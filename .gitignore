@@ -1,3 +1,35 @@
 /.bsp/
 target/
 .idea
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+.metals
+.bloop
+
+.vscode
+liquibase
+metals.sbt
+node_modules
+
+.DS_Store
+.aider.chat.history
+.aider.chat.history*
+.aider.tags.*
+.aider.input.history*
+.aider-desk/*
+.aider.tags.cache.v4/*
+.roo*
+.continue*
+
+dist/
+deploy_folder/liquibase
+deploy_folder/backend
+deploy_folder/frontend
