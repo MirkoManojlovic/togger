@@ -1,0 +1,51 @@
+package com.togger.project
+
+import com.togger.auth.SecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgJsonSuccess
+import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, UpdateProjectReq}
+import io.circe.generic.auto._
+import sttp.tapir._
+import sttp.tapir.generic.auto._
+import sttp.tapir.json.circe.jsonBody
+
+class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
+
+  private val basePath: EndpointInput[Unit] = "project"
+
+  val findByIdEndpoint: TgSecuredEndpoint[Long, FindProjectResp] =
+    securedEndpoint.endpoint.get
+      .in(basePath / path[Long]("id"))
+      .out(jsonBody[TgJsonSuccess[FindProjectResp]])
+  //      .tag(topic)
+  //      .name(createName(findById))
+  //      .summary(createSummary(findById))
+  //      .description(s"Find $topic using id")
+
+  val saveEndpoint: TgSecuredEndpoint[CreateProjectReq, FindProjectResp] =
+    securedEndpoint.endpoint.post
+      .in(basePath)
+      .in(jsonBody[CreateProjectReq])
+      .out(jsonBody[TgJsonSuccess[FindProjectResp]])
+
+  val updateEndpoint: TgSecuredEndpoint[UpdateProjectReq, FindProjectResp] =
+    securedEndpoint.endpoint.put
+      .in(basePath)
+      .in(jsonBody[UpdateProjectReq])
+      .out(jsonBody[TgJsonSuccess[FindProjectResp]])
+
+  val findByOrganizationIdAndAccountIdEndpoint: TgSecuredEndpoint[Long, Seq[FindProjectResp]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "organization" / path[Long]("id"))
+      .out(jsonBody[TgJsonSuccess[Seq[FindProjectResp]]])
+  //      .tag(topic)
+  //      .name(createName(findById))
+  //      .summary(createSummary(findById))
+  //      .description(s"Find $topic using id")
+
+  val findAllMembersEndpoint: TgSecuredEndpoint[Long, Seq[SearchAccountDto]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "members" /  path[Long]("project-id"))
+      .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
+
+}

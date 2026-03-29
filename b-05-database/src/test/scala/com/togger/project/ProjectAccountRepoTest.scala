@@ -1,0 +1,103 @@
+package com.togger.project
+
+import cats.implicits._
+import com.togger.account.{Account, AccountRepoImpl, TgAccount}
+import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.organization.{TgOrganization, TgProject}
+import doobie.implicits._
+import doobie.postgres.implicits._
+
+class ProjectAccountRepoTest
+    extends BusinessTgDbSpec
+    with TgAccount
+    with TgOrganization
+    with TgProject
+    with TimeHelpers {
+
+  val projectAccountRepo = new ProjectAccountRepoImpl
+  val accountRepo = new AccountRepoImpl
+
+  testNameFromClassName should {
+
+    "do basic crud operations" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        savedProjectAccount <- projectAccountRepo.insert(
+          ProjectAccount(
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            createdAt = nowAsInstant
+          )
+        )
+        foundProjectAccount <- projectAccountRepo.findById(
+          projectId = savedProjectAccount.projectId,
+          accountId = savedProjectAccount.accountId
+        )
+        _ <- projectAccountRepo.deleteById(
+          projectId = savedProjectAccount.projectId,
+          accountId = savedProjectAccount.accountId
+        )
+        foundProjectAccount2 <- projectAccountRepo
+          .findById(
+            projectId = savedProjectAccount.projectId,
+            accountId = savedProjectAccount.accountId
+          )
+          .attempt
+      } yield {
+        val cp = new Checkpoint
+        cp(savedProjectAccount shouldBe foundProjectAccount)
+        cp.reportAll()
+        foundProjectAccount2.isLeft shouldBe true
+      }
+
+      res.transact(transactor)
+    }
+  }
+
+  "find all members of the project" in { transactor =>
+    val accounts = Seq(
+      createAccount("John", "Smith", "shark@email.com"),
+      createAccount("Jack", "Curry", "bird@email.com"),
+      createAccount("Steve", "Murry", "bird1@email.com"),
+      createAccount("George", "Washington", "dog@email.com")
+    )
+
+    val res = for {
+      accountTypes <- createAccountTypes
+      savedAccounts <- accounts
+        .map(account => accountRepo.insert(account.copy(accountTypeId = accountTypes.head.id)))
+        .sequence
+      savedOrgAndProject <- createOrgAndProject
+      (_, savedProject) = savedOrgAndProject
+      projectAccountsForSaving = savedAccounts.map(account =>
+        ProjectAccount(
+          projectId = savedProject.id,
+          accountId = account.id,
+          createdAt = nowAsInstant
+        )
+      )
+      _ <- projectAccountsForSaving.map(projectAccountRepo.insert).sequence
+      foundAccounts <- projectAccountRepo.findAllMembers(savedProject.id)
+    } yield {
+      savedAccounts shouldBe foundAccounts
+    }
+
+    res.transact(transactor)
+  }
+
+  def createAccount(firstName: String, lastName: String, email: String) =
+    Account(
+      id = -1,
+      firstName = firstName,
+      lastName = lastName,
+      email = email,
+      password = passwordHashed,
+      accountTypeId = 1,
+      verified = true,
+      enabled = true,
+      createdAt = nowAsInstant,
+      updatedAt = nowAsInstant
+    )
+}
