@@ -1,14 +1,13 @@
 package com.togger.ui.navbar
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.organization.FindOrganizationsAndProjects
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.AccountService
 import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
-import com.togger.ui.task.{DumpComponent, LoadComponent}
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLLIElement
 
 case class SidebarLink(
@@ -62,9 +61,7 @@ class Sidebar(
   router: TgRouter[FrontendPage],
   logout: Logout[FrontendPage],
   organizationServiceFe: OrganizationServiceFe,
-  accountService: AccountService,
-  dumpComponent: DumpComponent,
-  loadComponent: LoadComponent
+  accountService: AccountService
 )(implicit IORuntime: IORuntime) {
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
@@ -204,10 +201,7 @@ class Sidebar(
                       SidebarLink(project.name, router.navigateTo(ShowAllTasksPage(project.id))).deselectedProject
                     )
               }
-            },
-            li(dumpComponent.asLink.amend(cls(Sidebar.sideBarLinkStyle))),
-            li(loadComponent.asLink.amend(cls(Sidebar.sideBarLinkStyle)))
-
+            }
 //            li(
 //              a(
 //                cls(sideBarLinkStyle),

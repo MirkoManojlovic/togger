@@ -21,8 +21,7 @@ class ShowAllTasksComponent(
   dateFormater: TgDateFormater,
   spinnerService: SpinnerService,
   accountService: AccountService,
-  projectId: Long,
-  dumpComponent: DumpComponent
+  projectId: Long
 )(implicit
   ioRuntime: IORuntime
 ) {
