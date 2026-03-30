@@ -1,0 +1,103 @@
+package com.togger.routes
+
+import com.togger.routes.Pages._
+import com.raquo.waypoint._
+
+class TgRoutes {
+
+  def routes(basePath: String): Seq[Route[_ <: FrontendPage, _ <: Any]] =
+    Seq(
+      Route.static(
+        HomePage,
+        root / endOfSegments
+//        basePath = basePath
+      ),
+      Route.static(
+        LoginPage,
+        root / "login"
+      ),
+      Route.static(
+        ChangePasswordPage,
+        root / "change-password"
+      ),
+      Route(
+        encode = (page: CreateTaskPage) => page.projectId,
+        decode = (projectId: Long) => CreateTaskPage(projectId),
+        pattern = root / "create-task" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: CreateTaskStatusPage) => page.projectId,
+        decode = (projectId: Long) => CreateTaskStatusPage(projectId),
+        pattern = root / "create-task-status" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: EditTaskStatusPage) => page.projectId -> page.taskStatusId,
+//        decode = { case (projectId: Long, taskStatusId: Long) => EditTaskStatusPage(projectId, taskStatusId) },
+        decode = { (a: (Long, Long)) => EditTaskStatusPage(a._1, a._2) },
+        pattern =
+          root / "edit-task-status" / "project-id" / segment[Long] / "task-status-id" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: EditTaskPage) => page.projectId -> page.taskId,
+        decode = { (a: (Long, Long)) => EditTaskPage(a._1, a._2) },
+        pattern = root / "edit-task" / "project-id" / segment[Long] / "task-id" / segment[Long] / endOfSegments
+//        basePath = basePath
+      ),
+      Route(
+        encode = (page: ShowAllTasksPage) => page.projectId,
+        decode = (projectId: Long) => ShowAllTasksPage(projectId),
+        pattern = root / "show-tasks" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: ShowAllTaskStatusesPage) => page.projectId,
+        decode = (projectId: Long) => ShowAllTaskStatusesPage(projectId),
+        pattern = root / "task-status" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: CreateProjectPage) => page.organizationId,
+        decode = (organizationId: Long) => CreateProjectPage(organizationId),
+        pattern = root / "create-project" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: ShowProjectsForOrganizationIdTable) => page.id,
+        decode = (id: Long) => ShowProjectsForOrganizationIdTable(id),
+        pattern = root / "project" / "table" / "organization" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: ShowProjectsForOrganizationIdStatus) => page.id,
+        decode = (id: Long) => ShowProjectsForOrganizationIdStatus(id),
+        pattern = root / "project" / "status" / "organization" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: EditProjectPage) => page.id,
+        decode = (id: Long) => EditProjectPage(id),
+        pattern = root / "project" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      ),
+      Route.static(
+        CreateOrganizationPage,
+        root / "organization" / "create"
+        //        basePath = basePath
+      ),
+      Route.static(
+        ShowAllOrganizationsPage,
+        root / "organization" / endOfSegments
+        //        basePath = basePath
+      ),
+      Route(
+        encode = (page: EditOrganizationPage) => page.id,
+        decode = (id: Long) => EditOrganizationPage(id),
+        pattern = root / "organization" / segment[Long] / endOfSegments
+        //        basePath = basePath
+      )
+    )
+
+}
