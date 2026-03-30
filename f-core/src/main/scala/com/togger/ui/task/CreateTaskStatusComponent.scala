@@ -1,0 +1,104 @@
+package com.togger.ui.task
+
+import cats.effect.unsafe.IORuntime
+import com.togger.auth.SecuredEndpoint
+import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto._
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.task.TaskStatusEndpoints
+import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
+import com.raquo.laminar.api.L._
+import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+
+case class CreateTaskStatusForm(
+  projectId: Long = -1L,
+  name: String = "",
+  description: String = ""
+)
+
+class CreateTaskStatusComponent(
+  taskStatusService: TaskStatusFeService,
+  spinnerService: SpinnerService,
+  tgClock: TgClock,
+  accountService: AccountService,
+  projectId: Long,
+  val toast: Toast
+)(implicit ioRuntime: IORuntime)
+    extends ToastMessages {
+
+  val formState = Var(CreateTaskStatusForm(projectId = projectId))
+
+  lazy val submitter = Observer[CreateTaskStatusForm] { form =>
+    val dto = CreateTaskStatusReq(
+      projectId = form.projectId,
+      name = form.name,
+      description = form.description
+    )
+    spinnerService
+      .runWithSpinner(taskStatusService.createTaskStatus(dto))
+      .toastMessageJustMessage("Task status created successfully")
+      .unsafeRunAndForget()
+  }
+
+  private val nameInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.name),
+    errors = EventStream.empty,
+    labelValue = "Status name",
+    tgInputType = TgInputType.Text
+  )
+
+  private val descriptionInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.description),
+    errors = EventStream.empty,
+    labelValue = "Status description",
+    tgInputType = TgInputType.Text
+  )
+
+  val element = div(
+    justifyCenterFlex,
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Create a task status", TgCard.CardHeaderSize.H3),
+        body = TgCard.HtmlCardContent(
+          div(
+            form(
+              onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+              nameInput.htmlElement.amend(cls("mb-4")),
+              descriptionInput.htmlElement.amend(cls("mb-4")),
+              TgHtmlButton.create(EventStream.fromValue(false))
+            )
+          )
+        )
+      )
+      .element
+      .amend(heightAndWidthFitContent)
+  )
+
+}
+
+class TaskStatusFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
+  val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
+
+  def createTaskStatus(dto: CreateTaskStatusReq): TgRespIO[CreateTaskStatusResp] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.saveEndpoint)(dto)
+
+  def updateTaskStatus(dto: UpdateTaskStatusResp): TgRespIO[FindTaskStatusResp] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.updateEndpoint)(dto)
+
+  def findByProjectId(projectId: Long): TgRespIO[Seq[FindTaskStatusResp]] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)(projectId)
+
+  def findTaskStatusById(id: Long): TgRespIO[FindTaskStatusResp] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByIdEndpoint)(id)
+
+  def deleteTaskStatusById(id: Long): TgRespIO[TgEmptyBody] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.deleteByIdEndpoint)(id)
+}
