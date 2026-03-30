@@ -1,0 +1,253 @@
+package com.togger.ui.logentry
+
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
+import com.togger.common.TgClock
+import com.togger.common.TgJavaTimeSyntax.TgInstantOps
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto.LogEntryDto
+import com.togger.logentry.LogEntryStatus
+import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgSelect.TgSelectSyntax
+import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.auth._
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.toast.Toast
+import com.raquo.laminar.api.L._
+import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+
+import java.time.{Instant, LocalDate, ZoneOffset}
+
+case class LogEntryForm(
+  logEntryId: Long = -1,
+  taskId: Long,
+  status: String = "",
+  textExternal: String = "",
+  textInternal: String = "",
+  date: String = ""
+) {
+  lazy val dateAsInstant: Instant = {
+    val localDate = LocalDate.parse(date)
+    val localDateTime = localDate.atTime(0, 0, 0)
+    localDateTime.toInstant(ZoneOffset.UTC)
+  }
+}
+
+object LogEntryForm {
+  def default(taskId: Long, tgClock: TgClock) =
+    LogEntryForm(
+      taskId = taskId,
+      status = LogEntryStatus.InProgress.toString,
+      date = tgClock.currentDate().toString
+    )
+
+  def fromDto(dto: LogEntryDto) =
+    LogEntryForm(
+      logEntryId = dto.id,
+      taskId = dto.taskId,
+      status = dto.status.value.toString,
+      textExternal = dto.textExternal,
+      textInternal = dto.textInternal,
+      date = dto.updatedAt.toLocalDate().toString
+    )
+}
+
+class LogEntryComponent(
+  logEntryForm: LogEntryForm,
+  taskService: TaskFeService,
+  spinnerService: SpinnerService,
+  accountService: AccountService,
+  tgClock: TgClock,
+  router: TgRouter[FrontendPage],
+  val toast: Toast
+)(implicit
+  IORuntime: IORuntime
+) extends ToastMessages {
+  private val formState = Var(logEntryForm)
+  private val displayAsEditVar = Var(false)
+
+  lazy val saveSubmitter = Observer[LogEntryForm] { form =>
+    val dto = LogEntryDto(
+      id = form.logEntryId,
+      textInternal = form.textInternal,
+      textExternal = form.textExternal,
+      status = LogEntryStatus.withValue(form.status.toInt),
+      taskId = form.taskId,
+      createdBy = accountService.get.get.id,
+      createdAt = form.dateAsInstant,
+      updatedAt = form.dateAsInstant
+    )
+
+    spinnerService
+      .runWithSpinner(taskService.saveLogEntry(dto))
+      .toastMessageDto(_ => "Log Entry saved!")(_ => IO(router.route(router.currentPageSignal.now())))
+      .unsafeRunAndForget()
+  }
+
+  lazy val updateSubmitter = Observer[LogEntryForm] { form =>
+    val dto = LogEntryDto(
+      id = form.logEntryId,
+      textInternal = form.textInternal,
+      textExternal = form.textExternal,
+      status = LogEntryStatus.withValue(form.status.toInt),
+      taskId = form.taskId,
+      createdBy = accountService.get.get.id,
+      createdAt = tgClock.currentInstant,
+      updatedAt = form.dateAsInstant
+    )
+
+    spinnerService
+      .runWithSpinner(taskService.updateLogEntry(dto))
+      .toastMessageDto(_ => "Log Entry updated!")(_ => IO(router.route(router.currentPageSignal.now())))
+      .unsafeRunAndForget()
+  }
+
+  lazy val asEditElement = div(
+    asDisplayEl(saveSubmitter, "Create", addShowToggle = false)
+  )
+
+  lazy val element =
+    if (formState.now().logEntryId == -1) asEditElement
+    else asDisplayElement.amend(cls("mt-4"))
+
+  lazy val asDisplayElement = div(
+    div(
+      child <-- displayAsEditVar.signal.map { displayAsEdit =>
+        if (displayAsEdit) {
+          asDisplayEl(updateSubmitter, "Update", addShowToggle = true)
+        } else {
+          div(
+            {
+              val state = formState.now()
+              TgCard
+                .headerNoFooter(
+                  header = TgCard.CardHeader.html(
+                    div(
+                      cls("flex"),
+                      justifyContent.spaceBetween, // TODO: fix this
+                      div(b("Date: "), state.date),
+                      TgHtmlButton
+                        .extraSmall("Edit")
+                        .amend(
+                          onClick.mapToUnit --> { _ =>
+                            displayAsEditVar.update(displayAsEdit => !displayAsEdit)
+                          }
+                        )
+                    ),
+                    TgCard.CardHeaderSize.H3
+                  ),
+                  body = TgCard.HtmlCardContent(
+                    div(
+                      p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toString, cls("mb-4")),
+                      div(p(b(s"Status update")), markdownToHtml(state.textExternal), cls("mb-4"))
+//                      div(p(b("Text internal")), markdownToHtml(state.textInternal), cls("mb-4"))
+                    )
+                  )
+                )
+                .element
+            }
+          )
+        }
+      }
+    )
+  )
+
+  private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
+
+    val statusInputSelect = formState.tgSelectManualError(
+      inputAndUpdater = selectorAndUpdaterMacro(_.status),
+      labelValue = "Status",
+      valuesAndDisplays = LogEntryStatus.namesToValuesMapString
+    )
+
+    val textExternalTextArea = formState.tgTextAreaManualErrorSig(
+      inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
+      errors = EventStream.empty,
+      labelValue = "Status update",
+      numberOfColumns = 80
+    )
+
+//    val textInternalTextArea = formState.tgTextAreaManualErrorSig(
+//      inputAndUpdater = selectorAndUpdaterMacro(_.textInternal),
+//      errors = EventStream.empty,
+//      labelValue = "Internal text",
+//      isRequired = false,
+//      numberOfColumns = 80
+//    )
+
+    val dateInput = formState.tgInputManualErrorLPSig(
+      inputAndUpdater = selectorAndUpdaterMacro(_.date),
+      errors = EventStream.empty,
+      labelValue = "Date created",
+      tgInputType = TgInputType.Date
+    )
+
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.html(
+          div(
+            cls("flex"),
+            justifyContent.spaceBetween, // TODO: fix this
+            div("Create a daily log entry"),
+            if (addShowToggle) {
+              TgHtmlButton
+                .extraSmall("Show")
+                .amend(
+                  onClick.mapToUnit --> { _ =>
+                    displayAsEditVar.update(displayAsEdit => !displayAsEdit)
+                  }
+                )
+            } else div()
+          ),
+          TgCard.CardHeaderSize.H3
+        ),
+        body = TgCard.HtmlCardContent(
+          div(
+            form(
+              onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+              statusInputSelect.htmlElement.amend(cls("mb-4")),
+              div(
+                cls("flex mb-4"),
+                textExternalTextArea.htmlElement
+//                div(
+//                  marginLeft.rem(1),
+//                  h3("Preview external"),
+//                  children <-- formState.signal.map(_.textExternal).map(markdownToHtml)
+//                )
+              ),
+//              div(
+//                cls("flex mb-4"),
+//                textInternalTextArea.htmlElement,
+//                div(
+//                  marginLeft.rem(1),
+//                  h3("Preview internal"),
+//                  children <-- formState.signal.map(_.textInternal).map(markdownToHtml)
+//                )
+//              ),
+              dateInput.htmlElement.amend(cls("mb-4")),
+              div(TgHtmlButton.primary(buttonLabel))
+            )
+          )
+        )
+      )
+      .element
+      .amend(heightAndWidthFitContent)
+
+  }
+
+  def markdownToHtml(text: String) = {
+    val splitText = text.split("\n").toSeq
+
+    splitText.collect {
+//      case line if line.startsWith("##") => h2(line.replaceAll("##", ""))
+//      case line if line.startsWith("#")  => h1(line.replaceAll("#", ""))
+      case line => p(line)
+    }
+
+  }
+
+}
