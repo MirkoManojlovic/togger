@@ -1,0 +1,145 @@
+package com.togger.ui.project
+
+import cats.effect.unsafe.IORuntime
+import com.togger.auth.SecuredEndpoint
+import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto._
+import com.togger.dto.organization.FindOrganizationResp
+import com.togger.project.ProjectEndpoints
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.auth._
+import com.togger.ui.organization.OrganizationServiceFe
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
+import com.raquo.laminar.api.L._
+import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+
+case class CreateProjectForm(
+  organizationId: Long = -1L,
+  name: String = "",
+  description: String = "",
+  members: Seq[Long] = Seq.empty
+)
+
+trait ProjectService {
+  def createProject(dto: CreateProjectReq): TgRespIO[FindProjectResp]
+
+  def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp]
+
+  def findByOrganizationId(organizationId: Long): TgRespIO[Seq[FindProjectResp]]
+
+  def findById(id: Long): TgRespIO[FindProjectResp]
+
+  def findAllMembers(projectId: Long): TgRespIO[Seq[SearchAccountDto]]
+
+}
+
+class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends ProjectService {
+  val projectEndpoints = new ProjectEndpoints(securedEndpoint)
+
+  override def createProject(dto: CreateProjectReq): TgRespIO[FindProjectResp] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.saveEndpoint)(dto)
+
+  override def findByOrganizationId(organizationId: Long): TgRespIO[Seq[FindProjectResp]] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(organizationId)
+
+  override def findById(id: Long): TgRespIO[FindProjectResp] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.findByIdEndpoint)(id)
+
+  override def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.updateEndpoint)(dto)
+
+  override def findAllMembers(projectId: Long): TgRespIO[Seq[SearchAccountDto]] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)(projectId)
+
+}
+
+class CreateProjectComponent(
+  findAccountService: FindAccountService,
+  projectService: ProjectService,
+  organizationServiceFe: OrganizationServiceFe,
+  accountService: AccountService,
+  spinnerService: SpinnerService,
+  organizationId: Long,
+  val toast: Toast
+)(implicit ioRuntime: IORuntime)
+    extends ToastMessages {
+
+  val formState = Var(CreateProjectForm(organizationId = organizationId))
+  val organizationsVar = Var(Seq.empty[FindOrganizationResp])
+  val findAccountsComponent = new FindAccountsComponent(
+    findAccountService = findAccountService,
+    accountService = accountService,
+    excludeUserAccount = true
+  )
+
+  spinnerService
+    .runWithSpinner(
+      organizationServiceFe
+        .findByAccountId(accountService.get.get.id)
+        .map(
+          _.fold(
+            e => println(e),
+            success => {
+              organizationsVar.set(success.body.get)
+            }
+          )
+        )
+    )
+    .unsafeRunAndForget()
+
+  lazy val createSubmitter = Observer[CreateProjectForm] { state =>
+    val request = CreateProjectReq(
+      organizationId = state.organizationId,
+      name = state.name,
+      description = state.description,
+      membersToAdd = findAccountsComponent.membersToAdd.map(_.id)
+    )
+
+    spinnerService
+      .runWithSpinner(projectService.createProject(request))
+      .toastMessageJustMessage("Project created successfully")
+      .unsafeRunAndForget()
+  }
+
+  private val nameInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.name),
+    errors = EventStream.empty,
+    labelValue = "Project name",
+    tgInputType = TgInputType.Text
+  )
+
+  private val descriptionTextArea = formState.tgTextAreaManualErrorSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.description),
+    errors = EventStream.empty,
+    labelValue = "Project description"
+  )
+
+  val element = div(
+    justifyCenterFlex,
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Create a project", TgCard.CardHeaderSize.H3),
+        body = TgCard.HtmlCardContent(
+          div(
+            form(
+              onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
+              nameInput.htmlElement.amend(cls("mb-4")),
+              descriptionTextArea.htmlElement.amend(cls("mb-4")),
+              findAccountsComponent.element.amend(width.px(500)),
+              TgHtmlButton.create(EventStream.fromValue(false))
+            )
+          )
+        )
+      )
+      .element
+      .amend(heightAndWidthFitContent)
+  )
+
+}
