@@ -19,16 +19,30 @@ object LogEntryStatus extends IntEnum[LogEntryStatus] {
     override def toString: String = "🔴 Blocked"
   }
 
-//  case object Todo extends LogEntryStatus {
-//    override def toString: String = "🟡 Todo"
-//  }
-
   case object Completed extends LogEntryStatus(3, "🟢") {
     override def toString: String = "🟢 Completed"
   }
+
   case object Abandoned extends LogEntryStatus(4, "⚫️") {
     override def toString: String = "⚫️ Abandoned"
   }
+
+  case object Paused extends LogEntryStatus(5, "🟡️") {
+    override def toString: String = "🟡 Paused"
+  }
+
+  case object Holiday extends LogEntryStatus(6, "🎄") {
+    override def toString: String = "🎄 Holiday"
+  }
+
+  case object Vacation extends LogEntryStatus(7, "🏝") {
+    override def toString: String = "🏝️ Vacation"
+  }
+
+  case object Handover extends LogEntryStatus(8, "🤲") {
+    override def toString: String = "🤲 Handover"
+  }
+
 
   def namesToValuesMapString: Map[String, String] =
     this.values.map { status => status.value.toString -> status.toString }.toMap
