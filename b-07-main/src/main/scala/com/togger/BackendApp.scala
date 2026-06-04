@@ -35,10 +35,32 @@ object BackendApp extends IOApp with TgLogging {
     )
 
 //  private def runServer(authAppConfig: AuthAppConfig): IO[ExitCode] =
-  private def runServer(transactor: Transactor[IO]): IO[ExitCode] =
-    TgServer
-      .instance(new TransactorModuleApp(transactor))
-      .use(_ => IO.never)
-      .as(ExitCode.Success)
+  private def runServer(transactor: Transactor[IO], appConfigBe: AppConfigBe): IO[ExitCode] =
+    for {
+      stopSignal <- Deferred[IO, Unit]
+      serverResult <- TgServer
+        .instance(new TransactorModuleApp(transactor))
+        .use(_ => runServer(stopSignal, appConfigBe))
+        .map(_ => logger.info("Stoping the app"))
+        .as(ExitCode.Success)
+    } yield serverResult
+
+  private def runServer(stopSignal: Deferred[IO, Unit], appConfigBe: AppConfigBe): IO[IO[Unit]] = {
+    if (appConfigBe.isDesktopMode) runServerDesktop(stopSignal)
+    else runServerWeb
+  }
+
+  private def runServerWeb: IO[IO[Unit]] =
+    IO.never
+
+  private def runServerDesktop(stopSignal: Deferred[IO, Unit]): IO[IO[Unit]] = {
+    val checkDesktopAppRunningCondition = new CheckDesktopAppRunningCondition()
+    val checkDesktopRunning = new CheckDesktopAppRunning
+
+    for {
+      _ <- checkDesktopRunning.run(() => checkDesktopAppRunningCondition.isRunning, stopSignal)
+      _ <- stopSignal.get.map(_ => logger.info("Stop signal received, stoping the app"))
+    } yield IO.unit
+  }
 
 }

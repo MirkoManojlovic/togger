@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS=--max-old-space-size=1024 vite --debug",
-    "build": "vite build",
+    "build-web": "vite build --mode web",
+    "build-desktop": "vite build --mode desktop",
     "preview": "vite preview",
     "tauri": "tauri"
   },

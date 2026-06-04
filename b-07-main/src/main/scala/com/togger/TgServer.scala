@@ -26,13 +26,17 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule): Resource[IO, server.Server] = {
+  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
 
     lazy val dependenciesModule =
-      new DependenciesModule(transactorModule.transactor, securedEndpoint, authDependenciesModule)
+      new DependenciesModule(
+        transactorModule.transactor,
+        securedEndpoint,
+        authDependenciesModule
+      )
     import dependenciesModule._
 
     lazy val httpModule = new HttpModule()
