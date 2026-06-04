@@ -1,7 +1,7 @@
 package com.togger.dep
 
 import cats.effect.IO
-import com.togger.account.{AccountRepoImpl, AccountService, AccountServiceCore, AccountSessionRepo}
+import com.togger.account.{AccountRepoImpl, AccountService, AccountSessionRepo}
 import com.togger.auth.{ChangePasswordLogic, PasswordUpdate, SecuredEndpoint}
 import com.togger.common.TgClockImpl
 import com.togger.login.{LoginController, SessionTokenFactoryImpl}
