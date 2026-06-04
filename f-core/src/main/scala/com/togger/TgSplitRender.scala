@@ -80,7 +80,9 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         elementForSpinner,
         toastHolder,
         div(
-          cls("p-4 sm:ml-64"),
+          cls <-- loginRepo.authenticatedSignal.map(accountOpt =>
+            if (accountOpt.isDefined) TgSplitRender.sidebarPadding else ""
+          ),
           child <-- signal
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
@@ -221,6 +223,10 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         )
       )
     )
+}
+
+object TgSplitRender {
+  lazy val sidebarPadding = "p-4 sm:ml-64"
 }
 
 case class NavigationSelection(
