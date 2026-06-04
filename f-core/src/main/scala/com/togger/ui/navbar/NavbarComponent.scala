@@ -1,8 +1,9 @@
 package com.togger.ui.navbar
-import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.routes.Pages._
+import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.ui.icons.TgSvgIcons
 import org.scalajs.dom.HTMLLIElement
 
 case class MenuLink(
@@ -98,8 +99,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
           cls("max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4"),
           a(
             cls("block py-2 px-3 text-heading flex items-center space-x-3 rtl:space-x-reverse"),
-            img(src("/tg-icon-1.svg"), cls("h-7")),
-//            img(src("https://flowbite.com/docs/images/logo.svg"), cls("h-7")),
+            TgSvgIcons.tgIconLogo,
             span(cls("self-center text-xl text-heading font-semibold whitespace-nowrap"), "Togger"),
             router.navigateTo(HomePage)
           ),

@@ -1,16 +1,17 @@
 package com.togger.ui.auth
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.airstream.core.EventStream
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.login.{DeviceInfo, LoginDto}
 import com.togger.routes.Pages.{HomePage, LoginPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.airstream.core.EventStream
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 case class LoginFormState(email: String = "@email.com", password: String = "A!good_1_password_is_good") {}
@@ -70,8 +71,12 @@ class LoginComponent(
       div(
         div(
           justifyCenterFlex,
+          marginTop.rem(5),
           marginBottom.rem(2),
-          img(src("/tg-icon.svg"), width.percent(30))
+          div(
+            justifyCenterFlex,
+            TgSvgIcons.tgIconApp
+          )
         ),
         div(
           justifyCenterFlex,

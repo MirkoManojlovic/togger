@@ -6,6 +6,7 @@ import com.togger.dto.organization.FindOrganizationsAndProjects
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.AccountService
+import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import org.scalajs.dom.HTMLLIElement
@@ -177,7 +178,10 @@ class Sidebar(
           cls("h-full px-3 py-4 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
           a(
             cls("flex items-center ps-2.5 mb-5"),
-            img(src("/tg-icon-1.svg"), cls("h-7"), cls("h-6 me-3"), alt("Togger Logo")),
+            div(
+              cls("flex items-center me-3"),
+              TgSvgIcons.tgIconLogo,
+            ),
             span(
               cls("self-center text-lg text-heading font-semibold whitespace-nowrap"),
               "Togger"
