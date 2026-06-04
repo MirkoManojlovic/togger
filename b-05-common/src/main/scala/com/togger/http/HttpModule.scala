@@ -22,7 +22,8 @@ class HttpModule extends TgLogging {
       .withAllowOriginHost(
         Set(
           // TODO: move this to dev config
-          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(5173))
+          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(5173)),
+          Origin.Host(Uri.Scheme.fromString("tauri").toOption.get, Uri.RegName("localhost"))
           //          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(63342))
         )
       )
