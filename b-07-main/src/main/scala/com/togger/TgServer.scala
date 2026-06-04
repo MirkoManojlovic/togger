@@ -15,8 +15,7 @@ import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepo
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.Transactor
-import doobie.postgres.implicits._
-import org.http4s.server
+import org.http4s.server.Server
 
 trait TransactorModule {
   val transactor: Transactor[IO]
@@ -74,7 +73,6 @@ object TgServer {
         taskStatusController.delete
       )
     )
-
   }
 }
 
@@ -118,4 +116,5 @@ class DependenciesModule(
   lazy val taskStatusService = new TaskStatusService(taskStatusRepo, tgClock, transactor)
   lazy val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
   lazy val taskStatusController = new TaskStatusController(taskStatusService, taskStatusEndpoints, tgClock)
+
 }

@@ -1,6 +1,7 @@
 package com.togger
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect._
+import com.togger.desktop.{CheckDesktopAppRunning, CheckDesktopAppRunningCondition}
 import doobie.Transactor
 import scribe.format.Formatter
 import scribe.{Level, Logger, Logging}
@@ -15,13 +16,13 @@ object BackendApp extends IOApp with TgLogging {
     val transactor = TgTransactor.desktopTransactor
 //    val transactor = TgTransactor.dockerTransactor
 
-//  val appEnv = new AppEnvParser().parse(args)
-//  logger.info(s"Running App in [env=$appEnv]")
-//  val authAppConfig = new AppEnvSelector(appEnv).authAppConfig
+    val appEnv = new AppEnvParser().parse(args)
+    logger.info(s"Running App in [env=$appEnv]")
+    val appConfigBe = new AppEnvSelector(appEnv).appConfig
+
     for {
       _ <- setupScribeLogging
-//      exitCode <- runServer(authAppConfig)
-      exitCode <- runServer(transactor)
+      exitCode <- runServer(transactor, appConfigBe)
     } yield exitCode
   }
 
@@ -34,7 +35,6 @@ object BackendApp extends IOApp with TgLogging {
         .replace()
     )
 
-//  private def runServer(authAppConfig: AuthAppConfig): IO[ExitCode] =
   private def runServer(transactor: Transactor[IO], appConfigBe: AppConfigBe): IO[ExitCode] =
     for {
       stopSignal <- Deferred[IO, Unit]
