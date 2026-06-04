@@ -8,6 +8,7 @@ ThisBuild / scalaVersion := "2.13.18"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.togger"
 ThisBuild / organizationName := "Togger"
+ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
 Global / tpolecatExcludeOptions ++= Set(
   ScalacOptions.warnNumericWiden,
@@ -310,7 +311,7 @@ lazy val backendAuth = (project in file("b-auth-app-core"))
       // Liquibase
       `org.liquibase` % `liquibase-core` % `liquibase-version`,
       // Postgres
-      `com.opentable.components` % `otj-pg-embedded` % `otj-pg-embedded-version` % Test,
+//      `com.opentable.components` % `otj-pg-embedded` % `otj-pg-embedded-version` % Test,
       `org.postgresql` % `postgresql` % `postgresql-version`,
       `org.tpolecat` %% `doobie-hikari` % `doobie-version`,
       `org.tpolecat` %% `doobie-core` % `doobie-version`,
@@ -339,10 +340,9 @@ lazy val backendAuth = (project in file("b-auth-app-core"))
       `com.outr` %% `scalapass` % `scalapass-version`,
       // JWT
       `com.github.jwt-scala` %% `jwt-circe` % `jwt-circe-version`,
-      // Send grid
-      `com.sendgrid` % `sendgrid-java` % `sendgrid-version`,
       // Pureconfig
-      `com.github.pureconfig` %% pureconfig % `pureconfig-version`
+      `com.github.pureconfig` %% pureconfig % `pureconfig-version`,
+      "com.lihaoyi" %% "os-lib" % "0.11.8"
     )
   )
   .dependsOn(tgCommon.jvm % Cctt)
@@ -394,5 +394,3 @@ lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform) in file("c-00-tg-macr
       `com.outr` %%% scribe % `scribe-version`
     )
   )
-
-

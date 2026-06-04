@@ -21,7 +21,7 @@ object Libraries {
     val `cats-core` = "cats-core"
     val `cats-version` = "2.9.0"
     val `cats-effect` = "cats-effect"
-    val `cats-effect-version` = "3.4.3"
+    val `cats-effect-version` = "3.5.4"
     val mouse = "mouse"
     val `mouse-version` = "1.2.1"
 
@@ -117,7 +117,7 @@ object Libraries {
     val `tapir-http4s-client` = "tapir-http4s-client"
     val `tapir-json-circe` = "tapir-json-circe"
     val `tapir-sttp-client` = "tapir-sttp-client"
-    val `tapir-version` = "1.5.4"
+    val `tapir-version` = "1.5.5"
 
     val `tapir-swagger-ui-bundle` = "tapir-swagger-ui-bundle"
     val `tapir-redoc-bundle` = "tapir-redoc-bundle"
@@ -133,9 +133,9 @@ object Libraries {
     val `otj-pg-embedded` = "otj-pg-embedded"
     val `otj-pg-embedded-version` = "1.0.1"
 
-    val `com.sendgrid` = "com.sendgrid"
-    val `sendgrid-java` = "sendgrid-java"
-    val `sendgrid-version` = "4.9.3"
+//    val `com.sendgrid` = "com.sendgrid"
+//    val `sendgrid-java` = "sendgrid-java"
+//    val `sendgrid-version` = "4.9.3"
 
     val `com.github.jwt-scala` = "com.github.jwt-scala"
     val `jwt-circe` = "jwt-circe"
