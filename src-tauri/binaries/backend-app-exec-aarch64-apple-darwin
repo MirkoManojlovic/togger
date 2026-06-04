@@ -1,0 +1,4 @@
+#!/bin/bash
+
+START_DATE=$(date +%Y%m%d%H%M%S)
+bash $1/bin/backend-app > "$HOME/togger/$START_DATE-togger-log.txt" 2>&1
