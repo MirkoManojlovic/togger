@@ -137,7 +137,7 @@ class ShowAllTasksComponent(
                     ),
                     tbody(
                       dtos
-                        .sortBy(_.id)
+                        .sortBy(_.taskStatus.id)
                         .zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
