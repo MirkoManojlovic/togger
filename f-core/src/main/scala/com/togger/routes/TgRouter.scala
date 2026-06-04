@@ -38,7 +38,8 @@ class TgRouterImpl(
   )(
     popStateEvents = windowEvents(_.onPopState),
     owner = unsafeWindowOwner,
-    origin = origin
+    origin = origin,
+    initialUrl = initialUrl
   )
 
   override def route(page: FrontendPage): Unit =
