@@ -2,6 +2,7 @@ package com.togger.ui.logentry
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.components.button.TgHtmlButton
@@ -17,10 +18,9 @@ import com.togger.ui.auth._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 
 case class LogEntryForm(
   logEntryId: Long = -1,
@@ -34,6 +34,11 @@ case class LogEntryForm(
     val localDate = LocalDate.parse(date)
     val localDateTime = localDate.atTime(0, 0, 0)
     localDateTime.toInstant(ZoneOffset.UTC)
+  }
+
+  lazy val dateDay: DayOfWeek = {
+    val localDate = LocalDate.parse(date)
+    localDate.getDayOfWeek
   }
 }
 
@@ -129,7 +134,7 @@ class LogEntryComponent(
                     div(
                       cls("flex"),
                       justifyContent.spaceBetween, // TODO: fix this
-                      div(b("Date: "), state.date),
+                      div(b("Date: "), s"${state.date} ${state.dateDay.toString.toLowerCase.capitalize.take(3)}"),
                       TgHtmlButton
                         .extraSmall("Edit")
                         .amend(
