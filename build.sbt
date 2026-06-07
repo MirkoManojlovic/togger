@@ -136,6 +136,7 @@ lazy val backendMain = (project in file("b-07-main"))
       `org.liquibase` % `liquibase-core` % `liquibase-version`,
       // Tests
       `org.scalatest` %% scalatest % `scalatest-version` % Test,
+      // TODO: check if this is needed
       "com.lihaoyi" %% "sourcecode" % "0.4.2"
     )
   )
