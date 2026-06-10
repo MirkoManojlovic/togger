@@ -132,6 +132,8 @@ lazy val backendMain = (project in file("b-07-main"))
       `com.outr` %% `scribe-slf4j` % `scribe-version`,
       // Http API docs
       `com.softwaremill.sttp.tapir` %% `tapir-swagger-ui-bundle` % `tapir-version`,
+      // Liquibase
+      `org.liquibase` % `liquibase-core` % `liquibase-version`,
       // Tests
       `org.scalatest` %% scalatest % `scalatest-version` % Test,
       "com.lihaoyi" %% "sourcecode" % "0.4.2"
