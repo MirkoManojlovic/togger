@@ -200,7 +200,9 @@ class ShowAllProjectsStatusComponent(
           cls("mb-2"),
           accountDto.fullName
         ),
-        div(tasks.map { task =>
+        div(tasks
+          .sortBy(_.taskStatus.id)
+          .map { task =>
           val taskCard = TgCard
             .headerNoFooter(
               header = TgCard.CardHeader
@@ -233,7 +235,6 @@ class ShowAllProjectsStatusComponent(
                     display.flex,
                     task.logEntries
                       .sortBy(_.createdAt)
-                      .take(10)
                       .map(logEntry =>
                         div(
                           cls("border-1 border-gray-200 rounded-md"),
