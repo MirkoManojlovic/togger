@@ -34,4 +34,8 @@ deploy_folder/liquibase
 deploy_folder/backend
 deploy_folder/frontend
 
+deploy_docker_desktop/backend
+deploy_docker_desktop/frontend
+*jar
+
 src-tauri/java/*
