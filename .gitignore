@@ -33,3 +33,5 @@ dist/
 deploy_folder/liquibase
 deploy_folder/backend
 deploy_folder/frontend
+
+src-tauri/java/*
