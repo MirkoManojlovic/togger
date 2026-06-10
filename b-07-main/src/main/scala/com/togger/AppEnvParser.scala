@@ -11,11 +11,16 @@ object AppEnv extends Enum[AppEnv] {
 }
 
 class AppEnvParser {
-  def parse(inputArgs: List[String]): AppEnv =
-    inputArgs match {
-      case List("web")     => AppEnv.Web
-      case List("desktop") => AppEnv.Desktop
-      case _               => AppEnv.Web
+  def parse(inputArgs: List[String]): (AppEnv, String) = {
+    val appEnv = inputArgs.head match {
+      case "web"     => AppEnv.Web
+      case "desktop" => AppEnv.Desktop
+      case _         => AppEnv.Web
     }
+
+    val changelogPath = inputArgs.tail.head
+
+    appEnv -> changelogPath
+  }
 
 }

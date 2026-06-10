@@ -1,28 +1,29 @@
 package com.togger.maintenance
 
+import java.time._
+
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
+import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
 import com.togger.common.{Password, TgClockImpl}
 import com.togger.login.SessionTokenFactoryImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Transactor}
-
-import java.time._
 
 object CreateAccountApp extends IOApp {
 
-  val hashedPassword = HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
-  val now = Instant.now
+  private val hashedPassword =
+    HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
+  private val now = Instant.now
 
   override def run(args: List[String]): IO[ExitCode] = {
 
     val xa = Transactor.fromDriverManager[IO](
       driver = "org.postgresql.Driver",
-      url = "jdbc:postgresql:togger-local",
-      user = "togger_account",
-      password = "togger_password",
+      url = s"jdbc:postgresql:$DB_NAME",
+      user = DB_USERNAME,
+      password = DB_PASSWORD,
       logHandler = None
     )
 

@@ -1,7 +1,7 @@
 package com.togger.desktop
 
 import cats.effect.IO
-import cats.implicits.toTraverseOps
+import cats.implicits._
 import com.togger.account._
 import com.togger.common.{Password, TgClockImpl}
 import com.togger.login.SessionTokenFactoryImpl
@@ -9,44 +9,28 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Transactor}
 
-import java.time.Instant
-
 class CreateAdminAccount(transactor: Transactor[IO]) {
+  private val accountTypeRepo = new AccountTypeRepo()
+  private val accountRepo = new AccountRepoImpl()
+  private val accountSessionRepo = new AccountSessionRepo()
+  private val sessionTokenFactory = new SessionTokenFactoryImpl
+  private val tgClock = new TgClockImpl
 
-  val hashedPassword = HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
-  val now = Instant.now
+  private val accountService =
+    new AccountService(
+      accountRepo = accountRepo,
+      accountSessionRepo = accountSessionRepo,
+      sessionTokenFactory = sessionTokenFactory,
+      tgClock = tgClock,
+      transactor = transactor
+    )
 
-  def run() = {
-    val accountTypeRepo = new AccountTypeRepo()
-    val accountRepo = new AccountRepoImpl()
-    val accountSessionRepo = new AccountSessionRepo()
-    val sessionTokenFactory = new SessionTokenFactoryImpl
-    val tgClock = new TgClockImpl
+  private val now = tgClock.currentInstant
+  private val hashedPassword =
+    HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
+  private val accountTypes = Seq("developer", "manager", "qa")
 
-    val accountService =
-      new AccountService(
-        accountRepo = accountRepo,
-        accountSessionRepo = accountSessionRepo,
-        sessionTokenFactory = sessionTokenFactory,
-        tgClock = tgClock,
-        transactor = transactor
-      )
-
-    def createAccountTypes: ConnectionIO[List[AccountType]] =
-      Seq("developer", "manager", "qa")
-        .map(accountName =>
-          accountTypeRepo.insert(
-            AccountType(
-              id = -1,
-              name = accountName,
-              createdAt = now,
-              updatedAt = now
-            )
-          )
-        )
-        .toList
-        .sequence
-
+  def run: IO[Unit] = {
     val accounts = Seq(
       createAccount("John", "Doe", "admin@email.com")
     )
@@ -57,7 +41,22 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
     } yield ()
   }
 
-  def createAccount(firstName: String, lastName: String, email: String) =
+  private def createAccountTypes: ConnectionIO[List[AccountType]] =
+    accountTypes
+      .map(accountTypeName =>
+        accountTypeRepo.insert(
+          AccountType(
+            id = -1,
+            name = accountTypeName,
+            createdAt = now,
+            updatedAt = now
+          )
+        )
+      )
+      .toList
+      .sequence
+
+  private def createAccount(firstName: String, lastName: String, email: String): Account =
     Account(
       id = -1,
       firstName = firstName,
