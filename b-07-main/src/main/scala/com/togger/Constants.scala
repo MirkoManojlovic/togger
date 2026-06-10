@@ -2,8 +2,8 @@ package com.togger
 
 object Constants {
 
-  val DB_NAME: String = "togger_local"
-  val DB_USERNAME: String = "togger-account"
-  val DB_PASSWORD: String = "togger-password"
+  val DB_NAME: String = "togger-local-play"
+  val DB_USERNAME: String = "togger_account_play"
+  val DB_PASSWORD: String = "togger_password"
 
 }

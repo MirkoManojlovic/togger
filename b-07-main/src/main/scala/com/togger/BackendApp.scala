@@ -4,8 +4,6 @@ import cats.effect._
 import com.togger.Constants.DB_NAME
 import com.togger.desktop._
 import doobie.Transactor
-import doobie.implicits._
-import doobie.postgres.implicits._
 import scribe.format.Formatter
 import scribe.{Level, Logger, Logging}
 
@@ -27,6 +25,7 @@ object BackendApp extends IOApp with TgLogging {
     for {
       _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath)
       _ <- setupScribeLogging
+      _ <- archiveLogs(appEnv)
       exitCode <- runServer(appTransactor, appConfigBe)
     } yield exitCode
   }
@@ -39,6 +38,16 @@ object BackendApp extends IOApp with TgLogging {
         .withHandler(formatter = Formatter.compact)
         .replace()
     )
+
+  private def archiveLogs(appEnv: AppEnv): IO[Unit] =
+    appEnv match {
+      case AppEnv.Web =>
+        logger.info("Running in web mode, not archiving logs")
+        IO.unit
+      case AppEnv.Desktop =>
+        logger.info("Running in desktop mode, archiving logs")
+        IO(new LogArchive().run())
+    }
 
   private def runServer(transactor: Transactor[IO], appConfigBe: AppConfigBe): IO[ExitCode] =
     for {
