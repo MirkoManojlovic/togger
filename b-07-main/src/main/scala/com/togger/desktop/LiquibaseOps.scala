@@ -4,7 +4,7 @@ import java.io.File
 import java.sql.{DriverManager, SQLException}
 
 import cats.effect.IO
-import com.togger.Constants.DB_NAME
+import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.TgLogging
 import doobie.implicits._
 import doobie.{FC, Transactor}
@@ -60,7 +60,7 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
   }
 
   def createDatabase: IO[Either[SQLException, Int]] = {
-    fr"""CREATE DATABASE "togger-local" """.update.run.attemptSql.transact(nonTransactionalTransactor).recover {
+    fr"""CREATE DATABASE "togger-local-development" """.update.run.attemptSql.transact(nonTransactionalTransactor).recover {
       case e =>
         println(s"error ${e}")
         Right(1)
@@ -68,16 +68,16 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
   }
 
   def createToggerUser: IO[Int] = {
-    fr"CREATE USER togger_account WITH PASSWORD 'togger_password'".update.run.transact(transactorWithRootAccount)
+    fr"CREATE USER togger_account_development WITH PASSWORD 'togger_password'".update.run.transact(transactorWithRootAccount)
   }
 
   def grantAllPrivileges: IO[Int] = {
-    fr"""GRANT ALL PRIVILEGES ON DATABASE "togger-local" TO togger_account""".update.run
+    fr"""GRANT ALL PRIVILEGES ON DATABASE "$DB_NAME" TO togger_account_development""".update.run
       .transact(transactorWithRootAccount)
   }
 
   def makeSuperUser: IO[Int] = {
-    fr"""ALTER ROLE togger_account SUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION NOBYPASSRLS""".update.run
+    fr"""ALTER ROLE togger_account_development SUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION NOBYPASSRLS""".update.run
       .transact(transactorWithRootAccount)
   }
 
