@@ -1,5 +1,7 @@
 package com.togger.desktop
 
+import java.util.UUID
+
 import cats.effect.IO
 import cats.implicits._
 import com.togger.account._
@@ -31,13 +33,12 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
   private val accountTypes = Seq("developer", "manager", "qa")
 
   def run: IO[Unit] = {
-    val accounts = Seq(
-      createAccount("John", "Doe", "admin@email.com")
-    )
-
     for {
       accountTypes <- createAccountTypes.transact(transactor)
-      _ <- accounts.map(account => accountService.createAccount(account)).sequence
+      managerAccountType = accountTypes.find(_.name == "manager").get
+      _ <- Seq(
+        createAccount("John", "Doe", "admin@email.com", managerAccountType.id)
+      ).map(account => accountService.createAccount(account)).sequence
     } yield ()
   }
 
@@ -46,7 +47,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
       .map(accountTypeName =>
         accountTypeRepo.insert(
           AccountType(
-            id = -1,
+            id = UUID.randomUUID(),
             name = accountTypeName,
             createdAt = now,
             updatedAt = now
@@ -56,14 +57,14 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
       .toList
       .sequence
 
-  private def createAccount(firstName: String, lastName: String, email: String): Account =
+  private def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID): Account =
     Account(
       id = -1,
       firstName = firstName,
       lastName = lastName,
       email = email,
       password = hashedPassword,
-      accountTypeId = 1,
+      accountTypeId = accountTypeId,
       verified = true,
       enabled = true,
       createdAt = now,

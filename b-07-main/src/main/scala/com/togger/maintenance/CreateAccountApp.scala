@@ -1,6 +1,7 @@
 package com.togger.maintenance
 
 import java.time._
+import java.util.UUID
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
@@ -47,7 +48,7 @@ object CreateAccountApp extends IOApp {
         .map(accountName =>
           accountTypeRepo.insert(
             AccountType(
-              id = -1,
+              id = UUID.randomUUID(),
               name = accountName,
               createdAt = now,
               updatedAt = now
@@ -79,7 +80,7 @@ object CreateAccountApp extends IOApp {
       lastName = lastName,
       email = email,
       password = hashedPassword,
-      accountTypeId = 1,
+      accountTypeId = UUID.randomUUID(),
       verified = true,
       enabled = true,
       createdAt = now,

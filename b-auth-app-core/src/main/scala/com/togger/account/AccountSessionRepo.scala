@@ -1,13 +1,12 @@
 package com.togger.account
 
+import java.time.Instant
+
 import com.togger.account.AccountSessionRepo.ACCOUNT_SESSION_TABLE_FRAG
 import com.togger.db.Util._
 import com.togger.logging.TgLogging
 import doobie.implicits._
-import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Get}
-
-import java.time.Instant
+import doobie.{ConnectionIO, Fragment}
 
 case class AccountSession(
   id: Long,
@@ -22,6 +21,7 @@ case class AccountSession(
 class AccountSessionRepo extends TgLogging {
 
   import AccountRepoImpl.passwordCodec
+  import doobie.postgres.implicits._
 
   def insert(accountSession: AccountSession): ConnectionIO[AccountSession] = {
     import accountSession._

@@ -3,7 +3,7 @@ package com.togger.task
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
 import com.togger.common.TgJsonSuccess
-import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, FindTaskResp1, FindTaskRespFull, UpdateTaskReq}
+import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, FindTaskRespFull, UpdateTaskReq}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

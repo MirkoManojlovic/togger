@@ -4,8 +4,13 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
 import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{FindProjectResp, SearchAccountDto}
-import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, FindOrganizationsAndProjects, UpdateOrganizationReq}
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.organization.{
+  CreateOrganizationReq,
+  FindOrganizationResp,
+  FindOrganizationsAndProjects,
+  UpdateOrganizationReq
+}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -45,16 +50,14 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-
   val findAllEndpoint: TgSecuredEndpointNoInput[Seq[FindOrganizationResp]] =
     securedEndpoint.endpoint.get
       .in(basePath)
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
 
-
   val findByAccountIdEndpoint: TgSecuredEndpoint[Long, Seq[FindOrganizationResp]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "account" /  path[Long]("account-id"))
+      .in(basePath / "account" / path[Long]("account-id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
   //      .tag(topic)
   //      .name(createName(findById))
@@ -63,12 +66,11 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
 
   val findAllMembersEndpoint: TgSecuredEndpoint[Long, Seq[SearchAccountDto]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "members" /  path[Long]("organization-id"))
+      .in(basePath / "members" / path[Long]("organization-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
-
 
   val findOrgAndProjectsByAccountIdEndpoint: TgSecuredEndpoint[Long, Seq[FindOrganizationsAndProjects]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "org-projects" / "account" /  path[Long]("account-id"))
+      .in(basePath / "org-projects" / "account" / path[Long]("account-id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationsAndProjects]]])
 }

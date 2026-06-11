@@ -7,6 +7,7 @@ import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment, Meta}
+import doobie.postgres.implicits._
 
 import java.time.Instant
 

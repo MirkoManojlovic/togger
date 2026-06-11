@@ -1,17 +1,18 @@
 package com.togger.account
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.effect.IO
 import doobie.Transactor
 import doobie.implicits._
-
-import java.time.Instant
 
 case class AccountNoCreds(
   id: Long,
   firstName: String,
   lastName: String,
   email: String,
-  accountTypeId: Long,
+  accountTypeId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

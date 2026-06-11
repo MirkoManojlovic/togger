@@ -9,13 +9,12 @@ import com.togger.common.{TgJsonFailure, TgJsonSuccess}
 import com.togger.logging.TgLogging
 import doobie.Transactor
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class SecurityLogicJvm(accountSessionRepo: AccountSessionRepo, transactor: Transactor[IO])
     extends SecurityLogic
     with TgLogging {
 
-  override def securityLogic(token: String): TgRespIO[AuthAccount]= {
+  override def securityLogic(token: String): TgRespIO[AuthAccount] = {
     accountSessionRepo
       .findByTokenWithAccountNotSoftDeleted(token)
       .map { case (session, account) =>

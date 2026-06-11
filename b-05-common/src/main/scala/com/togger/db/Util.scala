@@ -1,5 +1,7 @@
 package com.togger.db
 
+import java.util.UUID
+
 import cats.effect.IO
 import cats.free.Free
 import com.togger.logging.TgLogging
@@ -12,6 +14,9 @@ import scribe.mdc.MDC
 object Util extends TgLogging {
 
   def whereId(id: Long): Fragment =
+    fr"where id = $id"
+
+  def whereIdUUID(id: UUID): Fragment =
     fr"where id = $id"
 
   def insertStatement(table: Fragment)(rest: Fragment): Fragment =
@@ -37,6 +42,9 @@ object Util extends TgLogging {
 
   def whereNotSoftDeleted: Fragment =
     fr"where deleted_at is null"
+
+  def updateStatementUUID(table: Fragment)(id: UUID)(rest: Fragment): Fragment =
+    fr"update" ++ table ++ fr"set" ++ rest ++ whereIdUUID(id)
 
   def updateStatement(table: Fragment)(id: Long)(rest: Fragment): Fragment =
     fr"update" ++ table ++ fr"set" ++ rest ++ whereId(id)

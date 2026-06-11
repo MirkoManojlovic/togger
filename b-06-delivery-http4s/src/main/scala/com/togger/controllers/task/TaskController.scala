@@ -106,7 +106,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
       firstName = account.firstName,
       lastName = account.lastName,
       email = account.email,
-      accountTypeId = account.accountTypeId
+      accountTypeId = account.accountTypeId.toString
     )
 
   val save = saveEndpoint.serverLogic { auth => dto =>

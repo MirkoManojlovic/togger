@@ -1,13 +1,14 @@
 package com.togger.dto
 
 import java.time.Instant
+import java.util.UUID
 
 case class SearchAccountDto(
   id: Long,
   firstName: String,
   lastName: String,
   email: String,
-  accountTypeId: Long
+  accountTypeId: String
 ) {
   lazy val fullNameAndEmail: String = firstName + lastName + email
   lazy val fullName: String = s"$firstName $lastName"
@@ -23,7 +24,7 @@ case class AccountNoCreds(
   firstName: String,
   lastName: String,
   email: String,
-  accountTypeId: Long,
+  accountTypeId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

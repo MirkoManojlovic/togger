@@ -15,8 +15,8 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
-
 import java.time.{LocalDate, ZoneOffset}
+import java.util.UUID
 
 case class ShowAllProjectsState(
   info: Seq[ProjectInfo] = Seq.empty
@@ -189,7 +189,7 @@ class ShowAllProjectsStatusComponent(
       firstName = "Not",
       lastName = "assigned",
       email = "notassinged@email.com",
-      accountTypeId = -1
+      accountTypeId = ""
     )
     val groupedTasksByAssignee = dto.tasks.groupBy(_.assignedTo.getOrElse(unassignedDto))
 

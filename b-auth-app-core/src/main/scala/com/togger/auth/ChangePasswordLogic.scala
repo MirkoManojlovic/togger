@@ -2,7 +2,7 @@ package com.togger.auth
 
 import cats.data.NonEmptyChain
 import cats.effect.IO
-import com.togger.account.{Account, AccountRepoImpl, HashedPasswordImpl, InvalidCredentials}
+import com.togger.account.{Account, AccountRepoImpl, HashedPasswordImpl}
 import com.togger.auth.ChangePasswordError.{InvalidAccountId, OldPasswordIncorrect}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
@@ -19,10 +19,10 @@ class PasswordUpdate {
 }
 
 class ChangePasswordLogic(
-                           accountRepo: AccountRepoImpl,
-                           passwordUpdate: PasswordUpdate,
-                           tgClock: TgClock,
-                           transactor: Transactor[IO]
+  accountRepo: AccountRepoImpl,
+  passwordUpdate: PasswordUpdate,
+  tgClock: TgClock,
+  transactor: Transactor[IO]
 ) extends TgLogging {
 
   def change(dto: ChangePasswordDto): TgRespEmptyBodyIO = {
@@ -57,7 +57,7 @@ class ChangePasswordLogic(
     } yield result
 
     res.recoverWith { case UnexpectedEnd =>
-       TgJsonFailure.badRequestLeftIO[TgEmptyBody](TgJsonError.fromError(InvalidAccountId))
+      TgJsonFailure.badRequestLeftIO[TgEmptyBody](TgJsonError.fromError(InvalidAccountId))
     }
   }
 

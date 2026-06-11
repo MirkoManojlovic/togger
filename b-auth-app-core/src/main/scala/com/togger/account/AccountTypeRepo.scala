@@ -1,5 +1,8 @@
 package com.togger.account
 
+import java.time.Instant
+import java.util.UUID
+
 import com.togger.account.AccountTypeRepo.ACCOUNT_TYPE_TABLE_FRAG
 import com.togger.db.Util._
 import com.togger.logging.TgLogging
@@ -7,10 +10,8 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment}
 
-import java.time.Instant
-
 case class AccountType(
-  id: Long,
+  id: UUID,
   name: String,
   createdAt: Instant,
   updatedAt: Instant
@@ -51,7 +52,7 @@ class AccountTypeRepo extends TgLogging {
 
   def update(accountType: AccountType, updatedAt: Instant): ConnectionIO[AccountType] = {
     logAroundInfoQuery(
-      updateStatement(ACCOUNT_TYPE_TABLE_FRAG)(accountType.id)(
+      updateStatementUUID(ACCOUNT_TYPE_TABLE_FRAG)(accountType.id)(
         fr"""
            name = ${accountType.name},
            updated_at = $updatedAt"""

@@ -1,9 +1,10 @@
 package com.togger.account
 
+import java.time.Instant
+import java.util.UUID
+
 import com.togger.common.Password
 import doobie.ConnectionIO
-
-import java.time.Instant
 
 trait HashedPassword {
   val value: String
@@ -17,7 +18,7 @@ case class Account(
   lastName: String,
   email: String,
   password: HashedPassword,
-  accountTypeId: Long,
+  accountTypeId: UUID,
   verified: Boolean,
   enabled: Boolean,
   createdAt: Instant,
