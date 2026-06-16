@@ -140,6 +140,10 @@ object Libraries {
     val `com.github.jwt-scala` = "com.github.jwt-scala"
     val `jwt-circe` = "jwt-circe"
     val `jwt-circe-version` = "9.4.4"
+
+    val `com.fasterxml.uuid` = "com.fasterxml.uuid"
+    val `java-uuid-generator` = "java-uuid-generator"
+    val `java-uuid-generator-version` = "5.2.0"
   }
 
   case object io {
