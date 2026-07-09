@@ -15,7 +15,7 @@ devenv.local.nix
 .bloop
 
 .vscode
-liquibase
+liquibase/*
 metals.sbt
 node_modules
 
