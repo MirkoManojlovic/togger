@@ -66,7 +66,7 @@ case class FindLinkResp(id: UUID, name: String, url: String)
 case class FindTaskResp(task: FindTaskResp1, links: Seq[FindLinkResp], logEntries: Seq[LogEntryDto])
 
 case class LogEntryDto(
-  id: Long,
+  id: UUID,
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,

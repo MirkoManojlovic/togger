@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 case class LogEntry(
-  id: Long,
+  id: UUID,
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,

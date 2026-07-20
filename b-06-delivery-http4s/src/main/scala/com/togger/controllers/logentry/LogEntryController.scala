@@ -7,6 +7,8 @@ import com.togger.logentry.{LogEntry, LogEntryEndpoints, LogEntryRepo}
 import doobie.Transactor
 import doobie.implicits._
 
+import java.util.UUID
+
 class LogEntryController(
   logEntryEndpoints: LogEntryEndpoints,
   logEntryRepo: LogEntryRepo,
@@ -16,7 +18,7 @@ class LogEntryController(
 
   val save = logEntryEndpoints.saveEndpoint.serverLogic { auth => dto =>
     val logEntry = LogEntry(
-      id = -1,
+      id = UUID.randomUUID(),
       textInternal = dto.textInternal,
       textExternal = dto.textExternal,
       status = dto.status,

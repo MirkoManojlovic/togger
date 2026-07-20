@@ -21,9 +21,10 @@ import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
+import java.util.UUID
 
 case class LogEntryForm(
-  logEntryId: Long = -1,
+  logEntryId: Option[UUID] = None,
   taskId: Long,
   status: String = "",
   textExternal: String = "",
@@ -52,7 +53,7 @@ object LogEntryForm {
 
   def fromDto(dto: LogEntryDto) =
     LogEntryForm(
-      logEntryId = dto.id,
+      logEntryId = Some(dto.id),
       taskId = dto.taskId,
       status = dto.status.value.toString,
       textExternal = dto.textExternal,
@@ -77,7 +78,7 @@ class LogEntryComponent(
 
   lazy val saveSubmitter = Observer[LogEntryForm] { form =>
     val dto = LogEntryDto(
-      id = form.logEntryId,
+      id = form.logEntryId.getOrElse(UUID.randomUUID()),
       textInternal = form.textInternal,
       textExternal = form.textExternal,
       status = LogEntryStatus.withValue(form.status.toInt),
@@ -95,7 +96,7 @@ class LogEntryComponent(
 
   lazy val updateSubmitter = Observer[LogEntryForm] { form =>
     val dto = LogEntryDto(
-      id = form.logEntryId,
+      id = form.logEntryId.getOrElse(UUID.randomUUID()),
       textInternal = form.textInternal,
       textExternal = form.textExternal,
       status = LogEntryStatus.withValue(form.status.toInt),
@@ -116,7 +117,7 @@ class LogEntryComponent(
   )
 
   lazy val element =
-    if (formState.now().logEntryId == -1) asEditElement
+    if (formState.now().logEntryId.isEmpty) asEditElement
     else asDisplayElement.amend(cls("mt-4"))
 
   lazy val asDisplayElement = div(

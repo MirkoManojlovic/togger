@@ -8,6 +8,7 @@ import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment, Meta}
 
 import java.time.Instant
+import java.util.UUID
 
 class LogEntryRepoImpl extends LogEntryRepo {
   import LogEntryRepoImpl.logEntryStatusCodec
@@ -32,20 +33,20 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )(s"Inserting ${sp(logEntry)}", logEntry => s"Log entry inserted ${sp(logEntry)}")
   }
 
-  override def findById(id: Long): ConnectionIO[LogEntry] =
-    logAroundInfoQuery(findByIdStatement(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].unique)(
+  override def findById(id: UUID): ConnectionIO[LogEntry] =
+    logAroundInfoQuery(findByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].unique)(
       s"Finding log entry with ${sp(id)}",
       logEntry => s"log entry found ${sp(logEntry)}"
     )
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(deleteByIdStatement(LOG_ENTRY_TABLE_FRAG)(id).update.run)(
+  override def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(deleteByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).update.run)(
       s"Deleting log entry with ${sp(id)}",
       logEntry => s"Log entry deleted ${sp(logEntry)}"
     )
   override def update(logEntry: LogEntry, updatedAt: Instant): ConnectionIO[LogEntry] =
     logAroundInfoQuery(
-      updateStatement(LOG_ENTRY_TABLE_FRAG)(logEntry.id)(fr"""
+      updateStatementUUID(LOG_ENTRY_TABLE_FRAG)(logEntry.id)(fr"""
             text_internal = ${logEntry.textInternal},
             text_external = ${logEntry.textExternal},
             status = ${logEntry.status},

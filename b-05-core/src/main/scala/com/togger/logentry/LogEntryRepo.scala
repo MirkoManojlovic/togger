@@ -3,14 +3,15 @@ package com.togger.logentry
 import doobie.ConnectionIO
 
 import java.time.Instant
+import java.util.UUID
 
 trait LogEntryRepo {
 
   def insert(link: LogEntry): ConnectionIO[LogEntry]
 
-  def findById(id: Long): ConnectionIO[LogEntry]
+  def findById(id: UUID): ConnectionIO[LogEntry]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(link: LogEntry, updatedAt: Instant): ConnectionIO[LogEntry]
 
