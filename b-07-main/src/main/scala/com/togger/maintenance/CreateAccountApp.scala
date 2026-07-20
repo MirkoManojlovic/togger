@@ -7,7 +7,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl}
+import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.login.SessionTokenFactoryImpl
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -75,7 +75,7 @@ object CreateAccountApp extends IOApp {
 
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(
-      id = -1,
+      id = TgIds.UNASSIGNED_ACCOUNT_ID,
       firstName = firstName,
       lastName = lastName,
       email = email,

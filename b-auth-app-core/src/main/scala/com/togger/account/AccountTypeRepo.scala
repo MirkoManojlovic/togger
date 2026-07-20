@@ -37,15 +37,15 @@ class AccountTypeRepo extends TgLogging {
 
   }
 
-  def findById(id: Long): ConnectionIO[AccountType] = {
-    logAroundInfoQuery(findByIdStatement(ACCOUNT_TYPE_TABLE_FRAG)(id).query[AccountType].unique)(
+  def findById(id: UUID): ConnectionIO[AccountType] = {
+    logAroundInfoQuery(findByIdStatementUUID(ACCOUNT_TYPE_TABLE_FRAG)(id).query[AccountType].unique)(
       s"Finding accountType with [id=$id]",
       accountType => s"AccountType found $accountType"
     )
   }
 
-  def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(deleteByIdStatement(ACCOUNT_TYPE_TABLE_FRAG)(id).update.run)(
+  def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(deleteByIdStatementUUID(ACCOUNT_TYPE_TABLE_FRAG)(id).update.run)(
       s"Deleting accountType with [id=$id]",
       _ => s"AccountType with [id=$id] deleted"
     )

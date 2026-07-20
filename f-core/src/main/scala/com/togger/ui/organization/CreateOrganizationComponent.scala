@@ -19,10 +19,12 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
+
 case class CreateOrganizationForm(
   name: String = "",
   description: String = "",
-  members: Seq[Long] = Seq.empty
+  members: Seq[UUID] = Seq.empty
 )
 
 trait OrganizationServiceFe {
@@ -34,9 +36,9 @@ trait OrganizationServiceFe {
 
   def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp]
 
-  def findByAccountId(accountId: Long): TgRespIO[Seq[FindOrganizationResp]]
+  def findByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]]
 
-  def findOrgAndProjectsByAccountId(accountId: Long): TgRespIO[Seq[FindOrganizationsAndProjects]]
+  def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]]
 
   def findAllMembers(organizationId: Long): TgRespIO[Seq[SearchAccountDto]]
 
@@ -52,7 +54,7 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
   override def findAll(): TgRespIO[Seq[FindOrganizationResp]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)()
 
-  override def findByAccountId(accountId: Long): TgRespIO[Seq[FindOrganizationResp]] =
+  override def findByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)(accountId)
 
   override def findById(id: Long): TgRespIO[FindOrganizationResp] =
@@ -64,7 +66,7 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
   override def findAllMembers(organizationId: Long): TgRespIO[Seq[SearchAccountDto]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)(organizationId)
 
-  override def findOrgAndProjectsByAccountId(accountId: Long): TgRespIO[Seq[FindOrganizationsAndProjects]] =
+  override def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findOrgAndProjectsByAccountIdEndpoint)(accountId)
 }
 

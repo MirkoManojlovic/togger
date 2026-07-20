@@ -2,7 +2,7 @@ package com.togger.task
 
 import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -18,7 +18,7 @@ class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     description = "Task description",
     assignedTo = None,
     taskStatusId = -1L,
-    createdBy = -1L,
+    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

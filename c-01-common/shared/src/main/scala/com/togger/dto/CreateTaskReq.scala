@@ -3,13 +3,14 @@ package com.togger.dto
 import com.togger.logentry.LogEntryStatus
 
 import java.time.Instant
+import java.util.UUID
 
 case class CreateTaskReq(
   projectId: Long,
   name: String,
   description: String,
-  assignedTo: Option[Long],
-  createdBy: Long,
+  assignedTo: Option[UUID],
+  createdBy: UUID,
   taskStatusId: Long,
   createdAt: Instant,
   updatedAt: Instant
@@ -20,8 +21,8 @@ case class UpdateTaskReq1(
   projectId: Long,
   name: String,
   description: String,
-  assignedTo: Option[Long],
-  createdBy: Long,
+  assignedTo: Option[UUID],
+  createdBy: UUID,
   taskStatusId: Long,
   createdAt: Instant,
   updatedAt: Instant
@@ -32,8 +33,8 @@ case class FindTaskResp1(
   projectId: Long,
   name: String,
   description: String,
-  assignedTo: Option[Long],
-  createdBy: Long,
+  assignedTo: Option[UUID],
+  createdBy: UUID,
   taskStatusId: Long,
   createdAt: Instant,
   updatedAt: Instant
@@ -70,7 +71,7 @@ case class LogEntryDto(
   textExternal: String,
   status: LogEntryStatus,
   taskId: Long,
-  createdBy: Long,
+  createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

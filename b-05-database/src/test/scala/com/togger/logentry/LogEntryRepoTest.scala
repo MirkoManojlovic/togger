@@ -1,11 +1,13 @@
 package com.togger.logentry
 import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.task.{Task, TaskRepoImpl}
 import doobie.implicits._
 import doobie.postgres.implicits._
+
+import java.util.UUID
 
 class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
@@ -19,7 +21,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     description = "Task description",
     assignedTo = None,
     taskStatusId = -1L,
-    createdBy = -1L,
+    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -30,7 +32,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     textExternal = "Test External",
     status = LogEntryStatus.InProgress,
     taskId = -1,
-    createdBy = -1,
+    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -93,7 +95,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    def createLogEntries(taskId: Long, accountId: Long) = (0 to 10).map(index =>
+    def createLogEntries(taskId: Long, accountId: UUID) = (0 to 10).map(index =>
       LogEntry(
         id = -1,
         textInternal = s"Text internal- $index",

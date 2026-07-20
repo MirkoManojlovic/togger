@@ -10,6 +10,7 @@ import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
 import java.time.Instant
+import java.util.UUID
 
 class OrganizationRepoImpl extends OrganizationRepo {
 
@@ -79,7 +80,7 @@ class OrganizationRepoImpl extends OrganizationRepo {
     )
   }
 
-  override def findAllOrgByAccountId(accountId: Long): ConnectionIO[Seq[(Organization, OrganizationAccount)]] = {
+  override def findAllOrgByAccountId(accountId: UUID): ConnectionIO[Seq[(Organization, OrganizationAccount)]] = {
     logAroundInfoQuery(
       (selectAllStatement(ORGANIZATION_TABLE_FRAG) ++
         innerJoin(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG)(

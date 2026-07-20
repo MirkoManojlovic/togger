@@ -5,7 +5,7 @@ import java.util.UUID
 import cats.effect.IO
 import cats.implicits._
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl}
+import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.login.SessionTokenFactoryImpl
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -47,7 +47,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
       .map(accountTypeName =>
         accountTypeRepo.insert(
           AccountType(
-            id = UUID.randomUUID(),
+            id = TgIds.UNASSIGNED_ACCOUNT_ID,
             name = accountTypeName,
             createdAt = now,
             updatedAt = now
@@ -59,7 +59,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
 
   private def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID): Account =
     Account(
-      id = -1,
+      id = TgIds.UNASSIGNED_ACCOUNT_ID,
       firstName = firstName,
       lastName = lastName,
       email = email,

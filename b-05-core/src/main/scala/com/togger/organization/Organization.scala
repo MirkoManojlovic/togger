@@ -1,6 +1,7 @@
 package com.togger.organization
 
 import java.time.Instant
+import java.util.UUID
 
 case class Organization(
   id: Long,
@@ -12,6 +13,6 @@ case class Organization(
 
 case class OrganizationAccount(
   organizationId: Long,
-  accountId: Long,
+  accountId: UUID,
   createdAt: Instant
 )

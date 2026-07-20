@@ -9,6 +9,7 @@ import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
 import java.time.Instant
+import java.util.UUID
 
 class ProjectRepoImpl extends ProjectRepo {
 
@@ -72,7 +73,7 @@ class ProjectRepoImpl extends ProjectRepo {
     )
   }
 
-  override def findAllProjectsByAccountId(accountId: Long): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
+  override def findAllProjectsByAccountId(accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
     logAroundInfoQuery(
       (selectAllStatement(PROJECT_TABLE_FRAG) ++
         innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(
@@ -89,7 +90,7 @@ class ProjectRepoImpl extends ProjectRepo {
 
   override def findByOrganizationIdAndAccountId(
     organizationId: Long,
-    accountId: Long
+    accountId: UUID
   ): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
     logAroundInfoQuery(
       (selectAllStatement(PROJECT_TABLE_FRAG) ++

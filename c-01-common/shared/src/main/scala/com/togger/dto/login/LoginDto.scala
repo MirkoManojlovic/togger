@@ -1,5 +1,7 @@
 package com.togger.dto.login
 
+import java.util.UUID
+
 case class LoginDto(
   email: String,
   password: String,
@@ -15,7 +17,7 @@ case class DeviceInfo(
 )
 
 case class LoginResponseDto(
-  accountId: Long,
+  accountId: UUID,
   sessionId: String
 )
 
@@ -24,7 +26,7 @@ case class ExpireSessionResult(deleted: Long, inDb: Long)
 case class LogoutEveryoneDto(numberOfSessionsDeleted: Int)
 
 case class ChangePasswordDto(
-  accountId: Long,
+  accountId: UUID,
   oldPassword: String,
   newPassword: String,
   confirmNewPassword: String

@@ -9,9 +9,11 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
+import java.util.UUID
+
 class ProjectAccountRepoImpl extends ProjectAccountRepo {
 
-  override def findById(projectId: Long, accountId: Long): ConnectionIO[ProjectAccount] =
+  override def findById(projectId: Long, accountId: UUID): ConnectionIO[ProjectAccount] =
     logAroundInfoQuery(
       (selectAllStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
         fr"where project_id = $projectId and account_id = $accountId")
@@ -40,7 +42,7 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
     )
   }
 
-  override def deleteById(projectId: Long, accountId: Long): ConnectionIO[Int] =
+  override def deleteById(projectId: Long, accountId: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
       (deleteStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
         fr"where project_id = $projectId and account_id = $accountId").update.run

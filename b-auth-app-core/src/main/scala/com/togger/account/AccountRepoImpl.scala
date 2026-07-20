@@ -10,6 +10,7 @@ import doobie.{ConnectionIO, Fragment, Meta}
 import doobie.postgres.implicits._
 
 import java.time.Instant
+import java.util.UUID
 
 class AccountRepoImpl extends AccountRepo with TgLogging {
   import AccountRepoImpl.passwordCodec
@@ -38,8 +39,8 @@ class AccountRepoImpl extends AccountRepo with TgLogging {
 
   }
 
-  override def findById(id: Long): ConnectionIO[Account] = {
-    logAroundInfoQuery((findByIdStatement(ACCOUNT_TABLE_FRAG)(id)).query[Account].unique)(
+  override def findById(id: UUID): ConnectionIO[Account] = {
+    logAroundInfoQuery((findByIdStatementUUID(ACCOUNT_TABLE_FRAG)(id)).query[Account].unique)(
       s"Finding account with [id=$id]",
       account => s"Account found $account"
     )
@@ -52,15 +53,15 @@ class AccountRepoImpl extends AccountRepo with TgLogging {
     )
   }
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery((deleteByIdStatement(ACCOUNT_TABLE_FRAG)(id)).update.run)(
+  override def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery((deleteByIdStatementUUID(ACCOUNT_TABLE_FRAG)(id)).update.run)(
       s"Deleting account with [id=$id]",
       _ => s"Account with [id=$id] deleted"
     )
 
   override def update(account: Account, updatedAt: Instant): ConnectionIO[Account] = {
     logAroundInfoQuery(
-      updateStatement(ACCOUNT_TABLE_FRAG)(account.id)(
+      updateStatementUUID(ACCOUNT_TABLE_FRAG)(account.id)(
         fr"""
            first_name = ${account.firstName},
            last_name = ${account.lastName},

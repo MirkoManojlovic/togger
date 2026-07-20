@@ -3,15 +3,16 @@ package com.togger.task
 import com.togger.account.Account
 
 import java.time.Instant
+import java.util.UUID
 
 case class Task(
   id: Long,
   projectId: Long,
   name: String,
   description: String,
-  assignedTo: Option[Long],
-  createdBy: Long,
-  closedBy: Option[Long] = None,
+  assignedTo: Option[UUID],
+  createdBy: UUID,
+  closedBy: Option[UUID] = None,
   taskStatusId: Long,
   createdAt: Instant,
   updatedAt: Instant

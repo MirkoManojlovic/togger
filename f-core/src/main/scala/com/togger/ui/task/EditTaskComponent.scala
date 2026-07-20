@@ -1,7 +1,7 @@
 package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, TgIds}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -18,6 +18,7 @@ import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
+import java.util.UUID
 import scala.collection.immutable.ListMap
 
 case class EditTaskForm(
@@ -25,8 +26,8 @@ case class EditTaskForm(
   projectId: Long,
   name: String = "",
   description: String = "",
-  createBy: Long = -1L,
-  assignedTo: Option[Long] = None,
+  createBy: UUID = TgIds.UNASSIGNED_ACCOUNT_ID,
+  assignedTo: Option[UUID] = None,
   taskStatusSelected: String = ""
 )
 

@@ -1,5 +1,6 @@
 package com.togger.project
 import java.time.Instant
+import java.util.UUID
 
 case class Project(
   id: Long,
@@ -12,6 +13,6 @@ case class Project(
 
 case class ProjectAccount(
   projectId: Long,
-  accountId: Long,
+  accountId: UUID,
   createdAt: Instant
 )

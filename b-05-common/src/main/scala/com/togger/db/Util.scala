@@ -4,6 +4,7 @@ import java.util.UUID
 
 import cats.effect.IO
 import cats.free.Free
+import com.togger.common.TgIds
 import com.togger.logging.TgLogging
 import doobie.free.connection
 import doobie.implicits._
@@ -12,6 +13,8 @@ import doobie.{ConnectionIO, Fragment}
 import scribe.mdc.MDC
 
 object Util extends TgLogging {
+
+  val UNASSIGNED_ACCOUNT_ID: UUID = TgIds.UNASSIGNED_ACCOUNT_ID
 
   def whereId(id: Long): Fragment =
     fr"where id = $id"
@@ -28,14 +31,26 @@ object Util extends TgLogging {
   def findByIdStatement(table: Fragment)(id: Long): Fragment =
     selectAllStatement(table) ++ whereId(id)
 
+  def findByIdStatementUUID(table: Fragment)(id: UUID): Fragment =
+    selectAllStatement(table) ++ whereIdUUID(id)
+
   def findByIdSoftDeletedStatement(table: Fragment)(id: Long): Fragment =
     selectAllStatement(table) ++ whereId(id) ++ andNotSoftDeleted
+
+  def findByIdSoftDeletedStatementUUID(table: Fragment)(id: UUID): Fragment =
+    selectAllStatement(table) ++ whereIdUUID(id) ++ andNotSoftDeleted
 
   def deleteByIdStatement(table: Fragment)(id: Long): Fragment =
     deleteStatement(table) ++ whereId(id)
 
+  def deleteByIdStatementUUID(table: Fragment)(id: UUID): Fragment =
+    deleteStatement(table) ++ whereIdUUID(id)
+
   def softDeleteByIdStatement(table: Fragment)(id: Long): Fragment =
     updateStatement(table)(id)(fr"deleted_at = now()")
+
+  def softDeleteByIdStatementUUID(table: Fragment)(id: UUID): Fragment =
+    updateStatementUUID(table)(id)(fr"deleted_at = now()")
 
   def andNotSoftDeleted: Fragment =
     fr"and deleted_at is null"

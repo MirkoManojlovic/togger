@@ -1,9 +1,10 @@
 package com.togger.auth
 
 import java.time.Instant
+import java.util.UUID
 
 case class AuthAccount(
-  id: Long,
+  id: UUID,
   firstName: String,
   lastName: String,
   email: String,

@@ -19,11 +19,13 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
+
 case class CreateProjectForm(
   organizationId: Long = -1L,
   name: String = "",
   description: String = "",
-  members: Seq[Long] = Seq.empty
+  members: Seq[UUID] = Seq.empty
 )
 
 trait ProjectService {

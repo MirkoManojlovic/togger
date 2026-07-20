@@ -1,7 +1,7 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{DateHelpers, TimeHelpers}
+import com.togger.common.{DateHelpers, TgIds, TimeHelpers}
 import com.togger.dto.login.DeviceInfo
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -16,7 +16,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
 
   val accountSession = AccountSession(
     id = -1L,
-    accountId = -1L,
+    accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
     sessionToken = "sessionToken1",
     deviceInfo = "some device info",
     createdAt = nowAsInstant,
@@ -92,7 +92,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
           id = index,
-          accountId = index,
+          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),
@@ -129,7 +129,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
           id = index,
-          accountId = index,
+          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),
@@ -157,7 +157,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
         .map(index =>
           AccountSession(
             id = index,
-            accountId = index,
+            accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
             sessionToken = s"sessionToken-$index",
             deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
             createdAt = today.plusDays(index).atTime(at14).toInstant(ZoneOffset.UTC),
@@ -188,7 +188,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
         .map(index =>
           AccountSession(
             id = index,
-            accountId = index,
+            accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
             sessionToken = s"sessionToken-$index",
             deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
             createdAt = today.plusDays(index).atTime(at14).toInstant(ZoneOffset.UTC),

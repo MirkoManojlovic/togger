@@ -7,10 +7,12 @@ import com.togger.common.{NonEmptyChainHelpers, Password}
 import com.togger.dto.login.ChangePasswordDto
 import org.scalatest.EitherValues
 
+import java.util.UUID
+
 // TODO 2: create a trait for validation tests EitherValues, NonEmptyChainHelpers...
 class ChangePasswordValidatedTest extends TgWordSpecJvm with EitherValues with NonEmptyChainHelpers {
 
-  val accountId = 1L
+  val accountId: UUID = UUID.randomUUID()
   val anotherValidPassword = Password.fromString("Password123789##").toOption.get
   val invalidPassword = "invalidPasswordBro"
   val validPassword: Password = Password.fromString("Password123456##").toOption.get

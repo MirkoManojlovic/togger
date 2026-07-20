@@ -1,6 +1,7 @@
 package com.togger.account
 
 import java.time.Instant
+import java.util.UUID
 
 import com.togger.account.AccountSessionRepo.ACCOUNT_SESSION_TABLE_FRAG
 import com.togger.db.Util._
@@ -10,7 +11,7 @@ import doobie.{ConnectionIO, Fragment}
 
 case class AccountSession(
   id: Long,
-  accountId: Long,
+  accountId: UUID,
   sessionToken: String,
   deviceInfo: String,
   createdAt: Instant,

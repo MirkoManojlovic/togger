@@ -7,8 +7,10 @@ import com.togger.common.Password.PasswordError
 import com.togger.common.{Password, TgError}
 import com.togger.dto.login.ChangePasswordDto
 
+import java.util.UUID
+
 case class ChangePasswordValidated(
-  accountId: Long,
+  accountId: UUID,
   oldPassword: Password,
   newPassword: Password,
   confirmNewPassword: Password

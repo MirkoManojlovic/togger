@@ -4,11 +4,11 @@ import java.time.Instant
 import java.util.UUID
 
 case class SearchAccountDto(
-  id: Long,
+  id: UUID,
   firstName: String,
   lastName: String,
   email: String,
-  accountTypeId: String
+  accountTypeId: UUID
 ) {
   lazy val fullNameAndEmail: String = firstName + lastName + email
   lazy val fullName: String = s"$firstName $lastName"
@@ -20,7 +20,7 @@ case class SearchAccountResp(
 )
 
 case class AccountNoCreds(
-  id: Long,
+  id: UUID,
   firstName: String,
   lastName: String,
   email: String,

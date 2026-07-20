@@ -1,11 +1,13 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{Password, TimeHelpers}
+import com.togger.common.{Password, TgIds, TimeHelpers}
 import com.togger.db.TgTestDbDrops
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
+
+import java.util.UUID
 
 trait TgAccount extends TgTestDbDrops { self: TimeHelpers =>
   lazy val passwordString = "A!good_1_password_is_good"
@@ -20,7 +22,7 @@ trait TgAccount extends TgTestDbDrops { self: TimeHelpers =>
       .map(accountName =>
         accountTypeRepo.insert(
           AccountType(
-            id = -1,
+            id = TgIds.UNASSIGNED_ACCOUNT_ID,
             name = accountName,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
@@ -30,8 +32,8 @@ trait TgAccount extends TgTestDbDrops { self: TimeHelpers =>
       .toList
       .sequence
 
-  def createAccount(accountTypeId: Long) = Account(
-    id = -1L,
+  def createAccount(accountTypeId: UUID) = Account(
+    id = TgIds.UNASSIGNED_ACCOUNT_ID,
     firstName = "John",
     lastName = "Doe",
     email = email,

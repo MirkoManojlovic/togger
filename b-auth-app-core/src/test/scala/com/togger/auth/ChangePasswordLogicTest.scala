@@ -13,6 +13,8 @@ import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 import org.scalatest.EitherValues
 
+import java.util.UUID
+
 class ChangePasswordLogicTest
     extends TgAsyncWordSpecMockJvm
     with MockedTransactor
@@ -20,12 +22,12 @@ class ChangePasswordLogicTest
     with TgAccount
     with TimeHelpers {
 
-  val accountId = 165L
+  val accountId: UUID = UUID.randomUUID()
   val accountRepo = mock[AccountRepoImpl]
   val passwordUpdate = mock[PasswordUpdate]
   val tgClock = mock[TgClock]
 
-  val account = createAccount(1)
+  val account = createAccount(TgIds.UNASSIGNED_ACCOUNT_ID)
 
   val changePasswordLogic = new ChangePasswordLogic(
     accountRepo = accountRepo,

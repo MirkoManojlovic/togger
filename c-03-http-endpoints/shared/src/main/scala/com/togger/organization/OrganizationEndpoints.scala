@@ -16,6 +16,8 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe.jsonBody
 
+import java.util.UUID
+
 class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
 
   private val basePath: EndpointInput[Unit] = "organization"
@@ -55,9 +57,9 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath)
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
 
-  val findByAccountIdEndpoint: TgSecuredEndpoint[Long, Seq[FindOrganizationResp]] =
+  val findByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindOrganizationResp]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "account" / path[Long]("account-id"))
+      .in(basePath / "account" / path[UUID]("account-id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
   //      .tag(topic)
   //      .name(createName(findById))
@@ -69,8 +71,8 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "members" / path[Long]("organization-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
 
-  val findOrgAndProjectsByAccountIdEndpoint: TgSecuredEndpoint[Long, Seq[FindOrganizationsAndProjects]] =
+  val findOrgAndProjectsByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindOrganizationsAndProjects]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "org-projects" / "account" / path[Long]("account-id"))
+      .in(basePath / "org-projects" / "account" / path[UUID]("account-id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationsAndProjects]]])
 }

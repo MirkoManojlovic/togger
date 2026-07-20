@@ -1,7 +1,7 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.TimeHelpers
+import com.togger.common.{TgIds, TimeHelpers}
 import com.togger.dto.login.{DeviceInfo, LoginDto}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -92,12 +92,12 @@ class AccountRepoTest extends AccountTgDbSpec with TimeHelpers with TgAccount {
 
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(
-      id = -1,
+      id = TgIds.UNASSIGNED_ACCOUNT_ID,
       firstName = firstName,
       lastName = lastName,
       email = email,
       password = passwordHashed,
-      accountTypeId = 1,
+      accountTypeId = TgIds.UNASSIGNED_ACCOUNT_ID,
       verified = true,
       enabled = true,
       createdAt = nowAsInstant,

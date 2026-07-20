@@ -10,6 +10,8 @@ import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
 
+import java.util.UUID
+
 class ProjectService(
   projectRepo: ProjectRepo,
   projectAccountRepo: ProjectAccountRepo,
@@ -21,8 +23,8 @@ class ProjectService(
 
   def saveProject(
     project: Project,
-    accountId: Long,
-    membersToAdd: Seq[Long]
+    accountId: UUID,
+    membersToAdd: Seq[UUID]
   ): IO[(Project, Seq[Account])] = {
     (for {
       savedProject <- projectRepo.insert(project)
@@ -41,7 +43,7 @@ class ProjectService(
 
   private def addMembers(
     project: Project,
-    membersToAdd: Seq[Long]
+    membersToAdd: Seq[UUID]
   ): ConnectionIO[List[ProjectAccount]] = {
     membersToAdd
       .map(accountId =>
@@ -56,7 +58,7 @@ class ProjectService(
       .sequence
   }
 
-  private def removeMembers(project: Project, membersToRemove: Seq[Long]): ConnectionIO[List[Int]] = {
+  private def removeMembers(project: Project, membersToRemove: Seq[UUID]): ConnectionIO[List[Int]] = {
     membersToRemove
       .map(accountId =>
         ProjectAccount(
@@ -76,8 +78,8 @@ class ProjectService(
 
   def updateProject(
     project: Project,
-    membersToAdd: Seq[Long],
-    membersToRemove: Seq[Long]
+    membersToAdd: Seq[UUID],
+    membersToRemove: Seq[UUID]
   ): IO[(Project, Seq[Account])] = {
     logger.info(s"Updating a ${sp(project)}")
     val now = tgClock.currentInstant
@@ -92,7 +94,7 @@ class ProjectService(
     }).transact(transactor)
   }
 
-  def findAllByOrganizationIdAndAccountId(organizationId: Long, accountId: Long): IO[Seq[Project]] = {
+  def findAllByOrganizationIdAndAccountId(organizationId: Long, accountId: UUID): IO[Seq[Project]] = {
     projectRepo
       .findByOrganizationIdAndAccountId(organizationId, accountId)
       .transact(transactor)

@@ -2,7 +2,9 @@ package com.togger.dto.organization
 
 import com.togger.dto.SearchAccountDto
 
-case class CreateOrganizationReq(name: String, description: String, membersToAdd: Seq[Long])
+import java.util.UUID
+
+case class CreateOrganizationReq(name: String, description: String, membersToAdd: Seq[UUID])
 case class FindOrganizationResp(
   id: Long,
   name: String,
@@ -27,6 +29,6 @@ case class UpdateOrganizationReq(
   id: Long,
   name: String,
   description: String,
-  membersToAdd: Seq[Long],
-  membersToRemove: Seq[Long]
+  membersToAdd: Seq[UUID],
+  membersToRemove: Seq[UUID]
 )

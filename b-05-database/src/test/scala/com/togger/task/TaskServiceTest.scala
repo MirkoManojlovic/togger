@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{TgClock, TimeHelpers}
+import com.togger.common.{TgClock, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.logentry.LogEntryRepo
 import com.togger.suites.TestNameHelper
@@ -50,7 +50,7 @@ class TaskServiceTest
     name = "Test Task",
     description = "A task for testing",
     assignedTo = None,
-    createdBy = -1L,
+    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     taskStatusId = -1L,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

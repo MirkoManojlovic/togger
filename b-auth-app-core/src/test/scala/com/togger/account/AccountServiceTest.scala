@@ -15,6 +15,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import java.time.ZoneOffset
+import java.util.UUID
 
 class AccountServiceTest
     extends AsyncWordSpec
@@ -39,11 +40,11 @@ class AccountServiceTest
     transactor = transactorMock
   )
 
-  val account = createAccount(1)
+  val account = createAccount(TgIds.UNASSIGNED_ACCOUNT_ID)
 
   val accountSession = AccountSession(
     id = -1L,
-    accountId = -1L,
+    accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
     sessionToken = "sessionToken1",
     deviceInfo = "some device info",
     createdAt = nowAsInstant,
@@ -52,7 +53,7 @@ class AccountServiceTest
 
   "AccountService" should {
     "create account" in {
-      val insertedAccount = account.copy(id = 123L)
+      val insertedAccount = account.copy(id = UUID.randomUUID())
       (accountRepo.insert _).expects(account).returns(insertedAccount.pure[ConnectionIO])
 
       accountService

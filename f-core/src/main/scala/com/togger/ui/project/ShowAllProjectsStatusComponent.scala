@@ -3,6 +3,7 @@ package com.togger.ui.project
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits.toTraverseOps
+import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
@@ -185,11 +186,11 @@ class ShowAllProjectsStatusComponent(
 
   private def createTaskCard(dto: ProjectInfo) = {
     val unassignedDto = SearchAccountDto(
-      id = -1,
+      id = TgIds.UNASSIGNED_ACCOUNT_ID,
       firstName = "Not",
       lastName = "assigned",
       email = "notassinged@email.com",
-      accountTypeId = ""
+      accountTypeId = TgIds.UNASSIGNED_ACCOUNT_ID
     )
     val groupedTasksByAssignee = dto.tasks.groupBy(_.assignedTo.getOrElse(unassignedDto))
 

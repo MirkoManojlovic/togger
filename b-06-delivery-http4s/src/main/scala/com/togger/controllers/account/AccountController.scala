@@ -46,7 +46,7 @@ class AccountController(accountEndpoints: AccountEndpoints, accountServiceCore: 
                   firstName = account.firstName,
                   lastName = account.lastName,
                   email = account.email,
-                  accountTypeId = account.accountTypeId.toString
+                  accountTypeId = account.accountTypeId
                 )
               )
             )

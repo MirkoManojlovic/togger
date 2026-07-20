@@ -13,6 +13,7 @@ import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
 import java.time._
+import java.util.UUID
 
 class TaskRepoImpl extends TaskRepo with TgLogging {
 
@@ -112,7 +113,7 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     )
   }
 
-  override def findAllTaskIdsByAssigneeId(accountId: Long): ConnectionIO[List[Long]] = {
+  override def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[Long]] = {
     logAroundInfoQuery(
       (fr"select id from " ++ TASK_TABLE_FRAG ++ fr" where assigned_to = $accountId").query[Long].to[List]
     )(

@@ -2,7 +2,7 @@ package com.togger.accountType
 
 import cats.implicits._
 import com.togger.account.{AccountTgDbSpec, AccountType, AccountTypeRepo}
-import com.togger.common.TimeHelpers
+import com.togger.common.{TgIds, TimeHelpers}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
@@ -10,7 +10,7 @@ trait TgAccount { self: TimeHelpers =>
   val password = "A!good_1_password_is_good"
 
   val accountType = AccountType(
-    id = -1L,
+    id = TgIds.UNASSIGNED_ACCOUNT_ID,
     name = "Developer",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

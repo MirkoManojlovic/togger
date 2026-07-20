@@ -4,6 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgEndpoints.TgBaseEndpoint
+import com.togger.common.TgIds
 import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.login.ChangePasswordDto
@@ -77,7 +78,7 @@ class ChangePasswordComponent(
   )
 
   private val submitter = Observer[ChangePasswordFormState] { state =>
-    val id = accountService.get.map(_.id).getOrElse(-1L)
+    val id = accountService.get.map(_.id).getOrElse(TgIds.UNASSIGNED_ACCOUNT_ID)
     val dto = state.into[ChangePasswordDto].withFieldComputed(_.accountId, _ => id).transform
     spinnerService
       .runWithSpinner(changePasswordService.change(dto))

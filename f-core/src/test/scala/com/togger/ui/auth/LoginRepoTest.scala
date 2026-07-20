@@ -8,9 +8,11 @@ import com.togger.ui.localstorage.LocalStorageTest
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.OptionValues
 
+import java.util.UUID
+
 class LoginRepoTest extends AsyncJsWordSpec with AsyncMockFactory with OwnerForTestingTrait with OptionValues {
 
-  val accountId = 4673L
+  val accountId: UUID = UUID.randomUUID()
   val sessionId = "sessionId"
   val dto = LoginResponseDto(accountId, sessionId)
 

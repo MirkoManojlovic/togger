@@ -174,7 +174,7 @@ class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelper
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
           id = index,
-          accountId = index,
+          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),

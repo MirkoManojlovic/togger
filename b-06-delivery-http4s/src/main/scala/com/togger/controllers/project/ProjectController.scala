@@ -24,7 +24,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                 firstName = account.firstName,
                 lastName = account.lastName,
                 email = account.email,
-                accountTypeId = account.accountTypeId.toString
+                accountTypeId = account.accountTypeId
               )
             )
           )
@@ -59,7 +59,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                 firstName = account.firstName,
                 lastName = account.lastName,
                 email = account.email,
-                accountTypeId = account.accountTypeId.toString
+                accountTypeId = account.accountTypeId
               )
             )
           )
@@ -98,7 +98,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                 firstName = account.firstName,
                 lastName = account.lastName,
                 email = account.email,
-                accountTypeId = account.accountTypeId.toString
+                accountTypeId = account.accountTypeId
               )
             )
           )
@@ -137,7 +137,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
               firstName = account.firstName,
               lastName = account.lastName,
               email = account.email,
-              accountTypeId = account.accountTypeId.toString
+              accountTypeId = account.accountTypeId
             )
           )
         )

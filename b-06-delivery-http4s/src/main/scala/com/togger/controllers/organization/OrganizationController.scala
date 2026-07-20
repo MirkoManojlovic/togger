@@ -29,7 +29,7 @@ class OrganizationController(
                   firstName = account.firstName,
                   lastName = account.lastName,
                   email = account.email,
-                  accountTypeId = account.accountTypeId.toString
+                  accountTypeId = account.accountTypeId
                 )
               )
             )
@@ -61,7 +61,7 @@ class OrganizationController(
               firstName = account.firstName,
               lastName = account.lastName,
               email = account.email,
-              accountTypeId = account.accountTypeId.toString
+              accountTypeId = account.accountTypeId
             )
           )
         )
@@ -98,7 +98,7 @@ class OrganizationController(
                 firstName = account.firstName,
                 lastName = account.lastName,
                 email = account.email,
-                accountTypeId = account.accountTypeId.toString
+                accountTypeId = account.accountTypeId
               )
             )
           )
@@ -157,7 +157,7 @@ class OrganizationController(
               firstName = account.firstName,
               lastName = account.lastName,
               email = account.email,
-              accountTypeId = account.accountTypeId.toString
+              accountTypeId = account.accountTypeId
             )
           )
         )

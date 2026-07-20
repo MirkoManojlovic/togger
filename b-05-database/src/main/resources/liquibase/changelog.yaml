@@ -39,8 +39,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: bigint
-                  autoIncrement: true
+                  type: uuid
+                  defaultValueComputed: uuidv7()
                   constraints:
                     primaryKey: true
                     nullable: false
@@ -241,21 +241,21 @@ databaseChangeLog:
                     unique: false
               - column:
                   name: assigned_to
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: true
                     foreignKeyName: fk_task_assigned_to_account
                     references: account(id)
               - column:
                   name: created_by
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_task_created_by_account
                     references: account(id)
               - column:
                   name: closed_by
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: true
                     foreignKeyName: fk_task_closed_by_account
@@ -357,10 +357,10 @@ databaseChangeLog:
                     references: task(id)
               - column:
                   name: created_by
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
-                    foreignKeyName: fk_task_created_by_account
+                    foreignKeyName: fk_log_entry_created_by_account
                     references: account(id)
               - column:
                   name: created_at
@@ -386,7 +386,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: account_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: true
                     foreignKeyName: fk_user_account_account_session
@@ -433,7 +433,7 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: account_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_organization_account_account
@@ -458,7 +458,7 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: account_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_project_account_account

@@ -18,6 +18,8 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 
+import java.util.UUID
+
 //class FindAccountServiceImpl extends FindAccountService {
 //
 //  val accounts = Seq(
@@ -60,15 +62,15 @@ class FindAccountsComponent(
 
   case class FindAccountForm(
     searchTerm: String = "",
-    existingMembers: Map[Long, SearchAccountDto] = Map.empty,
+    existingMembers: Map[UUID, SearchAccountDto] = Map.empty,
     foundMembers: Either[String, Seq[SearchAccountDto]] = Right(List.empty),
-    membersToAdd: Map[Long, SearchAccountDto] = Map.empty,
-    membersToRemove: Map[Long, SearchAccountDto] = Map.empty
+    membersToAdd: Map[UUID, SearchAccountDto] = Map.empty,
+    membersToRemove: Map[UUID, SearchAccountDto] = Map.empty
   )
 
   private val formState = Var(FindAccountForm())
 
-  private def accountsToMap(accounts: Seq[SearchAccountDto]): Map[Long, SearchAccountDto] =
+  private def accountsToMap(accounts: Seq[SearchAccountDto]): Map[UUID, SearchAccountDto] =
     removeUserAccount(accounts)
       .groupMap(_.id)(identity)
       .map { case (id, accounts) => id -> accounts.head }

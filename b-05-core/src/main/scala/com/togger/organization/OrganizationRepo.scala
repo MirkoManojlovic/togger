@@ -3,6 +3,7 @@ package com.togger.organization
 import doobie.ConnectionIO
 
 import java.time.Instant
+import java.util.UUID
 
 trait OrganizationRepo {
   def findById(id: Long): ConnectionIO[Organization]
@@ -15,6 +16,6 @@ trait OrganizationRepo {
 
   def findAll(): ConnectionIO[Seq[Organization]]
 
-  def findAllOrgByAccountId(accountId: Long): ConnectionIO[Seq[(Organization, OrganizationAccount)]]
+  def findAllOrgByAccountId(accountId: UUID): ConnectionIO[Seq[(Organization, OrganizationAccount)]]
 
 }

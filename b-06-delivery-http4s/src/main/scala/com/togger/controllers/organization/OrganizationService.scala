@@ -11,6 +11,8 @@ import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
 
+import java.util.UUID
+
 class OrganizationService(
   organizationRepo: OrganizationRepo,
   organizationAccountRepo: OrganizationAccountRepo,
@@ -21,8 +23,8 @@ class OrganizationService(
 
   def saveOrganization(
     organization: Organization,
-    accountId: Long,
-    membersToAdd: Seq[Long]
+    accountId: UUID,
+    membersToAdd: Seq[UUID]
   ): IO[(Organization, Seq[Account])] = {
     (for {
       savedOrg <- organizationRepo.insert(organization)
@@ -40,7 +42,7 @@ class OrganizationService(
 
   private def addMembers(
     organization: Organization,
-    membersToAdd: Seq[Long]
+    membersToAdd: Seq[UUID]
   ): ConnectionIO[List[OrganizationAccount]] = {
     membersToAdd
       .map(accountId =>
@@ -55,7 +57,7 @@ class OrganizationService(
       .sequence
   }
 
-  private def removeMembers(organization: Organization, membersToRemove: Seq[Long]): ConnectionIO[List[Int]] = {
+  private def removeMembers(organization: Organization, membersToRemove: Seq[UUID]): ConnectionIO[List[Int]] = {
     membersToRemove
       .map(accountId =>
         OrganizationAccount(
@@ -84,8 +86,8 @@ class OrganizationService(
 
   def updateOrganization(
     organization: Organization,
-    membersToAdd: Seq[Long],
-    membersToRemove: Seq[Long]
+    membersToAdd: Seq[UUID],
+    membersToRemove: Seq[UUID]
   ): IO[(Organization, Seq[Account])] = {
     logger.info(s"Updating a ${sp(organization)}")
     val now = tgClock.currentInstant
@@ -108,13 +110,13 @@ class OrganizationService(
     organizationRepo.findAll().transact(transactor)
   }
 
-  def findAllOrgByAccountId(accountId: Long): IO[Seq[Organization]] =
+  def findAllOrgByAccountId(accountId: UUID): IO[Seq[Organization]] =
     organizationRepo.findAllOrgByAccountId(accountId).map(_.map(_._1)).transact(transactor)
 
   def findAllMembers(organizationId: Long): IO[Seq[Account]] =
     organizationAccountRepo.findAllMembers(organizationId).transact(transactor)
 
-  def findOrganizationsAndProjectsByAccountId(accountId: Long): IO[List[(Organization, Seq[Project])]] = {
+  def findOrganizationsAndProjectsByAccountId(accountId: UUID): IO[List[(Organization, Seq[Project])]] = {
     (for {
       organizations <- organizationRepo.findAllOrgByAccountId(accountId).map(_.map(_._1))
       orgsAndProjects <- organizations

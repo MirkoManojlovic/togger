@@ -2,7 +2,7 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
 import com.togger.organization.{TgOrganization, TgProject}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -89,12 +89,12 @@ class ProjectAccountRepoTest
 
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(
-      id = -1,
+      id = TgIds.UNASSIGNED_ACCOUNT_ID,
       firstName = firstName,
       lastName = lastName,
       email = email,
       password = passwordHashed,
-      accountTypeId = 1,
+      accountTypeId = TgIds.UNASSIGNED_ACCOUNT_ID,
       verified = true,
       enabled = true,
       createdAt = nowAsInstant,

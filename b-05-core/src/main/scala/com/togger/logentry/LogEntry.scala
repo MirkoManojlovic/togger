@@ -1,6 +1,7 @@
 package com.togger.logentry
 
 import java.time.Instant
+import java.util.UUID
 
 case class LogEntry(
   id: Long,
@@ -8,7 +9,7 @@ case class LogEntry(
   textExternal: String,
   status: LogEntryStatus,
   taskId: Long,
-  createdBy: Long,
+  createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

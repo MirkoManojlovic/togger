@@ -1,10 +1,12 @@
 package com.togger.dto
 
+import java.util.UUID
+
 case class CreateProjectReq(
   organizationId: Long,
   name: String,
   description: String,
-  membersToAdd: Seq[Long]
+  membersToAdd: Seq[UUID]
 )
 
 case class FindProjectResp(
@@ -20,6 +22,6 @@ case class UpdateProjectReq(
   organizationId: Long,
   name: String,
   description: String,
-  membersToAdd: Seq[Long],
-  membersToRemove: Seq[Long]
+  membersToAdd: Seq[UUID],
+  membersToRemove: Seq[UUID]
 )

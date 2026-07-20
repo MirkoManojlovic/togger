@@ -8,7 +8,7 @@ import doobie.Transactor
 import doobie.implicits._
 
 case class AccountNoCreds(
-  id: Long,
+  id: UUID,
   firstName: String,
   lastName: String,
   email: String,

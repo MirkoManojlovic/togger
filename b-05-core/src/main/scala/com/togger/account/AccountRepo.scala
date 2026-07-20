@@ -13,7 +13,7 @@ trait HashedPassword {
 }
 
 case class Account(
-  id: Long,
+  id: UUID,
   firstName: String,
   lastName: String,
   email: String,
@@ -32,9 +32,9 @@ case class Account(
 
 trait AccountRepo {
   def insert(account: Account): ConnectionIO[Account]
-  def findById(id: Long): ConnectionIO[Account]
+  def findById(id: UUID): ConnectionIO[Account]
   def findByEmail(email: String): ConnectionIO[Account]
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
   def update(account: Account, updateAt: Instant): ConnectionIO[Account]
   def findByFirstNameLastNameOrEmail(term: String): ConnectionIO[List[Account]]
 }

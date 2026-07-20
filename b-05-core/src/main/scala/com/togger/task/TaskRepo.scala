@@ -3,6 +3,7 @@ package com.togger.task
 import doobie.ConnectionIO
 
 import java.time._
+import java.util.UUID
 
 trait TaskRepo {
 
@@ -20,7 +21,7 @@ trait TaskRepo {
 
   def findByProjectId(projectId: Long): ConnectionIO[Seq[TaskFull]]
 
-  def findAllTaskIdsByAssigneeId(accountId: Long): ConnectionIO[List[Long]]
+  def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[Long]]
 
 }
 
