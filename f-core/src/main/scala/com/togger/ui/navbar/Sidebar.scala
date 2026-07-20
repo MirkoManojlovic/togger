@@ -182,7 +182,7 @@ class Sidebar(
             cls("flex items-center ps-2.5 mb-5"),
             div(
               cls("flex items-center me-3"),
-              TgSvgIcons.tgIconLogo,
+              TgSvgIcons.tgIconLogo
             ),
             span(
               cls("self-center text-lg text-heading font-semibold whitespace-nowrap"),

@@ -21,12 +21,13 @@ class AuthenticationRouteGuard(
       loginPage
   }
 
-  private val userAuthenticatedVisitingLoginPage: PartialFunction[FrontendPage, FrontendPage] = new PartialFunction[FrontendPage, FrontendPage] {
-    override def isDefinedAt(page: FrontendPage): Boolean =
-      page == loginPage && loginRepo.authenticated
+  private val userAuthenticatedVisitingLoginPage: PartialFunction[FrontendPage, FrontendPage] =
+    new PartialFunction[FrontendPage, FrontendPage] {
+      override def isDefinedAt(page: FrontendPage): Boolean =
+        page == loginPage && loginRepo.authenticated
 
-    override def apply(page: FrontendPage): FrontendPage = homePage
-  }
+      override def apply(page: FrontendPage): FrontendPage = homePage
+    }
 
   private def userAuthenticated(page: FrontendPage): PartialFunction[FrontendPage, FrontendPage] = { case _ =>
     page

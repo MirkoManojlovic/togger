@@ -46,8 +46,6 @@ case class TgCard(header: Option[CardHeader], body: TgCardContent, footer: Optio
         body.htmlElement(None),
         footer.map(foot => Seq(div(foot.cardFooterStyle, foot.element)))
       )
-
-
     )
   def elementOld: HtmlDiv =
     div(

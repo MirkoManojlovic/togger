@@ -5,7 +5,6 @@ import com.togger.common.TgJsonFailure
 import com.togger.common.TgResponseTypes.{TgResp, TgRespIO}
 import com.togger.ui.toast.Toast
 
-
 trait ToastMessagesTgResp {
   def toast: Toast
 

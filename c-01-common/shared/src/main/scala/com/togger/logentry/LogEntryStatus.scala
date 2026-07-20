@@ -43,7 +43,6 @@ object LogEntryStatus extends IntEnum[LogEntryStatus] {
     override def toString: String = "🤲 Handover"
   }
 
-
   def namesToValuesMapString: Map[String, String] =
     this.values.map { status => status.value.toString -> status.toString }.toMap
 

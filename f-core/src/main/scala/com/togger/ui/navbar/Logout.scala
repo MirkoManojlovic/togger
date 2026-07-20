@@ -14,8 +14,7 @@ case class Logout[PAGE](
 ) {
 
   def logoutButton: ReactiveHtmlElement[HTMLAnchorElement] =
-      a("Log out", onClick --> logout, href("#"))
-
+    a("Log out", onClick --> logout, href("#"))
 
   private def logout: MouseEvent => Unit = { _ =>
     loginRepo.delete()

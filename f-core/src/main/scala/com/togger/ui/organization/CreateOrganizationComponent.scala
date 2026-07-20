@@ -6,7 +6,12 @@ import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
-import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, FindOrganizationsAndProjects, UpdateOrganizationReq}
+import com.togger.dto.organization.{
+  CreateOrganizationReq,
+  FindOrganizationResp,
+  FindOrganizationsAndProjects,
+  UpdateOrganizationReq
+}
 import com.togger.organization.OrganizationEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages

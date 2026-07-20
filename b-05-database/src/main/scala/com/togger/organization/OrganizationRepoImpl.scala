@@ -95,7 +95,6 @@ class OrganizationRepoImpl extends OrganizationRepo {
     )
   }
 
-
 }
 
 object OrganizationRepoImpl {

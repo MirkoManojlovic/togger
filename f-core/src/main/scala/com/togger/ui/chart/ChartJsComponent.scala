@@ -30,7 +30,7 @@ class ChartJsComponent()(implicit runtime: IORuntime) {
   val unprotectedBackendClient = new UnprotectedBackendClient(baseUri = uri"http://localhost:8081/")
 
 //  val m = unprotectedBackendClient.httpCall(logEntryEndpoints.findByTaskId)(2)
-val m = null
+  val m = null
 //  m.map(_.map(success => logEntriesVar.set(success.body.get))).unsafeRunAndForget()
 
   // ---
@@ -88,8 +88,8 @@ val m = null
     logEntries.map { dto =>
       labels += dto.createdAt.atOffset(ZoneOffset.UTC).toLocalDate.toString
       val statusAsInt = dto.status match {
-        case Blocked => 0
-        case InProgress  => 1
+        case Blocked    => 0
+        case InProgress => 1
       }
       data += statusAsInt
     }

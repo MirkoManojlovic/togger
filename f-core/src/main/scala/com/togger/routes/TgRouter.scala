@@ -21,7 +21,6 @@ trait TgRouter[PAGE <: FrontendPage] {
 
 }
 
-
 class TgRouterImpl(
   appRoutes: Seq[Route[_ <: FrontendPage, _]],
   origin: String,
@@ -53,7 +52,6 @@ class TgRouterImpl(
 
   override def absoluteUrlForPage(page: FrontendPage): String =
     router.absoluteUrlForPage(page)
-
 
   override def navigateTo(page: FrontendPage): Binder[HtmlElement] = Binder { el =>
     val isLinkElement = el.ref.isInstanceOf[dom.html.Anchor]

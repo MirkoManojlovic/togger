@@ -60,15 +60,17 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
   }
 
   def createDatabase: IO[Either[SQLException, Int]] = {
-    fr"""CREATE DATABASE "togger-local-development" """.update.run.attemptSql.transact(nonTransactionalTransactor).recover {
-      case e =>
+    fr"""CREATE DATABASE "togger-local-development" """.update.run.attemptSql
+      .transact(nonTransactionalTransactor)
+      .recover { case e =>
         println(s"error ${e}")
         Right(1)
-    }
+      }
   }
 
   def createToggerUser: IO[Int] = {
-    fr"CREATE USER togger_account_development WITH PASSWORD 'togger_password'".update.run.transact(transactorWithRootAccount)
+    fr"CREATE USER togger_account_development WITH PASSWORD 'togger_password'".update.run
+      .transact(transactorWithRootAccount)
   }
 
   def grantAllPrivileges: IO[Int] = {

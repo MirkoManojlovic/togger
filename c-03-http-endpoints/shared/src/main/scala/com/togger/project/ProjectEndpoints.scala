@@ -47,7 +47,7 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
 
   val findAllMembersEndpoint: TgSecuredEndpoint[Long, Seq[SearchAccountDto]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "members" /  path[Long]("project-id"))
+      .in(basePath / "members" / path[Long]("project-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
 
 }

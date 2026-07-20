@@ -2,7 +2,13 @@ package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{FindProjectResp, FindTaskRespFull}
-import com.togger.routes.Pages.{CreateTaskPage, EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTaskStatusesPage}
+import com.togger.routes.Pages.{
+  CreateTaskPage,
+  EditOrganizationPage,
+  EditProjectPage,
+  EditTaskPage,
+  ShowAllTaskStatusesPage
+}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.TgIcons
@@ -64,7 +70,6 @@ class ShowAllTasksComponent(
       projectCall.flatMap(_ => taskStatusCall).flatMap(_ => taskCall)
     }
     .unsafeRunAndForget()
-
 
   def createTh(content: String) =
     th(cls("px-6 py-3 font-medium"), content)

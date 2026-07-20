@@ -28,7 +28,6 @@ object TgInputType extends Enum[TgInputType] {
   case object Color extends TgInputType
 }
 
-
 case class TgInput(
   inputSignal: Signal[String],
   inputStateUpdater: Observer[String],

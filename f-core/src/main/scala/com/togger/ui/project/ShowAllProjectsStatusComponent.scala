@@ -201,76 +201,85 @@ class ShowAllProjectsStatusComponent(
           cls("mb-2"),
           accountDto.fullName
         ),
-        div(tasks
-          .sortBy(_.taskStatus.id)
-          .map { task =>
-          val taskCard = TgCard
-            .headerNoFooter(
-              header = TgCard.CardHeader
-                .html(
-                  div(
-                    cls("flex", "justify-between"),
-                    a(
-                      cls("font-medium text-fg-brand hover:underline"),
-                      cls("mr-2"),
-                      task.name,
-                      router.navigateTo(EditTaskPage(task.projectId, task.id))
-                    ),
-                    div(
-                      task.taskStatus.name
-                    )
-
-                    //                              s"${task.name} - ${task.taskStatus.name} - ${task.assignedTo.map(_.fullName).getOrElse("Not assigned")} "
-                  ),
-                  TgCard.CardHeaderSize.H3
-                ),
-              body = TgCard.HtmlCardContent(
-                div(
-                  div(
-                    cls("mb-4"),
-                    b("Description: "),
-                    task.description
-                  ),
-                  div(
-                    marginBottom.rem(1),
-                    display.flex,
-                    task.logEntries
-                      .sortBy(_.createdAt)
-                      .map(logEntry =>
-                        div(
-                          cls("border-1 border-gray-200 rounded-md"),
+        div(
+          tasks
+            .sortBy(_.taskStatus.id)
+            .map { task =>
+              val taskCard = TgCard
+                .headerNoFooter(
+                  header = TgCard.CardHeader
+                    .html(
+                      div(
+                        cls("flex", "justify-between"),
+                        a(
+                          cls("font-medium text-fg-brand hover:underline"),
                           cls("mr-2"),
-                          textAlign.center, {
-                            val (day, date) = tgDateFormater.asAmericanDate(
-                              LocalDate.from(logEntry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-                            )
-                            div(
-                              cls("bg-gray-100 rounded-t-md"),
-                              cls("p-1"),
-                              p(date),
-                              p(b(day))
-                            )
-                          },
-                          div(
-                            cls("p-1"),
-                            logEntry.status.color
-                          )
+                          task.name,
+                          router.navigateTo(EditTaskPage(task.projectId, task.id))
+                        ),
+                        div(
+                          task.taskStatus.name
                         )
+
+                        //                              s"${task.name} - ${task.taskStatus.name} - ${task.assignedTo.map(_.fullName).getOrElse("Not assigned")} "
+                      ),
+                      TgCard.CardHeaderSize.H3
+                    ),
+                  body = TgCard.HtmlCardContent(
+                    div(
+                      div(
+                        cls("mb-4"),
+                        b("Description: "),
+                        task.description
+                      ),
+                      div(
+                        marginBottom.rem(1),
+                        display.flex,
+                        task.logEntries
+                          .sortBy(_.createdAt)
+                          .map(logEntry =>
+                            div(
+                              cls("border-1 border-gray-200 rounded-md"),
+                              cls("mr-2"),
+                              textAlign.center, {
+                                val (day, date) = tgDateFormater.asAmericanDate(
+                                  LocalDate.from(logEntry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+                                )
+                                div(
+                                  cls("bg-gray-100 rounded-t-md"),
+                                  cls("p-1"),
+                                  p(date),
+                                  p(b(day))
+                                )
+                              },
+                              div(
+                                cls("p-1"),
+                                logEntry.status.color
+                              )
+                            )
+                          )
+                      ),
+                      div(
+                        p(b("Latest status")),
+                        div {
+                          if (task.logEntries.isEmpty) p("No status update")
+                          else
+                            task.logEntries
+                              .sortBy(_.createdAt)
+                              .reverse
+                              .head
+                              .textExternal
+                              .split("\n")
+                              .map(a => p(a))
+                              .toSeq
+                        }
                       )
-                  ),
-                  div(
-                    p(b("Latest status")),
-                    div {
-                      if (task.logEntries.isEmpty) p("No status update")
-                      else
-                        task.logEntries.sortBy(_.createdAt).reverse.head.textExternal.split("\n").map(a => p(a)).toSeq
-                    }
+                    )
                   )
                 )
-              )
-            )
-          taskCard.element.amend(cls("mb-4"))
-        })
+              taskCard.element.amend(cls("mb-4"))
+            }
+        )
       )
 
     }.toSeq

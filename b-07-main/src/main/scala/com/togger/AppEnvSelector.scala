@@ -18,8 +18,8 @@ class AppEnvSelector(appEnv: AppEnv) extends Logging {
   }
 
   private def filePicker: String = appEnv match {
-    case AppEnv.Web => "application-web.conf"
-    case AppEnv.Desktop  => "application-desktop.conf"
+    case AppEnv.Web     => "application-web.conf"
+    case AppEnv.Desktop => "application-desktop.conf"
   }
 
 }
