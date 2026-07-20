@@ -1,0 +1,146 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Togger — a Scala full-stack app for logging everyday developer activity, with a lightweight project-management
+tool (organizations → projects → tasks → task statuses → log entries) and analytics dashboards. Ships as both a
+web app and a Tauri desktop app (same ScalaJS frontend, same http4s backend embedded via GraalVM native image).
+
+## Dev environment
+
+This repo uses `devenv`/`direnv` (`.envrc` → `use devenv`) to provision `sbt`, `nodejs`, GraalVM, and a local
+Postgres 13 instance (`services.postgres` in `devenv.nix`). Enter the shell before running anything (`direnv
+allow` once, or launch a shell where `.envrc` has been sourced). Useful devenv scripts: `kill-pg`, `reset-pg`
+(runs Liquibase drop/update against `liquibase-local.properties`).
+
+Backend tests connect to a real local Postgres database `togger-test` with user `togger_account` /
+`togger_password` on port 5432 — hardcoded in `b-05-common/.../db/TgTestTransactor.scala`. Postgres must be
+running before running any backend test suite (there is no embedded/mocked DB for most specs, though
+`otj-pg-embedded` is a test dependency in some modules). Each spec (`TgDbSpec`/`BusinessTgDbSpec`) truncates its
+known tables before and after each test, so specs in `b-auth-app-core` run with `parallelExecution := false`
+(shared DB, avoids cross-test interference).
+
+## Common commands
+
+There is no root/aggregate sbt project or command aliases in `build.sbt` — target individual projects by their
+`lazy val` name (not the `name :=` string), e.g.:
+
+```
+sbt backendMain/compile
+sbt backendMain/run
+sbt "backendAuth/testOnly com.togger.account.AccountServiceTest"
+sbt backendDatabase/test
+sbt frontendMain/fastLinkJS      # dev ScalaJS build, used by `npm run dev`
+sbt frontendMain/fullLinkJS      # prod ScalaJS build, used by `npm run build-*`
+sbt scalafmtAll                  # format (see .scalafmt.conf)
+```
+
+Project-name → directory map (see `build.sbt`):
+
+| sbt project           | directory              |
+|------------------------|-------------------------|
+| `frontendCore`         | `f-core`                |
+| `frontendMain`         | `f-main`                |
+| `backendCore`          | `b-05-core`             |
+| `backendCommon`        | `b-05-common`           |
+| `backendDatabase`      | `b-05-database`         |
+| `backendDiskSync`      | `b-05-disk-sync`        |
+| `backendDeliveryHttp4s`| `b-06-delivery-http4s`  |
+| `backendMain`          | `b-07-main`             |
+| `backendAuth`          | `b-auth-app-core`       |
+| `tgMacros`             | `c-00-tg-macros` (cross)|
+| `tgCommon`             | `c-01-common` (cross)   |
+| `httpEndpoints`        | `c-03-http-endpoints` (cross) |
+
+Cross-projects (`c-*`) are compiled for both platforms; append `.js`/`.jvm` in `build.sbt` deps, or use e.g.
+`sbt tgCommonJS/compile` / `sbt tgCommonJVM/compile` on the CLI.
+
+Frontend (npm/vite):
+
+```
+npm run dev            # vite dev server (port 5173, fixed for Tauri); shells out to `sbt print fastLinkOutputDir`
+npm run build-web      # production web build
+npm run build-desktop  # production build for Tauri (VITE_IS_DESKTOP_MODE=true via .env.desktop)
+```
+
+Note: `vite.config.js` runs `sbt` synchronously on startup to resolve the ScalaJS linker output directory
+(aliased as `@linkOutputDir`), so `npm run dev`/`build-*` requires a working `sbt` on PATH and will trigger an
+sbt run every time vite starts.
+
+Desktop packaging (`justfile`, requires the Tauri CLI and a working sbt/GraalVM setup):
+
+```
+just build-tauri-backend   # sbt Universal package -> unpack into src-tauri/java, copy Liquibase changelog
+just build-tauri-app       # npm run tauri build
+just desktop                # both of the above
+just desktop-clean          # sbt clean first
+```
+
+## Architecture
+
+**Module layering by prefix:**
+- `c-*` — cross-platform (`crossProject(JS, JVM)`) shared code, compiled into both frontend and backend.
+  `c-00-tg-macros` → `c-01-common` (DTOs, `TgError`, shared auth types, logging) → `c-03-http-endpoints`
+  (Tapir endpoint *definitions* only, no server/client logic — one file per domain, e.g. `TaskEndpoints`,
+  `OrganizationEndpoints`).
+- `b-*` — JVM-only backend. `b-05-core` holds domain models + repo *traits* (interfaces); `b-05-database`,
+  `b-05-common`, `b-auth-app-core` hold Doobie repo *implementations* (`*RepoImpl`) and controllers;
+  `b-06-delivery-http4s` and `b-auth-app-core` hold `*Controller`/`*Service` classes that implement the shared
+  Tapir endpoints as http4s server logic; `b-07-main` is the executable entry point that wires everything
+  together and runs Liquibase/DB bootstrap.
+- `f-*` — ScalaJS-only frontend. `f-core` has the actual UI (Laminar components under `ui/`, routing, backend
+  HTTP clients under `backendcalls/`); `f-main` is the thin entry point (`FrontendApp`).
+
+**Endpoint-first API contract:** a domain's Tapir endpoint is defined once in `c-03-http-endpoints` (shared),
+then given a server implementation in the backend (`*Controller` in `b-06-delivery-http4s`/`b-auth-app-core`)
+and consumed by the frontend via an sttp client (`f-core/.../backendcalls`). Changing a request/response shape
+means touching the shared DTO in `c-01-common`, the shared endpoint in `c-03-http-endpoints`, the backend
+controller, and the frontend caller/component.
+
+**No DI framework — manual constructor wiring.** `TgServer.DependenciesModule` (in `b-07-main`) and
+`AuthDependenciesModule` (in `b-auth-app-core`) wire the whole object graph by hand with `lazy val`s; new
+services/controllers get added there and to the endpoint list passed to `HttpModule.createServer`.
+
+**Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
+(wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
+JVM (`SecurityLogicJvm`) and JS (`SecurityLogicJs`) implementations). Passwords hashed with `scalapass`.
+
+**Repo pattern:** each domain has a `*Repo` trait (interface, in `b-05-core`) plus a `*RepoImpl` (Doobie
+`ConnectionIO`, in `b-05-database`/`b-auth-app-core`), each exposing its table name as a constant (e.g.
+`AccountRepoImpl.ACCOUNT_TABLE`) that test specs use for cleanup.
+
+**DB schema:** managed by Liquibase, changelog at `b-05-database/src/main/resources/liquibase/changelog.yaml`
+(gitignored contents pattern relaxed — see `.gitignore` note in git log). On desktop app startup,
+`BackendApp.setupDb` checks whether the `togger_account` DB role exists; if not, it creates the DB/role, runs
+Liquibase, and seeds an admin account (`CreateAdminAccount`).
+
+**Web vs. desktop split**, both at build time and runtime:
+- Runtime: `AppEnv` (`web`/`desktop`, first CLI arg to `BackendApp`) selects `application-web.conf` /
+  `application-desktop.conf` (`AppEnvSelector`), which controls log archiving and whether the backend runs
+  a foreground desktop-lifecycle watcher (`CheckDesktopAppRunning`) vs. `IO.never` for web.
+  On the frontend, `VITE_IS_DESKTOP_MODE` (set via `.env`/`.env.desktop`/`.env.web`) picks between
+  `WebFrontendApp` and `DesktopFrontendApp` in `FrontendApp`, which differ in router origin
+  (`http://localhost:5173` vs `tauri://localhost`) and startup delay.
+- Packaging: the desktop build packages the http4s backend as a GraalVM native/Universal artifact and bundles
+  it as a sidecar inside the Tauri app (`src-tauri/`); see the `justfile` targets above.
+
+**Frontend routing/rendering:** Waypoint router (`TgRoutes`/`TgRouterImpl` in `f-core/routes`) defines pages as
+ADT cases (`Pages.scala`); `TgSplitRender` maps the router's signal to the Laminar component for the current
+page.
+
+## Code style
+
+Governed by `.scalafmt.conf` (2-space indent, 120 col) and `CONVENTIONS.md`. Key points from `CONVENTIONS.md`
+worth following when writing Scala in this repo:
+- Favor early returns, small single-purpose functions, and self-explanatory code over comments.
+- Functional style: pure functions, immutability, composition (Cats/Cats Effect idioms already used throughout).
+- Match existing styling/component patterns in a file rather than introducing new ones (especially in `f-core`
+  UI components).
+
+## Current branch context
+
+`feature/ids-long-to-uuids` is an in-progress migration of primary key types from `Long` to `UUID` (see
+`uuid7` dependency and `b-05-common/.../db/Util.scala`). Expect some domains already on UUID ids and others
+still on `Long` mid-migration — check the specific repo/DTO/endpoint before assuming either type.
