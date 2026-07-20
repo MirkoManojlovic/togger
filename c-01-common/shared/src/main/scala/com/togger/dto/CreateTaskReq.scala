@@ -56,13 +56,13 @@ case class FindTaskRespFull(
 )
 
 case class CreateLinkReq(name: String, url: String)
-case class UpdateLinkReq(id: Long, name: String, url: String)
+case class UpdateLinkReq(id: UUID, name: String, url: String)
 
 case class CreateTaskAndLinksReq(task: CreateTaskReq, links: Seq[CreateLinkReq])
 
 case class UpdateTaskReq(task: UpdateTaskReq1, linksForUpdate: Seq[UpdateLinkReq], linksToCreate: Seq[CreateLinkReq])
 
-case class FindLinkResp(id: Long, name: String, url: String)
+case class FindLinkResp(id: UUID, name: String, url: String)
 case class FindTaskResp(task: FindTaskResp1, links: Seq[FindLinkResp], logEntries: Seq[LogEntryDto])
 
 case class LogEntryDto(

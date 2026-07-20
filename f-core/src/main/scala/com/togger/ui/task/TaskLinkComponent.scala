@@ -8,8 +8,10 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 
+import java.util.UUID
+
 case class TaskLinkFormData(
-  id: Option[Long] = None,
+  id: Option[UUID] = None,
   name: String = "",
   url: String = ""
 )

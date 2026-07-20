@@ -16,6 +16,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
+import java.util.UUID
 
 class TaskServiceTest
     extends AsyncWordSpec
@@ -58,7 +59,7 @@ class TaskServiceTest
 
   val links = List(
     Link(
-      id = 1L,
+      id = UUID.randomUUID(),
       taskId = task.id,
       url = "http://example.com/1",
       name = "link 1",
@@ -66,7 +67,7 @@ class TaskServiceTest
       updatedAt = nowAsInstant
     ),
     Link(
-      id = 2L,
+      id = UUID.randomUUID(),
       taskId = task.id,
       url = "http://example.com/2",
       name = "link 2",

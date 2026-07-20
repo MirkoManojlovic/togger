@@ -7,6 +7,8 @@ import com.togger.organization.{TgProject, TgTaskStatus}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.util.UUID
+
 class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val taskRepo = new TaskRepoImpl
@@ -25,7 +27,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
   )
 
   val link = Link(
-    id = -1L,
+    id = UUID.randomUUID(),
     name = "link name",
     url = "example url",
     taskId = -1L,
@@ -70,7 +72,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     "insert many links" in { transactor =>
       def createLinks(taskId: Long) = (0 to 10).map(index =>
         Link(
-          id = -1,
+          id = UUID.randomUUID(),
           name = s"Link $index",
           url = s"url-$index",
           taskId = taskId,
@@ -128,7 +130,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
 
     def createLinks(taskId: Long) = (0 to 10).map(index =>
       Link(
-        id = -1,
+        id = UUID.randomUUID(),
         name = s"Link $index",
         url = s"url-$index",
         taskId = taskId,

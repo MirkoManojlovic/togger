@@ -5,6 +5,8 @@ import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.dto._
 import com.togger.task._
 
+import java.util.UUID
+
 class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgClock: TgClock) {
 
   import taskEndpoints._
@@ -129,7 +131,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     val linksForDb =
       linksDto.map(dto =>
         Link(
-          id = -1,
+          id = UUID.randomUUID(),
           name = dto.name,
           url = dto.url,
           taskId = -1,
@@ -193,7 +195,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     val linksToCreateDb =
       linksToCreate.map(dto =>
         Link(
-          id = -1,
+          id = UUID.randomUUID(),
           name = dto.name,
           url = dto.url,
           taskId = taskDto.id,

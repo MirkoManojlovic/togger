@@ -10,6 +10,7 @@ import doobie.util.update.Update
 import doobie.{ConnectionIO, Fragment}
 
 import java.time.Instant
+import java.util.UUID
 
 class LinkRepoImpl extends LinkRepo with TgLogging {
 
@@ -47,8 +48,8 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )
   }
 
-  override def findById(id: Long): ConnectionIO[Link] = {
-    logAroundInfoQuery(findByIdStatement(LINK_TABLE_FRAG)(id).query[Link].unique)(
+  override def findById(id: UUID): ConnectionIO[Link] = {
+    logAroundInfoQuery(findByIdStatementUUID(LINK_TABLE_FRAG)(id).query[Link].unique)(
       s"Finding link with ${sp(id)}",
       link => s"Link found ${sp(link)}"
     )
@@ -72,8 +73,8 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )
   }
 
-  override def deleteById(id: Long): ConnectionIO[Int] = {
-    logAroundInfoQuery(deleteByIdStatement(LINK_TABLE_FRAG)(id).update.run)(
+  override def deleteById(id: UUID): ConnectionIO[Int] = {
+    logAroundInfoQuery(deleteByIdStatementUUID(LINK_TABLE_FRAG)(id).update.run)(
       s"Deleting link with ${sp(id)}",
       link => s"Link deleted ${sp(link)}"
     )
@@ -81,7 +82,7 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
 
   override def update(link: Link, updatedAt: Instant): ConnectionIO[Link] =
     logAroundInfoQuery(
-      updateStatement(LINK_TABLE_FRAG)(link.id)(fr"""
+      updateStatementUUID(LINK_TABLE_FRAG)(link.id)(fr"""
             name = ${link.name}, 
             url = ${link.url},
             task_id = ${link.taskId},

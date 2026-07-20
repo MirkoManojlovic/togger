@@ -3,14 +3,15 @@ package com.togger.task
 import doobie.ConnectionIO
 
 import java.time._
+import java.util.UUID
 
 trait LinkRepo {
 
   def insert(link: Link): ConnectionIO[Link]
 
-  def findById(id: Long): ConnectionIO[Link]
+  def findById(id: UUID): ConnectionIO[Link]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(link: Link, updatedAt: Instant): ConnectionIO[Link]
 

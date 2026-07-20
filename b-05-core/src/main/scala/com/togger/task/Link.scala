@@ -1,9 +1,10 @@
 package com.togger.task
 
 import java.time.Instant
+import java.util.UUID
 
 case class Link(
-  id: Long,
+  id: UUID,
   name: String,
   url: String,
   taskId: Long,
