@@ -50,7 +50,7 @@ class TaskServiceTest
     name = "Test Task",
     description = "A task for testing",
     assignedTo = None,
-    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
+    createdBy = TgIds.UNASSIGNED_UUID,
     taskStatusId = UUID.randomUUID(),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

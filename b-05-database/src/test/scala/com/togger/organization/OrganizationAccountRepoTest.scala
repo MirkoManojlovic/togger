@@ -81,12 +81,12 @@ class OrganizationAccountRepoTest extends BusinessTgDbSpec with TgAccount with T
 
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(
-      id = TgIds.UNASSIGNED_ACCOUNT_ID,
+      id = TgIds.UNASSIGNED_UUID,
       firstName = firstName,
       lastName = lastName,
       email = email,
       password = passwordHashed,
-      accountTypeId = TgIds.UNASSIGNED_ACCOUNT_ID,
+      accountTypeId = TgIds.UNASSIGNED_UUID,
       verified = true,
       enabled = true,
       createdAt = nowAsInstant,

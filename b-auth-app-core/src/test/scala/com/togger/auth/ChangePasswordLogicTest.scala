@@ -27,7 +27,7 @@ class ChangePasswordLogicTest
   val passwordUpdate = mock[PasswordUpdate]
   val tgClock = mock[TgClock]
 
-  val account = createAccount(TgIds.UNASSIGNED_ACCOUNT_ID)
+  val account = createAccount(TgIds.UNASSIGNED_UUID)
 
   val changePasswordLogic = new ChangePasswordLogic(
     accountRepo = accountRepo,

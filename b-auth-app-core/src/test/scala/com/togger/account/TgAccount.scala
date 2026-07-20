@@ -22,7 +22,7 @@ trait TgAccount extends TgTestDbDrops { self: TimeHelpers =>
       .map(accountName =>
         accountTypeRepo.insert(
           AccountType(
-            id = TgIds.UNASSIGNED_ACCOUNT_ID,
+            id = TgIds.UNASSIGNED_UUID,
             name = accountName,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
@@ -33,7 +33,7 @@ trait TgAccount extends TgTestDbDrops { self: TimeHelpers =>
       .sequence
 
   def createAccount(accountTypeId: UUID) = Account(
-    id = TgIds.UNASSIGNED_ACCOUNT_ID,
+    id = TgIds.UNASSIGNED_UUID,
     firstName = "John",
     lastName = "Doe",
     email = email,

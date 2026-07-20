@@ -1,6 +1,7 @@
 package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, TgIds}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -14,7 +15,6 @@ import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
@@ -26,7 +26,7 @@ case class EditTaskForm(
   projectId: Long,
   name: String = "",
   description: String = "",
-  createBy: UUID = TgIds.UNASSIGNED_ACCOUNT_ID,
+  createBy: UUID = TgIds.UNASSIGNED_UUID,
   assignedTo: Option[UUID] = None,
   taskStatusSelected: String = ""
 )

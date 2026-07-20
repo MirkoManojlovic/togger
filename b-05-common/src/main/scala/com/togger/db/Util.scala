@@ -14,7 +14,7 @@ import scribe.mdc.MDC
 
 object Util extends TgLogging {
 
-  val UNASSIGNED_ACCOUNT_ID: UUID = TgIds.UNASSIGNED_ACCOUNT_ID
+  val UNASSIGNED_ACCOUNT_ID: UUID = TgIds.UNASSIGNED_UUID
 
   def whereId(id: Long): Fragment =
     fr"where id = $id"

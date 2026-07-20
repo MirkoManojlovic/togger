@@ -186,11 +186,11 @@ class ShowAllProjectsStatusComponent(
 
   private def createTaskCard(dto: ProjectInfo) = {
     val unassignedDto = SearchAccountDto(
-      id = TgIds.UNASSIGNED_ACCOUNT_ID,
+      id = TgIds.UNASSIGNED_UUID,
       firstName = "Not",
       lastName = "assigned",
       email = "notassinged@email.com",
-      accountTypeId = TgIds.UNASSIGNED_ACCOUNT_ID
+      accountTypeId = TgIds.UNASSIGNED_UUID
     )
     val groupedTasksByAssignee = dto.tasks.groupBy(_.assignedTo.getOrElse(unassignedDto))
 

@@ -47,7 +47,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
       .map(accountTypeName =>
         accountTypeRepo.insert(
           AccountType(
-            id = TgIds.UNASSIGNED_ACCOUNT_ID,
+            id = TgIds.UNASSIGNED_UUID,
             name = accountTypeName,
             createdAt = now,
             updatedAt = now
@@ -59,7 +59,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
 
   private def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID): Account =
     Account(
-      id = TgIds.UNASSIGNED_ACCOUNT_ID,
+      id = TgIds.UNASSIGNED_UUID,
       firstName = firstName,
       lastName = lastName,
       email = email,

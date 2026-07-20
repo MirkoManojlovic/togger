@@ -10,7 +10,7 @@ trait TgAccount { self: TimeHelpers =>
   val password = "A!good_1_password_is_good"
 
   val accountType = AccountType(
-    id = TgIds.UNASSIGNED_ACCOUNT_ID,
+    id = TgIds.UNASSIGNED_UUID,
     name = "Developer",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

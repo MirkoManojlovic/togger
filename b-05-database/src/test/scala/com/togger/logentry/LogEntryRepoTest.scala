@@ -21,7 +21,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     description = "Task description",
     assignedTo = None,
     taskStatusId = UUID.randomUUID(),
-    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
+    createdBy = TgIds.UNASSIGNED_UUID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -32,7 +32,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     textExternal = "Test External",
     status = LogEntryStatus.InProgress,
     taskId = -1,
-    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
+    createdBy = TgIds.UNASSIGNED_UUID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

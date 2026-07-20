@@ -21,7 +21,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     description = "Task description",
     assignedTo = None,
     taskStatusId = UUID.randomUUID(),
-    createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
+    createdBy = TgIds.UNASSIGNED_UUID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

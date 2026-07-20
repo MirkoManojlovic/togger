@@ -18,6 +18,7 @@ import org.http4s.implicits.http4sLiteralsSyntax
 import org.http4s.{EntityDecoder, Method, Request}
 
 import java.time.ZoneOffset
+import java.util.UUID
 
 class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelpers with DateHelpers {
 
@@ -173,8 +174,8 @@ class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelper
 
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
-          id = index,
-          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+          id = UUID.randomUUID(),
+          accountId = TgIds.UNASSIGNED_UUID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),

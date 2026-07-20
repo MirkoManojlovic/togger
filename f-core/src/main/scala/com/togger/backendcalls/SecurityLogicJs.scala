@@ -10,7 +10,7 @@ class SecurityLogicJs extends SecurityLogic with TgLogging {
   override def securityLogic(token: String): IO[Either[TgJsonFailure, TgJsonSuccess[AuthAccount]]] =
     TgJsonSuccess.justBodyRightIO(
       AuthAccount(
-        id = TgIds.UNASSIGNED_ACCOUNT_ID,
+        id = TgIds.UNASSIGNED_UUID,
         firstName = "n/a",
         lastName = "n/a",
         email = "n/a",

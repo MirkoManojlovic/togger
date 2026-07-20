@@ -78,7 +78,7 @@ class ChangePasswordComponent(
   )
 
   private val submitter = Observer[ChangePasswordFormState] { state =>
-    val id = accountService.get.map(_.id).getOrElse(TgIds.UNASSIGNED_ACCOUNT_ID)
+    val id = accountService.get.map(_.id).getOrElse(TgIds.UNASSIGNED_UUID)
     val dto = state.into[ChangePasswordDto].withFieldComputed(_.accountId, _ => id).transform
     spinnerService
       .runWithSpinner(changePasswordService.change(dto))
