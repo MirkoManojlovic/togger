@@ -6,11 +6,11 @@ import java.time.Instant
 import java.util.UUID
 
 trait OrganizationRepo {
-  def findById(id: Long): ConnectionIO[Organization]
+  def findById(id: UUID): ConnectionIO[Organization]
 
   def insert(organization: Organization): ConnectionIO[Organization]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(organization: Organization, updatedAt: Instant): ConnectionIO[Organization]
 

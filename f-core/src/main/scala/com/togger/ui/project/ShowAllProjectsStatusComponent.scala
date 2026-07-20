@@ -36,7 +36,7 @@ class ShowAllProjectsStatusComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgDateFormater: TgDateFormater,
-  organizationId: Long
+  organizationId: UUID
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -44,7 +44,7 @@ class ShowAllProjectsStatusComponent(
   val stateFormVar = Var(ShowAllProjectsState())
   private val organizationVar: Var[FindOrganizationResp] = Var(
     FindOrganizationResp(
-      id = -1,
+      id = UUID.randomUUID(),
       name = "",
       description = "",
       members = Seq.empty

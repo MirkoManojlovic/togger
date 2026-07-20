@@ -28,9 +28,9 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[CreateOrganizationReq])
       .out(jsonBody[TgJsonSuccess[FindOrganizationResp]])
 
-  val findByIdEndpoint: TgSecuredEndpoint[Long, FindOrganizationResp] =
+  val findByIdEndpoint: TgSecuredEndpoint[UUID, FindOrganizationResp] =
     securedEndpoint.endpoint.get
-      .in(basePath / path[Long]("id"))
+      .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[FindOrganizationResp]])
 //      .tag(topic)
 //      .name(createName(findById))
@@ -43,9 +43,9 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateOrganizationReq])
       .out(jsonBody[TgJsonSuccess[FindOrganizationResp]])
 
-  val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[Long] =
+  val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
-      .in(basePath / path[Long]("id"))
+      .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
   //      .tag(topic)
   //      .name(createName(findById))
@@ -66,9 +66,9 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val findAllMembersEndpoint: TgSecuredEndpoint[Long, Seq[SearchAccountDto]] =
+  val findAllMembersEndpoint: TgSecuredEndpoint[UUID, Seq[SearchAccountDto]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "members" / path[Long]("organization-id"))
+      .in(basePath / "members" / path[UUID]("organization-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
 
   val findOrgAndProjectsByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindOrganizationsAndProjects]] =

@@ -17,11 +17,13 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
+
 case class EditProjectForm(
   projectId: Long = -1L,
   name: String = "",
   description: String = "",
-  organizationId: Long = -1L
+  organizationId: UUID = UUID.randomUUID()
 )
 
 class EditProjectComponent(

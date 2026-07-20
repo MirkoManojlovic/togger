@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 case class Organization(
-  id: Long,
+  id: UUID,
   name: String,
   description: String,
   createdAt: Instant,
@@ -12,7 +12,7 @@ case class Organization(
 )
 
 case class OrganizationAccount(
-  organizationId: Long,
+  organizationId: UUID,
   accountId: UUID,
   createdAt: Instant
 )

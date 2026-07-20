@@ -14,7 +14,7 @@ trait ProjectRepo {
 
   def update(project: Project, updatedAt: Instant): ConnectionIO[Project]
 
-  def findByOrganizationIdAndAccountId(organizationId: Long, accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]]
+  def findByOrganizationIdAndAccountId(organizationId: UUID, accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]]
 
   def findAllProjectsByAccountId(accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]]
 

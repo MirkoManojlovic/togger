@@ -3,6 +3,8 @@ package com.togger.routes
 import com.togger.routes.Pages._
 import com.raquo.waypoint._
 
+import java.util.UUID
+
 class TgRoutes {
 
   def routes(basePath: String): Seq[Route[_ <: FrontendPage, _ <: Any]] =
@@ -59,21 +61,21 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
-        encode = (page: CreateProjectPage) => page.organizationId,
-        decode = (organizationId: Long) => CreateProjectPage(organizationId),
-        pattern = root / "create-project" / segment[Long] / endOfSegments
+        encode = (page: CreateProjectPage) => page.organizationId.toString,
+        decode = (organizationId: String) => CreateProjectPage(UUID.fromString(organizationId)),
+        pattern = root / "create-project" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: ShowProjectsForOrganizationIdTable) => page.id,
-        decode = (id: Long) => ShowProjectsForOrganizationIdTable(id),
-        pattern = root / "project" / "table" / "organization" / segment[Long] / endOfSegments
+        encode = (page: ShowProjectsForOrganizationIdTable) => page.id.toString,
+        decode = (id: String) => ShowProjectsForOrganizationIdTable(UUID.fromString(id)),
+        pattern = root / "project" / "table" / "organization" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: ShowProjectsForOrganizationIdStatus) => page.id,
-        decode = (id: Long) => ShowProjectsForOrganizationIdStatus(id),
-        pattern = root / "project" / "status" / "organization" / segment[Long] / endOfSegments
+        encode = (page: ShowProjectsForOrganizationIdStatus) => page.id.toString,
+        decode = (id: String) => ShowProjectsForOrganizationIdStatus(UUID.fromString(id)),
+        pattern = root / "project" / "status" / "organization" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
@@ -93,9 +95,9 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditOrganizationPage) => page.id,
-        decode = (id: Long) => EditOrganizationPage(id),
-        pattern = root / "organization" / segment[Long] / endOfSegments
+        encode = (page: EditOrganizationPage) => page.id.toString,
+        decode = (id: String) => EditOrganizationPage(UUID.fromString(id)),
+        pattern = root / "organization" / segment[String] / endOfSegments
         //        basePath = basePath
       )
     )

@@ -3,7 +3,7 @@ package com.togger.dto
 import java.util.UUID
 
 case class CreateProjectReq(
-  organizationId: Long,
+  organizationId: UUID,
   name: String,
   description: String,
   membersToAdd: Seq[UUID]
@@ -11,7 +11,7 @@ case class CreateProjectReq(
 
 case class FindProjectResp(
   id: Long,
-  organizationId: Long,
+  organizationId: UUID,
   name: String,
   description: String,
   members: Seq[SearchAccountDto]
@@ -19,7 +19,7 @@ case class FindProjectResp(
 
 case class UpdateProjectReq(
   id: Long,
-  organizationId: Long,
+  organizationId: UUID,
   name: String,
   description: String,
   membersToAdd: Seq[UUID],

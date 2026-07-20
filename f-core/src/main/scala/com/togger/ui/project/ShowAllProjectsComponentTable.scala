@@ -14,13 +14,15 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
 
+import java.util.UUID
+
 class ShowAllProjectsTableComponent(
   projectService: ProjectService,
   organizationServiceFe: OrganizationServiceFe,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService,
-  organizationId: Long
+  organizationId: UUID
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -28,7 +30,7 @@ class ShowAllProjectsTableComponent(
   private val stateFormVar = Var(Seq.empty[FindProjectResp])
   private val organizationVar: Var[FindOrganizationResp] = Var(
     FindOrganizationResp(
-      id = -1,
+      id = UUID.randomUUID(),
       name = "",
       description = "",
       members = Seq.empty

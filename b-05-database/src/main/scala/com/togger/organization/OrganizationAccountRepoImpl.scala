@@ -13,7 +13,7 @@ import java.util.UUID
 
 class OrganizationAccountRepoImpl extends OrganizationAccountRepo {
 
-  override def findById(organizationId: Long, accountId: UUID): ConnectionIO[OrganizationAccount] =
+  override def findById(organizationId: UUID, accountId: UUID): ConnectionIO[OrganizationAccount] =
     logAroundInfoQuery(
       (selectAllStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
         fr"where organization_id = $organizationId and account_id = $accountId")
@@ -42,7 +42,7 @@ class OrganizationAccountRepoImpl extends OrganizationAccountRepo {
     )
   }
 
-  override def deleteById(organizationId: Long, accountId: UUID): ConnectionIO[Int] =
+  override def deleteById(organizationId: UUID, accountId: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
       (deleteStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
         fr"where organization_id = $organizationId and account_id = $accountId").update.run
@@ -71,7 +71,7 @@ class OrganizationAccountRepoImpl extends OrganizationAccountRepo {
 //      organization => s"${sp(organization)} updated"
 //    )
 
-  override def findAllMembers(organizationId: Long): ConnectionIO[Seq[Account]] = {
+  override def findAllMembers(organizationId: UUID): ConnectionIO[Seq[Account]] = {
     logAroundInfoQuery(
       (selectAllStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
         innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"organization_account.account_id = account.id") ++

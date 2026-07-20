@@ -116,7 +116,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
               .map(project =>
                 FindProjectResp(
                   id = project.id,
-                  organizationId = project.id,
+                  organizationId = project.organizationId,
                   name = project.name,
                   description = project.description,
                   members = Seq.empty

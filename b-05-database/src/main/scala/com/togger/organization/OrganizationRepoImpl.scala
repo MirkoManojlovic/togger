@@ -14,9 +14,9 @@ import java.util.UUID
 
 class OrganizationRepoImpl extends OrganizationRepo {
 
-  override def findById(id: Long): ConnectionIO[Organization] =
+  override def findById(id: UUID): ConnectionIO[Organization] =
     logAroundInfoQuery(
-      findByIdStatement(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(id).query[Organization].unique
+      findByIdStatementUUID(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(id).query[Organization].unique
     )(
       s"Finding organization with ${sp(id)}",
       organization => s"Organization found ${sp(organization)}"
@@ -42,9 +42,9 @@ class OrganizationRepoImpl extends OrganizationRepo {
     )
   }
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
+  override def deleteById(id: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
-      deleteByIdStatement(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(id).update.run
+      deleteByIdStatementUUID(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(id).update.run
     )(
       s"Deleting organization with ${sp(id)}",
       _ => s"Organization with ${sp(id)} deleted"
@@ -52,7 +52,7 @@ class OrganizationRepoImpl extends OrganizationRepo {
 
   override def update(organization: Organization, updatedAt: Instant): ConnectionIO[Organization] = {
     logAroundInfoQuery(
-      updateStatement(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(organization.id)(fr"""
+      updateStatementUUID(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(organization.id)(fr"""
         name = ${organization.name},
         description = ${organization.description},
         created_at = ${organization.createdAt},

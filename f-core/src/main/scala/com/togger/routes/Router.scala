@@ -2,6 +2,8 @@ package com.togger.routes
 
 import enumeratum._
 
+import java.util.UUID
+
 sealed trait ToggerPermission extends EnumEntry
 
 object ToggerPermission extends Enum[ToggerPermission] {
@@ -56,13 +58,13 @@ object Pages {
 
   case object ShowAllOrganizationsPage extends PrivatePage
 
-  case class EditOrganizationPage(id: Long) extends PrivatePage
+  case class EditOrganizationPage(id: UUID) extends PrivatePage
 
-  case class CreateProjectPage(organizationId: Long) extends PrivatePage
+  case class CreateProjectPage(organizationId: UUID) extends PrivatePage
 
-  case class ShowProjectsForOrganizationIdTable(id: Long) extends PrivatePage
+  case class ShowProjectsForOrganizationIdTable(id: UUID) extends PrivatePage
 
-  case class ShowProjectsForOrganizationIdStatus(id: Long) extends PrivatePage
+  case class ShowProjectsForOrganizationIdStatus(id: UUID) extends PrivatePage
 
   case class EditProjectPage(id: Long) extends PrivatePage
 

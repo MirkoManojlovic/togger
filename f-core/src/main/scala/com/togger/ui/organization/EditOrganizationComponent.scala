@@ -18,14 +18,16 @@ import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
+import java.util.UUID
+
 case class EditOrganizationForm(
-  id: Long = -1L,
+  id: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = ""
 )
 
 class EditOrganizationComponent(
-  organizationId: Long,
+  organizationId: UUID,
   organizationService: OrganizationServiceFe,
   findAccountService: FindAccountService,
   accountService: AccountService,

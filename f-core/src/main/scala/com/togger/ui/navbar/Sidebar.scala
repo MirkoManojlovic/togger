@@ -11,6 +11,8 @@ import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import org.scalajs.dom.HTMLLIElement
 
+import java.util.UUID
+
 case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
@@ -82,7 +84,7 @@ class Sidebar(
     .unsafeRunAndForget()
 
   private val taskMenuLink = SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(-1L)))
-  private val projectMenuLink = SidebarLink("Projects", router.navigateTo(CreateProjectPage(0)))
+  private val projectMenuLink = SidebarLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
   private val organizationMenuLink = SidebarLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
   private val passwordMenuLink = SidebarLink("Change Password", router.navigateTo(ChangePasswordPage))
   private val logoutElement = li(logout.logoutButton.amend(cls(Sidebar.sideBarLinkStyle)))

@@ -32,7 +32,7 @@ trait OrganizationServiceFe {
 
   def findAll(): TgRespIO[Seq[FindOrganizationResp]]
 
-  def findById(id: Long): TgRespIO[FindOrganizationResp]
+  def findById(id: UUID): TgRespIO[FindOrganizationResp]
 
   def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp]
 
@@ -40,7 +40,7 @@ trait OrganizationServiceFe {
 
   def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]]
 
-  def findAllMembers(organizationId: Long): TgRespIO[Seq[SearchAccountDto]]
+  def findAllMembers(organizationId: UUID): TgRespIO[Seq[SearchAccountDto]]
 
 }
 
@@ -57,13 +57,13 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
   override def findByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)(accountId)
 
-  override def findById(id: Long): TgRespIO[FindOrganizationResp] =
+  override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
 
   override def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.updateEndpoint)(dto)
 
-  override def findAllMembers(organizationId: Long): TgRespIO[Seq[SearchAccountDto]] =
+  override def findAllMembers(organizationId: UUID): TgRespIO[Seq[SearchAccountDto]] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)(organizationId)
 
   override def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]] =

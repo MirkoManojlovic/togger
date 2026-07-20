@@ -5,6 +5,8 @@ import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.{FindOrganizationResp, FindOrganizationsAndProjects, OrganizationProjectResp}
 import com.togger.organization._
 
+import java.util.UUID
+
 class OrganizationController(
   organizationEndpoints: OrganizationEndpoints,
   organizationService: OrganizationService,
@@ -41,7 +43,7 @@ class OrganizationController(
     val now = tgClock.currentInstant
 
     val organization = Organization(
-      id = -1,
+      id = UUID.randomUUID(),
       name = dto.name,
       description = dto.description,
       createdAt = now,

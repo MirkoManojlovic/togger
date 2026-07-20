@@ -10,6 +10,8 @@ import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.util.UUID
+
 trait TgTaskStatus { self: TimeHelpers =>
 
   val taskStatusRepo = new TaskStatusRepoImpl
@@ -35,7 +37,7 @@ trait TgProject extends TgOrganization { self: TimeHelpers =>
 
   lazy val project = Project(
     id = -1L,
-    organizationId = -1L,
+    organizationId = UUID.randomUUID(),
     name = "Project name",
     description = "Project description",
     createdAt = nowAsInstant,
@@ -56,7 +58,7 @@ trait TgOrganization { self: TimeHelpers =>
   lazy val organizationRepo = new OrganizationRepoImpl
 
   val organization = Organization(
-    id = -1L,
+    id = UUID.randomUUID(),
     name = "Organization name",
     description = "Organization description",
     createdAt = nowAsInstant,
@@ -76,7 +78,7 @@ class OrganizationRepoTest extends BusinessTgDbSpec with TgAccount with TimeHelp
   val organizationAccountRepo = new OrganizationAccountRepoImpl
 
   val organization = Organization(
-    id = -1L,
+    id = UUID.randomUUID(),
     name = "Organization name",
     description = "Organization description",
     createdAt = nowAsInstant,

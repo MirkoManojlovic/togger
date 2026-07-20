@@ -22,7 +22,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import java.util.UUID
 
 case class CreateProjectForm(
-  organizationId: Long = -1L,
+  organizationId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
   members: Seq[UUID] = Seq.empty
@@ -33,7 +33,7 @@ trait ProjectService {
 
   def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp]
 
-  def findByOrganizationId(organizationId: Long): TgRespIO[Seq[FindProjectResp]]
+  def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]]
 
   def findById(id: Long): TgRespIO[FindProjectResp]
 
@@ -48,7 +48,7 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
   override def createProject(dto: CreateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.saveEndpoint)(dto)
 
-  override def findByOrganizationId(organizationId: Long): TgRespIO[Seq[FindProjectResp]] =
+  override def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(organizationId)
 
   override def findById(id: Long): TgRespIO[FindProjectResp] =
@@ -68,7 +68,7 @@ class CreateProjectComponent(
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   spinnerService: SpinnerService,
-  organizationId: Long,
+  organizationId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {

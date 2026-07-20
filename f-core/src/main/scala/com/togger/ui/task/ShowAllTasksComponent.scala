@@ -13,6 +13,8 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
 
+import java.util.UUID
+
 class ShowAllTasksComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
@@ -31,7 +33,7 @@ class ShowAllTasksComponent(
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = -1,
-      organizationId = -1,
+      organizationId = UUID.randomUUID(),
       name = "",
       description = "",
       members = Seq.empty

@@ -4,7 +4,7 @@ import java.util.UUID
 
 case class Project(
   id: Long,
-  organizationId: Long,
+  organizationId: UUID,
   name: String,
   description: String,
   createdAt: Instant,

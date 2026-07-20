@@ -94,7 +94,7 @@ class ProjectService(
     }).transact(transactor)
   }
 
-  def findAllByOrganizationIdAndAccountId(organizationId: Long, accountId: UUID): IO[Seq[Project]] = {
+  def findAllByOrganizationIdAndAccountId(organizationId: UUID, accountId: UUID): IO[Seq[Project]] = {
     projectRepo
       .findByOrganizationIdAndAccountId(organizationId, accountId)
       .transact(transactor)

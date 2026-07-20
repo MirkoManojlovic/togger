@@ -71,7 +71,7 @@ class ShowAllOrganizationsComponent(
                     ),
                     tbody(
                       dtos
-                        .sortBy(_.id)
+                        .sortBy(_.id.toString)
                         .zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
@@ -82,7 +82,7 @@ class ShowAllOrganizationsComponent(
 
                           tr(
                             cls(rowCls),
-                            createTd(dto.id),
+                            createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.description),
                             createTd(

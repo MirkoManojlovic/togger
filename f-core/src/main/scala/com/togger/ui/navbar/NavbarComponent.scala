@@ -6,6 +6,8 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.icons.TgSvgIcons
 import org.scalajs.dom.HTMLLIElement
 
+import java.util.UUID
+
 case class MenuLink(
   linkName: String,
   link: Binder[HtmlElement],
@@ -31,7 +33,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
   private val mobileNavShow: Var[Boolean] = Var(false)
 
   private val taskMenuLink = MenuLink("Tasks", router.navigateTo(ShowAllTasksPage(-1L)))
-  private val projectMenuLink = MenuLink("Projects", router.navigateTo(CreateProjectPage(0)))
+  private val projectMenuLink = MenuLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
   private val passwordMenuLink = MenuLink("Change Password", router.navigateTo(ChangePasswordPage))
   private val logoutElement = li(logout.logoutButton.amend(cls(NavbarComponent.navLinkClass)))

@@ -150,7 +150,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   toast
                 ).element
-              case CreateProjectPage(organizationId: Long) =>
+              case CreateProjectPage(organizationId) =>
                 new CreateProjectComponent(
                   findAccountServiceImpl,
                   projectService,

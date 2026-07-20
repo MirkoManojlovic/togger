@@ -73,11 +73,11 @@ class OrganizationService(
       .sequence
   }
 
-  private def findMembersLocal(organizationId: Long): ConnectionIO[Seq[Account]] = {
+  private def findMembersLocal(organizationId: UUID): ConnectionIO[Seq[Account]] = {
     organizationAccountRepo.findAllMembers(organizationId)
   }
 
-  def findBy(id: Long): IO[(Organization, Seq[Account])] = {
+  def findBy(id: UUID): IO[(Organization, Seq[Account])] = {
     (for {
       organization <- organizationRepo.findById(id)
       members <- organizationAccountRepo.findAllMembers(id)
@@ -102,7 +102,7 @@ class OrganizationService(
     }).transact(transactor)
   }
 
-  def deleteById(id: Long): IO[Int] = {
+  def deleteById(id: UUID): IO[Int] = {
     organizationRepo.deleteById(id).transact(transactor)
   }
 
@@ -113,7 +113,7 @@ class OrganizationService(
   def findAllOrgByAccountId(accountId: UUID): IO[Seq[Organization]] =
     organizationRepo.findAllOrgByAccountId(accountId).map(_.map(_._1)).transact(transactor)
 
-  def findAllMembers(organizationId: Long): IO[Seq[Account]] =
+  def findAllMembers(organizationId: UUID): IO[Seq[Account]] =
     organizationAccountRepo.findAllMembers(organizationId).transact(transactor)
 
   def findOrganizationsAndProjectsByAccountId(accountId: UUID): IO[List[(Organization, Seq[Project])]] = {

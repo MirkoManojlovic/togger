@@ -89,7 +89,7 @@ class ProjectRepoImpl extends ProjectRepo {
   }
 
   override def findByOrganizationIdAndAccountId(
-    organizationId: Long,
+    organizationId: UUID,
     accountId: UUID
   ): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
     logAroundInfoQuery(
