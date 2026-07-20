@@ -12,8 +12,10 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
 
+import java.util.UUID
+
 case class TaskStatusFormState(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String
@@ -105,7 +107,7 @@ class ShowAllTaskStatusesComponent(
                           tr(
                             cls(rowCls),
                             //                textAlign.center,
-                            createTd(dto.id),
+                            createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.description),
                             createTd(

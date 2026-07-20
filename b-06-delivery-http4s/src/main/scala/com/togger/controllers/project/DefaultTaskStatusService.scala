@@ -3,6 +3,8 @@ package com.togger.controllers.project
 import com.togger.common.TgClock
 import com.togger.task.TaskStatus
 
+import java.util.UUID
+
 class DefaultTaskStatusService(tgClock: TgClock) {
 
   def createDefaultTaskStatuses(projectId: Long): Seq[TaskStatus] = {
@@ -18,7 +20,7 @@ class DefaultTaskStatusService(tgClock: TgClock) {
       ("🗑️ Won't do", "This has been completed")
     ).map { case (name, description) =>
       TaskStatus(
-        id = -1,
+        id = UUID.randomUUID(),
         projectId = projectId,
         name = name,
         description = description,

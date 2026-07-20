@@ -13,7 +13,7 @@ case class Task(
   assignedTo: Option[UUID],
   createdBy: UUID,
   closedBy: Option[UUID] = None,
-  taskStatusId: Long,
+  taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 ) {
@@ -65,7 +65,7 @@ case class TaskFull(
 }
 
 case class TaskStatus(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,

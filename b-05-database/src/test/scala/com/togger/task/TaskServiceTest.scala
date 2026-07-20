@@ -42,7 +42,6 @@ class TaskServiceTest
     override def currentDate(zoneOffset: ZoneOffset): LocalDate = ???
   }
 
-
   val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, tgClock, transactorMock)
 
   val task = Task(
@@ -52,7 +51,7 @@ class TaskServiceTest
     description = "A task for testing",
     assignedTo = None,
     createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
-    taskStatusId = -1L,
+    taskStatusId = UUID.randomUUID(),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

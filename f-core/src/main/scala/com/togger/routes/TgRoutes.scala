@@ -1,7 +1,7 @@
 package com.togger.routes
 
-import com.togger.routes.Pages._
 import com.raquo.waypoint._
+import com.togger.routes.Pages._
 
 import java.util.UUID
 
@@ -35,11 +35,13 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditTaskStatusPage) => page.projectId -> page.taskStatusId,
-//        decode = { case (projectId: Long, taskStatusId: Long) => EditTaskStatusPage(projectId, taskStatusId) },
-        decode = { (a: (Long, Long)) => EditTaskStatusPage(a._1, a._2) },
-        pattern =
-          root / "edit-task-status" / "project-id" / segment[Long] / "task-status-id" / segment[Long] / endOfSegments
+        encode = (page: EditTaskStatusPage) => page.projectId -> page.taskStatusId.toString,
+        decode = { (projectIdAndTaskStatusId: (Long, String)) =>
+          EditTaskStatusPage(projectIdAndTaskStatusId._1, UUID.fromString(projectIdAndTaskStatusId._2))
+        },
+        pattern = root / "edit-task-status" / "project-id" / segment[Long] / "task-status-id" / segment[
+          String
+        ] / endOfSegments
         //        basePath = basePath
       ),
       Route(

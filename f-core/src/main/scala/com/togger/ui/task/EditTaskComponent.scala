@@ -124,7 +124,7 @@ class EditTaskComponent(
         description = form.description,
         assignedTo = form.assignedTo,
         createdBy = form.createBy,
-        taskStatusId = form.taskStatusSelected.toLong,
+        taskStatusId = UUID.fromString(form.taskStatusSelected),
         createdAt = now,
         updatedAt = now
       ),

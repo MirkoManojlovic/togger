@@ -22,6 +22,8 @@ import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
 
+import java.util.UUID
+
 class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   // FIXME
@@ -117,7 +119,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId
                 ).element
-              case EditTaskStatusPage(projectId: Long, taskStatusId: Long) =>
+              case EditTaskStatusPage(projectId: Long, taskStatusId: UUID) =>
                 new EditTaskStatusComponent(
                   taskStatusService,
                   spinnerService,

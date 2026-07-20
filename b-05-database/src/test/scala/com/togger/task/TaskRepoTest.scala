@@ -7,6 +7,8 @@ import com.togger.organization.{TgProject, TgTaskStatus}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.util.UUID
+
 class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val taskRepo = new TaskRepoImpl
@@ -17,7 +19,7 @@ class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     name = "Task name",
     description = "Task description",
     assignedTo = None,
-    taskStatusId = -1L,
+    taskStatusId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

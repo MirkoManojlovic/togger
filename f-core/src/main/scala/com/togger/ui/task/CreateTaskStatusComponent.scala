@@ -18,6 +18,8 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
+
 case class CreateTaskStatusForm(
   projectId: Long = -1L,
   name: String = "",
@@ -96,9 +98,9 @@ class TaskStatusFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
   def findByProjectId(projectId: Long): TgRespIO[Seq[FindTaskStatusResp]] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)(projectId)
 
-  def findTaskStatusById(id: Long): TgRespIO[FindTaskStatusResp] =
+  def findTaskStatusById(id: UUID): TgRespIO[FindTaskStatusResp] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByIdEndpoint)(id)
 
-  def deleteTaskStatusById(id: Long): TgRespIO[TgEmptyBody] =
+  def deleteTaskStatusById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.deleteByIdEndpoint)(id)
 }

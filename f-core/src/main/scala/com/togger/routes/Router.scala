@@ -46,7 +46,7 @@ object Pages {
 
   case class CreateTaskStatusPage(projectId: Long) extends PrivatePage
 
-  case class EditTaskStatusPage(projectId: Long, taskStatusId: Long) extends PrivatePage
+  case class EditTaskStatusPage(projectId: Long, taskStatusId: UUID) extends PrivatePage
 
   case class ShowAllTasksPage(projectId: Long) extends PrivatePage
 

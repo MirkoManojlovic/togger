@@ -17,7 +17,7 @@ trait TgTaskStatus { self: TimeHelpers =>
   val taskStatusRepo = new TaskStatusRepoImpl
 
   val taskStatus = TaskStatus(
-    id = -1L,
+    id = UUID.randomUUID(),
     projectId = -1L,
     name = "In progress",
     description = "Task in progress",

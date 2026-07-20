@@ -11,7 +11,7 @@ case class CreateTaskReq(
   description: String,
   assignedTo: Option[UUID],
   createdBy: UUID,
-  taskStatusId: Long,
+  taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )
@@ -23,7 +23,7 @@ case class UpdateTaskReq1(
   description: String,
   assignedTo: Option[UUID],
   createdBy: UUID,
-  taskStatusId: Long,
+  taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )
@@ -35,7 +35,7 @@ case class FindTaskResp1(
   description: String,
   assignedTo: Option[UUID],
   createdBy: UUID,
-  taskStatusId: Long,
+  taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )
@@ -77,6 +77,6 @@ case class LogEntryDto(
 )
 
 case class CreateTaskStatusReq(projectId: Long, name: String, description: String)
-case class CreateTaskStatusResp(id: Long, projectId: Long, name: String, description: String)
-case class FindTaskStatusResp(id: Long, projectId: Long, name: String, description: String)
-case class UpdateTaskStatusResp(id: Long, projectId: Long, name: String, description: String)
+case class CreateTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)
+case class FindTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)
+case class UpdateTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)

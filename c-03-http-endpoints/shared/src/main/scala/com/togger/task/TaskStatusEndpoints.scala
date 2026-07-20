@@ -11,6 +11,8 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe.jsonBody
 
+import java.util.UUID
+
 class TaskStatusEndpoints(securedEndpoint: SecuredEndpoint) {
 
   private val basePath: EndpointInput[Unit] = "task-status"
@@ -21,9 +23,9 @@ class TaskStatusEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[CreateTaskStatusReq])
       .out(jsonBody[TgJsonSuccess[CreateTaskStatusResp]])
 
-  val findByIdEndpoint: TgSecuredEndpoint[Long, FindTaskStatusResp] =
+  val findByIdEndpoint: TgSecuredEndpoint[UUID, FindTaskStatusResp] =
     securedEndpoint.endpoint.get
-      .in(basePath / path[Long]("id"))
+      .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[FindTaskStatusResp]])
 //      .tag(topic)
 //      .name(createName(findById))
@@ -45,9 +47,9 @@ class TaskStatusEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[Long] =
+  val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
-      .in(basePath / path[Long]("id"))
+      .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
   //      .tag(topic)
   //      .name(createName(findById))

@@ -11,6 +11,7 @@ import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
 import java.time._
+import java.util.UUID
 
 class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
 
@@ -35,21 +36,21 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
     )
   }
 
-  override def findById(id: Long): ConnectionIO[TaskStatus] =
-    logAroundInfoQuery(findByIdStatement(TASK_STATUS_TABLE_FRAG)(id).query[TaskStatus].unique)(
+  override def findById(id: UUID): ConnectionIO[TaskStatus] =
+    logAroundInfoQuery(findByIdStatementUUID(TASK_STATUS_TABLE_FRAG)(id).query[TaskStatus].unique)(
       s"Finding taskStatus with ${sp(id)}",
       taskStatus => s"TaskStatus found ${sp(taskStatus)}"
     )
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(deleteByIdStatement(TASK_STATUS_TABLE_FRAG)(id).update.run)(
+  override def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(deleteByIdStatementUUID(TASK_STATUS_TABLE_FRAG)(id).update.run)(
       s"Deleting taskStatus with ${sp(id)}",
       _ => s"TaskStatus with ${sp(id)} deleted"
     )
 
   def update(taskStatus: TaskStatus, updatedAt: Instant): ConnectionIO[TaskStatus] = {
     logAroundInfoQuery(
-      updateStatement(TASK_STATUS_TABLE_FRAG)(taskStatus.id)(fr"""
+      updateStatementUUID(TASK_STATUS_TABLE_FRAG)(taskStatus.id)(fr"""
            name = ${taskStatus.name},
            description = ${taskStatus.description},
            project_id = ${taskStatus.projectId},
@@ -70,7 +71,9 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
   }
 
   override def findByProjectId(projectId: Long): ConnectionIO[List[TaskStatus]] =
-    logAroundInfoQuery((selectAllStatement(TASK_STATUS_TABLE_FRAG) ++ fr" where project_id= $projectId").query[TaskStatus].to[List])(
+    logAroundInfoQuery(
+      (selectAllStatement(TASK_STATUS_TABLE_FRAG) ++ fr" where project_id= $projectId").query[TaskStatus].to[List]
+    )(
       s"Finding all tasks by ${sp(projectId)} statuses",
       tasks => s"Task statuses found ${sp(tasks)} for "
     )

@@ -7,6 +7,8 @@ import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
 import doobie.implicits._
 
+import java.util.UUID
+
 class TaskStatusService(
   taskStatusRepo: TaskStatusRepo,
   tgClock: TgClock,
@@ -27,7 +29,7 @@ class TaskStatusService(
     taskStatusRepo.findByProjectId(projectId).transact(transactor)
   }
 
-  def findById(id: Long) =
+  def findById(id: UUID) =
     (for {
       taskStatus <- taskStatusRepo.findById(id)
     } yield taskStatus).transact(transactor)
@@ -43,7 +45,7 @@ class TaskStatusService(
     }).transact(transactor)
   }
 
-  def deleteById(id: Long) = {
+  def deleteById(id: UUID) = {
     taskStatusRepo.deleteById(id).transact(transactor)
   }
 }

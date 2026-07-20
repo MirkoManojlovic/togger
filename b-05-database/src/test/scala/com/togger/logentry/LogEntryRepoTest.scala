@@ -20,7 +20,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     name = "Task name",
     description = "Task description",
     assignedTo = None,
-    taskStatusId = -1L,
+    taskStatusId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_ACCOUNT_ID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

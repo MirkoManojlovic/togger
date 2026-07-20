@@ -27,11 +27,11 @@ trait TaskRepo {
 
 trait TaskStatusRepo {
 
-  def findById(id: Long): ConnectionIO[TaskStatus]
+  def findById(id: UUID): ConnectionIO[TaskStatus]
 
   def insert(task: TaskStatus): ConnectionIO[TaskStatus]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(task: TaskStatus, updatedAt: Instant): ConnectionIO[TaskStatus]
 

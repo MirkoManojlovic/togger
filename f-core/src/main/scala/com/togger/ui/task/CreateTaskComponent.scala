@@ -20,6 +20,7 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
 import scala.collection.immutable.ListMap
 
 case class CreateTaskForm(
@@ -34,12 +35,12 @@ case class TaskStatusesState(
   lazy val asTaskStatusSelect =
     taskStatuses.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
 
-  lazy val idToName: Map[Long, String] =
+  lazy val idToName: Map[UUID, String] =
     taskStatuses.map(dto => dto.id -> dto.name).toMap
 
 }
 
-case class TaskStatusSelect(id: Long, name: String) {
+case class TaskStatusSelect(id: UUID, name: String) {
   lazy val asTuple: (String, String) = id.toString -> name
 }
 
@@ -87,7 +88,7 @@ class CreateTaskComponent(
         description = form.description,
         assignedTo = Some(accountService.get.get.id),
         createdBy = accountService.get.get.id,
-        taskStatusId = form.taskStatusSelected.toLong,
+        taskStatusId = UUID.fromString(form.taskStatusSelected),
         createdAt = now,
         updatedAt = now
       ),

@@ -13,9 +13,11 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.util.UUID
+
 case class EditTaskStatusForm(
   projectId: Long = -1L,
-  taskStatusId: Long = -1L,
+  taskStatusId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = ""
 )
@@ -26,7 +28,7 @@ class EditTaskStatusComponent(
   tgClock: TgClock,
   accountService: AccountService,
   projectId: Long,
-  taskStatusId: Long,
+  taskStatusId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {

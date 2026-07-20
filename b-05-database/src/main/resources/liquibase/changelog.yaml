@@ -174,8 +174,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: bigint
-                  autoIncrement: true
+                  type: uuid
+                  defaultValueComputed: uuidv7()
                   constraints:
                     primaryKey: true
                     nullable: false
@@ -262,7 +262,7 @@ databaseChangeLog:
                     references: account(id)
               - column:
                   name: task_status_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_task_status_task

@@ -9,12 +9,14 @@ import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.util.UUID
+
 class TaskStatusRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
 
   val taskStatusRepo = new TaskStatusRepoImpl
 
   val task = TaskStatus(
-    id = -1L,
+    id = UUID.randomUUID(),
     name = "In progress",
     description = "Doing things",
     projectId = -1L,

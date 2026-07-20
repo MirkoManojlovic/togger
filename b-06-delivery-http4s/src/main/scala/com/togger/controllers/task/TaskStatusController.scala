@@ -4,6 +4,8 @@ import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.dto._
 import com.togger.task._
 
+import java.util.UUID
+
 class TaskStatusController(
   taskStatusService: TaskStatusService,
   taskStatusEndpoints: TaskStatusEndpoints,
@@ -51,7 +53,7 @@ class TaskStatusController(
     val now = tgClock.currentInstant
 
     val task = TaskStatus(
-      id = -1,
+      id = UUID.randomUUID(),
       projectId = dto.projectId,
       name = dto.name,
       description = dto.description,
