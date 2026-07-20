@@ -10,7 +10,7 @@ import doobie.implicits._
 import doobie.{ConnectionIO, Fragment}
 
 case class AccountSession(
-  id: Long,
+  id: UUID,
   accountId: UUID,
   sessionToken: String,
   deviceInfo: String,
@@ -47,35 +47,35 @@ class AccountSessionRepo extends TgLogging {
     )
   }
 
-  def findById(id: Long): ConnectionIO[AccountSession] = {
-    logAroundInfoQuery(findByIdStatement(ACCOUNT_SESSION_TABLE_FRAG)(id).query[AccountSession].unique)(
+  def findById(id: UUID): ConnectionIO[AccountSession] = {
+    logAroundInfoQuery(findByIdStatementUUID(ACCOUNT_SESSION_TABLE_FRAG)(id).query[AccountSession].unique)(
       s"Finding account with [id=$id]",
       accountSession => s"Account session found $accountSession"
     )
   }
 
-  def findByIdNotSoftDeleted(id: Long): ConnectionIO[AccountSession] = {
-    logAroundInfoQuery(findByIdSoftDeletedStatement(ACCOUNT_SESSION_TABLE_FRAG)(id).query[AccountSession].unique)(
+  def findByIdNotSoftDeleted(id: UUID): ConnectionIO[AccountSession] = {
+    logAroundInfoQuery(findByIdSoftDeletedStatementUUID(ACCOUNT_SESSION_TABLE_FRAG)(id).query[AccountSession].unique)(
       s"Finding account with [id=$id] and not soft deleted",
       accountSession => s"Account session found $accountSession"
     )
   }
 
-  def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(deleteByIdStatement(ACCOUNT_SESSION_TABLE_FRAG)(id).update.run)(
+  def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(deleteByIdStatementUUID(ACCOUNT_SESSION_TABLE_FRAG)(id).update.run)(
       s"Deleting accountSession with [id=$id]",
       _ => s"AccountSession with [id=$id] deleted"
     )
 
-  def deleteSoftById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(softDeleteByIdStatement(ACCOUNT_SESSION_TABLE_FRAG)(id).update.run)(
+  def deleteSoftById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(softDeleteByIdStatementUUID(ACCOUNT_SESSION_TABLE_FRAG)(id).update.run)(
       s"Soft deleting accountSession with [id=$id]",
       _ => s"AccountSession with [id=$id] soft deleted"
     )
 
-  def updateSessionToken(id: Long, newSessionToken: String, updatedAt: Instant): ConnectionIO[AccountSession] =
+  def updateSessionToken(id: UUID, newSessionToken: String, updatedAt: Instant): ConnectionIO[AccountSession] =
     logAroundInfoQuery(
-      updateStatement(ACCOUNT_SESSION_TABLE_FRAG)(id)(fr"""
+      updateStatementUUID(ACCOUNT_SESSION_TABLE_FRAG)(id)(fr"""
            session_token = $newSessionToken,
            updated_at = $updatedAt""").update
         .withUniqueGeneratedKeys[AccountSession](

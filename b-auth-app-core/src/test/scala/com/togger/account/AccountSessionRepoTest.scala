@@ -8,6 +8,7 @@ import doobie.postgres.implicits._
 
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateHelpers with TgAccount {
 
@@ -15,8 +16,8 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
   val accountSessionRepo = new AccountSessionRepo
 
   val accountSession = AccountSession(
-    id = -1L,
-    accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+    id = UUID.randomUUID(),
+    accountId = TgIds.UNASSIGNED_UUID,
     sessionToken = "sessionToken1",
     deviceInfo = "some device info",
     createdAt = nowAsInstant,
@@ -91,8 +92,8 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
 
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
-          id = index,
-          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+          id = UUID.randomUUID(),
+          accountId = TgIds.UNASSIGNED_UUID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),
@@ -128,8 +129,8 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
 
       val sessions = dates.zipWithIndex.map { case (dateAsInstant, index) =>
         AccountSession(
-          id = index,
-          accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+          id = UUID.randomUUID(),
+          accountId = TgIds.UNASSIGNED_UUID,
           sessionToken = s"sessionToken-$index",
           deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
           createdAt = dateAsInstant.toInstant(ZoneOffset.UTC),
@@ -156,8 +157,8 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
       val sessions = (1 to 100)
         .map(index =>
           AccountSession(
-            id = index,
-            accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+            id = UUID.randomUUID(),
+            accountId = TgIds.UNASSIGNED_UUID,
             sessionToken = s"sessionToken-$index",
             deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
             createdAt = today.plusDays(index).atTime(at14).toInstant(ZoneOffset.UTC),
@@ -187,8 +188,8 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
       val sessions = (1 to 100)
         .map(index =>
           AccountSession(
-            id = index,
-            accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+            id = UUID.randomUUID(),
+            accountId = TgIds.UNASSIGNED_UUID,
             sessionToken = s"sessionToken-$index",
             deviceInfo = DeviceInfo(browser = "Firefox", ipAddress = "0.0.0.0").toString,
             createdAt = today.plusDays(index).atTime(at14).toInstant(ZoneOffset.UTC),

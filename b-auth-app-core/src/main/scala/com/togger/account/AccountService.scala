@@ -1,10 +1,10 @@
 package com.togger.account
 
 import java.time.{Duration, Instant}
-
+import java.util.UUID
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeId
-import com.togger.common.{Password, TgClock}
+import com.togger.common.{Password, TgClock, TgIds}
 import com.togger.dto.login.{ExpireSessionResult, LoginDto, LoginResponseDto}
 import com.togger.logging.TgLogging
 import com.togger.login.SessionTokenFactory
@@ -45,7 +45,7 @@ class AccountService(
         if (passwordsMatch) {
           val accountSession =
             AccountSession(
-              id = -1L,
+              id = TgIds.UNASSIGNED_UUID,
               accountId = accountFromDb.id,
               sessionToken = sessionTokenFactory.generateSessionToken,
               deviceInfo = loginDto.deviceInfo.toString,

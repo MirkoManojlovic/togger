@@ -31,6 +31,7 @@ class AccountServiceTest
   val accountSessionRepo = mock[AccountSessionRepo]
   val sessionTokenFactory = mock[SessionTokenFactory]
   val tgClock = mock[TgClock]
+  val accountSessionId = TgIds.UNASSIGNED_UUID
 
   val accountService = new AccountService(
     accountRepo = accountRepo,
@@ -40,11 +41,11 @@ class AccountServiceTest
     transactor = transactorMock
   )
 
-  val account = createAccount(TgIds.UNASSIGNED_ACCOUNT_ID)
+  val account = createAccount(TgIds.UNASSIGNED_UUID)
 
   val accountSession = AccountSession(
-    id = -1L,
-    accountId = TgIds.UNASSIGNED_ACCOUNT_ID,
+    id = accountSessionId,
+    accountId = TgIds.UNASSIGNED_UUID,
     sessionToken = "sessionToken1",
     deviceInfo = "some device info",
     createdAt = nowAsInstant,
@@ -73,7 +74,7 @@ class AccountServiceTest
       val sessionToken = "new-session-token"
 
       val accountSession = AccountSession(
-        id = -1,
+        id = accountSessionId,
         accountId = account.id,
         sessionToken = sessionToken,
         deviceInfo = dto.deviceInfo.toString,
@@ -84,7 +85,9 @@ class AccountServiceTest
       (accountRepo.findByEmail _).expects(dto.email).returns(account.pure[ConnectionIO])
       (() => sessionTokenFactory.generateSessionToken).expects().returns(sessionToken)
       (() => tgClock.currentInstant).expects().returns(nowAsInstant).twice()
-      (accountSessionRepo.insert _).expects(accountSession).returns(accountSession.pure[ConnectionIO])
+      (accountSessionRepo.insert _)
+        .expects(accountSession)
+        .returns(accountSession.pure[ConnectionIO])
 
       accountService
         .login(dto)

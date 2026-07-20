@@ -379,8 +379,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: bigint
-                  autoIncrement: true
+                  type: uuid
+                  defaultValueComputed: uuidv7()
                   constraints:
                     primaryKey: true
                     nullable: false

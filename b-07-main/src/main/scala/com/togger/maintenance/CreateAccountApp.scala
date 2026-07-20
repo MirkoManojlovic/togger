@@ -75,7 +75,7 @@ object CreateAccountApp extends IOApp {
 
   def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID) =
     Account(
-      id = TgIds.UNASSIGNED_ACCOUNT_ID,
+      id = TgIds.UNASSIGNED_UUID,
       firstName = firstName,
       lastName = lastName,
       email = email,
