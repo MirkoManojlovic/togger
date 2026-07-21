@@ -184,6 +184,8 @@ lazy val backendDiskSync = (project in file("b-05-disk-sync"))
 lazy val backendDatabase = (project in file("b-05-database"))
   .settings(
     name := "backend-database",
+    test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
+    Test / test := (Test / test).dependsOn(backendAuth / Test / test).value, // run backendAuth tests first, never concurrently, same shared postgres
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Postgres
