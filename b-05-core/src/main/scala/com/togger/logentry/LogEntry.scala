@@ -8,7 +8,7 @@ case class LogEntry(
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,
-  taskId: Long,
+  taskId: UUID,
   createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant

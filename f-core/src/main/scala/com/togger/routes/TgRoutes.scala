@@ -45,9 +45,11 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditTaskPage) => page.projectId -> page.taskId,
-        decode = { (a: (Long, Long)) => EditTaskPage(a._1, a._2) },
-        pattern = root / "edit-task" / "project-id" / segment[Long] / "task-id" / segment[Long] / endOfSegments
+        encode = (page: EditTaskPage) => page.projectId -> page.taskId.toString,
+        decode = { (projectIdAndTaskId: (Long, String)) =>
+          EditTaskPage(projectIdAndTaskId._1, UUID.fromString(projectIdAndTaskId._2))
+        },
+        pattern = root / "edit-task" / "project-id" / segment[Long] / "task-id" / segment[String] / endOfSegments
 //        basePath = basePath
       ),
       Route(

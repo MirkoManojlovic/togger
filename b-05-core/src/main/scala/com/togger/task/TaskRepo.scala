@@ -7,21 +7,21 @@ import java.util.UUID
 
 trait TaskRepo {
 
-  def findById(id: Long): ConnectionIO[Task]
+  def findById(id: UUID): ConnectionIO[Task]
 
-  def findByIdWithStatus(id: Long): ConnectionIO[(Task, TaskStatus)]
+  def findByIdWithStatus(id: UUID): ConnectionIO[(Task, TaskStatus)]
 
-  def findByIdWithStatusAndAccount(id: Long): ConnectionIO[TaskFull]
+  def findByIdWithStatusAndAccount(id: UUID): ConnectionIO[TaskFull]
 
   def insert(task: Task): ConnectionIO[Task]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(task: Task, updatedAt: Instant): ConnectionIO[Task]
 
   def findByProjectId(projectId: Long): ConnectionIO[Seq[TaskFull]]
 
-  def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[Long]]
+  def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]]
 
 }
 

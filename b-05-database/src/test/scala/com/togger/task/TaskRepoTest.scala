@@ -14,7 +14,7 @@ class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
   val taskRepo = new TaskRepoImpl
 
   val task = Task(
-    id = -1L,
+    id = UUID.randomUUID(),
     projectId = -1L,
     name = "Task name",
     description = "Task description",

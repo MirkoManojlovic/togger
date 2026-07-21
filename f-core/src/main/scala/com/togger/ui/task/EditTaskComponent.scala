@@ -22,7 +22,7 @@ import java.util.UUID
 import scala.collection.immutable.ListMap
 
 case class EditTaskForm(
-  taskId: Long,
+  taskId: UUID,
   projectId: Long,
   name: String = "",
   description: String = "",
@@ -32,7 +32,7 @@ case class EditTaskForm(
 )
 
 class EditTaskComponent(
-  taskId: Long,
+  taskId: UUID,
   projectId: Long,
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,

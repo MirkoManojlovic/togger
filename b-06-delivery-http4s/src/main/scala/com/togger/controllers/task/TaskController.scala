@@ -116,7 +116,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     val linksDto = dto.links
 
     val task = Task(
-      id = -1,
+      id = UUID.randomUUID(),
       projectId = taskDto.projectId,
       name = taskDto.name,
       description = taskDto.description,
@@ -134,7 +134,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
           id = UUID.randomUUID(),
           name = dto.name,
           url = dto.url,
-          taskId = -1,
+          taskId = UUID.randomUUID(),
           createdAt = now,
           updatedAt = now
         )

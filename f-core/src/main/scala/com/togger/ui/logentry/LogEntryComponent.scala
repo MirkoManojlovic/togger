@@ -25,7 +25,7 @@ import java.util.UUID
 
 case class LogEntryForm(
   logEntryId: Option[UUID] = None,
-  taskId: Long,
+  taskId: UUID,
   status: String = "",
   textExternal: String = "",
   textInternal: String = "",
@@ -44,7 +44,7 @@ case class LogEntryForm(
 }
 
 object LogEntryForm {
-  def default(taskId: Long, tgClock: TgClock) =
+  def default(taskId: UUID, tgClock: TgClock) =
     LogEntryForm(
       taskId = taskId,
       status = LogEntryStatus.InProgress.toString,

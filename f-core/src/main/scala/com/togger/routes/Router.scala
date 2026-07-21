@@ -52,7 +52,7 @@ object Pages {
 
   case class ShowAllTaskStatusesPage(projectId: Long) extends PrivatePage
 
-  case class EditTaskPage(projectId: Long, taskId: Long) extends PrivatePage
+  case class EditTaskPage(projectId: Long, taskId: UUID) extends PrivatePage
 
   case object CreateOrganizationPage extends PrivatePage
 

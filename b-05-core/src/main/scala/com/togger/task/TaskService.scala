@@ -9,6 +9,8 @@ import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
 import doobie.implicits._
 
+import java.util.UUID
+
 class TaskService(
   taskRepo: TaskRepo,
   linkRepo: LinkRepo,
@@ -45,7 +47,7 @@ class TaskService(
       }
       .transact(transactor)
 
-  def findById(id: Long) =
+  def findById(id: UUID) =
     (for {
       task <- taskRepo.findById(id)
       links <- linkRepo.findByTaskId(task.id)
@@ -53,7 +55,7 @@ class TaskService(
     } yield (task, links, logEntries)).transact(transactor)
 
   def findByIdWithTaskStatusAndAccount(
-    id: Long
+    id: UUID
   ): IO[(TaskFull, List[Link], List[LogEntry])] =
     (for {
       taskFull <- taskRepo.findByIdWithStatusAndAccount(id)

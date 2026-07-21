@@ -32,7 +32,7 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )(s"Inserting ${sp(link)}", link => s"Link inserted ${sp(link)}")
   }
 
-  type LinkInfo = (String, String, Long, Instant, Instant)
+  type LinkInfo = (String, String, UUID, Instant, Instant)
   private val insertManySql = "insert into link (name, url, task_id, created_at, updated_at) values (?, ?, ?, ?, ?)"
 
   override def insertMany(links: Seq[Link]): ConnectionIO[List[Link]] = {
@@ -98,7 +98,7 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
         )
     )(s"Updating ${sp(link)}", link => s"${sp(link)} updated")
 
-  override def findByTaskId(taskId: Long): ConnectionIO[List[Link]] =
+  override def findByTaskId(taskId: UUID): ConnectionIO[List[Link]] =
     logAroundInfoQuery(
       (selectAllStatement(LINK_TABLE_FRAG) ++ fr"where task_id = $taskId").query[Link].to[List]
     )(
@@ -106,7 +106,7 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
       links => s"Links found ${sp(links)} for ${sp(taskId)}"
     )
 
-  override def deleteByTaskId(taskId: Long): ConnectionIO[Int] = {
+  override def deleteByTaskId(taskId: UUID): ConnectionIO[Int] = {
     logAroundInfoQuery(
       (fr"delete from " ++ LINK_TABLE_FRAG ++ fr"where task_id = $taskId").update.run
     )(

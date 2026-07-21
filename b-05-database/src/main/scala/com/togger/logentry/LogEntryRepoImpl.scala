@@ -65,7 +65,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
         )
     )(s"Updating ${sp(logEntry)}", logEntry => s"${sp(logEntry)} updated")
 
-  override def findByTaskId(taskId: Long): ConnectionIO[List[LogEntry]] = {
+  override def findByTaskId(taskId: UUID): ConnectionIO[List[LogEntry]] = {
     logAroundInfoQuery(
       (selectAllStatement(LOG_ENTRY_TABLE_FRAG) ++ fr"where task_id = $taskId").query[LogEntry].to[List]
     )(
@@ -74,7 +74,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )
   }
 
-  override def deleteByTaskId(taskId: Long): ConnectionIO[Int] = {
+  override def deleteByTaskId(taskId: UUID): ConnectionIO[Int] = {
     logAroundInfoQuery(
       (fr"delete from " ++ LOG_ENTRY_TABLE_FRAG ++ fr"where task_id = $taskId").update.run
     )(

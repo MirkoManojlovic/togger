@@ -42,21 +42,21 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     )
   }
 
-  override def findById(id: Long): ConnectionIO[Task] =
-    logAroundInfoQuery(findByIdStatement(TASK_TABLE_FRAG)(id).query[Task].unique)(
+  override def findById(id: UUID): ConnectionIO[Task] =
+    logAroundInfoQuery(findByIdStatementUUID(TASK_TABLE_FRAG)(id).query[Task].unique)(
       s"Finding task with ${sp(id)}",
       task => s"Task found ${sp(task)}"
     )
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
-    logAroundInfoQuery(deleteByIdStatement(TASK_TABLE_FRAG)(id).update.run)(
+  override def deleteById(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(deleteByIdStatementUUID(TASK_TABLE_FRAG)(id).update.run)(
       s"Deleting task with ${sp(id)}",
       _ => s"Task with ${sp(id)} deleted"
     )
 
   def update(task: Task, updatedAt: Instant): ConnectionIO[Task] = {
     logAroundInfoQuery(
-      updateStatement(TASK_TABLE_FRAG)(task.id)(fr"""
+      updateStatementUUID(TASK_TABLE_FRAG)(task.id)(fr"""
            name = ${task.name},
            project_id = ${task.projectId},
            description = ${task.description},
@@ -113,9 +113,9 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     )
   }
 
-  override def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[Long]] = {
+  override def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]] = {
     logAroundInfoQuery(
-      (fr"select id from " ++ TASK_TABLE_FRAG ++ fr" where assigned_to = $accountId").query[Long].to[List]
+      (fr"select id from " ++ TASK_TABLE_FRAG ++ fr" where assigned_to = $accountId").query[UUID].to[List]
     )(
       s"Finding task ids for ${sp(accountId)}",
       taskIds => s"Task ids found ${sp(taskIds)}"
@@ -123,7 +123,7 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
 
   }
 
-  override def findByIdWithStatus(id: Long): ConnectionIO[(Task, TaskStatus)] =
+  override def findByIdWithStatus(id: UUID): ConnectionIO[(Task, TaskStatus)] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_TABLE_FRAG) ++
         innerJoin(TASK_STATUS_TABLE_FRAG)(fr"task.task_status_id = task_status.id") ++
@@ -137,7 +137,7 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
       }
     )
 
-  override def findByIdWithStatusAndAccount(id: Long): ConnectionIO[TaskFull] = {
+  override def findByIdWithStatusAndAccount(id: UUID): ConnectionIO[TaskFull] = {
     logAroundInfoQuery(
       (selectAllStatement(TASK_TABLE_FRAG) ++
         innerJoin(TASK_STATUS_TABLE_FRAG)(fr"task.task_status_id = task_status.id") ++

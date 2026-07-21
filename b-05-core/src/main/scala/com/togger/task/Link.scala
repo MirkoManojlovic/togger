@@ -7,7 +7,7 @@ case class Link(
   id: UUID,
   name: String,
   url: String,
-  taskId: Long,
+  taskId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

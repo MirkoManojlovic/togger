@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.UUID
 
 case class Task(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,
@@ -38,7 +38,7 @@ case class Task(
 }
 
 case class TaskFull(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,

@@ -15,7 +15,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
   val logEntryRepo = new LogEntryRepoImpl
 
   val task = Task(
-    id = -1L,
+    id = UUID.randomUUID(),
     projectId = -1L,
     name = "Task name",
     description = "Task description",
@@ -31,7 +31,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     textInternal = "Text internal",
     textExternal = "Test External",
     status = LogEntryStatus.InProgress,
-    taskId = -1,
+    taskId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
@@ -95,7 +95,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    def createLogEntries(taskId: Long, accountId: UUID) = (0 to 10).map(index =>
+    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(index =>
       LogEntry(
         id = UUID.randomUUID(),
         textInternal = s"Text internal- $index",

@@ -17,7 +17,7 @@ case class CreateTaskReq(
 )
 
 case class UpdateTaskReq1(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,
@@ -29,7 +29,7 @@ case class UpdateTaskReq1(
 )
 
 case class FindTaskResp1(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,
@@ -41,7 +41,7 @@ case class FindTaskResp1(
 )
 
 case class FindTaskRespFull(
-  id: Long,
+  id: UUID,
   projectId: Long,
   name: String,
   description: String,
@@ -70,7 +70,7 @@ case class LogEntryDto(
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,
-  taskId: Long,
+  taskId: UUID,
   createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant

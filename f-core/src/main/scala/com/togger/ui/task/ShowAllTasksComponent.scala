@@ -156,7 +156,7 @@ class ShowAllTasksComponent(
                           tr(
                             cls(rowCls),
                             //                textAlign.center,
-                            createTd(dto.id),
+                            createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.description),
 //                            createTd(dto.assignedTo.map(_.fullName).getOrElse("No one")),

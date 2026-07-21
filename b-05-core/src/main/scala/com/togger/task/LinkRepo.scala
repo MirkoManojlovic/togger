@@ -17,8 +17,8 @@ trait LinkRepo {
 
   def insertMany(links: Seq[Link]): ConnectionIO[List[Link]]
 
-  def findByTaskId(taskId: Long): ConnectionIO[List[Link]]
+  def findByTaskId(taskId: UUID): ConnectionIO[List[Link]]
 
-  def deleteByTaskId(taskId: Long): ConnectionIO[Int]
+  def deleteByTaskId(taskId: UUID): ConnectionIO[Int]
 
 }

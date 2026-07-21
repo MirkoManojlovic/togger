@@ -45,7 +45,7 @@ class TaskServiceTest
   val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, tgClock, transactorMock)
 
   val task = Task(
-    id = 42,
+    id = UUID.randomUUID(),
     projectId = 10,
     name = "Test Task",
     description = "A task for testing",

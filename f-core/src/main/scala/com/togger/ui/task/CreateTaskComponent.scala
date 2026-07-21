@@ -170,7 +170,7 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def findByProjectId(projectId: Long): TgRespIO[Seq[FindTaskRespFull]] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)(projectId)
 
-  def findTaskById(id: Long): TgRespIO[FindTaskResp] =
+  def findTaskById(id: UUID): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByIdEndpoint)(id)
 
   def saveLogEntry(dto: LogEntryDto) =

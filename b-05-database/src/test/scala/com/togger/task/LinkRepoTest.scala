@@ -15,7 +15,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
   val linkRepo = new LinkRepoImpl
 
   val task = Task(
-    id = -1L,
+    id = UUID.randomUUID(),
     projectId = -1L,
     name = "Task name",
     description = "Task description",
@@ -30,7 +30,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     id = UUID.randomUUID(),
     name = "link name",
     url = "example url",
-    taskId = -1L,
+    taskId = UUID.randomUUID(),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -70,7 +70,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     }
 
     "insert many links" in { transactor =>
-      def createLinks(taskId: Long) = (0 to 10).map(index =>
+      def createLinks(taskId: UUID) = (0 to 10).map(index =>
         Link(
           id = UUID.randomUUID(),
           name = s"Link $index",
@@ -128,7 +128,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
       res.transact(transactor)
     }
 
-    def createLinks(taskId: Long) = (0 to 10).map(index =>
+    def createLinks(taskId: UUID) = (0 to 10).map(index =>
       Link(
         id = UUID.randomUUID(),
         name = s"Link $index",

@@ -9,6 +9,8 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe.jsonBody
 
+import java.util.UUID
+
 class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
 
   private val basePath: EndpointInput[Unit] = "log-entry"
@@ -19,9 +21,9 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[LogEntryDto])
       .out(jsonBody[TgJsonSuccess[LogEntryDto]])
 
-  val findByTaskId: TgSecuredEndpoint[Long, List[LogEntryDto]] =
+  val findByTaskId: TgSecuredEndpoint[UUID, List[LogEntryDto]] =
     securedEndpoint.endpoint.get
-      .in(basePath / path[Long]("task-id"))
+      .in(basePath / path[UUID]("task-id"))
       .out(jsonBody[TgJsonSuccess[List[LogEntryDto]]])
   //      .tag(topic)
   //      .name(createName(findById))
