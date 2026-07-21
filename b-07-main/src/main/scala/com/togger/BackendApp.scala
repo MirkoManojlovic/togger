@@ -77,7 +77,7 @@ object BackendApp extends IOApp with TgLogging {
     val liquibaseOps = new LiquibaseOps(changelogPath)
 
     for {
-      userExists <- initialSetup.checkIfUserExits(Constants.TOGGER_ACCOUNT)
+      userExists <- initialSetup.checkIfUserExits(Constants.DB_USERNAME)
       _ <-
         if (userExists) {
           for {
