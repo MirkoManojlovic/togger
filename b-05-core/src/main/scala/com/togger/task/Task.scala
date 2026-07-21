@@ -7,7 +7,7 @@ import java.util.UUID
 
 case class Task(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[UUID],
@@ -39,7 +39,7 @@ case class Task(
 
 case class TaskFull(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[Account],
@@ -66,7 +66,7 @@ case class TaskFull(
 
 case class TaskStatus(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   createdAt: Instant,

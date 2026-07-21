@@ -13,9 +13,9 @@ import java.util.UUID
 
 class ProjectRepoImpl extends ProjectRepo {
 
-  override def findById(id: Long): ConnectionIO[Project] =
+  override def findById(id: UUID): ConnectionIO[Project] =
     logAroundInfoQuery(
-      findByIdStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).query[Project].unique
+      findByIdStatementUUID(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).query[Project].unique
     )(
       s"Finding project with ${sp(id)}",
       project => s"Project found ${sp(project)}"
@@ -42,9 +42,9 @@ class ProjectRepoImpl extends ProjectRepo {
     )
   }
 
-  override def deleteById(id: Long): ConnectionIO[Int] =
+  override def deleteById(id: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
-      deleteByIdStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).update.run
+      deleteByIdStatementUUID(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).update.run
     )(
       s"Deleting project with ${sp(id)}",
       _ => s"Project with ${sp(id)} deleted"
@@ -52,7 +52,7 @@ class ProjectRepoImpl extends ProjectRepo {
 
   override def update(project: Project, updatedAt: Instant): ConnectionIO[Project] = {
     logAroundInfoQuery(
-      updateStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(project.id)(fr"""
+      updateStatementUUID(ProjectRepoImpl.PROJECT_TABLE_FRAG)(project.id)(fr"""
         name = ${project.name},
         organization_id = ${project.organizationId},
         description = ${project.description},

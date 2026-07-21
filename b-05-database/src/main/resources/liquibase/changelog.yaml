@@ -133,8 +133,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: bigint
-                  autoIncrement: true
+                  type: uuid
+                  defaultValueComputed: uuidv7()
                   constraints:
                     primaryKey: true
                     nullable: false
@@ -181,7 +181,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: project_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: true
                     foreignKeyName: fk_project_task_status
@@ -222,7 +222,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: project_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_project_task
@@ -450,7 +450,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: project_id
-                  type: bigint
+                  type: uuid
                   constraints:
                     nullable: false
                     foreignKeyName: fk_project_account_project

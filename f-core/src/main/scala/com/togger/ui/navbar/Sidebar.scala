@@ -83,7 +83,7 @@ class Sidebar(
     )
     .unsafeRunAndForget()
 
-  private val taskMenuLink = SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(-1L)))
+  private val taskMenuLink = SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())))
   private val projectMenuLink = SidebarLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
   private val organizationMenuLink = SidebarLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
   private val passwordMenuLink = SidebarLink("Change Password", router.navigateTo(ChangePasswordPage))

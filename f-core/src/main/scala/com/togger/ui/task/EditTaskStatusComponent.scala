@@ -16,7 +16,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import java.util.UUID
 
 case class EditTaskStatusForm(
-  projectId: Long = -1L,
+  projectId: UUID = UUID.randomUUID(),
   taskStatusId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = ""
@@ -27,7 +27,7 @@ class EditTaskStatusComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
-  projectId: Long,
+  projectId: UUID,
   taskStatusId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)

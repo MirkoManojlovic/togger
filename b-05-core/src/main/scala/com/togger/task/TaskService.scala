@@ -31,7 +31,7 @@ class TaskService(
     }).transact(transactor)
   }
 
-  def findByProjectId(projectId: Long): IO[List[(TaskFull, List[Link], List[LogEntry])]] =
+  def findByProjectId(projectId: UUID): IO[List[(TaskFull, List[Link], List[LogEntry])]] =
     taskRepo
       .findByProjectId(projectId)
       .flatMap { tasks =>

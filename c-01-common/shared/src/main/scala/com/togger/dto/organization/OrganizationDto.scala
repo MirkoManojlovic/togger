@@ -20,7 +20,7 @@ case class FindOrganizationsAndProjects(
 )
 
 case class OrganizationProjectResp(
-  id: Long,
+  id: UUID,
   name: String,
   description: String
 )

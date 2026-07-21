@@ -136,7 +136,7 @@ class ShowAllProjectsTableComponent(
                           tr(
                             cls(rowCls),
                             //                textAlign.center,
-                            createTd(dto.id),
+                            createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.description),
                             createTd(

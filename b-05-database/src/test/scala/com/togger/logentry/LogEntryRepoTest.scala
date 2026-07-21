@@ -16,7 +16,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
 
   val task = Task(
     id = UUID.randomUUID(),
-    projectId = -1L,
+    projectId = UUID.randomUUID(),
     name = "Task name",
     description = "Task description",
     assignedTo = None,

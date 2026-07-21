@@ -50,7 +50,7 @@ class CreateTaskComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
-  projectId: Long,
+  projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -167,7 +167,7 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def updateTask(dto: UpdateTaskReq): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.updateEndpoint)(dto)
 
-  def findByProjectId(projectId: Long): TgRespIO[Seq[FindTaskRespFull]] =
+  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)(projectId)
 
   def findTaskById(id: UUID): TgRespIO[FindTaskResp] =

@@ -19,7 +19,7 @@ trait TaskRepo {
 
   def update(task: Task, updatedAt: Instant): ConnectionIO[Task]
 
-  def findByProjectId(projectId: Long): ConnectionIO[Seq[TaskFull]]
+  def findByProjectId(projectId: UUID): ConnectionIO[Seq[TaskFull]]
 
   def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]]
 
@@ -35,6 +35,6 @@ trait TaskStatusRepo {
 
   def update(task: TaskStatus, updatedAt: Instant): ConnectionIO[TaskStatus]
 
-  def findByProjectId(projectId: Long): ConnectionIO[List[TaskStatus]]
+  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskStatus]]
 
 }

@@ -32,7 +32,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   private val mobileNavShow: Var[Boolean] = Var(false)
 
-  private val taskMenuLink = MenuLink("Tasks", router.navigateTo(ShowAllTasksPage(-1L)))
+  private val taskMenuLink = MenuLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())))
   private val projectMenuLink = MenuLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
   private val passwordMenuLink = MenuLink("Change Password", router.navigateTo(ChangePasswordPage))

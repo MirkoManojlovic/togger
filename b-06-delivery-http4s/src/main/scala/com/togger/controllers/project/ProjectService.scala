@@ -72,7 +72,7 @@ class ProjectService(
       .sequence
   }
 
-  private def findMembersLocal(projectId: Long): ConnectionIO[Seq[Account]] = {
+  private def findMembersLocal(projectId: UUID): ConnectionIO[Seq[Account]] = {
     projectAccountRepo.findAllMembers(projectId)
   }
 
@@ -101,7 +101,7 @@ class ProjectService(
       .map(_.map(_._1))
   }
 
-  def findById(id: Long): IO[(Project, Seq[Account])] = {
+  def findById(id: UUID): IO[(Project, Seq[Account])] = {
     (for {
       project <- projectRepo.findById(id)
       members <- projectAccountRepo.findAllMembers(id)
@@ -109,6 +109,6 @@ class ProjectService(
 
   }
 
-  def findAllMembers(projectId: Long): IO[Seq[Account]] =
+  def findAllMembers(projectId: UUID): IO[Seq[Account]] =
     projectAccountRepo.findAllMembers(projectId).transact(transactor)
 }

@@ -13,7 +13,7 @@ import java.util.UUID
 
 class ProjectAccountRepoImpl extends ProjectAccountRepo {
 
-  override def findById(projectId: Long, accountId: UUID): ConnectionIO[ProjectAccount] =
+  override def findById(projectId: UUID, accountId: UUID): ConnectionIO[ProjectAccount] =
     logAroundInfoQuery(
       (selectAllStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
         fr"where project_id = $projectId and account_id = $accountId")
@@ -42,7 +42,7 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
     )
   }
 
-  override def deleteById(projectId: Long, accountId: UUID): ConnectionIO[Int] =
+  override def deleteById(projectId: UUID, accountId: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
       (deleteStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
         fr"where project_id = $projectId and account_id = $accountId").update.run
@@ -71,7 +71,7 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
 //      project => s"${sp(project)} updated"
 //    )
 
-  override def findAllMembers(projectId: Long): ConnectionIO[Seq[Account]] = {
+  override def findAllMembers(projectId: UUID): ConnectionIO[Seq[Account]] = {
     logAroundInfoQuery(
       (selectAllStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
         innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"project_account.account_id = account.id") ++

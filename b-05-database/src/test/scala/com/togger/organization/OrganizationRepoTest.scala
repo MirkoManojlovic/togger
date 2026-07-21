@@ -18,14 +18,14 @@ trait TgTaskStatus { self: TimeHelpers =>
 
   val taskStatus = TaskStatus(
     id = UUID.randomUUID(),
-    projectId = -1L,
+    projectId = UUID.randomUUID(),
     name = "In progress",
     description = "Task in progress",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
 
-  def createTaskStatus(projectId: Long): ConnectionIO[TaskStatus] =
+  def createTaskStatus(projectId: UUID): ConnectionIO[TaskStatus] =
     for {
       savedTaskStatus <- taskStatusRepo.insert(taskStatus.copy(projectId = projectId))
     } yield savedTaskStatus
@@ -36,7 +36,7 @@ trait TgProject extends TgOrganization { self: TimeHelpers =>
   lazy val projectRepo = new ProjectRepoImpl
 
   lazy val project = Project(
-    id = -1L,
+    id = UUID.randomUUID(),
     organizationId = UUID.randomUUID(),
     name = "Project name",
     description = "Project description",

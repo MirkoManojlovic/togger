@@ -21,7 +21,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import java.util.UUID
 
 case class CreateTaskStatusForm(
-  projectId: Long = -1L,
+  projectId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = ""
 )
@@ -31,7 +31,7 @@ class CreateTaskStatusComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
-  projectId: Long,
+  projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -95,7 +95,7 @@ class TaskStatusFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
   def updateTaskStatus(dto: UpdateTaskStatusResp): TgRespIO[FindTaskStatusResp] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.updateEndpoint)(dto)
 
-  def findByProjectId(projectId: Long): TgRespIO[Seq[FindTaskStatusResp]] =
+  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskStatusResp]] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)(projectId)
 
   def findTaskStatusById(id: UUID): TgRespIO[FindTaskStatusResp] =

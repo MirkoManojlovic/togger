@@ -7,7 +7,7 @@ import java.util.UUID
 
 class DefaultTaskStatusService(tgClock: TgClock) {
 
-  def createDefaultTaskStatuses(projectId: Long): Seq[TaskStatus] = {
+  def createDefaultTaskStatuses(projectId: UUID): Seq[TaskStatus] = {
     val now = tgClock.currentInstant
     Seq(
       ("📚 Backlog", "This has been completed"),

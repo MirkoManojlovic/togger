@@ -46,7 +46,7 @@ class TaskServiceTest
 
   val task = Task(
     id = UUID.randomUUID(),
-    projectId = 10,
+    projectId = UUID.randomUUID(),
     name = "Test Task",
     description = "A task for testing",
     assignedTo = None,

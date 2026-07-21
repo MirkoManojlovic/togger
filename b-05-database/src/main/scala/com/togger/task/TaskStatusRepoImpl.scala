@@ -70,7 +70,7 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
     )
   }
 
-  override def findByProjectId(projectId: Long): ConnectionIO[List[TaskStatus]] =
+  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskStatus]] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_STATUS_TABLE_FRAG) ++ fr" where project_id= $projectId").query[TaskStatus].to[List]
     )(

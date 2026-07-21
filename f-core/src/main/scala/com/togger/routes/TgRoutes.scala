@@ -23,45 +23,48 @@ class TgRoutes {
         root / "change-password"
       ),
       Route(
-        encode = (page: CreateTaskPage) => page.projectId,
-        decode = (projectId: Long) => CreateTaskPage(projectId),
-        pattern = root / "create-task" / segment[Long] / endOfSegments
+        encode = (page: CreateTaskPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTaskPage(UUID.fromString(projectId)),
+        pattern = root / "create-task" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: CreateTaskStatusPage) => page.projectId,
-        decode = (projectId: Long) => CreateTaskStatusPage(projectId),
-        pattern = root / "create-task-status" / segment[Long] / endOfSegments
+        encode = (page: CreateTaskStatusPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTaskStatusPage(UUID.fromString(projectId)),
+        pattern = root / "create-task-status" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditTaskStatusPage) => page.projectId -> page.taskStatusId.toString,
-        decode = { (projectIdAndTaskStatusId: (Long, String)) =>
-          EditTaskStatusPage(projectIdAndTaskStatusId._1, UUID.fromString(projectIdAndTaskStatusId._2))
+        encode = (page: EditTaskStatusPage) => page.projectId.toString -> page.taskStatusId.toString,
+        decode = { (projectIdAndTaskStatusId: (String, String)) =>
+          EditTaskStatusPage(
+            UUID.fromString(projectIdAndTaskStatusId._1),
+            UUID.fromString(projectIdAndTaskStatusId._2)
+          )
         },
-        pattern = root / "edit-task-status" / "project-id" / segment[Long] / "task-status-id" / segment[
+        pattern = root / "edit-task-status" / "project-id" / segment[String] / "task-status-id" / segment[
           String
         ] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditTaskPage) => page.projectId -> page.taskId.toString,
-        decode = { (projectIdAndTaskId: (Long, String)) =>
-          EditTaskPage(projectIdAndTaskId._1, UUID.fromString(projectIdAndTaskId._2))
+        encode = (page: EditTaskPage) => page.projectId.toString -> page.taskId.toString,
+        decode = { (projectIdAndTaskId: (String, String)) =>
+          EditTaskPage(UUID.fromString(projectIdAndTaskId._1), UUID.fromString(projectIdAndTaskId._2))
         },
-        pattern = root / "edit-task" / "project-id" / segment[Long] / "task-id" / segment[String] / endOfSegments
+        pattern = root / "edit-task" / "project-id" / segment[String] / "task-id" / segment[String] / endOfSegments
 //        basePath = basePath
       ),
       Route(
-        encode = (page: ShowAllTasksPage) => page.projectId,
-        decode = (projectId: Long) => ShowAllTasksPage(projectId),
-        pattern = root / "show-tasks" / segment[Long] / endOfSegments
+        encode = (page: ShowAllTasksPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowAllTasksPage(UUID.fromString(projectId)),
+        pattern = root / "show-tasks" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
-        encode = (page: ShowAllTaskStatusesPage) => page.projectId,
-        decode = (projectId: Long) => ShowAllTaskStatusesPage(projectId),
-        pattern = root / "task-status" / segment[Long] / endOfSegments
+        encode = (page: ShowAllTaskStatusesPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowAllTaskStatusesPage(UUID.fromString(projectId)),
+        pattern = root / "task-status" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route(
@@ -83,9 +86,9 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
-        encode = (page: EditProjectPage) => page.id,
-        decode = (id: Long) => EditProjectPage(id),
-        pattern = root / "project" / segment[Long] / endOfSegments
+        encode = (page: EditProjectPage) => page.id.toString,
+        decode = (id: String) => EditProjectPage(UUID.fromString(id)),
+        pattern = root / "project" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
       Route.static(

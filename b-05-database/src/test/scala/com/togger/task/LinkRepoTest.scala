@@ -16,7 +16,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
 
   val task = Task(
     id = UUID.randomUUID(),
-    projectId = -1L,
+    projectId = UUID.randomUUID(),
     name = "Task name",
     description = "Task description",
     assignedTo = None,

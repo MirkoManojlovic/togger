@@ -3,7 +3,7 @@ import java.time.Instant
 import java.util.UUID
 
 case class Project(
-  id: Long,
+  id: UUID,
   organizationId: UUID,
   name: String,
   description: String,
@@ -12,7 +12,7 @@ case class Project(
 )
 
 case class ProjectAccount(
-  projectId: Long,
+  projectId: UUID,
   accountId: UUID,
   createdAt: Instant
 )

@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.UUID
 
 case class CreateTaskReq(
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[UUID],
@@ -18,7 +18,7 @@ case class CreateTaskReq(
 
 case class UpdateTaskReq1(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[UUID],
@@ -30,7 +30,7 @@ case class UpdateTaskReq1(
 
 case class FindTaskResp1(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[UUID],
@@ -42,7 +42,7 @@ case class FindTaskResp1(
 
 case class FindTaskRespFull(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String,
   assignedTo: Option[SearchAccountDto],
@@ -76,7 +76,7 @@ case class LogEntryDto(
   updatedAt: Instant
 )
 
-case class CreateTaskStatusReq(projectId: Long, name: String, description: String)
-case class CreateTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)
-case class FindTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)
-case class UpdateTaskStatusResp(id: UUID, projectId: Long, name: String, description: String)
+case class CreateTaskStatusReq(projectId: UUID, name: String, description: String)
+case class CreateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
+case class FindTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
+case class UpdateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)

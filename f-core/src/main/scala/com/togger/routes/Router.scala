@@ -42,17 +42,17 @@ object Pages {
 
   case class NotFoundPage(url: String) extends PublicPage
 
-  case class CreateTaskPage(projectId: Long) extends PrivatePage
+  case class CreateTaskPage(projectId: UUID) extends PrivatePage
 
-  case class CreateTaskStatusPage(projectId: Long) extends PrivatePage
+  case class CreateTaskStatusPage(projectId: UUID) extends PrivatePage
 
-  case class EditTaskStatusPage(projectId: Long, taskStatusId: UUID) extends PrivatePage
+  case class EditTaskStatusPage(projectId: UUID, taskStatusId: UUID) extends PrivatePage
 
-  case class ShowAllTasksPage(projectId: Long) extends PrivatePage
+  case class ShowAllTasksPage(projectId: UUID) extends PrivatePage
 
-  case class ShowAllTaskStatusesPage(projectId: Long) extends PrivatePage
+  case class ShowAllTaskStatusesPage(projectId: UUID) extends PrivatePage
 
-  case class EditTaskPage(projectId: Long, taskId: UUID) extends PrivatePage
+  case class EditTaskPage(projectId: UUID, taskId: UUID) extends PrivatePage
 
   case object CreateOrganizationPage extends PrivatePage
 
@@ -66,7 +66,7 @@ object Pages {
 
   case class ShowProjectsForOrganizationIdStatus(id: UUID) extends PrivatePage
 
-  case class EditProjectPage(id: Long) extends PrivatePage
+  case class EditProjectPage(id: UUID) extends PrivatePage
 
   case object HomePage extends PrivatePage
 }

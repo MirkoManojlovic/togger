@@ -20,7 +20,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import java.util.UUID
 
 case class EditProjectForm(
-  projectId: Long = -1L,
+  projectId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
   organizationId: UUID = UUID.randomUUID()
@@ -33,7 +33,7 @@ class EditProjectComponent(
   accountService: AccountService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  projectId: Long,
+  projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {

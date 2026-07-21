@@ -6,14 +6,14 @@ import doobie.ConnectionIO
 import java.util.UUID
 
 trait ProjectAccountRepo {
-  def findById(projectId: Long, accountId: UUID): ConnectionIO[ProjectAccount]
+  def findById(projectId: UUID, accountId: UUID): ConnectionIO[ProjectAccount]
 
   def insert(organizationAccount: ProjectAccount): ConnectionIO[ProjectAccount]
 
-  def deleteById(projectId: Long, accountId: UUID): ConnectionIO[Int]
+  def deleteById(projectId: UUID, accountId: UUID): ConnectionIO[Int]
 
 //  def update(organizationAccount: ProjectAccount, updatedAt: Instant): ConnectionIO[ProjectAccount]
 
-  def findAllMembers(projectId: Long): ConnectionIO[Seq[Account]]
+  def findAllMembers(projectId: UUID): ConnectionIO[Seq[Account]]
 
 }

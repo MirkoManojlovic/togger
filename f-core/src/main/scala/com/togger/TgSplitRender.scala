@@ -92,7 +92,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case LoginPage => new LoginComponent(router, loginService, spinnerService).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
-              case CreateTaskPage(projectId: Long) =>
+              case CreateTaskPage(projectId: UUID) =>
                 new CreateTaskComponent(
                   taskService,
                   taskStatusService,
@@ -102,7 +102,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case CreateTaskStatusPage(projectId: Long) =>
+              case CreateTaskStatusPage(projectId: UUID) =>
                 new CreateTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
@@ -119,7 +119,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId
                 ).element
-              case EditTaskStatusPage(projectId: Long, taskStatusId: UUID) =>
+              case EditTaskStatusPage(projectId: UUID, taskStatusId: UUID) =>
                 new EditTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
@@ -129,7 +129,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskStatusId,
                   toast
                 ).element
-              case ShowAllTasksPage(projectId: Long) =>
+              case ShowAllTasksPage(projectId: UUID) =>
                 new ShowAllTasksComponent(
                   taskService,
                   taskStatusService,

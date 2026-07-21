@@ -15,7 +15,7 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
   val projectAccountRepo = new ProjectAccountRepoImpl
 
   val project = Project(
-    id = -1L,
+    id = UUID.randomUUID(),
     organizationId = UUID.randomUUID(),
     name = "Project name",
     description = "Project description",

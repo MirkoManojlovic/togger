@@ -15,9 +15,9 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
 
   private val basePath: EndpointInput[Unit] = "project"
 
-  val findByIdEndpoint: TgSecuredEndpoint[Long, FindProjectResp] =
+  val findByIdEndpoint: TgSecuredEndpoint[UUID, FindProjectResp] =
     securedEndpoint.endpoint.get
-      .in(basePath / path[Long]("id"))
+      .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[FindProjectResp]])
   //      .tag(topic)
   //      .name(createName(findById))
@@ -45,9 +45,9 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val findAllMembersEndpoint: TgSecuredEndpoint[Long, Seq[SearchAccountDto]] =
+  val findAllMembersEndpoint: TgSecuredEndpoint[UUID, Seq[SearchAccountDto]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "members" / path[Long]("project-id"))
+      .in(basePath / "members" / path[UUID]("project-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
 
 }

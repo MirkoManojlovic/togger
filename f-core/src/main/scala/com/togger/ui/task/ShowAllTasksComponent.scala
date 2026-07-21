@@ -29,7 +29,7 @@ class ShowAllTasksComponent(
   dateFormater: TgDateFormater,
   spinnerService: SpinnerService,
   accountService: AccountService,
-  projectId: Long
+  projectId: UUID
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -38,7 +38,7 @@ class ShowAllTasksComponent(
   val statusesVar = Var(TaskStatusesState()) // TODO: don't need this
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
-      id = -1,
+      id = UUID.randomUUID(),
       organizationId = UUID.randomUUID(),
       name = "",
       description = "",

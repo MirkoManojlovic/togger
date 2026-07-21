@@ -10,7 +10,7 @@ case class CreateProjectReq(
 )
 
 case class FindProjectResp(
-  id: Long,
+  id: UUID,
   organizationId: UUID,
   name: String,
   description: String,
@@ -18,7 +18,7 @@ case class FindProjectResp(
 )
 
 case class UpdateProjectReq(
-  id: Long,
+  id: UUID,
   organizationId: UUID,
   name: String,
   description: String,

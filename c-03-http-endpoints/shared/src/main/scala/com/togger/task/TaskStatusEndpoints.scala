@@ -38,9 +38,9 @@ class TaskStatusEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateTaskStatusResp])
       .out(jsonBody[TgJsonSuccess[FindTaskStatusResp]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[Long, Seq[FindTaskStatusResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTaskStatusResp]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "project" / path[Long]("id"))
+      .in(basePath / "project" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindTaskStatusResp]]])
   //      .tag(topic)
   //      .name(createName(findById))

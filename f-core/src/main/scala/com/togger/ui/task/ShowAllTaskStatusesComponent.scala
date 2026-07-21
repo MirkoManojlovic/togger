@@ -16,7 +16,7 @@ import java.util.UUID
 
 case class TaskStatusFormState(
   id: UUID,
-  projectId: Long,
+  projectId: UUID,
   name: String,
   description: String
 )
@@ -26,7 +26,7 @@ class ShowAllTaskStatusesComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService,
-  projectId: Long
+  projectId: UUID
 )(implicit
   ioRuntime: IORuntime
 ) {

@@ -4,6 +4,8 @@ import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.dto.{FindProjectResp, SearchAccountDto}
 import com.togger.project._
 
+import java.util.UUID
+
 class ProjectController(projectEndpoints: ProjectEndpoints, projectService: ProjectService, tgClock: TgClock) {
 
   import projectEndpoints._
@@ -36,7 +38,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     val now = tgClock.currentInstant
 
     val project = Project(
-      id = -1,
+      id = UUID.randomUUID(),
       organizationId = dto.organizationId,
       name = dto.name,
       description = dto.description,

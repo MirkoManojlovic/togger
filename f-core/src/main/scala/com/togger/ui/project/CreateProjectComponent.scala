@@ -35,9 +35,9 @@ trait ProjectService {
 
   def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]]
 
-  def findById(id: Long): TgRespIO[FindProjectResp]
+  def findById(id: UUID): TgRespIO[FindProjectResp]
 
-  def findAllMembers(projectId: Long): TgRespIO[Seq[SearchAccountDto]]
+  def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]]
 
 }
 
@@ -51,13 +51,13 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
   override def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(organizationId)
 
-  override def findById(id: Long): TgRespIO[FindProjectResp] =
+  override def findById(id: UUID): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findByIdEndpoint)(id)
 
   override def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.updateEndpoint)(dto)
 
-  override def findAllMembers(projectId: Long): TgRespIO[Seq[SearchAccountDto]] =
+  override def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)(projectId)
 
 }

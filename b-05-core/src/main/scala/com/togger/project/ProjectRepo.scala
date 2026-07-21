@@ -6,11 +6,11 @@ import java.time.Instant
 import java.util.UUID
 
 trait ProjectRepo {
-  def findById(id: Long): ConnectionIO[Project]
+  def findById(id: UUID): ConnectionIO[Project]
 
   def insert(project: Project): ConnectionIO[Project]
 
-  def deleteById(id: Long): ConnectionIO[Int]
+  def deleteById(id: UUID): ConnectionIO[Int]
 
   def update(project: Project, updatedAt: Instant): ConnectionIO[Project]
 

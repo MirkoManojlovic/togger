@@ -25,7 +25,7 @@ class TaskStatusService(
     }).transact(transactor)
   }
 
-  def findByProjectId(projectId: Long): IO[List[TaskStatus]] = {
+  def findByProjectId(projectId: UUID): IO[List[TaskStatus]] = {
     taskStatusRepo.findByProjectId(projectId).transact(transactor)
   }
 

@@ -30,9 +30,9 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
 //      .summary(createSummary(findById))
 //      .description(s"Find $topic using id")
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[Long, Seq[FindTaskRespFull]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTaskRespFull]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "project-id" / path[Long]("id"))
+      .in(basePath / "project-id" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindTaskRespFull]]])
   //      .tag(topic)
   //      .name(createName(findById))
