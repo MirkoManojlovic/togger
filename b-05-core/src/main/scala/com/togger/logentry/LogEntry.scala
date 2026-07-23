@@ -27,4 +27,6 @@ case class LogEntryVersion(
 }
 
 case class LogEntryWithOneVersion(logEntry: LogEntry, version: LogEntryVersion)
-case class LogEntryWithVersions(logEntry: LogEntry, versions: Seq[LogEntryVersion])
+case class LogEntryWithVersions(logEntry: LogEntry, versions: Seq[LogEntryVersion]) {
+  lazy val latestVersion: LogEntryVersion = versions.head
+}

@@ -1,12 +1,12 @@
 package com.togger.task
 
 import cats.effect.IO
-import cats.implicits.toTraverseOps
+import cats.implicits._
 import com.togger.common.TgClock
-import com.togger.logentry.{LogEntry, LogEntryRepo}
+import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo, LogEntryWithVersions}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
-import doobie.Transactor
+import doobie.{ConnectionIO, Transactor}
 import doobie.implicits._
 
 import java.util.UUID
@@ -15,6 +15,7 @@ class TaskService(
   taskRepo: TaskRepo,
   linkRepo: LinkRepo,
   logEntryRepo: LogEntryRepo,
+  logEntryVersionRepo: LogEntryVersionRepo,
   tgClock: TgClock,
   transactor: Transactor[IO]
 ) extends TgLogging {
@@ -31,7 +32,7 @@ class TaskService(
     }).transact(transactor)
   }
 
-  def findByProjectId(projectId: UUID): IO[List[(TaskFull, List[Link], List[LogEntry])]] =
+  def findByProjectId(projectId: UUID): IO[List[(TaskFull, List[Link], List[LogEntryWithVersions])]] =
     taskRepo
       .findByProjectId(projectId)
       .flatMap { tasks =>
@@ -39,7 +40,7 @@ class TaskService(
           .map(task =>
             for {
               links <- linkRepo.findByTaskId(task.id)
-              logEntries <- logEntryRepo.findByTaskId(task.id)
+              logEntries <- findLogEntriesWithLatestVersion(task.id)
             } yield (task, links, logEntries)
           )
           .toList
@@ -47,20 +48,31 @@ class TaskService(
       }
       .transact(transactor)
 
-  def findById(id: UUID) =
+  private def findLogEntriesWithLatestVersion(taskId: UUID): ConnectionIO[List[LogEntryWithVersions]] =
+    for {
+      logEntries <- logEntryRepo.findByTaskId(taskId)
+      logEntriesWithVersion <-
+        logEntries.traverse(logEntry =>
+          logEntryVersionRepo
+            .findLatestByLogEntryId(logEntry.id)
+            .map(version => LogEntryWithVersions(logEntry, Seq(version)))
+        )
+    } yield logEntriesWithVersion
+
+  def findById(id: UUID): IO[(Task, List[Link], List[LogEntryWithVersions])] =
     (for {
       task <- taskRepo.findById(id)
       links <- linkRepo.findByTaskId(task.id)
-      logEntries <- logEntryRepo.findByTaskId(task.id)
+      logEntries <- findLogEntriesWithLatestVersion(task.id)
     } yield (task, links, logEntries)).transact(transactor)
 
   def findByIdWithTaskStatusAndAccount(
     id: UUID
-  ): IO[(TaskFull, List[Link], List[LogEntry])] =
+  ): IO[(TaskFull, List[Link], List[LogEntryWithVersions])] =
     (for {
       taskFull <- taskRepo.findByIdWithStatusAndAccount(id)
       links <- linkRepo.findByTaskId(taskFull.id)
-      logEntries <- logEntryRepo.findByTaskId(taskFull.id)
+      logEntries <- findLogEntriesWithLatestVersion(taskFull.id)
     } yield (taskFull, links, logEntries)).transact(transactor)
 
   def updateTask(task: Task, linksToUpdate: Seq[Link], linksToCreate: Seq[Link]): IO[(Task, Seq[Link], List[Link])] = {

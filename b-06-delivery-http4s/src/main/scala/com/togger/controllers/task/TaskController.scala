@@ -2,6 +2,7 @@ package com.togger.controllers.task
 
 import com.togger.account.Account
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
 import com.togger.dto._
 import com.togger.task._
 
@@ -36,18 +37,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
                   url = link.url
                 )
               ),
-              logEntries = logEntries.map(logEntry =>
-                LogEntryDto(
-                  id = logEntry.id,
-                  textInternal = logEntry.textInternal,
-                  textExternal = logEntry.textExternal,
-                  status = logEntry.status,
-                  taskId = logEntry.taskId,
-                  createdBy = logEntry.createdBy,
-                  createdAt = logEntry.createdAt,
-                  updatedAt = logEntry.updatedAt
-                )
-              )
+              logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion))
             )
           )
         }
@@ -77,18 +67,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
                   ),
                   createdAt = taskFull.createdAt,
                   updatedAt = taskFull.updatedAt,
-                  logEntries = logEntries.map(logEntry =>
-                    LogEntryDto(
-                      id = logEntry.id,
-                      textInternal = logEntry.textInternal,
-                      textExternal = logEntry.textExternal,
-                      status = logEntry.status,
-                      taskId = logEntry.taskId,
-                      createdBy = logEntry.createdBy,
-                      createdAt = logEntry.createdAt,
-                      updatedAt = logEntry.updatedAt
-                    )
-                  ),
+                  logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
                   links = links.map(link =>
                     FindLinkResp(
                       id = link.id,

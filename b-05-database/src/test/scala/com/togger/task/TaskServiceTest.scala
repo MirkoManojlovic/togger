@@ -6,7 +6,7 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.{TgClock, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
-import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo}
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -31,6 +31,7 @@ class TaskServiceTest
   val taskRepo: TaskRepo = mock[TaskRepo]
   val linkRepo: LinkRepo = mock[LinkRepo]
   val logEntryRepo: LogEntryRepo = mock[LogEntryRepo]
+  val logEntryVersionRepo: LogEntryVersionRepo = mock[LogEntryVersionRepo]
 
   val tgClock = new TgClock {
     override def currentInstant: Instant = nowAsInstant
@@ -42,7 +43,7 @@ class TaskServiceTest
     override def currentDate(zoneOffset: ZoneOffset): LocalDate = ???
   }
 
-  val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, tgClock, transactorMock)
+  val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, logEntryVersionRepo, tgClock, transactorMock)
 
   val task = Task(
     id = UUID.randomUUID(),
