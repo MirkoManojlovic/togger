@@ -79,12 +79,13 @@ class LogEntryComponent(
   lazy val saveSubmitter = Observer[LogEntryForm] { form =>
     val dto = LogEntryDto(
       id = form.logEntryId.getOrElse(UUID.randomUUID()),
-      textInternal = form.textInternal,
-      textExternal = form.textExternal,
-      status = LogEntryStatus.withValue(form.status.toInt),
       taskId = form.taskId,
       createdBy = accountService.get.get.id,
       createdAt = form.dateAsInstant,
+      latestVersion = UUID.randomUUID(),
+      textInternal = form.textInternal,
+      textExternal = form.textExternal,
+      status = LogEntryStatus.withValue(form.status.toInt),
       updatedAt = form.dateAsInstant
     )
 
@@ -97,12 +98,13 @@ class LogEntryComponent(
   lazy val updateSubmitter = Observer[LogEntryForm] { form =>
     val dto = LogEntryDto(
       id = form.logEntryId.getOrElse(UUID.randomUUID()),
-      textInternal = form.textInternal,
-      textExternal = form.textExternal,
-      status = LogEntryStatus.withValue(form.status.toInt),
       taskId = form.taskId,
       createdBy = accountService.get.get.id,
       createdAt = tgClock.currentInstant,
+      latestVersion = UUID.randomUUID(),
+      textInternal = form.textInternal,
+      textExternal = form.textExternal,
+      status = LogEntryStatus.withValue(form.status.toInt),
       updatedAt = form.dateAsInstant
     )
 
