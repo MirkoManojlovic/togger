@@ -331,24 +331,6 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: text_internal
-                  type: text
-                  constraints:
-                    nullable: true
-                    unique: false
-              - column:
-                  name: text_external
-                  type: text
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: status
-                  type: int
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
                   name: task_id
                   type: uuid
                   constraints:
@@ -368,12 +350,69 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createTable:
+            tableName: log_entry_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: log_entry_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_log_entry_version_log_entry
+                    references: log_entry(id)
+                    deleteCascade: true
+              - column:
+                  name: text_internal
+                  type: text
+                  constraints:
+                    nullable: true
+                    unique: false
+              - column:
+                  name: text_external
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: status
+                  type: int
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_log_entry_version_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
               - column:
                   name: updated_at
                   type: timestamp with time zone
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createIndex:
+            indexName: idx_log_entry_version_log_entry_id_version
+            tableName: log_entry_version
+            columns:
+              - column:
+                  name: log_entry_id
+              - column:
+                  name: version
+                  descending: true
         - createTable:
             tableName: account_session
             columns:
