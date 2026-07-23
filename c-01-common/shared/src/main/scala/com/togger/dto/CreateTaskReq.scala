@@ -67,10 +67,22 @@ case class FindTaskResp(task: FindTaskResp1, links: Seq[FindLinkResp], logEntrie
 
 case class LogEntryDto(
   id: UUID,
+  taskId: UUID,
+  createdBy: UUID,
+  createdAt: Instant,
+  latestVersion: UUID,
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,
-  taskId: UUID,
+  updatedAt: Instant
+)
+
+case class LogEntryVersionDto(
+  version: UUID,
+  logEntryId: UUID,
+  textInternal: String,
+  textExternal: String,
+  status: LogEntryStatus,
   createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant
