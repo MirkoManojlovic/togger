@@ -179,4 +179,13 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def updateLogEntry(dto: LogEntryDto) =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.updateEndpoint)(dto)
 
+  def listLogEntryVersions(logEntryId: UUID) =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.listVersionsEndpoint)(logEntryId)
+
+  def updateLogEntryVersion(dto: LogEntryVersionDto) =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.updateVersionEndpoint)(dto)
+
+  def deleteLogEntryVersion(version: UUID) =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.deleteVersionEndpoint)(version)
+
 }
