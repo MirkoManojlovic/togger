@@ -9,7 +9,7 @@ import com.togger.controllers.project.{DefaultTaskStatusService, ProjectControll
 import com.togger.controllers.task.{TaskController, TaskStatusController}
 import com.togger.dep.AuthDependenciesModule
 import com.togger.http.HttpModule
-import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl}
+import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
 import com.togger.task._
@@ -59,6 +59,9 @@ object TgServer {
         logEntryController.findByTaskId,
         logEntryController.save,
         logEntryController.updateLogEntry,
+        logEntryController.listVersions,
+        logEntryController.updateVersion,
+        logEntryController.deleteVersion,
         organizationController.findAll,
         organizationController.findByAccountId,
         organizationController.save,
@@ -83,12 +86,14 @@ class DependenciesModule(
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
+  lazy val logEntryVersionRepo = new LogEntryVersionRepoImpl
+  lazy val logEntryService = new LogEntryService(logEntryRepo, logEntryVersionRepo, transactor)
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
-  lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryRepo, tgClock, transactor)
+  lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService)
 
   lazy val taskRepo = new TaskRepoImpl
   lazy val linkRepo = new LinkRepoImpl
-  lazy val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, tgClock, transactor)
+  lazy val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, logEntryVersionRepo, tgClock, transactor)
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
   lazy val taskController = new TaskController(taskService, taskEndpoints, tgClock)
 
