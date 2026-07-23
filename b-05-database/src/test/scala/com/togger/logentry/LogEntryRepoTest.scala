@@ -28,13 +28,9 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
 
   val logEntry = LogEntry(
     id = UUID.randomUUID(),
-    textInternal = "Text internal",
-    textExternal = "Test External",
-    status = LogEntryStatus.InProgress,
     taskId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant,
-    updatedAt = nowAsInstant
+    createdAt = nowAsInstant
   )
 
   testNameFromClassName should {
@@ -54,18 +50,14 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
           )
         )
         savedLogEntry <- logEntryRepo.insert(logEntry.copy(taskId = savedTask.id, createdBy = savedAccount.id))
-        foundLink1 <- logEntryRepo.findById(savedLogEntry.id)
-        newUpdatedAt = nowAsInstant
-        updatedLink <- logEntryRepo.update(savedLogEntry.copy(textExternal = "new text external"), newUpdatedAt)
-        foundLink2 <- logEntryRepo.findById(savedLogEntry.id)
-        _ <- logEntryRepo.deleteById(foundLink2.id)
-        foundLink3 <- logEntryRepo.findById(savedLogEntry.id).attempt
+        foundLogEntry1 <- logEntryRepo.findById(savedLogEntry.id)
+        _ <- logEntryRepo.deleteById(foundLogEntry1.id)
+        foundLogEntry2 <- logEntryRepo.findById(savedLogEntry.id).attempt
       } yield {
         val cp = new Checkpoint
-        cp(savedLogEntry shouldBe foundLink1)
-        cp(updatedLink shouldBe foundLink2)
+        cp(savedLogEntry shouldBe foundLogEntry1)
         cp.reportAll()
-        foundLink3.isLeft shouldBe true
+        foundLogEntry2.isLeft shouldBe true
       }
 
       res.transact(transactor)
@@ -98,13 +90,9 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(index =>
       LogEntry(
         id = UUID.randomUUID(),
-        textInternal = s"Text internal- $index",
-        textExternal = s"Test External - $index",
-        status = LogEntryStatus.InProgress,
         taskId = taskId,
         createdBy = accountId,
-        createdAt = nowAsInstant,
-        updatedAt = nowAsInstant
+        createdAt = nowAsInstant
       )
     )
 

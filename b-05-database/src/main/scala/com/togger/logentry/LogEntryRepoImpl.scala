@@ -5,31 +5,20 @@ import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Meta}
+import doobie.{ConnectionIO, Fragment}
 
-import java.time.Instant
 import java.util.UUID
 
 class LogEntryRepoImpl extends LogEntryRepo {
-  import LogEntryRepoImpl.logEntryStatusCodec
 
   def insert(logEntry: LogEntry): ConnectionIO[LogEntry] = {
     import logEntry._
     logAroundInfoQuery(
       insertStatement(LOG_ENTRY_TABLE_FRAG)(fr"""
-        (text_internal, text_external, status, task_id, created_by, created_at, updated_at)
-        values ($textInternal, $textExternal, $status, $taskId, $createdBy, $createdAt, $updatedAt)
+        (task_id, created_by, created_at)
+        values ($taskId, $createdBy, $createdAt)
       """).update
-        .withUniqueGeneratedKeys[LogEntry](
-          "id",
-          "text_internal",
-          "text_external",
-          "status",
-          "task_id",
-          "created_by",
-          "created_at",
-          "updated_at"
-        )
+        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at")
     )(s"Inserting ${sp(logEntry)}", logEntry => s"Log entry inserted ${sp(logEntry)}")
   }
 
@@ -44,26 +33,6 @@ class LogEntryRepoImpl extends LogEntryRepo {
       s"Deleting log entry with ${sp(id)}",
       logEntry => s"Log entry deleted ${sp(logEntry)}"
     )
-  override def update(logEntry: LogEntry, updatedAt: Instant): ConnectionIO[LogEntry] =
-    logAroundInfoQuery(
-      updateStatementUUID(LOG_ENTRY_TABLE_FRAG)(logEntry.id)(fr"""
-            text_internal = ${logEntry.textInternal},
-            text_external = ${logEntry.textExternal},
-            status = ${logEntry.status},
-            task_id = ${logEntry.taskId},
-            updated_at = $updatedAt
-          """).update
-        .withUniqueGeneratedKeys[LogEntry](
-          "id",
-          "text_internal",
-          "text_external",
-          "status",
-          "task_id",
-          "created_by",
-          "created_at",
-          "updated_at"
-        )
-    )(s"Updating ${sp(logEntry)}", logEntry => s"${sp(logEntry)} updated")
 
   override def findByTaskId(taskId: UUID): ConnectionIO[List[LogEntry]] = {
     logAroundInfoQuery(
@@ -87,7 +56,4 @@ class LogEntryRepoImpl extends LogEntryRepo {
 object LogEntryRepoImpl {
   val LOG_ENTRY_TABLE: String = "log_entry"
   val LOG_ENTRY_TABLE_FRAG: Fragment = Fragment.const(LOG_ENTRY_TABLE)
-
-  implicit val logEntryStatusCodec: Meta[LogEntryStatus] = Meta[Int].imap(LogEntryStatus.withValue)(_.value)
-
 }
