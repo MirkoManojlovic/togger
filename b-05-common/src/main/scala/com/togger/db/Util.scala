@@ -82,6 +82,9 @@ object Util extends TgLogging {
   def leftJoin(table: Fragment)(on: Fragment): Fragment =
     fr"left join " ++ table ++ fr" on " ++ on
 
+  def orderByDescLimitOne(field: Fragment): Fragment =
+    fr"order by " ++ field ++ fr" desc limit 1"
+
   def logAroundInfoQuery[A](
     codeBlock: => ConnectionIO[A]
   )(msgBefore: String, msgToLogAfter: A => String)(implicit
