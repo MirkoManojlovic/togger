@@ -290,18 +290,6 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: name
-                  type: varchar(256)
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: url
-                  type: varchar(256)
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
                   name: task_id
                   type: uuid
                   constraints:
@@ -314,12 +302,56 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createTable:
+            tableName: link_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: link_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_link_version_link
+                    references: link(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: url
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
               - column:
                   name: updated_at
                   type: timestamp with time zone
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createIndex:
+            indexName: idx_link_version_link_id_version
+            tableName: link_version
+            columns:
+              - column:
+                  name: link_id
+              - column:
+                  name: version
+                  descending: true
         - createTable:
             tableName: log_entry
             columns:

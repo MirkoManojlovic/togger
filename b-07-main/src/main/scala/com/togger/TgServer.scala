@@ -6,7 +6,7 @@ import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService}
-import com.togger.controllers.task.{TaskController, TaskStatusController}
+import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
 import com.togger.dep.AuthDependenciesModule
 import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
@@ -50,6 +50,9 @@ object TgServer {
         taskController.findByProjectId,
         taskController.save,
         taskController.update,
+        linkController.listVersions,
+        linkController.updateVersion,
+        linkController.deleteVersion,
         projectController.findByid,
         projectController.update,
         projectController.save,
@@ -93,7 +96,12 @@ class DependenciesModule(
 
   lazy val taskRepo = new TaskRepoImpl
   lazy val linkRepo = new LinkRepoImpl
-  lazy val taskService = new TaskService(taskRepo, linkRepo, logEntryRepo, logEntryVersionRepo, tgClock, transactor)
+  lazy val linkVersionRepo = new LinkVersionRepoImpl
+  lazy val linkService = new LinkService(linkVersionRepo, transactor)
+  lazy val linkEndpoints = new LinkEndpoints(securedEndpoint)
+  lazy val linkController = new LinkController(linkEndpoints, linkService)
+  lazy val taskService =
+    new TaskService(taskRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo, tgClock, transactor)
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
   lazy val taskController = new TaskController(taskService, taskEndpoints, tgClock)
 

@@ -28,11 +28,8 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
 
   val link = Link(
     id = UUID.randomUUID(),
-    name = "link name",
-    url = "example url",
     taskId = UUID.randomUUID(),
-    createdAt = nowAsInstant,
-    updatedAt = nowAsInstant
+    createdAt = nowAsInstant
   )
 
   testNameFromClassName should {
@@ -53,17 +50,13 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         )
         savedLink <- linkRepo.insert(link.copy(taskId = savedTask.id))
         foundLink1 <- linkRepo.findById(savedLink.id)
-        newUpdatedAt = nowAsInstant
-        updatedLink <- linkRepo.update(savedLink.copy(url = "new url"), newUpdatedAt)
-        foundLink2 <- linkRepo.findById(savedLink.id)
-        _ <- linkRepo.deleteById(foundLink2.id)
-        foundLink3 <- linkRepo.findById(savedLink.id).attempt
+        _ <- linkRepo.deleteById(foundLink1.id)
+        foundLink2 <- linkRepo.findById(savedLink.id).attempt
       } yield {
         val cp = new Checkpoint
         cp(savedLink shouldBe foundLink1)
-        cp(updatedLink shouldBe foundLink2)
         cp.reportAll()
-        foundLink3.isLeft shouldBe true
+        foundLink2.isLeft shouldBe true
       }
 
       res.transact(transactor)
@@ -73,11 +66,8 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
       def createLinks(taskId: UUID) = (0 to 10).map(index =>
         Link(
           id = UUID.randomUUID(),
-          name = s"Link $index",
-          url = s"url-$index",
           taskId = taskId,
-          createdAt = nowAsInstant,
-          updatedAt = nowAsInstant
+          createdAt = nowAsInstant
         )
       )
 
@@ -131,11 +121,8 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     def createLinks(taskId: UUID) = (0 to 10).map(index =>
       Link(
         id = UUID.randomUUID(),
-        name = s"Link $index",
-        url = s"url-$index",
         taskId = taskId,
-        createdAt = nowAsInstant,
-        updatedAt = nowAsInstant
+        createdAt = nowAsInstant
       )
     )
 

@@ -3,6 +3,7 @@ package com.togger.controllers.task
 import com.togger.account.Account
 import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
+import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
 import com.togger.dto._
 import com.togger.task._
 
@@ -30,13 +31,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
                 createdAt = task.createdAt,
                 updatedAt = task.updatedAt
               ),
-              links = links.map(link =>
-                FindLinkResp(
-                  id = link.id,
-                  name = link.name,
-                  url = link.url
-                )
-              ),
+              links = links.map(link => toLinkDto(link.link, link.latestVersion)),
               logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion))
             )
           )
@@ -68,13 +63,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
                   createdAt = taskFull.createdAt,
                   updatedAt = taskFull.updatedAt,
                   logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
-                  links = links.map(link =>
-                    FindLinkResp(
-                      id = link.id,
-                      name = link.name,
-                      url = link.url
-                    )
-                  )
+                  links = links.map(link => toLinkDto(link.link, link.latestVersion))
                 )
               }
           )
@@ -107,19 +96,23 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     )
 
     val now = tgClock.currentInstant
-    val linksForDb =
-      linksDto.map(dto =>
-        Link(
-          id = UUID.randomUUID(),
-          name = dto.name,
-          url = dto.url,
-          taskId = UUID.randomUUID(),
-          createdAt = now,
-          updatedAt = now
+    val newLinks =
+      linksDto.map { linkDto =>
+        val linkId = UUID.randomUUID()
+        LinkWithOneVersion(
+          link = Link(id = linkId, taskId = UUID.randomUUID(), createdAt = now),
+          version = LinkVersion(
+            version = UUID.randomUUID(),
+            linkId = linkId,
+            name = linkDto.name,
+            url = linkDto.url,
+            createdAt = now,
+            updatedAt = now
+          )
         )
-      )
+      }
 
-    taskService.createTask(task, linksForDb).map { case (savedTask, savedLinks) =>
+    taskService.createTask(task, newLinks).map { case (savedTask, savedLinks) =>
       val savedDto = FindTaskResp(
         task = FindTaskResp1(
           id = savedTask.id,
@@ -132,8 +125,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
           createdAt = savedTask.createdAt,
           updatedAt = savedTask.updatedAt
         ),
-        links =
-          savedLinks.map(savedLink => FindLinkResp(id = savedLink.id, url = savedLink.url, name = savedLink.name)),
+        links = savedLinks.map(link => toLinkDto(link.link, link.version)),
         logEntries = Seq.empty
       )
       TgJsonSuccess.justBodyRight(savedDto)
@@ -159,31 +151,35 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
       updatedAt = newUpdatedAt
     )
 
-    val linksForUpdateDb =
+    val linkVersionUpdates =
       linksForUpdate.map(dto =>
-        Link(
-          id = dto.id,
+        LinkVersion(
+          version = UUID.randomUUID(),
+          linkId = dto.id,
           name = dto.name,
           url = dto.url,
-          taskId = taskDto.id,
           createdAt = newUpdatedAt,
           updatedAt = newUpdatedAt
         )
       )
 
-    val linksToCreateDb =
-      linksToCreate.map(dto =>
-        Link(
-          id = UUID.randomUUID(),
-          name = dto.name,
-          url = dto.url,
-          taskId = taskDto.id,
-          createdAt = newUpdatedAt,
-          updatedAt = newUpdatedAt
+    val newLinks =
+      linksToCreate.map { linkDto =>
+        val linkId = UUID.randomUUID()
+        LinkWithOneVersion(
+          link = Link(id = linkId, taskId = taskDto.id, createdAt = newUpdatedAt),
+          version = LinkVersion(
+            version = UUID.randomUUID(),
+            linkId = linkId,
+            name = linkDto.name,
+            url = linkDto.url,
+            createdAt = newUpdatedAt,
+            updatedAt = newUpdatedAt
+          )
         )
-      )
+      }
 
-    taskService.updateTask(task, linksForUpdateDb, linksToCreateDb).map { case (savedTask, updatedLinks, savedLinks) =>
+    taskService.updateTask(task, linkVersionUpdates, newLinks).map { case (savedTask, updatedLinks, savedLinks) =>
       val savedDto = FindTaskResp(
         task = FindTaskResp1(
           id = savedTask.id,
@@ -196,8 +192,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
           createdAt = savedTask.createdAt,
           updatedAt = savedTask.updatedAt
         ),
-        links = (updatedLinks ++ savedLinks)
-          .map(savedLink => FindLinkResp(id = savedLink.id, url = savedLink.url, name = savedLink.name)),
+        links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
         logEntries = Seq.empty
       )
       TgJsonSuccess.justBodyRight(savedDto)

@@ -62,7 +62,16 @@ case class CreateTaskAndLinksReq(task: CreateTaskReq, links: Seq[CreateLinkReq])
 
 case class UpdateTaskReq(task: UpdateTaskReq1, linksForUpdate: Seq[UpdateLinkReq], linksToCreate: Seq[CreateLinkReq])
 
-case class FindLinkResp(id: UUID, name: String, url: String)
+case class FindLinkResp(
+  id: UUID,
+  taskId: UUID,
+  createdAt: Instant,
+  latestVersion: UUID,
+  name: String,
+  url: String,
+  updatedAt: Instant
+)
+case class LinkVersionDto(version: UUID, linkId: UUID, name: String, url: String, createdAt: Instant, updatedAt: Instant)
 case class FindTaskResp(task: FindTaskResp1, links: Seq[FindLinkResp], logEntries: Seq[LogEntryDto])
 
 case class LogEntryDto(

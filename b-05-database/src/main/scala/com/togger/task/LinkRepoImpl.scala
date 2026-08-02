@@ -18,28 +18,25 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     import link._
     logAroundInfoQuery(
       insertStatement(LINK_TABLE_FRAG)(fr"""
-        (name, url, task_id, created_at, updated_at)
-        values ($name, $url, $taskId, $createdAt, $updatedAt)
+        (task_id, created_at)
+        values ($taskId, $createdAt)
       """).update
         .withUniqueGeneratedKeys[Link](
           "id",
-          "name",
-          "url",
           "task_id",
-          "created_at",
-          "updated_at"
+          "created_at"
         )
     )(s"Inserting ${sp(link)}", link => s"Link inserted ${sp(link)}")
   }
 
-  type LinkInfo = (String, String, UUID, Instant, Instant)
-  private val insertManySql = "insert into link (name, url, task_id, created_at, updated_at) values (?, ?, ?, ?, ?)"
+  type LinkInfo = (UUID, Instant)
+  private val insertManySql = "insert into link (task_id, created_at) values (?, ?)"
 
   override def insertMany(links: Seq[Link]): ConnectionIO[List[Link]] = {
     logAroundInfoQuery {
-      val linksToSave = links.map(link => (link.name, link.url, link.taskId, link.createdAt, link.updatedAt))
+      val linksToSave = links.map(link => (link.taskId, link.createdAt))
       Update[LinkInfo](insertManySql)
-        .updateManyWithGeneratedKeys[Link]("id", "name", "url", "task_id", "created_at", "updated_at")(linksToSave)
+        .updateManyWithGeneratedKeys[Link]("id", "task_id", "created_at")(linksToSave)
         .compile
         .toList
     }(
@@ -55,48 +52,12 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )
   }
 
-  def findByUrl(url: String): ConnectionIO[Link] = {
-    logAroundInfoQuery(
-      (selectAllStatement(LINK_TABLE_FRAG) ++ fr"where url = $url").query[Link].unique
-    )(
-      s"Finding link with url=$url",
-      link => s"Link found $link"
-    )
-  }
-
-  def findByName(name: String): ConnectionIO[Link] = {
-    logAroundInfoQuery(
-      (selectAllStatement(LINK_TABLE_FRAG) ++ fr"where name = $name").query[Link].unique
-    )(
-      s"Finding link with name=$name",
-      link => s"Link found $link"
-    )
-  }
-
   override def deleteById(id: UUID): ConnectionIO[Int] = {
     logAroundInfoQuery(deleteByIdStatementUUID(LINK_TABLE_FRAG)(id).update.run)(
       s"Deleting link with ${sp(id)}",
       link => s"Link deleted ${sp(link)}"
     )
   }
-
-  override def update(link: Link, updatedAt: Instant): ConnectionIO[Link] =
-    logAroundInfoQuery(
-      updateStatementUUID(LINK_TABLE_FRAG)(link.id)(fr"""
-            name = ${link.name}, 
-            url = ${link.url},
-            task_id = ${link.taskId},
-            updated_at = $updatedAt
-          """).update
-        .withUniqueGeneratedKeys[Link](
-          "id",
-          "name",
-          "url",
-          "task_id",
-          "created_at",
-          "updated_at"
-        )
-    )(s"Updating ${sp(link)}", link => s"${sp(link)} updated")
 
   override def findByTaskId(taskId: UUID): ConnectionIO[List[Link]] =
     logAroundInfoQuery(
