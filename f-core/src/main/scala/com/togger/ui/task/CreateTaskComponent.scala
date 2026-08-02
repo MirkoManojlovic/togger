@@ -9,7 +9,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.task.TaskEndpoints
+import com.togger.task.{LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -160,6 +160,7 @@ class CreateTaskComponent(
 class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
   val taskEndpoints = new TaskEndpoints(securedEndpoint)
   val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
+  val linkEndpoints = new LinkEndpoints(securedEndpoint)
 
   def createTask(dto: CreateTaskAndLinksReq): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.saveEndpoint)(dto)
@@ -187,5 +188,14 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
 
   def deleteLogEntryVersion(version: UUID) =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.deleteVersionEndpoint)(version)
+
+  def listLinkVersions(linkId: UUID) =
+    protectedBackendClient.protectedHttpCall(linkEndpoints.listVersionsEndpoint)(linkId)
+
+  def updateLinkVersion(dto: LinkVersionDto) =
+    protectedBackendClient.protectedHttpCall(linkEndpoints.updateVersionEndpoint)(dto)
+
+  def deleteLinkVersion(version: UUID) =
+    protectedBackendClient.protectedHttpCall(linkEndpoints.deleteVersionEndpoint)(version)
 
 }
