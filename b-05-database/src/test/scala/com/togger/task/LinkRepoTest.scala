@@ -17,13 +17,8 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
   val task = Task(
     id = UUID.randomUUID(),
     projectId = UUID.randomUUID(),
-    name = "Task name",
-    description = "Task description",
-    assignedTo = None,
-    taskStatusId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant,
-    updatedAt = nowAsInstant
+    createdAt = nowAsInstant
   )
 
   val link = Link(
@@ -39,15 +34,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
-        taskStatusSaved <- createTaskStatus(savedProject.id)
-        savedTask <- taskRepo.insert(task =
-          task.copy(
-            projectId = savedProject.id,
-            assignedTo = Some(savedAccount.id),
-            createdBy = savedAccount.id,
-            taskStatusId = taskStatusSaved.id
-          )
-        )
+        savedTask <- taskRepo.insert(task = task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
         savedLink <- linkRepo.insert(link.copy(taskId = savedTask.id))
         foundLink1 <- linkRepo.findById(savedLink.id)
         _ <- linkRepo.deleteById(foundLink1.id)
@@ -75,15 +62,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
-        taskStatusSaved <- createTaskStatus(savedProject.id)
-        savedTask <- taskRepo.insert(task =
-          task.copy(
-            projectId = savedProject.id,
-            assignedTo = Some(savedAccount.id),
-            createdBy = savedAccount.id,
-            taskStatusId = taskStatusSaved.id
-          )
-        )
+        savedTask <- taskRepo.insert(task = task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
         linksToInsert = createLinks(savedTask.id)
         savedLinks <- linkRepo.insertMany(linksToInsert)
         foundLinks <- savedLinks.map(link => linkRepo.findById(link.id)).sequence
@@ -99,15 +78,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
-        taskStatusSaved <- createTaskStatus(savedProject.id)
-        savedTask <- taskRepo.insert(task =
-          task.copy(
-            projectId = savedProject.id,
-            assignedTo = Some(savedAccount.id),
-            createdBy = savedAccount.id,
-            taskStatusId = taskStatusSaved.id
-          )
-        )
+        savedTask <- taskRepo.insert(task = task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
         linksToInsert = createLinks(savedTask.id)
         savedLinks <- linkRepo.insertMany(linksToInsert)
         foundLinks <- linkRepo.findByTaskId(savedTask.id)
@@ -131,15 +102,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
-        taskStatusSaved <- createTaskStatus(savedProject.id)
-        savedTask <- taskRepo.insert(task =
-          task.copy(
-            projectId = savedProject.id,
-            assignedTo = Some(savedAccount.id),
-            createdBy = savedAccount.id,
-            taskStatusId = taskStatusSaved.id
-          )
-        )
+        savedTask <- taskRepo.insert(task = task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
         linksToInsert = createLinks(savedTask.id)
         savedLinks <- linkRepo.insertMany(linksToInsert)
         numberOfDeletedLinks <- linkRepo.deleteByTaskId(savedTask.id)

@@ -5,7 +5,7 @@ import com.togger.account.{AccountRepoImpl, AccountSessionRepo, AccountTypeRepo,
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl}
-import com.togger.task.{LinkRepoImpl, LinkVersionRepoImpl, TaskRepoImpl}
+import com.togger.task.{LinkRepoImpl, LinkVersionRepoImpl, TaskRepoImpl, TaskVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.ConnectionIO
 
@@ -17,6 +17,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
         LogEntryRepoImpl.LOG_ENTRY_TABLE,
         LinkVersionRepoImpl.LINK_VERSION_TABLE,
         LinkRepoImpl.LINK_TABLE,
+        TaskVersionRepoImpl.TASK_VERSION_TABLE,
         TaskRepoImpl.TASK_TABLE,
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
         AccountSessionRepo.ACCOUNT_SESSION_TABLE,

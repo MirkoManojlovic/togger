@@ -50,6 +50,9 @@ object TgServer {
         taskController.findByProjectId,
         taskController.save,
         taskController.update,
+        taskController.listVersions,
+        taskController.updateVersion,
+        taskController.deleteVersion,
         linkController.listVersions,
         linkController.updateVersion,
         linkController.deleteVersion,
@@ -95,15 +98,17 @@ class DependenciesModule(
   lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService)
 
   lazy val taskRepo = new TaskRepoImpl
+  lazy val taskVersionRepo = new TaskVersionRepoImpl
+  lazy val taskVersionService = new TaskVersionService(taskVersionRepo, transactor)
   lazy val linkRepo = new LinkRepoImpl
   lazy val linkVersionRepo = new LinkVersionRepoImpl
   lazy val linkService = new LinkService(linkVersionRepo, transactor)
   lazy val linkEndpoints = new LinkEndpoints(securedEndpoint)
   lazy val linkController = new LinkController(linkEndpoints, linkService)
   lazy val taskService =
-    new TaskService(taskRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo, tgClock, transactor)
+    new TaskService(taskRepo, taskVersionRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo, transactor)
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
-  lazy val taskController = new TaskController(taskService, taskEndpoints, tgClock)
+  lazy val taskController = new TaskController(taskService, taskVersionService, taskEndpoints, tgClock)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl

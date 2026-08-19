@@ -9,12 +9,7 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class LinkVersionRepoTest
-    extends BusinessTgDbSpec
-    with TgAccount
-    with TgProject
-    with TgTaskStatus
-    with TimeHelpers {
+class LinkVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val taskRepo = new TaskRepoImpl
   val linkRepo = new LinkRepoImpl
@@ -23,13 +18,8 @@ class LinkVersionRepoTest
   val task = Task(
     id = UUID.randomUUID(),
     projectId = UUID.randomUUID(),
-    name = "Task name",
-    description = "Task description",
-    assignedTo = None,
-    taskStatusId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant,
-    updatedAt = nowAsInstant
+    createdAt = nowAsInstant
   )
 
   val link = Link(
@@ -55,15 +45,7 @@ class LinkVersionRepoTest
       savedAccount <- createAccount
       orgAndProject <- createOrgAndProject
       savedProject = orgAndProject._2
-      taskStatusSaved <- createTaskStatus(savedProject.id)
-      savedTask <- taskRepo.insert(
-        task.copy(
-          projectId = savedProject.id,
-          assignedTo = Some(savedAccount.id),
-          createdBy = savedAccount.id,
-          taskStatusId = taskStatusSaved.id
-        )
-      )
+      savedTask <- taskRepo.insert(task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
       savedLink <- linkRepo.insert(link.copy(taskId = savedTask.id))
     } yield savedLink
 

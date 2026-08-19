@@ -228,6 +228,37 @@ databaseChangeLog:
                     foreignKeyName: fk_project_task
                     references: project(id)
               - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: task_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_version_task
+                    references: task(id)
+                    deleteCascade: true
+              - column:
                   name: name
                   type: varchar(256)
                   constraints:
@@ -244,33 +275,25 @@ databaseChangeLog:
                   type: uuid
                   constraints:
                     nullable: true
-                    foreignKeyName: fk_task_assigned_to_account
-                    references: account(id)
-              - column:
-                  name: created_by
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_task_created_by_account
+                    foreignKeyName: fk_task_version_assigned_to_account
                     references: account(id)
               - column:
                   name: closed_by
                   type: uuid
                   constraints:
                     nullable: true
-                    foreignKeyName: fk_task_closed_by_account
+                    foreignKeyName: fk_task_version_closed_by_account
                     references: account(id)
               - column:
                   name: task_status_id
                   type: uuid
                   constraints:
                     nullable: false
-                    foreignKeyName: fk_task_status_task
+                    foreignKeyName: fk_task_version_task_status
                     references: task_status(id)
               - column:
                   name: created_at
                   type: timestamp with time zone
-                  defaultValueComputed: now()
                   constraints:
                     nullable: false
               - column:
@@ -279,6 +302,15 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createIndex:
+            indexName: idx_task_version_task_id_version
+            tableName: task_version
+            columns:
+              - column:
+                  name: task_id
+              - column:
+                  name: version
+                  descending: true
         - createTable:
             tableName: link
             columns:

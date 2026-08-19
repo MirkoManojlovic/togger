@@ -3,7 +3,8 @@ package com.togger.task
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
 import com.togger.common.TgJsonSuccess
-import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, FindTaskRespFull, UpdateTaskReq}
+import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, FindTaskRespFull, TaskVersionDto, UpdateTaskReq}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -44,5 +45,21 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath)
       .in(jsonBody[UpdateTaskReq])
       .out(jsonBody[TgJsonSuccess[FindTaskResp]])
+
+  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[TaskVersionDto]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / path[UUID]("id") / "version")
+      .out(jsonBody[TgJsonSuccess[List[TaskVersionDto]]])
+
+  val updateVersionEndpoint: TgSecuredEndpoint[TaskVersionDto, TaskVersionDto] =
+    securedEndpoint.endpoint.put
+      .in(basePath / "version")
+      .in(jsonBody[TaskVersionDto])
+      .out(jsonBody[TgJsonSuccess[TaskVersionDto]])
+
+  val deleteVersionEndpoint: TgSecuredEndpointEmptyBody[UUID] =
+    securedEndpoint.endpoint.delete
+      .in(basePath / "version" / path[UUID]("version"))
+      .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
 }

@@ -1,15 +1,22 @@
 package com.togger.controllers.task
 
 import com.togger.account.Account
+import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
 import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
+import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto, toVersionDto}
 import com.togger.dto._
 import com.togger.task._
 
 import java.util.UUID
 
-class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgClock: TgClock) {
+class TaskController(
+  taskService: TaskService,
+  taskVersionService: TaskVersionService,
+  taskEndpoints: TaskEndpoints,
+  tgClock: TgClock
+) {
 
   import taskEndpoints._
 
@@ -17,20 +24,10 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     findByIdEndpoint.serverLogic { auth => taskId =>
       taskService
         .findById(taskId)
-        .map { case (task, links, logEntries) =>
+        .map { case (taskWithVersions, links, logEntries) =>
           TgJsonSuccess.justBodyRight(
             FindTaskResp(
-              task = FindTaskResp1(
-                id = task.id,
-                projectId = task.projectId,
-                name = task.name,
-                description = task.description,
-                assignedTo = task.assignedTo,
-                createdBy = task.createdBy,
-                taskStatusId = task.taskStatusId,
-                createdAt = task.createdAt,
-                updatedAt = task.updatedAt
-              ),
+              task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion),
               links = links.map(link => toLinkDto(link.link, link.latestVersion)),
               logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion))
             )
@@ -62,6 +59,7 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
                   ),
                   createdAt = taskFull.createdAt,
                   updatedAt = taskFull.updatedAt,
+                  latestVersion = taskFull.latestVersion,
                   logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
                   links = links.map(link => toLinkDto(link.link, link.latestVersion))
                 )
@@ -86,10 +84,17 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
     val task = Task(
       id = UUID.randomUUID(),
       projectId = taskDto.projectId,
+      createdBy = auth.body.get.id,
+      createdAt = taskDto.createdAt
+    )
+
+    val firstVersion = TaskVersion(
+      version = UUID.randomUUID(),
+      taskId = task.id,
       name = taskDto.name,
       description = taskDto.description,
       assignedTo = taskDto.assignedTo,
-      createdBy = auth.body.get.id,
+      closedBy = None,
       taskStatusId = taskDto.taskStatusId,
       createdAt = taskDto.createdAt,
       updatedAt = taskDto.createdAt
@@ -112,19 +117,9 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
         )
       }
 
-    taskService.createTask(task, newLinks).map { case (savedTask, savedLinks) =>
+    taskService.createTask(task, firstVersion, newLinks).map { case (savedTask, savedLinks) =>
       val savedDto = FindTaskResp(
-        task = FindTaskResp1(
-          id = savedTask.id,
-          projectId = savedTask.projectId,
-          name = savedTask.name,
-          description = savedTask.description,
-          assignedTo = savedTask.assignedTo,
-          createdBy = savedTask.createdBy,
-          taskStatusId = task.taskStatusId,
-          createdAt = savedTask.createdAt,
-          updatedAt = savedTask.updatedAt
-        ),
+        task = toTaskDto(savedTask.task, savedTask.version),
         links = savedLinks.map(link => toLinkDto(link.link, link.version)),
         logEntries = Seq.empty
       )
@@ -139,15 +134,15 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
 
     val newUpdatedAt = tgClock.currentInstant
 
-    val task = Task(
-      id = taskDto.id,
-      projectId = taskDto.projectId,
+    val newVersionContent = TaskVersion(
+      version = UUID.randomUUID(),
+      taskId = taskDto.id,
       name = taskDto.name,
       description = taskDto.description,
       assignedTo = taskDto.assignedTo,
-      createdBy = auth.body.get.id,
+      closedBy = None,
       taskStatusId = taskDto.taskStatusId,
-      createdAt = taskDto.createdAt,
+      createdAt = newUpdatedAt,
       updatedAt = newUpdatedAt
     )
 
@@ -179,24 +174,39 @@ class TaskController(taskService: TaskService, taskEndpoints: TaskEndpoints, tgC
         )
       }
 
-    taskService.updateTask(task, linkVersionUpdates, newLinks).map { case (savedTask, updatedLinks, savedLinks) =>
-      val savedDto = FindTaskResp(
-        task = FindTaskResp1(
-          id = savedTask.id,
-          projectId = savedTask.projectId,
-          name = savedTask.name,
-          description = savedTask.description,
-          assignedTo = savedTask.assignedTo,
-          createdBy = savedTask.createdBy,
-          taskStatusId = taskDto.taskStatusId,
-          createdAt = savedTask.createdAt,
-          updatedAt = savedTask.updatedAt
-        ),
-        links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
-        logEntries = Seq.empty
-      )
-      TgJsonSuccess.justBodyRight(savedDto)
+    taskService.updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks).map {
+      case (savedTask, updatedLinks, savedLinks) =>
+        val savedDto = FindTaskResp(
+          task = toTaskDto(savedTask.task, savedTask.version),
+          links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
+          logEntries = Seq.empty
+        )
+        TgJsonSuccess.justBodyRight(savedDto)
     }
+  }
+
+  val listVersions = listVersionsEndpoint.serverLogic { auth => taskId =>
+    taskVersionService
+      .listVersions(taskId)
+      .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  }
+
+  val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
+    taskVersionService
+      .updateVersionContent(dto.version, dto.name, dto.description, dto.assignedTo, dto.closedBy, dto.taskStatusId)
+      .map {
+        case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
+        case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
+      }
+  }
+
+  val deleteVersion = deleteVersionEndpoint.serverLogic { auth => version =>
+    taskVersionService
+      .deleteVersion(version)
+      .map {
+        case Right(_)    => TgJsonSuccess.justMessageRight("Task version deleted successfully")
+        case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]
+      }
   }
 
 }

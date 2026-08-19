@@ -23,13 +23,8 @@ class LogEntryVersionRepoTest
   val task = Task(
     id = UUID.randomUUID(),
     projectId = UUID.randomUUID(),
-    name = "Task name",
-    description = "Task description",
-    assignedTo = None,
-    taskStatusId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant,
-    updatedAt = nowAsInstant
+    createdAt = nowAsInstant
   )
 
   val logEntry = LogEntry(
@@ -58,15 +53,7 @@ class LogEntryVersionRepoTest
       savedAccount <- createAccount
       orgAndProject <- createOrgAndProject
       savedProject = orgAndProject._2
-      taskStatusSaved <- createTaskStatus(savedProject.id)
-      savedTask <- taskRepo.insert(
-        task.copy(
-          projectId = savedProject.id,
-          assignedTo = Some(savedAccount.id),
-          createdBy = savedAccount.id,
-          taskStatusId = taskStatusSaved.id
-        )
-      )
+      savedTask <- taskRepo.insert(task.copy(projectId = savedProject.id, createdBy = savedAccount.id))
       savedLogEntry <- logEntryRepo.insert(logEntry.copy(taskId = savedTask.id, createdBy = savedAccount.id))
     } yield (savedAccount, savedLogEntry)
 

@@ -21,6 +21,9 @@ case class LinkVersion(
   def withNewContent(name: String, url: String): LinkVersion =
     this.copy(name = name, url = url)
 
+  def hasSameContentAs(other: LinkVersion): Boolean =
+    name == other.name && url == other.url
+
 }
 
 case class LinkWithOneVersion(link: Link, version: LinkVersion)
