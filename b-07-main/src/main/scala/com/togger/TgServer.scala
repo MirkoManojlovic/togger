@@ -5,9 +5,10 @@ import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
-import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService}
+import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
 import com.togger.dep.AuthDependenciesModule
+import com.togger.dump._
 import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
@@ -25,7 +26,7 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
+  def instance(transactorModule: TransactorModule, appConfigBe: AppConfigBe): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
@@ -34,7 +35,8 @@ object TgServer {
       new DependenciesModule(
         transactorModule.transactor,
         securedEndpoint,
-        authDependenciesModule
+        authDependenciesModule,
+        appConfigBe.taskDumpBasePath
       )
     import dependenciesModule._
 
@@ -79,7 +81,8 @@ object TgServer {
         taskStatusController.findById,
         taskStatusController.save,
         taskStatusController.update,
-        taskStatusController.delete
+        taskStatusController.delete,
+        taskDumpController.dumpTasks
       )
     )
   }
@@ -88,7 +91,8 @@ object TgServer {
 class DependenciesModule(
   val transactor: Transactor[IO],
   securedEndpoint: SecuredEndpoint,
-  authDependenciesModule: AuthDependenciesModule
+  authDependenciesModule: AuthDependenciesModule,
+  taskDumpBasePath: String
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
@@ -134,5 +138,24 @@ class DependenciesModule(
   lazy val taskStatusService = new TaskStatusService(taskStatusRepo, tgClock, transactor)
   lazy val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
   lazy val taskStatusController = new TaskStatusController(taskStatusService, taskStatusEndpoints, tgClock)
+
+  lazy val taskDumpDiskOps = new DiskOps
+  lazy val taskDumpRepo =
+    new TaskDumpRepo(
+      projectRepo,
+      projectAccountRepo,
+      taskRepo,
+      taskVersionRepo,
+      taskStatusRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo
+    )
+  lazy val taskDumpDiskWriter = new TaskDumpDiskWriter(taskDumpDiskOps)
+  lazy val taskDumpService =
+    new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpBasePath, tgClock, transactor)
+  lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
+  lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService)
 
 }

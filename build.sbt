@@ -240,6 +240,7 @@ lazy val backendDeliveryHttp4s = (project in file("b-06-delivery-http4s"))
   .dependsOn(httpEndpoints.jvm % Cctt)
   .dependsOn(tgCommon.jvm % Cctt)
   .dependsOn(backendCore % Cctt)
+  .dependsOn(backendDiskSync % Cctt)
 
 //  .dependsOn(backendCommon % Cctt)
 
