@@ -198,4 +198,13 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def deleteLinkVersion(version: UUID) =
     protectedBackendClient.protectedHttpCall(linkEndpoints.deleteVersionEndpoint)(version)
 
+  def listTaskVersions(taskId: UUID) =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.listVersionsEndpoint)(taskId)
+
+  def updateTaskVersion(dto: TaskVersionDto) =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.updateVersionEndpoint)(dto)
+
+  def deleteTaskVersion(version: UUID) =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.deleteVersionEndpoint)(version)
+
 }
