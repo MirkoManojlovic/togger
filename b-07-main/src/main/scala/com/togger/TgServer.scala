@@ -7,6 +7,7 @@ import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
+import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
@@ -15,6 +16,7 @@ import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoin
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import doobie.Transactor
 import org.http4s.server.Server
 
@@ -82,7 +84,13 @@ object TgServer {
         taskStatusController.save,
         taskStatusController.update,
         taskStatusController.delete,
-        taskDumpController.dumpTasks
+        taskDumpController.dumpTasks,
+        taskDumpConfigController.findById,
+        taskDumpConfigController.save,
+        taskDumpConfigController.update,
+        taskDumpConfigController.delete,
+        taskDumpConfigController.findByProjectId,
+        taskDumpConfigController.findByAccountId
       )
     )
   }
@@ -157,5 +165,11 @@ class DependenciesModule(
     new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpBasePath, tgClock, transactor)
   lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
   lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService)
+
+  lazy val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
+  lazy val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactor)
+  lazy val taskDumpConfigEndpoints = new TaskDumpConfigEndpoints(securedEndpoint)
+  lazy val taskDumpConfigController =
+    new TaskDumpConfigController(taskDumpConfigEndpoints, taskDumpConfigService, tgClock)
 
 }

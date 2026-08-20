@@ -7,12 +7,14 @@ import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImp
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl}
 import com.togger.task.{LinkRepoImpl, LinkVersionRepoImpl, TaskRepoImpl, TaskVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
 import doobie.ConnectionIO
 
 trait BusinessTgDbSpec extends TgDbSpec {
   override val dropTablesQuery: ConnectionIO[Seq[Int]] =
     dropAll(
       Seq(
+        TaskDumpConfigRepoImpl.TASK_DUMP_CONFIG_TABLE,
         LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE,
         LogEntryRepoImpl.LOG_ENTRY_TABLE,
         LinkVersionRepoImpl.LINK_VERSION_TABLE,
