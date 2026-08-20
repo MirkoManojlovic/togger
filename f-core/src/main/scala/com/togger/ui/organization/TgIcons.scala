@@ -192,6 +192,25 @@ object TgIcons {
     )
   }
 
+  def trashIcon(className: String) = {
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d(
+          "M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
+        )
+      )
+    )
+  }
+
   def userIcon(className: String) = {
     svg.svg(
       svg.className(className),
