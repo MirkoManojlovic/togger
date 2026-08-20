@@ -60,7 +60,7 @@ class CreateTaskDumpConfigComponent(
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
     errors = EventStream.empty,
-    labelValue = "Dump path",
+    labelValue = "Dump path (must be an abs path)",
     tgInputType = TgInputType.Text
   )
 
