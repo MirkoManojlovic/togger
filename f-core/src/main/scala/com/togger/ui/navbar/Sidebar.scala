@@ -5,10 +5,14 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.organization.FindOrganizationsAndProjects
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
 import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLLIElement
 
 import java.util.UUID
@@ -16,7 +20,8 @@ import java.util.UUID
 case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
-  isSelected: Boolean = false
+  isSelected: Boolean = false,
+  onDumpClick: Option[() => Unit] = None
 ) {
 
   def selected: ReactiveHtmlElement[HTMLLIElement] =
@@ -29,11 +34,24 @@ case class SidebarLink(
     )
 
   private def linkElementProject =
-    a(
-      cls("inline-flex items-center w-100"),
-      TgIcons.briefcaseIcon("w-4 h-4 me-1.5 -ms-0.5"),
-      linkName,
-      link
+    div(
+      cls("flex items-center justify-between"),
+      a(
+        cls("inline-flex items-center"),
+        TgIcons.briefcaseIcon("w-4 h-4 me-1.5 -ms-0.5"),
+        linkName,
+        link
+      ),
+      onDumpClick.map(dumpAction =>
+        button(
+          `type`("button"),
+          TgIcons.downloadIcon("w-3.5 h-3.5"),
+          cls(
+            "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
+          ),
+          onClick.mapToUnit --> (_ => dumpAction())
+        )
+      )
     )
 
   private def linkElementOrg =
@@ -64,8 +82,18 @@ class Sidebar(
   router: TgRouter[FrontendPage],
   logout: Logout[FrontendPage],
   organizationServiceFe: OrganizationServiceFe,
-  accountService: AccountService
-)(implicit IORuntime: IORuntime) {
+  accountService: AccountService,
+  taskDumpService: TaskDumpFeService,
+  spinnerService: SpinnerService,
+  val toast: Toast
+)(implicit IORuntime: IORuntime)
+    extends ToastMessages {
+
+  private def dumpProject(projectId: UUID): Unit =
+    spinnerService
+      .runWithSpinner(taskDumpService.dumpTasks(projectId))
+      .toastMessageFn("Tasks dumped successfully")(_ => ())
+      .unsafeRunAndForget()
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
 
@@ -204,7 +232,11 @@ class Sidebar(
                   organization.projects
                     .sortBy(_.name)
                     .map(project =>
-                      SidebarLink(project.name, router.navigateTo(ShowAllTasksPage(project.id))).deselectedProject
+                      SidebarLink(
+                        linkName = project.name,
+                        link = router.navigateTo(ShowAllTasksPage(project.id)),
+                        onDumpClick = Some(() => dumpProject(project.id))
+                      ).deselectedProject
                     )
               }
             }

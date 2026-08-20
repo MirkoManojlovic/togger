@@ -42,13 +42,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val loginService = new LoginService(baseEndpoint, securedEndpoint, loginRepo)
   lazy val authenticationRouteGuard = new AuthenticationRouteGuard(loginRepo, LoginPage, ShowAllOrganizationsPage)
   lazy val navigationSelection =
-    NavigationSelection(loginRepo, organizationService, accountService, router)
+    NavigationSelection(loginRepo, organizationService, accountService, router, taskDumpService, spinnerService, toast)
 
   lazy val protectedBackendClient = new ProtectedBackendClient(loginRepo, baseUri = uri"http://localhost:8081/")
   lazy val unprotectedBackendClient = new UnprotectedBackendClient(baseUri = uri"http://localhost:8081/")
 
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
+  lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
   lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
@@ -235,7 +236,10 @@ case class NavigationSelection(
   loginRepo: LoginRepo,
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
-  router: TgRouter[FrontendPage]
+  router: TgRouter[FrontendPage],
+  taskDumpService: TaskDumpFeService,
+  spinnerService: SpinnerService,
+  toast: Toast
 )(implicit IORuntime: IORuntime) {
 
   lazy val navigationSignal: Signal[ReactiveHtmlElement[HTMLDivElement]] = {
@@ -247,7 +251,10 @@ case class NavigationSelection(
             router,
             Logout(loginRepo, router),
             organizationServiceFe,
-            accountService
+            accountService,
+            taskDumpService,
+            spinnerService,
+            toast
           ).element
         )
         .getOrElse(div())
