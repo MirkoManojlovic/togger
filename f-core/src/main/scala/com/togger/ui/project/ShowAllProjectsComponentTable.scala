@@ -4,7 +4,13 @@ import cats.effect.unsafe.IORuntime
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.FindProjectResp
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.{CreateProjectPage, EditOrganizationPage, EditProjectPage, ShowAllTasksPage}
+import com.togger.routes.Pages.{
+  CreateProjectPage,
+  EditOrganizationPage,
+  EditProjectPage,
+  ShowAllTaskDumpConfigsPage,
+  ShowAllTasksPage
+}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
@@ -158,7 +164,17 @@ class ShowAllProjectsTableComponent(
                                   cls(
                                     "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
                                   ),
+                                  cls("mr-2"),
                                   onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.id)))
+                                ),
+                                button(
+                                  `type`("button"),
+                                  TgIcons.downloadIcon("w-4 h-4 me-1.5 -ms-0.5"),
+                                  "Dump Config",
+                                  cls(
+                                    "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
+                                  ),
+                                  onClick.mapToUnit --> (_ => router.route(ShowAllTaskDumpConfigsPage(dto.id)))
                                 )
                               )
                             )

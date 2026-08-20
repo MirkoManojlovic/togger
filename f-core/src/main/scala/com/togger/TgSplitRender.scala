@@ -18,6 +18,7 @@ import com.togger.ui.organization._
 import com.togger.ui.project._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
+import com.togger.ui.taskdumpconfig._
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -74,6 +75,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val projectService = new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
+  lazy val taskDumpConfigService = new TaskDumpConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
 
   lazy val splitRender: SplitRender[FrontendPage, HtmlElement] =
     SplitRender[FrontendPage, HtmlElement](router.currentPageSignal).collectSignal((signal: Signal[FrontendPage]) =>
@@ -128,6 +130,30 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId,
                   taskStatusId,
+                  toast
+                ).element
+              case ShowAllTaskDumpConfigsPage(projectId: UUID) =>
+                new ShowAllTaskDumpConfigsComponent(
+                  taskDumpConfigService,
+                  router,
+                  spinnerService,
+                  toast,
+                  projectId
+                ).element
+              case CreateTaskDumpConfigPage(projectId: UUID) =>
+                new CreateTaskDumpConfigComponent(
+                  taskDumpConfigService,
+                  projectService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case EditTaskDumpConfigPage(id: UUID) =>
+                new EditTaskDumpConfigComponent(
+                  id,
+                  taskDumpConfigService,
+                  router,
+                  spinnerService,
                   toast
                 ).element
               case ShowAllTasksPage(projectId: UUID) =>

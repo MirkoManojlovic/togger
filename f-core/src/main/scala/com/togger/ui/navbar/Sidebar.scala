@@ -21,7 +21,8 @@ case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
   isSelected: Boolean = false,
-  onDumpClick: Option[() => Unit] = None
+  onDumpClick: Option[() => Unit] = None,
+  onConfigClick: Option[() => Unit] = None
 ) {
 
   def selected: ReactiveHtmlElement[HTMLLIElement] =
@@ -42,14 +43,26 @@ case class SidebarLink(
         linkName,
         link
       ),
-      onDumpClick.map(dumpAction =>
-        button(
-          `type`("button"),
-          TgIcons.downloadIcon("w-3.5 h-3.5"),
-          cls(
-            "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
-          ),
-          onClick.mapToUnit --> (_ => dumpAction())
+      div(
+        onDumpClick.map(dumpAction =>
+          button(
+            `type`("button"),
+            TgIcons.downloadIcon("w-3.5 h-3.5"),
+            cls(
+              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
+            ),
+            onClick.mapToUnit --> (_ => dumpAction())
+          )
+        ),
+        onConfigClick.map(configAction =>
+          button(
+            `type`("button"),
+            TgIcons.editIcon("w-3.5 h-3.5"),
+            cls(
+              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
+            ),
+            onClick.mapToUnit --> (_ => configAction())
+          )
         )
       )
     )
@@ -235,7 +248,8 @@ class Sidebar(
                       SidebarLink(
                         linkName = project.name,
                         link = router.navigateTo(ShowAllTasksPage(project.id)),
-                        onDumpClick = Some(() => dumpProject(project.id))
+                        onDumpClick = Some(() => dumpProject(project.id)),
+                        onConfigClick = Some(() => router.route(ShowAllTaskDumpConfigsPage(project.id)))
                       ).deselectedProject
                     )
               }

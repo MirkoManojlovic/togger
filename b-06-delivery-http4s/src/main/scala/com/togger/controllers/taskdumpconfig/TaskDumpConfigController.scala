@@ -37,7 +37,7 @@ class TaskDumpConfigController(
     val taskDumpConfig = TaskDumpConfig(
       id = UUID.randomUUID(),
       projectId = dto.projectId,
-      accountId = dto.accountId,
+      accountId = auth.body.get.id,
       dumpPath = dto.dumpPath,
       createdAt = now,
       updatedAt = now
@@ -54,7 +54,7 @@ class TaskDumpConfigController(
     val taskDumpConfig = TaskDumpConfig(
       id = dto.id,
       projectId = dto.projectId,
-      accountId = dto.accountId,
+      accountId = auth.body.get.id,
       dumpPath = dto.dumpPath,
       createdAt = now,
       updatedAt = now
