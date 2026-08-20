@@ -1,11 +1,12 @@
 package com.togger.ui.toast
 
-import com.togger.common._
-import com.togger.logging.TgLogging
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common._
+import com.togger.logging.TgLogging
+import com.togger.ui.organization.TgIcons
 import com.togger.util.SplunkMacro.sp
-import org.scalajs.dom.html
+import org.scalajs.dom.{HTMLDivElement, html}
 
 import java.util.UUID
 
@@ -14,67 +15,36 @@ class Toast(
   elementForToast: HtmlElement
 ) extends TgLogging {
 
-  private val toastElementClasses: Map[ToastMessageType, String] =
+  private val toastIcons: Map[ToastMessageType, ReactiveHtmlElement[HTMLDivElement]] =
     Map(
-      ToastSuccess -> "toast toast-success",
-      ToastError -> "toast toast-error"
+      ToastSuccess ->
+        div(
+          cls("inline-flex items-center justify-center shrink-0 w-7 h-7 text-fg-success bg-success-soft rounded"),
+          TgIcons.toastSuccessIcon("w-5 h-5"),
+          span(cls("sr-only"), "Check icon")
+        ),
+      ToastError ->
+        div(
+          cls("inline-flex items-center justify-center shrink-0 w-7 h-7 text-fg-danger bg-danger-soft rounded"),
+          TgIcons.toastErrorIcon("w-5 h-5"),
+          span(cls("sr-only"), "Check icon")
+        )
     )
 
   elementForToast.amend(
     children <-- toastMessagesService.$toastMessages.map(formatToastMessages)
   )
 
-//
-//  <div id="toast-success" class= role="alert">
-//    <div class=>
-//      <svg class= aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d=/></svg>
-//      <span class="sr-only">Check icon</span>
-//    </div>
-//    <div class=>Item moved successfully.</div>
-//    <button type="button" class="ms-auto flex items-center justify-center text-body hover:text-heading bg-transparent box-border border border-transparent hover:bg-neutral-secondary-medium focus:ring-4 focus:ring-neutral-tertiary font-medium leading-5 rounded text-sm h-8 w-8 focus:outline-none" data-dismiss-target="#toast-success" aria-label="Close">
-//      <span class="sr-only">Close</span>
-//      <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
-//    </button>
-//  </div>
-//
-
   private def formatToastMessages(uuidToToastMessage: Map[UUID, ToastMessage]): Seq[ReactiveHtmlElement[html.Div]] =
     uuidToToastMessage.values
       .map(toastMessage =>
-//        div(
-//          cls(
-//            toastElementClasses(toastMessage.toastType),
-//            "mb-4"
-////            ToastElement.toastElementStyle.htmlClass
-//          ),
-//          toastMessage.message
-//        )
-
-        // new
-
         div(
           idAttr("toast"),
           position.fixed,
           cls(
             "flex items-center w-full max-w-sm p-4 text-body bg-neutral-primary-soft rounded-base shadow-xs border border-default"
           ),
-          div(
-            cls("inline-flex items-center justify-center shrink-0 w-7 h-7 text-fg-success bg-success-soft rounded"),
-            svg.svg(
-              svg.className("w-5 h-5"),
-              svg.width("24"),
-              svg.fill("none"),
-              svg.viewBox("0 0 24 24"),
-              svg.path(
-                svg.stroke("currentColor"),
-                svg.strokeLineCap("round"),
-                svg.strokeLineJoin("round"),
-                svg.strokeWidth("2"),
-                svg.d("M5 11.917 9.724 16.5 19 7.5")
-              )
-            ),
-            span(cls("sr-only"), "Check icon")
-          ),
+          toastIcons(toastMessage.toastType),
           div(
             cls(
               "ms-3 text-sm font-normal"
@@ -113,11 +83,3 @@ class Toast(
         toastMessagesService.createAToastMessage(ToastMessage.failure("Unknown message occurred"))
     }
 }
-
-//object ToastElement extends StyleSheet.Inline {
-//
-//  val toastElementStyle: StyleA = style(
-//    marginBottom(0.25.rem)
-//  )
-//
-//}
