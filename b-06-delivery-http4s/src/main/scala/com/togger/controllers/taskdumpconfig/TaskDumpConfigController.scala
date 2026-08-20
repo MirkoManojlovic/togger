@@ -1,6 +1,7 @@
 package com.togger.controllers.taskdumpconfig
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import cats.effect.IO
+import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigEndpoints, TaskDumpConfigService}
 
@@ -9,6 +10,7 @@ import java.util.UUID
 class TaskDumpConfigController(
   taskDumpConfigEndpoints: TaskDumpConfigEndpoints,
   taskDumpConfigService: TaskDumpConfigService,
+  taskDumpConfigVerification: TaskDumpConfigVerification,
   tgClock: TgClock
 ) {
 
@@ -32,37 +34,53 @@ class TaskDumpConfigController(
     }
 
   val save = saveEndpoint.serverLogic { auth => dto =>
-    val now = tgClock.currentInstant
+    taskDumpConfigVerification
+      .verify(dto.dumpPath)
+      .fold(
+        error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
+        _ => {
+          val now = tgClock.currentInstant
 
-    val taskDumpConfig = TaskDumpConfig(
-      id = UUID.randomUUID(),
-      projectId = dto.projectId,
-      accountId = auth.body.get.id,
-      dumpPath = dto.dumpPath,
-      createdAt = now,
-      updatedAt = now
-    )
+          val taskDumpConfig = TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = dto.projectId,
+            accountId = auth.body.get.id,
+            dumpPath = dto.dumpPath,
+            createdAt = now,
+            updatedAt = now
+          )
 
-    taskDumpConfigService
-      .create(taskDumpConfig)
-      .map(saved => TgJsonSuccess.justBodyRight(toResp(saved)))
+          taskDumpConfigService
+            .create(taskDumpConfig)
+            .map(saved => TgJsonSuccess.justBodyRight(toResp(saved)))
+        }
+      )
+
   }
 
   val update = updateEndpoint.serverLogic { auth => dto =>
-    val now = tgClock.currentInstant
+    taskDumpConfigVerification
+      .verify(dto.dumpPath)
+      .fold(
+        error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
+        _ => {
+          val now = tgClock.currentInstant
 
-    val taskDumpConfig = TaskDumpConfig(
-      id = dto.id,
-      projectId = dto.projectId,
-      accountId = auth.body.get.id,
-      dumpPath = dto.dumpPath,
-      createdAt = now,
-      updatedAt = now
-    )
+          val taskDumpConfig = TaskDumpConfig(
+            id = dto.id,
+            projectId = dto.projectId,
+            accountId = auth.body.get.id,
+            dumpPath = dto.dumpPath,
+            createdAt = now,
+            updatedAt = now
+          )
 
-    taskDumpConfigService
-      .update(taskDumpConfig)
-      .map(updated => TgJsonSuccess.justBodyRight(toResp(updated)))
+          taskDumpConfigService
+            .update(taskDumpConfig)
+            .map(updated => TgJsonSuccess.justBodyRight(toResp(updated)))
+        }
+      )
+
   }
 
   val delete = deleteByIdEndpoint.serverLogic { auth => id =>

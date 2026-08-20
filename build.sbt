@@ -233,6 +233,8 @@ lazy val backendDeliveryHttp4s = (project in file("b-06-delivery-http4s"))
       // Logging
       `com.outr` %% scribe % `scribe-version`,
       `com.outr` %% `scribe-slf4j` % `scribe-version`,
+      // Files
+      "com.lihaoyi" %% "os-lib" % "0.11.6",
       // Tests
       `org.scalatest` %% scalatest % `scalatest-version` % Test
     )

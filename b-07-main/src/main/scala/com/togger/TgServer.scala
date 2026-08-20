@@ -7,7 +7,7 @@ import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
-import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
+import com.togger.controllers.taskdumpconfig.{TaskDumpConfigController, TaskDumpConfigVerification}
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
@@ -168,8 +168,9 @@ class DependenciesModule(
 
   lazy val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
   lazy val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactor)
+  lazy val taskDumpConfigVerification = new TaskDumpConfigVerification()
   lazy val taskDumpConfigEndpoints = new TaskDumpConfigEndpoints(securedEndpoint)
   lazy val taskDumpConfigController =
-    new TaskDumpConfigController(taskDumpConfigEndpoints, taskDumpConfigService, tgClock)
+    new TaskDumpConfigController(taskDumpConfigEndpoints, taskDumpConfigService,taskDumpConfigVerification, tgClock)
 
 }
