@@ -8,6 +8,8 @@ trait LinkRepo {
 
   def insert(link: Link): ConnectionIO[Link]
 
+  def insertWithId(link: Link): ConnectionIO[Link]
+
   def findById(id: UUID): ConnectionIO[Link]
 
   def deleteById(id: UUID): ConnectionIO[Int]

@@ -20,6 +20,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
+import com.togger.ui.taskload._
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -143,6 +144,13 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 ).element
               case TaskDumpStatusPage(projectId: UUID) =>
                 new TaskDumpStatusComponent(
+                  taskDumpService,
+                  spinnerService,
+                  toast,
+                  projectId
+                ).element
+              case TaskLoadPage(projectId: UUID) =>
+                new TaskLoadComponent(
                   taskDumpService,
                   spinnerService,
                   toast,

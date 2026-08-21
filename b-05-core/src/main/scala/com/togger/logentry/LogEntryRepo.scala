@@ -8,6 +8,8 @@ trait LogEntryRepo {
 
   def insert(logEntry: LogEntry): ConnectionIO[LogEntry]
 
+  def insertWithId(logEntry: LogEntry): ConnectionIO[LogEntry]
+
   def findById(id: UUID): ConnectionIO[LogEntry]
 
   def deleteById(id: UUID): ConnectionIO[Int]

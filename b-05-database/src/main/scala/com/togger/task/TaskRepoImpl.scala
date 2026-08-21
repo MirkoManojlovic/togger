@@ -27,6 +27,20 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     )
   }
 
+  override def insertWithId(task: Task): ConnectionIO[Task] = {
+    import task._
+    logAroundInfoQuery(
+      insertStatement(TASK_TABLE_FRAG)(fr"""
+        (id, project_id, created_by, created_at)
+        values ($id, $projectId, $createdBy, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[Task]("id", "project_id", "created_by", "created_at")
+    )(
+      s"Inserting ${sp(task)} with existing id",
+      task => s"Task inserted with existing id ${sp(task)}"
+    )
+  }
+
   override def findById(id: UUID): ConnectionIO[Task] =
     logAroundInfoQuery(findByIdStatementUUID(TASK_TABLE_FRAG)(id).query[Task].unique)(
       s"Finding task with ${sp(id)}",

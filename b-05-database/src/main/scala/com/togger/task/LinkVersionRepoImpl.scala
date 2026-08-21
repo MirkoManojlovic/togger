@@ -31,6 +31,20 @@ class LinkVersionRepoImpl extends LinkVersionRepo {
     )(s"Inserting ${sp(linkVersion)}", linkVersion => s"Link version inserted ${sp(linkVersion)}")
   }
 
+  override def insertWithId(linkVersion: LinkVersion): ConnectionIO[LinkVersion] = {
+    import linkVersion._
+    logAroundInfoQuery(
+      insertStatement(LINK_VERSION_TABLE_FRAG)(fr"""
+        (version, link_id, name, url, created_at, updated_at)
+        values ($version, $linkId, $name, $url, $createdAt, $updatedAt)
+      """).update
+        .withUniqueGeneratedKeys[LinkVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(linkVersion)} with existing version",
+      linkVersion => s"Link version inserted with existing version ${sp(linkVersion)}"
+    )
+  }
+
   override def findByVersion(version: UUID): ConnectionIO[LinkVersion] =
     logAroundInfoQuery(
       (selectAllStatement(LINK_VERSION_TABLE_FRAG) ++ fr"where version = $version").query[LinkVersion].unique

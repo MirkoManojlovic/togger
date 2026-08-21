@@ -11,6 +11,8 @@ trait TaskRepo {
 
   def insert(task: Task): ConnectionIO[Task]
 
+  def insertWithId(task: Task): ConnectionIO[Task]
+
   def deleteById(id: UUID): ConnectionIO[Int]
 
 }
@@ -18,6 +20,8 @@ trait TaskRepo {
 trait TaskVersionRepo {
 
   def insert(taskVersion: TaskVersion): ConnectionIO[TaskVersion]
+
+  def insertWithId(taskVersion: TaskVersion): ConnectionIO[TaskVersion]
 
   def findByVersion(version: UUID): ConnectionIO[TaskVersion]
 

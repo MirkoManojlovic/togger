@@ -8,6 +8,8 @@ trait LogEntryVersionRepo {
 
   def insert(logEntryVersion: LogEntryVersion): ConnectionIO[LogEntryVersion]
 
+  def insertWithId(logEntryVersion: LogEntryVersion): ConnectionIO[LogEntryVersion]
+
   def findByVersion(version: UUID): ConnectionIO[LogEntryVersion]
 
   def findByLogEntryId(logEntryId: UUID): ConnectionIO[List[LogEntryVersion]]

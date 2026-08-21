@@ -85,6 +85,7 @@ object TgServer {
         taskStatusController.delete,
         taskDumpController.dumpTasks,
         taskDumpController.checkStatus,
+        taskDumpController.loadTasks,
         taskDumpConfigController.findById,
         taskDumpConfigController.save,
         taskDumpConfigController.update,
@@ -170,7 +171,10 @@ class DependenciesModule(
 
   lazy val taskDumpService =
     new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, tgClock, transactor)
+  lazy val taskLoadRepo =
+    new TaskLoadRepo(taskRepo, taskVersionRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo)
+  lazy val taskLoadService = new TaskLoadService(taskDumpRepo, taskLoadRepo, taskDumpDiskWriter, transactor)
   lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
-  lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService)
+  lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService, taskLoadService)
 
 }

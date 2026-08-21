@@ -8,6 +8,8 @@ trait LinkVersionRepo {
 
   def insert(linkVersion: LinkVersion): ConnectionIO[LinkVersion]
 
+  def insertWithId(linkVersion: LinkVersion): ConnectionIO[LinkVersion]
+
   def findByVersion(version: UUID): ConnectionIO[LinkVersion]
 
   def findByLinkId(linkId: UUID): ConnectionIO[List[LinkVersion]]

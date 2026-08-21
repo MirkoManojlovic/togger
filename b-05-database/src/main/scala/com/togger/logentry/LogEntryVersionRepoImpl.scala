@@ -34,6 +34,20 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
     )(s"Inserting ${sp(logEntryVersion)}", logEntryVersion => s"Log entry version inserted ${sp(logEntryVersion)}")
   }
 
+  override def insertWithId(logEntryVersion: LogEntryVersion): ConnectionIO[LogEntryVersion] = {
+    import logEntryVersion._
+    logAroundInfoQuery(
+      insertStatement(LOG_ENTRY_VERSION_TABLE_FRAG)(fr"""
+        (version, log_entry_id, text_internal, text_external, status, created_by, created_at, updated_at)
+        values ($version, $logEntryId, $textInternal, $textExternal, $status, $createdBy, $createdAt, $updatedAt)
+      """).update
+        .withUniqueGeneratedKeys[LogEntryVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(logEntryVersion)} with existing version",
+      logEntryVersion => s"Log entry version inserted with existing version ${sp(logEntryVersion)}"
+    )
+  }
+
   override def findByVersion(version: UUID): ConnectionIO[LogEntryVersion] =
     logAroundInfoQuery(
       (selectAllStatement(LOG_ENTRY_VERSION_TABLE_FRAG) ++ fr"where version = $version").query[LogEntryVersion].unique

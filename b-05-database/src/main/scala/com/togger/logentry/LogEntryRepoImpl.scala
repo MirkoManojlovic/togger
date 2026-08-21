@@ -22,6 +22,20 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )(s"Inserting ${sp(logEntry)}", logEntry => s"Log entry inserted ${sp(logEntry)}")
   }
 
+  override def insertWithId(logEntry: LogEntry): ConnectionIO[LogEntry] = {
+    import logEntry._
+    logAroundInfoQuery(
+      insertStatement(LOG_ENTRY_TABLE_FRAG)(fr"""
+        (id, task_id, created_by, created_at)
+        values ($id, $taskId, $createdBy, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at")
+    )(
+      s"Inserting ${sp(logEntry)} with existing id",
+      logEntry => s"Log entry inserted with existing id ${sp(logEntry)}"
+    )
+  }
+
   override def findById(id: UUID): ConnectionIO[LogEntry] =
     logAroundInfoQuery(findByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].unique)(
       s"Finding log entry with ${sp(id)}",

@@ -29,6 +29,21 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )(s"Inserting ${sp(link)}", link => s"Link inserted ${sp(link)}")
   }
 
+  override def insertWithId(link: Link): ConnectionIO[Link] = {
+    import link._
+    logAroundInfoQuery(
+      insertStatement(LINK_TABLE_FRAG)(fr"""
+        (id, task_id, created_at)
+        values ($id, $taskId, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[Link](
+          "id",
+          "task_id",
+          "created_at"
+        )
+    )(s"Inserting ${sp(link)} with existing id", link => s"Link inserted with existing id ${sp(link)}")
+  }
+
   type LinkInfo = (UUID, Instant)
   private val insertManySql = "insert into link (task_id, created_at) values (?, ?)"
 

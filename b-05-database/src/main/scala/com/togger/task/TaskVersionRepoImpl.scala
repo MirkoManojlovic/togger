@@ -64,6 +64,20 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     )(s"Inserting ${sp(taskVersion)}", taskVersion => s"Task version inserted ${sp(taskVersion)}")
   }
 
+  override def insertWithId(taskVersion: TaskVersion): ConnectionIO[TaskVersion] = {
+    import taskVersion._
+    logAroundInfoQuery(
+      insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
+        (version, task_id, name, description, assigned_to, closed_by, task_status_id, created_at, updated_at)
+        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $createdAt, $updatedAt)
+      """).update
+        .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(taskVersion)} with existing version",
+      taskVersion => s"Task version inserted with existing version ${sp(taskVersion)}"
+    )
+  }
+
   override def findByVersion(version: UUID): ConnectionIO[TaskVersion] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_VERSION_TABLE_FRAG) ++ fr"where version = $version").query[TaskVersion].unique

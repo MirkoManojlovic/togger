@@ -8,13 +8,25 @@ import com.togger.dto.{
   TaskDumpResp,
   TaskDumpStatusResp,
   TaskDumpSyncStatusResp,
-  TaskDumpTaskStatusResp
+  TaskDumpTaskStatusResp,
+  TaskLoadResp,
+  TaskLoadStatusResp,
+  TaskLoadTaskResultResp
 }
-import com.togger.dump.{TaskDumpEndpoints, TaskDumpService, TaskDumpSyncStatus, TaskDumpTaskStatus}
+import com.togger.dump.{
+  TaskDumpEndpoints,
+  TaskDumpService,
+  TaskDumpSyncStatus,
+  TaskDumpTaskStatus,
+  TaskLoadService,
+  TaskLoadTaskResult,
+  TaskLoadTaskStatus
+}
 
 class TaskDumpController(
   taskDumpEndpoints: TaskDumpEndpoints,
-  taskDumpService: TaskDumpService
+  taskDumpService: TaskDumpService,
+  taskLoadService: TaskLoadService
 ) {
 
   val dumpTasks = taskDumpEndpoints.dumpEndpoint.serverLogic { auth => projectId =>
@@ -37,6 +49,38 @@ class TaskDumpController(
           TgJsonSuccess.justBodyRight(TaskDumpStatusResp(projectId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[TaskDumpStatusResp]
       }
+  }
+
+  val loadTasks = taskDumpEndpoints.loadEndpoint.serverLogic { auth =>
+    { case (projectId, req) =>
+      taskLoadService
+        .loadProject(projectId, auth.body.get.id, req.dumpPath)
+        .map {
+          case Right(result) =>
+            val results = result.taskResults.map(toResp)
+            TgJsonSuccess.justBodyRight(TaskLoadResp(projectId, result.dumpPath, result.taskCount, results))
+          case Left(error) => error.toBadRequestLeft[TaskLoadResp]
+        }
+    }
+  }
+
+  private def toResp(r: TaskLoadTaskResult): TaskLoadTaskResultResp =
+    TaskLoadTaskResultResp(
+      r.taskId,
+      r.taskName,
+      toRespStatus(r.status),
+      r.versionsAdded,
+      r.linksAdded,
+      r.logEntriesAdded,
+      r.error
+    )
+
+  private def toRespStatus(s: TaskLoadTaskStatus): TaskLoadStatusResp = s match {
+    case TaskLoadTaskStatus.Inserted  => TaskLoadStatusResp.Inserted
+    case TaskLoadTaskStatus.Merged    => TaskLoadStatusResp.Merged
+    case TaskLoadTaskStatus.Unchanged => TaskLoadStatusResp.Unchanged
+    case TaskLoadTaskStatus.Malformed => TaskLoadStatusResp.Malformed
+    case TaskLoadTaskStatus.Failed    => TaskLoadStatusResp.Failed
   }
 
   private def toResp(s: TaskDumpTaskStatus): TaskDumpTaskStatusResp =
