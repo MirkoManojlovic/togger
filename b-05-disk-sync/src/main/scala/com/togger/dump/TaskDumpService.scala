@@ -100,19 +100,31 @@ class TaskDumpService(
     val missingFromDumpIds = dbTasksById.keySet.diff(diskTasksById.keySet)
     val missingFromDbIds = diskTasksById.keySet.diff(dbTasksById.keySet)
 
+    def taskName(taskId: UUID): Option[String] =
+      dbTasksById
+        .get(taskId)
+        .orElse(diskTasksById.get(taskId).flatMap(_.toOption))
+        .flatMap(_.taskVersions.headOption)
+        .map(_.name)
+
     val commonStatuses = commonIds.toList.map { taskId =>
       diskTasksById(taskId) match {
-        case Left(parseError) => TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.Malformed, List(parseError))
+        case Left(parseError) =>
+          TaskDumpTaskStatus(taskId, taskName(taskId), TaskDumpSyncStatus.Malformed, List(parseError))
         case Right(diskData) =>
           val diffs = differences(dbTasksById(taskId), diskData)
-          if (diffs.isEmpty) TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.InSync, Nil)
-          else TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.OutOfSync, diffs)
+          if (diffs.isEmpty) TaskDumpTaskStatus(taskId, taskName(taskId), TaskDumpSyncStatus.InSync, Nil)
+          else TaskDumpTaskStatus(taskId, taskName(taskId), TaskDumpSyncStatus.OutOfSync, diffs)
       }
     }
     val missingFromDumpStatuses =
-      missingFromDumpIds.toList.map(TaskDumpTaskStatus(_, TaskDumpSyncStatus.MissingFromDump, Nil))
+      missingFromDumpIds.toList.map(taskId =>
+        TaskDumpTaskStatus(taskId, taskName(taskId), TaskDumpSyncStatus.MissingFromDump, Nil)
+      )
     val missingFromDbStatuses =
-      missingFromDbIds.toList.map(TaskDumpTaskStatus(_, TaskDumpSyncStatus.MissingFromDb, Nil))
+      missingFromDbIds.toList.map(taskId =>
+        TaskDumpTaskStatus(taskId, taskName(taskId), TaskDumpSyncStatus.MissingFromDb, Nil)
+      )
 
     TaskDumpPathStatus(dumpPath, commonStatuses ++ missingFromDumpStatuses ++ missingFromDbStatuses)
   }

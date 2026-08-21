@@ -40,7 +40,7 @@ class TaskDumpController(
   }
 
   private def toResp(s: TaskDumpTaskStatus): TaskDumpTaskStatusResp =
-    TaskDumpTaskStatusResp(s.taskId, toRespStatus(s.status), s.differences)
+    TaskDumpTaskStatusResp(s.taskId, s.taskName, toRespStatus(s.status), s.differences)
 
   private def toRespStatus(s: TaskDumpSyncStatus): TaskDumpSyncStatusResp = s match {
     case TaskDumpSyncStatus.InSync          => TaskDumpSyncStatusResp.InSync

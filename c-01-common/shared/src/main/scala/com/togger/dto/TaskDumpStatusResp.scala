@@ -18,6 +18,7 @@ object TaskDumpSyncStatusResp extends Enum[TaskDumpSyncStatusResp] {
 
 case class TaskDumpTaskStatusResp(
   taskId: UUID,
+  taskName: Option[String],
   status: TaskDumpSyncStatusResp,
   differences: List[String]
 )

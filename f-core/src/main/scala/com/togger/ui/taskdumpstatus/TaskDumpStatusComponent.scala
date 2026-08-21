@@ -63,6 +63,7 @@ class TaskDumpStatusComponent(
                 cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
                 tr(
                   createTh("task id"),
+                  createTh("task name"),
                   createTh("status"),
                   createTh("details")
                 )
@@ -74,6 +75,7 @@ class TaskDumpStatusComponent(
                     tr(
                       cls("odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"),
                       createTd(taskStatus.taskId.toString),
+                      createTd(taskStatus.taskName.getOrElse("-"): String),
                       createTd(statusBadge(taskStatus.status)),
                       createTd(taskStatus.differences.mkString(", "))
                     )

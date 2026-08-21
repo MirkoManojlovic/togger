@@ -35,6 +35,6 @@ object TaskDumpSyncStatus {
   case object Malformed extends TaskDumpSyncStatus
 }
 
-case class TaskDumpTaskStatus(taskId: UUID, status: TaskDumpSyncStatus, differences: List[String])
+case class TaskDumpTaskStatus(taskId: UUID, taskName: Option[String], status: TaskDumpSyncStatus, differences: List[String])
 case class TaskDumpPathStatus(dumpPath: String, taskStatuses: List[TaskDumpTaskStatus])
 case class TaskDumpStatusResult(pathStatuses: List[TaskDumpPathStatus])
