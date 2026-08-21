@@ -245,6 +245,21 @@ object TgIcons {
       )
     )
 
+  def toastWarningIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z")
+      )
+    )
+
   def toastErrorIcon(className: String) =
     svg.svg(
       svg.className(className),
