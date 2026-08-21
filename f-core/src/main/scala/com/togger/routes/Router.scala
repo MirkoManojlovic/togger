@@ -74,5 +74,7 @@ object Pages {
 
   case class EditTaskDumpConfigPage(id: UUID) extends PrivatePage
 
+  case class TaskDumpStatusPage(projectId: UUID) extends PrivatePage
+
   case object HomePage extends PrivatePage
 }

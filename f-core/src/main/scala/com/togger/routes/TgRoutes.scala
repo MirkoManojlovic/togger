@@ -121,6 +121,11 @@ class TgRoutes {
         encode = (page: EditTaskDumpConfigPage) => page.id.toString,
         decode = (id: String) => EditTaskDumpConfigPage(UUID.fromString(id)),
         pattern = root / "task-dump-config" / "edit" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: TaskDumpStatusPage) => page.projectId.toString,
+        decode = (projectId: String) => TaskDumpStatusPage(UUID.fromString(projectId)),
+        pattern = root / "task-dump-status" / "project" / segment[String] / endOfSegments
       )
     )
 

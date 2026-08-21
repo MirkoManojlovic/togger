@@ -71,6 +71,60 @@ class TaskDumpService(
       }
   }
 
+  def checkStatus(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] = {
+    logger.info(s"Checking dump status for ${sp(projectId)} requested by ${sp(accountId)}")
+    getDumpData(projectId, accountId)
+      .transact(transactor)
+      .flatMap {
+        case Left(error) => IO.pure(Left(error))
+        case Right((project, _, dbTasks)) =>
+          taskDumpConfigService.findByProjectId(projectId).map { configs =>
+            if (configs.isEmpty)
+              Left(NoDumpPathConfigured)
+            else {
+              val dbTasksById = dbTasks.map(t => t.task.id -> t).toMap
+              val pathStatuses = configs.map(config => buildPathStatus(config.dumpPath, project, dbTasksById))
+              Right(TaskDumpStatusResult(pathStatuses))
+            }
+          }
+      }
+  }
+
+  private def buildPathStatus(
+    dumpPath: String,
+    project: Project,
+    dbTasksById: Map[UUID, TaskDumpData]
+  ): TaskDumpPathStatus = {
+    val diskTasksById = taskDumpDiskWriter.readDumpedTasks(dumpPath, project)
+    val commonIds = dbTasksById.keySet.intersect(diskTasksById.keySet)
+    val missingFromDumpIds = dbTasksById.keySet.diff(diskTasksById.keySet)
+    val missingFromDbIds = diskTasksById.keySet.diff(dbTasksById.keySet)
+
+    val commonStatuses = commonIds.toList.map { taskId =>
+      diskTasksById(taskId) match {
+        case Left(parseError) => TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.Malformed, List(parseError))
+        case Right(diskData) =>
+          val diffs = differences(dbTasksById(taskId), diskData)
+          if (diffs.isEmpty) TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.InSync, Nil)
+          else TaskDumpTaskStatus(taskId, TaskDumpSyncStatus.OutOfSync, diffs)
+      }
+    }
+    val missingFromDumpStatuses =
+      missingFromDumpIds.toList.map(TaskDumpTaskStatus(_, TaskDumpSyncStatus.MissingFromDump, Nil))
+    val missingFromDbStatuses =
+      missingFromDbIds.toList.map(TaskDumpTaskStatus(_, TaskDumpSyncStatus.MissingFromDb, Nil))
+
+    TaskDumpPathStatus(dumpPath, commonStatuses ++ missingFromDumpStatuses ++ missingFromDbStatuses)
+  }
+
+  private def differences(db: TaskDumpData, disk: TaskDumpData): List[String] =
+    List(
+      Option.when(db.task != disk.task)("task fields differ"),
+      Option.when(db.taskVersions != disk.taskVersions)("task versions differ"),
+      Option.when(db.links != disk.links)("links differ"),
+      Option.when(db.logEntries != disk.logEntries)("log entries differ")
+    ).flatten
+
   private def getDumpData(projectId: UUID, accountId: UUID): ConnectionIO[Either[ProjectError, DumpData]] =
     for {
       assigned <- taskDumpRepo.isAssigned(projectId, accountId)

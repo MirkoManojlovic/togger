@@ -5,6 +5,7 @@ import com.togger.project.Project
 import com.togger.task._
 
 import java.time.Instant
+import java.util.UUID
 
 case class LinkDumpData(link: Link, versions: List[LinkVersion])
 
@@ -23,3 +24,17 @@ case class ProjectDumpManifest(
   dumpedAt: Instant,
   taskCount: Int
 )
+
+sealed trait TaskDumpSyncStatus
+
+object TaskDumpSyncStatus {
+  case object InSync extends TaskDumpSyncStatus
+  case object OutOfSync extends TaskDumpSyncStatus
+  case object MissingFromDump extends TaskDumpSyncStatus
+  case object MissingFromDb extends TaskDumpSyncStatus
+  case object Malformed extends TaskDumpSyncStatus
+}
+
+case class TaskDumpTaskStatus(taskId: UUID, status: TaskDumpSyncStatus, differences: List[String])
+case class TaskDumpPathStatus(dumpPath: String, taskStatuses: List[TaskDumpTaskStatus])
+case class TaskDumpStatusResult(pathStatuses: List[TaskDumpPathStatus])

@@ -11,6 +11,9 @@ class DiskOps extends TgLogging {
   def readFileFromDisk(filePath: os.Path): String =
     os.read(filePath)
 
+  def listFiles(folderPath: os.Path): Seq[os.Path] =
+    if (os.exists(folderPath)) os.list(folderPath) else Seq.empty
+
   def resolvePath(basePath: String, segments: String*): os.Path = {
 
     segments.foldLeft(os.Path(processHomePath(basePath), os.home))(_ / _)

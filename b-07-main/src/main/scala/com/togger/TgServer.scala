@@ -84,6 +84,7 @@ object TgServer {
         taskStatusController.update,
         taskStatusController.delete,
         taskDumpController.dumpTasks,
+        taskDumpController.checkStatus,
         taskDumpConfigController.findById,
         taskDumpConfigController.save,
         taskDumpConfigController.update,

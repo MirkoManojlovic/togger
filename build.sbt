@@ -117,6 +117,7 @@ lazy val backendMain = (project in file("b-07-main"))
   .enablePlugins(GraalVMNativeImagePlugin)
   .settings(
     name := "backend-main",
+    Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Http4s
