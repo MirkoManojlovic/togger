@@ -5,8 +5,7 @@ import pureconfig.generic.auto._
 import scribe.Logging
 
 case class AppConfigBe(
-  isDesktopMode: Boolean,
-  taskDumpBasePath: String
+  isDesktopMode: Boolean
 )
 class AppEnvSelector(appEnv: AppEnv) extends Logging {
 

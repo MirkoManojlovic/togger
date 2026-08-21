@@ -28,7 +28,7 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule, appConfigBe: AppConfigBe): Resource[IO, Server] = {
+  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
@@ -37,8 +37,7 @@ object TgServer {
       new DependenciesModule(
         transactorModule.transactor,
         securedEndpoint,
-        authDependenciesModule,
-        appConfigBe.taskDumpBasePath
+        authDependenciesModule
       )
     import dependenciesModule._
 
@@ -99,8 +98,7 @@ object TgServer {
 class DependenciesModule(
   val transactor: Transactor[IO],
   securedEndpoint: SecuredEndpoint,
-  authDependenciesModule: AuthDependenciesModule,
-  taskDumpBasePath: String
+  authDependenciesModule: AuthDependenciesModule
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
@@ -161,10 +159,6 @@ class DependenciesModule(
       logEntryVersionRepo
     )
   lazy val taskDumpDiskWriter = new TaskDumpDiskWriter(taskDumpDiskOps)
-  lazy val taskDumpService =
-    new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpBasePath, tgClock, transactor)
-  lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
-  lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService)
 
   lazy val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
   lazy val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactor)
@@ -172,5 +166,10 @@ class DependenciesModule(
   lazy val taskDumpConfigEndpoints = new TaskDumpConfigEndpoints(securedEndpoint)
   lazy val taskDumpConfigController =
     new TaskDumpConfigController(taskDumpConfigEndpoints, taskDumpConfigService,taskDumpConfigVerification, tgClock)
+
+  lazy val taskDumpService =
+    new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, tgClock, transactor)
+  lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
+  lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService)
 
 }

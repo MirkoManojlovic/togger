@@ -53,7 +53,7 @@ object BackendApp extends IOApp with TgLogging {
     for {
       stopSignal <- Deferred[IO, Unit]
       serverResult <- TgServer
-        .instance(new TransactorModuleApp(transactor), appConfigBe)
+        .instance(new TransactorModuleApp(transactor))
         .use(_ => runServer(stopSignal, appConfigBe))
         .map(_ => logger.info("Stoping the app"))
         .as(ExitCode.Success)

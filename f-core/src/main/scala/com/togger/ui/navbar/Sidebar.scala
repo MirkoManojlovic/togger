@@ -1,4 +1,5 @@
 package com.togger.ui.navbar
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
@@ -105,7 +106,9 @@ class Sidebar(
   private def dumpProject(projectId: UUID): Unit =
     spinnerService
       .runWithSpinner(taskDumpService.dumpTasks(projectId))
-      .toastMessageFn("Tasks dumped successfully")(_ => ())
+      .toastMessageDto(dto =>
+        s"Tasks dumped to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
+      )(_ => IO.unit)
       .unsafeRunAndForget()
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)

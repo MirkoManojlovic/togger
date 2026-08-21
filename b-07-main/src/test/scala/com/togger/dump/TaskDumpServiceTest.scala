@@ -7,6 +7,7 @@ import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntry
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
 import com.togger.task.{Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -38,6 +39,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   )
   val diskOps = new DiskOps
   val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
+  val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
 
   def createTaskWithFullHistory(projectId: UUID, createdBy: UUID, taskStatusId: UUID): ConnectionIO[UUID] =
     for {
@@ -87,8 +89,9 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   testNameFromClassName should {
 
     "reject dump for an account not assigned to the project" in { transactor =>
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
       val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, dumpBasePath.toString, new TgClockImpl, transactor)
+        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
 
       for {
         savedAccount <- createAccount.transact(transactor)
@@ -101,9 +104,11 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       }
     }
 
-    "dump all tasks with links, log entries and task statuses to disk" in { transactor =>
+    "reject dump for a project with no dump path configured" in { transactor =>
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
       val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, dumpBasePath.toString, new TgClockImpl, transactor)
+        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+      val noConfigDumpPath: os.Path = os.pwd / "target" / s"test-task-dump-no-config-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -111,6 +116,51 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         (_, savedProject) = savedOrgAndProject
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+      } yield (savedAccount, savedProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject) = setupResult
+        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+      } yield {
+        result shouldBe Left(ProjectError.NoDumpPathConfigured)
+        os.exists(noConfigDumpPath) shouldBe false
+      }
+    }
+
+    "dump all tasks with links, log entries and task statuses to every configured dump path" in { transactor =>
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
+      val taskDumpService =
+        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+      val secondDumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskDumpConfigRepo.insert(
+          TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            dumpPath = dumpBasePath.toString,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        _ <- taskDumpConfigRepo.insert(
+          TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            dumpPath = secondDumpBasePath.toString,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
         )
         savedTaskStatus <- createTaskStatus(savedProject.id)
         taskIds <- List.fill(2)(()).traverse(_ => createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id))
@@ -125,21 +175,26 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         result.isRight shouldBe true
         val dumpResult = result.toOption.get
         cp(dumpResult.taskCount shouldBe 2)
+        cp(dumpResult.pathResults.size shouldBe 2)
+        cp(dumpResult.pathResults.forall(_.success) shouldBe true)
 
-        val rootFolder = os.Path(dumpResult.dumpPath)
-        val manifest = decode[ProjectDumpManifest](os.read(rootFolder / "project.json")).toOption.get
-        cp(manifest.project.id shouldBe savedProject.id)
-        cp(manifest.taskStatuses.map(_.id) shouldBe List(savedTaskStatus.id))
-        cp(manifest.taskCount shouldBe 2)
+        List(dumpBasePath, secondDumpBasePath).foreach { basePath =>
+          val pathResult = dumpResult.pathResults.find(_.dumpPath.startsWith(basePath.toString)).get
+          val rootFolder = os.Path(pathResult.dumpPath)
+          val manifest = decode[ProjectDumpManifest](os.read(rootFolder / "project.json")).toOption.get
+          cp(manifest.project.id shouldBe savedProject.id)
+          cp(manifest.taskStatuses.map(_.id) shouldBe List(savedTaskStatus.id))
+          cp(manifest.taskCount shouldBe 2)
 
-        taskIds.foreach { taskId =>
-          val taskDump = decode[TaskDumpData](os.read(rootFolder / s"$taskId.json")).toOption.get
-          cp(taskDump.task.id shouldBe taskId)
-          cp(taskDump.taskVersions.size shouldBe 2)
-          cp(taskDump.links.size shouldBe 1)
-          cp(taskDump.links.head.versions.size shouldBe 2)
-          cp(taskDump.logEntries.size shouldBe 1)
-          cp(taskDump.logEntries.head.versions.size shouldBe 2)
+          taskIds.foreach { taskId =>
+            val taskDump = decode[TaskDumpData](os.read(rootFolder / s"$taskId.json")).toOption.get
+            cp(taskDump.task.id shouldBe taskId)
+            cp(taskDump.taskVersions.size shouldBe 2)
+            cp(taskDump.links.size shouldBe 1)
+            cp(taskDump.links.head.versions.size shouldBe 2)
+            cp(taskDump.logEntries.size shouldBe 1)
+            cp(taskDump.logEntries.head.versions.size shouldBe 2)
+          }
         }
         cp.reportAll()
       }
