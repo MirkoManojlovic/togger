@@ -615,3 +615,52 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+
+        - createTable:
+            tableName: task_load_config
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: dump_path
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_load_config_project
+                    references: project(id)
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_load_config_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
