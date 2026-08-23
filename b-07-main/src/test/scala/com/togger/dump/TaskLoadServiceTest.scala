@@ -4,8 +4,19 @@ import com.togger.account.TgAccount
 import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
-import com.togger.task.{Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.project.{Project, ProjectAccount, ProjectAccountRepoImpl, ProjectError}
+import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepoImpl}
+import com.togger.task.{
+  Link,
+  LinkRepoImpl,
+  LinkVersion,
+  LinkVersionRepoImpl,
+  Task,
+  TaskRepoImpl,
+  TaskStatus,
+  TaskVersion,
+  TaskVersionRepoImpl
+}
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -23,6 +34,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   val linkVersionRepo = new LinkVersionRepoImpl
   val logEntryRepo = new LogEntryRepoImpl
   val logEntryVersionRepo = new LogEntryVersionRepoImpl
+  val projectMappingRepo = new ProjectMappingRepoImpl
 
   val taskDumpRepo = new TaskDumpRepo(
     projectRepo,
@@ -36,7 +48,17 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     logEntryVersionRepo
   )
   val taskLoadRepo =
-    new TaskLoadRepo(taskRepo, taskVersionRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo)
+    new TaskLoadRepo(
+      taskRepo,
+      taskVersionRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo,
+      projectMappingRepo,
+      taskStatusRepo,
+      new TgClockImpl
+    )
   val diskOps = new DiskOps
   val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
   val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
@@ -122,6 +144,25 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       )
     )
 
+  private def insertMapping(projectIdDb: UUID, projectIdDump: UUID): ConnectionIO[ProjectMapping] =
+    projectMappingRepo.insert(
+      ProjectMapping(
+        id = UUID.randomUUID(),
+        projectIdDb = projectIdDb,
+        projectIdDump = projectIdDump,
+        createdAt = nowAsInstant,
+        updatedAt = nowAsInstant
+      )
+    )
+
+  private def createSecondProject(organizationId: UUID): ConnectionIO[Project] =
+    projectRepo.insert(project.copy(id = UUID.randomUUID(), organizationId = organizationId, name = "Second project"))
+
+  private def loaded(outcome: TaskLoadOutcome): TaskLoadResult = outcome match {
+    case TaskLoadOutcome.Loaded(result) => result
+    case other                          => fail(s"expected TaskLoadOutcome.Loaded but got $other")
+  }
+
   testNameFromClassName should {
 
     "reject load for an account not assigned to the project" in { transactor =>
@@ -148,6 +189,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
         _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
         savedTaskStatus <- createTaskStatus(savedProject.id)
       } yield (savedAccount, savedProject, savedTaskStatus)
 
@@ -208,14 +250,14 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           )
         )
         _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, dumpBasePath.toString)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
         persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
         persistedVersions <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor)
         persistedLinks <- linkRepo.findByTaskId(newTaskId).transact(transactor)
         persistedLogEntries <- logEntryRepo.findByTaskId(newTaskId).transact(transactor)
       } yield {
         loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == newTaskId).get
+        val taskResult = loaded(loadResult.toOption.get).taskResults.find(_.taskId == newTaskId).get
         taskResult.status shouldBe TaskLoadTaskStatus.Inserted
         taskResult.versionsAdded shouldBe 3
         taskResult.linksAdded shouldBe 1
@@ -240,6 +282,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
         _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, fullHistory)
@@ -249,18 +292,19 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         (savedAccount, savedProject, fullHistory) = setupResult
         dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
         _ = dumpResult.isRight shouldBe true
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
         // simulate a local db that's behind the dump: drop the older task version, the whole link, and the older log entry version
         _ <- taskVersionRepo.deleteByVersion(fullHistory.taskVersions.head.version).transact(transactor)
         _ <- linkRepo.deleteById(fullHistory.link.id).transact(transactor)
         _ <- logEntryVersionRepo.deleteByVersion(fullHistory.logEntryVersions.head.version).transact(transactor)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, dumpBasePath.toString)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
         persistedVersions <- taskVersionRepo.findByTaskId(fullHistory.taskId).transact(transactor)
         persistedLinks <- linkRepo.findByTaskId(fullHistory.taskId).transact(transactor)
         persistedLogEntryVersions <- logEntryVersionRepo.findByLogEntryId(fullHistory.logEntry.id).transact(transactor)
-        reloadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, dumpBasePath.toString)
+        reloadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
       } yield {
         loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        val taskResult = loaded(loadResult.toOption.get).taskResults.find(_.taskId == fullHistory.taskId).get
         taskResult.status shouldBe TaskLoadTaskStatus.Merged
         taskResult.versionsAdded shouldBe 4 // 1 task version + 2 link versions (whole link re-inserted) + 1 log entry version
         taskResult.linksAdded shouldBe 1
@@ -270,7 +314,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         persistedLogEntryVersions.size shouldBe 2
 
         reloadResult.isRight shouldBe true
-        val reloadTaskResult = reloadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        val reloadTaskResult = loaded(reloadResult.toOption.get).taskResults.find(_.taskId == fullHistory.taskId).get
         reloadTaskResult.status shouldBe TaskLoadTaskStatus.Unchanged
         reloadTaskResult.versionsAdded shouldBe 0
         reloadTaskResult.linksAdded shouldBe 0
@@ -291,6 +335,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
         _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, fullHistory)
@@ -300,10 +345,11 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         (savedAccount, savedProject, fullHistory) = setupResult
         dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
         _ = dumpResult.isRight shouldBe true
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, dumpBasePath.toString)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
       } yield {
         loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        val taskResult = loaded(loadResult.toOption.get).taskResults.find(_.taskId == fullHistory.taskId).get
         taskResult.status shouldBe TaskLoadTaskStatus.Unchanged
         taskResult.versionsAdded shouldBe 0
         taskResult.linksAdded shouldBe 0
@@ -324,6 +370,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
         _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, fullHistory)
@@ -334,12 +381,206 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
         _ = os.write.over(rootFolder / s"${fullHistory.taskId}.json", "not valid json")
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, dumpBasePath.toString)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
       } yield {
         loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        val taskResult = loaded(loadResult.toOption.get).taskResults.find(_.taskId == fullHistory.taskId).get
         taskResult.status shouldBe TaskLoadTaskStatus.Malformed
         taskResult.error should not be empty
+      }
+    }
+
+    "reject loading when the dump path has no readable project.json manifest" in { transactor =>
+      val taskLoadService = newTaskLoadService(transactor)
+
+      for {
+        savedAccount <- createAccount.transact(transactor)
+        savedOrgAndProject <- createOrgAndProject.transact(transactor)
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo
+          .insert(ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant))
+          .transact(transactor)
+        emptyFolder = os.pwd / "target" / s"test-task-load-empty-${UUID.randomUUID()}"
+        _ = os.makeDir.all(emptyFolder)
+        result <- taskLoadService.loadProject(savedProject.id, savedAccount.id, emptyFolder.toString)
+      } yield result shouldBe Left(ProjectError.DumpManifestMissing)
+    }
+
+    "report a mapping is required when no project mapping exists for the target project" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val taskLoadService = newTaskLoadService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (savedOrganization, dumpProject) = savedOrgAndProject
+        targetProject <- createSecondProject(savedOrganization.id)
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
+      } yield (savedAccount, dumpProject, targetProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, dumpProject, targetProject) = setupResult
+        dumpResult <- taskDumpService.dumpProject(dumpProject.id, savedAccount.id)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, rootFolder.toString)
+        mappings <- projectMappingRepo.findByProjectIdDb(targetProject.id).transact(transactor)
+      } yield {
+        loadResult shouldBe Right(TaskLoadOutcome.MappingRequired(dumpProject.id, dumpProject.name))
+        mappings shouldBe empty
+      }
+    }
+
+    "reject loading when the target project's mapping points to a different dump project" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val taskLoadService = newTaskLoadService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (savedOrganization, dumpProject) = savedOrgAndProject
+        targetProject <- createSecondProject(savedOrganization.id)
+        unrelatedDumpProject <- createSecondProject(savedOrganization.id)
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(targetProject.id, unrelatedDumpProject.id)
+      } yield (savedAccount, dumpProject, targetProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, dumpProject, targetProject) = setupResult
+        dumpResult <- taskDumpService.dumpProject(dumpProject.id, savedAccount.id)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, rootFolder.toString)
+      } yield loadResult shouldBe Left(ProjectError.ProjectMappingConflict)
+    }
+
+    "remap the project id and reconcile task statuses by name/description when loading across a mapping" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val taskLoadService = newTaskLoadService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (savedOrganization, dumpProject) = savedOrgAndProject
+        targetProject <- createSecondProject(savedOrganization.id)
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(targetProject.id, dumpProject.id)
+        doneStatusOnDumpSide <- taskStatusRepo.insert(
+          TaskStatus(
+            id = UUID.randomUUID(),
+            projectId = dumpProject.id,
+            name = "Done",
+            description = "Task completed",
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        blockedStatusOnDumpSide <- taskStatusRepo.insert(
+          TaskStatus(
+            id = UUID.randomUUID(),
+            projectId = dumpProject.id,
+            name = "Blocked",
+            description = "Task blocked",
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        doneStatusOnTargetSide <- taskStatusRepo.insert(
+          TaskStatus(
+            id = UUID.randomUUID(),
+            projectId = targetProject.id,
+            name = "Done",
+            description = "Task completed",
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+      } yield (savedAccount, dumpProject, targetProject, doneStatusOnDumpSide, blockedStatusOnDumpSide, doneStatusOnTargetSide)
+
+      // These tasks only ever exist as hand-written dump files, never as real rows in this DB under
+      // dumpProject - a real cross-database load would never find them by id either, so this exercises
+      // the "insert with remapped project id" branch of TaskLoadRepo.mergeTask, not the "merge into an
+      // already-present row" branch.
+      val doneTaskId = UUID.randomUUID()
+      val blockedTaskId = UUID.randomUUID()
+
+      def diskTaskFor(taskId: UUID, dumpProjectId: UUID, accountId: UUID, taskStatusId: UUID): TaskDumpData =
+        TaskDumpData(
+          task = Task(id = taskId, projectId = dumpProjectId, createdBy = accountId, createdAt = nowAsInstant),
+          taskVersions = List(
+            TaskVersion(
+              version = UUID.randomUUID(),
+              taskId = taskId,
+              name = "Disk task",
+              description = "Disk task description",
+              assignedTo = None,
+              closedBy = None,
+              taskStatusId = taskStatusId,
+              createdAt = nowAsInstant,
+              updatedAt = nowAsInstant
+            )
+          ),
+          links = Nil,
+          logEntries = Nil
+        )
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, dumpProject, targetProject, doneStatusOnDumpSide, blockedStatusOnDumpSide, doneStatusOnTargetSide) =
+          setupResult
+        dumpResult <- taskDumpService.dumpProject(dumpProject.id, savedAccount.id)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        _ = os.write.over(
+          rootFolder / s"$doneTaskId.json",
+          diskTaskFor(doneTaskId, dumpProject.id, savedAccount.id, doneStatusOnDumpSide.id).asJson.spaces2
+        )
+        _ = os.write.over(
+          rootFolder / s"$blockedTaskId.json",
+          diskTaskFor(blockedTaskId, dumpProject.id, savedAccount.id, blockedStatusOnDumpSide.id).asJson.spaces2
+        )
+        loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, rootFolder.toString)
+        persistedDoneTask <- taskRepo.findById(doneTaskId).transact(transactor)
+        persistedBlockedTask <- taskRepo.findById(blockedTaskId).transact(transactor)
+        persistedDoneVersion <- taskVersionRepo.findByTaskId(doneTaskId).transact(transactor).map(_.head)
+        persistedBlockedVersion <- taskVersionRepo.findByTaskId(blockedTaskId).transact(transactor).map(_.head)
+        targetStatuses <- taskStatusRepo.findByProjectId(targetProject.id).transact(transactor)
+        reloadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, rootFolder.toString)
+        targetStatusesAfterReload <- taskStatusRepo.findByProjectId(targetProject.id).transact(transactor)
+      } yield {
+        loadResult.isRight shouldBe true
+        // both tasks and their statuses are remapped into the target project, not left pointing at the dump project
+        persistedDoneTask.projectId shouldBe targetProject.id
+        persistedBlockedTask.projectId shouldBe targetProject.id
+        persistedDoneVersion.taskStatusId shouldBe doneStatusOnTargetSide.id
+        targetStatuses.count(_.name == "Done") shouldBe 1
+        val newBlockedStatus = targetStatuses.find(_.name == "Blocked").get
+        newBlockedStatus.description shouldBe "Task blocked"
+        persistedBlockedVersion.taskStatusId shouldBe newBlockedStatus.id
+
+        // reloading is idempotent: no duplicate task statuses get created in the target project
+        reloadResult.isRight shouldBe true
+        targetStatusesAfterReload.size shouldBe targetStatuses.size
       }
     }
   }

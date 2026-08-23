@@ -35,6 +35,19 @@ class TaskDumpDiskWriter(diskOps: DiskOps) extends TgLogging {
       .toMap
   }
 
+  def readManifest(folderPath: String): Either[String, ProjectDumpManifest] =
+    Try(diskOps.readFileFromDisk(diskOps.resolvePath(folderPath, "project.json"))).toEither.left
+      .map(_.getMessage)
+      .flatMap(content => decode[ProjectDumpManifest](content).left.map(_.getMessage))
+
+  def readDumpedTasksAtPath(folderPath: String): Map[UUID, Either[String, TaskDumpData]] =
+    diskOps
+      .listFiles(diskOps.resolvePath(folderPath))
+      .flatMap { file =>
+        Try(UUID.fromString(file.baseName)).toOption.map(taskId => taskId -> parseTaskDumpFile(file))
+      }
+      .toMap
+
   private def parseTaskDumpFile(file: os.Path): Either[String, TaskDumpData] =
     Try(diskOps.readFileFromDisk(file)).toEither.left
       .map(_.getMessage)

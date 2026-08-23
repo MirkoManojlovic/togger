@@ -1,9 +1,13 @@
 package com.togger.dump
 
 import cats.implicits._
+import com.togger.common.TgClock
 import com.togger.logentry.{LogEntryRepo, LogEntryVersion, LogEntryVersionRepo}
+import com.togger.projectmapping.ProjectMappingRepo
 import com.togger.task._
 import doobie.ConnectionIO
+
+import java.util.UUID
 
 class TaskLoadRepo(
   taskRepo: TaskRepo,
@@ -11,10 +15,41 @@ class TaskLoadRepo(
   linkRepo: LinkRepo,
   linkVersionRepo: LinkVersionRepo,
   logEntryRepo: LogEntryRepo,
-  logEntryVersionRepo: LogEntryVersionRepo
+  logEntryVersionRepo: LogEntryVersionRepo,
+  projectMappingRepo: ProjectMappingRepo,
+  taskStatusRepo: TaskStatusRepo,
+  tgClock: TgClock
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
+
+  def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[MappingResolution] =
+    projectMappingRepo.findByProjectIdDb(projectIdDb).map(_.headOption).flatMap {
+      case None =>
+        (MappingResolution.Required: MappingResolution).pure[ConnectionIO]
+      case Some(mapping) if mapping.projectIdDump != manifest.project.id =>
+        (MappingResolution.Conflict: MappingResolution).pure[ConnectionIO]
+      case Some(_) =>
+        reconcileTaskStatuses(projectIdDb, manifest.taskStatuses).map(MappingResolution.Resolved)
+    }
+
+  private def reconcileTaskStatuses(projectIdDb: UUID, diskStatuses: List[TaskStatus]): ConnectionIO[Map[UUID, UUID]] =
+    for {
+      dbStatuses <- taskStatusRepo.findByProjectId(projectIdDb)
+      now = tgClock.currentInstant
+      initialByKey = dbStatuses.map(s => (s.name, s.description) -> s.id).toMap
+      folded <- diskStatuses.foldLeftM((initialByKey, Map.empty[UUID, UUID])) { case ((byKey, idMap), diskStatus) =>
+        byKey.get((diskStatus.name, diskStatus.description)) match {
+          case Some(dbId) =>
+            (byKey, idMap + (diskStatus.id -> dbId)).pure[ConnectionIO]
+          case None =>
+            taskStatusRepo.insert(diskStatus.copy(projectId = projectIdDb, createdAt = now, updatedAt = now)).map {
+              created =>
+                (byKey + ((diskStatus.name, diskStatus.description) -> created.id), idMap + (diskStatus.id -> created.id))
+            }
+        }
+      }
+    } yield folded._2
 
   def mergeTask(diskData: TaskDumpData): ConnectionIO[TaskLoadTaskResult] =
     for {

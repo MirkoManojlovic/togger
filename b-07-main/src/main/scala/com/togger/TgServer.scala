@@ -200,7 +200,17 @@ class DependenciesModule(
   lazy val taskDumpService =
     new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, tgClock, transactor)
   lazy val taskLoadRepo =
-    new TaskLoadRepo(taskRepo, taskVersionRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo)
+    new TaskLoadRepo(
+      taskRepo,
+      taskVersionRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo,
+      projectMappingRepo,
+      taskStatusRepo,
+      tgClock
+    )
   lazy val taskLoadService = new TaskLoadService(taskDumpRepo, taskLoadRepo, taskDumpDiskWriter, transactor)
   lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)
   lazy val taskDumpController = new TaskDumpController(taskDumpEndpoints, taskDumpService, taskLoadService)

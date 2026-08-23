@@ -12,4 +12,13 @@ object ProjectError {
   case object NoDumpPathConfigured extends ProjectError {
     override def message: String = "No dump path configured for this project. Configure at least one task dump config path first."
   }
+
+  case object DumpManifestMissing extends ProjectError {
+    override def message: String = "No project.json manifest found at the given dump path, or it could not be parsed"
+  }
+
+  case object ProjectMappingConflict extends ProjectError {
+    override def message: String =
+      "This project already has a project mapping pointing to a different dump project"
+  }
 }
