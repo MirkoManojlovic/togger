@@ -1,0 +1,103 @@
+package com.togger.ui.projectmapping
+
+import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto.projectmapping.ProjectMappingResp
+import com.togger.routes.Pages.{CreateProjectMappingPage, EditProjectMappingPage}
+import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
+import com.togger.ui.organization.TgIcons
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
+
+import java.util.UUID
+
+class ShowProjectMappingComponent(
+  projectMappingService: ProjectMappingFeService,
+  router: TgRouter[FrontendPage],
+  spinnerService: SpinnerService,
+  val toast: Toast,
+  projectId: UUID
+)(implicit
+  ioRuntime: IORuntime
+) extends ToastMessages {
+
+  private val stateVar = Var(Option.empty[ProjectMappingResp])
+
+  spinnerService
+    .runWithSpinner(
+      projectMappingService
+        .findByProjectIdLoaded(projectId)
+        .map(response => response.map(success => stateVar.set(success.body.get.headOption)))
+    )
+    .unsafeRunAndForget()
+
+  private def deleteButton(mapping: ProjectMappingResp) =
+    button(
+      `type`("button"),
+      TgIcons.trashIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
+      "Delete",
+      cls(
+        "inline-flex items-center text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 focus:ring-red-300 shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
+      ),
+      onClick.mapToUnit --> (_ =>
+        spinnerService
+          .runWithSpinner(projectMappingService.deleteById(mapping.id))
+          .toastBackendMessageCodeBlock {
+            stateVar.set(None)
+          }
+          .unsafeRunAndForget()
+      )
+    )
+
+  private def editButton(mapping: ProjectMappingResp) =
+    button(
+      `type`("button"),
+      TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
+      "Edit",
+      cls(
+        "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
+      ),
+      cls("mr-2"),
+      onClick.mapToUnit --> (_ => router.route(EditProjectMappingPage(mapping.id)))
+    )
+
+  private def mappingDetails(mapping: ProjectMappingResp) =
+    div(
+      cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default p-4"),
+      p(cls("mb-2"), b("Origin project id: "), mapping.projectIdOrigin.toString),
+      p(cls("mb-2"), b("Loaded project id: "), mapping.projectIdLoaded.toString),
+      p(cls("mb-2"), b("Created at: "), mapping.createdAt.toString),
+      p(cls("mb-4"), b("Updated at: "), mapping.updatedAt.toString),
+      div(editButton(mapping), deleteButton(mapping))
+    )
+
+  private def emptyState =
+    div(
+      cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default p-4"),
+      p(cls("mb-4"), "No project mapping configured for this project yet."),
+      TgHtmlButton
+        .extraSmall("Create")
+        .amend(
+          router.navigateTo(CreateProjectMappingPage(projectId))
+        )
+    )
+
+  val element = {
+    div(
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.plainText("Project mapping", TgCard.CardHeaderSize.H3),
+          body = TgCard.HtmlCardContent(
+            div(
+              child <-- stateVar.signal.map(mappingOpt => mappingOpt.fold(emptyState)(mappingDetails))
+            )
+          )
+        )
+        .element
+    )
+  }
+
+}

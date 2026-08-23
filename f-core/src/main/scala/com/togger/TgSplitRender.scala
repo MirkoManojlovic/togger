@@ -16,6 +16,7 @@ import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.navbar.{Logout, Sidebar}
 import com.togger.ui.organization._
 import com.togger.ui.project._
+import com.togger.ui.projectmapping._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.taskdumpconfig._
@@ -80,6 +81,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
   lazy val taskDumpConfigService = new TaskDumpConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val taskLoadConfigService = new TaskLoadConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val projectMappingService = new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
 
   lazy val splitRender: SplitRender[FrontendPage, HtmlElement] =
     SplitRender[FrontendPage, HtmlElement](router.currentPageSignal).collectSignal((signal: Signal[FrontendPage]) =>
@@ -286,6 +288,30 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   projectId,
+                  toast
+                ).element
+              case ShowProjectMappingPage(projectId: UUID) =>
+                new ShowProjectMappingComponent(
+                  projectMappingService,
+                  router,
+                  spinnerService,
+                  toast,
+                  projectId
+                ).element
+              case CreateProjectMappingPage(projectId: UUID) =>
+                new CreateProjectMappingComponent(
+                  projectMappingService,
+                  router,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case EditProjectMappingPage(id: UUID) =>
+                new EditProjectMappingComponent(
+                  id,
+                  projectMappingService,
+                  router,
+                  spinnerService,
                   toast
                 ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
