@@ -211,6 +211,23 @@ object TgIcons {
     )
   }
 
+  def listIcon(className: String) = {
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5")
+      )
+    )
+  }
+
   def trashIcon(className: String) = {
     svg.svg(
       svg.className(className),

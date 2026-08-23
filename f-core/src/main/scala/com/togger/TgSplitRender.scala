@@ -21,6 +21,7 @@ import com.togger.ui.task._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskload._
+import com.togger.ui.taskloadconfig._
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -78,6 +79,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val projectService = new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
   lazy val taskDumpConfigService = new TaskDumpConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val taskLoadConfigService = new TaskLoadConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
 
   lazy val splitRender: SplitRender[FrontendPage, HtmlElement] =
     SplitRender[FrontendPage, HtmlElement](router.currentPageSignal).collectSignal((signal: Signal[FrontendPage]) =>
@@ -168,6 +170,29 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new EditTaskDumpConfigComponent(
                   id,
                   taskDumpConfigService,
+                  router,
+                  spinnerService,
+                  toast
+                ).element
+              case ShowAllTaskLoadConfigsPage(projectId: UUID) =>
+                new ShowAllTaskLoadConfigsComponent(
+                  taskLoadConfigService,
+                  router,
+                  spinnerService,
+                  toast,
+                  projectId
+                ).element
+              case CreateTaskLoadConfigPage(projectId: UUID) =>
+                new CreateTaskLoadConfigComponent(
+                  taskLoadConfigService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case EditTaskLoadConfigPage(id: UUID) =>
+                new EditTaskLoadConfigComponent(
+                  id,
+                  taskLoadConfigService,
                   router,
                   spinnerService,
                   toast

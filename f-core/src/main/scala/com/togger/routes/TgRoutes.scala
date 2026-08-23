@@ -131,6 +131,21 @@ class TgRoutes {
         encode = (page: TaskLoadPage) => page.projectId.toString,
         decode = (projectId: String) => TaskLoadPage(UUID.fromString(projectId)),
         pattern = root / "task-load" / "project" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: ShowAllTaskLoadConfigsPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowAllTaskLoadConfigsPage(UUID.fromString(projectId)),
+        pattern = root / "task-load-config" / "project" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: CreateTaskLoadConfigPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTaskLoadConfigPage(UUID.fromString(projectId)),
+        pattern = root / "task-load-config" / "create" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditTaskLoadConfigPage) => page.id.toString,
+        decode = (id: String) => EditTaskLoadConfigPage(UUID.fromString(id)),
+        pattern = root / "task-load-config" / "edit" / segment[String] / endOfSegments
       )
     )
 
