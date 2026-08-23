@@ -157,6 +157,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new TaskLoadComponent(
                   taskDumpService,
                   taskLoadConfigService,
+                  projectMappingService,
                   spinnerService,
                   toast,
                   projectId
