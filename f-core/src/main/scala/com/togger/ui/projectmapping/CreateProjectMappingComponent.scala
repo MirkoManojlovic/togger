@@ -18,20 +18,20 @@ import java.util.UUID
 import scala.util.Try
 
 case class CreateProjectMappingForm(
-  projectIdOrigin: String = ""
+  projectIdDump: String = ""
 ) extends FormErrors {
 
-  def projectIdOriginValid: Seq[String] =
-    Try(UUID.fromString(projectIdOrigin)).fold(_ => Seq("Must be a valid UUID"), _ => Seq.empty)
+  def projectIdDumpValid: Seq[String] =
+    Try(UUID.fromString(projectIdDump)).fold(_ => Seq("Must be a valid UUID"), _ => Seq.empty)
 
-  override def additionalErrors: Seq[String] = projectIdOriginValid
+  override def additionalErrors: Seq[String] = projectIdDumpValid
 }
 
 class CreateProjectMappingComponent(
   projectMappingService: ProjectMappingFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  projectIdLoaded: UUID,
+  projectIdDb: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -40,19 +40,19 @@ class CreateProjectMappingComponent(
 
   lazy val createSubmitter = Observer[CreateProjectMappingForm] { state =>
     val request = CreateProjectMappingReq(
-      projectIdOrigin = UUID.fromString(state.projectIdOrigin),
-      projectIdLoaded = projectIdLoaded
+      projectIdDump = UUID.fromString(state.projectIdDump),
+      projectIdDb = projectIdDb
     )
     spinnerService
       .runWithSpinner(projectMappingService.create(request))
-      .toastMessageFn("Project mapping created successfully")(_ => router.route(ShowProjectMappingPage(projectIdLoaded)))
+      .toastMessageFn("Project mapping created successfully")(_ => router.route(ShowProjectMappingPage(projectIdDb)))
       .unsafeRunAndForget()
   }
 
-  private val projectIdOriginInput = formState.tgInputManualErrorLP(
-    inputAndUpdater = selectorAndUpdaterMacro(_.projectIdOrigin),
-    errorsFn = _.projectIdOriginValid,
-    labelValue = "Origin project id (from dump file)",
+  private val projectIdDumpInput = formState.tgInputManualErrorLP(
+    inputAndUpdater = selectorAndUpdaterMacro(_.projectIdDump),
+    errorsFn = _.projectIdDumpValid,
+    labelValue = "Dump project id (from dump file)",
     tgInputType = TgInputType.Text
   )
 
@@ -63,10 +63,10 @@ class CreateProjectMappingComponent(
         header = TgCard.CardHeader.plainText("Create a project mapping", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
-            p(cls("mb-4"), s"Loaded project id: $projectIdLoaded"),
+            p(cls("mb-4"), s"Db project id: $projectIdDb"),
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
-              projectIdOriginInput.htmlElement.amend(cls("mb-4")),
+              projectIdDumpInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.create(formState.signal.changes.map(_.hasErrors))
             )
           )

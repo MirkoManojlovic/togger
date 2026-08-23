@@ -25,8 +25,8 @@ class ProjectMappingService(
   def findById(id: UUID): IO[ProjectMapping] =
     projectMappingRepo.findById(id).transact(transactor)
 
-  def findByProjectIdLoaded(projectIdLoaded: UUID): IO[List[ProjectMapping]] =
-    projectMappingRepo.findByProjectIdLoaded(projectIdLoaded).transact(transactor)
+  def findByProjectIdDb(projectIdDb: UUID): IO[List[ProjectMapping]] =
+    projectMappingRepo.findByProjectIdDb(projectIdDb).transact(transactor)
 
   def update(projectMapping: ProjectMapping): IO[ProjectMapping] = {
     logger.info(s"Updating ${sp(projectMapping)}")

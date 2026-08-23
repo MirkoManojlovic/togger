@@ -38,9 +38,9 @@ class ProjectMappingEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
-  val findByProjectIdLoadedEndpoint: TgSecuredEndpoint[UUID, Seq[ProjectMappingResp]] =
+  val findByProjectIdDbEndpoint: TgSecuredEndpoint[UUID, Seq[ProjectMappingResp]] =
     securedEndpoint.endpoint.get
-      .in(basePath / "project-loaded" / path[UUID]("id"))
+      .in(basePath / "project-db" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[Seq[ProjectMappingResp]]])
 
 }

@@ -17,8 +17,8 @@ class ProjectMappingController(
   private def toResp(projectMapping: ProjectMapping): ProjectMappingResp =
     ProjectMappingResp(
       id = projectMapping.id,
-      projectIdOrigin = projectMapping.projectIdOrigin,
-      projectIdLoaded = projectMapping.projectIdLoaded,
+      projectIdDump = projectMapping.projectIdDump,
+      projectIdDb = projectMapping.projectIdDb,
       createdAt = projectMapping.createdAt,
       updatedAt = projectMapping.updatedAt
     )
@@ -35,8 +35,8 @@ class ProjectMappingController(
 
     val projectMapping = ProjectMapping(
       id = UUID.randomUUID(),
-      projectIdOrigin = dto.projectIdOrigin,
-      projectIdLoaded = dto.projectIdLoaded,
+      projectIdDump = dto.projectIdDump,
+      projectIdDb = dto.projectIdDb,
       createdAt = now,
       updatedAt = now
     )
@@ -51,8 +51,8 @@ class ProjectMappingController(
 
     val projectMapping = ProjectMapping(
       id = dto.id,
-      projectIdOrigin = dto.projectIdOrigin,
-      projectIdLoaded = dto.projectIdLoaded,
+      projectIdDump = dto.projectIdDump,
+      projectIdDb = dto.projectIdDb,
       createdAt = now,
       updatedAt = now
     )
@@ -68,10 +68,10 @@ class ProjectMappingController(
       .map(_ => TgJsonSuccess.justMessageRight("Project mapping deleted successfully"))
   }
 
-  val findByProjectIdLoaded =
-    findByProjectIdLoadedEndpoint.serverLogic { _ => projectIdLoaded =>
+  val findByProjectIdDb =
+    findByProjectIdDbEndpoint.serverLogic { _ => projectIdDb =>
       projectMappingService
-        .findByProjectIdLoaded(projectIdLoaded)
+        .findByProjectIdDb(projectIdDb)
         .map(mappings => TgJsonSuccess.justBodyRight(mappings.map(toResp)))
     }
 

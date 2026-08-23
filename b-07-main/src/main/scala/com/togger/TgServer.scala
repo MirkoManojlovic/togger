@@ -106,7 +106,7 @@ object TgServer {
         projectMappingController.save,
         projectMappingController.update,
         projectMappingController.delete,
-        projectMappingController.findByProjectIdLoaded
+        projectMappingController.findByProjectIdDb
       )
     )
   }

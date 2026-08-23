@@ -18,7 +18,7 @@ trait ProjectMappingFeService {
 
   def deleteById(id: UUID): TgRespIO[TgEmptyBody]
 
-  def findByProjectIdLoaded(projectIdLoaded: UUID): TgRespIO[Seq[ProjectMappingResp]]
+  def findByProjectIdDb(projectIdDb: UUID): TgRespIO[Seq[ProjectMappingResp]]
 }
 
 class ProjectMappingFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -38,6 +38,6 @@ class ProjectMappingFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBac
   override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(projectMappingEndpoints.deleteByIdEndpoint)(id)
 
-  override def findByProjectIdLoaded(projectIdLoaded: UUID): TgRespIO[Seq[ProjectMappingResp]] =
-    protectedBackendClient.protectedHttpCall(projectMappingEndpoints.findByProjectIdLoadedEndpoint)(projectIdLoaded)
+  override def findByProjectIdDb(projectIdDb: UUID): TgRespIO[Seq[ProjectMappingResp]] =
+    protectedBackendClient.protectedHttpCall(projectMappingEndpoints.findByProjectIdDbEndpoint)(projectIdDb)
 }

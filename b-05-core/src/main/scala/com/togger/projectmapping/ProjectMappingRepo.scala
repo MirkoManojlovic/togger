@@ -15,6 +15,6 @@ trait ProjectMappingRepo {
 
   def update(projectMapping: ProjectMapping, updatedAt: Instant): ConnectionIO[ProjectMapping]
 
-  def findByProjectIdLoaded(projectIdLoaded: UUID): ConnectionIO[List[ProjectMapping]]
+  def findByProjectIdDb(projectIdDb: UUID): ConnectionIO[List[ProjectMapping]]
 
 }

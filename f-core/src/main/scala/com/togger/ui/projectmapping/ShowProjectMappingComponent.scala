@@ -29,7 +29,7 @@ class ShowProjectMappingComponent(
   spinnerService
     .runWithSpinner(
       projectMappingService
-        .findByProjectIdLoaded(projectId)
+        .findByProjectIdDb(projectId)
         .map(response => response.map(success => stateVar.set(success.body.get.headOption)))
     )
     .unsafeRunAndForget()
@@ -67,8 +67,8 @@ class ShowProjectMappingComponent(
   private def mappingDetails(mapping: ProjectMappingResp) =
     div(
       cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default p-4"),
-      p(cls("mb-2"), b("Origin project id: "), mapping.projectIdOrigin.toString),
-      p(cls("mb-2"), b("Loaded project id: "), mapping.projectIdLoaded.toString),
+      p(cls("mb-2"), b("Dump project id: "), mapping.projectIdDump.toString),
+      p(cls("mb-2"), b("Db project id: "), mapping.projectIdDb.toString),
       p(cls("mb-2"), b("Created at: "), mapping.createdAt.toString),
       p(cls("mb-4"), b("Updated at: "), mapping.updatedAt.toString),
       div(editButton(mapping), deleteButton(mapping))

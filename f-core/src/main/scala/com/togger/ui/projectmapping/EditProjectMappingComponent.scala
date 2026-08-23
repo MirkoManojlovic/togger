@@ -20,14 +20,14 @@ import scala.util.Try
 
 case class EditProjectMappingForm(
   id: UUID = UUID.randomUUID(),
-  projectIdOrigin: String = "",
-  projectIdLoaded: UUID = UUID.randomUUID()
+  projectIdDump: String = "",
+  projectIdDb: UUID = UUID.randomUUID()
 ) extends FormErrors {
 
-  def projectIdOriginValid: Seq[String] =
-    Try(UUID.fromString(projectIdOrigin)).fold(_ => Seq("Must be a valid UUID"), _ => Seq.empty)
+  def projectIdDumpValid: Seq[String] =
+    Try(UUID.fromString(projectIdDump)).fold(_ => Seq("Must be a valid UUID"), _ => Seq.empty)
 
-  override def additionalErrors: Seq[String] = projectIdOriginValid
+  override def additionalErrors: Seq[String] = projectIdDumpValid
 }
 
 class EditProjectMappingComponent(
@@ -53,8 +53,8 @@ class EditProjectMappingComponent(
               formState.set(
                 EditProjectMappingForm(
                   id = dto.id,
-                  projectIdOrigin = dto.projectIdOrigin.toString,
-                  projectIdLoaded = dto.projectIdLoaded
+                  projectIdDump = dto.projectIdDump.toString,
+                  projectIdDb = dto.projectIdDb
                 )
               )
             }
@@ -66,8 +66,8 @@ class EditProjectMappingComponent(
   val submitter = Observer[EditProjectMappingForm] { state =>
     val dto = UpdateProjectMappingReq(
       id = state.id,
-      projectIdOrigin = UUID.fromString(state.projectIdOrigin),
-      projectIdLoaded = state.projectIdLoaded
+      projectIdDump = UUID.fromString(state.projectIdDump),
+      projectIdDb = state.projectIdDb
     )
 
     spinnerService
@@ -76,10 +76,10 @@ class EditProjectMappingComponent(
       .unsafeRunAndForget()
   }
 
-  private val projectIdOriginInput = formState.tgInputManualErrorLP(
-    inputAndUpdater = selectorAndUpdaterMacro(_.projectIdOrigin),
-    errorsFn = _.projectIdOriginValid,
-    labelValue = "Origin project id (from dump file)",
+  private val projectIdDumpInput = formState.tgInputManualErrorLP(
+    inputAndUpdater = selectorAndUpdaterMacro(_.projectIdDump),
+    errorsFn = _.projectIdDumpValid,
+    labelValue = "Dump project id (from dump file)",
     tgInputType = TgInputType.Text
   )
 
@@ -90,10 +90,10 @@ class EditProjectMappingComponent(
         header = TgCard.CardHeader.plainText("Edit project mapping", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
-            child <-- formState.signal.map(state => p(cls("mb-4"), s"Loaded project id: ${state.projectIdLoaded}")),
+            child <-- formState.signal.map(state => p(cls("mb-4"), s"Db project id: ${state.projectIdDb}")),
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              projectIdOriginInput.htmlElement.amend(cls("mb-4")),
+              projectIdDumpInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.update(formState.signal.changes.map(_.hasErrors))
             )
           )

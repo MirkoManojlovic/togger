@@ -30,13 +30,13 @@ class ProjectMappingServiceTest
 
   val service = new ProjectMappingService(projectMappingRepo, tgClock, transactorMock)
 
-  val projectIdOrigin: UUID = UUID.randomUUID()
-  val projectIdLoaded: UUID = UUID.randomUUID()
+  val projectIdDump: UUID = UUID.randomUUID()
+  val projectIdDb: UUID = UUID.randomUUID()
 
   def newProjectMapping() = ProjectMapping(
     id = UUID.randomUUID(),
-    projectIdOrigin = projectIdOrigin,
-    projectIdLoaded = projectIdLoaded,
+    projectIdDump = projectIdDump,
+    projectIdDb = projectIdDb,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -59,20 +59,20 @@ class ProjectMappingServiceTest
       service.findById(mapping.id).map(_ shouldBe mapping).unsafeToFuture()
     }
 
-    "find project mappings by loaded project id" in {
+    "find project mappings by db project id" in {
       val mapping = newProjectMapping()
 
-      (projectMappingRepo.findByProjectIdLoaded _)
-        .expects(projectIdLoaded)
+      (projectMappingRepo.findByProjectIdDb _)
+        .expects(projectIdDb)
         .returns(List(mapping).pure[ConnectionIO])
 
-      service.findByProjectIdLoaded(projectIdLoaded).map(_ shouldBe List(mapping)).unsafeToFuture()
+      service.findByProjectIdDb(projectIdDb).map(_ shouldBe List(mapping)).unsafeToFuture()
     }
 
     "update a project mapping, stamping the current time from the clock" in {
       val mapping = newProjectMapping()
       val now = nowAsInstant
-      val updated = mapping.copy(projectIdOrigin = UUID.randomUUID(), updatedAt = now)
+      val updated = mapping.copy(projectIdDump = UUID.randomUUID(), updatedAt = now)
 
       (() => tgClock.currentInstant).expects().returns(now)
       (projectMappingRepo.update _).expects(mapping, now).returns(updated.pure[ConnectionIO])

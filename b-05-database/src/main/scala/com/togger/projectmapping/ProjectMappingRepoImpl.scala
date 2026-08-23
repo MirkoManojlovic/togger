@@ -15,8 +15,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
 
   private lazy val returnFields = List(
     "id",
-    "project_id_origin",
-    "project_id_loaded",
+    "project_id_dump",
+    "project_id_db",
     "created_at",
     "updated_at"
   )
@@ -33,8 +33,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
     import projectMapping._
     logAroundInfoQuery(
       insertStatement(PROJECT_MAPPING_TABLE_FRAG)(fr"""
-        (project_id_origin, project_id_loaded, created_at, updated_at)
-        values ($projectIdOrigin, $projectIdLoaded, $createdAt, $updatedAt)
+        (project_id_dump, project_id_db, created_at, updated_at)
+        values ($projectIdDump, $projectIdDb, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
     )(
@@ -54,8 +54,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
   override def update(projectMapping: ProjectMapping, updatedAt: Instant): ConnectionIO[ProjectMapping] =
     logAroundInfoQuery(
       updateStatementUUID(PROJECT_MAPPING_TABLE_FRAG)(projectMapping.id)(fr"""
-        project_id_origin = ${projectMapping.projectIdOrigin},
-        project_id_loaded = ${projectMapping.projectIdLoaded},
+        project_id_dump = ${projectMapping.projectIdDump},
+        project_id_db = ${projectMapping.projectIdDb},
         updated_at = $updatedAt
       """).update
         .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
@@ -64,13 +64,13 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
       projectMapping => s"${sp(projectMapping)} updated"
     )
 
-  override def findByProjectIdLoaded(projectIdLoaded: UUID): ConnectionIO[List[ProjectMapping]] =
+  override def findByProjectIdDb(projectIdDb: UUID): ConnectionIO[List[ProjectMapping]] =
     logAroundInfoQuery(
-      (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_loaded = $projectIdLoaded")
+      (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_db = $projectIdDb")
         .query[ProjectMapping]
         .to[List]
     )(
-      s"Finding project mappings for ${sp(projectIdLoaded)}",
+      s"Finding project mappings for ${sp(projectIdDb)}",
       projectMappings => s"${sp(projectMappings)} found"
     )
 
