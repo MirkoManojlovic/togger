@@ -6,6 +6,7 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
+import com.togger.dto.taskloadconfig.TaskLoadConfigResp
 import com.togger.dto.{TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -13,6 +14,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLTableCellElement
@@ -23,6 +25,7 @@ case class TaskLoadForm(dumpPath: String = "")
 
 class TaskLoadComponent(
   taskDumpService: TaskDumpFeService,
+  taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID
@@ -31,6 +34,15 @@ class TaskLoadComponent(
 
   private val formState = Var(TaskLoadForm())
   private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
+  private val configsVar = Var(Seq.empty[TaskLoadConfigResp])
+
+  spinnerService
+    .runWithSpinner(
+      taskLoadConfigService
+        .findByProjectId(projectId)
+        .map(response => response.map(success => configsVar.set(success.body.get)))
+    )
+    .unsafeRunAndForget()
 
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
@@ -73,6 +85,35 @@ class TaskLoadComponent(
       status.entryName
     )
 
+  private def configsTable(configs: Seq[TaskLoadConfigResp]) =
+    div(
+      cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
+      table(
+        cls("w-full text-sm text-left rtl:text-right text-body"),
+        thead(
+          cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
+          tr(
+            createTh("name"),
+            createTh("dump path")
+          )
+        ),
+        tbody(
+          configs
+            .sortBy(_.name)
+            .map { dto =>
+              tr(
+                cls(
+                  "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default cursor-pointer hover:bg-neutral-tertiary-soft"
+                ),
+                onClick.mapToUnit --> (_ => formState.update(_.copy(dumpPath = dto.dumpPath))),
+                createTd(dto.name),
+                createTd(dto.dumpPath)
+              )
+            }
+        )
+      )
+    )
+
   private def resultsTable(results: Seq[TaskLoadTaskResultResp]) =
     div(
       cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
@@ -110,6 +151,23 @@ class TaskLoadComponent(
     )
 
   val element = div(
+    div(
+      justifyCenterFlex,
+      cls("mb-4"),
+      child.maybe <-- configsVar.signal.map { configs =>
+        if (configs.isEmpty) None
+        else
+          Some(
+            TgCard
+              .headerNoFooter(
+                header = TgCard.CardHeader.plainText("Configured paths", TgCard.CardHeaderSize.H3),
+                body = TgCard.HtmlCardContent(configsTable(configs))
+              )
+              .element
+              .amend(heightAndWidthFitContent)
+          )
+      }
+    ),
     div(
       justifyCenterFlex,
       TgCard
