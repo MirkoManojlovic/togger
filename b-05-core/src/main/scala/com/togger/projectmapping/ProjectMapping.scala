@@ -5,8 +5,8 @@ import java.util.UUID
 
 case class ProjectMapping(
   id: UUID,
-  projectIdDump: UUID,
   projectIdDb: UUID,
+  projectIdDump: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

@@ -17,8 +17,8 @@ class ProjectMappingController(
   private def toResp(projectMapping: ProjectMapping): ProjectMappingResp =
     ProjectMappingResp(
       id = projectMapping.id,
-      projectIdDump = projectMapping.projectIdDump,
       projectIdDb = projectMapping.projectIdDb,
+      projectIdDump = projectMapping.projectIdDump,
       createdAt = projectMapping.createdAt,
       updatedAt = projectMapping.updatedAt
     )
@@ -35,8 +35,8 @@ class ProjectMappingController(
 
     val projectMapping = ProjectMapping(
       id = UUID.randomUUID(),
-      projectIdDump = dto.projectIdDump,
       projectIdDb = dto.projectIdDb,
+      projectIdDump = dto.projectIdDump,
       createdAt = now,
       updatedAt = now
     )
@@ -51,8 +51,8 @@ class ProjectMappingController(
 
     val projectMapping = ProjectMapping(
       id = dto.id,
-      projectIdDump = dto.projectIdDump,
       projectIdDb = dto.projectIdDb,
+      projectIdDump = dto.projectIdDump,
       createdAt = now,
       updatedAt = now
     )

@@ -676,13 +676,6 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: project_id_dump
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_project_mapping_project_dump
-                    references: project(id)
-              - column:
                   name: project_id_db
                   type: uuid
                   constraints:
@@ -690,6 +683,11 @@ databaseChangeLog:
                     unique: true
                     foreignKeyName: fk_project_mapping_project_db
                     references: project(id)
+              - column:
+                  name: project_id_dump
+                  type: uuid
+                  constraints:
+                    nullable: false
               - column:
                   name: created_at
                   type: timestamp with time zone

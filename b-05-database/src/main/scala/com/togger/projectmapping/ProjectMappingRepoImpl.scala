@@ -15,8 +15,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
 
   private lazy val returnFields = List(
     "id",
-    "project_id_dump",
     "project_id_db",
+    "project_id_dump",
     "created_at",
     "updated_at"
   )
@@ -33,8 +33,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
     import projectMapping._
     logAroundInfoQuery(
       insertStatement(PROJECT_MAPPING_TABLE_FRAG)(fr"""
-        (project_id_dump, project_id_db, created_at, updated_at)
-        values ($projectIdDump, $projectIdDb, $createdAt, $updatedAt)
+        (project_id_db, project_id_dump, created_at, updated_at)
+        values ($projectIdDb,$projectIdDump, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
     )(
@@ -54,8 +54,8 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
   override def update(projectMapping: ProjectMapping, updatedAt: Instant): ConnectionIO[ProjectMapping] =
     logAroundInfoQuery(
       updateStatementUUID(PROJECT_MAPPING_TABLE_FRAG)(projectMapping.id)(fr"""
-        project_id_dump = ${projectMapping.projectIdDump},
         project_id_db = ${projectMapping.projectIdDb},
+        project_id_dump = ${projectMapping.projectIdDump},
         updated_at = $updatedAt
       """).update
         .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
