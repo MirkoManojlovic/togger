@@ -5,6 +5,7 @@ import com.togger.account.{AccountRepoImpl, AccountSessionRepo, AccountTypeRepo,
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl}
+import com.togger.projectmapping.ProjectMappingRepoImpl
 import com.togger.task.{LinkRepoImpl, LinkVersionRepoImpl, TaskRepoImpl, TaskVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
@@ -15,6 +16,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
   override val dropTablesQuery: ConnectionIO[Seq[Int]] =
     dropAll(
       Seq(
+        ProjectMappingRepoImpl.PROJECT_MAPPING_TABLE,
         TaskDumpConfigRepoImpl.TASK_DUMP_CONFIG_TABLE,
         TaskLoadConfigRepoImpl.TASK_LOAD_CONFIG_TABLE,
         LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE,

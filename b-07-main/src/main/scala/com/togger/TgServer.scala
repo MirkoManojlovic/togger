@@ -6,6 +6,7 @@ import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
+import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.{TaskDumpConfigController, TaskDumpConfigVerification}
 import com.togger.controllers.taskloadconfig.{TaskLoadConfigController, TaskLoadConfigVerification}
@@ -15,6 +16,7 @@ import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
+import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
@@ -99,7 +101,12 @@ object TgServer {
         taskLoadConfigController.update,
         taskLoadConfigController.delete,
         taskLoadConfigController.findByProjectId,
-        taskLoadConfigController.findByAccountId
+        taskLoadConfigController.findByAccountId,
+        projectMappingController.findById,
+        projectMappingController.save,
+        projectMappingController.update,
+        projectMappingController.delete,
+        projectMappingController.findByProjectIdLoaded
       )
     )
   }
@@ -183,6 +190,12 @@ class DependenciesModule(
   lazy val taskLoadConfigEndpoints = new TaskLoadConfigEndpoints(securedEndpoint)
   lazy val taskLoadConfigController =
     new TaskLoadConfigController(taskLoadConfigEndpoints, taskLoadConfigService, taskLoadConfigVerification, tgClock)
+
+  lazy val projectMappingRepo = new ProjectMappingRepoImpl
+  lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, tgClock, transactor)
+  lazy val projectMappingEndpoints = new ProjectMappingEndpoints(securedEndpoint)
+  lazy val projectMappingController =
+    new ProjectMappingController(projectMappingEndpoints, projectMappingService, tgClock)
 
   lazy val taskDumpService =
     new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, tgClock, transactor)

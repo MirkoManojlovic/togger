@@ -664,3 +664,41 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+
+        - createTable:
+            tableName: project_mapping
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id_origin
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_mapping_project_origin
+                    references: project(id)
+              - column:
+                  name: project_id_loaded
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_project_mapping_project_loaded
+                    references: project(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
