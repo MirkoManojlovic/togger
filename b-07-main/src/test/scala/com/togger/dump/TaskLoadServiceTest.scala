@@ -1,6 +1,6 @@
 package com.togger.dump
 
-import com.togger.account.TgAccount
+import com.togger.account.{AccountRepoImpl, TgAccount}
 import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
@@ -28,6 +28,7 @@ import java.util.UUID
 class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val projectAccountRepo = new ProjectAccountRepoImpl
+  val accountRepo = new AccountRepoImpl
   val taskRepo = new TaskRepoImpl
   val taskVersionRepo = new TaskVersionRepoImpl
   val linkRepo = new LinkRepoImpl
@@ -39,6 +40,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   val taskDumpRepo = new TaskDumpRepo(
     projectRepo,
     projectAccountRepo,
+    accountRepo,
     taskRepo,
     taskVersionRepo,
     taskStatusRepo,

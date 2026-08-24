@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.account.Account
 import com.togger.logentry.{LogEntry, LogEntryVersion}
 import com.togger.project.Project
 import com.togger.task._
@@ -18,9 +19,17 @@ case class TaskDumpData(
   logEntries: List[LogEntryDumpData]
 )
 
+case class AccountDumpData(id: UUID, firstName: String, lastName: String, email: String)
+
+object AccountDumpData {
+  def from(account: Account): AccountDumpData =
+    AccountDumpData(account.id, account.firstName, account.lastName, account.email)
+}
+
 case class ProjectDumpManifest(
   project: Project,
   taskStatuses: List[TaskStatus],
+  dumpedBy: AccountDumpData,
   dumpedAt: Instant,
   taskCount: Int
 )

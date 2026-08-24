@@ -2,6 +2,7 @@ package com.togger.dump
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.account.Account
 import com.togger.common.TgClock
 import com.togger.logging.TgLogging
 import com.togger.project.Project
@@ -40,7 +41,7 @@ class TaskDumpService(
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  private type DumpData = (Project, List[TaskStatus], List[TaskDumpData])
+  private type DumpData = (Project, List[TaskStatus], Account, List[TaskDumpData])
 
   def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] = {
     logger.info(s"Dumping tasks for ${sp(projectId)} requested by ${sp(accountId)}")
@@ -48,7 +49,7 @@ class TaskDumpService(
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, taskStatuses, tasks)) =>
+        case Right((project, taskStatuses, account, tasks)) =>
           taskDumpConfigService.findByProjectId(projectId).map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
@@ -56,6 +57,7 @@ class TaskDumpService(
               val manifest = ProjectDumpManifest(
                 project = project,
                 taskStatuses = taskStatuses,
+                dumpedBy = AccountDumpData.from(account),
                 dumpedAt = tgClock.currentInstant,
                 taskCount = tasks.size
               )
@@ -77,7 +79,7 @@ class TaskDumpService(
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, _, dbTasks)) =>
+        case Right((project, _, _, dbTasks)) =>
           taskDumpConfigService.findByProjectId(projectId).map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
@@ -146,8 +148,9 @@ class TaskDumpService(
         else
           for {
             projectAndStatuses <- taskDumpRepo.getProjectAndTaskStatuses(projectId)
+            account <- taskDumpRepo.findAccountById(accountId)
             tasks <- taskDumpRepo.getAllTasksForProject(projectId)
-          } yield (projectAndStatuses._1, projectAndStatuses._2, tasks).asRight[ProjectError]
+          } yield (projectAndStatuses._1, projectAndStatuses._2, account, tasks).asRight[ProjectError]
     } yield result
 
 }

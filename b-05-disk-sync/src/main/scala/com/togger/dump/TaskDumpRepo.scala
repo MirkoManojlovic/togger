@@ -1,6 +1,7 @@
 package com.togger.dump
 
 import cats.implicits._
+import com.togger.account.{Account, AccountRepo}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo}
 import com.togger.project.{Project, ProjectAccountRepo, ProjectRepo}
 import com.togger.task._
@@ -11,6 +12,7 @@ import java.util.UUID
 class TaskDumpRepo(
   projectRepo: ProjectRepo,
   projectAccountRepo: ProjectAccountRepo,
+  accountRepo: AccountRepo,
   taskRepo: TaskRepo,
   taskVersionRepo: TaskVersionRepo,
   taskStatusRepo: TaskStatusRepo,
@@ -22,6 +24,9 @@ class TaskDumpRepo(
 
   def isAssigned(projectId: UUID, accountId: UUID): ConnectionIO[Boolean] =
     projectAccountRepo.findById(projectId, accountId).attempt.map(_.toOption.isDefined)
+
+  def findAccountById(accountId: UUID): ConnectionIO[Account] =
+    accountRepo.findById(accountId)
 
   def getProjectAndTaskStatuses(projectId: UUID): ConnectionIO[(Project, List[TaskStatus])] =
     for {

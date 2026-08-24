@@ -167,6 +167,7 @@ class DependenciesModule(
     new TaskDumpRepo(
       projectRepo,
       projectAccountRepo,
+      accountRepo,
       taskRepo,
       taskVersionRepo,
       taskStatusRepo,
