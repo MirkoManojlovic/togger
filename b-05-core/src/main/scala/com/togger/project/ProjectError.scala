@@ -21,4 +21,8 @@ object ProjectError {
     override def message: String =
       "This project already has a project mapping pointing to a different dump project"
   }
+
+  case object AccountTypeMissing extends ProjectError {
+    override def message: String = "Cannot auto-create dump account: no 'developer' account type exists"
+  }
 }

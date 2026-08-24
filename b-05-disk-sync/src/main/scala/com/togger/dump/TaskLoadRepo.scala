@@ -1,12 +1,15 @@
 package com.togger.dump
 
 import cats.implicits._
-import com.togger.common.TgClock
+import com.togger.account.{Account, AccountRepo, AccountTypeRepo, HashedPasswordImpl}
+import com.togger.common.{Password, TgClock, TgIds}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersion, LogEntryVersionRepo}
+import com.togger.project.ProjectError.{AccountTypeMissing, ProjectError}
 import com.togger.projectmapping.ProjectMappingRepo
 import com.togger.task._
 import doobie.ConnectionIO
 
+import java.security.SecureRandom
 import java.util.UUID
 
 class TaskLoadRepo(
@@ -18,10 +21,43 @@ class TaskLoadRepo(
   logEntryVersionRepo: LogEntryVersionRepo,
   projectMappingRepo: ProjectMappingRepo,
   taskStatusRepo: TaskStatusRepo,
-  tgClock: TgClock
+  tgClock: TgClock,
+  accountRepo: AccountRepo,
+  accountTypeRepo: AccountTypeRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
+
+  def ensureAccountExists(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, Unit]] =
+    accountRepo.findByEmail(accountDumpData.email).attempt.flatMap {
+      case Right(_) => ().asRight[ProjectError].pure[ConnectionIO]
+      case Left(_) =>
+        accountTypeRepo.findByName("developer").attempt.flatMap {
+          case Left(_) => (AccountTypeMissing: ProjectError).asLeft[Unit].pure[ConnectionIO]
+          case Right(accountType) =>
+            val now = tgClock.currentInstant
+            val account = Account(
+              id = TgIds.UNASSIGNED_UUID,
+              firstName = accountDumpData.firstName,
+              lastName = accountDumpData.lastName,
+              email = accountDumpData.email,
+              password = HashedPasswordImpl.fromPassword(generateRandomPassword()),
+              accountTypeId = accountType.id,
+              verified = false,
+              enabled = true,
+              createdAt = now,
+              updatedAt = now
+            )
+            accountRepo.insert(account).void.map(_.asRight[ProjectError])
+        }
+    }
+
+  private def generateRandomPassword(): Password = {
+    val random = new SecureRandom
+    def randomUuid = new UUID(random.nextLong(), random.nextLong())
+    val rawPassword = s"Aa1!$randomUuid$randomUuid"
+    Password.fromString(rawPassword).toOption.get
+  }
 
   def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[MappingResolution] =
     projectMappingRepo.findByProjectIdDb(projectIdDb).map(_.headOption).flatMap {

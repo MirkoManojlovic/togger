@@ -1,6 +1,6 @@
 package com.togger
 import cats.effect.{IO, Resource}
-import com.togger.account.{AccountEndpoints, AccountServiceCore}
+import com.togger.account.{AccountEndpoints, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
@@ -145,6 +145,7 @@ class DependenciesModule(
     new ProjectService(projectRepo, projectAccountRepo, taskStatusRepo, tgClock, defaultTaskStatusService, transactor)
   lazy val projectController = new ProjectController(projectEndpoints, projectService, tgClock)
   lazy val accountEndpoints = new AccountEndpoints(securedEndpoint)
+  lazy val accountTypeRepo = new AccountTypeRepo
   val accountServiceCore = new AccountServiceCore(accountRepo, transactor)
   lazy val accountController = new AccountController(accountEndpoints, accountServiceCore)
 
@@ -210,7 +211,9 @@ class DependenciesModule(
       logEntryVersionRepo,
       projectMappingRepo,
       taskStatusRepo,
-      tgClock
+      tgClock,
+      accountRepo,
+      accountTypeRepo
     )
   lazy val taskLoadService = new TaskLoadService(taskDumpRepo, taskLoadRepo, taskDumpDiskWriter, transactor)
   lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)

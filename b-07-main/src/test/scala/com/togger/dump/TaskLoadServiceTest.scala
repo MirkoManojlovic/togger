@@ -1,7 +1,7 @@
 package com.togger.dump
 
-import com.togger.account.{AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TimeHelpers}
+import com.togger.account.{Account, AccountRepoImpl, AccountType, TgAccount}
+import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TgIds, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{Project, ProjectAccount, ProjectAccountRepoImpl, ProjectError}
@@ -59,7 +59,9 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       logEntryVersionRepo,
       projectMappingRepo,
       taskStatusRepo,
-      new TgClockImpl
+      new TgClockImpl,
+      accountRepo,
+      accountTypeRepo
     )
   val diskOps = new DiskOps
   val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
@@ -584,6 +586,96 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         reloadResult.isRight shouldBe true
         targetStatusesAfterReload.size shouldBe targetStatuses.size
       }
+    }
+
+    "create the dumped-by account when it doesn't exist in the target db, then load" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val taskLoadService = newTaskLoadService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
+        developerAccountType <- accountTypeRepo.findByName("developer")
+      } yield (savedAccount, savedProject, developerAccountType)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, developerAccountType) = setupResult
+        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        _ = dumpResult.isRight shouldBe true
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+        newAccountEmail = s"new-${UUID.randomUUID().toString.take(8)}@example.com"
+        manifestWithMissingAccount = originalManifest.copy(
+          dumpedBy = AccountDumpData(UUID.randomUUID(), "New", "Person", newAccountEmail)
+        )
+        _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
+        createdAccount <- accountRepo.findByEmail(newAccountEmail).transact(transactor)
+      } yield {
+        loadResult.isRight shouldBe true
+        createdAccount.firstName shouldBe "New"
+        createdAccount.lastName shouldBe "Person"
+        createdAccount.email shouldBe newAccountEmail
+        createdAccount.verified shouldBe false
+        createdAccount.enabled shouldBe true
+        createdAccount.accountTypeId shouldBe developerAccountType.id
+      }
+    }
+
+    "reject the load when the dumped-by account is missing and no 'developer' account type exists" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val taskLoadService = newTaskLoadService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+      val setup = for {
+        managerAccountType <- accountTypeRepo.insert(
+          AccountType(id = TgIds.UNASSIGNED_UUID, name = "manager", createdAt = nowAsInstant, updatedAt = nowAsInstant)
+        )
+        savedAccount <- accountRepo.insert(
+          Account(
+            id = TgIds.UNASSIGNED_UUID,
+            firstName = "John",
+            lastName = "Doe",
+            email = email,
+            password = passwordHashed,
+            accountTypeId = managerAccountType.id,
+            verified = false,
+            enabled = true,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertMapping(savedProject.id, savedProject.id)
+      } yield (savedAccount, savedProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject) = setupResult
+        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        _ = dumpResult.isRight shouldBe true
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+        missingAccountEmail = s"missing-${UUID.randomUUID().toString.take(8)}@example.com"
+        manifestWithMissingAccount = originalManifest.copy(
+          dumpedBy = AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail)
+        )
+        _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
+        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
+      } yield loadResult shouldBe Left(ProjectError.AccountTypeMissing)
     }
   }
 
