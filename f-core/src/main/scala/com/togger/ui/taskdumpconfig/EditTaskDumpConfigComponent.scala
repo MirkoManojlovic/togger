@@ -21,6 +21,7 @@ case class EditTaskDumpConfigForm(
   id: UUID = UUID.randomUUID(),
   projectId: UUID = UUID.randomUUID(),
   accountId: UUID = UUID.randomUUID(),
+  name: String = "",
   dumpPath: String = ""
 )
 
@@ -49,6 +50,7 @@ class EditTaskDumpConfigComponent(
                   id = dto.id,
                   projectId = dto.projectId,
                   accountId = dto.accountId,
+                  name = dto.name,
                   dumpPath = dto.dumpPath
                 )
               )
@@ -62,6 +64,7 @@ class EditTaskDumpConfigComponent(
     val dto = UpdateTaskDumpConfigReq(
       id = state.id,
       projectId = state.projectId,
+      name = state.name,
       dumpPath = state.dumpPath
     )
 
@@ -70,6 +73,13 @@ class EditTaskDumpConfigComponent(
       .toastMessageFn("Task dump config updated successfully")(_ => router.route(EditTaskDumpConfigPage(id)))
       .unsafeRunAndForget()
   }
+
+  private val nameInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.name),
+    errors = EventStream.empty,
+    labelValue = "Name",
+    tgInputType = TgInputType.Text
+  )
 
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
@@ -87,6 +97,7 @@ class EditTaskDumpConfigComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+              nameInput.htmlElement.amend(cls("mb-4")),
               dumpPathInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.update(EventStream.fromValue(false))
             )

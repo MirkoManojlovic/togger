@@ -19,6 +19,7 @@ import java.util.UUID
 import scala.collection.immutable.ListMap
 
 case class CreateTaskDumpConfigForm(
+  name: String = "",
   dumpPath: String = ""
 )
 
@@ -49,6 +50,7 @@ class CreateTaskDumpConfigComponent(
   lazy val createSubmitter = Observer[CreateTaskDumpConfigForm] { state =>
     val request = CreateTaskDumpConfigReq(
       projectId = projectId,
+      name = state.name,
       dumpPath = state.dumpPath
     )
     spinnerService
@@ -56,6 +58,13 @@ class CreateTaskDumpConfigComponent(
       .toastMessageJustMessage("Task dump config created successfully")
       .unsafeRunAndForget()
   }
+
+  private val nameInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.name),
+    errors = EventStream.empty,
+    labelValue = "Name",
+    tgInputType = TgInputType.Text
+  )
 
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
@@ -74,6 +83,7 @@ class CreateTaskDumpConfigComponent(
             div(
               form(
                 onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
+                nameInput.htmlElement.amend(cls("mb-4")),
                 dumpPathInput.htmlElement.amend(cls("mb-4")),
                 TgHtmlButton.create(EventStream.fromValue(false))
               )

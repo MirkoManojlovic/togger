@@ -149,6 +149,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
+            name = "First dump config",
             dumpPath = dumpBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
@@ -159,6 +160,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
+            name = "Second dump config",
             dumpPath = secondDumpBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant

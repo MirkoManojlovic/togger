@@ -9,18 +9,19 @@ class TaskDumpConfigVerificationTest extends TgWordSpecJvm with EitherValues {
 
   "TaskDumpConfigVerification.verify" should {
 
-    "return dump path when it is a valid absolute path" in {
+    "return name and dump path when both are valid" in {
+      val name = "My dump config"
       val dumpPath = "/tmp/togger/dumps"
 
-      val result = verification.verify(dumpPath)
+      val result = verification.verify(name, dumpPath)
 
-      result.value shouldBe dumpPath
+      result.value shouldBe (name, dumpPath)
     }
 
     "return error when the path is relative" in {
       val dumpPath = "relative/dump/path"
 
-      val result = verification.verify(dumpPath)
+      val result = verification.verify("My dump config", dumpPath)
 
       result.left.value shouldBe InvalidPath(dumpPath)
     }
@@ -28,7 +29,7 @@ class TaskDumpConfigVerificationTest extends TgWordSpecJvm with EitherValues {
     "return error when the path is relative (home)" in {
       val dumpPath = "~/relative/dump/path"
 
-      val result = verification.verify(dumpPath)
+      val result = verification.verify("My dump config", dumpPath)
 
       result.left.value shouldBe InvalidPath(dumpPath)
     }
@@ -36,9 +37,25 @@ class TaskDumpConfigVerificationTest extends TgWordSpecJvm with EitherValues {
     "return error when the path is blank" in {
       val dumpPath = ""
 
-      val result = verification.verify(dumpPath)
+      val result = verification.verify("My dump config", dumpPath)
 
       result.left.value shouldBe InvalidPath(dumpPath)
+    }
+
+    "return error when the name is blank" in {
+      val name = ""
+
+      val result = verification.verify(name, "/tmp/togger/dumps")
+
+      result.left.value shouldBe BlankName(name)
+    }
+
+    "return error when the name is whitespace only" in {
+      val name = "   "
+
+      val result = verification.verify(name, "/tmp/togger/dumps")
+
+      result.left.value shouldBe BlankName(name)
     }
 
   }

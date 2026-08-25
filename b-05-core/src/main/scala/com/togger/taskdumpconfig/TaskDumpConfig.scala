@@ -7,6 +7,7 @@ case class TaskDumpConfig(
   id: UUID,
   projectId: UUID,
   accountId: UUID,
+  name: String,
   dumpPath: String,
   createdAt: Instant,
   updatedAt: Instant

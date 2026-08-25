@@ -70,6 +70,7 @@ class ShowAllTaskDumpConfigsComponent(
                       cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
                       tr(
                         createTh("id"),
+                        createTh("name"),
                         createTh("dump path"),
                         createTh("updated at"),
                         createTh("Action")
@@ -89,6 +90,7 @@ class ShowAllTaskDumpConfigsComponent(
                           tr(
                             cls(rowCls),
                             createTd(dto.id.toString),
+                            createTd(dto.name),
                             createTd(dto.dumpPath),
                             createTd(dto.updatedAt.toString),
                             createTd(

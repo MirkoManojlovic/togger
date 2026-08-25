@@ -142,6 +142,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         id = UUID.randomUUID(),
         projectId = projectId,
         accountId = accountId,
+        name = "Dump config",
         dumpPath = dumpPath.toString,
         createdAt = nowAsInstant,
         updatedAt = nowAsInstant

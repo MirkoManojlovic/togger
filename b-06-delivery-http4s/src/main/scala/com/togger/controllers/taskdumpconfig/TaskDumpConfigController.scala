@@ -21,6 +21,7 @@ class TaskDumpConfigController(
       id = taskDumpConfig.id,
       projectId = taskDumpConfig.projectId,
       accountId = taskDumpConfig.accountId,
+      name = taskDumpConfig.name,
       dumpPath = taskDumpConfig.dumpPath,
       createdAt = taskDumpConfig.createdAt,
       updatedAt = taskDumpConfig.updatedAt
@@ -35,7 +36,7 @@ class TaskDumpConfigController(
 
   val save = saveEndpoint.serverLogic { auth => dto =>
     taskDumpConfigVerification
-      .verify(dto.dumpPath)
+      .verify(dto.name, dto.dumpPath)
       .fold(
         error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
         _ => {
@@ -45,6 +46,7 @@ class TaskDumpConfigController(
             id = UUID.randomUUID(),
             projectId = dto.projectId,
             accountId = auth.body.get.id,
+            name = dto.name,
             dumpPath = dto.dumpPath,
             createdAt = now,
             updatedAt = now
@@ -60,7 +62,7 @@ class TaskDumpConfigController(
 
   val update = updateEndpoint.serverLogic { auth => dto =>
     taskDumpConfigVerification
-      .verify(dto.dumpPath)
+      .verify(dto.name, dto.dumpPath)
       .fold(
         error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
         _ => {
@@ -70,6 +72,7 @@ class TaskDumpConfigController(
             id = dto.id,
             projectId = dto.projectId,
             accountId = auth.body.get.id,
+            name = dto.name,
             dumpPath = dto.dumpPath,
             createdAt = now,
             updatedAt = now

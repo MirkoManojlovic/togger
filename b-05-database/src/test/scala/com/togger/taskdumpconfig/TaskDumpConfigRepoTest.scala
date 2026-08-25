@@ -14,10 +14,16 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
   val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
   val accountRepo = new AccountRepoImpl
 
-  def newTaskDumpConfig(projectId: UUID, accountId: UUID, dumpPath: String = "/tmp/dumps") = TaskDumpConfig(
+  def newTaskDumpConfig(
+    projectId: UUID,
+    accountId: UUID,
+    name: String = "My dump config",
+    dumpPath: String = "/tmp/dumps"
+  ) = TaskDumpConfig(
     id = UUID.randomUUID(),
     projectId = projectId,
     accountId = accountId,
+    name = name,
     dumpPath = dumpPath,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
@@ -47,7 +53,7 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
         foundConfig1 <- taskDumpConfigRepo.findById(savedConfig.id)
         newUpdatedAt = nowAsInstant
         updatedConfig <- taskDumpConfigRepo.update(
-          savedConfig.copy(dumpPath = "/tmp/dumps-new"),
+          savedConfig.copy(name = "Renamed config", dumpPath = "/tmp/dumps-new"),
           newUpdatedAt
         )
         foundConfig2 <- taskDumpConfigRepo.findById(savedConfig.id)
@@ -57,6 +63,7 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
         val cp = new Checkpoint
         cp(savedConfig shouldBe foundConfig1)
         cp(updatedConfig shouldBe foundConfig2)
+        cp(updatedConfig.name shouldBe "Renamed config")
         cp(updatedConfig.dumpPath shouldBe "/tmp/dumps-new")
         cp.reportAll()
         foundConfig3.isLeft shouldBe true
@@ -74,9 +81,9 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Second project")
         )
         savedAccount <- createAccount
-        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "/dumps/p1-a"))
-        config2 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "/dumps/p1-b"))
-        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject2.id, savedAccount.id, "/dumps/p2-a"))
+        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a"))
+        config2 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b"))
+        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
         found <- taskDumpConfigRepo.findByProjectId(savedProject1.id)
       } yield {
         found.toSet shouldBe Set(config1, config2)
@@ -92,8 +99,8 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
         savedAccount1 <- createAccount
         accountTypes <- createAccountTypes
         savedAccount2 <- accountRepo.insert(createAccountWith("second-account@email.com", accountTypes.head.id))
-        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount1.id, "/dumps/a1"))
-        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount2.id, "/dumps/a2"))
+        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount1.id, "a1", "/dumps/a1"))
+        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount2.id, "a2", "/dumps/a2"))
         found <- taskDumpConfigRepo.findByAccountId(savedAccount1.id)
       } yield {
         found shouldBe List(config1)

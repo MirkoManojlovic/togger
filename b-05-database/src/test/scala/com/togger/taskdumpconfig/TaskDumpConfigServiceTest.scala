@@ -37,6 +37,7 @@ class TaskDumpConfigServiceTest
     id = UUID.randomUUID(),
     projectId = projectId,
     accountId = accountId,
+    name = "My dump config",
     dumpPath = "/tmp/dumps",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

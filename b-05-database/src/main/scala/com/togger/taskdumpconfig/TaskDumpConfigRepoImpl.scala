@@ -17,6 +17,7 @@ class TaskDumpConfigRepoImpl extends TaskDumpConfigRepo {
     "id",
     "project_id",
     "account_id",
+    "name",
     "dump_path",
     "created_at",
     "updated_at"
@@ -34,8 +35,8 @@ class TaskDumpConfigRepoImpl extends TaskDumpConfigRepo {
     import taskDumpConfig._
     logAroundInfoQuery(
       insertStatement(TASK_DUMP_CONFIG_TABLE_FRAG)(fr"""
-        (project_id, account_id, dump_path, created_at, updated_at)
-        values ($projectId, $accountId, $dumpPath, $createdAt, $updatedAt)
+        (project_id, account_id, name, dump_path, created_at, updated_at)
+        values ($projectId, $accountId, $name, $dumpPath, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskDumpConfig](returnFields: _*)
     )(
@@ -57,6 +58,7 @@ class TaskDumpConfigRepoImpl extends TaskDumpConfigRepo {
       updateStatementUUID(TASK_DUMP_CONFIG_TABLE_FRAG)(taskDumpConfig.id)(fr"""
         project_id = ${taskDumpConfig.projectId},
         account_id = ${taskDumpConfig.accountId},
+        name = ${taskDumpConfig.name},
         dump_path = ${taskDumpConfig.dumpPath},
         updated_at = $updatedAt
       """).update

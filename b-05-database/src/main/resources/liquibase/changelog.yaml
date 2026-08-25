@@ -598,6 +598,12 @@ databaseChangeLog:
                     foreignKeyName: fk_task_dump_config_account
                     references: account(id)
               - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
                   name: dump_path
                   type: text
                   constraints:

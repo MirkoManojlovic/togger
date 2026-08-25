@@ -99,6 +99,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         id = UUID.randomUUID(),
         projectId = projectId,
         accountId = accountId,
+        name = "Dump config",
         dumpPath = dumpPath.toString,
         createdAt = nowAsInstant,
         updatedAt = nowAsInstant
