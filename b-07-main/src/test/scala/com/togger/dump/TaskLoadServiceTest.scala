@@ -64,7 +64,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       accountTypeRepo
     )
   val diskOps = new DiskOps
-  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
+  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = Int.MaxValue)
   val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
 
   case class FullHistory(

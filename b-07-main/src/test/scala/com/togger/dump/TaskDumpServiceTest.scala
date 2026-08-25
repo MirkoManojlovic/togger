@@ -2,7 +2,7 @@ package com.togger.dump
 
 import cats.implicits._
 import com.togger.account.{AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
@@ -14,6 +14,7 @@ import doobie.postgres.implicits._
 import io.circe.generic.auto._
 import io.circe.parser.decode
 
+import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
 class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
@@ -40,8 +41,16 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     logEntryVersionRepo
   )
   val diskOps = new DiskOps
-  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
+  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = Int.MaxValue)
   val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
+
+  private class TestClock extends TgClock {
+    var instant: Instant = Instant.now
+    override def currentInstant: Instant = instant
+    override def currentOffsetDateTime(zoneOffset: ZoneOffset = ZoneOffset.UTC): OffsetDateTime = instant.atOffset(zoneOffset)
+    override def currentYear(zoneOffset: ZoneOffset = ZoneOffset.UTC): Int = instant.atOffset(zoneOffset).getYear
+    override def currentDate(zoneOffset: ZoneOffset = ZoneOffset.UTC): LocalDate = instant.atOffset(zoneOffset).toLocalDate
+  }
 
   def createTaskWithFullHistory(projectId: UUID, createdBy: UUID, taskStatusId: UUID): ConnectionIO[UUID] =
     for {
@@ -204,6 +213,56 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             cp(taskDump.logEntries.head.versions.size shouldBe 2)
           }
         }
+        cp.reportAll()
+      }
+    }
+
+    "delete the oldest dump folders once the number of dumps exceeds dump-limit" in { transactor =>
+      val testClock = new TestClock
+      val limitedDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = 2)
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, testClock, transactor)
+      val taskDumpService =
+        new TaskDumpService(taskDumpRepo, limitedDumpDiskWriter, taskDumpConfigService, testClock, transactor)
+      val limitedDumpPath: os.Path = os.pwd / "target" / s"test-task-dump-limit-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskDumpConfigRepo.insert(
+          TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            name = "Dump config",
+            dumpPath = limitedDumpPath.toString,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+      } yield (savedAccount, savedProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject) = setupResult
+        _ = testClock.instant = Instant.parse("2026-01-01T00:00:00Z")
+        first <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        _ = testClock.instant = Instant.parse("2026-01-02T00:00:00Z")
+        second <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        _ = testClock.instant = Instant.parse("2026-01-03T00:00:00Z")
+        third <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+      } yield {
+        val cp = new Checkpoint
+        cp(first.isRight shouldBe true)
+        cp(second.isRight shouldBe true)
+        cp(third.isRight shouldBe true)
+
+        val projectFolder = os.Path(third.toOption.get.pathResults.head.dumpPath) / os.up
+        val remainingDumpFolders = os.list(projectFolder).map(_.last).toSet
+        cp(remainingDumpFolders shouldBe Set("20260102000000", "20260103000000"))
         cp.reportAll()
       }
     }

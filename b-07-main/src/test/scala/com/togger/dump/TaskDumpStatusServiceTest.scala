@@ -40,7 +40,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
     logEntryVersionRepo
   )
   val diskOps = new DiskOps
-  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps)
+  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = Int.MaxValue)
   val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
 
   def createTaskWithFullHistory(projectId: UUID, createdBy: UUID, taskStatusId: UUID): ConnectionIO[UUID] =
@@ -280,6 +280,48 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         val taskStatus = pathStatus.taskStatuses.find(_.taskId == orphanTaskId).get
         taskStatus.status shouldBe TaskDumpSyncStatus.MissingFromDb
+      }
+    }
+
+    "check status against the most recent dump folder when multiple dumps exist" in { transactor =>
+      val taskDumpService = newTaskDumpService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        savedTaskStatus <- createTaskStatus(savedProject.id)
+        taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
+      } yield (savedAccount, savedProject, taskId)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, taskId) = setupResult
+        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        firstDumpFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        projectFolder = firstDumpFolder / os.up
+        // A dated folder that always sorts after any real timestamp, simulating a later dump.
+        laterDumpFolder = projectFolder / "99999999999999"
+        orphanTaskId = UUID.randomUUID()
+        orphanDump = TaskDumpData(
+          task = Task(id = orphanTaskId, projectId = savedProject.id, createdBy = savedAccount.id, createdAt = nowAsInstant),
+          taskVersions = Nil,
+          links = Nil,
+          logEntries = Nil
+        )
+        _ = os.write.over(laterDumpFolder / "project.json", os.read(firstDumpFolder / "project.json"), createFolders = true)
+        _ = os.write.over(laterDumpFolder / s"$orphanTaskId.json", orphanDump.asJson.spaces2)
+        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+      } yield {
+        val pathStatus = statusResult.toOption.get.pathStatuses.head
+        pathStatus.taskStatuses.map(_.taskId).toSet shouldBe Set(taskId, orphanTaskId)
+        pathStatus.taskStatuses.find(_.taskId == taskId).get.status shouldBe TaskDumpSyncStatus.MissingFromDump
+        pathStatus.taskStatuses.find(_.taskId == orphanTaskId).get.status shouldBe TaskDumpSyncStatus.MissingFromDb
       }
     }
 

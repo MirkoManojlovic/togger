@@ -32,7 +32,7 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
+  def instance(transactorModule: TransactorModule, dumpLimit: Int): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
@@ -41,7 +41,8 @@ object TgServer {
       new DependenciesModule(
         transactorModule.transactor,
         securedEndpoint,
-        authDependenciesModule
+        authDependenciesModule,
+        dumpLimit
       )
     import dependenciesModule._
 
@@ -115,7 +116,8 @@ object TgServer {
 class DependenciesModule(
   val transactor: Transactor[IO],
   securedEndpoint: SecuredEndpoint,
-  authDependenciesModule: AuthDependenciesModule
+  authDependenciesModule: AuthDependenciesModule,
+  dumpLimit: Int
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
@@ -177,7 +179,7 @@ class DependenciesModule(
       logEntryRepo,
       logEntryVersionRepo
     )
-  lazy val taskDumpDiskWriter = new TaskDumpDiskWriter(taskDumpDiskOps)
+  lazy val taskDumpDiskWriter = new TaskDumpDiskWriter(taskDumpDiskOps, dumpLimit)
 
   lazy val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
   lazy val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactor)
