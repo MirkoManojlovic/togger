@@ -143,6 +143,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ShowAllTaskConfigsComponent(
                   taskDumpConfigService,
                   taskLoadConfigService,
+                  projectMappingService,
                   router,
                   spinnerService,
                   toast,
@@ -285,14 +286,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   projectId,
                   toast
-                ).element
-              case ShowProjectMappingPage(projectId: UUID) =>
-                new ShowProjectMappingComponent(
-                  projectMappingService,
-                  router,
-                  spinnerService,
-                  toast,
-                  projectId
                 ).element
               case CreateProjectMappingPage(projectId: UUID) =>
                 new CreateProjectMappingComponent(

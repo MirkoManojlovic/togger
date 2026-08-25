@@ -143,11 +143,6 @@ class TgRoutes {
         pattern = root / "task-load-config" / "edit" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: ShowProjectMappingPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowProjectMappingPage(UUID.fromString(projectId)),
-        pattern = root / "project-mapping" / "project" / segment[String] / endOfSegments
-      ),
-      Route(
         encode = (page: CreateProjectMappingPage) => page.projectId.toString,
         decode = (projectId: String) => CreateProjectMappingPage(UUID.fromString(projectId)),
         pattern = root / "project-mapping" / "create" / segment[String] / endOfSegments

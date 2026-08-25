@@ -25,8 +25,7 @@ case class SidebarLink(
   onDumpClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
   onStatusClick: Option[() => Unit] = None,
-  onLoadClick: Option[() => Unit] = None,
-  onProjectMappingClick: Option[() => Unit] = None
+  onLoadClick: Option[() => Unit] = None
 ) {
 
   def selected: ReactiveHtmlElement[HTMLLIElement] =
@@ -86,16 +85,6 @@ case class SidebarLink(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
             onClick.mapToUnit --> (_ => loadAction())
-          )
-        ),
-        onProjectMappingClick.map(projectMappingAction =>
-          button(
-            `type`("button"),
-            TgIcons.hammerIcon("w-3.5 h-3.5"),
-            cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => projectMappingAction())
           )
         )
       )
@@ -287,8 +276,7 @@ class Sidebar(
                         onDumpClick = Some(() => dumpProject(project.id)),
                         onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
                         onStatusClick = Some(() => router.route(TaskDumpStatusPage(project.id))),
-                        onLoadClick = Some(() => router.route(TaskLoadPage(project.id))),
-                        onProjectMappingClick = Some(() => router.route(ShowProjectMappingPage(project.id)))
+                        onLoadClick = Some(() => router.route(TaskLoadPage(project.id)))
                       ).deselectedProject
                     )
               }
