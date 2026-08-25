@@ -686,7 +686,6 @@ databaseChangeLog:
                   type: uuid
                   constraints:
                     nullable: false
-                    unique: true
                     foreignKeyName: fk_project_mapping_project_db
                     references: project(id)
               - column:

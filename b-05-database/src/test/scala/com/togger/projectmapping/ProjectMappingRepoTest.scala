@@ -74,17 +74,18 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
       res.transact(transactor)
     }
 
-    "fail to insert a second mapping for a project id that is already in the db" in { transactor =>
+    "allow mapping multiple dump projects to the same db project" in { transactor =>
       val res = for {
         orgAndProject <- createOrgAndProject
         savedOrganization = orgAndProject._1
         dumpProject1 = orgAndProject._2
         dumpProject2 <- createSecondProject(savedOrganization.id)
         dbProject <- createSecondProject(savedOrganization.id)
-        _ <- projectMappingRepo.insert(newProjectMapping(dumpProject1.id, dbProject.id))
-        secondInsert <- projectMappingRepo.insert(newProjectMapping(dumpProject2.id, dbProject.id)).attempt
+        mapping1 <- projectMappingRepo.insert(newProjectMapping(dumpProject1.id, dbProject.id))
+        mapping2 <- projectMappingRepo.insert(newProjectMapping(dumpProject2.id, dbProject.id))
+        found <- projectMappingRepo.findByProjectIdDb(dbProject.id)
       } yield {
-        secondInsert.isLeft shouldBe true
+        found.toSet shouldBe Set(mapping1, mapping2)
       }
 
       res.transact(transactor)

@@ -24,13 +24,13 @@ class ShowProjectMappingComponent(
   ioRuntime: IORuntime
 ) extends ToastMessages {
 
-  private val stateVar = Var(Option.empty[ProjectMappingResp])
+  private val stateVar = Var(List.empty[ProjectMappingResp])
 
   spinnerService
     .runWithSpinner(
       projectMappingService
         .findByProjectIdDb(projectId)
-        .map(response => response.map(success => stateVar.set(success.body.get.headOption)))
+        .map(response => response.map(success => stateVar.set(success.body.get.toList)))
     )
     .unsafeRunAndForget()
 
@@ -46,7 +46,7 @@ class ShowProjectMappingComponent(
         spinnerService
           .runWithSpinner(projectMappingService.deleteById(mapping.id))
           .toastBackendMessageCodeBlock {
-            stateVar.set(None)
+            stateVar.update(_.filterNot(_.id == mapping.id))
           }
           .unsafeRunAndForget()
       )
@@ -75,15 +75,14 @@ class ShowProjectMappingComponent(
     )
 
   private def emptyState =
-    div(
-      cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default p-4"),
-      p(cls("mb-4"), "No project mapping configured for this project yet."),
-      TgHtmlButton
-        .extraSmall("Create")
-        .amend(
-          router.navigateTo(CreateProjectMappingPage(projectId))
-        )
-    )
+    p(cls("mb-4"), "No project mapping configured for this project yet.")
+
+  private def createButton =
+    TgHtmlButton
+      .extraSmall("Create")
+      .amend(
+        router.navigateTo(CreateProjectMappingPage(projectId))
+      )
 
   val element = {
     div(
@@ -92,7 +91,11 @@ class ShowProjectMappingComponent(
           header = TgCard.CardHeader.plainText("Project mapping", TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
-              child <-- stateVar.signal.map(mappingOpt => mappingOpt.fold(emptyState)(mappingDetails))
+              cls("space-y-4"),
+              child <-- stateVar.signal.map(mappings =>
+                if (mappings.isEmpty) emptyState else div(cls("space-y-4"), mappings.map(mappingDetails))
+              ),
+              createButton
             )
           )
         )
