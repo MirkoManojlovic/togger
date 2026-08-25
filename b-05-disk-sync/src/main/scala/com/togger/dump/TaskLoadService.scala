@@ -27,7 +27,8 @@ class TaskLoadService(
           case Right(manifest) =>
             taskLoadRepo.ensureAccountExists(manifest.dumpedBy).transact(transactor).flatMap {
               case Left(error) => IO.pure(Left(error))
-              case Right(_) =>
+              case Right(dumperAccountIdDb) =>
+                val accountIdMap = Map(manifest.dumpedBy.id -> dumperAccountIdDb)
                 taskLoadRepo
                   .prepareLoad(projectId, manifest)
                   .transact(transactor)
@@ -45,7 +46,7 @@ class TaskLoadService(
                               TaskLoadTaskResult(taskId, None, TaskLoadTaskStatus.Malformed, 0, 0, 0, Some(parseError))
                             )
                           case (taskId, Right(diskData)) =>
-                            val remapped = remapForTarget(diskData, projectId, statusIdMap)
+                            val remapped = remapForTarget(diskData, projectId, statusIdMap, accountIdMap)
                             taskLoadRepo
                               .mergeTask(remapped)
                               .transact(transactor)
@@ -74,13 +75,28 @@ class TaskLoadService(
   private def remapForTarget(
     diskData: TaskDumpData,
     projectIdDb: UUID,
-    taskStatusIdMap: Map[UUID, UUID]
-  ): TaskDumpData =
+    taskStatusIdMap: Map[UUID, UUID],
+    accountIdMap: Map[UUID, UUID]
+  ): TaskDumpData = {
+    def remapAccount(id: UUID): UUID = accountIdMap.getOrElse(id, id)
+    def remapAccountOpt(id: Option[UUID]): Option[UUID] = id.map(remapAccount)
+
     diskData.copy(
-      task = diskData.task.copy(projectId = projectIdDb),
+      task = diskData.task.copy(projectId = projectIdDb, createdBy = remapAccount(diskData.task.createdBy)),
       taskVersions = diskData.taskVersions.map(v =>
-        v.copy(taskStatusId = taskStatusIdMap.getOrElse(v.taskStatusId, v.taskStatusId))
+        v.copy(
+          taskStatusId = taskStatusIdMap.getOrElse(v.taskStatusId, v.taskStatusId),
+          assignedTo = remapAccountOpt(v.assignedTo),
+          closedBy = remapAccountOpt(v.closedBy)
+        )
+      ),
+      logEntries = diskData.logEntries.map(le =>
+        le.copy(
+          logEntry = le.logEntry.copy(createdBy = remapAccount(le.logEntry.createdBy)),
+          versions = le.versions.map(v => v.copy(createdBy = remapAccount(v.createdBy)))
+        )
       )
     )
+  }
 
 }

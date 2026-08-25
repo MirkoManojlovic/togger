@@ -630,6 +630,90 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       }
     }
 
+    "remap account ids in a task and its log entry when the dumped-by account is found by email under a different id" in {
+      transactor =>
+        val taskDumpService = newTaskDumpService(transactor)
+        val taskLoadService = newTaskLoadService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+        val setup = for {
+          savedAccount <- createAccount
+          savedOrgAndProject <- createOrgAndProject
+          (_, savedProject) = savedOrgAndProject
+          _ <- projectAccountRepo.insert(
+            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+          )
+          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+          _ <- insertMapping(savedProject.id, savedProject.id)
+          savedTaskStatus <- createTaskStatus(savedProject.id)
+        } yield (savedAccount, savedProject, savedTaskStatus)
+
+        for {
+          setupResult <- setup.transact(transactor)
+          (savedAccount, savedProject, savedTaskStatus) = setupResult
+          dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+          _ = dumpResult.isRight shouldBe true
+          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+          originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+          // dump-side id for the same person differs from their id in this db, but the email still matches
+          dumpSideAccountId = UUID.randomUUID()
+          manifestWithForeignAccountId = originalManifest.copy(
+            dumpedBy = originalManifest.dumpedBy.copy(id = dumpSideAccountId)
+          )
+          _ = os.write.over(rootFolder / "project.json", manifestWithForeignAccountId.asJson.spaces2)
+          newTaskId = UUID.randomUUID()
+          newLogEntryId = UUID.randomUUID()
+          diskData = TaskDumpData(
+            task = Task(id = newTaskId, projectId = savedProject.id, createdBy = dumpSideAccountId, createdAt = nowAsInstant),
+            taskVersions = List(
+              TaskVersion(
+                version = UUID.randomUUID(),
+                taskId = newTaskId,
+                name = "Disk task",
+                description = "Disk task description",
+                assignedTo = Some(dumpSideAccountId),
+                closedBy = Some(dumpSideAccountId),
+                taskStatusId = savedTaskStatus.id,
+                createdAt = nowAsInstant,
+                updatedAt = nowAsInstant
+              )
+            ),
+            links = Nil,
+            logEntries = List(
+              LogEntryDumpData(
+                logEntry =
+                  LogEntry(id = newLogEntryId, taskId = newTaskId, createdBy = dumpSideAccountId, createdAt = nowAsInstant),
+                versions = List(
+                  LogEntryVersion(
+                    version = UUID.randomUUID(),
+                    logEntryId = newLogEntryId,
+                    textInternal = "internal",
+                    textExternal = "external",
+                    status = LogEntryStatus.InProgress,
+                    createdBy = dumpSideAccountId,
+                    createdAt = nowAsInstant,
+                    updatedAt = nowAsInstant
+                  )
+                )
+              )
+            )
+          )
+          _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
+          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, rootFolder.toString)
+          persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
+          persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
+          persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
+          persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
+        } yield {
+          loadResult.isRight shouldBe true
+          persistedTask.createdBy shouldBe savedAccount.id
+          persistedVersion.assignedTo shouldBe Some(savedAccount.id)
+          persistedVersion.closedBy shouldBe Some(savedAccount.id)
+          persistedLogEntry.createdBy shouldBe savedAccount.id
+          persistedLogEntryVersion.createdBy shouldBe savedAccount.id
+        }
+    }
+
     "reject the load when the dumped-by account is missing and no 'developer' account type exists" in { transactor =>
       val taskDumpService = newTaskDumpService(transactor)
       val taskLoadService = newTaskLoadService(transactor)

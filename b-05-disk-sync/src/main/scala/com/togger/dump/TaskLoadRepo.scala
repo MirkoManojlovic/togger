@@ -28,12 +28,12 @@ class TaskLoadRepo(
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
 
-  def ensureAccountExists(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, Unit]] =
+  def ensureAccountExists(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
     accountRepo.findByEmail(accountDumpData.email).attempt.flatMap {
-      case Right(_) => ().asRight[ProjectError].pure[ConnectionIO]
+      case Right(account) => account.id.asRight[ProjectError].pure[ConnectionIO]
       case Left(_) =>
         accountTypeRepo.findByName("developer").attempt.flatMap {
-          case Left(_) => (AccountTypeMissing: ProjectError).asLeft[Unit].pure[ConnectionIO]
+          case Left(_) => (AccountTypeMissing: ProjectError).asLeft[UUID].pure[ConnectionIO]
           case Right(accountType) =>
             val now = tgClock.currentInstant
             val account = Account(
@@ -48,7 +48,7 @@ class TaskLoadRepo(
               createdAt = now,
               updatedAt = now
             )
-            accountRepo.insert(account).void.map(_.asRight[ProjectError])
+            accountRepo.insert(account).map(_.id.asRight[ProjectError])
         }
     }
 
