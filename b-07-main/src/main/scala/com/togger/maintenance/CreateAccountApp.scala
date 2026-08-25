@@ -2,98 +2,20 @@ package com.togger.maintenance
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
-import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl, TgIds}
-import com.togger.controllers.organization.OrganizationService
-import com.togger.controllers.project.{DefaultTaskStatusService, ProjectService}
-import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryService, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
-import com.togger.login.SessionTokenFactoryImpl
-import com.togger.organization.{Organization, OrganizationAccountRepoImpl, OrganizationRepoImpl}
-import com.togger.project.{Project, ProjectAccountRepoImpl, ProjectRepoImpl}
+import com.togger.common.TgIds
+import com.togger.logentry.{LogEntry, LogEntryStatus, LogEntryVersion}
+import com.togger.organization.Organization
+import com.togger.project.Project
 import com.togger.task._
-import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
+import doobie.ConnectionIO
 
-import java.time._
 import java.util.UUID
 
-object CreateAccountApp extends IOApp {
-
-  private val hashedPassword =
-    HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
-  private val now = Instant.now
+object CreateAccountApp extends IOApp with SeedAppModule {
 
   override def run(args: List[String]): IO[ExitCode] = {
-
-    val xa = Transactor.fromDriverManager[IO](
-      driver = "org.postgresql.Driver",
-      url = s"jdbc:postgresql:$DB_NAME",
-      user = DB_USERNAME,
-      password = DB_PASSWORD,
-      logHandler = None
-    )
-
-    val accountTypeRepo = new AccountTypeRepo()
-    val accountRepo = new AccountRepoImpl()
-    val accountSessionRepo = new AccountSessionRepo()
-    val sessionTokenFactory = new SessionTokenFactoryImpl
-    val tgClock = new TgClockImpl
-
-    val accountService =
-      new AccountService(
-        accountRepo = accountRepo,
-        accountSessionRepo = accountSessionRepo,
-        sessionTokenFactory = sessionTokenFactory,
-        tgClock = tgClock,
-        transactor = xa
-      )
-
-    val organizationRepo = new OrganizationRepoImpl
-    val organizationAccountRepo = new OrganizationAccountRepoImpl
-    val projectRepo = new ProjectRepoImpl
-    val projectAccountRepo = new ProjectAccountRepoImpl
-    val taskStatusRepo = new TaskStatusRepoImpl
-    val taskRepo = new TaskRepoImpl
-    val taskVersionRepo = new TaskVersionRepoImpl
-    val linkRepo = new LinkRepoImpl
-    val linkVersionRepo = new LinkVersionRepoImpl
-    val logEntryRepo = new LogEntryRepoImpl
-    val logEntryVersionRepo = new LogEntryVersionRepoImpl
-    val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
-
-    val organizationService =
-      new OrganizationService(
-        organizationRepo = organizationRepo,
-        organizationAccountRepo = organizationAccountRepo,
-        projectRepo = projectRepo,
-        tgClock = tgClock,
-        transactor = xa
-      )
-
-    val projectService =
-      new ProjectService(
-        projectRepo = projectRepo,
-        projectAccountRepo = projectAccountRepo,
-        taskStatusRepo = taskStatusRepo,
-        tgClock = tgClock,
-        defaultTaskStatusService = defaultTaskStatusService,
-        transactor = xa
-      )
-
-    val taskService =
-      new TaskService(
-        taskRepo = taskRepo,
-        taskVersionRepo = taskVersionRepo,
-        linkRepo = linkRepo,
-        linkVersionRepo = linkVersionRepo,
-        logEntryRepo = logEntryRepo,
-        logEntryVersionRepo = logEntryVersionRepo,
-        transactor = xa
-      )
-
-    val logEntryService = new LogEntryService(logEntryRepo = logEntryRepo, logEntryVersionRepo = logEntryVersionRepo, transactor = xa)
 
     def createAccountTypes: ConnectionIO[List[AccountType]] =
       Seq("developer", "manager", "qa")
@@ -126,7 +48,7 @@ object CreateAccountApp extends IOApp {
       savedOrgResult <- organizationService.saveOrganization(
         Organization(
           id = TgIds.UNASSIGNED_UUID,
-          name = "The Daily Bugle",
+          name = "Maths",
           description = "",
           createdAt = now,
           updatedAt = now
@@ -136,11 +58,11 @@ object CreateAccountApp extends IOApp {
       )
       savedOrg = savedOrgResult._1
 
-      savedProjectResult <- projectService.saveProject(
+      savedAlphaResult <- projectService.saveProject(
         Project(
           id = TgIds.UNASSIGNED_UUID,
           organizationId = savedOrg.id,
-          name = "Spiderman",
+          name = "Alpha",
           description = "",
           createdAt = now,
           updatedAt = now
@@ -148,21 +70,21 @@ object CreateAccountApp extends IOApp {
         owner.id,
         Seq.empty
       )
-      savedProject = savedProjectResult._1
+      savedAlpha = savedAlphaResult._1
 
-      taskStatuses <- taskStatusRepo.findByProjectId(savedProject.id).transact(xa)
-      inProgressStatus = taskStatuses.find(_.name == "🏗️ In progress").get
-      doneStatus = taskStatuses.find(_.name == "✅ Done").get
+      alphaTaskStatuses <- taskStatusRepo.findByProjectId(savedAlpha.id).transact(xa)
+      alphaInProgressStatus = alphaTaskStatuses.find(_.name == "🏗️ In progress").get
+      alphaDoneStatus = alphaTaskStatuses.find(_.name == "✅ Done").get
 
-      task1Result <- taskService.createTask(
-        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedProject.id, createdBy = owner.id, createdAt = now),
+      alphaTask1Result <- taskService.createTask(
+        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedAlpha.id, createdBy = owner.id, createdAt = now),
         TaskVersion(
           version = TgIds.UNASSIGNED_UUID,
           taskId = TgIds.UNASSIGNED_UUID,
-          name = "Photographs of Spiderman",
+          name = "Task 01 - Alpha",
           description = "",
           assignedTo = None,
-          taskStatusId = inProgressStatus.id,
+          taskStatusId = alphaInProgressStatus.id,
           createdAt = now,
           updatedAt = now
         ),
@@ -172,22 +94,22 @@ object CreateAccountApp extends IOApp {
             LinkVersion(
               version = TgIds.UNASSIGNED_UUID,
               linkId = TgIds.UNASSIGNED_UUID,
-              name = "Link to pics",
-              url = "www.spiderman.com",
+              name = "Link - Alpha",
+              url = "www.alpha.com",
               createdAt = now,
               updatedAt = now
             )
           )
         )
       )
-      task1 = task1Result._1
+      alphaTask1 = alphaTask1Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = task1.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = alphaTask1.task.id, createdBy = owner.id, createdAt = now),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Working on it",
-          textExternal = "Working on it",
+          textInternal = "Log entry Alpha 01",
+          textExternal = "Log entry Alpha 01",
           status = LogEntryStatus.InProgress,
           createdBy = owner.id,
           createdAt = now,
@@ -195,29 +117,147 @@ object CreateAccountApp extends IOApp {
         )
       )
 
-      task2Result <- taskService.createTask(
-        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedProject.id, createdBy = owner.id, createdAt = now),
+      alphaTask2Result <- taskService.createTask(
+        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedAlpha.id, createdBy = owner.id, createdAt = now),
         TaskVersion(
           version = TgIds.UNASSIGNED_UUID,
           taskId = TgIds.UNASSIGNED_UUID,
-          name = "Who is Spiderman?",
+          name = "Task02 - Alpha",
           description = "",
           assignedTo = None,
-          taskStatusId = doneStatus.id,
+          taskStatusId = alphaDoneStatus.id,
           createdAt = now,
           updatedAt = now
         ),
         Seq.empty
       )
-      task2 = task2Result._1
+      alphaTask2 = alphaTask2Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = task2.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = alphaTask2.task.id, createdBy = owner.id, createdAt = now),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Don't know",
-          textExternal = "Don't know",
+          textInternal = "Log entry Alpha 02",
+          textExternal = "Log entry Alpha 02",
           status = LogEntryStatus.Completed,
+          createdBy = owner.id,
+          createdAt = now,
+          updatedAt = now
+        )
+      )
+
+      savedBetaResult <- projectService.saveProject(
+        Project(
+          id = TgIds.UNASSIGNED_UUID,
+          organizationId = savedOrg.id,
+          name = "Beta",
+          description = "",
+          createdAt = now,
+          updatedAt = now
+        ),
+        owner.id,
+        Seq.empty
+      )
+      savedBeta = savedBetaResult._1
+
+      betaTaskStatuses <- taskStatusRepo.findByProjectId(savedBeta.id).transact(xa)
+      betaInProgressStatus = betaTaskStatuses.find(_.name == "🏗️ In progress").get
+      betaDoneStatus = betaTaskStatuses.find(_.name == "✅ Done").get
+      betaWaitingStatus = betaTaskStatuses.find(_.name == "👀 In review/Waiting").get
+
+      betaTask1Result <- taskService.createTask(
+        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedBeta.id, createdBy = owner.id, createdAt = now),
+        TaskVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          taskId = TgIds.UNASSIGNED_UUID,
+          name = "Task 01 - Beta",
+          description = "",
+          assignedTo = None,
+          taskStatusId = betaInProgressStatus.id,
+          createdAt = now,
+          updatedAt = now
+        ),
+        Seq(
+          LinkWithOneVersion(
+            Link(id = TgIds.UNASSIGNED_UUID, taskId = TgIds.UNASSIGNED_UUID, createdAt = now),
+            LinkVersion(
+              version = TgIds.UNASSIGNED_UUID,
+              linkId = TgIds.UNASSIGNED_UUID,
+              name = "Link - Beta",
+              url = "www.beta.com",
+              createdAt = now,
+              updatedAt = now
+            )
+          )
+        )
+      )
+      betaTask1 = betaTask1Result._1
+      _ <- logEntryService.createLogEntry(
+        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask1.task.id, createdBy = owner.id, createdAt = now),
+        LogEntryVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          logEntryId = TgIds.UNASSIGNED_UUID,
+          textInternal = "Log entry Beta 01",
+          textExternal = "Log entry Beta 01",
+          status = LogEntryStatus.InProgress,
+          createdBy = owner.id,
+          createdAt = now,
+          updatedAt = now
+        )
+      )
+
+      betaTask2Result <- taskService.createTask(
+        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedBeta.id, createdBy = owner.id, createdAt = now),
+        TaskVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          taskId = TgIds.UNASSIGNED_UUID,
+          name = "Task02 - Beta",
+          description = "",
+          assignedTo = None,
+          taskStatusId = betaDoneStatus.id,
+          createdAt = now,
+          updatedAt = now
+        ),
+        Seq.empty
+      )
+      betaTask2 = betaTask2Result._1
+      _ <- logEntryService.createLogEntry(
+        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask2.task.id, createdBy = owner.id, createdAt = now),
+        LogEntryVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          logEntryId = TgIds.UNASSIGNED_UUID,
+          textInternal = "Log entry Beta 02",
+          textExternal = "Log entry Beta 02",
+          status = LogEntryStatus.Completed,
+          createdBy = owner.id,
+          createdAt = now,
+          updatedAt = now
+        )
+      )
+
+      betaTask3Result <- taskService.createTask(
+        Task(id = TgIds.UNASSIGNED_UUID, projectId = savedBeta.id, createdBy = owner.id, createdAt = now),
+        TaskVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          taskId = TgIds.UNASSIGNED_UUID,
+          name = "Task03 - Beta",
+          description = "",
+          assignedTo = None,
+          taskStatusId = betaWaitingStatus.id,
+          createdAt = now,
+          updatedAt = now
+        ),
+        Seq.empty
+      )
+      betaTask3 = betaTask3Result._1
+      _ <- logEntryService.createLogEntry(
+        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask3.task.id, createdBy = owner.id, createdAt = now),
+        LogEntryVersion(
+          version = TgIds.UNASSIGNED_UUID,
+          logEntryId = TgIds.UNASSIGNED_UUID,
+          textInternal = "Log entry Beta 03",
+          textExternal = "Log entry Beta 03",
+          status = LogEntryStatus.Paused,
           createdBy = owner.id,
           createdAt = now,
           updatedAt = now
@@ -226,19 +266,5 @@ object CreateAccountApp extends IOApp {
     } yield ExitCode.Success
 
   }
-
-  def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID) =
-    Account(
-      id = TgIds.UNASSIGNED_UUID,
-      firstName = firstName,
-      lastName = lastName,
-      email = email,
-      password = hashedPassword,
-      accountTypeId = accountTypeId,
-      verified = true,
-      enabled = true,
-      createdAt = now,
-      updatedAt = now
-    )
 
 }
