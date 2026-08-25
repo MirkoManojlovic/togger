@@ -470,7 +470,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       }
     }
 
-    "reject loading when the target project's mapping points to a different dump project" in { transactor =>
+    "report a mapping is required when the target project has a mapping to a different dump project" in { transactor =>
       val taskDumpService = newTaskDumpService(transactor)
       val taskLoadService = newTaskLoadService(transactor)
       val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
@@ -498,7 +498,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
         projectRoot = rootFolder / os.up
         loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
-      } yield loadResult shouldBe Left(ProjectError.ProjectMappingConflict)
+      } yield loadResult shouldBe Right(TaskLoadOutcome.MappingRequired(dumpProject.id, dumpProject.name))
     }
 
     "remap the project id and reconcile task statuses by name/description when loading across a mapping" in { transactor =>

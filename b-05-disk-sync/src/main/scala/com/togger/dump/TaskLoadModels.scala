@@ -28,7 +28,6 @@ sealed trait MappingResolution
 
 object MappingResolution {
   case object Required extends MappingResolution
-  case object Conflict extends MappingResolution
   case class Resolved(taskStatusIdMap: Map[UUID, UUID]) extends MappingResolution
 }
 

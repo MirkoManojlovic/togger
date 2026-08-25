@@ -77,13 +77,11 @@ class TaskLoadRepo(
   }
 
   def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[MappingResolution] =
-    projectMappingRepo.findByProjectIdDb(projectIdDb).map(_.headOption).flatMap {
-      case None =>
-        (MappingResolution.Required: MappingResolution).pure[ConnectionIO]
-      case Some(mapping) if mapping.projectIdDump != manifest.project.id =>
-        (MappingResolution.Conflict: MappingResolution).pure[ConnectionIO]
-      case Some(_) =>
+    projectMappingRepo.findByProjectIdDb(projectIdDb).flatMap { mappings =>
+      if (mappings.exists(_.projectIdDump == manifest.project.id))
         reconcileTaskStatuses(projectIdDb, manifest.taskStatuses).map(MappingResolution.Resolved)
+      else
+        (MappingResolution.Required: MappingResolution).pure[ConnectionIO]
     }
 
   private def reconcileTaskStatuses(projectIdDb: UUID, diskStatuses: List[TaskStatus]): ConnectionIO[Map[UUID, UUID]] =

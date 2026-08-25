@@ -3,7 +3,7 @@ package com.togger.dump
 import cats.effect.IO
 import cats.implicits._
 import com.togger.logging.TgLogging
-import com.togger.project.ProjectError.{DumpManifestMissing, NotAssignedToProject, ProjectError, ProjectMappingConflict}
+import com.togger.project.ProjectError.{DumpManifestMissing, NotAssignedToProject, ProjectError}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.Transactor
@@ -38,8 +38,6 @@ class TaskLoadService(
                       .flatMap {
                         case MappingResolution.Required =>
                           IO.pure(Right(TaskLoadOutcome.MappingRequired(manifest.project.id, manifest.project.name)))
-                        case MappingResolution.Conflict =>
-                          IO.pure(Left(ProjectMappingConflict))
                         case MappingResolution.Resolved(statusIdMap) =>
                           val diskTasksById = taskDumpDiskWriter.readDumpedTasksAtPath(dumpPath)
                           diskTasksById.toList
