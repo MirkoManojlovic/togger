@@ -2,6 +2,7 @@ package com.togger.dump
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepo, AccountTypeRepo, HashedPasswordImpl}
+import com.togger.accountmapping.{AccountMapping, AccountMappingRepo}
 import com.togger.common.{Password, TgClock, TgIds}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersion, LogEntryVersionRepo}
 import com.togger.project.ProjectError.{AccountTypeMissing, ProjectError}
@@ -23,12 +24,28 @@ class TaskLoadRepo(
   taskStatusRepo: TaskStatusRepo,
   tgClock: TgClock,
   accountRepo: AccountRepo,
-  accountTypeRepo: AccountTypeRepo
+  accountTypeRepo: AccountTypeRepo,
+  accountMappingRepo: AccountMappingRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
 
-  def ensureAccountExists(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
+  def resolveAccountMapping(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
+    accountMappingRepo.findByAccountIdDump(accountDumpData.id).map(_.headOption).flatMap {
+      case Some(mapping) =>
+        mapping.accountIdDb.asRight[ProjectError].pure[ConnectionIO]
+      case None =>
+        resolveOrCreateAccountByEmail(accountDumpData).flatMap {
+          case Left(error) => (error: ProjectError).asLeft[UUID].pure[ConnectionIO]
+          case Right(accountIdDb) =>
+            val now = tgClock.currentInstant
+            accountMappingRepo
+              .insert(AccountMapping(accountIdDb, accountDumpData.id, now, now))
+              .map(_ => accountIdDb.asRight[ProjectError])
+        }
+    }
+
+  private def resolveOrCreateAccountByEmail(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
     accountRepo.findByEmail(accountDumpData.email).attempt.flatMap {
       case Right(account) => account.id.asRight[ProjectError].pure[ConnectionIO]
       case Left(_) =>

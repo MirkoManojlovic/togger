@@ -706,3 +706,32 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createTable:
+            tableName: account_mapping
+            columns:
+              - column:
+                  name: account_id_db
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_account_mapping_account_db
+                    references: account(id)
+              - column:
+                  name: account_id_dump
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false

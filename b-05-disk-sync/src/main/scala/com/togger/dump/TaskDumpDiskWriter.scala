@@ -47,6 +47,9 @@ class TaskDumpDiskWriter(diskOps: DiskOps, dumpLimit: Int) extends TgLogging {
     }
   }
 
+  def resolveLatestDumpFolder(projectRootPath: String): Option[String] =
+    latestDumpFolder(diskOps.resolvePath(projectRootPath)).map(_.toString)
+
   def readManifest(folderPath: String): Either[String, ProjectDumpManifest] =
     Try(diskOps.readFileFromDisk(diskOps.resolvePath(folderPath, "project.json"))).toEither.left
       .map(_.getMessage)

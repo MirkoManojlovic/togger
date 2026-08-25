@@ -6,6 +6,7 @@ import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
+import com.togger.controllers.accountmapping.AccountMappingController
 import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.{TaskDumpConfigController, TaskDumpConfigVerification}
@@ -16,6 +17,7 @@ import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
+import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
 import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
@@ -107,7 +109,11 @@ object TgServer {
         projectMappingController.save,
         projectMappingController.update,
         projectMappingController.delete,
-        projectMappingController.findByProjectIdDb
+        projectMappingController.findByProjectIdDb,
+        accountMappingController.save,
+        accountMappingController.findByAccountIdDb,
+        accountMappingController.findByAccountIdDump,
+        accountMappingController.delete
       )
     )
   }
@@ -201,6 +207,12 @@ class DependenciesModule(
   lazy val projectMappingController =
     new ProjectMappingController(projectMappingEndpoints, projectMappingService, tgClock)
 
+  lazy val accountMappingRepo = new AccountMappingRepoImpl
+  lazy val accountMappingService = new AccountMappingService(accountMappingRepo, transactor)
+  lazy val accountMappingEndpoints = new AccountMappingEndpoints(securedEndpoint)
+  lazy val accountMappingController =
+    new AccountMappingController(accountMappingEndpoints, accountMappingService, tgClock)
+
   lazy val taskDumpService =
     new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, tgClock, transactor)
   lazy val taskLoadRepo =
@@ -215,7 +227,8 @@ class DependenciesModule(
       taskStatusRepo,
       tgClock,
       accountRepo,
-      accountTypeRepo
+      accountTypeRepo,
+      accountMappingRepo
     )
   lazy val taskLoadService = new TaskLoadService(taskDumpRepo, taskLoadRepo, taskDumpDiskWriter, transactor)
   lazy val taskDumpEndpoints = new TaskDumpEndpoints(securedEndpoint)

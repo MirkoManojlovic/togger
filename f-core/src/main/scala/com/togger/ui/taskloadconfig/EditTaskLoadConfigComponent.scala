@@ -84,7 +84,7 @@ class EditTaskLoadConfigComponent(
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
     errors = EventStream.empty,
-    labelValue = "Dump path (must be an abs path)",
+    labelValue = "Project dump root path (must be an abs path; the latest dump inside it is loaded)",
     tgInputType = TgInputType.Text
   )
 

@@ -50,7 +50,7 @@ class TaskLoadComponent(
   private val dumpPathInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
     errors = EventStream.empty,
-    labelValue = "Dump path to load from",
+    labelValue = "Project dump root path to load from (the latest dump inside it is loaded)",
     tgInputType = TgInputType.Text
   )
 
