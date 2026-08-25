@@ -8,7 +8,7 @@ import com.togger.routes.Pages.{
   CreateProjectPage,
   EditOrganizationPage,
   EditProjectPage,
-  ShowAllTaskDumpConfigsPage,
+  ShowAllTaskConfigsPage,
   ShowAllTasksPage
 }
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -170,11 +170,11 @@ class ShowAllProjectsTableComponent(
                                 button(
                                   `type`("button"),
                                   TgIcons.downloadIcon("w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Dump Config",
+                                  "Config",
                                   cls(
                                     "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
                                   ),
-                                  onClick.mapToUnit --> (_ => router.route(ShowAllTaskDumpConfigsPage(dto.id)))
+                                  onClick.mapToUnit --> (_ => router.route(ShowAllTaskConfigsPage(dto.id)))
                                 )
                               )
                             )

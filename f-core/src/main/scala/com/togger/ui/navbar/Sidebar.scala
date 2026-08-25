@@ -26,7 +26,6 @@ case class SidebarLink(
   onConfigClick: Option[() => Unit] = None,
   onStatusClick: Option[() => Unit] = None,
   onLoadClick: Option[() => Unit] = None,
-  onLoadConfigClick: Option[() => Unit] = None,
   onProjectMappingClick: Option[() => Unit] = None
 ) {
 
@@ -87,16 +86,6 @@ case class SidebarLink(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
             onClick.mapToUnit --> (_ => loadAction())
-          )
-        ),
-        onLoadConfigClick.map(loadConfigAction =>
-          button(
-            `type`("button"),
-            TgIcons.listIcon("w-3.5 h-3.5"),
-            cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => loadConfigAction())
           )
         ),
         onProjectMappingClick.map(projectMappingAction =>
@@ -296,10 +285,9 @@ class Sidebar(
                         linkName = project.name,
                         link = router.navigateTo(ShowAllTasksPage(project.id)),
                         onDumpClick = Some(() => dumpProject(project.id)),
-                        onConfigClick = Some(() => router.route(ShowAllTaskDumpConfigsPage(project.id))),
+                        onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
                         onStatusClick = Some(() => router.route(TaskDumpStatusPage(project.id))),
                         onLoadClick = Some(() => router.route(TaskLoadPage(project.id))),
-                        onLoadConfigClick = Some(() => router.route(ShowAllTaskLoadConfigsPage(project.id))),
                         onProjectMappingClick = Some(() => router.route(ShowProjectMappingPage(project.id)))
                       ).deselectedProject
                     )

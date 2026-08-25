@@ -19,6 +19,7 @@ import com.togger.ui.project._
 import com.togger.ui.projectmapping._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
+import com.togger.ui.taskconfig._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskload._
@@ -138,9 +139,10 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskStatusId,
                   toast
                 ).element
-              case ShowAllTaskDumpConfigsPage(projectId: UUID) =>
-                new ShowAllTaskDumpConfigsComponent(
+              case ShowAllTaskConfigsPage(projectId: UUID) =>
+                new ShowAllTaskConfigsComponent(
                   taskDumpConfigService,
+                  taskLoadConfigService,
                   router,
                   spinnerService,
                   toast,
@@ -177,14 +179,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   toast
-                ).element
-              case ShowAllTaskLoadConfigsPage(projectId: UUID) =>
-                new ShowAllTaskLoadConfigsComponent(
-                  taskLoadConfigService,
-                  router,
-                  spinnerService,
-                  toast,
-                  projectId
                 ).element
               case CreateTaskLoadConfigPage(projectId: UUID) =>
                 new CreateTaskLoadConfigComponent(

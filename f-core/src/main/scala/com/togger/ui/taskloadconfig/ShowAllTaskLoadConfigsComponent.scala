@@ -6,7 +6,7 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage, ShowAllTaskLoadConfigsPage}
+import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage, ShowAllTaskConfigsPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -116,7 +116,7 @@ class ShowAllTaskLoadConfigsComponent(
                                     spinnerService
                                       .runWithSpinner(taskLoadConfigService.deleteById(dto.id))
                                       .toastBackendMessageCodeBlock {
-                                        router.route(ShowAllTaskLoadConfigsPage(projectId))
+                                        router.route(ShowAllTaskConfigsPage(projectId))
                                       }
                                       .unsafeRunAndForget()
                                   )

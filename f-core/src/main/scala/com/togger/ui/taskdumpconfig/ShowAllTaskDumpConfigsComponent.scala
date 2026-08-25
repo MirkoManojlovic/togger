@@ -6,7 +6,7 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
-import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage, ShowAllTaskDumpConfigsPage}
+import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage, ShowAllTaskConfigsPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -114,7 +114,7 @@ class ShowAllTaskDumpConfigsComponent(
                                     spinnerService
                                       .runWithSpinner(taskDumpConfigService.deleteById(dto.id))
                                       .toastBackendMessageCodeBlock {
-                                        router.route(ShowAllTaskDumpConfigsPage(projectId))
+                                        router.route(ShowAllTaskConfigsPage(projectId))
                                       }
                                       .unsafeRunAndForget()
                                   )
