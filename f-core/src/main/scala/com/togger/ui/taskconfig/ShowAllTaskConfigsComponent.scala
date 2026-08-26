@@ -36,7 +36,15 @@ class ShowAllTaskConfigsComponent(
         projectId
       ).element,
       div(cls("mt-4")),
-      new ShowAllTaskLoadConfigsComponent(taskLoadConfigService, router, spinnerService, toast, projectId).element,
+      new ShowAllTaskLoadConfigsComponent(
+        taskLoadConfigService,
+        taskDumpService,
+        projectMappingService,
+        router,
+        spinnerService,
+        toast,
+        projectId
+      ).element,
       div(cls("mt-4")),
       new ShowProjectMappingComponent(projectMappingService, router, spinnerService, toast, projectId).element
     )
