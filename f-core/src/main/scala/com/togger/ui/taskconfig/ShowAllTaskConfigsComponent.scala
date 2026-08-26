@@ -3,7 +3,7 @@ package com.togger.ui.taskconfig
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.projectmapping.{ProjectMappingFeService, ShowProjectMappingComponent}
+import com.togger.ui.projectmapping.ProjectMappingFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
 import com.togger.ui.taskdumpconfig.{ShowAllTaskDumpConfigsComponent, TaskDumpConfigFeService}
@@ -44,9 +44,7 @@ class ShowAllTaskConfigsComponent(
         spinnerService,
         toast,
         projectId
-      ).element,
-      div(cls("mt-4")),
-      new ShowProjectMappingComponent(projectMappingService, router, spinnerService, toast, projectId).element
+      ).element
     )
   }
 
