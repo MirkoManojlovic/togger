@@ -1,8 +1,10 @@
 package com.togger.ui.navbar
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.dto.TaskLoadResp
 import com.togger.dto.organization.FindOrganizationsAndProjects
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -13,6 +15,7 @@ import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
 import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLLIElement
 
@@ -24,7 +27,6 @@ case class SidebarLink(
   isSelected: Boolean = false,
   onDumpClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
-  onStatusClick: Option[() => Unit] = None,
   onLoadClick: Option[() => Unit] = None
 ) {
 
@@ -57,26 +59,6 @@ case class SidebarLink(
             onClick.mapToUnit --> (_ => dumpAction())
           )
         ),
-        onConfigClick.map(configAction =>
-          button(
-            `type`("button"),
-            TgIcons.editIcon("w-3.5 h-3.5"),
-            cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => configAction())
-          )
-        ),
-        onStatusClick.map(statusAction =>
-          button(
-            `type`("button"),
-            TgIcons.checkIcon("w-3.5 h-3.5"),
-            cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => statusAction())
-          )
-        ),
         onLoadClick.map(loadAction =>
           button(
             `type`("button"),
@@ -85,6 +67,16 @@ case class SidebarLink(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
             onClick.mapToUnit --> (_ => loadAction())
+          )
+        ),
+        onConfigClick.map(configAction =>
+          button(
+            `type`("button"),
+            TgIcons.editIcon("w-3.5 h-3.5"),
+            cls(
+              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
+            ),
+            onClick.mapToUnit --> (_ => configAction())
           )
         )
       )
@@ -120,6 +112,7 @@ class Sidebar(
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   taskDumpService: TaskDumpFeService,
+  taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   val toast: Toast
 )(implicit IORuntime: IORuntime)
@@ -132,6 +125,30 @@ class Sidebar(
         s"Tasks dumped to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
       )(_ => IO.unit)
       .unsafeRunAndForget()
+
+  private def loadAllForProject(projectId: UUID): Unit = {
+    val program: IO[Unit] = taskLoadConfigService.findByProjectId(projectId).flatMap {
+      _.fold(
+        error => IO(toast.error(error)),
+        success => {
+          val paths = success.body.get.map(_.dumpPath).distinct.toList
+          if (paths.isEmpty) IO(toast.error("No load paths configured for this project"))
+          else
+            paths
+              .traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+              .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]) =>
+                val successes = outcomes.collect { case Right(dto) => dto }
+                outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
+                val totalTasks = successes.map(_.taskCount).sum
+                val failedCount = outcomes.count(_.isLeft)
+                if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
+                else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+              }
+        }
+      )
+    }
+    spinnerService.runWithSpinner(program).unsafeRunAndForget()
+  }
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
 
@@ -275,8 +292,7 @@ class Sidebar(
                         link = router.navigateTo(ShowAllTasksPage(project.id)),
                         onDumpClick = Some(() => dumpProject(project.id)),
                         onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
-                        onStatusClick = Some(() => router.route(TaskDumpStatusPage(project.id))),
-                        onLoadClick = Some(() => router.route(TaskLoadPage(project.id)))
+                        onLoadClick = Some(() => loadAllForProject(project.id))
                       ).deselectedProject
                     )
               }

@@ -22,7 +22,6 @@ import com.togger.ui.task._
 import com.togger.ui.taskconfig._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
-import com.togger.ui.taskload._
 import com.togger.ui.taskloadconfig._
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
@@ -48,7 +47,16 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val loginService = new LoginService(baseEndpoint, securedEndpoint, loginRepo)
   lazy val authenticationRouteGuard = new AuthenticationRouteGuard(loginRepo, LoginPage, ShowAllOrganizationsPage)
   lazy val navigationSelection =
-    NavigationSelection(loginRepo, organizationService, accountService, router, taskDumpService, spinnerService, toast)
+    NavigationSelection(
+      loginRepo,
+      organizationService,
+      accountService,
+      router,
+      taskDumpService,
+      taskLoadConfigService,
+      spinnerService,
+      toast
+    )
 
   lazy val protectedBackendClient = new ProtectedBackendClient(loginRepo, baseUri = uri"http://localhost:8081/")
   lazy val unprotectedBackendClient = new UnprotectedBackendClient(baseUri = uri"http://localhost:8081/")
@@ -152,14 +160,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case TaskDumpStatusPage(projectId: UUID) =>
                 new TaskDumpStatusComponent(
                   taskDumpService,
-                  spinnerService,
-                  toast,
-                  projectId
-                ).element
-              case TaskLoadPage(projectId: UUID) =>
-                new TaskLoadComponent(
-                  taskDumpService,
-                  taskLoadConfigService,
                   spinnerService,
                   toast,
                   projectId
@@ -319,6 +319,7 @@ case class NavigationSelection(
   accountService: AccountService,
   router: TgRouter[FrontendPage],
   taskDumpService: TaskDumpFeService,
+  taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
@@ -334,6 +335,7 @@ case class NavigationSelection(
             organizationServiceFe,
             accountService,
             taskDumpService,
+            taskLoadConfigService,
             spinnerService,
             toast
           ).element
