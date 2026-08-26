@@ -25,6 +25,16 @@ class TaskDumpEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "status" / path[UUID]("project-id"))
       .out(jsonBody[TgJsonSuccess[TaskDumpStatusResp]])
 
+  val dumpByConfigEndpoint: TgSecuredEndpoint[UUID, TaskDumpResp] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "config" / path[UUID]("dump-config-id"))
+      .out(jsonBody[TgJsonSuccess[TaskDumpResp]])
+
+  val checkStatusByConfigEndpoint: TgSecuredEndpoint[UUID, TaskDumpStatusResp] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "status" / "config" / path[UUID]("dump-config-id"))
+      .out(jsonBody[TgJsonSuccess[TaskDumpStatusResp]])
+
   val loadEndpoint: TgSecuredEndpoint[(UUID, TaskLoadReq), TaskLoadResp] =
     securedEndpoint.endpoint.post
       .in(basePath / "load" / path[UUID]("project-id"))

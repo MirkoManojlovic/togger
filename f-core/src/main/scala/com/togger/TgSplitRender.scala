@@ -142,6 +142,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case ShowAllTaskConfigsPage(projectId: UUID) =>
                 new ShowAllTaskConfigsComponent(
                   taskDumpConfigService,
+                  taskDumpService,
                   taskLoadConfigService,
                   projectMappingService,
                   router,

@@ -17,6 +17,12 @@ class TaskDumpFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient
   def checkStatus(projectId: UUID): TgRespIO[TaskDumpStatusResp] =
     protectedBackendClient.protectedHttpCall(taskDumpEndpoints.checkStatusEndpoint)(projectId)
 
+  def dumpByConfig(dumpConfigId: UUID): TgRespIO[TaskDumpResp] =
+    protectedBackendClient.protectedHttpCall(taskDumpEndpoints.dumpByConfigEndpoint)(dumpConfigId)
+
+  def checkStatusByConfig(dumpConfigId: UUID): TgRespIO[TaskDumpStatusResp] =
+    protectedBackendClient.protectedHttpCall(taskDumpEndpoints.checkStatusByConfigEndpoint)(dumpConfigId)
+
   def loadTasks(projectId: UUID, dumpPath: String): TgRespIO[TaskLoadResp] =
     protectedBackendClient.protectedHttpCall(taskDumpEndpoints.loadEndpoint)((projectId, TaskLoadReq(dumpPath)))
 }

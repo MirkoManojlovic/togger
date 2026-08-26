@@ -8,7 +8,7 @@ import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.project.ProjectError.{NoDumpPathConfigured, NotAssignedToProject, ProjectError}
 import com.togger.task.TaskStatus
-import com.togger.taskdumpconfig.TaskDumpConfigService
+import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigService}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -43,14 +43,34 @@ class TaskDumpService(
 
   private type DumpData = (Project, List[TaskStatus], Account, List[TaskDumpData])
 
-  def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] = {
+  def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] =
+    dumpWithConfigs(projectId, accountId, taskDumpConfigService.findByProjectId(projectId))
+
+  def dumpConfig(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] =
+    taskDumpConfigService.findById(dumpConfigId).flatMap { config =>
+      dumpWithConfigs(config.projectId, accountId, IO.pure(List(config)))
+    }
+
+  def checkStatus(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] =
+    checkStatusWithConfigs(projectId, accountId, taskDumpConfigService.findByProjectId(projectId))
+
+  def checkConfigStatus(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] =
+    taskDumpConfigService.findById(dumpConfigId).flatMap { config =>
+      checkStatusWithConfigs(config.projectId, accountId, IO.pure(List(config)))
+    }
+
+  private def dumpWithConfigs(
+    projectId: UUID,
+    accountId: UUID,
+    configsIO: IO[List[TaskDumpConfig]]
+  ): IO[Either[ProjectError, TaskDumpResult]] = {
     logger.info(s"Dumping tasks for ${sp(projectId)} requested by ${sp(accountId)}")
     getDumpData(projectId, accountId)
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
         case Right((project, taskStatuses, account, tasks)) =>
-          taskDumpConfigService.findByProjectId(projectId).map { configs =>
+          configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
             else {
@@ -73,14 +93,18 @@ class TaskDumpService(
       }
   }
 
-  def checkStatus(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] = {
+  private def checkStatusWithConfigs(
+    projectId: UUID,
+    accountId: UUID,
+    configsIO: IO[List[TaskDumpConfig]]
+  ): IO[Either[ProjectError, TaskDumpStatusResult]] = {
     logger.info(s"Checking dump status for ${sp(projectId)} requested by ${sp(accountId)}")
     getDumpData(projectId, accountId)
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
         case Right((project, _, _, dbTasks)) =>
-          taskDumpConfigService.findByProjectId(projectId).map { configs =>
+          configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
             else {

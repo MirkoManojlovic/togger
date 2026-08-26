@@ -53,6 +53,28 @@ class TaskDumpController(
       }
   }
 
+  val dumpByConfig = taskDumpEndpoints.dumpByConfigEndpoint.serverLogic { auth => dumpConfigId =>
+    taskDumpService
+      .dumpConfig(dumpConfigId, auth.body.get.id)
+      .map {
+        case Right(result) =>
+          val results = result.pathResults.map(r => TaskDumpPathResultResp(r.dumpPath, r.error))
+          TgJsonSuccess.justBodyRight(TaskDumpResp(dumpConfigId, result.taskCount, results))
+        case Left(error) => error.toBadRequestLeft[TaskDumpResp]
+      }
+  }
+
+  val checkStatusByConfig = taskDumpEndpoints.checkStatusByConfigEndpoint.serverLogic { auth => dumpConfigId =>
+    taskDumpService
+      .checkConfigStatus(dumpConfigId, auth.body.get.id)
+      .map {
+        case Right(result) =>
+          val pathStatuses = result.pathStatuses.map(p => TaskDumpPathStatusResp(p.dumpPath, p.taskStatuses.map(toResp)))
+          TgJsonSuccess.justBodyRight(TaskDumpStatusResp(dumpConfigId, pathStatuses))
+        case Left(error) => error.toBadRequestLeft[TaskDumpStatusResp]
+      }
+  }
+
   val loadTasks = taskDumpEndpoints.loadEndpoint.serverLogic { auth =>
     { case (projectId, req) =>
       taskLoadService
