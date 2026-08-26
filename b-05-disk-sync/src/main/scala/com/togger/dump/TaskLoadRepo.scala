@@ -6,7 +6,7 @@ import com.togger.accountmapping.{AccountMapping, AccountMappingRepo}
 import com.togger.common.{Password, TgClock, TgIds}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersion, LogEntryVersionRepo}
 import com.togger.project.ProjectError.{AccountTypeMissing, ProjectError}
-import com.togger.projectmapping.ProjectMappingRepo
+import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepo}
 import com.togger.task._
 import doobie.ConnectionIO
 
@@ -76,12 +76,17 @@ class TaskLoadRepo(
     Password.fromString(rawPassword).toOption.get
   }
 
-  def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[MappingResolution] =
+  def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[Map[UUID, UUID]] =
     projectMappingRepo.findByProjectIdDb(projectIdDb).flatMap { mappings =>
-      if (mappings.exists(_.projectIdDump == manifest.project.id))
-        reconcileTaskStatuses(projectIdDb, manifest.taskStatuses).map(MappingResolution.Resolved)
-      else
-        (MappingResolution.Required: MappingResolution).pure[ConnectionIO]
+      val ensureMapping: ConnectionIO[Unit] =
+        if (mappings.exists(_.projectIdDump == manifest.project.id)) ().pure[ConnectionIO]
+        else {
+          val now = tgClock.currentInstant
+          projectMappingRepo
+            .insert(ProjectMapping(TgIds.UNASSIGNED_UUID, projectIdDb, manifest.project.id, now, now))
+            .void
+        }
+      ensureMapping *> reconcileTaskStatuses(projectIdDb, manifest.taskStatuses)
     }
 
   private def reconcileTaskStatuses(projectIdDb: UUID, diskStatuses: List[TaskStatus]): ConnectionIO[Map[UUID, UUID]] =

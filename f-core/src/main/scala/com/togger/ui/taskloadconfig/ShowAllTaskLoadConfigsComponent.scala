@@ -1,19 +1,19 @@
 package com.togger.ui.taskloadconfig
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.projectmapping.CreateProjectMappingReq
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.dto.{TaskLoadMappingRequiredResp, TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
+import com.togger.dto.{TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage, ShowAllTaskConfigsPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.projectmapping.ProjectMappingFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
 import com.togger.ui.toast.Toast
@@ -24,7 +24,6 @@ import java.util.UUID
 class ShowAllTaskLoadConfigsComponent(
   taskLoadConfigService: TaskLoadConfigFeService,
   taskDumpService: TaskDumpFeService,
-  projectMappingService: ProjectMappingFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   val toast: Toast,
@@ -35,8 +34,6 @@ class ShowAllTaskLoadConfigsComponent(
 
   private val stateFormVar = Var(Seq.empty[TaskLoadConfigResp])
   private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
-  private val mappingRequiredVar = Var(Option.empty[TaskLoadMappingRequiredResp])
-  private val lastAttemptedPathVar = Var(Option.empty[String])
 
   spinnerService
     .runWithSpinner(
@@ -61,50 +58,35 @@ class ShowAllTaskLoadConfigsComponent(
       s"${counts.getOrElse(TaskLoadStatusResp.Malformed, 0) + counts.getOrElse(TaskLoadStatusResp.Failed, 0)} failed"
   }
 
-  private def handleLoadResponse(dto: TaskLoadResp): Unit =
-    dto.mappingRequired match {
-      case Some(info) =>
-        mappingRequiredVar.set(Some(info))
-        resultsVar.set(Seq.empty)
-      case None =>
-        mappingRequiredVar.set(None)
-        resultsVar.set(dto.results)
-        toast.success(summaryMessage(dto))
-    }
+  private def handleLoadResponse(dto: TaskLoadResp): Unit = {
+    resultsVar.set(dto.results)
+    toast.success(summaryMessage(dto))
+  }
 
-  private def load(dumpPath: String): Unit = {
-    lastAttemptedPathVar.set(Some(dumpPath))
+  private def load(dumpPath: String): Unit =
     spinnerService
       .runWithSpinner(taskDumpService.loadTasks(projectId, dumpPath))
       .toastJustErrors(())(handleLoadResponse)
       .unsafeRunAndForget()
-  }
 
-  private def createMappingAndRetry(info: TaskLoadMappingRequiredResp): Unit = {
-    val request = CreateProjectMappingReq(projectIdDb = projectId, projectIdDump = info.dumpProjectId)
+  private def loadAll(): Unit = {
+    val paths = stateFormVar.now().map(_.dumpPath).distinct.toList
+    val program: IO[List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]] =
+      paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+
     spinnerService
-      .runWithSpinner(projectMappingService.create(request))
-      .toastMessageFn("Project mapping created")(_ => lastAttemptedPathVar.now().foreach(load))
+      .runWithSpinner(program)
+      .map { outcomes =>
+        val successes = outcomes.collect { case Right(dto) => dto }
+        resultsVar.set(successes.flatMap(_.results))
+        outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
+        val totalTasks = successes.map(_.taskCount).sum
+        val failedCount = outcomes.count(_.isLeft)
+        if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
+        else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+      }
       .unsafeRunAndForget()
   }
-
-  private def mappingRequiredPanel(info: TaskLoadMappingRequiredResp) =
-    TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Project mapping required", TgCard.CardHeaderSize.H3),
-        body = TgCard.HtmlCardContent(
-          div(
-            p(
-              cls("mb-4"),
-              s"""No project mapping found for dump project "${info.dumpProjectName}" (${info.dumpProjectId})."""
-            ),
-            TgHtmlButton
-              .extraSmall("Create mapping & continue")
-              .amend(onClick.mapToUnit --> (_ => createMappingAndRetry(info)))
-          )
-        )
-      )
-      .element
 
   private def statusBadgeCls(status: TaskLoadStatusResp): String = status match {
     case TaskLoadStatusResp.Inserted  => "bg-green-100 text-green-800"
@@ -171,11 +153,16 @@ class ShowAllTaskLoadConfigsComponent(
             div(
               cls("flex justify-between"),
               div("Task load configs"),
-              TgHtmlButton
-                .extraSmall("Create")
-                .amend(
-                  router.navigateTo(CreateTaskLoadConfigPage(projectId))
-                )
+              div(
+                TgHtmlButton
+                  .extraSmall("Load all")
+                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => loadAll())),
+                TgHtmlButton
+                  .extraSmall("Create")
+                  .amend(
+                    router.navigateTo(CreateTaskLoadConfigPage(projectId))
+                  )
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
@@ -263,7 +250,6 @@ class ShowAllTaskLoadConfigsComponent(
           )
         )
         .element,
-      div(cls("mt-4"), child.maybe <-- mappingRequiredVar.signal.map(_.map(mappingRequiredPanel))),
       div(cls("mt-4"), child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(resultsTable(results))))
     )
   }

@@ -28,12 +28,9 @@ case class TaskLoadTaskResultResp(
   error: Option[String]
 )
 
-case class TaskLoadMappingRequiredResp(dumpProjectId: UUID, dumpProjectName: String)
-
 case class TaskLoadResp(
   projectId: UUID,
   dumpPath: String,
-  mappingRequired: Option[TaskLoadMappingRequiredResp],
   taskCount: Int,
   results: List[TaskLoadTaskResultResp]
 )

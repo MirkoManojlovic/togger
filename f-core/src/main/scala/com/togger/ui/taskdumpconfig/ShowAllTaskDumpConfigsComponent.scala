@@ -2,11 +2,12 @@ package com.togger.ui.taskdumpconfig
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp}
+import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
 import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage, ShowAllTaskConfigsPage}
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -33,6 +34,7 @@ class ShowAllTaskDumpConfigsComponent(
 
   private val stateFormVar = Var(Seq.empty[TaskDumpConfigResp])
   private val statusResultVar = Var(Seq.empty[TaskDumpPathStatusResp])
+  private val loadResultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
 
   spinnerService
     .runWithSpinner(
@@ -99,6 +101,82 @@ class ShowAllTaskDumpConfigsComponent(
       )
       .element
 
+  private def loadStatusBadgeCls(status: TaskLoadStatusResp): String = status match {
+    case TaskLoadStatusResp.Inserted  => "bg-green-100 text-green-800"
+    case TaskLoadStatusResp.Merged    => "bg-blue-100 text-blue-800"
+    case TaskLoadStatusResp.Unchanged => "bg-gray-100 text-gray-800"
+    case TaskLoadStatusResp.Malformed => "bg-red-100 text-red-800"
+    case TaskLoadStatusResp.Failed    => "bg-red-100 text-red-800"
+  }
+
+  private def loadStatusBadge(status: TaskLoadStatusResp) =
+    span(
+      cls(s"px-2 py-1 rounded-base text-xs font-medium ${loadStatusBadgeCls(status)}"),
+      status.entryName
+    )
+
+  private def loadResultsTable(results: Seq[TaskLoadTaskResultResp]) =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Load results", TgCard.CardHeaderSize.H3),
+        body = TgCard.HtmlCardContent(
+          div(
+            cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
+            table(
+              cls("w-full text-sm text-left rtl:text-right text-body"),
+              thead(
+                cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
+                tr(
+                  createTh("task id"),
+                  createTh("task name"),
+                  createTh("status"),
+                  createTh("versions"),
+                  createTh("links"),
+                  createTh("log entries"),
+                  createTh("error")
+                )
+              ),
+              tbody(
+                results
+                  .sortBy(_.taskId)
+                  .map { (r: TaskLoadTaskResultResp) =>
+                    tr(
+                      cls("odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"),
+                      createTd(r.taskId.toString),
+                      createTd(r.taskName.getOrElse("-"): String),
+                      createTd(loadStatusBadge(r.status)),
+                      createTd(r.versionsAdded.toString),
+                      createTd(r.linksAdded.toString),
+                      createTd(r.logEntriesAdded.toString),
+                      createTd(r.error.getOrElse("-"): String)
+                    )
+                  }
+              )
+            )
+          )
+        )
+      )
+      .element
+
+  private def loadAll(): Unit = {
+    val paths = stateFormVar.now().map(_.dumpPath).distinct.toList
+    val program: IO[List[Either[com.togger.common.TgJsonFailure, com.togger.dto.TaskLoadResp]]] =
+      paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+
+    spinnerService
+      .runWithSpinner(program)
+      .map { outcomes =>
+        val successes = outcomes.collect { case Right(dto) => dto }
+        loadResultsVar.set(successes.flatMap(_.results))
+        outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
+        val totalTasks = successes.map(_.taskCount).sum
+        val failedCount = outcomes.count(_.isLeft)
+        if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
+        else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+      }
+      .unsafeRunAndForget()
+  }
+
   private def dumpAll(): Unit =
     spinnerService
       .runWithSpinner(taskDumpService.dumpTasks(projectId))
@@ -128,6 +206,9 @@ class ShowAllTaskDumpConfigsComponent(
                 TgHtmlButton
                   .extraSmall("Check all statuses")
                   .amend(cls("mr-2"), onClick.mapToUnit --> (_ => checkAllStatuses())),
+                TgHtmlButton
+                  .extraSmall("Load all")
+                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => loadAll())),
                 TgHtmlButton
                   .extraSmall("Create")
                   .amend(
@@ -247,7 +328,8 @@ class ShowAllTaskDumpConfigsComponent(
         )
         .element,
       div(cls("mt-4")),
-      children <-- statusResultVar.signal.map(_.map(statusPanel))
+      children <-- statusResultVar.signal.map(_.map(statusPanel)),
+      div(cls("mt-4"), child.maybe <-- loadResultsVar.signal.map(results => if (results.isEmpty) None else Some(loadResultsTable(results))))
     )
   }
 

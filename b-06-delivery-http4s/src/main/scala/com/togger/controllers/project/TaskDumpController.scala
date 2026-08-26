@@ -9,7 +9,6 @@ import com.togger.dto.{
   TaskDumpStatusResp,
   TaskDumpSyncStatusResp,
   TaskDumpTaskStatusResp,
-  TaskLoadMappingRequiredResp,
   TaskLoadResp,
   TaskLoadStatusResp,
   TaskLoadTaskResultResp
@@ -19,7 +18,6 @@ import com.togger.dump.{
   TaskDumpService,
   TaskDumpSyncStatus,
   TaskDumpTaskStatus,
-  TaskLoadOutcome,
   TaskLoadService,
   TaskLoadTaskResult,
   TaskLoadTaskStatus
@@ -80,19 +78,9 @@ class TaskDumpController(
       taskLoadService
         .loadProject(projectId, auth.body.get.id, req.dumpPath)
         .map {
-          case Right(TaskLoadOutcome.MappingRequired(dumpProjectId, dumpProjectName)) =>
-            TgJsonSuccess.justBodyRight(
-              TaskLoadResp(
-                projectId,
-                req.dumpPath,
-                Some(TaskLoadMappingRequiredResp(dumpProjectId, dumpProjectName)),
-                0,
-                Nil
-              )
-            )
-          case Right(TaskLoadOutcome.Loaded(result)) =>
+          case Right(result) =>
             val results = result.taskResults.map(toResp)
-            TgJsonSuccess.justBodyRight(TaskLoadResp(projectId, result.dumpPath, None, result.taskCount, results))
+            TgJsonSuccess.justBodyRight(TaskLoadResp(projectId, result.dumpPath, result.taskCount, results))
           case Left(error) => error.toBadRequestLeft[TaskLoadResp]
         }
     }

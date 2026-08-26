@@ -5,14 +5,12 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.projectmapping.CreateProjectMappingReq
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.dto.{TaskLoadMappingRequiredResp, TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
+import com.togger.dto.{TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
-import com.togger.ui.projectmapping.ProjectMappingFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
 import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
@@ -27,7 +25,6 @@ case class TaskLoadForm(dumpPath: String = "")
 class TaskLoadComponent(
   taskDumpService: TaskDumpFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
-  projectMappingService: ProjectMappingFeService,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID
@@ -37,7 +34,6 @@ class TaskLoadComponent(
   private val formState = Var(TaskLoadForm())
   private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
   private val configsVar = Var(Seq.empty[TaskLoadConfigResp])
-  private val mappingRequiredVar = Var(Option.empty[TaskLoadMappingRequiredResp])
 
   spinnerService
     .runWithSpinner(
@@ -63,16 +59,10 @@ class TaskLoadComponent(
       s"${counts.getOrElse(TaskLoadStatusResp.Malformed, 0) + counts.getOrElse(TaskLoadStatusResp.Failed, 0)} failed"
   }
 
-  private def handleLoadResponse(dto: TaskLoadResp): Unit =
-    dto.mappingRequired match {
-      case Some(info) =>
-        mappingRequiredVar.set(Some(info))
-        resultsVar.set(Seq.empty)
-      case None =>
-        mappingRequiredVar.set(None)
-        resultsVar.set(dto.results)
-        toast.success(summaryMessage(dto))
-    }
+  private def handleLoadResponse(dto: TaskLoadResp): Unit = {
+    resultsVar.set(dto.results)
+    toast.success(summaryMessage(dto))
+  }
 
   private def load(dumpPath: String): Unit =
     spinnerService
@@ -81,32 +71,6 @@ class TaskLoadComponent(
       .unsafeRunAndForget()
 
   private lazy val loadSubmitter = Observer[TaskLoadForm](form => load(form.dumpPath))
-
-  private def createMappingAndRetry(info: TaskLoadMappingRequiredResp): Unit = {
-    val request = CreateProjectMappingReq(projectIdDb = projectId, projectIdDump = info.dumpProjectId)
-    spinnerService
-      .runWithSpinner(projectMappingService.create(request))
-      .toastMessageFn("Project mapping created")(_ => load(formState.now().dumpPath))
-      .unsafeRunAndForget()
-  }
-
-  private def mappingRequiredPanel(info: TaskLoadMappingRequiredResp) =
-    TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Project mapping required", TgCard.CardHeaderSize.H3),
-        body = TgCard.HtmlCardContent(
-          div(
-            p(
-              cls("mb-4"),
-              s"""No project mapping found for dump project "${info.dumpProjectName}" (${info.dumpProjectId})."""
-            ),
-            TgHtmlButton
-              .extraSmall("Create mapping & continue")
-              .amend(onClick.mapToUnit --> (_ => createMappingAndRetry(info)))
-          )
-        )
-      )
-      .element
 
   private def createTh(content: String) =
     th(cls("px-6 py-3 font-medium"), content)
@@ -228,10 +192,6 @@ class TaskLoadComponent(
         )
         .element
         .amend(heightAndWidthFitContent)
-    ),
-    div(
-      cls("mt-4"),
-      child.maybe <-- mappingRequiredVar.signal.map(_.map(mappingRequiredPanel))
     ),
     div(cls("mt-4 w-full"), child <-- resultsVar.signal.map(resultsTable))
   )

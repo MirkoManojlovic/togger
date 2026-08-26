@@ -23,17 +23,3 @@ case class TaskLoadTaskResult(
 )
 
 case class TaskLoadResult(dumpPath: String, taskCount: Int, taskResults: List[TaskLoadTaskResult])
-
-sealed trait MappingResolution
-
-object MappingResolution {
-  case object Required extends MappingResolution
-  case class Resolved(taskStatusIdMap: Map[UUID, UUID]) extends MappingResolution
-}
-
-sealed trait TaskLoadOutcome
-
-object TaskLoadOutcome {
-  case class MappingRequired(dumpProjectId: UUID, dumpProjectName: String) extends TaskLoadOutcome
-  case class Loaded(result: TaskLoadResult) extends TaskLoadOutcome
-}
