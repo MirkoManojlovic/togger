@@ -152,6 +152,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskDumpConfigService,
                   taskDumpService,
                   taskLoadConfigService,
+                  tgDateFormater,
                   router,
                   spinnerService,
                   toast,

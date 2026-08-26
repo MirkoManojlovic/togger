@@ -6,16 +6,15 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
+import com.togger.dto._
 import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage, ShowAllTaskConfigsPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.task.{TaskDumpFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLTableCellElement
 
@@ -24,6 +23,7 @@ import java.util.UUID
 class ShowAllTaskDumpConfigsComponent(
   taskDumpConfigService: TaskDumpConfigFeService,
   taskDumpService: TaskDumpFeService,
+  tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   val toast: Toast,
@@ -45,10 +45,19 @@ class ShowAllTaskDumpConfigsComponent(
     .unsafeRunAndForget()
 
   def createTh(content: String) =
-    th(cls("px-6 py-3 font-medium"), content)
+    th(cls("px-2 py-3 font-medium"), content)
 
   def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-6 py-4"), content)
+    td(cls("px-2 py-4"), content)
+
+  private val headerIconButtonCls =
+    "inline-flex items-center justify-center w-8 h-8 text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle rounded-base focus:outline-none"
+
+  private val rowIconButtonCls =
+    "inline-flex items-center justify-center w-8 h-8 text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs rounded-base focus:outline-none"
+
+  private val rowIconButtonDangerCls =
+    "inline-flex items-center justify-center w-8 h-8 text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 focus:ring-red-300 shadow-xs rounded-base focus:outline-none"
 
   private def statusBadgeCls(status: TaskDumpSyncStatusResp): String = status match {
     case TaskDumpSyncStatusResp.InSync          => "bg-green-100 text-green-800"
@@ -158,25 +167,6 @@ class ShowAllTaskDumpConfigsComponent(
       )
       .element
 
-  private def loadAll(): Unit = {
-    val paths = stateFormVar.now().map(_.dumpPath).distinct.toList
-    val program: IO[List[Either[com.togger.common.TgJsonFailure, com.togger.dto.TaskLoadResp]]] =
-      paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
-
-    spinnerService
-      .runWithSpinner(program)
-      .map { outcomes =>
-        val successes = outcomes.collect { case Right(dto) => dto }
-        loadResultsVar.set(successes.flatMap(_.results))
-        outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
-        val totalTasks = successes.map(_.taskCount).sum
-        val failedCount = outcomes.count(_.isLeft)
-        if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
-        else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
-      }
-      .unsafeRunAndForget()
-  }
-
   private def dumpAll(): Unit =
     spinnerService
       .runWithSpinner(taskDumpService.dumpTasks(projectId))
@@ -200,20 +190,29 @@ class ShowAllTaskDumpConfigsComponent(
               cls("flex justify-between"),
               div("Task dump configs"),
               div(
-                TgHtmlButton
-                  .extraSmall("Dump all")
-                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => dumpAll())),
-                TgHtmlButton
-                  .extraSmall("Check all statuses")
-                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => checkAllStatuses())),
-                TgHtmlButton
-                  .extraSmall("Load all")
-                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => loadAll())),
-                TgHtmlButton
-                  .extraSmall("Create")
-                  .amend(
-                    router.navigateTo(CreateTaskDumpConfigPage(projectId))
-                  )
+                button(
+                  `type`("button"),
+                  title("Dump all"),
+                  TgIcons.downloadIcon(className = "w-4 h-4"),
+                  cls(headerIconButtonCls),
+                  cls("mr-2"),
+                  onClick.mapToUnit --> (_ => dumpAll())
+                ),
+                button(
+                  `type`("button"),
+                  title("Check all statuses"),
+                  TgIcons.checkIcon(className = "w-4 h-4"),
+                  cls(headerIconButtonCls),
+                  cls("mr-2"),
+                  onClick.mapToUnit --> (_ => checkAllStatuses())
+                ),
+                button(
+                  `type`("button"),
+                  title("Create"),
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  cls(headerIconButtonCls),
+                  router.navigateTo(CreateTaskDumpConfigPage(projectId))
+                )
               )
             ),
             TgCard.CardHeaderSize.H3
@@ -228,10 +227,10 @@ class ShowAllTaskDumpConfigsComponent(
                     thead(
                       cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
                       tr(
-                        createTh("id"),
+//                        createTh("id"),
                         createTh("name"),
                         createTh("dump path"),
-                        createTh("updated at"),
+                        createTh("dumped at"),
                         createTh("Action")
                       )
                     ),
@@ -248,30 +247,26 @@ class ShowAllTaskDumpConfigsComponent(
 
                           tr(
                             cls(rowCls),
-                            createTd(dto.id.toString),
+//                            createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.dumpPath),
-                            createTd(dto.updatedAt.toString),
+                            createTd(tgDateFormater.yearMonthDayTimeFormat(dto.updatedAt)),
                             createTd(
                               div(
                                 button(
                                   `type`("button"),
-                                  TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Edit",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                                  ),
-                                  cls("mr-2"),
+                                  title("Edit"),
+                                  TgIcons.editIcon(className = "w-4 h-4"),
+                                  cls(rowIconButtonCls),
+                                  cls("mr-2 mt-1 mb-1"),
                                   onClick.mapToUnit --> (_ => router.route(EditTaskDumpConfigPage(dto.id)))
                                 ),
                                 button(
                                   `type`("button"),
-                                  TgIcons.trashIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Delete",
-                                  cls(
-                                    "inline-flex items-center text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 focus:ring-red-300 shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                                  ),
-                                  cls("mr-2"),
+                                  title("Delete"),
+                                  TgIcons.trashIcon(className = "w-4 h-4"),
+                                  cls(rowIconButtonDangerCls),
+                                  cls("mr-2 mt-1 mb-1"),
                                   onClick.mapToUnit --> (_ =>
                                     spinnerService
                                       .runWithSpinner(taskDumpConfigService.deleteById(dto.id))
@@ -283,19 +278,18 @@ class ShowAllTaskDumpConfigsComponent(
                                 ),
                                 button(
                                   `type`("button"),
-                                  TgIcons.uploadIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Dump",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                                  ),
-                                  cls("mr-2"),
+                                  title("Dump"),
+                                  TgIcons.downloadIcon(className = "w-4 h-4"),
+                                  cls(rowIconButtonCls),
+                                  cls("mr-2 mt-1 mb-1"),
                                   onClick.mapToUnit --> (_ =>
                                     spinnerService
                                       .runWithSpinner(taskDumpService.dumpByConfig(dto.id))
                                       .toastJustErrorsUnit { resp =>
                                         resp.results.headOption.flatMap(_.error) match {
                                           case Some(err) => toast.error(s"Dump to ${dto.dumpPath} failed: $err")
-                                          case None      => toast.success(s"Dumped ${resp.taskCount} tasks to ${dto.dumpPath}")
+                                          case None =>
+                                            toast.success(s"Dumped ${resp.taskCount} tasks to ${dto.dumpPath}")
                                         }
                                       }
                                       .unsafeRunAndForget()
@@ -303,11 +297,10 @@ class ShowAllTaskDumpConfigsComponent(
                                 ),
                                 button(
                                   `type`("button"),
-                                  TgIcons.checkIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Check status",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                                  ),
+                                  title("Check status"),
+                                  TgIcons.checkIcon(className = "w-4 h-4"),
+                                  cls(rowIconButtonCls),
+                                  cls("mt-1 mb-1"),
                                   onClick.mapToUnit --> (_ =>
                                     spinnerService
                                       .runWithSpinner(taskDumpService.checkStatusByConfig(dto.id))
@@ -329,7 +322,12 @@ class ShowAllTaskDumpConfigsComponent(
         .element,
       div(cls("mt-4")),
       children <-- statusResultVar.signal.map(_.map(statusPanel)),
-      div(cls("mt-4"), child.maybe <-- loadResultsVar.signal.map(results => if (results.isEmpty) None else Some(loadResultsTable(results))))
+      div(
+        cls("mt-4"),
+        child.maybe <-- loadResultsVar.signal.map(results =>
+          if (results.isEmpty) None else Some(loadResultsTable(results))
+        )
+      )
     )
   }
 

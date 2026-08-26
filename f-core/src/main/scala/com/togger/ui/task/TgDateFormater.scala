@@ -1,10 +1,10 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.{EuropeanDots, LogEntryFormat}
+import com.togger.ui.task.TgDateFormat.{EuropeanDots, LogEntryFormat, YearMonthDayTimeFormat}
 import enumeratum.{Enum, EnumEntry}
 
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, ZoneOffset}
 
 class TgDateFormater {
   def asEuropeanDate(date: LocalDate): String =
@@ -13,6 +13,11 @@ class TgDateFormater {
   def asAmericanDate(date: LocalDate): (String, String) = {
     date.getDayOfWeek.name().toLowerCase.capitalize.take(3) -> LogEntryFormat.formater.format(date)
   }
+
+  def yearMonthDayTimeFormat(instant: Instant): String =
+    YearMonthDayTimeFormat.formater.format(
+      instant.atOffset(ZoneOffset.UTC)
+    ) // When converting from instant an error is thrown
 }
 
 sealed abstract class TgDateFormat(val formater: DateTimeFormatter) extends EnumEntry
@@ -25,5 +30,7 @@ object TgDateFormat extends Enum[TgDateFormat] {
 
 //  case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd-MMM-Y"))
   case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd MMM"))
+
+  case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss"))
 
 }

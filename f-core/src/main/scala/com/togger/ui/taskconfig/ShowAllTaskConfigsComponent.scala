@@ -4,7 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.task.{TaskDumpFeService, TgDateFormater}
 import com.togger.ui.taskdumpconfig.{ShowAllTaskDumpConfigsComponent, TaskDumpConfigFeService}
 import com.togger.ui.taskloadconfig.{ShowAllTaskLoadConfigsComponent, TaskLoadConfigFeService}
 import com.togger.ui.toast.Toast
@@ -15,6 +15,7 @@ class ShowAllTaskConfigsComponent(
   taskDumpConfigService: TaskDumpConfigFeService,
   taskDumpService: TaskDumpFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
+  tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   toast: Toast,
@@ -28,6 +29,7 @@ class ShowAllTaskConfigsComponent(
       new ShowAllTaskDumpConfigsComponent(
         taskDumpConfigService,
         taskDumpService,
+        tgDateFormater,
         router,
         spinnerService,
         toast,
@@ -37,6 +39,7 @@ class ShowAllTaskConfigsComponent(
       new ShowAllTaskLoadConfigsComponent(
         taskLoadConfigService,
         taskDumpService,
+        tgDateFormater,
         router,
         spinnerService,
         toast,
