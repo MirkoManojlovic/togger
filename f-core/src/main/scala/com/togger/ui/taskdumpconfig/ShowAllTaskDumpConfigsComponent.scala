@@ -1,5 +1,6 @@
 package com.togger.ui.taskdumpconfig
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
@@ -31,7 +32,7 @@ class ShowAllTaskDumpConfigsComponent(
 ) extends ToastMessages {
 
   private val stateFormVar = Var(Seq.empty[TaskDumpConfigResp])
-  private val statusResultVar = Var(Option.empty[TaskDumpPathStatusResp])
+  private val statusResultVar = Var(Seq.empty[TaskDumpPathStatusResp])
 
   spinnerService
     .runWithSpinner(
@@ -98,6 +99,20 @@ class ShowAllTaskDumpConfigsComponent(
       )
       .element
 
+  private def dumpAll(): Unit =
+    spinnerService
+      .runWithSpinner(taskDumpService.dumpTasks(projectId))
+      .toastMessageDto(dto =>
+        s"Tasks dumped to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
+      )(_ => IO.unit)
+      .unsafeRunAndForget()
+
+  private def checkAllStatuses(): Unit =
+    spinnerService
+      .runWithSpinner(taskDumpService.checkStatus(projectId))
+      .toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
+      .unsafeRunAndForget()
+
   val element = {
     div(
       TgCard
@@ -106,11 +121,19 @@ class ShowAllTaskDumpConfigsComponent(
             div(
               cls("flex justify-between"),
               div("Task dump configs"),
-              TgHtmlButton
-                .extraSmall("Create")
-                .amend(
-                  router.navigateTo(CreateTaskDumpConfigPage(projectId))
-                )
+              div(
+                TgHtmlButton
+                  .extraSmall("Dump all")
+                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => dumpAll())),
+                TgHtmlButton
+                  .extraSmall("Check all statuses")
+                  .amend(cls("mr-2"), onClick.mapToUnit --> (_ => checkAllStatuses())),
+                TgHtmlButton
+                  .extraSmall("Create")
+                  .amend(
+                    router.navigateTo(CreateTaskDumpConfigPage(projectId))
+                  )
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
@@ -207,7 +230,7 @@ class ShowAllTaskDumpConfigsComponent(
                                   onClick.mapToUnit --> (_ =>
                                     spinnerService
                                       .runWithSpinner(taskDumpService.checkStatusByConfig(dto.id))
-                                      .toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses.headOption))
+                                      .toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
                                       .unsafeRunAndForget()
                                   )
                                 )
@@ -224,7 +247,7 @@ class ShowAllTaskDumpConfigsComponent(
         )
         .element,
       div(cls("mt-4")),
-      child.maybe <-- statusResultVar.signal.map(_.map(statusPanel))
+      children <-- statusResultVar.signal.map(_.map(statusPanel))
     )
   }
 
