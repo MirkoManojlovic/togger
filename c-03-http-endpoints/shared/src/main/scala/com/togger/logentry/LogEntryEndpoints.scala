@@ -4,7 +4,7 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
 import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, LogEntryDto, LogEntryVersionDto, UpdateTaskReq}
+import com.togger.dto.{LogEntryDto, LogEntryVersionDto}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

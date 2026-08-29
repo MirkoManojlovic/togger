@@ -5,7 +5,6 @@ import com.togger.common.TgEndpoints._
 import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto._
-import com.togger.dto.organization.FindOrganizationResp
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
