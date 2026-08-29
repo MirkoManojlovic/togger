@@ -28,9 +28,6 @@ class TaskDumpConfigService(
   def findByProjectId(projectId: UUID): IO[List[TaskDumpConfig]] =
     taskDumpConfigRepo.findByProjectId(projectId).transact(transactor)
 
-  def findByAccountId(accountId: UUID): IO[List[TaskDumpConfig]] =
-    taskDumpConfigRepo.findByAccountId(accountId).transact(transactor)
-
   def update(taskDumpConfig: TaskDumpConfig): IO[TaskDumpConfig] = {
     logger.info(s"Updating ${sp(taskDumpConfig)}")
     val now = tgClock.currentInstant

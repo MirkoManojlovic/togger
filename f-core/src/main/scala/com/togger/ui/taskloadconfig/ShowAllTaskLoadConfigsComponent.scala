@@ -4,8 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
 import com.togger.dto.{TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
 import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage, ShowAllTaskConfigsPage}
@@ -14,9 +12,8 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskDumpFeService, TgDateFormater}
+import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
-import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
 
@@ -32,6 +29,8 @@ class ShowAllTaskLoadConfigsComponent(
   ioRuntime: IORuntime
 ) extends ToastMessages {
 
+  import TaskConfigTableSupport._
+
   private val stateFormVar = Var(Seq.empty[TaskLoadConfigResp])
   private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
 
@@ -42,21 +41,6 @@ class ShowAllTaskLoadConfigsComponent(
         .map(response => response.map(success => stateFormVar.set(success.body.get)))
     )
     .unsafeRunAndForget()
-
-  def createTh(content: String) =
-    th(cls("px-2 py-3 font-medium"), content)
-
-  def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-2 py-4"), content)
-
-  private val headerIconButtonCls =
-    "inline-flex items-center justify-center w-8 h-8 text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle rounded-base focus:outline-none"
-
-  private val rowIconButtonCls =
-    "inline-flex items-center justify-center w-8 h-8 text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs rounded-base focus:outline-none"
-
-  private val rowIconButtonDangerCls =
-    "inline-flex items-center justify-center w-8 h-8 text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 focus:ring-red-300 shadow-xs rounded-base focus:outline-none"
 
   private def summaryMessage(dto: TaskLoadResp): String = {
     val counts = dto.results.groupBy(_.status).view.mapValues(_.size).toMap
@@ -97,50 +81,121 @@ class ShowAllTaskLoadConfigsComponent(
       .unsafeRunAndForget()
   }
 
-  private def statusBadgeCls(status: TaskLoadStatusResp): String = status match {
-    case TaskLoadStatusResp.Inserted  => "bg-green-100 text-green-800"
-    case TaskLoadStatusResp.Merged    => "bg-blue-100 text-blue-800"
-    case TaskLoadStatusResp.Unchanged => "bg-gray-100 text-gray-800"
-    case TaskLoadStatusResp.Malformed => "bg-red-100 text-red-800"
-    case TaskLoadStatusResp.Failed    => "bg-red-100 text-red-800"
-  }
-
-  private def statusBadge(status: TaskLoadStatusResp) =
-    span(
-      cls(s"px-2 py-1 rounded-base text-xs font-medium ${statusBadgeCls(status)}"),
-      status.entryName
+  private def configRow(dto: TaskLoadConfigResp) =
+    tr(
+      cls(rowCls),
+      createTd(dto.name),
+      createTd(dto.dumpPath),
+      createTd(tgDateFormater.yearMonthDayTimeFormat(dto.updatedAt)),
+      createTd(
+        div(
+          iconButton(
+            "Edit",
+            TgIcons.editIcon(className = "w-4 h-4"),
+            rowIconButtonCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => router.route(EditTaskLoadConfigPage(dto.id)))
+          ),
+          iconButton(
+            "Delete",
+            TgIcons.trashIcon(className = "w-4 h-4"),
+            rowIconButtonDangerCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ =>
+              spinnerService
+                .runWithSpinner(taskLoadConfigService.deleteById(dto.id))
+                .toastBackendMessageCodeBlock {
+                  router.route(ShowAllTaskConfigsPage(projectId))
+                }
+                .unsafeRunAndForget()
+            )
+          ),
+          iconButton(
+            "Load",
+            TgIcons.uploadIcon(className = "w-4 h-4"),
+            rowIconButtonCls,
+            lastRowButtonMarginCls,
+            onClick.mapToUnit --> (_ => load(dto.dumpPath))
+          )
+        )
+      )
     )
 
-  private def resultsTable(results: Seq[TaskLoadTaskResultResp]) =
+  val element = {
+    div(
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.html(
+            div(
+              cls("flex justify-between"),
+              div("Task load configs"),
+              div(
+                iconButton(
+                  "Load all",
+                  TgIcons.uploadIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  headerButtonMarginCls,
+                  onClick.mapToUnit --> (_ => loadAll())
+                ),
+                iconButton(
+                  "Create",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "",
+                  router.navigateTo(CreateTaskLoadConfigPage(projectId))
+                )
+              )
+            ),
+            TgCard.CardHeaderSize.H3
+          ),
+          body = TgCard.HtmlCardContent(
+            div(
+              child <-- stateFormVar.signal.map(dtos =>
+                div(
+                  cls(tableWrapperCls),
+                  table(
+                    cls(tableCls),
+                    thead(
+                      cls(theadCls),
+                      tr(Seq("name", "dump path", "loaded at", "Action").map(createTh))
+                    ),
+                    tbody(dtos.sortBy(_.id).map(configRow))
+                  )
+                )
+              )
+            )
+          )
+        )
+        .element,
+      div(
+        cls("mt-4"),
+        child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(loadResultsTable(results)))
+      )
+    )
+  }
+
+  private def loadResultsTable(results: Seq[TaskLoadTaskResultResp]) =
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Load results", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
-            cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
+            cls(tableWrapperCls),
             table(
-              cls("w-full text-sm text-left rtl:text-right text-body"),
+              cls(tableCls),
               thead(
-                cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
-                tr(
-                  createTh("task id"),
-                  createTh("task name"),
-                  createTh("status"),
-                  createTh("versions"),
-                  createTh("links"),
-                  createTh("log entries"),
-                  createTh("error")
-                )
+                cls(theadCls),
+                tr(Seq("task id", "task name", "status", "versions", "links", "log entries", "error").map(createTh))
               ),
               tbody(
                 results
                   .sortBy(_.taskId)
                   .map { (r: TaskLoadTaskResultResp) =>
                     tr(
-                      cls("odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"),
+                      cls(rowCls),
                       createTd(r.taskId.toString),
                       createTd(r.taskName.getOrElse("-"): String),
-                      createTd(statusBadge(r.status)),
+                      createTd(loadStatusBadge(r.status)),
                       createTd(r.versionsAdded.toString),
                       createTd(r.linksAdded.toString),
                       createTd(r.logEntriesAdded.toString),
@@ -154,115 +209,15 @@ class ShowAllTaskLoadConfigsComponent(
       )
       .element
 
-  val element = {
-    div(
-      TgCard
-        .headerNoFooter(
-          header = TgCard.CardHeader.html(
-            div(
-              cls("flex justify-between"),
-              div("Task load configs"),
-              div(
-                button(
-                  `type`("button"),
-                  title("Load all"),
-                  TgIcons.uploadIcon(className = "w-4 h-4"),
-                  cls(headerIconButtonCls),
-                  cls("mr-2"),
-                  onClick.mapToUnit --> (_ => loadAll())
-                ),
-                button(
-                  `type`("button"),
-                  title("Create"),
-                  TgIcons.plusIcon(className = "w-4 h-4"),
-                  cls(headerIconButtonCls),
-                  router.navigateTo(CreateTaskLoadConfigPage(projectId))
-                )
-              )
-            ),
-            TgCard.CardHeaderSize.H3
-          ),
-          body = TgCard.HtmlCardContent(
-            div(
-              child <-- stateFormVar.signal.map(dtos =>
-                div(
-                  cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
-                  table(
-                    cls("w-full text-sm text-left rtl:text-right text-body"),
-                    thead(
-                      cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
-                      tr(
-//                        createTh("id"),
-                        createTh("name"),
-                        createTh("dump path"),
-                        createTh("loaded at"),
-                        createTh("Action")
-                      )
-                    ),
-                    tbody(
-                      dtos
-                        .sortBy(_.id)
-                        .zipWithIndex
-                        .map { case (dto, index) =>
-                          val rowCls = if (index % 2 == 0) {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          } else {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          }
-
-                          tr(
-                            cls(rowCls),
-//                            createTd(dto.id.toString),
-                            createTd(dto.name),
-                            createTd(dto.dumpPath),
-                            createTd(tgDateFormater.yearMonthDayTimeFormat(dto.updatedAt)),
-                            createTd(
-                              div(
-                                button(
-                                  `type`("button"),
-                                  title("Edit"),
-                                  TgIcons.editIcon(className = "w-4 h-4"),
-                                  cls(rowIconButtonCls),
-                                  cls("mr-2 mt-1 mb-1"),
-                                  onClick.mapToUnit --> (_ => router.route(EditTaskLoadConfigPage(dto.id)))
-                                ),
-                                button(
-                                  `type`("button"),
-                                  title("Delete"),
-                                  TgIcons.trashIcon(className = "w-4 h-4"),
-                                  cls(rowIconButtonDangerCls),
-                                  cls("mr-2 mt-1 mb-1"),
-                                  onClick.mapToUnit --> (_ =>
-                                    spinnerService
-                                      .runWithSpinner(taskLoadConfigService.deleteById(dto.id))
-                                      .toastBackendMessageCodeBlock {
-                                        router.route(ShowAllTaskConfigsPage(projectId))
-                                      }
-                                      .unsafeRunAndForget()
-                                  )
-                                ),
-                                button(
-                                  `type`("button"),
-                                  title("Load"),
-                                  TgIcons.uploadIcon(className = "w-4 h-4"),
-                                  cls(rowIconButtonCls),
-                                  cls("mt-1 mb-1"),
-                                  onClick.mapToUnit --> (_ => load(dto.dumpPath))
-                                )
-                              )
-                            )
-                          )
-                        }
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-        .element,
-      div(cls("mt-4"), child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(resultsTable(results))))
-    )
+  private def loadStatusBadgeCls(status: TaskLoadStatusResp): String = status match {
+    case TaskLoadStatusResp.Inserted  => greenBadgeCls
+    case TaskLoadStatusResp.Merged    => blueBadgeCls
+    case TaskLoadStatusResp.Unchanged => grayBadgeCls
+    case TaskLoadStatusResp.Malformed => redBadgeCls
+    case TaskLoadStatusResp.Failed    => redBadgeCls
   }
+
+  private def loadStatusBadge(status: TaskLoadStatusResp) =
+    badge(status.entryName, loadStatusBadgeCls(status))
 
 }

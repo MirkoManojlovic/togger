@@ -60,7 +60,7 @@ class EditTaskDumpConfigComponent(
     )
     .unsafeRunAndForget()
 
-  val submitter = Observer[EditTaskDumpConfigForm] { state =>
+  private val submitter = Observer[EditTaskDumpConfigForm] { state =>
     val dto = UpdateTaskDumpConfigReq(
       id = state.id,
       projectId = state.projectId,

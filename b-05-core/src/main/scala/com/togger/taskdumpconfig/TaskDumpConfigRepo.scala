@@ -17,6 +17,4 @@ trait TaskDumpConfigRepo {
 
   def findByProjectId(projectId: UUID): ConnectionIO[List[TaskDumpConfig]]
 
-  def findByAccountId(accountId: UUID): ConnectionIO[List[TaskDumpConfig]]
-
 }

@@ -78,16 +78,6 @@ class TaskLoadConfigRepoImpl extends TaskLoadConfigRepo {
       taskLoadConfigs => s"${sp(taskLoadConfigs)} found"
     )
 
-  override def findByAccountId(accountId: UUID): ConnectionIO[List[TaskLoadConfig]] =
-    logAroundInfoQuery(
-      (selectAllStatement(TASK_LOAD_CONFIG_TABLE_FRAG) ++ fr"where account_id = $accountId")
-        .query[TaskLoadConfig]
-        .to[List]
-    )(
-      s"Finding task load configs for ${sp(accountId)}",
-      taskLoadConfigs => s"${sp(taskLoadConfigs)} found"
-    )
-
 }
 
 object TaskLoadConfigRepoImpl {

@@ -78,16 +78,6 @@ class TaskDumpConfigRepoImpl extends TaskDumpConfigRepo {
       taskDumpConfigs => s"${sp(taskDumpConfigs)} found"
     )
 
-  override def findByAccountId(accountId: UUID): ConnectionIO[List[TaskDumpConfig]] =
-    logAroundInfoQuery(
-      (selectAllStatement(TASK_DUMP_CONFIG_TABLE_FRAG) ++ fr"where account_id = $accountId")
-        .query[TaskDumpConfig]
-        .to[List]
-    )(
-      s"Finding task dump configs for ${sp(accountId)}",
-      taskDumpConfigs => s"${sp(taskDumpConfigs)} found"
-    )
-
 }
 
 object TaskDumpConfigRepoImpl {

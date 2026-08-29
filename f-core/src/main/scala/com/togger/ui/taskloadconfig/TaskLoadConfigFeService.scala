@@ -19,8 +19,6 @@ trait TaskLoadConfigFeService {
   def deleteById(id: UUID): TgRespIO[TgEmptyBody]
 
   def findByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]]
-
-  def findByAccountId(accountId: UUID): TgRespIO[Seq[TaskLoadConfigResp]]
 }
 
 class TaskLoadConfigFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -42,7 +40,4 @@ class TaskLoadConfigFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBac
 
   override def findByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]] =
     protectedBackendClient.protectedHttpCall(taskLoadConfigEndpoints.findByProjectIdEndpoint)(projectId)
-
-  override def findByAccountId(accountId: UUID): TgRespIO[Seq[TaskLoadConfigResp]] =
-    protectedBackendClient.protectedHttpCall(taskLoadConfigEndpoints.findByAccountIdEndpoint)(accountId)
 }

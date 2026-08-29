@@ -168,7 +168,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case CreateTaskDumpConfigPage(projectId: UUID) =>
                 new CreateTaskDumpConfigComponent(
                   taskDumpConfigService,
-                  projectService,
                   spinnerService,
                   projectId,
                   toast

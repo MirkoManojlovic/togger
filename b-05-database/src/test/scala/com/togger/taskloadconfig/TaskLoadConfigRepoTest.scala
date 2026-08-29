@@ -81,8 +81,12 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Second project")
         )
         savedAccount <- createAccount
-        config1 <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a"))
-        config2 <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b"))
+        config1 <- taskLoadConfigRepo.insert(
+          newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
+        )
+        config2 <- taskLoadConfigRepo.insert(
+          newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
+        )
         _ <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
         found <- taskLoadConfigRepo.findByProjectId(savedProject1.id)
       } yield {
@@ -92,22 +96,6 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
       res.transact(transactor)
     }
 
-    "find task load configs by account id, scoped to that account" in { transactor =>
-      val res = for {
-        orgAndProject <- createOrgAndProject
-        savedProject = orgAndProject._2
-        savedAccount1 <- createAccount
-        accountTypes <- createAccountTypes
-        savedAccount2 <- accountRepo.insert(createAccountWith("second-account@email.com", accountTypes.head.id))
-        config1 <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject.id, savedAccount1.id, "a1", "/dumps/a1"))
-        _ <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject.id, savedAccount2.id, "a2", "/dumps/a2"))
-        found <- taskLoadConfigRepo.findByAccountId(savedAccount1.id)
-      } yield {
-        found shouldBe List(config1)
-      }
-
-      res.transact(transactor)
-    }
   }
 
 }

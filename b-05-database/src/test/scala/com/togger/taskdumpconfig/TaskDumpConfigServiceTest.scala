@@ -69,14 +69,6 @@ class TaskDumpConfigServiceTest
       service.findByProjectId(projectId).map(_ shouldBe List(config)).unsafeToFuture()
     }
 
-    "find task dump configs by account id" in {
-      val config = newTaskDumpConfig()
-
-      (taskDumpConfigRepo.findByAccountId _).expects(accountId).returns(List(config).pure[ConnectionIO])
-
-      service.findByAccountId(accountId).map(_ shouldBe List(config)).unsafeToFuture()
-    }
-
     "update a task dump config, stamping the current time from the clock" in {
       val config = newTaskDumpConfig()
       val now = nowAsInstant

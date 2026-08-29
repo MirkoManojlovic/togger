@@ -9,8 +9,8 @@ import com.togger.controllers.project.{DefaultTaskStatusService, ProjectControll
 import com.togger.controllers.accountmapping.AccountMappingController
 import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
-import com.togger.controllers.taskdumpconfig.{TaskDumpConfigController, TaskDumpConfigVerification}
-import com.togger.controllers.taskloadconfig.{TaskLoadConfigController, TaskLoadConfigVerification}
+import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
+import com.togger.controllers.taskloadconfig.TaskLoadConfigController
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
@@ -100,13 +100,11 @@ object TgServer {
         taskDumpConfigController.update,
         taskDumpConfigController.delete,
         taskDumpConfigController.findByProjectId,
-        taskDumpConfigController.findByAccountId,
         taskLoadConfigController.findById,
         taskLoadConfigController.save,
         taskLoadConfigController.update,
         taskLoadConfigController.delete,
         taskLoadConfigController.findByProjectId,
-        taskLoadConfigController.findByAccountId,
         projectMappingController.findById,
         projectMappingController.save,
         projectMappingController.update,
@@ -189,19 +187,29 @@ class DependenciesModule(
     )
   lazy val taskDumpDiskWriter = new TaskDumpDiskWriter(taskDumpDiskOps, dumpLimit)
 
+  lazy val taskDumpLoadConfigVerification = new TaskDumpLoadConfigVerification()
+
   lazy val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
   lazy val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactor)
-  lazy val taskDumpConfigVerification = new TaskDumpConfigVerification()
   lazy val taskDumpConfigEndpoints = new TaskDumpConfigEndpoints(securedEndpoint)
   lazy val taskDumpConfigController =
-    new TaskDumpConfigController(taskDumpConfigEndpoints, taskDumpConfigService,taskDumpConfigVerification, tgClock)
+    new TaskDumpConfigController(
+      taskDumpConfigEndpoints,
+      taskDumpConfigService,
+      taskDumpLoadConfigVerification,
+      tgClock
+    )
 
   lazy val taskLoadConfigRepo = new TaskLoadConfigRepoImpl
   lazy val taskLoadConfigService = new TaskLoadConfigService(taskLoadConfigRepo, tgClock, transactor)
-  lazy val taskLoadConfigVerification = new TaskLoadConfigVerification()
   lazy val taskLoadConfigEndpoints = new TaskLoadConfigEndpoints(securedEndpoint)
   lazy val taskLoadConfigController =
-    new TaskLoadConfigController(taskLoadConfigEndpoints, taskLoadConfigService, taskLoadConfigVerification, tgClock)
+    new TaskLoadConfigController(
+      taskLoadConfigEndpoints,
+      taskLoadConfigService,
+      taskDumpLoadConfigVerification,
+      tgClock
+    )
 
   lazy val projectMappingRepo = new ProjectMappingRepoImpl
   lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, tgClock, transactor)

@@ -1,8 +1,8 @@
 package com.togger.controllers.taskdumpconfig
 
-import cats.effect.IO
-import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
+import com.togger.dump.TaskDumpLoadConfigVerification
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigEndpoints, TaskDumpConfigService}
 
 import java.util.UUID
@@ -10,7 +10,7 @@ import java.util.UUID
 class TaskDumpConfigController(
   taskDumpConfigEndpoints: TaskDumpConfigEndpoints,
   taskDumpConfigService: TaskDumpConfigService,
-  taskDumpConfigVerification: TaskDumpConfigVerification,
+  taskDumpConfigVerification: TaskDumpLoadConfigVerification,
   tgClock: TgClock
 ) {
 
@@ -38,7 +38,7 @@ class TaskDumpConfigController(
     taskDumpConfigVerification
       .verify(dto.name, dto.dumpPath)
       .fold(
-        error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
+        errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
@@ -64,7 +64,7 @@ class TaskDumpConfigController(
     taskDumpConfigVerification
       .verify(dto.name, dto.dumpPath)
       .fold(
-        error => IO(TgJsonFailure.badRequestStringLeft(error.message)),
+        errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
@@ -96,13 +96,6 @@ class TaskDumpConfigController(
     findByProjectIdEndpoint.serverLogic { auth => projectId =>
       taskDumpConfigService
         .findByProjectId(projectId)
-        .map(configs => TgJsonSuccess.justBodyRight(configs.map(toResp)))
-    }
-
-  val findByAccountId =
-    findByAccountIdEndpoint.serverLogic { auth => accountId =>
-      taskDumpConfigService
-        .findByAccountId(accountId)
         .map(configs => TgJsonSuccess.justBodyRight(configs.map(toResp)))
     }
 

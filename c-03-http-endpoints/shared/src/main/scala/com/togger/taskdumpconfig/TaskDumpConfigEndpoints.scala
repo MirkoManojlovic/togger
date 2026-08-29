@@ -43,9 +43,4 @@ class TaskDumpConfigEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "project" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[Seq[TaskDumpConfigResp]]])
 
-  val findByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[TaskDumpConfigResp]] =
-    securedEndpoint.endpoint.get
-      .in(basePath / "account" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[TaskDumpConfigResp]]])
-
 }

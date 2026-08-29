@@ -81,8 +81,12 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Second project")
         )
         savedAccount <- createAccount
-        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a"))
-        config2 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b"))
+        config1 <- taskDumpConfigRepo.insert(
+          newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
+        )
+        config2 <- taskDumpConfigRepo.insert(
+          newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
+        )
         _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
         found <- taskDumpConfigRepo.findByProjectId(savedProject1.id)
       } yield {
@@ -92,22 +96,6 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
       res.transact(transactor)
     }
 
-    "find task dump configs by account id, scoped to that account" in { transactor =>
-      val res = for {
-        orgAndProject <- createOrgAndProject
-        savedProject = orgAndProject._2
-        savedAccount1 <- createAccount
-        accountTypes <- createAccountTypes
-        savedAccount2 <- accountRepo.insert(createAccountWith("second-account@email.com", accountTypes.head.id))
-        config1 <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount1.id, "a1", "/dumps/a1"))
-        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount2.id, "a2", "/dumps/a2"))
-        found <- taskDumpConfigRepo.findByAccountId(savedAccount1.id)
-      } yield {
-        found shouldBe List(config1)
-      }
-
-      res.transact(transactor)
-    }
   }
 
 }

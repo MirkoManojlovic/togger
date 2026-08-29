@@ -17,6 +17,4 @@ trait TaskLoadConfigRepo {
 
   def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLoadConfig]]
 
-  def findByAccountId(accountId: UUID): ConnectionIO[List[TaskLoadConfig]]
-
 }

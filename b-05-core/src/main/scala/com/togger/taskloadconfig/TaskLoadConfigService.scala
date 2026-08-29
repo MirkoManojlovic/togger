@@ -28,9 +28,6 @@ class TaskLoadConfigService(
   def findByProjectId(projectId: UUID): IO[List[TaskLoadConfig]] =
     taskLoadConfigRepo.findByProjectId(projectId).transact(transactor)
 
-  def findByAccountId(accountId: UUID): IO[List[TaskLoadConfig]] =
-    taskLoadConfigRepo.findByAccountId(accountId).transact(transactor)
-
   def update(taskLoadConfig: TaskLoadConfig): IO[TaskLoadConfig] = {
     logger.info(s"Updating ${sp(taskLoadConfig)}")
     val now = tgClock.currentInstant
