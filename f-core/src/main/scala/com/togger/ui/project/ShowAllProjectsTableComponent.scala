@@ -1,23 +1,17 @@
 package com.togger.ui.project
 
 import cats.effect.unsafe.IORuntime
-import com.togger.components.button.TgHtmlButton
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.FindProjectResp
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.{
-  CreateProjectPage,
-  EditOrganizationPage,
-  EditProjectPage,
-  ShowAllTaskConfigsPage,
-  ShowAllTasksPage
-}
+import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -80,13 +74,11 @@ class ShowAllProjectsTableComponent(
                   cls("flex items-center justify-between"),
                   div(cls("mr-2"), organizationResp.name),
                   div(
-                    button(
-                      `type`("button"),
+                    iconButton(
+                      "Edit Organization",
                       TgIcons.editIcon(className = "w-4 h-4"),
-                      cls(
-                        "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                      ),
-                      cls("mr-2"),
+                      rowIconButtonCls,
+                      rowButtonMarginCls,
                       onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(organizationResp.id)))
                     )
                   )
@@ -104,11 +96,13 @@ class ShowAllProjectsTableComponent(
             div(
               cls("flex justify-between"),
               div("Projects"),
-              TgHtmlButton
-                .extraSmall("Create")
-                .amend(
-                  router.navigateTo(CreateProjectPage(organizationId))
-                )
+              iconButton(
+                "Create Project",
+                TgIcons.plusIcon(className = "w-4 h-4"),
+                headerIconButtonCls,
+                "mr-2",
+                router.navigateTo(CreateProjectPage(organizationId))
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
@@ -147,33 +141,25 @@ class ShowAllProjectsTableComponent(
                             createTd(dto.description),
                             createTd(
                               div(
-                                button(
-                                  `type`("button"),
-                                  TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
+                                iconButton(
                                   "Edit",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                                  ),
-                                  cls("mr-2"),
+                                  TgIcons.editIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(EditProjectPage(dto.id)))
                                 ),
-                                button(
-                                  `type`("button"),
-                                  TgIcons.hammerIcon("w-4 h-4 me-1.5 -ms-0.5"),
+                                iconButton(
                                   "Tasks",
-                                  cls(
-                                    "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
-                                  ),
-                                  cls("mr-2"),
+                                  TgIcons.hammerIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.id)))
                                 ),
-                                button(
-                                  `type`("button"),
-                                  TgIcons.downloadIcon("w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Config",
-                                  cls(
-                                    "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
-                                  ),
+                                iconButton(
+                                  "Task Dump/Load Configuration",
+                                  TgIcons.downloadIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(ShowAllTaskConfigsPage(dto.id)))
                                 )
                               )

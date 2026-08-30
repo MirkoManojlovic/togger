@@ -1,22 +1,16 @@
 package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
-import com.togger.components.button.TgHtmlButton
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.{FindProjectResp, FindTaskRespFull}
-import com.togger.routes.Pages.{
-  CreateTaskPage,
-  EditOrganizationPage,
-  EditProjectPage,
-  EditTaskPage,
-  ShowAllTaskStatusesPage
-}
+import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -84,10 +78,18 @@ class ShowAllTasksComponent(
           .headerNoFooter(
             header = TgCard.CardHeader.html(
               div(
-                a(
-                  cls("font-medium text-fg-brand hover:underline"),
-                  projectResp.name,
-                  router.navigateTo(EditProjectPage(projectResp.id))
+                div(
+                  cls("flex items-center justify-between"),
+                  div(cls("mr-2"), projectResp.name),
+                  div(
+                    iconButton(
+                      "Edit Project",
+                      TgIcons.editIcon(className = "w-4 h-4"),
+                      rowIconButtonCls,
+                      rowButtonMarginCls,
+                      onClick.mapToUnit --> (_ => router.route(EditProjectPage(projectResp.id)))
+                    )
+                  )
                 )
               )
             ),
@@ -104,19 +106,20 @@ class ShowAllTasksComponent(
               div("Tasks"),
               div(
                 cls("flex"),
-//                dumpComponent.element.amend(cls("mb-4 w-xs mr-4")),
-                TgHtmlButton
-                  .extraSmall("Create Task")
-                  .amend(
-                    cls("mr-2"),
-                    router.navigateTo(CreateTaskPage(projectId))
-                  ),
-                TgHtmlButton
-                  .extraSmall("Show Task Statuses")
-                  .amend(
-                    cls("mr-2"),
-                    router.navigateTo(ShowAllTaskStatusesPage(projectId))
-                  )
+                iconButton(
+                  "Create Task",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(CreateTaskPage(projectId))
+                ),
+                iconButton(
+                  "Task statuses",
+                  TgIcons.statusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowAllTaskStatusesPage(projectId))
+                )
               )
             ),
             TgCard.CardHeaderSize.H3
@@ -170,14 +173,14 @@ class ShowAllTasksComponent(
                             createTd(statusesVar.now().idToName(dto.taskStatus.id)),
                             createTd(
                               div(
-                                button(
-                                  `type`("button"),
-                                  TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-                                  "Edit",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none mr-2"
-                                  ),
-                                  onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                                div(
+                                  iconButton(
+                                    "Edit",
+                                    TgIcons.editIcon(className = "w-4 h-4"),
+                                    rowIconButtonCls,
+                                    rowButtonMarginCls,
+                                    onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                                  )
                                 )
                               )
                             )

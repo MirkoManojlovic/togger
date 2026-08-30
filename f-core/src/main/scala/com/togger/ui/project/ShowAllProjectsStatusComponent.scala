@@ -3,6 +3,9 @@ package com.togger.ui.project
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits.toTraverseOps
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
@@ -11,11 +14,10 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
+
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 
@@ -119,13 +121,11 @@ class ShowAllProjectsStatusComponent(
                         cls("flex items-center justify-between"),
                         div(cls("mr-2"), organizationResp.name),
                         div(
-                          button(
-                            `type`("button"),
+                          iconButton(
+                            "Edit Organization",
                             TgIcons.editIcon(className = "w-4 h-4"),
-                            cls(
-                              "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                            ),
-                            cls("mr-2"),
+                            rowIconButtonCls,
+                            rowButtonMarginCls,
                             onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(organizationResp.id)))
                           )
                         )
@@ -152,21 +152,18 @@ class ShowAllProjectsStatusComponent(
                       dto.project.name
                     ),
                     div(
-                      button(
-                        `type`("button"),
+                      iconButton(
+                        "Edit Project",
                         TgIcons.editIcon(className = "w-4 h-4"),
-                        cls(
-                          "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-                        ),
-                        cls("mr-2"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
                         onClick.mapToUnit --> (_ => router.route(EditProjectPage(dto.project.id)))
                       ),
-                      button(
-                        `type`("button"),
-                        TgIcons.hammerIcon("w-4 h-4"),
-                        cls(
-                          "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
-                        ),
+                      iconButton(
+                        "Show Tasks",
+                        TgIcons.hammerIcon(className = "w-4 h-4"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
                         onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.project.id)))
                       )
                     )

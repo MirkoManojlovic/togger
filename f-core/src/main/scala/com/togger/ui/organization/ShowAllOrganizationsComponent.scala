@@ -1,15 +1,15 @@
 package com.togger.ui.organization
 
 import cats.effect.unsafe.IORuntime
-import com.togger.components.button.TgHtmlButton
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages.{CreateOrganizationPage, EditOrganizationPage, ShowProjectsForOrganizationIdTable}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import org.scalajs.dom.HTMLTableCellElement
 
 class ShowAllOrganizationsComponent(
@@ -45,11 +45,13 @@ class ShowAllOrganizationsComponent(
             div(
               cls("flex justify-between"),
               div("Organizations"),
-              TgHtmlButton
-                .extraSmall("Create")
-                .amend(
-                  router.navigateTo(CreateOrganizationPage)
-                )
+              iconButton(
+                "Create Organization",
+                TgIcons.plusIcon(className = "w-4 h-4"),
+                headerIconButtonCls,
+                "mr-2",
+                router.navigateTo(CreateOrganizationPage)
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
@@ -87,22 +89,18 @@ class ShowAllOrganizationsComponent(
                             createTd(dto.description),
                             createTd(
                               div(
-                                button(
-                                  `type`("button"),
-                                  TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
+                                iconButton(
                                   "Edit",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none mr-2"
-                                  ),
+                                  TgIcons.editIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(dto.id)))
                                 ),
-                                button(
-                                  `type`("button"),
-                                  TgIcons.briefcaseIcon("w-4 h-4 me-1.5 -ms-0.5"),
+                                iconButton(
                                   "Projects",
-                                  cls(
-                                    "inline-flex items-center text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white focus:ring-4 focus:ring-brand-subtle font-medium leading-5 rounded-base text-xs px-3 py-2 focus:outline-none"
-                                  ),
+                                  TgIcons.briefcaseIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(ShowProjectsForOrganizationIdTable(dto.id)))
                                 )
                               )

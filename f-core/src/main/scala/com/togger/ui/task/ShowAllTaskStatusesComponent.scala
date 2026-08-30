@@ -1,15 +1,15 @@
 package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
-import com.togger.components.button.TgHtmlButton
-import com.togger.routes.Pages.{CreateOrganizationPage, CreateTaskStatusPage, EditTaskStatusPage}
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.routes.Pages.{CreateTaskStatusPage, EditTaskStatusPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -70,11 +70,13 @@ class ShowAllTaskStatusesComponent(
             div(
               cls("flex justify-between"),
               div("Task statuses"),
-              TgHtmlButton
-                .extraSmall("Create")
-                .amend(
-                  router.navigateTo(CreateTaskStatusPage(projectId))
-                )
+              iconButton(
+                "Create Task Status",
+                TgIcons.plusIcon(className = "w-4 h-4"),
+                headerIconButtonCls,
+                "mr-2",
+                router.navigateTo(CreateTaskStatusPage(projectId))
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
@@ -112,13 +114,11 @@ class ShowAllTaskStatusesComponent(
                             createTd(dto.description),
                             createTd(
                               div(
-                                button(
-                                  `type`("button"),
-                                  TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
+                                iconButton(
                                   "Edit",
-                                  cls(
-                                    "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none mr-2"
-                                  ),
+                                  TgIcons.editIcon(className = "w-4 h-4"),
+                                  rowIconButtonCls,
+                                  rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(EditTaskStatusPage(dto.projectId, dto.id)))
                                 )
                               )
