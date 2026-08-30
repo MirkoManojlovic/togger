@@ -4,10 +4,10 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.{FindProjectResp, FindTaskRespFull}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgHtmlTable}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -31,10 +31,16 @@ class ShowAllTasksComponent(
   private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     statusesVar.signal.map(
-      _.taskStatuses.map { s =>
-        val isSelected = !defaultDeselectedStatusNames.contains(s.name)
-        MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
-      }
+      _.taskStatuses
+        .map(taskStatusResp =>
+          DefaultTaskStatus.values.find(enum1 => enum1.statusName == taskStatusResp.name).get -> taskStatusResp
+        )
+        .sortBy { case (enum, _) => enum.i }
+        .map(_._2)
+        .map { s =>
+          val isSelected = !defaultDeselectedStatusNames.contains(s.name)
+          MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
+        }
     )
   private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
   private val filteredTasksSignal: Signal[Seq[FindTaskRespFull]] =
