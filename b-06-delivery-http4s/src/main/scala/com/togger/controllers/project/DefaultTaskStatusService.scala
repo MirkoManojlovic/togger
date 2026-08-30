@@ -17,7 +17,8 @@ class DefaultTaskStatusService(tgClock: TgClock) {
       ("🧪 Testing", "This has been completed"),
       ("✅ Done", "This has been completed"),
       ("🔴 Blocked", "This has been completed"),
-      ("🗑️ Won't do", "This has been completed")
+      ("🗑️ Won't do", "This has been completed"),
+      ("📦 Archived", "This has been archived")
     ).map { case (name, description) =>
       TaskStatus(
         id = UUID.randomUUID(),
