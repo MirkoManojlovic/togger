@@ -25,16 +25,21 @@ case class TgCheckbox(
 
   val htmlElement: HtmlDiv =
     div(
-      cls("inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded-md"),
-      input(
-        `type` := "checkbox",
-        checked <-- inputSignal,
-        onClick.mapToChecked --> inputStateUpdater,
-        cls(
-          "w-4 h-4 border border-default-strong rounded-xs bg-neutral-secondary-strong focus:ring-2 focus:ring-brand-soft"
-        )
+      cls(
+        "inline-flex items-center w-full hover:bg-neutral-tertiary-medium hover:text-heading rounded-md cursor-pointer"
       ),
-      label(cls("w-full ms-2 text-sm font-medium text-heading"), labelValue)
+      label(
+        cls("inline-flex items-center w-full cursor-pointer p-2"),
+        input(
+          `type` := "checkbox",
+          checked <-- inputSignal,
+          onClick.mapToChecked --> inputStateUpdater,
+          cls(
+            "w-4 h-4 border border-default-strong rounded-xs bg-neutral-secondary-strong focus:ring-2 focus:ring-brand-soft"
+          )
+        ),
+        span(cls("w-full ms-2 text-sm font-medium text-heading"), labelValue)
+      )
     )
 
   def horizontalElement(textSize: ColumnSize = ColumSize.Column6): HtmlDiv =

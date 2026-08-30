@@ -7,6 +7,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -26,7 +27,20 @@ class ShowAllTasksComponent(
 ) {
 
   val stateFormVar = Var(Seq.empty[FindTaskRespFull])
-  val statusesVar = Var(TaskStatusesState()) // TODO: don't need this
+  val statusesVar = Var(TaskStatusesState())
+  private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
+  private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
+    statusesVar.signal.map(
+      _.taskStatuses.map { s =>
+        val isSelected = !defaultDeselectedStatusNames.contains(s.name)
+        MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
+      }
+    )
+  private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
+  private val filteredTasksSignal: Signal[Seq[FindTaskRespFull]] =
+    stateFormVar.signal.combineWith(statusFilter.selectedIds).map { case (tasks, selectedIds) =>
+      if (selectedIds.isEmpty) tasks else tasks.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+    }
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = UUID.randomUUID(),
@@ -116,36 +130,43 @@ class ShowAllTasksComponent(
             TgCard.CardHeaderSize.H3
           ),
           body = TgCard
-            .HtmlCardContent(div(child <-- stateFormVar.signal.map { dtos =>
-              TgHtmlTable.tableElement(
-                Seq("Id", "Name", "Description", "Assignee", "Status", "Action")
-              )(dtos
-                .sortBy(_.taskStatus.id)
-                .map { dto =>
-                Seq(
-                  createTd(dto.id.toString),
-                  createTd(dto.name),
-                  createTdOverflow(dto.description),
-                  createTd {
-                    // TODO: fix this, some implicit conversion is not converting string to reactive element
-                    val m = dto.assignedTo.map(_.fullName).getOrElse("No")
-                    m
-                  },
-                  createTd(statusesVar.now().idToName(dto.taskStatus.id)),
-                  createTd(
-                    div(
-                      iconButton(
-                        "Edit",
-                        TgIcons.editIcon(className = "w-4 h-4"),
-                        rowIconButtonCls,
-                        rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
-                      )
-                    )
+            .HtmlCardContent(
+              div(
+                div(cls("flex justify-end mb-4"), statusFilter.element),
+                div(child <-- filteredTasksSignal.map { dtos =>
+                  TgHtmlTable.tableElement(
+                    Seq("Id", "Name", "Description", "Assignee", "Status", "Action")
+                  )(
+                    dtos
+                      .sortBy(_.taskStatus.id)
+                      .map { dto =>
+                        Seq(
+                          createTd(dto.id.toString),
+                          createTd(dto.name),
+                          createTdOverflow(dto.description),
+                          createTd {
+                            // TODO: fix this, some implicit conversion is not converting string to reactive element
+                            val m = dto.assignedTo.map(_.fullName).getOrElse("No")
+                            m
+                          },
+                          createTd(statusesVar.now().idToName(dto.taskStatus.id)),
+                          createTd(
+                            div(
+                              iconButton(
+                                "Edit",
+                                TgIcons.editIcon(className = "w-4 h-4"),
+                                rowIconButtonCls,
+                                rowButtonMarginCls,
+                                onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                              )
+                            )
+                          )
+                        )
+                      }
                   )
-                )
-              })
-            }))
+                })
+              )
+            )
         )
         .element
     )
