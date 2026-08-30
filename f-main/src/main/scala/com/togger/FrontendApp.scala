@@ -30,7 +30,7 @@ class WebFrontendApp {
 
     val routes = new TgRoutes().routes(basePath)
 
-    val router = new TgRouterImpl(routes, origin, initialUrl)
+    val router = new TgRouterImpl(routes, origin, None)
     val splitRender = new TgSplitRender(router)
 
     render(
@@ -56,7 +56,7 @@ class DesktopFrontendApp {
     setTimeout(sleepTime) {
       val routes = new TgRoutes().routes(basePath)
 
-      val router = new TgRouterImpl(routes, origin, initialUrl)
+      val router = new TgRouterImpl(routes, origin, Some(initialUrl))
       val splitRender = new TgSplitRender(router)
 
       splashScreen.remove()
