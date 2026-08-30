@@ -13,4 +13,13 @@ object TgHtmlTable {
   def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
     td(cls("px-6 py-2"), content)
 
+  def createTdOverflow(content: String) =
+    createTd(
+      div(
+        maxHeight.px(20),
+        overflow.hidden,
+        content
+      )
+    )
+
 }

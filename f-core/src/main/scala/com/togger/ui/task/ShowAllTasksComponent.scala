@@ -5,7 +5,7 @@ import com.togger.dto.{FindProjectResp, FindTaskRespFull}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow, createTh}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -153,7 +153,14 @@ class ShowAllTasksComponent(
                             //                textAlign.center,
                             createTd(dto.id.toString),
                             createTd(dto.name),
-                            createTd(dto.description),
+                            createTdOverflow(dto.description),
+//                            createTd(
+//                              div(
+//                                maxHeight.px(20),
+//                                overflow.hidden,
+//                                dto.description
+//                              )
+//                            ),
 //                            createTd(dto.assignedTo.map(_.fullName).getOrElse("No one")),
                             createTd {
                               val mirko = dto.assignedTo.map(_.fullName).getOrElse("No")
