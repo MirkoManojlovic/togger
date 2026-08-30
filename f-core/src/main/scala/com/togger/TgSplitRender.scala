@@ -201,9 +201,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskStatusService,
                   projectService,
                   router,
-                  tgDateFormater,
                   spinnerService,
-                  accountService,
                   projectId
                 ).element
               case EditTaskPage(projectId, taskId) =>

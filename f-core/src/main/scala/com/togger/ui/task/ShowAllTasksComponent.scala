@@ -4,8 +4,9 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.{FindProjectResp, FindTaskRespFull}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow, createTh}
+import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgHtmlTable
+import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -18,9 +19,7 @@ class ShowAllTasksComponent(
   taskStatusFeService: TaskStatusFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
-  dateFormater: TgDateFormater,
   spinnerService: SpinnerService,
-  accountService: AccountService,
   projectId: UUID
 )(implicit
   ioRuntime: IORuntime
@@ -116,81 +115,37 @@ class ShowAllTasksComponent(
             ),
             TgCard.CardHeaderSize.H3
           ),
-          body = TgCard.HtmlCardContent(
-            div(
-              child <-- stateFormVar.signal.map(dtos =>
-                div(
-                  cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
-                  table(
-                    cls("w-full text-sm text-left rtl:text-right text-body"),
-                    thead(
-                      cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
-                      tr(
-                        createTh("Id"),
-                        createTh("Name"),
-                        createTh("Description"),
-                        createTh("Assignee"),
-//                        createTh("created_by"),
-//                        createTh("created_at"),
-//                        createTh("updated_at"),
-                        createTh("Status"),
-                        createTh("Action")
+          body = TgCard
+            .HtmlCardContent(div(child <-- stateFormVar.signal.map { dtos =>
+              TgHtmlTable.tableElement(
+                Seq("Id", "Name", "Description", "Assignee", "Status", "Action")
+              )(dtos
+                .sortBy(_.taskStatus.id)
+                .map { dto =>
+                Seq(
+                  createTd(dto.id.toString),
+                  createTd(dto.name),
+                  createTdOverflow(dto.description),
+                  createTd {
+                    // TODO: fix this, some implicit conversion is not converting string to reactive element
+                    val m = dto.assignedTo.map(_.fullName).getOrElse("No")
+                    m
+                  },
+                  createTd(statusesVar.now().idToName(dto.taskStatus.id)),
+                  createTd(
+                    div(
+                      iconButton(
+                        "Edit",
+                        TgIcons.editIcon(className = "w-4 h-4"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
                       )
-                    ),
-                    tbody(
-                      dtos
-                        .sortBy(_.taskStatus.id)
-                        .zipWithIndex
-                        .map { case (dto, index) =>
-                          val rowCls = if (index % 2 == 0) {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          } else {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          }
-
-                          tr(
-                            cls(rowCls),
-                            //                textAlign.center,
-                            createTd(dto.id.toString),
-                            createTd(dto.name),
-                            createTdOverflow(dto.description),
-//                            createTd(
-//                              div(
-//                                maxHeight.px(20),
-//                                overflow.hidden,
-//                                dto.description
-//                              )
-//                            ),
-//                            createTd(dto.assignedTo.map(_.fullName).getOrElse("No one")),
-                            createTd {
-                              val mirko = dto.assignedTo.map(_.fullName).getOrElse("No")
-                              mirko
-                            },
-//                            createTd(dto.createdBy.fullName),
-//                            createTd(dateFormater.asEuropeanDate(dto.createdAt.toLocalDate())),
-//                            createTd(dateFormater.asEuropeanDate(dto.updatedAt.toLocalDate())),
-                            createTd(statusesVar.now().idToName(dto.taskStatus.id)),
-                            createTd(
-                              div(
-                                div(
-                                  iconButton(
-                                    "Edit",
-                                    TgIcons.editIcon(className = "w-4 h-4"),
-                                    rowIconButtonCls,
-                                    rowButtonMarginCls,
-                                    onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
-                                  )
-                                )
-                              )
-                            )
-                          )
-                        }
                     )
                   )
                 )
-              )
-            )
-          )
+              })
+            }))
         )
         .element
     )

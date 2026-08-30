@@ -3,6 +3,7 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import org.scalajs.dom.HTMLTableCellElement
 
 object TgHtmlTable {
@@ -19,6 +20,39 @@ object TgHtmlTable {
         maxHeight.px(20),
         overflow.hidden,
         content
+      )
+    )
+
+  private val evenRowClass =
+    "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
+
+  private val oddRowClass =
+    "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
+
+  def choseRowCls(index: Int): String =
+    if (index % 2 == 0) evenRowClass
+    else oddRowClass
+
+  def tableElement(headers: Seq[String])(rows: Seq[Seq[ReactiveHtmlElement[HTMLTableCellElement]]]): HtmlDiv =
+    div(
+      cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
+      table(
+        cls("w-full text-sm text-left rtl:text-right text-body"),
+        thead(
+          cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
+          tr(
+            headers.map(createTh)
+          )
+        ),
+        tbody(
+          rows.zipWithIndex
+            .map { case (rowElement, index) =>
+              tr(
+                cls(choseRowCls(index)),
+                rowElement
+              )
+            }
+        )
       )
     )
 
