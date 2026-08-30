@@ -13,7 +13,6 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
   val projectMappingRepo = new ProjectMappingRepoImpl
 
   def newProjectMapping(projectIdDump: UUID, projectIdDb: UUID) = ProjectMapping(
-    id = UUID.randomUUID(),
     projectIdDump = projectIdDump,
     projectIdDb = projectIdDb,
     createdAt = nowAsInstant,
@@ -33,24 +32,20 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
         savedOrganization = orgAndProject._1
         dumpProject = orgAndProject._2
         dbProject <- createSecondProject(savedOrganization.id)
-        savedMapping <- projectMappingRepo.insert(newProjectMapping(dumpProject.id, dbProject.id))
-        foundMapping1 <- projectMappingRepo.findById(savedMapping.id)
-        anotherDumpProject <- createSecondProject(savedOrganization.id)
-        newUpdatedAt = nowAsInstant
-        updatedMapping <- projectMappingRepo.update(
-          savedMapping.copy(projectIdDump = anotherDumpProject.id),
-          newUpdatedAt
-        )
-        foundMapping2 <- projectMappingRepo.findById(savedMapping.id)
-        _ <- projectMappingRepo.deleteById(foundMapping2.id)
-        foundMapping3 <- projectMappingRepo.findById(savedMapping.id).attempt
+        mapping = newProjectMapping(dumpProject.id, dbProject.id)
+        savedMapping <- projectMappingRepo.insert(mapping)
+        foundByDb <- projectMappingRepo.findByProjectIdDb(dbProject.id)
+        foundByDump <- projectMappingRepo.findByProjectIdDump(mapping.projectIdDump)
+        _ <- projectMappingRepo.deleteByIds(dbProject.id, mapping.projectIdDump)
+        foundAfterDelete <- projectMappingRepo.findByProjectIdDb(dbProject.id)
       } yield {
         val cp = new Checkpoint
-        cp(savedMapping shouldBe foundMapping1)
-        cp(updatedMapping shouldBe foundMapping2)
-        cp(updatedMapping.projectIdDump shouldBe anotherDumpProject.id)
+        cp(savedMapping.projectIdDb shouldBe dbProject.id)
+        cp(savedMapping.projectIdDump shouldBe mapping.projectIdDump)
+        cp(foundByDb shouldBe List(savedMapping))
+        cp(foundByDump shouldBe List(savedMapping))
         cp.reportAll()
-        foundMapping3.isLeft shouldBe true
+        foundAfterDelete shouldBe empty
       }
 
       res.transact(transactor)
@@ -86,6 +81,21 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
         found <- projectMappingRepo.findByProjectIdDb(dbProject.id)
       } yield {
         found.toSet shouldBe Set(mapping1, mapping2)
+      }
+
+      res.transact(transactor)
+    }
+
+    "fail to insert a duplicate composite-key mapping" in { transactor =>
+      val res = for {
+        orgAndProject <- createOrgAndProject
+        savedOrganization = orgAndProject._1
+        dumpProject = orgAndProject._2
+        dbProject <- createSecondProject(savedOrganization.id)
+        _ <- projectMappingRepo.insert(newProjectMapping(dumpProject.id, dbProject.id))
+        secondInsert <- projectMappingRepo.insert(newProjectMapping(dumpProject.id, dbProject.id)).attempt
+      } yield {
+        secondInsert.isLeft shouldBe true
       }
 
       res.transact(transactor)

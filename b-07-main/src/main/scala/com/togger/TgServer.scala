@@ -105,11 +105,10 @@ object TgServer {
         taskLoadConfigController.update,
         taskLoadConfigController.delete,
         taskLoadConfigController.findByProjectId,
-        projectMappingController.findById,
         projectMappingController.save,
-        projectMappingController.update,
-        projectMappingController.delete,
         projectMappingController.findByProjectIdDb,
+        projectMappingController.findByProjectIdDump,
+        projectMappingController.delete,
         accountMappingController.save,
         accountMappingController.findByAccountIdDb,
         accountMappingController.findByAccountIdDump,
@@ -212,7 +211,7 @@ class DependenciesModule(
     )
 
   lazy val projectMappingRepo = new ProjectMappingRepoImpl
-  lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, tgClock, transactor)
+  lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, transactor)
   lazy val projectMappingEndpoints = new ProjectMappingEndpoints(securedEndpoint)
   lazy val projectMappingController =
     new ProjectMappingController(projectMappingEndpoints, projectMappingService, tgClock)

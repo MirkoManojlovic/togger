@@ -164,7 +164,6 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   private def insertMapping(projectIdDb: UUID, projectIdDump: UUID): ConnectionIO[ProjectMapping] =
     projectMappingRepo.insert(
       ProjectMapping(
-        id = UUID.randomUUID(),
         projectIdDb = projectIdDb,
         projectIdDump = projectIdDump,
         createdAt = nowAsInstant,

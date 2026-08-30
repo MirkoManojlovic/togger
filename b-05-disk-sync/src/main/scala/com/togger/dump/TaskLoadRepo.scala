@@ -83,7 +83,7 @@ class TaskLoadRepo(
         else {
           val now = tgClock.currentInstant
           projectMappingRepo
-            .insert(ProjectMapping(TgIds.UNASSIGNED_UUID, projectIdDb, manifest.project.id, now, now))
+            .insert(ProjectMapping(projectIdDb, manifest.project.id, now, now))
             .void
         }
       ensureMapping *> reconcileTaskStatuses(projectIdDb, manifest.taskStatuses)

@@ -8,61 +8,23 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
-import java.time.Instant
 import java.util.UUID
 
 class ProjectMappingRepoImpl extends ProjectMappingRepo {
-
-  private lazy val returnFields = List(
-    "id",
-    "project_id_db",
-    "project_id_dump",
-    "created_at",
-    "updated_at"
-  )
-
-  override def findById(id: UUID): ConnectionIO[ProjectMapping] =
-    logAroundInfoQuery(
-      findByIdStatementUUID(PROJECT_MAPPING_TABLE_FRAG)(id).query[ProjectMapping].unique
-    )(
-      s"Finding project mapping with ${sp(id)}",
-      projectMapping => s"Project mapping found ${sp(projectMapping)}"
-    )
 
   override def insert(projectMapping: ProjectMapping): ConnectionIO[ProjectMapping] = {
     import projectMapping._
     logAroundInfoQuery(
       insertStatement(PROJECT_MAPPING_TABLE_FRAG)(fr"""
         (project_id_db, project_id_dump, created_at, updated_at)
-        values ($projectIdDb,$projectIdDump, $createdAt, $updatedAt)
+        values ($projectIdDb, $projectIdDump, $createdAt, $updatedAt)
       """).update
-        .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
+        .withUniqueGeneratedKeys[ProjectMapping]("project_id_db", "project_id_dump", "created_at", "updated_at")
     )(
       s"Inserting ${sp(projectMapping)}",
       projectMapping => s"Project mapping inserted ${sp(projectMapping)}"
     )
   }
-
-  override def deleteById(id: UUID): ConnectionIO[Int] =
-    logAroundInfoQuery(
-      deleteByIdStatementUUID(PROJECT_MAPPING_TABLE_FRAG)(id).update.run
-    )(
-      s"Deleting project mapping with ${sp(id)}",
-      _ => s"Project mapping with ${sp(id)} deleted"
-    )
-
-  override def update(projectMapping: ProjectMapping, updatedAt: Instant): ConnectionIO[ProjectMapping] =
-    logAroundInfoQuery(
-      updateStatementUUID(PROJECT_MAPPING_TABLE_FRAG)(projectMapping.id)(fr"""
-        project_id_db = ${projectMapping.projectIdDb},
-        project_id_dump = ${projectMapping.projectIdDump},
-        updated_at = $updatedAt
-      """).update
-        .withUniqueGeneratedKeys[ProjectMapping](returnFields: _*)
-    )(
-      s"Updating ${sp(projectMapping)}",
-      projectMapping => s"${sp(projectMapping)} updated"
-    )
 
   override def findByProjectIdDb(projectIdDb: UUID): ConnectionIO[List[ProjectMapping]] =
     logAroundInfoQuery(
@@ -72,6 +34,25 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
     )(
       s"Finding project mappings for ${sp(projectIdDb)}",
       projectMappings => s"${sp(projectMappings)} found"
+    )
+
+  override def findByProjectIdDump(projectIdDump: UUID): ConnectionIO[List[ProjectMapping]] =
+    logAroundInfoQuery(
+      (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_dump = $projectIdDump")
+        .query[ProjectMapping]
+        .to[List]
+    )(
+      s"Finding project mappings for ${sp(projectIdDump)}",
+      projectMappings => s"${sp(projectMappings)} found"
+    )
+
+  override def deleteByIds(projectIdDb: UUID, projectIdDump: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      (deleteStatement(PROJECT_MAPPING_TABLE_FRAG) ++
+        fr"where project_id_db = $projectIdDb and project_id_dump = $projectIdDump").update.run
+    )(
+      s"Deleting project mapping with ${sp(projectIdDb)} and ${sp(projectIdDump)}",
+      _ => s"Project mapping with ${sp(projectIdDb)} and ${sp(projectIdDump)} deleted"
     )
 
 }

@@ -3,7 +3,7 @@ package com.togger.projectmapping
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{TgClock, TimeHelpers}
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -26,15 +26,13 @@ class ProjectMappingServiceTest
     with TestLoggingJvm {
 
   val projectMappingRepo: ProjectMappingRepo = mock[ProjectMappingRepo]
-  val tgClock: TgClock = mock[TgClock]
 
-  val service = new ProjectMappingService(projectMappingRepo, tgClock, transactorMock)
+  val service = new ProjectMappingService(projectMappingRepo, transactorMock)
 
   val projectIdDump: UUID = UUID.randomUUID()
   val projectIdDb: UUID = UUID.randomUUID()
 
   def newProjectMapping() = ProjectMapping(
-    id = UUID.randomUUID(),
     projectIdDump = projectIdDump,
     projectIdDb = projectIdDb,
     createdAt = nowAsInstant,
@@ -51,14 +49,6 @@ class ProjectMappingServiceTest
       service.create(mapping).map(_ shouldBe mapping).unsafeToFuture()
     }
 
-    "find a project mapping by id" in {
-      val mapping = newProjectMapping()
-
-      (projectMappingRepo.findById _).expects(mapping.id).returns(mapping.pure[ConnectionIO])
-
-      service.findById(mapping.id).map(_ shouldBe mapping).unsafeToFuture()
-    }
-
     "find project mappings by db project id" in {
       val mapping = newProjectMapping()
 
@@ -69,23 +59,20 @@ class ProjectMappingServiceTest
       service.findByProjectIdDb(projectIdDb).map(_ shouldBe List(mapping)).unsafeToFuture()
     }
 
-    "update a project mapping, stamping the current time from the clock" in {
+    "find project mappings by dump project id" in {
       val mapping = newProjectMapping()
-      val now = nowAsInstant
-      val updated = mapping.copy(projectIdDump = UUID.randomUUID(), updatedAt = now)
 
-      (() => tgClock.currentInstant).expects().returns(now)
-      (projectMappingRepo.update _).expects(mapping, now).returns(updated.pure[ConnectionIO])
+      (projectMappingRepo.findByProjectIdDump _)
+        .expects(projectIdDump)
+        .returns(List(mapping).pure[ConnectionIO])
 
-      service.update(mapping).map(_ shouldBe updated).unsafeToFuture()
+      service.findByProjectIdDump(projectIdDump).map(_ shouldBe List(mapping)).unsafeToFuture()
     }
 
-    "delete a project mapping by id" in {
-      val mapping = newProjectMapping()
+    "delete a project mapping by its composite key" in {
+      (projectMappingRepo.deleteByIds _).expects(projectIdDb, projectIdDump).returns(1.pure[ConnectionIO])
 
-      (projectMappingRepo.deleteById _).expects(mapping.id).returns(1.pure[ConnectionIO])
-
-      service.deleteById(mapping.id).map(_ shouldBe 1).unsafeToFuture()
+      service.deleteByIds(projectIdDb, projectIdDump).map(_ shouldBe 1).unsafeToFuture()
     }
 
   }

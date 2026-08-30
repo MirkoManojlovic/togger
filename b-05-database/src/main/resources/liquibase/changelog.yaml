@@ -675,17 +675,11 @@ databaseChangeLog:
             tableName: project_mapping
             columns:
               - column:
-                  name: id
-                  type: uuid
-                  defaultValueComputed: uuidv7()
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
                   name: project_id_db
                   type: uuid
                   constraints:
                     nullable: false
+                    primaryKey: true
                     foreignKeyName: fk_project_mapping_project_db
                     references: project(id)
               - column:
@@ -693,6 +687,7 @@ databaseChangeLog:
                   type: uuid
                   constraints:
                     nullable: false
+                    primaryKey: true
               - column:
                   name: created_at
                   type: timestamp with time zone

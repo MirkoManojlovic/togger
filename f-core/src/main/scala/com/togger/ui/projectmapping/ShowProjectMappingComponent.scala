@@ -4,7 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.projectmapping.ProjectMappingResp
-import com.togger.routes.Pages.{CreateProjectMappingPage, EditProjectMappingPage}
+import com.togger.routes.Pages.CreateProjectMappingPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -44,24 +44,14 @@ class ShowProjectMappingComponent(
       ),
       onClick.mapToUnit --> (_ =>
         spinnerService
-          .runWithSpinner(projectMappingService.deleteById(mapping.id))
+          .runWithSpinner(projectMappingService.deleteByIds(mapping.projectIdDb, mapping.projectIdDump))
           .toastBackendMessageCodeBlock {
-            stateVar.update(_.filterNot(_.id == mapping.id))
+            stateVar.update(
+              _.filterNot(m => m.projectIdDb == mapping.projectIdDb && m.projectIdDump == mapping.projectIdDump)
+            )
           }
           .unsafeRunAndForget()
       )
-    )
-
-  private def editButton(mapping: ProjectMappingResp) =
-    button(
-      `type`("button"),
-      TgIcons.editIcon(className = "w-4 h-4 me-1.5 -ms-0.5"),
-      "Edit",
-      cls(
-        "inline-flex items-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
-      ),
-      cls("mr-2"),
-      onClick.mapToUnit --> (_ => router.route(EditProjectMappingPage(mapping.id)))
     )
 
   private def mappingDetails(mapping: ProjectMappingResp) =
@@ -71,7 +61,7 @@ class ShowProjectMappingComponent(
       p(cls("mb-2"), b("Db project id: "), mapping.projectIdDb.toString),
       p(cls("mb-2"), b("Created at: "), mapping.createdAt.toString),
       p(cls("mb-4"), b("Updated at: "), mapping.updatedAt.toString),
-      div(editButton(mapping), deleteButton(mapping))
+      div(deleteButton(mapping))
     )
 
   private def emptyState =

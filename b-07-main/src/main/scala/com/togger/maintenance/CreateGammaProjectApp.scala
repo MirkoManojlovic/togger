@@ -24,7 +24,7 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
   private def createOrganizationWithNewOwner: IO[(Organization, Account)] =
     for {
       accountType <- ensureAccountType("developer").transact(xa)
-      ownerAccount <- accountService.createAccount(createAccount("Maths", "Owner", "maths-owner@email.com", accountType.id))
+      ownerAccount <- accountService.createAccount(createAccount("Maths", "Owner", "mathsowner@email.com", accountType.id))
       savedOrgResult <- organizationService.saveOrganization(
         Organization(
           id = TgIds.UNASSIGNED_UUID,

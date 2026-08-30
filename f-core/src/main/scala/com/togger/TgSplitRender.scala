@@ -294,14 +294,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case EditProjectMappingPage(id: UUID) =>
-                new EditProjectMappingComponent(
-                  id,
-                  projectMappingService,
-                  router,
-                  spinnerService,
-                  toast
-                ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
             }
         )

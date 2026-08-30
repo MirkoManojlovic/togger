@@ -82,7 +82,5 @@ object Pages {
 
   case class CreateProjectMappingPage(projectId: UUID) extends PrivatePage
 
-  case class EditProjectMappingPage(id: UUID) extends PrivatePage
-
   case object HomePage extends PrivatePage
 }
