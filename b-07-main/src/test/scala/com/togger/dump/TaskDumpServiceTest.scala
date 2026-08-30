@@ -6,7 +6,17 @@ import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TgIds, TimeHel
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
-import com.togger.task.{Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.task.{
+  Link,
+  LinkRepoImpl,
+  LinkVersion,
+  LinkVersionRepoImpl,
+  Task,
+  TaskRepoImpl,
+  TaskStatus,
+  TaskVersion,
+  TaskVersionRepoImpl
+}
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -230,6 +240,54 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             cp(taskDump.logEntries.head.versions.size shouldBe 2)
           }
         }
+        cp.reportAll()
+      }
+    }
+
+    "exclude tasks with an Archived task status from the dump" in { transactor =>
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
+      val taskDumpService =
+        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+      val archivedDumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-archived-${UUID.randomUUID()}"
+
+      val setup = for {
+        savedAccount <- createAccount
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskDumpConfigRepo.insert(
+          TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            name = "Dump config",
+            dumpPath = archivedDumpBasePath.toString,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        activeTaskStatus <- createTaskStatus(savedProject.id)
+        archivedTaskStatus <- taskStatusRepo.insert(
+          taskStatus.copy(id = UUID.randomUUID(), projectId = savedProject.id, name = TaskStatus.ARCHIVED_NAME)
+        )
+        activeTaskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, activeTaskStatus.id)
+        archivedTaskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, archivedTaskStatus.id)
+      } yield (savedAccount, savedProject, activeTaskId, archivedTaskId)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, activeTaskId, archivedTaskId) = setupResult
+        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+      } yield {
+        val cp = new Checkpoint
+        result.isRight shouldBe true
+        val dumpResult = result.toOption.get
+        cp(dumpResult.taskCount shouldBe 1)
+        val rootFolder = os.Path(dumpResult.pathResults.head.dumpPath)
+        cp(os.exists(rootFolder / s"$activeTaskId.json") shouldBe true)
+        cp(os.exists(rootFolder / s"$archivedTaskId.json") shouldBe false)
         cp.reportAll()
       }
     }

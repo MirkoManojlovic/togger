@@ -37,7 +37,8 @@ class TaskDumpRepo(
   def getAllTasksForProject(projectId: UUID): ConnectionIO[List[TaskDumpData]] =
     for {
       tasks <- taskVersionRepo.findByProjectIdWithLatest(projectId)
-      dumpData <- tasks.toList.traverse(task => getTaskDumpData(task.id))
+      dumpableTasks = tasks.filterNot(_.taskStatus.name == TaskStatus.ARCHIVED_NAME)
+      dumpData <- dumpableTasks.toList.traverse(task => getTaskDumpData(task.id))
     } yield dumpData
 
   private def getTaskDumpData(taskId: UUID): ConnectionIO[TaskDumpData] =

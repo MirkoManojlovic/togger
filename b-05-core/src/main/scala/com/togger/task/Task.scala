@@ -70,3 +70,7 @@ case class TaskStatus(
   createdAt: Instant,
   updatedAt: Instant
 )
+
+object TaskStatus {
+  val ARCHIVED_NAME = "📦 Archived"
+}
