@@ -4,8 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits.toTraverseOps
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
@@ -16,7 +14,6 @@ import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
-import org.scalajs.dom.HTMLTableCellElement
 
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
@@ -100,12 +97,6 @@ class ShowAllProjectsStatusComponent(
       organizationCall.flatMap(_ => projectCall)
     }
     .unsafeRunAndForget()
-
-  def createTh(content: String) =
-    th(cls("px-6 py-3 font-medium"), content)
-
-  def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-6 py-4"), content)
 
   val element = {
     div(

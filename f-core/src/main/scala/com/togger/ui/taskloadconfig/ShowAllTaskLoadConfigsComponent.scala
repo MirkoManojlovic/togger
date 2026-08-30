@@ -10,6 +10,7 @@ import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}

@@ -2,15 +2,13 @@ package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.routes.Pages.{CreateTaskStatusPage, EditTaskStatusPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
+import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
-import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
 
@@ -55,12 +53,6 @@ class ShowAllTaskStatusesComponent(
         )
     )
     .unsafeRunAndForget()
-
-  def createTh(content: String) =
-    th(cls("px-6 py-3 font-medium"), content)
-
-  def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-6 py-4"), content)
 
   val element = {
     div(

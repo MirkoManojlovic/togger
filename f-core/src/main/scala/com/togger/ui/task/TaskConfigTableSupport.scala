@@ -5,7 +5,8 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp}
 import com.togger.ui.auth.TgCard
-import org.scalajs.dom.{HTMLButtonElement, HTMLTableCellElement}
+import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import org.scalajs.dom.HTMLButtonElement
 
 object TaskConfigTableSupport {
 
@@ -33,12 +34,6 @@ object TaskConfigTableSupport {
   val tableCls = "w-full text-sm text-left rtl:text-right text-body"
   val theadCls = "text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"
   val rowCls = "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-
-  def createTh(content: String) =
-    th(cls("px-2 py-3 font-medium"), content)
-
-  def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-2 py-4"), content)
 
   def iconButton(
     label: String,

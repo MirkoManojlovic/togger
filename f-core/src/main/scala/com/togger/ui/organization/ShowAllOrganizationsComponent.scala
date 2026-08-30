@@ -2,15 +2,13 @@ package com.togger.ui.organization
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages.{CreateOrganizationPage, EditOrganizationPage, ShowProjectsForOrganizationIdTable}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
+import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
-import org.scalajs.dom.HTMLTableCellElement
 
 class ShowAllOrganizationsComponent(
   organizationService: OrganizationServiceFe,
@@ -30,12 +28,6 @@ class ShowAllOrganizationsComponent(
         .map(response => response.map(success => stateFormVar.set(success.body.get)))
     )
     .unsafeRunAndForget()
-
-  def createTh(content: String) =
-    th(cls("px-6 py-3 font-medium"), content)
-
-  def createTd(content: Modifier[ReactiveHtmlElement[HTMLTableCellElement]]) =
-    td(cls("px-6 py-4"), content)
 
   val element = {
     div(
