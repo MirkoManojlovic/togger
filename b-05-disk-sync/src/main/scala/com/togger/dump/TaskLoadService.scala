@@ -28,44 +28,54 @@ class TaskLoadService(
             taskDumpDiskWriter.readManifest(dumpPath) match {
               case Left(_) => IO.pure(Left(DumpManifestMissing))
               case Right(manifest) =>
-                taskLoadRepo.resolveAccountMapping(manifest.dumpedBy).transact(transactor).flatMap {
-                  case Left(error) => IO.pure(Left(error))
-                  case Right(dumperAccountIdDb) =>
-                    val accountIdMap = Map(manifest.dumpedBy.id -> dumperAccountIdDb)
-                    taskLoadRepo
-                      .prepareLoad(projectId, manifest)
-                      .transact(transactor)
-                      .flatMap { statusIdMap =>
-                        val diskTasksById = taskDumpDiskWriter.readDumpedTasksAtPath(dumpPath)
-                        diskTasksById.toList
-                          .traverse {
-                            case (taskId, Left(parseError)) =>
-                              IO.pure(
-                                TaskLoadTaskResult(taskId, None, TaskLoadTaskStatus.Malformed, 0, 0, 0, Some(parseError))
-                              )
-                            case (taskId, Right(diskData)) =>
-                              val remapped = remapForTarget(diskData, projectId, statusIdMap, accountIdMap)
-                              taskLoadRepo
-                                .mergeTask(remapped)
-                                .transact(transactor)
-                                .attempt
-                                .map {
-                                  case Right(result) => result
-                                  case Left(e) =>
-                                    TaskLoadTaskResult(
-                                      taskId = taskId,
-                                      taskName = diskData.taskVersions.headOption.map(_.name),
-                                      status = TaskLoadTaskStatus.Failed,
-                                      versionsAdded = 0,
-                                      linksAdded = 0,
-                                      logEntriesAdded = 0,
-                                      error = Some(e.getMessage)
-                                    )
-                                }
-                          }
-                          .map(results => Right(TaskLoadResult(dumpPath, results.size, results)))
-                      }
-                }
+                taskLoadRepo
+                  .resolveAccountMappings(manifest.dumpedBy :: manifest.referencedAccounts)
+                  .transact(transactor)
+                  .flatMap {
+                    case Left(error) => IO.pure(Left(error))
+                    case Right(accountIdMap) =>
+                      taskLoadRepo
+                        .prepareLoad(projectId, manifest)
+                        .transact(transactor)
+                        .flatMap { statusIdMap =>
+                          val diskTasksById = taskDumpDiskWriter.readDumpedTasksAtPath(dumpPath)
+                          diskTasksById.toList
+                            .traverse {
+                              case (taskId, Left(parseError)) =>
+                                IO.pure(
+                                  TaskLoadTaskResult(
+                                    taskId,
+                                    None,
+                                    TaskLoadTaskStatus.Malformed,
+                                    0,
+                                    0,
+                                    0,
+                                    Some(parseError)
+                                  )
+                                )
+                              case (taskId, Right(diskData)) =>
+                                val remapped = remapForTarget(diskData, projectId, statusIdMap, accountIdMap)
+                                taskLoadRepo
+                                  .mergeTask(remapped)
+                                  .transact(transactor)
+                                  .attempt
+                                  .map {
+                                    case Right(result) => result
+                                    case Left(e) =>
+                                      TaskLoadTaskResult(
+                                        taskId = taskId,
+                                        taskName = diskData.taskVersions.headOption.map(_.name),
+                                        status = TaskLoadTaskStatus.Failed,
+                                        versionsAdded = 0,
+                                        linksAdded = 0,
+                                        logEntriesAdded = 0,
+                                        error = Some(e.getMessage)
+                                      )
+                                  }
+                            }
+                            .map(results => Right(TaskLoadResult(dumpPath, results.size, results)))
+                        }
+                  }
             }
         }
     }

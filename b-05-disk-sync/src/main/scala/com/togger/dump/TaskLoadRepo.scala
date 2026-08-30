@@ -45,6 +45,16 @@ class TaskLoadRepo(
         }
     }
 
+  def resolveAccountMappings(accounts: List[AccountDumpData]): ConnectionIO[Either[ProjectError, Map[UUID, UUID]]] =
+    accounts
+      .distinctBy(_.id)
+      .foldLeftM(Map.empty[UUID, UUID].asRight[ProjectError]) {
+        case (acc @ Left(_), _) =>
+          (acc: Either[ProjectError, Map[UUID, UUID]]).pure[ConnectionIO]
+        case (Right(map), accountDumpData) =>
+          resolveAccountMapping(accountDumpData).map(_.map(dbId => map + (accountDumpData.id -> dbId)))
+      }
+
   private def resolveOrCreateAccountByEmail(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
     accountRepo.findByEmail(accountDumpData.email).attempt.flatMap {
       case Right(account) => account.id.asRight[ProjectError].pure[ConnectionIO]

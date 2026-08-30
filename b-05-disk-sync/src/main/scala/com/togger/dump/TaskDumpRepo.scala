@@ -54,4 +54,16 @@ class TaskDumpRepo(
       )
     } yield TaskDumpData(task, taskVersions, linksDump, logEntriesDump)
 
+  private def referencedAccountIds(tasks: List[TaskDumpData]): Set[UUID] =
+    tasks.flatMap { t =>
+      t.task.createdBy ::
+        t.taskVersions.flatMap(v => v.assignedTo.toList ++ v.closedBy.toList) :::
+        t.logEntries.flatMap(le => le.logEntry.createdBy :: le.versions.map(_.createdBy))
+    }.toSet
+
+  def getReferencedAccounts(tasks: List[TaskDumpData]): ConnectionIO[List[AccountDumpData]] =
+    referencedAccountIds(tasks).toList
+      .traverse(id => accountRepo.findById(id).attempt.map(_.toOption.map(AccountDumpData.from)))
+      .map(_.flatten)
+
 }

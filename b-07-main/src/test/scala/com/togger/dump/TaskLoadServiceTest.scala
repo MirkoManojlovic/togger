@@ -894,6 +894,242 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         loadedTaskIds shouldBe Set(taskInLatestDump)
       }
     }
+
+    "resolve account mappings for every account referenced by a task, its versions and its log entry, not just the dumper" in {
+      transactor =>
+        val taskDumpService = newTaskDumpService(transactor)
+        val taskLoadService = newTaskLoadService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+        def createNamedAccount(firstName: String, lastName: String, emailAddress: String, accountTypeId: UUID): ConnectionIO[Account] =
+          accountRepo.insert(
+            Account(
+              id = TgIds.UNASSIGNED_UUID,
+              firstName = firstName,
+              lastName = lastName,
+              email = emailAddress,
+              password = passwordHashed,
+              accountTypeId = accountTypeId,
+              verified = true,
+              enabled = true,
+              createdAt = nowAsInstant,
+              updatedAt = nowAsInstant
+            )
+          )
+
+        val setup = for {
+          savedAccount <- createAccount
+          developerAccountType <- accountTypeRepo.findByName("developer")
+          creatorAccount <- createNamedAccount(
+            "Creator",
+            "Person",
+            s"creator-${UUID.randomUUID().toString.take(8)}@example.com",
+            developerAccountType.id
+          )
+          assigneeAccount <- createNamedAccount(
+            "Assignee",
+            "Person",
+            s"assignee-${UUID.randomUUID().toString.take(8)}@example.com",
+            developerAccountType.id
+          )
+          closerAccount <- createNamedAccount(
+            "Closer",
+            "Person",
+            s"closer-${UUID.randomUUID().toString.take(8)}@example.com",
+            developerAccountType.id
+          )
+          logAuthorAccount <- createNamedAccount(
+            "LogAuthor",
+            "Person",
+            s"logauthor-${UUID.randomUUID().toString.take(8)}@example.com",
+            developerAccountType.id
+          )
+          savedOrgAndProject <- createOrgAndProject
+          (_, savedProject) = savedOrgAndProject
+          _ <- projectAccountRepo.insert(
+            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+          )
+          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+          _ <- insertMapping(savedProject.id, savedProject.id)
+          savedTaskStatus <- createTaskStatus(savedProject.id)
+        } yield (savedAccount, creatorAccount, assigneeAccount, closerAccount, logAuthorAccount, savedProject, savedTaskStatus)
+
+        for {
+          setupResult <- setup.transact(transactor)
+          (savedAccount, creatorAccount, assigneeAccount, closerAccount, logAuthorAccount, savedProject, savedTaskStatus) = setupResult
+          dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+          _ = dumpResult.isRight shouldBe true
+          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+          projectRoot = rootFolder / os.up
+          originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+          creatorDumpId = UUID.randomUUID()
+          assigneeDumpId = UUID.randomUUID()
+          closerDumpId = UUID.randomUUID()
+          logAuthorDumpId = UUID.randomUUID()
+          manifestWithReferencedAccounts = originalManifest.copy(
+            referencedAccounts = List(
+              AccountDumpData(creatorDumpId, creatorAccount.firstName, creatorAccount.lastName, creatorAccount.email),
+              AccountDumpData(assigneeDumpId, assigneeAccount.firstName, assigneeAccount.lastName, assigneeAccount.email),
+              AccountDumpData(closerDumpId, closerAccount.firstName, closerAccount.lastName, closerAccount.email),
+              AccountDumpData(logAuthorDumpId, logAuthorAccount.firstName, logAuthorAccount.lastName, logAuthorAccount.email)
+            )
+          )
+          _ = os.write.over(rootFolder / "project.json", manifestWithReferencedAccounts.asJson.spaces2)
+          newTaskId = UUID.randomUUID()
+          newLogEntryId = UUID.randomUUID()
+          diskData = TaskDumpData(
+            task = Task(id = newTaskId, projectId = savedProject.id, createdBy = creatorDumpId, createdAt = nowAsInstant),
+            taskVersions = List(
+              TaskVersion(
+                version = UUID.randomUUID(),
+                taskId = newTaskId,
+                name = "Disk task",
+                description = "Disk task description",
+                assignedTo = Some(assigneeDumpId),
+                closedBy = Some(closerDumpId),
+                taskStatusId = savedTaskStatus.id,
+                createdAt = nowAsInstant,
+                updatedAt = nowAsInstant
+              )
+            ),
+            links = Nil,
+            logEntries = List(
+              LogEntryDumpData(
+                logEntry =
+                  LogEntry(id = newLogEntryId, taskId = newTaskId, createdBy = logAuthorDumpId, createdAt = nowAsInstant),
+                versions = List(
+                  LogEntryVersion(
+                    version = UUID.randomUUID(),
+                    logEntryId = newLogEntryId,
+                    textInternal = "internal",
+                    textExternal = "external",
+                    status = LogEntryStatus.InProgress,
+                    createdBy = logAuthorDumpId,
+                    createdAt = nowAsInstant,
+                    updatedAt = nowAsInstant
+                  )
+                )
+              )
+            )
+          )
+          _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
+          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+          persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
+          persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
+          persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
+          persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
+          creatorMappings <- accountMappingRepo.findByAccountIdDump(creatorDumpId).transact(transactor)
+          assigneeMappings <- accountMappingRepo.findByAccountIdDump(assigneeDumpId).transact(transactor)
+          closerMappings <- accountMappingRepo.findByAccountIdDump(closerDumpId).transact(transactor)
+          logAuthorMappings <- accountMappingRepo.findByAccountIdDump(logAuthorDumpId).transact(transactor)
+        } yield {
+          loadResult.isRight shouldBe true
+          persistedTask.createdBy shouldBe creatorAccount.id
+          persistedVersion.assignedTo shouldBe Some(assigneeAccount.id)
+          persistedVersion.closedBy shouldBe Some(closerAccount.id)
+          persistedLogEntry.createdBy shouldBe logAuthorAccount.id
+          persistedLogEntryVersion.createdBy shouldBe logAuthorAccount.id
+          creatorMappings.map(_.accountIdDb) shouldBe List(creatorAccount.id)
+          assigneeMappings.map(_.accountIdDb) shouldBe List(assigneeAccount.id)
+          closerMappings.map(_.accountIdDb) shouldBe List(closerAccount.id)
+          logAuthorMappings.map(_.accountIdDb) shouldBe List(logAuthorAccount.id)
+        }
+    }
+
+    "reject the whole load when a non-dumper referenced account is missing and no 'developer' account type exists" in {
+      transactor =>
+        val taskDumpService = newTaskDumpService(transactor)
+        val taskLoadService = newTaskLoadService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+        // deliberately avoid the trait's createAccount, which auto-seeds a "developer" account type
+        val setup = for {
+          managerAccountType <- accountTypeRepo.insert(
+            AccountType(id = TgIds.UNASSIGNED_UUID, name = "manager", createdAt = nowAsInstant, updatedAt = nowAsInstant)
+          )
+          savedAccount <- accountRepo.insert(
+            Account(
+              id = TgIds.UNASSIGNED_UUID,
+              firstName = "John",
+              lastName = "Doe",
+              email = email,
+              password = passwordHashed,
+              accountTypeId = managerAccountType.id,
+              verified = false,
+              enabled = true,
+              createdAt = nowAsInstant,
+              updatedAt = nowAsInstant
+            )
+          )
+          savedOrgAndProject <- createOrgAndProject
+          (_, savedProject) = savedOrgAndProject
+          _ <- projectAccountRepo.insert(
+            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+          )
+          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+          _ <- insertMapping(savedProject.id, savedProject.id)
+        } yield (savedAccount, savedProject)
+
+        for {
+          setupResult <- setup.transact(transactor)
+          (savedAccount, savedProject) = setupResult
+          dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+          _ = dumpResult.isRight shouldBe true
+          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+          projectRoot = rootFolder / os.up
+          originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+          // the dumper resolves fine via its existing email; the referenced account does not exist and can't
+          // be created because there's no 'developer' account type -- this must fail the whole load, not just
+          // silently skip that one account
+          missingAccountEmail = s"missing-${UUID.randomUUID().toString.take(8)}@example.com"
+          manifestWithMissingReferencedAccount = originalManifest.copy(
+            referencedAccounts = List(AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail))
+          )
+          _ = os.write.over(rootFolder / "project.json", manifestWithMissingReferencedAccount.asJson.spaces2)
+          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        } yield loadResult shouldBe Left(ProjectError.AccountTypeMissing)
+    }
+
+    "deduplicate an account referenced both as the dumper and in referencedAccounts, creating only one mapping" in {
+      transactor =>
+        val taskDumpService = newTaskDumpService(transactor)
+        val taskLoadService = newTaskLoadService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+
+        val setup = for {
+          savedAccount <- createAccount
+          savedOrgAndProject <- createOrgAndProject
+          (_, savedProject) = savedOrgAndProject
+          _ <- projectAccountRepo.insert(
+            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+          )
+          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+          _ <- insertMapping(savedProject.id, savedProject.id)
+        } yield (savedAccount, savedProject)
+
+        for {
+          setupResult <- setup.transact(transactor)
+          (savedAccount, savedProject) = setupResult
+          dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+          _ = dumpResult.isRight shouldBe true
+          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+          projectRoot = rootFolder / os.up
+          originalManifest = taskDumpDiskWriter.readManifest(rootFolder.toString).toOption.get
+          dumpSideAccountId = UUID.randomUUID()
+          // the dumper is also the creator of another task on disk, so the same dump-side id
+          // legitimately shows up again in referencedAccounts
+          manifestWithDuplicateReference = originalManifest.copy(
+            dumpedBy = originalManifest.dumpedBy.copy(id = dumpSideAccountId),
+            referencedAccounts = List(originalManifest.dumpedBy.copy(id = dumpSideAccountId))
+          )
+          _ = os.write.over(rootFolder / "project.json", manifestWithDuplicateReference.asJson.spaces2)
+          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+          mappings <- accountMappingRepo.findByAccountIdDump(dumpSideAccountId).transact(transactor)
+        } yield {
+          loadResult.isRight shouldBe true
+          mappings.map(_.accountIdDb) shouldBe List(savedAccount.id)
+        }
+    }
   }
 
 }

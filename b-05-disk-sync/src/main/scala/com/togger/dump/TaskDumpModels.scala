@@ -30,6 +30,7 @@ case class ProjectDumpManifest(
   project: Project,
   taskStatuses: List[TaskStatus],
   dumpedBy: AccountDumpData,
+  referencedAccounts: List[AccountDumpData] = Nil,
   dumpedAt: Instant,
   taskCount: Int
 )

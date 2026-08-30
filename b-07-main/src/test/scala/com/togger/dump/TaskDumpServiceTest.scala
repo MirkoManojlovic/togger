@@ -1,8 +1,8 @@
 package com.togger.dump
 
 import cats.implicits._
-import com.togger.account.{AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TimeHelpers}
+import com.togger.account.{Account, AccountRepoImpl, TgAccount}
+import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TgIds, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
@@ -13,6 +13,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.generic.auto._
 import io.circe.parser.decode
+import io.circe.syntax._
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.UUID
@@ -96,6 +97,22 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       )
       _ <- logEntryVersionRepo.insert(firstLogEntryVersion.copy(textInternal = "internal v2"))
     } yield savedTask.id
+
+  def createNamedAccount(firstName: String, lastName: String, emailAddress: String, accountTypeId: UUID): ConnectionIO[Account] =
+    accountRepo.insert(
+      Account(
+        id = TgIds.UNASSIGNED_UUID,
+        firstName = firstName,
+        lastName = lastName,
+        email = emailAddress,
+        password = passwordHashed,
+        accountTypeId = accountTypeId,
+        verified = true,
+        enabled = true,
+        createdAt = nowAsInstant,
+        updatedAt = nowAsInstant
+      )
+    )
 
   testNameFromClassName should {
 
@@ -265,6 +282,130 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         cp(remainingDumpFolders shouldBe Set("20260102000000", "20260103000000"))
         cp.reportAll()
       }
+    }
+
+    "include every account referenced by a project's tasks in referencedAccounts, deduplicated" in { transactor =>
+      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
+      val taskDumpService =
+        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+
+      val setup = for {
+        savedAccount <- createAccount
+        developerAccountType <- accountTypeRepo.findByName("developer")
+        creatorAccount <- createNamedAccount(
+          "Creator",
+          "Person",
+          s"creator-${UUID.randomUUID().toString.take(8)}@example.com",
+          developerAccountType.id
+        )
+        assigneeAccount <- createNamedAccount(
+          "Assignee",
+          "Person",
+          s"assignee-${UUID.randomUUID().toString.take(8)}@example.com",
+          developerAccountType.id
+        )
+        closerAccount <- createNamedAccount(
+          "Closer",
+          "Person",
+          s"closer-${UUID.randomUUID().toString.take(8)}@example.com",
+          developerAccountType.id
+        )
+        savedOrgAndProject <- createOrgAndProject
+        (_, savedProject) = savedOrgAndProject
+        _ <- projectAccountRepo.insert(
+          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskDumpConfigRepo.insert(
+          TaskDumpConfig(
+            id = UUID.randomUUID(),
+            projectId = savedProject.id,
+            accountId = savedAccount.id,
+            name = "Dump config",
+            dumpPath = dumpBasePath.toString,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        savedTaskStatus <- createTaskStatus(savedProject.id)
+        firstTask <- taskRepo.insert(
+          Task(id = UUID.randomUUID(), projectId = savedProject.id, createdBy = creatorAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskVersionRepo.insert(
+          TaskVersion(
+            version = UUID.randomUUID(),
+            taskId = firstTask.id,
+            name = "Task one",
+            description = "Task one description",
+            assignedTo = Some(assigneeAccount.id),
+            closedBy = Some(closerAccount.id),
+            taskStatusId = savedTaskStatus.id,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        // second task created by the same account as the first -- must not produce a duplicate entry
+        secondTask <- taskRepo.insert(
+          Task(id = UUID.randomUUID(), projectId = savedProject.id, createdBy = creatorAccount.id, createdAt = nowAsInstant)
+        )
+        _ <- taskVersionRepo.insert(
+          TaskVersion(
+            version = UUID.randomUUID(),
+            taskId = secondTask.id,
+            name = "Task two",
+            description = "Task two description",
+            assignedTo = None,
+            closedBy = None,
+            taskStatusId = savedTaskStatus.id,
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+      } yield (savedAccount, creatorAccount, assigneeAccount, closerAccount, savedProject)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, creatorAccount, assigneeAccount, closerAccount, savedProject) = setupResult
+        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+      } yield {
+        result.isRight shouldBe true
+        val rootFolder = os.Path(result.toOption.get.pathResults.head.dumpPath)
+        val manifest = decode[ProjectDumpManifest](os.read(rootFolder / "project.json")).toOption.get
+        val referencedIds = manifest.referencedAccounts.map(_.id)
+        referencedIds.toSet shouldBe Set(creatorAccount.id, assigneeAccount.id, closerAccount.id)
+        referencedIds.size shouldBe referencedIds.distinct.size
+      }
+    }
+
+    "omit accounts that no longer exist when gathering referenced accounts" in { transactor =>
+      val missingAccountId = UUID.randomUUID()
+      val diskData = TaskDumpData(
+        task = Task(id = UUID.randomUUID(), projectId = UUID.randomUUID(), createdBy = missingAccountId, createdAt = nowAsInstant),
+        taskVersions = Nil,
+        links = Nil,
+        logEntries = Nil
+      )
+
+      taskDumpRepo.getReferencedAccounts(List(diskData)).transact(transactor).map(_ shouldBe Nil)
+    }
+
+    // circe's generic-auto derivation requires every field to be present and does not fall back to the case
+    // class's default value when a key is missing -- so a pre-fix manifest (no referencedAccounts key) fails
+    // to decode cleanly rather than silently loading with an empty list. That's an accepted outcome: affected
+    // projects are simply re-dumped after upgrading.
+    "fail to decode a manifest json missing the referencedAccounts field, rather than silently defaulting to empty" in {
+      transactor =>
+        val manifest = ProjectDumpManifest(
+          project = project,
+          taskStatuses = Nil,
+          dumpedBy = AccountDumpData(UUID.randomUUID(), "John", "Doe", "john@example.com"),
+          referencedAccounts = Nil,
+          dumpedAt = Instant.now,
+          taskCount = 0
+        )
+        val jsonWithoutReferencedAccounts = manifest.asJson.hcursor.downField("referencedAccounts").delete.top.get
+        val decoded = decode[ProjectDumpManifest](jsonWithoutReferencedAccounts.noSpaces)
+
+        decoded.isLeft.pure[ConnectionIO].transact(transactor).map(_ shouldBe true)
     }
   }
 

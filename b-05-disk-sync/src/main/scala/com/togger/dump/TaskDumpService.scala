@@ -41,7 +41,7 @@ class TaskDumpService(
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  private type DumpData = (Project, List[TaskStatus], Account, List[TaskDumpData])
+  private type DumpData = (Project, List[TaskStatus], Account, List[TaskDumpData], List[AccountDumpData])
 
   def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] =
     dumpWithConfigs(projectId, accountId, taskDumpConfigService.findByProjectId(projectId))
@@ -69,7 +69,7 @@ class TaskDumpService(
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, taskStatuses, account, tasks)) =>
+        case Right((project, taskStatuses, account, tasks, referencedAccounts)) =>
           configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
@@ -78,6 +78,7 @@ class TaskDumpService(
                 project = project,
                 taskStatuses = taskStatuses,
                 dumpedBy = AccountDumpData.from(account),
+                referencedAccounts = referencedAccounts,
                 dumpedAt = tgClock.currentInstant,
                 taskCount = tasks.size
               )
@@ -103,7 +104,7 @@ class TaskDumpService(
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, _, _, dbTasks)) =>
+        case Right((project, _, _, dbTasks, _)) =>
           configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoDumpPathConfigured)
@@ -174,7 +175,9 @@ class TaskDumpService(
             projectAndStatuses <- taskDumpRepo.getProjectAndTaskStatuses(projectId)
             account <- taskDumpRepo.findAccountById(accountId)
             tasks <- taskDumpRepo.getAllTasksForProject(projectId)
-          } yield (projectAndStatuses._1, projectAndStatuses._2, account, tasks).asRight[ProjectError]
+            referencedAccounts <- taskDumpRepo.getReferencedAccounts(tasks)
+          } yield (projectAndStatuses._1, projectAndStatuses._2, account, tasks, referencedAccounts)
+            .asRight[ProjectError]
     } yield result
 
 }
