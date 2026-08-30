@@ -1,6 +1,7 @@
 package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgClock
@@ -9,7 +10,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.task.{LinkEndpoints, TaskEndpoints}
+import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -17,7 +18,6 @@ import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
@@ -33,10 +33,21 @@ case class TaskStatusesState(
   taskStatuses: Seq[FindTaskStatusResp] = Seq.empty
 ) {
   lazy val asTaskStatusSelect =
-    taskStatuses.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
+    taskStatusesSorted.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
 
   lazy val idToName: Map[UUID, String] =
     taskStatuses.map(dto => dto.id -> dto.name).toMap
+
+  lazy val idToOrder: Map[UUID, Int] =
+    taskStatuses.map(dto => dto.id -> DefaultTaskStatus.values.find(_.statusName == dto.name).get.i).toMap
+
+  lazy val taskStatusesSorted: Seq[FindTaskStatusResp] =
+    taskStatuses
+      .map(taskStatusResp =>
+        DefaultTaskStatus.values.find(enum1 => enum1.statusName == taskStatusResp.name).get -> taskStatusResp
+      )
+      .sortBy { case (enum, _) => enum.i }
+      .map(_._2)
 
 }
 

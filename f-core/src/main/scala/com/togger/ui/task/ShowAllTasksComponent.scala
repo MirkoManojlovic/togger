@@ -4,7 +4,6 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.{FindProjectResp, FindTaskRespFull}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgHtmlTable}
@@ -31,12 +30,7 @@ class ShowAllTasksComponent(
   private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     statusesVar.signal.map(
-      _.taskStatuses
-        .map(taskStatusResp =>
-          DefaultTaskStatus.values.find(enum1 => enum1.statusName == taskStatusResp.name).get -> taskStatusResp
-        )
-        .sortBy { case (enum, _) => enum.i }
-        .map(_._2)
+      _.taskStatusesSorted
         .map { s =>
           val isSelected = !defaultDeselectedStatusNames.contains(s.name)
           MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
@@ -144,7 +138,7 @@ class ShowAllTasksComponent(
                     Seq("Id", "Name", "Description", "Assignee", "Status", "Action")
                   )(
                     dtos
-                      .sortBy(_.taskStatus.id)
+                      .sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
                       .map { dto =>
                         Seq(
                           createTd(dto.id.toString),
