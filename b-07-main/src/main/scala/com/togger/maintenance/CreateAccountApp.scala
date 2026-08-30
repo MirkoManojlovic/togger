@@ -73,8 +73,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       savedAlpha = savedAlphaResult._1
 
       alphaTaskStatuses <- taskStatusRepo.findByProjectId(savedAlpha.id).transact(xa)
-      alphaInProgressStatus = alphaTaskStatuses.find(_.name == "🏗️ In progress").get
-      alphaDoneStatus = alphaTaskStatuses.find(_.name == "✅ Done").get
+      alphaInProgressStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
+      alphaDoneStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
 
       alphaTask1Result <- taskService.createTask(
         Task(id = TgIds.UNASSIGNED_UUID, projectId = savedAlpha.id, createdBy = owner.id, createdAt = now),
@@ -161,9 +161,9 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       savedBeta = savedBetaResult._1
 
       betaTaskStatuses <- taskStatusRepo.findByProjectId(savedBeta.id).transact(xa)
-      betaInProgressStatus = betaTaskStatuses.find(_.name == "🏗️ In progress").get
-      betaDoneStatus = betaTaskStatuses.find(_.name == "✅ Done").get
-      betaWaitingStatus = betaTaskStatuses.find(_.name == "👀 In review/Waiting").get
+      betaInProgressStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
+      betaDoneStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
+      betaWaitingStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InReviewWaiting.statusName).get
 
       betaTask1Result <- taskService.createTask(
         Task(id = TgIds.UNASSIGNED_UUID, projectId = savedBeta.id, createdBy = owner.id, createdAt = now),

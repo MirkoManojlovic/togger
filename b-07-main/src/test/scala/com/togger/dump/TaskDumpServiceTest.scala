@@ -6,17 +6,7 @@ import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TgIds, TimeHel
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
-import com.togger.task.{
-  Link,
-  LinkRepoImpl,
-  LinkVersion,
-  LinkVersionRepoImpl,
-  Task,
-  TaskRepoImpl,
-  TaskStatus,
-  TaskVersion,
-  TaskVersionRepoImpl
-}
+import com.togger.task.{DefaultTaskStatus, Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskStatus, TaskVersion, TaskVersionRepoImpl}
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -270,7 +260,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         )
         activeTaskStatus <- createTaskStatus(savedProject.id)
         archivedTaskStatus <- taskStatusRepo.insert(
-          taskStatus.copy(id = UUID.randomUUID(), projectId = savedProject.id, name = TaskStatus.ARCHIVED_NAME)
+          taskStatus.copy(id = UUID.randomUUID(), projectId = savedProject.id, name = DefaultTaskStatus.Archived.statusName)
         )
         activeTaskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, activeTaskStatus.id)
         archivedTaskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, archivedTaskStatus.id)
