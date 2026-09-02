@@ -6,7 +6,7 @@ import cats.implicits.toTraverseOps
 import com.raquo.laminar.api.L._
 import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
+import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
@@ -193,6 +193,7 @@ class ShowAllProjectsStatusComponent(
           tasks
             .sortBy(_.taskStatus.id)
             .map { task =>
+              val selectedDayVar: Var[Option[LocalDate]] = Var(lastCalendarDay(task.logEntries))
               val taskCard = TgCard
                 .headerNoFooter(
                   header = TgCard.CardHeader
@@ -220,48 +221,8 @@ class ShowAllProjectsStatusComponent(
                         b("Description: "),
                         task.description
                       ),
-                      div(
-                        marginBottom.rem(1),
-                        display.flex,
-                        task.logEntries
-                          .sortBy(_.createdAt)
-                          .map(logEntry =>
-                            div(
-                              cls("border-1 border-gray-200 rounded-md"),
-                              cls("mr-2"),
-                              textAlign.center, {
-                                val (day, date) = tgDateFormater.asAmericanDate(
-                                  LocalDate.from(logEntry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-                                )
-                                div(
-                                  cls("bg-gray-100 rounded-t-md"),
-                                  cls("p-1"),
-                                  p(date),
-                                  p(b(day))
-                                )
-                              },
-                              div(
-                                cls("p-1"),
-                                logEntry.status.color
-                              )
-                            )
-                          )
-                      ),
-                      div(
-                        p(b("Latest status")),
-                        div {
-                          if (task.logEntries.isEmpty) p("No status update")
-                          else
-                            task.logEntries
-                              .sortBy(_.createdAt)
-                              .reverse
-                              .head
-                              .textExternal
-                              .split("\n")
-                              .map(a => p(a))
-                              .toSeq
-                        }
-                      )
+                      logEntryCalendar(task.logEntries, selectedDayVar),
+                      selectedDayStatus(task.logEntries, selectedDayVar),
                     )
                   )
                 )
@@ -274,5 +235,100 @@ class ShowAllProjectsStatusComponent(
 
     div(elements)
   }
+
+  private def isWeekend(day: LocalDate): Boolean = {
+    val dow = day.getDayOfWeek.getValue
+    dow == 6 || dow == 7
+  }
+
+  private def lastCalendarDay(logEntries: Seq[LogEntryDto]): Option[LocalDate] =
+    logEntries
+      .map(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+      .filterNot(isWeekend)
+      .maxOption
+
+  private def logEntryCalendar(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) = {
+    val weekdayEntries = logEntries.filterNot(entry =>
+      isWeekend(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+    )
+
+    if (weekdayEntries.isEmpty) emptyNode
+    else {
+      val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
+        weekdayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+
+      val minDate = entriesByDate.keys.min
+      val maxDate = entriesByDate.keys.max
+
+      val calendarStart = minDate.minusDays(minDate.getDayOfWeek.getValue - 1L)
+      val calendarEnd = maxDate.plusDays(5L - maxDate.getDayOfWeek.getValue)
+
+      val allDays =
+        Iterator
+          .iterate(calendarStart)(_.plusDays(1))
+          .takeWhile(!_.isAfter(calendarEnd))
+          .filterNot(isWeekend)
+          .toSeq
+
+      div(
+        marginBottom.rem(1),
+        cls("grid grid-cols-5 gap-1"),
+        Seq("Mon", "Tue", "Wed", "Thu", "Fri")
+          .map(label => div(cls("text-xs font-semibold text-center text-gray-500"), label)),
+        allDays.map(day =>
+          calendarDayCell(day, entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt), selectedDayVar)
+        )
+      )
+    }
+  }
+
+  private def calendarDayCell(
+    day: LocalDate,
+    entries: Seq[LogEntryDto],
+    selectedDayVar: Var[Option[LocalDate]]
+  ) = {
+    val tooltip =
+      if (entries.isEmpty) ""
+      else (tgDateFormater.asEuropeanDate(day) +: entries.map(_.status.toString)).mkString("\n")
+
+    div(
+      cls("border-1 border-gray-200 rounded-md cursor-pointer"),
+      cls(if (entries.isEmpty) "bg-white" else "bg-gray-50"),
+      cls("p-1"),
+      cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
+      textAlign.center,
+      title(tooltip),
+      onClick.mapToUnit --> (_ =>
+        selectedDayVar.update(current => if (current.contains(day)) None else Some(day))
+      ),
+      div(cls("text-xs text-gray-500"), tgDateFormater.dayAndMonth(day)),
+      div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.color)))
+    )
+  }
+
+  private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
+    div(
+      child <-- selectedDayVar.signal.map {
+        case None => emptyNode
+        case Some(day) =>
+          val dayEntries = logEntries
+            .filter(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate == day)
+            .sortBy(_.createdAt)
+
+          div(
+            cls("mb-4"),
+            p(b(s"Status on ${tgDateFormater.asEuropeanDate(day)}")),
+            if (dayEntries.isEmpty) p("No status update")
+            else
+              dayEntries.map(entry =>
+                div(
+                  cls("mb-2"),
+                  p(b(entry.status.toString)),
+                  entry.textExternal.split("\n").map(line => p(line)).toSeq
+                )
+              )
+          )
+      }
+    )
 
 }

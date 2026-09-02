@@ -14,6 +14,9 @@ class TgDateFormater {
     date.getDayOfWeek.name().toLowerCase.capitalize.take(3) -> LogEntryFormat.formater.format(date)
   }
 
+  def dayAndMonth(date: LocalDate): String =
+    LogEntryFormat.formater.format(date)
+
   def yearMonthDayTimeFormat(instant: Instant): String =
     YearMonthDayTimeFormat.formater.format(
       instant.atOffset(ZoneOffset.UTC)
