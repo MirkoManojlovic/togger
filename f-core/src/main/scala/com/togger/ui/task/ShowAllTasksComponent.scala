@@ -1,7 +1,8 @@
 package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindProjectResp, FindTaskRespFull}
+import com.togger.common.TgIds
+import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
@@ -41,6 +42,19 @@ class ShowAllTasksComponent(
     stateFormVar.signal.combineWith(statusFilter.selectedIds).map { case (tasks, selectedIds) =>
       if (selectedIds.isEmpty) tasks else tasks.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
     }
+  private val unassignedDto = SearchAccountDto(
+    id = TgIds.UNASSIGNED_UUID,
+    firstName = "Not",
+    lastName = "assigned",
+    email = "notassigned@email.com",
+    accountTypeId = TgIds.UNASSIGNED_UUID
+  )
+  private val tasksByAccountSignal: Signal[Seq[(SearchAccountDto, Seq[FindTaskRespFull])]] =
+    filteredTasksSignal.map(
+      _.groupBy(_.assignedTo.getOrElse(unassignedDto)).toSeq.sortBy { case (accountDto, _) =>
+        accountDto.fullName.toLowerCase
+      }
+    )
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = UUID.randomUUID(),
@@ -133,37 +147,38 @@ class ShowAllTasksComponent(
             .HtmlCardContent(
               div(
                 div(cls("flex justify-end mb-4"), statusFilter.element),
-                div(child <-- filteredTasksSignal.map { dtos =>
-                  TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Description", "Assignee", "Status", "Action")
-                  )(
-                    dtos
-                      .sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
-                      .map { dto =>
-                        Seq(
-                          createTd(dto.id.toString),
-                          createTd(dto.name),
-                          createTdOverflow(dto.description),
-                          createTd {
-                            // TODO: fix this, some implicit conversion is not converting string to reactive element
-                            val m = dto.assignedTo.map(_.fullName).getOrElse("No")
-                            m
-                          },
-                          createTd(statusesVar.now().idToName(dto.taskStatus.id)),
-                          createTd(
-                            div(
-                              iconButton(
-                                "Edit",
-                                TgIcons.editIcon(className = "w-4 h-4"),
-                                rowIconButtonCls,
-                                rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                div(children <-- tasksByAccountSignal.map { groups =>
+                  groups.map { case (accountDto, dtos) =>
+                    div(
+                      cls("mb-4"),
+                      h5(cls("text-xl font-bold text-heading mb-2"), accountDto.fullName),
+                      TgHtmlTable.tableElement(
+                        Seq("Id", "Name", "Description", "Status", "Action")
+                      )(
+                        dtos
+                          .sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
+                          .map { dto =>
+                            Seq(
+                              createTd(dto.id.toString),
+                              createTd(dto.name),
+                              createTdOverflow(dto.description),
+                              createTd(statusesVar.now().idToName(dto.taskStatus.id)),
+                              createTd(
+                                div(
+                                  iconButton(
+                                    "Edit",
+                                    TgIcons.editIcon(className = "w-4 h-4"),
+                                    rowIconButtonCls,
+                                    rowButtonMarginCls,
+                                    onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                                  )
+                                )
                               )
                             )
-                          )
-                        )
-                      }
-                  )
+                          }
+                      )
+                    )
+                  }
                 })
               )
             )
