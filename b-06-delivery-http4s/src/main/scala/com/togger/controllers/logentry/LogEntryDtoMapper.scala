@@ -10,7 +10,7 @@ object LogEntryDtoMapper {
       id = logEntry.id,
       taskId = logEntry.taskId,
       createdBy = logEntry.createdBy,
-      createdAt = logEntry.createdAt,
+      createdAt = version.createdAt,
       latestVersion = version.version,
       textInternal = version.textInternal,
       textExternal = version.textExternal,

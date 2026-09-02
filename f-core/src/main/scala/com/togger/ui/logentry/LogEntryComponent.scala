@@ -100,12 +100,12 @@ class LogEntryComponent(
       id = form.logEntryId.getOrElse(UUID.randomUUID()),
       taskId = form.taskId,
       createdBy = accountService.get.get.id,
-      createdAt = tgClock.currentInstant,
+      createdAt = form.dateAsInstant,
       latestVersion = UUID.randomUUID(),
       textInternal = form.textInternal,
       textExternal = form.textExternal,
       status = LogEntryStatus.withValue(form.status.toInt),
-      updatedAt = form.dateAsInstant
+      updatedAt = tgClock.currentInstant
     )
 
     spinnerService
