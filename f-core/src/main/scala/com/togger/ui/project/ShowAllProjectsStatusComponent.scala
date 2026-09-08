@@ -10,6 +10,7 @@ import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAcc
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
+import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
@@ -43,7 +44,7 @@ class ShowAllProjectsStatusComponent(
 ) {
 
   val stateFormVar = Var(ShowAllProjectsState())
-  private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
+  private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map { state =>
       state.info
@@ -240,7 +241,7 @@ class ShowAllProjectsStatusComponent(
                         task.description
                       ),
                       logEntryCalendar(task.logEntries, selectedDayVar),
-                      selectedDayStatus(task.logEntries, selectedDayVar),
+                      selectedDayStatus(task.logEntries, selectedDayVar)
                     )
                   )
                 )
@@ -266,9 +267,7 @@ class ShowAllProjectsStatusComponent(
       .maxOption
 
   private def logEntryCalendar(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) = {
-    val weekdayEntries = logEntries.filterNot(entry =>
-      isWeekend(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-    )
+    val weekdayEntries = logEntries.filterNot(entry => isWeekend(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate))
 
     if (weekdayEntries.isEmpty) emptyNode
     else {
@@ -316,9 +315,7 @@ class ShowAllProjectsStatusComponent(
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
       textAlign.center,
       title(tooltip),
-      onClick.mapToUnit --> (_ =>
-        selectedDayVar.update(current => if (current.contains(day)) None else Some(day))
-      ),
+      onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       div(cls("text-xs text-gray-500"), tgDateFormater.dayAndMonth(day)),
       div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.color)))
     )

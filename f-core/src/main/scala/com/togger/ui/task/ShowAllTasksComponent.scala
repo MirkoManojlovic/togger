@@ -5,6 +5,7 @@ import com.togger.common.TgIds
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgHtmlTable}
@@ -28,7 +29,7 @@ class ShowAllTasksComponent(
 
   val stateFormVar = Var(Seq.empty[FindTaskRespFull])
   val statusesVar = Var(TaskStatusesState())
-  private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
+  private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     statusesVar.signal.map(
       _.taskStatusesSorted
