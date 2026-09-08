@@ -9,7 +9,9 @@ import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.{AccountService, TgCard}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -41,6 +43,26 @@ class ShowAllProjectsStatusComponent(
 ) {
 
   val stateFormVar = Var(ShowAllProjectsState())
+  private val defaultDeselectedStatusNames = Set("✅ Done", "🗑️ Won't do", "📦 Archived")
+  private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
+    stateFormVar.signal.map { state =>
+      state.info
+        .flatMap(_.tasks.map(_.taskStatus.name))
+        .distinct
+        .sortBy(name => DefaultTaskStatus.values.find(_.statusName == name).map(_.i).getOrElse(Int.MaxValue))
+        .map(name => MultiSelectItem(id = name, name = name, isSelected = !defaultDeselectedStatusNames.contains(name)))
+    }
+  private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
+  private val filteredStateSignal: Signal[ShowAllProjectsState] =
+    stateFormVar.signal.combineWith(statusFilter.selectedIds).map { case (state, selectedNames) =>
+      if (selectedNames.isEmpty) state
+      else
+        ShowAllProjectsState(
+          state.info
+            .map(info => info.copy(tasks = info.tasks.filter(task => selectedNames.contains(task.taskStatus.name))))
+            .filter(_.tasks.nonEmpty)
+        )
+    }
   private val organizationVar: Var[FindOrganizationResp] = Var(
     FindOrganizationResp(
       id = UUID.randomUUID(),
@@ -100,75 +122,71 @@ class ShowAllProjectsStatusComponent(
 
   val element = {
     div(
-      child <-- stateFormVar.signal.map(dtos =>
-        div(
-          div(
-            child <-- organizationVar.signal.map(organizationResp =>
-              TgCard
-                .headerNoFooter(
-                  header = TgCard.CardHeader.html(
-                    div(
-                      div(
-                        cls("flex items-center justify-between"),
-                        div(cls("mr-2"), organizationResp.name),
-                        div(
-                          iconButton(
-                            "Edit Organization",
-                            TgIcons.editIcon(className = "w-4 h-4"),
-                            rowIconButtonCls,
-                            rowButtonMarginCls,
-                            onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(organizationResp.id)))
-                          )
-                        )
-                      )
-                    )
-                  ),
-                  body = TgCard.HtmlCardContent(div(organizationResp.description))
-                )
-                .element
-                .amend(cls("mb-4"))
-            )
-          ),
-          dtos.info.map { dto =>
-            val projectCard = TgCard
-              .headerNoFooter(
-                header = TgCard.CardHeader.html(
+      div(
+        child <-- organizationVar.signal.map(organizationResp =>
+          TgCard
+            .headerNoFooter(
+              header = TgCard.CardHeader.html(
+                div(
                   div(
-                    cls("border-1 border-neutral-200 rounded-md bg-neutral-200"),
                     cls("flex items-center justify-between"),
-                    div(
-                      cls("mr-2"),
-                      cls("pl-6 pr-6 pt-2 pb-2"),
-//                      cls("grow"),
-                      dto.project.name
-                    ),
+                    div(cls("mr-2"), organizationResp.name),
                     div(
                       iconButton(
-                        "Edit Project",
+                        "Edit Organization",
                         TgIcons.editIcon(className = "w-4 h-4"),
                         rowIconButtonCls,
                         rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ => router.route(EditProjectPage(dto.project.id)))
-                      ),
-                      iconButton(
-                        "Show Tasks",
-                        TgIcons.hammerIcon(className = "w-4 h-4"),
-                        rowIconButtonCls,
-                        rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.project.id)))
+                        onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(organizationResp.id)))
                       )
                     )
-                  ),
-                  TgCard.CardHeaderSize.H3
-                ),
-                body = TgCard.HtmlCardContent(createTaskCard(dto))
-              )
-
-            projectCard.element.amend(cls("mb-4"))
-
-          }
+                  )
+                )
+              ),
+              body = TgCard.HtmlCardContent(div(organizationResp.description))
+            )
+            .element
+            .amend(cls("mb-4"))
         )
-      )
+      ),
+      div(cls("flex justify-end mb-4"), statusFilter.element),
+      children <-- filteredStateSignal.map(_.info.map { dto =>
+        val projectCard = TgCard
+          .headerNoFooter(
+            header = TgCard.CardHeader.html(
+              div(
+                cls("border-1 border-neutral-200 rounded-md bg-neutral-200"),
+                cls("flex items-center justify-between"),
+                div(
+                  cls("mr-2"),
+                  cls("pl-6 pr-6 pt-2 pb-2"),
+//                      cls("grow"),
+                  dto.project.name
+                ),
+                div(
+                  iconButton(
+                    "Edit Project",
+                    TgIcons.editIcon(className = "w-4 h-4"),
+                    rowIconButtonCls,
+                    rowButtonMarginCls,
+                    onClick.mapToUnit --> (_ => router.route(EditProjectPage(dto.project.id)))
+                  ),
+                  iconButton(
+                    "Show Tasks",
+                    TgIcons.hammerIcon(className = "w-4 h-4"),
+                    rowIconButtonCls,
+                    rowButtonMarginCls,
+                    onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.project.id)))
+                  )
+                )
+              ),
+              TgCard.CardHeaderSize.H3
+            ),
+            body = TgCard.HtmlCardContent(createTaskCard(dto))
+          )
+
+        projectCard.element.amend(cls("mb-4"))
+      })
     )
   }
 
