@@ -8,7 +8,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgHtmlTable}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgHtmlTable}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -39,9 +39,24 @@ class ShowAllTasksComponent(
         }
     )
   private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
+
+  val searchTermVar = Var("")
+  private val searchBox = TableSearchComponent(
+    inputSignal = searchTermVar.signal,
+    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
+    placeholderValue = "Search by name, description",
+    debounceMs = 0
+  )
+
   private val filteredTasksSignal: Signal[Seq[FindTaskRespFull]] =
-    stateFormVar.signal.combineWith(statusFilter.selectedIds).map { case (tasks, selectedIds) =>
-      if (selectedIds.isEmpty) tasks else tasks.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+    stateFormVar.signal.combineWith(statusFilter.selectedIds, searchBox.inputSignal).map {
+      case (tasks, selectedIds, term) =>
+        val byStatus =
+          if (selectedIds.isEmpty) tasks else tasks.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+        val needle = term.trim.toLowerCase
+        if (needle.isEmpty) byStatus
+        else
+          byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
     }
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
@@ -147,7 +162,7 @@ class ShowAllTasksComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("flex justify-end mb-4"), statusFilter.element),
+                div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
                 div(children <-- tasksByAccountSignal.map { groups =>
                   groups.map { case (accountDto, dtos) =>
                     div(

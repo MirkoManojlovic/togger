@@ -44,6 +44,16 @@ case class TgInput(
   private val inputState = Var("")
   private val labelDefaultStyle = Var(true)
 
+  val rawHtmlElement =
+    input(
+      `type` := tgInputType.toString,
+      placeholder(placeholderValue),
+      controlled(
+        value <-- inputSignal,
+        onInput.mapToValue --> inputStateUpdater
+      )
+    )
+
   val htmlElement: ReactiveHtmlElement[html.Div] =
     div(
       $errors --> errorState,
