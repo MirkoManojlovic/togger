@@ -117,8 +117,9 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   tgClock,
                   accountService,
+                  projectService,
                   projectId,
-                  toast
+                  toast,
                 ).element
               case CreateTaskStatusPage(projectId: UUID) =>
                 new CreateTaskStatusComponent(

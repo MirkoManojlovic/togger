@@ -1,11 +1,13 @@
 package com.togger.ui.task
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
@@ -16,6 +18,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -26,7 +29,8 @@ import scala.collection.immutable.ListMap
 case class CreateTaskForm(
   name: String = "",
   description: String = "",
-  taskStatusSelected: String = ""
+  taskStatusSelected: String = "",
+  assignedToSelected: String = ""
 )
 
 case class TaskStatusesState(
@@ -61,23 +65,34 @@ class CreateTaskComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
+  projectService: ProjectService,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  val formState = Var(CreateTaskForm())
+  val formState = Var(
+    CreateTaskForm(assignedToSelected = accountService.get.map(_.id.toString).getOrElse(""))
+  )
   val statusesVar = Var(TaskStatusesState())
+  val membersVar = Var(Seq.empty[SearchAccountDto])
 
   val firstLink = new TaskLinkComponent()
   val linksVar = Var(Seq(firstLink))
 
   spinnerService
-    .runWithSpinner(
-      taskStatusFeService
-        .findByProjectId(projectId)
-        .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
-    )
+    .runWithSpinner {
+      val call1: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
+        taskStatusFeService.findByProjectId(projectId)
+
+      val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
+        projectService.findAllMembers(projectId)
+
+      (call1, call2).parMapN { (findTaskStatusRespEither, searchAccountDtoEither) =>
+        findTaskStatusRespEither.map(success => statusesVar.set(TaskStatusesState(success.body.get)))
+        searchAccountDtoEither.map(success => membersVar.set(success.body.get))
+      }
+    }
     .unsafeRunAndForget()
 
   lazy val addNewLink =
@@ -97,7 +112,7 @@ class CreateTaskComponent(
         projectId = projectId,
         name = form.name,
         description = form.description,
-        assignedTo = Some(accountService.get.get.id),
+        assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
         createdBy = accountService.get.get.id,
         taskStatusId = UUID.fromString(form.taskStatusSelected),
         createdAt = now,
@@ -130,11 +145,18 @@ class CreateTaskComponent(
     labelValue = "Task name"
   )
 
-  def renderElement(selectValues: Seq[TaskStatusSelect]) = {
+  def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
     val statusInputSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.taskStatusSelected),
       labelValue = "Status",
       valuesAndDisplays = ListMap.from(selectValues.map(_.asTuple))
+    )
+
+    val assignedToSelect = formState.tgSelectManualError(
+      inputAndUpdater = selectorAndUpdaterMacro(_.assignedToSelected),
+      labelValue = "Assigned to",
+      emptyValue = Some("Unassigned"),
+      valuesAndDisplays = ListMap.from(members.map(member => member.id.toString -> member.fullName))
     )
 
     div(
@@ -149,6 +171,7 @@ class CreateTaskComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionTextArea.htmlElement.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
+                assignedToSelect.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
@@ -163,7 +186,9 @@ class CreateTaskComponent(
   }
 
   val element = div(
-    child <-- statusesVar.signal.map(state => renderElement(state.asTaskStatusSelect))
+    child <-- statusesVar.signal.combineWith(membersVar.signal).map { case (state, members) =>
+      renderElement(state.asTaskStatusSelect, members)
+    }
   )
 
 }
