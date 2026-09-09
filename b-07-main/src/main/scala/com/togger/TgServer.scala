@@ -4,6 +4,7 @@ import com.togger.account.{AccountEndpoints, AccountServiceCore, AccountTypeRepo
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
+import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController}
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
 import com.togger.controllers.accountmapping.AccountMappingController
@@ -15,6 +16,7 @@ import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
+import com.togger.milestone._
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
 import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
@@ -78,6 +80,22 @@ object TgServer {
         logEntryController.listVersions,
         logEntryController.updateVersion,
         logEntryController.deleteVersion,
+        milestoneController.findById,
+        milestoneController.findByProjectId,
+        milestoneController.save,
+        milestoneController.update,
+        milestoneController.delete,
+        milestoneController.listVersions,
+        milestoneController.updateVersion,
+        milestoneController.deleteVersion,
+        milestoneDateController.findById,
+        milestoneDateController.findByMilestoneId,
+        milestoneDateController.save,
+        milestoneDateController.update,
+        milestoneDateController.delete,
+        milestoneDateController.listVersions,
+        milestoneDateController.updateVersion,
+        milestoneDateController.deleteVersion,
         organizationController.findAll,
         organizationController.findByAccountId,
         organizationController.save,
@@ -130,6 +148,18 @@ class DependenciesModule(
   lazy val logEntryService = new LogEntryService(logEntryRepo, logEntryVersionRepo, transactor)
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
   lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService)
+
+  lazy val milestoneRepo = new MilestoneRepoImpl
+  lazy val milestoneVersionRepo = new MilestoneVersionRepoImpl
+  lazy val milestoneService = new MilestoneService(milestoneRepo, milestoneVersionRepo, transactor)
+  lazy val milestoneEndpoints = new MilestoneEndpoints(securedEndpoint)
+  lazy val milestoneController = new MilestoneController(milestoneEndpoints, milestoneService)
+
+  lazy val milestoneDateRepo = new MilestoneDateRepoImpl
+  lazy val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
+  lazy val milestoneDateService = new MilestoneDateService(milestoneDateRepo, milestoneDateVersionRepo, transactor)
+  lazy val milestoneDateEndpoints = new MilestoneDateEndpoints(securedEndpoint)
+  lazy val milestoneDateController = new MilestoneDateController(milestoneDateEndpoints, milestoneDateService)
 
   lazy val taskRepo = new TaskRepoImpl
   lazy val taskVersionRepo = new TaskVersionRepoImpl
