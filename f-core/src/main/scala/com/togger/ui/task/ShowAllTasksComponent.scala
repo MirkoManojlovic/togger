@@ -41,7 +41,7 @@ class ShowAllTasksComponent(
   private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
 
   val searchTermVar = Var("")
-  private val searchBox = TableSearchComponent(
+  private val searchBox =TableSearchComponent(
     inputSignal = searchTermVar.signal,
     inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
     placeholderValue = "Search by name, description",
@@ -154,6 +154,13 @@ class ShowAllTasksComponent(
                   headerIconButtonCls,
                   "mr-2",
                   router.navigateTo(ShowAllTaskStatusesPage(projectId))
+                ),
+                iconButton(
+                  "Create Milestone",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(CreateMilestonePage(projectId))
                 )
               )
             ),

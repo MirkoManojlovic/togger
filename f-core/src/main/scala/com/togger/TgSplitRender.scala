@@ -13,6 +13,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
 import com.togger.ui.localstorage.LocalStorageBrowser
+import com.togger.ui.milestone._
 import com.togger.ui.navbar.{Logout, Sidebar}
 import com.togger.ui.organization._
 import com.togger.ui.project._
@@ -64,6 +65,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
+  lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
+  lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
   lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
@@ -290,6 +293,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new CreateProjectMappingComponent(
                   projectMappingService,
                   router,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case CreateMilestonePage(projectId: UUID) =>
+                new CreateMilestoneComponent(
+                  milestoneService,
+                  milestoneDateService,
                   spinnerService,
                   projectId,
                   toast
