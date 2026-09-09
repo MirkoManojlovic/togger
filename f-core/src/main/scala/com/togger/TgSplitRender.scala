@@ -214,6 +214,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   tgClock,
                   accountService,
+                  projectService,
                   router,
                   toast
                 ).element
