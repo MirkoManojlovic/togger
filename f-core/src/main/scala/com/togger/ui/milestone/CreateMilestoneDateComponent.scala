@@ -5,7 +5,7 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{CreateMilestoneDateReq, FindMilestoneDateResp}
+import com.togger.dto.{CreateMilestoneDateReq, FindMilestoneDateResp, UpdateMilestoneDateReq}
 import com.togger.milestone.MilestoneDateEndpoints
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
@@ -14,6 +14,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 
 import java.time.{Instant, LocalDate, ZoneOffset}
+import java.util.UUID
 
 case class CreateMilestoneDateForm(
   name: String = "",
@@ -67,4 +68,10 @@ class MilestoneDateFeService(securedEndpoint: SecuredEndpoint, protectedBackendC
 
   def createMilestoneDate(dto: CreateMilestoneDateReq): TgRespIO[FindMilestoneDateResp] =
     protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.saveEndpoint)(dto)
+
+  def findByMilestoneId(milestoneId: UUID): TgRespIO[Seq[FindMilestoneDateResp]] =
+    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.findByMilestoneIdEndpoint)(milestoneId)
+
+  def updateMilestoneDate(dto: UpdateMilestoneDateReq): TgRespIO[FindMilestoneDateResp] =
+    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.updateEndpoint)(dto)
 }

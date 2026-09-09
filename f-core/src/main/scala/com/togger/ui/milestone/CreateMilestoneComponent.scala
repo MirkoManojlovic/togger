@@ -8,7 +8,7 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateMilestoneDateReq, CreateMilestoneReq, FindMilestoneResp}
+import com.togger.dto.{CreateMilestoneDateReq, CreateMilestoneReq, FindMilestoneResp, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -127,4 +127,10 @@ class MilestoneFeService(securedEndpoint: SecuredEndpoint, protectedBackendClien
 
   def createMilestone(dto: CreateMilestoneReq): TgRespIO[FindMilestoneResp] =
     protectedBackendClient.protectedHttpCall(milestoneEndpoints.saveEndpoint)(dto)
+
+  def findMilestoneById(id: UUID): TgRespIO[FindMilestoneResp] =
+    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByIdEndpoint)(id)
+
+  def updateMilestone(dto: UpdateMilestoneReq): TgRespIO[FindMilestoneResp] =
+    protectedBackendClient.protectedHttpCall(milestoneEndpoints.updateEndpoint)(dto)
 }
