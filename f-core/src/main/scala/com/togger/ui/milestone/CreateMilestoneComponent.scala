@@ -108,8 +108,13 @@ class CreateMilestoneComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               h5(cls("mb-2"), "Milestone dates"),
+              addNewMilestoneDate,
               child <-- milestoneDatesVar.signal.map(dateComponents =>
-                div(addNewMilestoneDate, dateComponents.map(_.htmlElement))
+                div(
+                  dateComponents.map(
+                    _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+                  )
+                )
               ),
               TgHtmlButton.create(EventStream.fromValue(false))
             )
