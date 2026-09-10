@@ -1,11 +1,13 @@
 package com.togger.dto
 
+import com.togger.milestone.MilestoneStatus
+
 import java.time.Instant
 import java.util.UUID
 
 case class CreateMilestoneReq(projectId: UUID, name: String, description: String)
 
-case class UpdateMilestoneReq(id: UUID, name: String, description: String)
+case class UpdateMilestoneReq(id: UUID, name: String, description: String, status: Option[MilestoneStatus] = None)
 
 case class FindMilestoneResp(
   id: UUID,
@@ -14,6 +16,7 @@ case class FindMilestoneResp(
   latestVersion: UUID,
   name: String,
   description: String,
+  status: MilestoneStatus,
   updatedAt: Instant
 )
 
@@ -22,6 +25,7 @@ case class MilestoneVersionDto(
   milestoneId: UUID,
   name: String,
   description: String,
+  status: MilestoneStatus,
   createdAt: Instant,
   updatedAt: Instant
 )

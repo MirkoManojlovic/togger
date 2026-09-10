@@ -223,6 +223,12 @@ databaseChangeLog:
                     nullable: false
                     unique: false
               - column:
+                  name: status
+                  type: int
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
                   name: created_at
                   type: timestamp with time zone
                   constraints:

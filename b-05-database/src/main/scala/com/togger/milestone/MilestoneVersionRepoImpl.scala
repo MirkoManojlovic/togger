@@ -5,17 +5,19 @@ import com.togger.milestone.MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE_FRA
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment}
+import doobie.{ConnectionIO, Fragment, Meta}
 
 import java.util.UUID
 
 class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
+  import MilestoneVersionRepoImpl.milestoneStatusCodec
 
   private lazy val returnFields = List(
     "version",
     "milestone_id",
     "name",
     "description",
+    "status",
     "created_at",
     "updated_at"
   )
@@ -24,8 +26,8 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
     import milestoneVersion._
     logAroundInfoQuery(
       insertStatement(MILESTONE_VERSION_TABLE_FRAG)(fr"""
-        (milestone_id, name, description, created_at, updated_at)
-        values ($milestoneId, $name, $description, $createdAt, $updatedAt)
+        (milestone_id, name, description, status, created_at, updated_at)
+        values ($milestoneId, $name, $description, $status, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[MilestoneVersion](returnFields: _*)
     )(s"Inserting ${sp(milestoneVersion)}", milestoneVersion => s"Milestone version inserted ${sp(milestoneVersion)}")
@@ -62,6 +64,7 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
       (fr"update" ++ MILESTONE_VERSION_TABLE_FRAG ++ fr"""set
             name = ${milestoneVersion.name},
             description = ${milestoneVersion.description},
+            status = ${milestoneVersion.status},
             updated_at = ${milestoneVersion.updatedAt}
           where version = ${milestoneVersion.version}""").update
         .withUniqueGeneratedKeys[MilestoneVersion](returnFields: _*)
@@ -87,4 +90,6 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
 object MilestoneVersionRepoImpl {
   val MILESTONE_VERSION_TABLE: String = "milestone_version"
   val MILESTONE_VERSION_TABLE_FRAG: Fragment = Fragment.const(MILESTONE_VERSION_TABLE)
+
+  implicit val milestoneStatusCodec: Meta[MilestoneStatus] = Meta[Int].imap(MilestoneStatus.withValue)(_.value)
 }

@@ -75,7 +75,8 @@ class MilestoneService(
   def updateVersionContent(
     version: UUID,
     name: String,
-    description: String
+    description: String,
+    status: MilestoneStatus = MilestoneStatus.Opened
   ): IO[Either[MilestoneError, MilestoneVersion]] =
     (for {
       existingVersion <- milestoneVersionRepo.findByVersion(version)
@@ -85,7 +86,7 @@ class MilestoneService(
           (CannotEditLatestVersion: MilestoneError).asLeft[MilestoneVersion].pure[doobie.ConnectionIO]
         else
           milestoneVersionRepo
-            .updateContent(existingVersion.withNewContent(name, description))
+            .updateContent(existingVersion.withNewContent(name, description, status))
             .map(_.asRight[MilestoneError])
     } yield result)
       .transact(transactor)

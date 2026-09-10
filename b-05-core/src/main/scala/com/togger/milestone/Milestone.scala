@@ -14,12 +14,17 @@ case class MilestoneVersion(
   milestoneId: UUID,
   name: String,
   description: String,
+  status: MilestoneStatus = MilestoneStatus.Opened,
   createdAt: Instant,
   updatedAt: Instant
 ) {
 
-  def withNewContent(name: String, description: String): MilestoneVersion =
-    this.copy(name = name, description = description)
+  def withNewContent(
+    name: String,
+    description: String,
+    status: MilestoneStatus = MilestoneStatus.Opened
+  ): MilestoneVersion =
+    this.copy(name = name, description = description, status = status)
 
 }
 

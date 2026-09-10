@@ -13,6 +13,7 @@ object MilestoneDtoMapper {
       latestVersion = version.version,
       name = version.name,
       description = version.description,
+      status = version.status,
       updatedAt = version.updatedAt
     )
 
@@ -22,6 +23,7 @@ object MilestoneDtoMapper {
       milestoneId = version.milestoneId,
       name = version.name,
       description = version.description,
+      status = version.status,
       createdAt = version.createdAt,
       updatedAt = version.updatedAt
     )
