@@ -133,4 +133,7 @@ class MilestoneFeService(securedEndpoint: SecuredEndpoint, protectedBackendClien
 
   def updateMilestone(dto: UpdateMilestoneReq): TgRespIO[FindMilestoneResp] =
     protectedBackendClient.protectedHttpCall(milestoneEndpoints.updateEndpoint)(dto)
+
+  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneResp]] =
+    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByProjectIdEndpoint)(projectId)
 }

@@ -313,6 +313,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   id,
                   toast
                 ).element
+              case ShowMilestonesPage(projectId: UUID) =>
+                new ShowMilestonesComponent(
+                  milestoneService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  projectId
+                ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
             }
         )
