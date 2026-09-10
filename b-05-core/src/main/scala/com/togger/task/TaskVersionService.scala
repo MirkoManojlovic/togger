@@ -24,7 +24,8 @@ class TaskVersionService(
     description: String,
     assignedTo: Option[UUID],
     closedBy: Option[UUID],
-    taskStatusId: UUID
+    taskStatusId: UUID,
+    milestone: Option[UUID] = None
   ): IO[Either[TaskError, TaskVersion]] =
     (for {
       existingVersion <- taskVersionRepo.findByVersion(version)
@@ -34,7 +35,9 @@ class TaskVersionService(
           (CannotEditLatestVersion: TaskError).asLeft[TaskVersion].pure[doobie.ConnectionIO]
         else
           taskVersionRepo
-            .updateContent(existingVersion.withNewContent(name, description, assignedTo, closedBy, taskStatusId))
+            .updateContent(
+              existingVersion.withNewContent(name, description, assignedTo, closedBy, taskStatusId, milestone)
+            )
             .map(_.asRight[TaskError])
     } yield result)
       .transact(transactor)

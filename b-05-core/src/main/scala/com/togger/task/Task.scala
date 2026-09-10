@@ -15,6 +15,7 @@ case class TaskVersion(
   assignedTo: Option[UUID],
   closedBy: Option[UUID] = None,
   taskStatusId: UUID,
+  milestone: Option[UUID] = None,
   createdAt: Instant,
   updatedAt: Instant
 ) {
@@ -24,14 +25,16 @@ case class TaskVersion(
     description: String,
     assignedTo: Option[UUID],
     closedBy: Option[UUID],
-    taskStatusId: UUID
+    taskStatusId: UUID,
+    milestone: Option[UUID] = None
   ): TaskVersion =
     this.copy(
       name = name,
       description = description,
       assignedTo = assignedTo,
       closedBy = closedBy,
-      taskStatusId = taskStatusId
+      taskStatusId = taskStatusId,
+      milestone = milestone
     )
 
   def hasSameContentAs(other: TaskVersion): Boolean =
@@ -39,7 +42,8 @@ case class TaskVersion(
       description == other.description &&
       assignedTo == other.assignedTo &&
       closedBy == other.closedBy &&
-      taskStatusId == other.taskStatusId
+      taskStatusId == other.taskStatusId &&
+      milestone == other.milestone
 
 }
 
@@ -57,6 +61,7 @@ case class TaskFull(
   createdBy: Account,
   closedBy: Option[Account] = None,
   taskStatus: TaskStatus,
+  milestone: Option[UUID] = None,
   createdAt: Instant,
   updatedAt: Instant,
   latestVersion: UUID

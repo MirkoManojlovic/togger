@@ -13,7 +13,8 @@ case class CreateTaskReq(
   createdBy: UUID,
   taskStatusId: UUID,
   createdAt: Instant,
-  updatedAt: Instant
+  updatedAt: Instant,
+  milestone: Option[UUID] = None
 )
 
 case class UpdateTaskReq1(
@@ -25,7 +26,8 @@ case class UpdateTaskReq1(
   createdBy: UUID,
   taskStatusId: UUID,
   createdAt: Instant,
-  updatedAt: Instant
+  updatedAt: Instant,
+  milestone: Option[UUID] = None
 )
 
 case class FindTaskResp1(
@@ -38,7 +40,8 @@ case class FindTaskResp1(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
-  latestVersion: UUID
+  latestVersion: UUID,
+  milestone: Option[UUID] = None
 )
 
 case class FindTaskRespFull(
@@ -54,7 +57,8 @@ case class FindTaskRespFull(
   updatedAt: Instant,
   latestVersion: UUID,
   logEntries: Seq[LogEntryDto],
-  links: Seq[FindLinkResp]
+  links: Seq[FindLinkResp],
+  milestone: Option[UUID] = None
 )
 
 case class TaskVersionDto(
@@ -66,7 +70,8 @@ case class TaskVersionDto(
   closedBy: Option[UUID],
   taskStatusId: UUID,
   createdAt: Instant,
-  updatedAt: Instant
+  updatedAt: Instant,
+  milestone: Option[UUID] = None
 )
 
 case class CreateLinkReq(name: String, url: String)

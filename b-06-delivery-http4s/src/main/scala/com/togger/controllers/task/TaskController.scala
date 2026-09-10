@@ -61,7 +61,8 @@ class TaskController(
                   updatedAt = taskFull.updatedAt,
                   latestVersion = taskFull.latestVersion,
                   logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
-                  links = links.map(link => toLinkDto(link.link, link.latestVersion))
+                  links = links.map(link => toLinkDto(link.link, link.latestVersion)),
+                  milestone = taskFull.milestone
                 )
               }
           )
@@ -96,6 +97,7 @@ class TaskController(
       assignedTo = taskDto.assignedTo,
       closedBy = None,
       taskStatusId = taskDto.taskStatusId,
+      milestone = taskDto.milestone,
       createdAt = taskDto.createdAt,
       updatedAt = taskDto.createdAt
     )
@@ -142,6 +144,7 @@ class TaskController(
       assignedTo = taskDto.assignedTo,
       closedBy = None,
       taskStatusId = taskDto.taskStatusId,
+      milestone = taskDto.milestone,
       createdAt = newUpdatedAt,
       updatedAt = newUpdatedAt
     )
@@ -193,7 +196,15 @@ class TaskController(
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
     taskVersionService
-      .updateVersionContent(dto.version, dto.name, dto.description, dto.assignedTo, dto.closedBy, dto.taskStatusId)
+      .updateVersionContent(
+        dto.version,
+        dto.name,
+        dto.description,
+        dto.assignedTo,
+        dto.closedBy,
+        dto.taskStatusId,
+        dto.milestone
+      )
       .map {
         case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
         case Left(error)    => error.toBadRequestLeft[TaskVersionDto]

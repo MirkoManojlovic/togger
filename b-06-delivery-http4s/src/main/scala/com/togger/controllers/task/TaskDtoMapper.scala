@@ -16,7 +16,8 @@ object TaskDtoMapper {
       taskStatusId = version.taskStatusId,
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
-      latestVersion = version.version
+      latestVersion = version.version,
+      milestone = version.milestone
     )
 
   def toVersionDto(version: TaskVersion): TaskVersionDto =
@@ -29,7 +30,8 @@ object TaskDtoMapper {
       closedBy = version.closedBy,
       taskStatusId = version.taskStatusId,
       createdAt = version.createdAt,
-      updatedAt = version.updatedAt
+      updatedAt = version.updatedAt,
+      milestone = version.milestone
     )
 
 }

@@ -170,6 +170,158 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
+            tableName: milestone
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_project
+                    references: project(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_version_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_version_milestone_id_version
+            tableName: milestone_version
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: milestone_date
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_date_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_date_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_date_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_date_version_milestone_date
+                    references: milestone_date(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_date_version_milestone_date_id_version
+            tableName: milestone_date_version
+            columns:
+              - column:
+                  name: milestone_date_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
             tableName: task_status
             columns:
               - column:
@@ -291,6 +443,13 @@ databaseChangeLog:
                     nullable: false
                     foreignKeyName: fk_task_version_task_status
                     references: task_status(id)
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_task_version_milestone
+                    references: milestone(id)
               - column:
                   name: created_at
                   type: timestamp with time zone
@@ -474,158 +633,6 @@ databaseChangeLog:
             columns:
               - column:
                   name: log_entry_id
-              - column:
-                  name: version
-                  descending: true
-        - createTable:
-            tableName: milestone
-            columns:
-              - column:
-                  name: id
-                  type: uuid
-                  defaultValueComputed: uuidv7()
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: project_id
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_milestone_project
-                    references: project(id)
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-        - createTable:
-            tableName: milestone_version
-            columns:
-              - column:
-                  name: version
-                  type: uuid
-                  defaultValueComputed: uuidv7()
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: milestone_id
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_milestone_version_milestone
-                    references: milestone(id)
-                    deleteCascade: true
-              - column:
-                  name: name
-                  type: varchar(256)
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: description
-                  type: text
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  constraints:
-                    nullable: false
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-        - createIndex:
-            indexName: idx_milestone_version_milestone_id_version
-            tableName: milestone_version
-            columns:
-              - column:
-                  name: milestone_id
-              - column:
-                  name: version
-                  descending: true
-        - createTable:
-            tableName: milestone_date
-            columns:
-              - column:
-                  name: id
-                  type: uuid
-                  defaultValueComputed: uuidv7()
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: milestone_id
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_milestone_date_milestone
-                    references: milestone(id)
-                    deleteCascade: true
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-        - createTable:
-            tableName: milestone_date_version
-            columns:
-              - column:
-                  name: version
-                  type: uuid
-                  defaultValueComputed: uuidv7()
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: milestone_date_id
-                  type: uuid
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_milestone_date_version_milestone_date
-                    references: milestone_date(id)
-                    deleteCascade: true
-              - column:
-                  name: name
-                  type: varchar(256)
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: description
-                  type: text
-                  constraints:
-                    nullable: false
-                    unique: false
-              - column:
-                  name: date
-                  type: timestamp with time zone
-                  constraints:
-                    nullable: false
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  constraints:
-                    nullable: false
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-        - createIndex:
-            indexName: idx_milestone_date_version_milestone_date_id_version
-            tableName: milestone_date_version
-            columns:
-              - column:
-                  name: milestone_date_id
               - column:
                   name: version
                   descending: true
