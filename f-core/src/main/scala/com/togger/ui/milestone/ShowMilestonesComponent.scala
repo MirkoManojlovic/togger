@@ -3,11 +3,12 @@ package com.togger.ui.milestone
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindMilestoneResp, FindProjectResp}
+import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{TableSearchComponent, TgHtmlTable}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgHtmlTable}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -35,11 +36,26 @@ class ShowMilestonesComponent(
     debounceMs = 0
   )
 
+  private val statusFilterItemsVar = Var(
+    MilestoneStatus.values.map(status =>
+      MultiSelectItem(
+        id = status.value.toString,
+        name = status.toString,
+        isSelected = status == MilestoneStatus.Open
+      )
+    )
+  )
+  private val statusFilter = new TableFilterComponent(statusFilterItemsVar.signal, label = "Filter by status")
+
   private val filteredMilestonesSignal: Signal[Seq[FindMilestoneResp]] =
-    stateFormVar.signal.combineWith(searchBox.inputSignal).map { case (milestones, term) =>
-      val needle = term.trim.toLowerCase
-      if (needle.isEmpty) milestones
-      else milestones.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
+    stateFormVar.signal.combineWith(statusFilter.selectedIds, searchBox.inputSignal).map {
+      case (milestones, selectedIds, term) =>
+        val byStatus =
+          if (selectedIds.isEmpty) milestones
+          else milestones.filter(dto => selectedIds.contains(dto.status.value.toString))
+        val needle = term.trim.toLowerCase
+        if (needle.isEmpty) byStatus
+        else byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
     }
 
   private val projectVar: Var[FindProjectResp] = Var(
@@ -122,7 +138,7 @@ class ShowMilestonesComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("flex justify-between mb-4"), searchBox.element),
+                div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
                 child <-- filteredMilestonesSignal.map { milestones =>
                   TgHtmlTable.tableElement(
                     Seq("Id", "Name", "Description", "Status", "Action")
