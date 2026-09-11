@@ -125,7 +125,7 @@ class ShowMilestonesComponent(
                 div(cls("flex justify-between mb-4"), searchBox.element),
                 child <-- filteredMilestonesSignal.map { milestones =>
                   TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Description", "Action")
+                    Seq("Id", "Name", "Description", "Status", "Action")
                   )(
                     milestones
                       .sortBy(_.name)
@@ -134,6 +134,7 @@ class ShowMilestonesComponent(
                           createTd(dto.id.toString),
                           createTd(dto.name),
                           createTdOverflow(dto.description),
+                          createTd(dto.status.toString),
                           createTd(
                             div(
                               iconButton(
