@@ -26,7 +26,7 @@ class MilestoneController(
       milestoneId = milestone.id,
       name = dto.name,
       description = dto.description,
-      status = MilestoneStatus.Opened,
+      status = MilestoneStatus.Open,
       createdAt = now,
       updatedAt = now
     )

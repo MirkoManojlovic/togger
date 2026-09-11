@@ -24,7 +24,7 @@ case class EditMilestoneForm(
   id: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
-  status: String = MilestoneStatus.Opened.value.toString
+  status: String = MilestoneStatus.Open.value.toString
 )
 
 class EditMilestoneComponent(

@@ -76,7 +76,7 @@ class MilestoneService(
     version: UUID,
     name: String,
     description: String,
-    status: MilestoneStatus = MilestoneStatus.Opened
+    status: MilestoneStatus = MilestoneStatus.Open
   ): IO[Either[MilestoneError, MilestoneVersion]] =
     (for {
       existingVersion <- milestoneVersionRepo.findByVersion(version)

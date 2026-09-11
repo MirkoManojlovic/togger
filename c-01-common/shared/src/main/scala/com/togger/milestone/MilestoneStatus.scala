@@ -6,7 +6,7 @@ sealed abstract class MilestoneStatus(val value: Int) extends IntEnumEntry
 
 object MilestoneStatus extends IntEnum[MilestoneStatus] {
 
-  case object Opened extends MilestoneStatus(0)
+  case object Open extends MilestoneStatus(0)
 
   case object Closed extends MilestoneStatus(1)
 
