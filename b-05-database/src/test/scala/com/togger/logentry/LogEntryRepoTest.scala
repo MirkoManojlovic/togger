@@ -75,6 +75,24 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       )
     )
 
+    "find by project id" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        orgAndProject1 <- createOrgAndProject
+        savedProject1 = orgAndProject1._2
+        savedProject2 <- projectRepo.insert(project.copy(organizationId = orgAndProject1._1.id))
+        savedTask1 <- taskRepo.insert(task.copy(projectId = savedProject1.id, createdBy = savedAccount.id))
+        savedTask2 <- taskRepo.insert(task.copy(projectId = savedProject2.id, createdBy = savedAccount.id))
+        logEntriesForProject1 = createLogEntries(savedTask1.id, savedAccount.id)
+        logEntriesForProject2 = createLogEntries(savedTask2.id, savedAccount.id)
+        savedLogEntriesForProject1 <- logEntriesForProject1.map(logEntryRepo.insert).toList.sequence
+        _ <- logEntriesForProject2.map(logEntryRepo.insert).toList.sequence
+        foundLogEntries <- logEntryRepo.findByProjectId(savedProject1.id)
+      } yield foundLogEntries.toSet shouldBe savedLogEntriesForProject1.toSet
+
+      res.transact(transactor)
+    }
+
     "delete by task id" in { transactor =>
       val res = for {
         savedAccount <- createAccount

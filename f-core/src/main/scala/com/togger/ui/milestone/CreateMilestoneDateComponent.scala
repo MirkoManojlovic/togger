@@ -72,6 +72,9 @@ class MilestoneDateFeService(securedEndpoint: SecuredEndpoint, protectedBackendC
   def findByMilestoneId(milestoneId: UUID): TgRespIO[Seq[FindMilestoneDateResp]] =
     protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.findByMilestoneIdEndpoint)(milestoneId)
 
+  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneDateResp]] =
+    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.findByProjectIdEndpoint)(projectId)
+
   def updateMilestoneDate(dto: UpdateMilestoneDateReq): TgRespIO[FindMilestoneDateResp] =
     protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.updateEndpoint)(dto)
 }

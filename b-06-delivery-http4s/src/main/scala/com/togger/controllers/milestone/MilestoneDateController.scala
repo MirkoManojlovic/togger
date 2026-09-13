@@ -52,6 +52,14 @@ class MilestoneDateController(
       )
   }
 
+  val findByProjectId = milestoneDateEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
+    milestoneDateService
+      .findByProjectId(projectId)
+      .map(datesWithLatestVersion =>
+        TgJsonSuccess.justBodyRight(datesWithLatestVersion.map(m => toDto(m.milestoneDate, m.versions.head)))
+      )
+  }
+
   val update = milestoneDateEndpoints.updateEndpoint.serverLogic { auth => dto =>
     val now = java.time.Instant.now()
     val newVersion = MilestoneDateVersion(

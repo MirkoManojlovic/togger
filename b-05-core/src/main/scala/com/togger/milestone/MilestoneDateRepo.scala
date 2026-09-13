@@ -14,4 +14,6 @@ trait MilestoneDateRepo {
 
   def findByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneDate]]
 
+  def findByProjectId(projectId: UUID): ConnectionIO[List[MilestoneDate]]
+
 }

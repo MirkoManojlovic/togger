@@ -125,6 +125,13 @@ class ShowMilestonesComponent(
               div(
                 cls("flex"),
                 iconButton(
+                  "History",
+                  TgIcons.statusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowMilestoneHistoryPage(projectId))
+                ),
+                iconButton(
                   "Create Milestone",
                   TgIcons.plusIcon(className = "w-4 h-4"),
                   headerIconButtonCls,

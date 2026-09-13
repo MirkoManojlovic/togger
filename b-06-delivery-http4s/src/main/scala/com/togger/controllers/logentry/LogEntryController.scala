@@ -44,6 +44,14 @@ class LogEntryController(
       )
   }
 
+  val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
+    logEntryService
+      .findByProjectId(projectId)
+      .map(entriesWithLatestVersion =>
+        TgJsonSuccess.justBodyRight(entriesWithLatestVersion.map(entry => toDto(entry.logEntry, entry.versions.head)))
+      )
+  }
+
   val updateLogEntry = logEntryEndpoints.updateEndpoint.serverLogic { auth => dto =>
     val newVersion = LogEntryVersion(
       version = UUID.randomUUID(),

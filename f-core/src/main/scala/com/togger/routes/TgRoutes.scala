@@ -156,6 +156,11 @@ class TgRoutes {
         encode = (page: ShowMilestonesPage) => page.projectId.toString,
         decode = (projectId: String) => ShowMilestonesPage(UUID.fromString(projectId)),
         pattern = root / "show-milestones" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: ShowMilestoneHistoryPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowMilestoneHistoryPage(UUID.fromString(projectId)),
+        pattern = root / "milestone-history" / segment[String] / endOfSegments
       )
     )
 

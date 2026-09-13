@@ -51,6 +51,16 @@ class MilestoneDateService(
         IO.pure(Left(MilestoneDateNotFound))
       }
 
+  def findByProjectId(projectId: UUID): IO[List[MilestoneDateWithVersions]] =
+    (for {
+      dates <- milestoneDateRepo.findByProjectId(projectId)
+      combined <- dates.traverse(date =>
+        milestoneDateVersionRepo
+          .findLatestByMilestoneDateId(date.id)
+          .map(version => MilestoneDateWithVersions(date, Seq(version)))
+      )
+    } yield combined).transact(transactor)
+
   def getCurrent(milestoneDateId: UUID): IO[Either[MilestoneDateError, MilestoneDateWithOneVersion]] =
     (for {
       milestoneDate <- milestoneDateRepo.findById(milestoneDateId)

@@ -52,6 +52,16 @@ class LogEntryService(
       )
     } yield combined).transact(transactor)
 
+  def findByProjectId(projectId: UUID): IO[List[LogEntryWithVersions]] =
+    (for {
+      entries <- logEntryRepo.findByProjectId(projectId)
+      combined <- entries.traverse(logEntry =>
+        logEntryVersionRepo
+          .findLatestByLogEntryId(logEntry.id)
+          .map(logEntryVersion => LogEntryWithVersions(logEntry, Seq(logEntryVersion)))
+      )
+    } yield combined).transact(transactor)
+
   def listVersions(logEntryId: UUID): IO[List[LogEntryVersion]] =
     logEntryVersionRepo.findByLogEntryId(logEntryId).transact(transactor)
 

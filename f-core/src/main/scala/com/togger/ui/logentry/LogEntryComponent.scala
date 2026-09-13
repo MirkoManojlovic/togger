@@ -150,7 +150,7 @@ class LogEntryComponent(
                   ),
                   body = TgCard.HtmlCardContent(
                     div(
-                      p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toString, cls("mb-4")),
+                      p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toStringWithEmoji, cls("mb-4")),
                       div(p(b(s"Status update")), markdownToHtml(state.textExternal), cls("mb-4"))
 //                      div(p(b("Text internal")), markdownToHtml(state.textInternal), cls("mb-4"))
                     )

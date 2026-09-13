@@ -2,6 +2,7 @@ package com.togger.logentry
 
 import com.togger.db.Util._
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
+import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -54,6 +55,17 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )(
       s"Finding log entries for ${sp(taskId)}",
       logEntries => s"Log entries found ${sp(logEntries)} for ${sp(taskId)}"
+    )
+  }
+
+  override def findByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]] = {
+    logAroundInfoQuery(
+      (fr"select log_entry.* from" ++ LOG_ENTRY_TABLE_FRAG ++
+        innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
+        fr"where task.project_id = $projectId").query[LogEntry].to[List]
+    )(
+      s"Finding log entries for ${sp(projectId)}",
+      logEntries => s"Log entries found ${sp(logEntries)} for ${sp(projectId)}"
     )
   }
 

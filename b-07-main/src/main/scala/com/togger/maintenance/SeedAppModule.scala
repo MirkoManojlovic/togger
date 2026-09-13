@@ -8,6 +8,7 @@ import com.togger.controllers.organization.OrganizationService
 import com.togger.controllers.project.{DefaultTaskStatusService, ProjectService}
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.login.SessionTokenFactoryImpl
+import com.togger.milestone.{MilestoneRepoImpl, MilestoneService, MilestoneVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl}
 import com.togger.task._
@@ -57,6 +58,8 @@ trait SeedAppModule {
   protected val linkVersionRepo = new LinkVersionRepoImpl
   protected val logEntryRepo = new LogEntryRepoImpl
   protected val logEntryVersionRepo = new LogEntryVersionRepoImpl
+  protected val milestoneRepo = new MilestoneRepoImpl
+  protected val milestoneVersionRepo = new MilestoneVersionRepoImpl
   protected val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
 
   protected val organizationService =
@@ -91,6 +94,13 @@ trait SeedAppModule {
 
   protected val logEntryService =
     new LogEntryService(logEntryRepo = logEntryRepo, logEntryVersionRepo = logEntryVersionRepo, transactor = xa)
+
+  protected val milestoneService =
+    new MilestoneService(
+      milestoneRepo = milestoneRepo,
+      milestoneVersionRepo = milestoneVersionRepo,
+      transactor = xa
+    )
 
   protected def createAccount(firstName: String, lastName: String, email: String, accountTypeId: UUID): Account =
     Account(

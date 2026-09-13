@@ -207,6 +207,9 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)(projectId)
 
+  def findLogEntriesByProjectId(projectId: UUID): TgRespIO[Seq[LogEntryDto]] =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.findByProjectIdEndpoint)(projectId)
+
   def findTaskById(id: UUID): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByIdEndpoint)(id)
 

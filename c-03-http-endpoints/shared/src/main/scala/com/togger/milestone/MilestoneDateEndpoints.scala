@@ -38,6 +38,11 @@ class MilestoneDateEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "milestone" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[Seq[FindMilestoneDateResp]]])
 
+  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindMilestoneDateResp]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "project" / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[Seq[FindMilestoneDateResp]]])
+
   val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
       .in(basePath / path[UUID]("id"))

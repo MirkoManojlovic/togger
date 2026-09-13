@@ -2,6 +2,7 @@ package com.togger.milestone
 
 import com.togger.db.Util._
 import com.togger.milestone.MilestoneDateRepoImpl.MILESTONE_DATE_TABLE_FRAG
+import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -40,6 +41,16 @@ class MilestoneDateRepoImpl extends MilestoneDateRepo {
     )(
       s"Finding milestone dates for ${sp(milestoneId)}",
       milestoneDates => s"Milestone dates found ${sp(milestoneDates)} for ${sp(milestoneId)}"
+    )
+
+  override def findByProjectId(projectId: UUID): ConnectionIO[List[MilestoneDate]] =
+    logAroundInfoQuery(
+      (fr"select milestone_date.* from" ++ MILESTONE_DATE_TABLE_FRAG ++
+        innerJoin(MILESTONE_TABLE_FRAG)(fr"milestone_date.milestone_id = milestone.id") ++
+        fr"where milestone.project_id = $projectId").query[MilestoneDate].to[List]
+    )(
+      s"Finding milestone dates for ${sp(projectId)}",
+      milestoneDates => s"Milestone dates found ${sp(milestoneDates)} for ${sp(projectId)}"
     )
 
 }

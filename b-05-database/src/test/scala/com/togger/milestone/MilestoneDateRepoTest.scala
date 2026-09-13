@@ -59,6 +59,24 @@ class MilestoneDateRepoTest extends BusinessTgDbSpec with TgAccount with TgProje
       res.transact(transactor)
     }
 
+    "find by project id" in { transactor =>
+      val res = for {
+        savedMilestone1 <- createMilestone()
+        savedOrganization2 <- organizationRepo.insert(organization.copy(name = "Organization name 2"))
+        savedProject2 <- projectRepo.insert(project.copy(organizationId = savedOrganization2.id))
+        savedMilestone2 <- milestoneRepo.insert(
+          Milestone(id = UUID.randomUUID(), projectId = savedProject2.id, createdAt = nowAsInstant)
+        )
+        milestoneDatesForMilestone1 = (0 to 10).map(_ => milestoneDate(savedMilestone1.id))
+        milestoneDatesForMilestone2 = (0 to 5).map(_ => milestoneDate(savedMilestone2.id))
+        savedMilestoneDates1 <- milestoneDatesForMilestone1.map(milestoneDateRepo.insert).toList.sequence
+        _ <- milestoneDatesForMilestone2.map(milestoneDateRepo.insert).toList.sequence
+        foundMilestoneDates <- milestoneDateRepo.findByProjectId(savedMilestone1.projectId)
+      } yield foundMilestoneDates.toSet shouldBe savedMilestoneDates1.toSet
+
+      res.transact(transactor)
+    }
+
   }
 
 }

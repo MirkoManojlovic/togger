@@ -16,6 +16,8 @@ trait LogEntryRepo {
 
   def findByTaskId(taskId: UUID): ConnectionIO[List[LogEntry]]
 
+  def findByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]]
+
   def deleteByTaskId(taskId: UUID): ConnectionIO[Int]
 
 }

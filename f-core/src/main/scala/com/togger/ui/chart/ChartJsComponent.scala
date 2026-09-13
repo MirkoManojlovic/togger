@@ -67,8 +67,8 @@ class ChartJsComponent()(implicit runtime: IORuntime) {
     val groupedEntries = logEntries.groupBy(_.status).map { case (status, entries) => (status, entries.size) }
 
     groupedEntries.foreach { case (status, count) =>
-      val chartColors = ChartColors.map1(status.toString)
-      labels += status.toString
+      val chartColors = ChartColors.map1(status.toStringWithEmoji)
+      labels += status.toStringWithEmoji
       data += count
       backgroundColor += chartColors.backgroundColor
       borderColor += chartColors.borderColor

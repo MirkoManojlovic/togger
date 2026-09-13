@@ -306,7 +306,7 @@ class ShowAllProjectsStatusComponent(
   ) = {
     val tooltip =
       if (entries.isEmpty) ""
-      else (tgDateFormater.asEuropeanDate(day) +: entries.map(_.status.toString)).mkString("\n")
+      else (tgDateFormater.asEuropeanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
 
     div(
       cls("border-1 border-gray-200 rounded-md cursor-pointer"),
@@ -317,7 +317,7 @@ class ShowAllProjectsStatusComponent(
       title(tooltip),
       onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       div(cls("text-xs text-gray-500"), tgDateFormater.dayAndMonth(day)),
-      div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.color)))
+      div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.emoji)))
     )
   }
 
@@ -338,7 +338,7 @@ class ShowAllProjectsStatusComponent(
               dayEntries.map(entry =>
                 div(
                   cls("mb-2"),
-                  p(b(entry.status.toString)),
+                  p(b(entry.status.toStringWithEmoji)),
                   entry.textExternal.split("\n").map(line => p(line)).toSeq
                 )
               )

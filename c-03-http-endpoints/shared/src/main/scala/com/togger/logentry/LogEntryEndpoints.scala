@@ -31,6 +31,11 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
+  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[LogEntryDto]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "project" / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[Seq[LogEntryDto]]])
+
   val updateEndpoint: TgSecuredEndpoint[LogEntryDto, LogEntryDto] =
     securedEndpoint.endpoint.put
       .in(basePath)
