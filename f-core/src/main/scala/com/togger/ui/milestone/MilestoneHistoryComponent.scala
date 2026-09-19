@@ -7,7 +7,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -110,6 +110,14 @@ class MilestoneHistoryComponent(
 
   private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
 
+  private val searchTermVar = Var("")
+  private val searchBox = TableSearchComponent(
+    inputSignal = searchTermVar.signal,
+    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
+    placeholderValue = "Search by name, description",
+    debounceMs = 0
+  )
+
   private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
@@ -136,12 +144,18 @@ class MilestoneHistoryComponent(
         logEntriesVar.signal,
         milestonesVar.signal,
         dateFilterComponent.activeFilter,
-        taskStatusFilter.selectedIds
+        taskStatusFilter.selectedIds,
+        searchBox.inputSignal
       )
-      .map { case (allTasks, allLogEntries, milestones, activeFilter, selectedStatusIds) =>
-        val tasks: Seq[FindTaskRespFull] =
+      .map { case (allTasks, allLogEntries, milestones, activeFilter, selectedStatusIds, searchTerm) =>
+        val byStatus: Seq[FindTaskRespFull] =
           if (selectedStatusIds.isEmpty) allTasks
           else allTasks.filter(t => selectedStatusIds.contains(t.taskStatus.id.toString))
+
+        val needle = searchTerm.trim.toLowerCase
+        val tasks: Seq[FindTaskRespFull] =
+          if (needle.isEmpty) byStatus
+          else byStatus.filter(t => t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle))
 
         val allDays: Seq[LocalDate] =
           if (allLogEntries.isEmpty) Seq.empty
@@ -387,7 +401,11 @@ class MilestoneHistoryComponent(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
-              div(cls("flex justify-between mb-4"), dateFilterComponent.element, taskStatusFilter.element),
+              div(
+                cls("flex justify-between items-start mb-4"),
+                searchBox.element,
+                div(cls("flex"), dateFilterComponent.element, taskStatusFilter.element)
+              ),
               child <-- historySignal.map { layout =>
                 if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
                 else if (layout.days.isEmpty) div("No log entries match the selected filter.")
