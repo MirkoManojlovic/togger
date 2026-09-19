@@ -72,6 +72,26 @@ class MilestoneHistoryComponent(
   private def weekStart(date: LocalDate): LocalDate =
     date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
+  private def dayPasses(day: LocalDate, filter: ActiveDateFilter): Boolean =
+    filter match {
+      case ActiveDateFilter.ByMonth(selected) =>
+        selected.isEmpty || selected.contains((day.getYear, day.getMonthValue))
+      case ActiveDateFilter.ByRange(start, end) =>
+        start.forall(!day.isBefore(_)) && end.forall(!day.isAfter(_))
+    }
+
+  private val monthOptionsSignal: Signal[Seq[MonthOption]] =
+    logEntriesVar.signal.map { entries =>
+      entries
+        .map(e => toLocalDate(e.createdAt))
+        .map(d => (d.getYear, d.getMonthValue))
+        .distinct
+        .sortBy(identity)
+        .map { case (year, month) => MonthOption(year, month) }
+    }
+
+  private val dateFilterComponent = new DateFilterComponent(monthOptionsSignal, tgDateFormater)
+
   private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
@@ -84,26 +104,32 @@ class MilestoneHistoryComponent(
     days: Seq[LocalDate],
     weekIndexByDay: Map[LocalDate, Int],
     monthHeaders: Seq[MonthHeader],
-    milestoneBoxes: Seq[MilestoneBox]
+    milestoneBoxes: Seq[MilestoneBox],
+    hasAnyLogEntries: Boolean
   )
 
   // Row order: one contiguous block per milestone (alphabetical by milestone name, tasks sorted by name within
   // the block), followed by a trailing block of tasks with no milestone. Contiguous blocks are what let a
   // milestone's red box be a single rectangle spanning exactly its own tasks' rows.
   private val historySignal: Signal[HistoryLayout] =
-    tasksVar.signal.combineWith(logEntriesVar.signal, milestonesVar.signal).map {
-      case (tasks, logEntries, milestones) =>
-        val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
-          logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
-
-        val days: Seq[LocalDate] =
-          if (logEntries.isEmpty) Seq.empty
+    tasksVar.signal.combineWith(logEntriesVar.signal, milestonesVar.signal, dateFilterComponent.activeFilter).map {
+      case (tasks, allLogEntries, milestones, activeFilter) =>
+        val allDays: Seq[LocalDate] =
+          if (allLogEntries.isEmpty) Seq.empty
           else {
-            val dates = logEntries.map(e => toLocalDate(e.createdAt))
+            val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
             val minDate = dates.min
             val maxDate = dates.max
             Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
           }
+        val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
+
+        val logEntries: Seq[LogEntryDto] = allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
+        val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
+
+        val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
+          logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
+
         val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
 
         val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
@@ -130,9 +156,10 @@ class MilestoneHistoryComponent(
           }
 
         val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
+        val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
         val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
-          tasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
-        val unassignedTasks: Seq[FindTaskRespFull] = tasks.filter(_.milestone.isEmpty).sortBy(_.name)
+          visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
+        val unassignedTasks: Seq[FindTaskRespFull] = visibleTasks.filter(_.milestone.isEmpty).sortBy(_.name)
 
         val orderedMilestoneIds: Seq[UUID] =
           tasksByMilestone.keys.toSeq.sortBy(id => milestoneNamesById.getOrElse(id, id.toString))
@@ -173,7 +200,15 @@ class MilestoneHistoryComponent(
           }
         }
 
-        HistoryLayout(orderedTasks, entriesByTaskAndDay, days, weekIndexByDay, monthHeaders, milestoneBoxes)
+        HistoryLayout(
+          orderedTasks,
+          entriesByTaskAndDay,
+          days,
+          weekIndexByDay,
+          monthHeaders,
+          milestoneBoxes,
+          hasAnyLogEntries = allLogEntries.nonEmpty
+        )
     }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
@@ -282,8 +317,10 @@ class MilestoneHistoryComponent(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
+              dateFilterComponent.element,
               child <-- historySignal.map { layout =>
-                if (layout.days.isEmpty) div("No log entries yet for this project.")
+                if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
+                else if (layout.days.isEmpty) div("No log entries match the selected filter.")
                 else renderGrid(layout)
               }
             )
