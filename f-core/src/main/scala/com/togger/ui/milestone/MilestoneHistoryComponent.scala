@@ -224,8 +224,8 @@ class MilestoneHistoryComponent(
             MonthHeader(
               tgDateFormater.monthName(repDay),
               monthNumber = repDay.getMonthValue,
-              colStart = startIdx + 3,
-              colEnd = endIdx + 4
+              colStart = startIdx + 1,
+              colEnd = endIdx + 2
             )
           }
 
@@ -268,8 +268,8 @@ class MilestoneHistoryComponent(
                     name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
                     rowStart = rowStart,
                     rowEnd = rowEnd,
-                    colStart = minIdx + 3,
-                    colEnd = maxIdx + 4
+                    colStart = minIdx + 1,
+                    colEnd = maxIdx + 2
                   )
                 )
               }
@@ -375,7 +375,7 @@ class MilestoneHistoryComponent(
 
   private def taskNameCell(task: FindTaskRespFull, rowIndex: Int, statusColor: Option[String]) =
     div(
-      cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2"),
+      cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2 bg-neutral-primary-soft"),
       styleAttr := gridCellPlacement(1, rowIndex),
       onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
       onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
@@ -401,38 +401,60 @@ class MilestoneHistoryComponent(
       )
     )
 
-  private def rowHoverOverlay(rowIndex: Int, colEnd: Int) =
+  // A CSS Grid item's containing block for `position: sticky` purposes is its own grid area, not the
+  // whole grid — so a sticky first-column cell inside one big scrolling grid can only stay pinned while
+  // that narrow column's own track is still scrolled into view, and disappears once the user scrolls past
+  // it. To keep the task-name column visible for the entire horizontal scroll range, it lives in its own
+  // non-scrolling grid, laid out side by side with a second, independently horizontally-scrolling grid that
+  // holds only the day columns.
+  private def leftRowHoverOverlay(rowIndex: Int) =
     div(
-      cls("pointer-events-none rounded-md border-2 border-y-indigo-500"),
+      cls("pointer-events-none rounded-l-md border-2 border-y-indigo-500"),
+      styleAttr := gridPlacement(1, 3, rowIndex, rowIndex + 1)
+    )
+
+  private def rightRowHoverOverlay(rowIndex: Int, colEnd: Int) =
+    div(
+      cls("pointer-events-none rounded-r-md border-2 border-y-indigo-500"),
       styleAttr := gridPlacement(1, colEnd, rowIndex, rowIndex + 1)
     )
 
-  private def renderGrid(layout: HistoryLayout) =
+  private def renderGrid(layout: HistoryLayout) = {
+    val rowsTemplate = "grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;"
     div(
-      cls("overflow-x-auto"),
+      cls("flex items-start"),
       div(
-        styleAttr <-- taskColWidthPxVar.signal.map(width =>
-          s"display: grid; grid-template-columns: ${width}px 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;"
-        ),
-        layout.milestoneBoxes.map(milestoneBoxElement),
-        layout.milestoneBoxes.map(milestoneNameCell),
-        div(styleAttr := gridPlacement(1, 2, 1, 3)),
+        cls("shrink-0"),
+        styleAttr <-- taskColWidthPxVar.signal.map(width => s"display: grid; grid-template-columns: ${width}px 2rem; $rowsTemplate"),
+        div(cls("bg-neutral-primary-soft"), styleAttr := gridPlacement(1, 2, 1, 3)),
         div(styleAttr := gridPlacement(2, 3, 1, 3)),
-        layout.monthHeaders.map(monthHeaderCell),
-        layout.days.zipWithIndex.map { case (day, idx) =>
-          dayHeaderCell(day, idx + 3, layout.weekIndexByDay.getOrElse(day, 0))
-        },
+        layout.milestoneBoxes.map(milestoneNameCell),
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
-          val rowIndex = taskIdx + 3
-          taskNameCell(task, rowIndex, layout.latestStatusColorByTask.get(task.id)) +:
-            layout.days.zipWithIndex.map { case (day, idx) =>
-              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)
-            }
+          taskNameCell(task, taskIdx + 3, layout.latestStatusColorByTask.get(task.id))
         },
         layout.milestoneBoxes.map(taskNameResizeHandle),
-        child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => rowHoverOverlay(rowIndex, layout.days.size + 3)))
+        child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => leftRowHoverOverlay(rowIndex)))
+      ),
+      div(
+        cls("overflow-x-auto"),
+        div(
+          styleAttr := s"display: grid; grid-template-columns: repeat(${layout.days.size}, 2rem); $rowsTemplate",
+          layout.milestoneBoxes.map(milestoneBoxElement),
+          layout.monthHeaders.map(monthHeaderCell),
+          layout.days.zipWithIndex.map { case (day, idx) =>
+            dayHeaderCell(day, idx + 1, layout.weekIndexByDay.getOrElse(day, 0))
+          },
+          layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
+            val rowIndex = taskIdx + 3
+            layout.days.zipWithIndex.map { case (day, idx) =>
+              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 1, rowIndex)
+            }
+          },
+          child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => rightRowHoverOverlay(rowIndex, layout.days.size + 1)))
+        )
       )
     )
+  }
 
   val element = {
     div(
