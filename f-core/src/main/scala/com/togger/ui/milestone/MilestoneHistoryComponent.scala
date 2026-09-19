@@ -163,7 +163,7 @@ class MilestoneHistoryComponent(
 
   private def milestoneBoxElement(box: MilestoneBox) =
     div(
-      cls("bg-gray-600/15 border border-gray-600/40 rounded-sm pointer-events-none"),
+      cls("bg-gray-600/5 border border-gray-600/40 rounded-sm pointer-events-none"),
       styleAttr := gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)
     )
 
