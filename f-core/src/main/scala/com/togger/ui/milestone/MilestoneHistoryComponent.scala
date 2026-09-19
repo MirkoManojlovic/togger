@@ -5,6 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -72,6 +73,9 @@ class MilestoneHistoryComponent(
   private def weekStart(date: LocalDate): LocalDate =
     date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
+  private def taskStatusOrder(task: FindTaskRespFull): Int =
+    DefaultTaskStatus.values.find(_.statusName == task.taskStatus.name).map(_.i).getOrElse(Int.MaxValue)
+
   private def dayPasses(day: LocalDate, filter: ActiveDateFilter): Boolean =
     filter match {
       case ActiveDateFilter.ByMonth(selected) =>
@@ -105,7 +109,8 @@ class MilestoneHistoryComponent(
     weekIndexByDay: Map[LocalDate, Int],
     monthHeaders: Seq[MonthHeader],
     milestoneBoxes: Seq[MilestoneBox],
-    hasAnyLogEntries: Boolean
+    hasAnyLogEntries: Boolean,
+    latestStatusColorByTask: Map[UUID, String]
   )
 
   // Row order: one contiguous block per milestone (alphabetical by milestone name, tasks sorted by name within
@@ -129,6 +134,13 @@ class MilestoneHistoryComponent(
 
         val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
           logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
+
+        val latestStatusColorByTask: Map[UUID, String] =
+          allLogEntries
+            .groupBy(_.taskId)
+            .view
+            .mapValues(_.sortBy(_.createdAt).last.status.color)
+            .toMap
 
         val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
 
@@ -159,13 +171,16 @@ class MilestoneHistoryComponent(
         val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
         val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
           visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
-        val unassignedTasks: Seq[FindTaskRespFull] = visibleTasks.filter(_.milestone.isEmpty).sortBy(_.name)
+        val unassignedTasks: Seq[FindTaskRespFull] =
+          visibleTasks.filter(_.milestone.isEmpty).sortBy(t => (taskStatusOrder(t), t.name))
 
         val orderedMilestoneIds: Seq[UUID] =
           tasksByMilestone.keys.toSeq.sortBy(id => milestoneNamesById.getOrElse(id, id.toString))
 
         val orderedGroups: Seq[(Option[UUID], Seq[FindTaskRespFull])] =
-          orderedMilestoneIds.map(id => Some(id) -> tasksByMilestone(id).sortBy(_.name)) :+ (None -> unassignedTasks)
+          orderedMilestoneIds.map(id =>
+            Some(id) -> tasksByMilestone(id).sortBy(t => (taskStatusOrder(t), t.name))
+          ) :+ (None -> unassignedTasks)
 
         val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
 
@@ -207,7 +222,8 @@ class MilestoneHistoryComponent(
           weekIndexByDay,
           monthHeaders,
           milestoneBoxes,
-          hasAnyLogEntries = allLogEntries.nonEmpty
+          hasAnyLogEntries = allLogEntries.nonEmpty,
+          latestStatusColorByTask
         )
     }
 
@@ -270,10 +286,16 @@ class MilestoneHistoryComponent(
     )
   }
 
-  private def taskNameCell(task: FindTaskRespFull, rowIndex: Int) =
+  private def taskNameCell(task: FindTaskRespFull, rowIndex: Int, statusColor: Option[String]) =
     div(
-      cls("cursor-pointer text-fg-brand hover:underline truncate pr-2"),
+      cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2"),
       styleAttr := gridCellPlacement(1, rowIndex),
+      statusColor.map { color =>
+        div(
+          cls("w-2 h-2 rounded-full shrink-0 mr-1.5"),
+          styleAttr := s"background-color: $color;"
+        )
+      },
       task.name,
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
     )
@@ -293,7 +315,7 @@ class MilestoneHistoryComponent(
         },
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
           val rowIndex = taskIdx + 3
-          taskNameCell(task, rowIndex) +:
+          taskNameCell(task, rowIndex, layout.latestStatusColorByTask.get(task.id)) +:
             layout.days.zipWithIndex.map { case (day, idx) =>
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)
             }
