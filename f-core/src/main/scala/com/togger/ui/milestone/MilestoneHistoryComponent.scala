@@ -74,8 +74,6 @@ class MilestoneHistoryComponent(
 
   private val weekBackgrounds: Seq[String] = Seq("bg-amber-100", "bg-indigo-100")
 
-  private val gridLineCls = "border-b border-r border-gray-200"
-
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
 
   private case class HistoryLayout(
@@ -180,7 +178,6 @@ class MilestoneHistoryComponent(
     div(
       cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight"),
       cls(weekBackgrounds(weekIndex % weekBackgrounds.size)),
-      cls(gridLineCls),
       styleAttr := gridCellPlacement(colIndex, 1),
       div(tgDateFormater.dayOfWeekAbbrev(day)),
       div(tgDateFormater.dayAndMonth(day))
@@ -190,17 +187,23 @@ class MilestoneHistoryComponent(
     val latest = entries.sortBy(_.createdAt).lastOption
     div(
       cls("flex items-center justify-center"),
-      cls(gridLineCls),
       styleAttr := gridCellPlacement(colIndex, rowIndex),
-      latest.toSeq.map(e => title(e.status.toString)),
-      latest.toSeq.map(e => div(cls("w-5.5 h-5.5 rounded-md"), styleAttr := s"background-color: ${e.status.color};"))
+      latest match {
+        case Some(e) =>
+          div(
+            title(e.status.toString),
+            cls("w-5.5 h-5.5 rounded-md"),
+            styleAttr := s"background-color: ${e.status.color};"
+          )
+        case None =>
+          div(cls("w-5.5 h-5.5 rounded-md bg-gray-200"))
+      }
     )
   }
 
   private def taskNameCell(task: FindTaskRespFull, rowIndex: Int) =
     div(
       cls("cursor-pointer text-fg-brand hover:underline truncate pr-2"),
-      cls(gridLineCls),
       styleAttr := gridCellPlacement(1, rowIndex),
       task.name,
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
@@ -210,12 +213,11 @@ class MilestoneHistoryComponent(
     div(
       cls("overflow-x-auto"),
       div(
-        cls("border-t border-l border-gray-200"),
         styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 3.25rem; grid-auto-rows: 2.25rem;",
         layout.milestoneBoxes.map(milestoneBoxElement),
         layout.milestoneBoxes.map(milestoneNameCell),
-        div(cls(gridLineCls), styleAttr := gridCellPlacement(1, 1)),
-        div(cls(gridLineCls), styleAttr := gridCellPlacement(2, 1)),
+        div(styleAttr := gridCellPlacement(1, 1)),
+        div(styleAttr := gridCellPlacement(2, 1)),
         layout.days.zipWithIndex.map { case (day, idx) =>
           dayHeaderCell(day, idx + 3, layout.weekIndexByDay.getOrElse(day, 0))
         },
