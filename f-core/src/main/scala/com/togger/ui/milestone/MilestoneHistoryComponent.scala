@@ -72,15 +72,18 @@ class MilestoneHistoryComponent(
   private def weekStart(date: LocalDate): LocalDate =
     date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
-  private val weekBackgrounds: Seq[String] = Seq("bg-amber-100", "bg-indigo-100")
+  private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
+
+  private case class MonthHeader(name: String, monthNumber: Int, colStart: Int, colEnd: Int)
 
   private case class HistoryLayout(
     orderedTasks: Seq[FindTaskRespFull],
     entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]],
     days: Seq[LocalDate],
     weekIndexByDay: Map[LocalDate, Int],
+    monthHeaders: Seq[MonthHeader],
     milestoneBoxes: Seq[MilestoneBox]
   )
 
@@ -106,6 +109,26 @@ class MilestoneHistoryComponent(
         val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
         val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
 
+        // days is chronologically ordered, so days sharing a (year, month) are always contiguous —
+        // a simple fold groups them into runs without needing a stable groupBy.
+        val monthHeaders: Seq[MonthHeader] = days.zipWithIndex
+          .foldLeft(Vector.empty[(LocalDate, Int, Int)]) { case (acc, (day, idx)) =>
+            acc.lastOption match {
+              case Some((repDay, startIdx, _)) if repDay.getYear == day.getYear && repDay.getMonth == day.getMonth =>
+                acc.init :+ (repDay, startIdx, idx)
+              case _ =>
+                acc :+ (day, idx, idx)
+            }
+          }
+          .map { case (repDay, startIdx, endIdx) =>
+            MonthHeader(
+              tgDateFormater.monthName(repDay),
+              monthNumber = repDay.getMonthValue,
+              colStart = startIdx + 3,
+              colEnd = endIdx + 4
+            )
+          }
+
         val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
         val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
           tasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
@@ -121,9 +144,9 @@ class MilestoneHistoryComponent(
 
         var rowCursor = 0
         val milestoneBoxes: Seq[MilestoneBox] = orderedGroups.flatMap { case (milestoneIdOpt, groupTasks) =>
-          val rowStart = rowCursor + 2
+          val rowStart = rowCursor + 3
           rowCursor += groupTasks.size
-          val rowEnd = rowCursor + 2
+          val rowEnd = rowCursor + 3
 
           milestoneIdOpt match {
             case Some(milestoneId) if groupTasks.nonEmpty =>
@@ -150,7 +173,7 @@ class MilestoneHistoryComponent(
           }
         }
 
-        HistoryLayout(orderedTasks, entriesByTaskAndDay, days, weekIndexByDay, milestoneBoxes)
+        HistoryLayout(orderedTasks, entriesByTaskAndDay, days, weekIndexByDay, monthHeaders, milestoneBoxes)
     }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
@@ -174,13 +197,24 @@ class MilestoneHistoryComponent(
       box.name
     )
 
+  private def monthHeaderCell(month: MonthHeader) = {
+    val colorCls =
+      if (month.monthNumber % 2 == 1) " border-black-600 border-x-8 border-y-2 text-black" else " border-black-600 border-y-2 border-x-8 text-black"
+    div(
+      cls("flex items-center justify-center text-xs font-semibold rounded-md"),
+      cls(colorCls),
+      styleAttr := gridPlacement(month.colStart, month.colEnd, 1, 2),
+      month.name
+    )
+  }
+
   private def dayHeaderCell(day: LocalDate, colIndex: Int, weekIndex: Int) =
     div(
-      cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight"),
+      cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight font-semibold"),
       cls(weekBackgrounds(weekIndex % weekBackgrounds.size)),
-      styleAttr := gridCellPlacement(colIndex, 1),
+      styleAttr := gridCellPlacement(colIndex, 2),
       div(tgDateFormater.dayOfWeekAbbrev(day)),
-      div(tgDateFormater.dayAndMonth(day))
+      div(tgDateFormater.dayOnly(day))
     )
 
   private def dayCell(entries: Seq[LogEntryDto], colIndex: Int, rowIndex: Int) = {
@@ -213,16 +247,17 @@ class MilestoneHistoryComponent(
     div(
       cls("overflow-x-auto"),
       div(
-        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 3.25rem; grid-auto-rows: 2.25rem;",
+        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;",
         layout.milestoneBoxes.map(milestoneBoxElement),
         layout.milestoneBoxes.map(milestoneNameCell),
-        div(styleAttr := gridCellPlacement(1, 1)),
-        div(styleAttr := gridCellPlacement(2, 1)),
+        div(styleAttr := gridPlacement(1, 2, 1, 3)),
+        div(styleAttr := gridPlacement(2, 3, 1, 3)),
+        layout.monthHeaders.map(monthHeaderCell),
         layout.days.zipWithIndex.map { case (day, idx) =>
           dayHeaderCell(day, idx + 3, layout.weekIndexByDay.getOrElse(day, 0))
         },
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
-          val rowIndex = taskIdx + 2
+          val rowIndex = taskIdx + 3
           taskNameCell(task, rowIndex) +:
             layout.days.zipWithIndex.map { case (day, idx) =>
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)

@@ -1,6 +1,6 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.{EuropeanDots, LogEntryFormat, YearMonthDayTimeFormat}
+import com.togger.ui.task.TgDateFormat.{DayOnlyFormat, EuropeanDots, LogEntryFormat, MonthNameFormat, YearMonthDayTimeFormat}
 import enumeratum.{Enum, EnumEntry}
 
 import java.time.format.DateTimeFormatter
@@ -20,6 +20,12 @@ class TgDateFormater {
   def dayOfWeekAbbrev(date: LocalDate): String =
     date.getDayOfWeek.name().toLowerCase.capitalize.take(3)
 
+  def dayOnly(date: LocalDate): String =
+    DayOnlyFormat.formater.format(date)
+
+  def monthName(date: LocalDate): String =
+    MonthNameFormat.formater.format(date)
+
   def yearMonthDayTimeFormat(instant: Instant): String =
     YearMonthDayTimeFormat.formater.format(
       instant.atOffset(ZoneOffset.UTC)
@@ -38,5 +44,9 @@ object TgDateFormat extends Enum[TgDateFormat] {
   case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd MMM"))
 
   case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss"))
+
+  case object DayOnlyFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd"))
+
+  case object MonthNameFormat extends TgDateFormat(DateTimeFormatter.ofPattern("MMMM"))
 
 }
