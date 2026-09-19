@@ -11,6 +11,8 @@ import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSea
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import org.scalajs.dom
+import org.scalajs.dom.MouseEvent
 
 import java.time.temporal.TemporalAdjusters
 import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
@@ -117,6 +119,27 @@ class MilestoneHistoryComponent(
     placeholderValue = "Search by name, description",
     debounceMs = 0
   )
+
+  private val taskColWidthPxVar: Var[Double] = Var(192.0) // 12rem at default root font size
+  private val dragStateVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
+
+  private def startDrag(ev: MouseEvent): Unit = {
+    ev.preventDefault()
+    dragStateVar.set(Some((ev.clientX, taskColWidthPxVar.now())))
+    dom.document.body.style.cursor = "col-resize"
+    dom.document.body.style.setProperty("user-select", "none")
+  }
+
+  private def onDragMove(ev: MouseEvent): Unit =
+    dragStateVar.now().foreach { case (startX, startWidth) =>
+      taskColWidthPxVar.set(math.max(0.0, startWidth + (ev.clientX - startX)))
+    }
+
+  private def endDrag(): Unit = {
+    dragStateVar.set(None)
+    dom.document.body.style.cursor = ""
+    dom.document.body.style.setProperty("user-select", "")
+  }
 
   private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
@@ -362,11 +385,24 @@ class MilestoneHistoryComponent(
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
     )
 
+  private def taskNameResizeHandle(box: MilestoneBox) =
+    div(
+      cls("pointer-events-none flex items-center justify-end"),
+      styleAttr := s"grid-column: 1 / 2; grid-row: ${box.rowStart} / ${box.rowEnd};",
+      div(
+        cls("w-2 h-20 bg-gray-300 hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
+        cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
+        onMouseDown --> (ev => startDrag(ev))
+      )
+    )
+
   private def renderGrid(layout: HistoryLayout) =
     div(
       cls("overflow-x-auto"),
       div(
-        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;",
+        styleAttr <-- taskColWidthPxVar.signal.map(width =>
+          s"display: grid; grid-template-columns: ${width}px 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;"
+        ),
         layout.milestoneBoxes.map(milestoneBoxElement),
         layout.milestoneBoxes.map(milestoneNameCell),
         div(styleAttr := gridPlacement(1, 2, 1, 3)),
@@ -381,12 +417,15 @@ class MilestoneHistoryComponent(
             layout.days.zipWithIndex.map { case (day, idx) =>
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)
             }
-        }
+        },
+        layout.milestoneBoxes.map(taskNameResizeHandle)
       )
     )
 
   val element = {
     div(
+      windowEvents(_.onMouseMove) --> (ev => onDragMove(ev)),
+      windowEvents(_.onMouseUp) --> (_ => endDrag()),
       child <-- projectVar.signal.map(projectResp =>
         TgCard
           .headerNoFooter(
