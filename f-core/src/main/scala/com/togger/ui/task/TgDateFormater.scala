@@ -11,11 +11,14 @@ class TgDateFormater {
     EuropeanDots.formater.format(date)
 
   def asAmericanDate(date: LocalDate): (String, String) = {
-    date.getDayOfWeek.name().toLowerCase.capitalize.take(3) -> LogEntryFormat.formater.format(date)
+    dayOfWeekAbbrev(date) -> LogEntryFormat.formater.format(date)
   }
 
   def dayAndMonth(date: LocalDate): String =
     LogEntryFormat.formater.format(date)
+
+  def dayOfWeekAbbrev(date: LocalDate): String =
+    date.getDayOfWeek.name().toLowerCase.capitalize.take(3)
 
   def yearMonthDayTimeFormat(instant: Instant): String =
     YearMonthDayTimeFormat.formater.format(

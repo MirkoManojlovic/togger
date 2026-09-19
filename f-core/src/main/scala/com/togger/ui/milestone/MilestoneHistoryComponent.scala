@@ -161,9 +161,10 @@ class MilestoneHistoryComponent(
 
   private def dayHeaderCell(day: LocalDate, colIndex: Int) =
     div(
-      cls("text-xs text-center text-body"),
+      cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight"),
       styleAttr := gridCellPlacement(colIndex, 1),
-      tgDateFormater.dayAndMonth(day)
+      div(tgDateFormater.dayOfWeekAbbrev(day)),
+      div(tgDateFormater.dayAndMonth(day))
     )
 
   private def dayCell(entries: Seq[LogEntryDto], colIndex: Int, rowIndex: Int) = {
