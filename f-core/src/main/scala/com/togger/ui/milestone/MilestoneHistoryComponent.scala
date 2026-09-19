@@ -189,7 +189,7 @@ class MilestoneHistoryComponent(
     div(
       cls("overflow-x-auto"),
       div(
-        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-auto-rows: 2.25rem;",
+        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-template-rows: 3.25rem; grid-auto-rows: 2.25rem;",
         layout.milestoneBoxes.map(milestoneBoxElement),
         layout.milestoneBoxes.map(milestoneNameCell),
         div(styleAttr := gridCellPlacement(1, 1)),
