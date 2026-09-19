@@ -7,6 +7,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -73,8 +74,11 @@ class MilestoneHistoryComponent(
   private def weekStart(date: LocalDate): LocalDate =
     date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
+  private def statusOrder(statusName: String): Int =
+    DefaultTaskStatus.values.find(_.statusName == statusName).map(_.i).getOrElse(Int.MaxValue)
+
   private def taskStatusOrder(task: FindTaskRespFull): Int =
-    DefaultTaskStatus.values.find(_.statusName == task.taskStatus.name).map(_.i).getOrElse(Int.MaxValue)
+    statusOrder(task.taskStatus.name)
 
   private def dayPasses(day: LocalDate, filter: ActiveDateFilter): Boolean =
     filter match {
@@ -95,6 +99,16 @@ class MilestoneHistoryComponent(
     }
 
   private val dateFilterComponent = new DateFilterComponent(monthOptionsSignal, tgDateFormater)
+
+  private val taskStatusItemsSignal: Signal[Seq[MultiSelectItem]] =
+    tasksVar.signal.map(
+      _.map(_.taskStatus)
+        .distinctBy(_.id)
+        .sortBy(s => statusOrder(s.name))
+        .map(s => MultiSelectItem(id = s.id.toString, name = s.name, isSelected = true))
+    )
+
+  private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
 
   private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
@@ -117,8 +131,18 @@ class MilestoneHistoryComponent(
   // the block), followed by a trailing block of tasks with no milestone. Contiguous blocks are what let a
   // milestone's red box be a single rectangle spanning exactly its own tasks' rows.
   private val historySignal: Signal[HistoryLayout] =
-    tasksVar.signal.combineWith(logEntriesVar.signal, milestonesVar.signal, dateFilterComponent.activeFilter).map {
-      case (tasks, allLogEntries, milestones, activeFilter) =>
+    tasksVar.signal
+      .combineWith(
+        logEntriesVar.signal,
+        milestonesVar.signal,
+        dateFilterComponent.activeFilter,
+        taskStatusFilter.selectedIds
+      )
+      .map { case (allTasks, allLogEntries, milestones, activeFilter, selectedStatusIds) =>
+        val tasks: Seq[FindTaskRespFull] =
+          if (selectedStatusIds.isEmpty) allTasks
+          else allTasks.filter(t => selectedStatusIds.contains(t.taskStatus.id.toString))
+
         val allDays: Seq[LocalDate] =
           if (allLogEntries.isEmpty) Seq.empty
           else {
@@ -225,7 +249,7 @@ class MilestoneHistoryComponent(
           hasAnyLogEntries = allLogEntries.nonEmpty,
           latestStatusColorByTask
         )
-    }
+      }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
     s"grid-column: $colStart / $colEnd; grid-row: $rowStart / $rowEnd;"
@@ -363,7 +387,7 @@ class MilestoneHistoryComponent(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
-              dateFilterComponent.element,
+              div(cls("flex justify-between mb-4"), dateFilterComponent.element, taskStatusFilter.element),
               child <-- historySignal.map { layout =>
                 if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
                 else if (layout.days.isEmpty) div("No log entries match the selected filter.")
