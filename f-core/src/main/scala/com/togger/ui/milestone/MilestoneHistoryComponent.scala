@@ -10,6 +10,7 @@ import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 
+import java.time.temporal.TemporalAdjusters
 import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
@@ -68,12 +69,18 @@ class MilestoneHistoryComponent(
   private def isWeekend(date: LocalDate): Boolean =
     date.getDayOfWeek == DayOfWeek.SATURDAY || date.getDayOfWeek == DayOfWeek.SUNDAY
 
+  private def weekStart(date: LocalDate): LocalDate =
+    date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+  private val weekBackgrounds: Seq[String] = Seq("bg-amber-100", "bg-indigo-100")
+
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
 
   private case class HistoryLayout(
     orderedTasks: Seq[FindTaskRespFull],
     entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]],
     days: Seq[LocalDate],
+    weekIndexByDay: Map[LocalDate, Int],
     milestoneBoxes: Seq[MilestoneBox]
   )
 
@@ -95,6 +102,9 @@ class MilestoneHistoryComponent(
             Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
           }
         val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
+
+        val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
+        val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
 
         val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
         val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
@@ -140,7 +150,7 @@ class MilestoneHistoryComponent(
           }
         }
 
-        HistoryLayout(orderedTasks, entriesByTaskAndDay, days, milestoneBoxes)
+        HistoryLayout(orderedTasks, entriesByTaskAndDay, days, weekIndexByDay, milestoneBoxes)
     }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
@@ -164,9 +174,10 @@ class MilestoneHistoryComponent(
       box.name
     )
 
-  private def dayHeaderCell(day: LocalDate, colIndex: Int) =
+  private def dayHeaderCell(day: LocalDate, colIndex: Int, weekIndex: Int) =
     div(
       cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight"),
+      cls(weekBackgrounds(weekIndex % weekBackgrounds.size)),
       styleAttr := gridCellPlacement(colIndex, 1),
       div(tgDateFormater.dayOfWeekAbbrev(day)),
       div(tgDateFormater.dayAndMonth(day))
@@ -199,7 +210,9 @@ class MilestoneHistoryComponent(
         layout.milestoneBoxes.map(milestoneNameCell),
         div(styleAttr := gridCellPlacement(1, 1)),
         div(styleAttr := gridCellPlacement(2, 1)),
-        layout.days.zipWithIndex.map { case (day, idx) => dayHeaderCell(day, idx + 3) },
+        layout.days.zipWithIndex.map { case (day, idx) =>
+          dayHeaderCell(day, idx + 3, layout.weekIndexByDay.getOrElse(day, 0))
+        },
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
           val rowIndex = taskIdx + 2
           taskNameCell(task, rowIndex) +:
