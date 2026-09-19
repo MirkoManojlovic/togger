@@ -122,6 +122,7 @@ class MilestoneHistoryComponent(
 
   private val taskColWidthPxVar: Var[Double] = Var(192.0) // 12rem at default root font size
   private val dragStateVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
+  private val hoveredRowIndexVar: Var[Option[Int]] = Var(None)
 
   private def startDrag(ev: MouseEvent): Unit = {
     ev.preventDefault()
@@ -334,6 +335,8 @@ class MilestoneHistoryComponent(
     div(
       cls("flex items-center justify-center"),
       styleAttr := gridCellPlacement(colIndex, rowIndex),
+      onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
+      onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
       latest match {
         case Some(e) =>
           div(
@@ -374,6 +377,8 @@ class MilestoneHistoryComponent(
     div(
       cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2"),
       styleAttr := gridCellPlacement(1, rowIndex),
+      onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
+      onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
       statusColor.map { color =>
         div(
           cls("w-2 h-2 rounded-full shrink-0 mr-1.5"),
@@ -394,6 +399,12 @@ class MilestoneHistoryComponent(
         cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
         onMouseDown --> (ev => startDrag(ev))
       )
+    )
+
+  private def rowHoverOverlay(rowIndex: Int, colEnd: Int) =
+    div(
+      cls("pointer-events-none rounded-md border-2 border-y-indigo-500"),
+      styleAttr := gridPlacement(1, colEnd, rowIndex, rowIndex + 1)
     )
 
   private def renderGrid(layout: HistoryLayout) =
@@ -418,7 +429,8 @@ class MilestoneHistoryComponent(
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)
             }
         },
-        layout.milestoneBoxes.map(taskNameResizeHandle)
+        layout.milestoneBoxes.map(taskNameResizeHandle),
+        child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => rowHoverOverlay(rowIndex, layout.days.size + 3)))
       )
     )
 
@@ -440,6 +452,7 @@ class MilestoneHistoryComponent(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
+              historySignal --> (_ => hoveredRowIndexVar.set(None)),
               div(
                 cls("flex justify-between items-start mb-4"),
                 searchBox.element,
