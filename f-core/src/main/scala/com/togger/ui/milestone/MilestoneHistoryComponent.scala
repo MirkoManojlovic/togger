@@ -10,7 +10,7 @@ import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 class MilestoneHistoryComponent(
@@ -65,6 +65,9 @@ class MilestoneHistoryComponent(
   private def toLocalDate(instant: Instant): LocalDate =
     instant.atOffset(ZoneOffset.UTC).toLocalDate
 
+  private def isWeekend(date: LocalDate): Boolean =
+    date.getDayOfWeek == DayOfWeek.SATURDAY || date.getDayOfWeek == DayOfWeek.SUNDAY
+
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
 
   private case class HistoryLayout(
@@ -89,7 +92,7 @@ class MilestoneHistoryComponent(
             val dates = logEntries.map(e => toLocalDate(e.createdAt))
             val minDate = dates.min
             val maxDate = dates.max
-            Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).toSeq
+            Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
           }
         val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
 
@@ -115,8 +118,10 @@ class MilestoneHistoryComponent(
           milestoneIdOpt match {
             case Some(milestoneId) if groupTasks.nonEmpty =>
               val groupTaskIds = groupTasks.map(_.id).toSet
-              val groupDates =
-                logEntries.filter(e => groupTaskIds.contains(e.taskId)).map(e => toLocalDate(e.createdAt))
+              val groupDates = logEntries
+                .filter(e => groupTaskIds.contains(e.taskId))
+                .map(e => toLocalDate(e.createdAt))
+                .filter(dayIndex.contains)
               if (groupDates.isEmpty) Seq.empty
               else {
                 val minIdx = dayIndex(groupDates.min)
