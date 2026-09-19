@@ -286,6 +286,29 @@ class MilestoneHistoryComponent(
     )
   }
 
+  private case class TaskStatusBadge(text: String, bgColor: String, textColor: String)
+
+  private def taskStatusBadge(task: FindTaskRespFull): Option[TaskStatusBadge] =
+    DefaultTaskStatus.values.find(_.statusName == task.taskStatus.name).map {
+      case DefaultTaskStatus.InProgress      => TaskStatusBadge("progress", "#3B82F6", "#FFFFFF")
+      case DefaultTaskStatus.Testing         => TaskStatusBadge("test", "#3B82F6", "#FFFFFF")
+      case DefaultTaskStatus.InReviewWaiting => TaskStatusBadge("wait", "#EAB308", "#000000")
+      case DefaultTaskStatus.Blocked         => TaskStatusBadge("block", "#EF4444", "#FFFFFF")
+      case DefaultTaskStatus.Todo            => TaskStatusBadge("todo", "#9CA3AF", "#000000")
+      case DefaultTaskStatus.Backlog         => TaskStatusBadge("blog", "#9CA3AF", "#000000")
+      case DefaultTaskStatus.Done            => TaskStatusBadge("done", "#22C55E", "#FFFFFF")
+      case DefaultTaskStatus.WontDo          => TaskStatusBadge("wontdo", "#000000", "#FFFFFF")
+      case DefaultTaskStatus.Archived        => TaskStatusBadge("archive", "#000000", "#FFFFFF")
+    }
+
+  private def taskStatusBadgeElement(badge: TaskStatusBadge) =
+    div(
+      title(badge.text),
+      cls("flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-3.5 text-[8px] font-semibold leading-none"),
+      styleAttr := s"background-color: ${badge.bgColor}; color: ${badge.textColor};",
+      badge.text
+    )
+
   private def taskNameCell(task: FindTaskRespFull, rowIndex: Int, statusColor: Option[String]) =
     div(
       cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2"),
@@ -296,6 +319,7 @@ class MilestoneHistoryComponent(
           styleAttr := s"background-color: $color;"
         )
       },
+      taskStatusBadge(task).map(taskStatusBadgeElement),
       task.name,
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
     )
