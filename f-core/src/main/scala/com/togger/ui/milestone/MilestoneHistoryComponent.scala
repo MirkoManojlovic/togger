@@ -126,8 +126,8 @@ class MilestoneHistoryComponent(
                     name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
                     rowStart = rowStart,
                     rowEnd = rowEnd,
-                    colStart = minIdx + 2,
-                    colEnd = maxIdx + 3
+                    colStart = minIdx + 3,
+                    colEnd = maxIdx + 4
                   )
                 )
               }
@@ -147,16 +147,16 @@ class MilestoneHistoryComponent(
   private def milestoneBoxElement(box: MilestoneBox) =
     div(
       cls("bg-gray-600/15 border border-gray-600/40 rounded-sm pointer-events-none"),
-      styleAttr := gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd),
-      div(
-        width.percent(100),
-        height.percent(100),
-        display.flex,
-        alignItems.center,
-        justifyContent.center,
-        cls("text-[10px] font-semibold text-gray-800 bg-gray-100/80 px-1 rounded-sm inline-block whitespace-nowrap "),
-        div(box.name)
-      )
+      styleAttr := gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)
+    )
+
+  private def milestoneNameCell(box: MilestoneBox) =
+    div(
+      cls(
+        "flex items-center justify-center text-[10px] font-semibold text-gray-800 whitespace-nowrap overflow-hidden [writing-mode:vertical-rl]"
+      ),
+      styleAttr := gridPlacement(2, 3, box.rowStart, box.rowEnd),
+      box.name
     )
 
   private def dayHeaderCell(day: LocalDate, colIndex: Int) =
@@ -188,15 +188,17 @@ class MilestoneHistoryComponent(
     div(
       cls("overflow-x-auto"),
       div(
-        styleAttr := s"display: grid; grid-template-columns: 12rem repeat(${layout.days.size}, 2rem); grid-auto-rows: 2.25rem;",
+        styleAttr := s"display: grid; grid-template-columns: 12rem 2rem repeat(${layout.days.size}, 2rem); grid-auto-rows: 2.25rem;",
         layout.milestoneBoxes.map(milestoneBoxElement),
+        layout.milestoneBoxes.map(milestoneNameCell),
         div(styleAttr := gridCellPlacement(1, 1)),
-        layout.days.zipWithIndex.map { case (day, idx) => dayHeaderCell(day, idx + 2) },
+        div(styleAttr := gridCellPlacement(2, 1)),
+        layout.days.zipWithIndex.map { case (day, idx) => dayHeaderCell(day, idx + 3) },
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
           val rowIndex = taskIdx + 2
           taskNameCell(task, rowIndex) +:
             layout.days.zipWithIndex.map { case (day, idx) =>
-              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 2, rowIndex)
+              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 3, rowIndex)
             }
         }
       )
