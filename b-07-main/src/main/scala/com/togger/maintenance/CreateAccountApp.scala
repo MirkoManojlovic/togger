@@ -160,6 +160,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       accountTypes <- createAccountTypes.transact(xa)
       accountType = accountTypes.head
       accounts = Seq(
+        createAccount("Dusan", "Manojlovic", "devone@email.com", accountType.id),
         createAccount("John", "Doe", "john@email.com", accountType.id),
         createAccount("John", "Smith", "shark@email.com", accountType.id),
         createAccount("Jack", "Curry", "bird@email.com", accountType.id),
