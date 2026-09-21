@@ -78,8 +78,8 @@ class ProjectRepoImpl extends ProjectRepo {
       (selectAllStatement(PROJECT_TABLE_FRAG) ++
         innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(
           fr"project.id = project_account.project_id"
-        ) ++
-        fr"where project_account.project_id = $accountId")
+        ))
+//        fr"where project_account.project_id = $accountId")
         .query[(Project, ProjectAccount)]
         .to[Seq]
     )(

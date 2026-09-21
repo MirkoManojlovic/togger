@@ -39,3 +39,4 @@ deploy_docker_desktop/frontend
 *jar
 
 src-tauri/java/*
+dump.json
