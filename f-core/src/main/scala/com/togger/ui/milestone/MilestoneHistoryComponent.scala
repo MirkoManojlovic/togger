@@ -112,6 +112,16 @@ class MilestoneHistoryComponent(
 
   private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
 
+  private val UnassignedMilestoneId = "unassigned"
+
+  private val milestoneItemsSignal: Signal[Seq[MultiSelectItem]] =
+    milestonesVar.signal.map { milestones =>
+      milestones.sortBy(_.name).map(m => MultiSelectItem(id = m.id.toString, name = m.name, isSelected = true)) :+
+        MultiSelectItem(id = UnassignedMilestoneId, name = "Unassigned", isSelected = true)
+    }
+
+  private val milestoneFilter = new TableFilterComponent(milestoneItemsSignal, label = "Filter by milestone")
+
   private val searchTermVar = Var("")
   private val searchBox = TableSearchComponent(
     inputSignal = searchTermVar.signal,
@@ -169,125 +179,144 @@ class MilestoneHistoryComponent(
         milestonesVar.signal,
         dateFilterComponent.activeFilter,
         taskStatusFilter.selectedIds,
+        milestoneFilter.selectedIds,
         searchBox.inputSignal
       )
-      .map { case (allTasks, allLogEntries, milestones, activeFilter, selectedStatusIds, searchTerm) =>
-        val byStatus: Seq[FindTaskRespFull] =
-          if (selectedStatusIds.isEmpty) allTasks
-          else allTasks.filter(t => selectedStatusIds.contains(t.taskStatus.id.toString))
+      .map {
+        case (
+              allTasks,
+              allLogEntries,
+              milestones,
+              activeFilter,
+              selectedStatusIds,
+              selectedMilestoneIds,
+              searchTerm
+            ) =>
+          val byStatus: Seq[FindTaskRespFull] =
+            if (selectedStatusIds.isEmpty) allTasks
+            else allTasks.filter(t => selectedStatusIds.contains(t.taskStatus.id.toString))
 
-        val needle = searchTerm.trim.toLowerCase
-        val tasks: Seq[FindTaskRespFull] =
-          if (needle.isEmpty) byStatus
-          else byStatus.filter(t => t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle))
+          def milestoneKey(t: FindTaskRespFull): String = t.milestone.map(_.toString).getOrElse(UnassignedMilestoneId)
 
-        val allDays: Seq[LocalDate] =
-          if (allLogEntries.isEmpty) Seq.empty
-          else {
-            val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
-            val minDate = dates.min
-            val maxDate = dates.max
-            Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
-          }
-        val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
+          val byMilestone: Seq[FindTaskRespFull] =
+            if (selectedMilestoneIds.isEmpty) byStatus
+            else byStatus.filter(t => selectedMilestoneIds.contains(milestoneKey(t)))
 
-        val logEntries: Seq[LogEntryDto] = allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
-        val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
+          val needle = searchTerm.trim.toLowerCase
+          val tasks: Seq[FindTaskRespFull] =
+            if (needle.isEmpty) byMilestone
+            else
+              byMilestone.filter(t =>
+                t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle)
+              )
 
-        val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
-          logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
+          val allDays: Seq[LocalDate] =
+            if (allLogEntries.isEmpty) Seq.empty
+            else {
+              val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
+              val minDate = dates.min
+              val maxDate = dates.max
+              Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
+            }
+          val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
 
-        val latestStatusColorByTask: Map[UUID, String] =
-          allLogEntries
-            .groupBy(_.taskId)
-            .view
-            .mapValues(_.sortBy(_.createdAt).last.status.color)
-            .toMap
+          val logEntries: Seq[LogEntryDto] = allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
+          val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
 
-        val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
+          val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
+            logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
 
-        val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
-        val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
+          val latestStatusColorByTask: Map[UUID, String] =
+            allLogEntries
+              .groupBy(_.taskId)
+              .view
+              .mapValues(_.sortBy(_.createdAt).last.status.color)
+              .toMap
 
-        // days is chronologically ordered, so days sharing a (year, month) are always contiguous —
-        // a simple fold groups them into runs without needing a stable groupBy.
-        val monthHeaders: Seq[MonthHeader] = days.zipWithIndex
-          .foldLeft(Vector.empty[(LocalDate, Int, Int)]) { case (acc, (day, idx)) =>
-            acc.lastOption match {
-              case Some((repDay, startIdx, _)) if repDay.getYear == day.getYear && repDay.getMonth == day.getMonth =>
-                acc.init :+ (repDay, startIdx, idx)
-              case _ =>
-                acc :+ (day, idx, idx)
+          val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
+
+          val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
+          val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
+
+          // days is chronologically ordered, so days sharing a (year, month) are always contiguous —
+          // a simple fold groups them into runs without needing a stable groupBy.
+          val monthHeaders: Seq[MonthHeader] = days.zipWithIndex
+            .foldLeft(Vector.empty[(LocalDate, Int, Int)]) { case (acc, (day, idx)) =>
+              acc.lastOption match {
+                case Some((repDay, startIdx, _)) if repDay.getYear == day.getYear && repDay.getMonth == day.getMonth =>
+                  acc.init :+ (repDay, startIdx, idx)
+                case _ =>
+                  acc :+ (day, idx, idx)
+              }
+            }
+            .map { case (repDay, startIdx, endIdx) =>
+              MonthHeader(
+                tgDateFormater.monthName(repDay),
+                monthNumber = repDay.getMonthValue,
+                colStart = startIdx + 1,
+                colEnd = endIdx + 2
+              )
+            }
+
+          val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
+          val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
+          val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
+            visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
+          val unassignedTasks: Seq[FindTaskRespFull] =
+            visibleTasks.filter(_.milestone.isEmpty).sortBy(t => (taskStatusOrder(t), t.name))
+
+          val orderedMilestoneIds: Seq[UUID] =
+            tasksByMilestone.keys.toSeq.sortBy(id => milestoneNamesById.getOrElse(id, id.toString))
+
+          val orderedGroups: Seq[(Option[UUID], Seq[FindTaskRespFull])] =
+            orderedMilestoneIds.map(id =>
+              Some(id) -> tasksByMilestone(id).sortBy(t => (taskStatusOrder(t), t.name))
+            ) :+ (None -> unassignedTasks)
+
+          val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
+
+          var rowCursor = 0
+          val milestoneBoxes: Seq[MilestoneBox] = orderedGroups.flatMap { case (milestoneIdOpt, groupTasks) =>
+            val rowStart = rowCursor + 3
+            rowCursor += groupTasks.size
+            val rowEnd = rowCursor + 3
+
+            milestoneIdOpt match {
+              case Some(milestoneId) if groupTasks.nonEmpty =>
+                val groupTaskIds = groupTasks.map(_.id).toSet
+                val groupDates = logEntries
+                  .filter(e => groupTaskIds.contains(e.taskId))
+                  .map(e => toLocalDate(e.createdAt))
+                  .filter(dayIndex.contains)
+                if (groupDates.isEmpty) Seq.empty
+                else {
+                  val minIdx = dayIndex(groupDates.min)
+                  val maxIdx = dayIndex(groupDates.max)
+                  Seq(
+                    MilestoneBox(
+                      name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
+                      rowStart = rowStart,
+                      rowEnd = rowEnd,
+                      colStart = minIdx + 1,
+                      colEnd = maxIdx + 2
+                    )
+                  )
+                }
+              case _ => Seq.empty
             }
           }
-          .map { case (repDay, startIdx, endIdx) =>
-            MonthHeader(
-              tgDateFormater.monthName(repDay),
-              monthNumber = repDay.getMonthValue,
-              colStart = startIdx + 1,
-              colEnd = endIdx + 2
-            )
-          }
 
-        val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
-        val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
-        val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
-          visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
-        val unassignedTasks: Seq[FindTaskRespFull] =
-          visibleTasks.filter(_.milestone.isEmpty).sortBy(t => (taskStatusOrder(t), t.name))
-
-        val orderedMilestoneIds: Seq[UUID] =
-          tasksByMilestone.keys.toSeq.sortBy(id => milestoneNamesById.getOrElse(id, id.toString))
-
-        val orderedGroups: Seq[(Option[UUID], Seq[FindTaskRespFull])] =
-          orderedMilestoneIds.map(id =>
-            Some(id) -> tasksByMilestone(id).sortBy(t => (taskStatusOrder(t), t.name))
-          ) :+ (None -> unassignedTasks)
-
-        val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
-
-        var rowCursor = 0
-        val milestoneBoxes: Seq[MilestoneBox] = orderedGroups.flatMap { case (milestoneIdOpt, groupTasks) =>
-          val rowStart = rowCursor + 3
-          rowCursor += groupTasks.size
-          val rowEnd = rowCursor + 3
-
-          milestoneIdOpt match {
-            case Some(milestoneId) if groupTasks.nonEmpty =>
-              val groupTaskIds = groupTasks.map(_.id).toSet
-              val groupDates = logEntries
-                .filter(e => groupTaskIds.contains(e.taskId))
-                .map(e => toLocalDate(e.createdAt))
-                .filter(dayIndex.contains)
-              if (groupDates.isEmpty) Seq.empty
-              else {
-                val minIdx = dayIndex(groupDates.min)
-                val maxIdx = dayIndex(groupDates.max)
-                Seq(
-                  MilestoneBox(
-                    name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
-                    rowStart = rowStart,
-                    rowEnd = rowEnd,
-                    colStart = minIdx + 1,
-                    colEnd = maxIdx + 2
-                  )
-                )
-              }
-            case _ => Seq.empty
-          }
+          HistoryLayout(
+            orderedTasks,
+            entriesByTaskAndDay,
+            days,
+            weekIndexByDay,
+            monthHeaders,
+            milestoneBoxes,
+            hasAnyLogEntries = allLogEntries.nonEmpty,
+            latestStatusColorByTask
+          )
         }
-
-        HistoryLayout(
-          orderedTasks,
-          entriesByTaskAndDay,
-          days,
-          weekIndexByDay,
-          monthHeaders,
-          milestoneBoxes,
-          hasAnyLogEntries = allLogEntries.nonEmpty,
-          latestStatusColorByTask
-        )
-      }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
     s"grid-column: $colStart / $colEnd; grid-row: $rowStart / $rowEnd;"
@@ -478,7 +507,7 @@ class MilestoneHistoryComponent(
               div(
                 cls("flex justify-between items-start mb-4"),
                 searchBox.element,
-                div(cls("flex"), dateFilterComponent.element, taskStatusFilter.element)
+                div(cls("flex"), dateFilterComponent.element, taskStatusFilter.element, milestoneFilter.element)
               ),
               child <-- historySignal.map { layout =>
                 if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
