@@ -27,6 +27,9 @@ class MilestoneController(
       name = dto.name,
       description = dto.description,
       status = MilestoneStatus.Open,
+      startDate = dto.startDate,
+      estimatedEndDate = dto.estimatedEndDate,
+      endDate = None,
       createdAt = now,
       updatedAt = now
     )
@@ -64,6 +67,9 @@ class MilestoneController(
           name = dto.name,
           description = dto.description,
           status = dto.status.getOrElse(current.version.status),
+          startDate = dto.startDate.getOrElse(current.version.startDate),
+          estimatedEndDate = dto.estimatedEndDate.getOrElse(current.version.estimatedEndDate),
+          endDate = dto.endDate.orElse(current.version.endDate),
           createdAt = now,
           updatedAt = now
         )
@@ -91,7 +97,7 @@ class MilestoneController(
 
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
     milestoneService
-      .updateVersionContent(dto.version, dto.name, dto.description, dto.status)
+      .updateVersionContent(dto.version, dto.name, dto.description, dto.status, dto.startDate, dto.estimatedEndDate, dto.endDate)
       .map {
         case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
         case Left(error)    => error.toBadRequestLeft[MilestoneVersionDto]

@@ -229,6 +229,21 @@ databaseChangeLog:
                     nullable: false
                     unique: false
               - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: estimated_end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: true
+              - column:
                   name: created_at
                   type: timestamp with time zone
                   constraints:

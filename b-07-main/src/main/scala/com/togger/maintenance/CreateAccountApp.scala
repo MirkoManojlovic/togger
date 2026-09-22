@@ -123,6 +123,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             name = milestoneName,
             description = "",
             status = MilestoneStatus.Open,
+            startDate = LocalDate.now(),
+            estimatedEndDate = LocalDate.now().plusMonths(1),
             createdAt = now,
             updatedAt = now
           )

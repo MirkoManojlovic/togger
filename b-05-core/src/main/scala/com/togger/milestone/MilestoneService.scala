@@ -15,6 +15,7 @@ import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneService(
@@ -76,7 +77,10 @@ class MilestoneService(
     version: UUID,
     name: String,
     description: String,
-    status: MilestoneStatus = MilestoneStatus.Open
+    status: MilestoneStatus = MilestoneStatus.Open,
+    startDate: LocalDate,
+    estimatedEndDate: LocalDate,
+    endDate: Option[LocalDate] = None
   ): IO[Either[MilestoneError, MilestoneVersion]] =
     (for {
       existingVersion <- milestoneVersionRepo.findByVersion(version)
@@ -86,7 +90,7 @@ class MilestoneService(
           (CannotEditLatestVersion: MilestoneError).asLeft[MilestoneVersion].pure[doobie.ConnectionIO]
         else
           milestoneVersionRepo
-            .updateContent(existingVersion.withNewContent(name, description, status))
+            .updateContent(existingVersion.withNewContent(name, description, status, startDate, estimatedEndDate, endDate))
             .map(_.asRight[MilestoneError])
     } yield result)
       .transact(transactor)

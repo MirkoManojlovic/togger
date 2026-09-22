@@ -1,6 +1,6 @@
 package com.togger.milestone
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 case class Milestone(
@@ -10,21 +10,34 @@ case class Milestone(
 )
 
 case class MilestoneVersion(
-                             version: UUID,
-                             milestoneId: UUID,
-                             name: String,
-                             description: String,
-                             status: MilestoneStatus = MilestoneStatus.Open,
-                             createdAt: Instant,
-                             updatedAt: Instant
+  version: UUID,
+  milestoneId: UUID,
+  name: String,
+  description: String,
+  status: MilestoneStatus = MilestoneStatus.Open,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None,
+  createdAt: Instant,
+  updatedAt: Instant
 ) {
 
   def withNewContent(
     name: String,
     description: String,
-    status: MilestoneStatus = MilestoneStatus.Open
+    status: MilestoneStatus = MilestoneStatus.Open,
+    startDate: LocalDate,
+    estimatedEndDate: LocalDate,
+    endDate: Option[LocalDate] = None
   ): MilestoneVersion =
-    this.copy(name = name, description = description, status = status)
+    this.copy(
+      name = name,
+      description = description,
+      status = status,
+      startDate = startDate,
+      estimatedEndDate = estimatedEndDate,
+      endDate = endDate
+    )
 
 }
 
