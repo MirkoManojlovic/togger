@@ -14,6 +14,7 @@ import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneServiceTest
@@ -44,6 +45,8 @@ class MilestoneServiceTest
     milestoneId = UUID.randomUUID(),
     name = s"Milestone $suffix",
     description = s"Description $suffix",
+    startDate = LocalDate.now(),
+    estimatedEndDate = LocalDate.now().plusMonths(1),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -106,7 +109,12 @@ class MilestoneServiceTest
       val milestone = newMilestone()
       val firstVersion = newVersion("v1").copy(milestoneId = milestone.id)
       val secondVersion = newVersion("v2").copy(milestoneId = milestone.id)
-      val editedFirstVersion = firstVersion.withNewContent("old name edit", "old description edit")
+      val editedFirstVersion = firstVersion.withNewContent(
+        "old name edit",
+        "old description edit",
+        startDate = firstVersion.startDate,
+        estimatedEndDate = firstVersion.estimatedEndDate
+      )
 
       (milestoneRepo.insert _).expects(milestone).returns(milestone.pure[ConnectionIO])
       (milestoneVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
@@ -123,8 +131,20 @@ class MilestoneServiceTest
         savedMilestone = created.milestone
         secondResult <- service.saveNewVersion(savedMilestone.id, secondVersion)
         savedSecondVersion = secondResult.toOption.get.version
-        editLatestResult <- service.updateVersionContent(savedSecondVersion.version, "edited name", "edited description")
-        editOldResult <- service.updateVersionContent(firstVersion.version, "old name edit", "old description edit")
+        editLatestResult <- service.updateVersionContent(
+          savedSecondVersion.version,
+          "edited name",
+          "edited description",
+          startDate = secondVersion.startDate,
+          estimatedEndDate = secondVersion.estimatedEndDate
+        )
+        editOldResult <- service.updateVersionContent(
+          firstVersion.version,
+          "old name edit",
+          "old description edit",
+          startDate = firstVersion.startDate,
+          estimatedEndDate = firstVersion.estimatedEndDate
+        )
       } yield {
         val cp = new Checkpoint
         cp(editLatestResult shouldBe Left(CannotEditLatestVersion))

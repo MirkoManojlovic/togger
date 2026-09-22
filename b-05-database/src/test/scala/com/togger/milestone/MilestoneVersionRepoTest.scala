@@ -7,6 +7,7 @@ import com.togger.organization.TgProject
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
@@ -22,6 +23,8 @@ class MilestoneVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgPr
     milestoneId = milestoneId,
     name = s"Milestone $suffix",
     description = s"Description $suffix",
+    startDate = LocalDate.now(),
+    estimatedEndDate = LocalDate.now().plusMonths(1),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
