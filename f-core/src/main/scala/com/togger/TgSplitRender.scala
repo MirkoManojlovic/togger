@@ -319,6 +319,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectService,
                   router,
                   spinnerService,
+                  tgDateFormater,
                   projectId
                 ).element
               case ShowMilestoneHistoryPage(projectId: UUID) =>

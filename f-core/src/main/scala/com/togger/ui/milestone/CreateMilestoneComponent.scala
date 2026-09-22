@@ -19,12 +19,15 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.time.LocalDate
 import java.util.UUID
 
 case class CreateMilestoneForm(
   projectId: UUID = UUID.randomUUID(),
   name: String = "",
-  description: String = ""
+  description: String = "",
+  startDate: String = "",
+  estimatedEndDate: String = ""
 )
 
 class CreateMilestoneComponent(
@@ -76,8 +79,8 @@ class CreateMilestoneComponent(
         projectId = form.projectId,
         name = form.name,
         description = form.description,
-        startDate = java.time.LocalDate.now(),
-        estimatedEndDate = java.time.LocalDate.now()
+        startDate = LocalDate.parse(form.startDate),
+        estimatedEndDate = LocalDate.parse(form.estimatedEndDate)
       )
       spinnerService
         .runWithSpinner(milestoneService.createMilestone(dto))
@@ -98,6 +101,29 @@ class CreateMilestoneComponent(
     labelValue = "Milestone description"
   )
 
+  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (
+      form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
+      LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+    )
+      Seq("Estimated end date must be on or after start date")
+    else Seq.empty
+  }
+
+  private val startDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
+    errors = EventStream.empty,
+    labelValue = "Start date",
+    tgInputType = TgInputType.Date
+  )
+
+  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
+    errors = estimatedEndDateErrors,
+    labelValue = "Estimated end date",
+    tgInputType = TgInputType.Date
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -109,7 +135,9 @@ class CreateMilestoneComponent(
               onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
-              h5(cls("mb-2"), "Milestone dates"),
+              startDateInput.htmlElement.amend(cls("mb-4")),
+              estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+              h5(cls("mb-2"), "Additional Milestone dates"),
               addNewMilestoneDate,
               child <-- milestoneDatesVar.signal.map(dateComponents =>
                 div(

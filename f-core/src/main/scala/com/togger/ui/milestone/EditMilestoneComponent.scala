@@ -17,6 +17,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.time.LocalDate
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -24,7 +25,10 @@ case class EditMilestoneForm(
   id: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
-  status: String = MilestoneStatus.Open.value.toString
+  status: String = MilestoneStatus.Open.value.toString,
+  startDate: String = "",
+  estimatedEndDate: String = "",
+  endDate: String = ""
 )
 
 class EditMilestoneComponent(
@@ -61,7 +65,10 @@ class EditMilestoneComponent(
               id = dto.id,
               name = dto.name,
               description = dto.description,
-              status = dto.status.value.toString
+              status = dto.status.value.toString,
+              startDate = dto.startDate.toString,
+              estimatedEndDate = dto.estimatedEndDate.toString,
+              endDate = dto.endDate.map(_.toString).getOrElse("")
             )
           )
         }
@@ -119,7 +126,10 @@ class EditMilestoneComponent(
           id = form.id,
           name = form.name,
           description = form.description,
-          status = Some(MilestoneStatus.withValue(form.status.toInt))
+          status = Some(MilestoneStatus.withValue(form.status.toInt)),
+          startDate = Some(LocalDate.parse(form.startDate)),
+          estimatedEndDate = Some(LocalDate.parse(form.estimatedEndDate)),
+          endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
         )
         spinnerService
           .runWithSpinner(milestoneService.updateMilestone(dto))
@@ -148,6 +158,46 @@ class EditMilestoneComponent(
     valuesAndDisplays = ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.toString))
   )
 
+  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (
+      form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
+      LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+    )
+      Seq("Estimated end date must be on or after start date")
+    else Seq.empty
+  }
+
+  private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (
+      form.startDate.nonEmpty && form.endDate.nonEmpty &&
+      LocalDate.parse(form.endDate).isBefore(LocalDate.parse(form.startDate))
+    )
+      Seq("End date must be on or after start date")
+    else Seq.empty
+  }
+
+  private val startDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
+    errors = EventStream.empty,
+    labelValue = "Start date",
+    tgInputType = TgInputType.Date,
+  )
+
+  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
+    errors = estimatedEndDateErrors,
+    labelValue = "Estimated end date",
+    tgInputType = TgInputType.Date,
+  )
+
+  private val endDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
+    errors = endDateErrors,
+    labelValue = "End date",
+    tgInputType = TgInputType.Date,
+    isRequired = false
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -162,8 +212,11 @@ class EditMilestoneComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               statusSelect.htmlElement.amend(cls("mb-4")),
+              startDateInput.htmlElement.amend(cls("mb-4")),
+              estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+              endDateInput.htmlElement.amend(cls("mb-4")),
               addNewMilestoneDate,
-              h5(cls("mb-2"), "Milestone dates"),
+              h5(cls("mb-2"), "Additional Milestone dates"),
               children <-- milestoneDatesVar.signal.map(dateComponents =>
                 dateComponents.map(
                   _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))

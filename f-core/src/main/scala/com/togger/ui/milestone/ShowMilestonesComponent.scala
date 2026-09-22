@@ -13,6 +13,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TgDateFormater
 
 import java.util.UUID
 
@@ -21,6 +22,7 @@ class ShowMilestonesComponent(
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  tgDateFormater: TgDateFormater,
   projectId: UUID
 )(implicit
   ioRuntime: IORuntime
@@ -148,7 +150,7 @@ class ShowMilestonesComponent(
                 div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
                 child <-- filteredMilestonesSignal.map { milestones =>
                   TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Description", "Status", "Action")
+                    Seq("Id", "Name", "Description", "Status", "Start date", "Estimated end date", "End date", "Action")
                   )(
                     milestones
                       .sortBy(_.name)
@@ -158,6 +160,9 @@ class ShowMilestonesComponent(
                           createTd(dto.name),
                           createTdOverflow(dto.description),
                           createTd(dto.status.toString),
+                          createTd(tgDateFormater.asEuropeanDate(dto.startDate)),
+                          createTd(tgDateFormater.asEuropeanDate(dto.estimatedEndDate)),
+                          createTd(dto.endDate.fold("-")(date => tgDateFormater.asEuropeanDate(date))),
                           createTd(
                             div(
                               iconButton(
