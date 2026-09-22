@@ -75,7 +75,9 @@ class CreateMilestoneComponent(
       val dto = CreateMilestoneReq(
         projectId = form.projectId,
         name = form.name,
-        description = form.description
+        description = form.description,
+        startDate = java.time.LocalDate.now(),
+        estimatedEndDate = java.time.LocalDate.now()
       )
       spinnerService
         .runWithSpinner(milestoneService.createMilestone(dto))
