@@ -2,7 +2,7 @@ package com.togger.ui.milestone
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -22,6 +22,7 @@ import java.util.UUID
 class MilestoneHistoryComponent(
   taskService: TaskFeService,
   milestoneService: MilestoneFeService,
+  milestoneDateService: MilestoneDateFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -43,6 +44,7 @@ class MilestoneHistoryComponent(
   private val tasksVar = Var(Seq.empty[FindTaskRespFull])
   private val logEntriesVar = Var(Seq.empty[LogEntryDto])
   private val milestonesVar = Var(Seq.empty[FindMilestoneResp])
+  private val milestoneDatesVar = Var(Seq.empty[FindMilestoneDateResp])
 
   spinnerService
     .runWithSpinner {
@@ -58,12 +60,17 @@ class MilestoneHistoryComponent(
         milestoneService
           .findByProjectId(projectId)
           .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get)))
+      val milestoneDatesCall =
+        milestoneDateService
+          .findByProjectId(projectId)
+          .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
 
       for {
         _ <- projectCall
         _ <- tasksCall
         _ <- logEntriesCall
         _ <- milestonesCall
+        _ <- milestoneDatesCall
       } yield ()
     }
     .unsafeRunAndForget()
@@ -168,12 +175,11 @@ class MilestoneHistoryComponent(
 
   private case class MonthHeader(name: String, monthNumber: Int, colStart: Int, colEnd: Int)
 
-  private case class EstimatedEndDateMarker(
+  private case class MilestoneDateMarker(
     rowStart: Int,
     rowEnd: Int,
     colIndex: Int,
-    milestoneName: String,
-    date: LocalDate
+    tooltipText: String
   )
 
   private case class HistoryLayout(
@@ -185,7 +191,7 @@ class MilestoneHistoryComponent(
     milestoneBoxes: Seq[MilestoneBox],
     hasAnyLogEntries: Boolean,
     latestStatusColorByTask: Map[UUID, String],
-    estimatedEndDateMarkers: Seq[EstimatedEndDateMarker]
+    milestoneDateMarkers: Seq[MilestoneDateMarker]
   )
 
   // Row order: one contiguous block per milestone (alphabetical by milestone name, tasks sorted by name within
@@ -196,6 +202,7 @@ class MilestoneHistoryComponent(
       .combineWith(
         logEntriesVar.signal,
         milestonesVar.signal,
+        milestoneDatesVar.signal,
         dateFilterComponent.activeFilter,
         taskStatusFilter.selectedIds,
         milestoneFilter.selectedIds,
@@ -207,6 +214,7 @@ class MilestoneHistoryComponent(
               allTasks,
               allLogEntries,
               milestones,
+              milestoneDates,
               activeFilter,
               selectedStatusIds,
               selectedMilestoneIds,
@@ -292,6 +300,7 @@ class MilestoneHistoryComponent(
 
           val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
           val milestonesById: Map[UUID, FindMilestoneResp] = milestones.map(m => m.id -> m).toMap
+          val milestoneDatesByMilestoneId: Map[UUID, Seq[FindMilestoneDateResp]] = milestoneDates.groupBy(_.milestoneId)
           val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
           val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
             visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
@@ -309,9 +318,9 @@ class MilestoneHistoryComponent(
           val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
 
           var rowCursor = 0
-          val (milestoneBoxes, estimatedEndDateMarkers)
-            : (Seq[MilestoneBox], Seq[EstimatedEndDateMarker]) =
-            orderedGroups.foldLeft((Seq.empty[MilestoneBox], Seq.empty[EstimatedEndDateMarker])) {
+          val (milestoneBoxes, milestoneDateMarkers)
+            : (Seq[MilestoneBox], Seq[MilestoneDateMarker]) =
+            orderedGroups.foldLeft((Seq.empty[MilestoneBox], Seq.empty[MilestoneDateMarker])) {
               case ((boxAcc, markerAcc), (milestoneIdOpt, groupTasks)) =>
                 val rowStart = rowCursor + 3
                 rowCursor += groupTasks.size
@@ -321,6 +330,7 @@ class MilestoneHistoryComponent(
                   case Some(milestoneId) if groupTasks.nonEmpty =>
                     milestonesById.get(milestoneId) match {
                       case Some(milestone) =>
+                        val milestoneName = milestoneNamesById.getOrElse(milestoneId, "Milestone")
                         val startDate = milestone.startDate
                         val endDate = milestone.endDate.getOrElse(milestone.estimatedEndDate)
                         // Milestone dates are always work days, but may fall outside the currently visible
@@ -339,7 +349,7 @@ class MilestoneHistoryComponent(
                           case (Some(minIdx), Some(maxIdx)) if minIdx <= maxIdx =>
                             Seq(
                               MilestoneBox(
-                                name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
+                                name = milestoneName,
                                 rowStart = rowStart,
                                 rowEnd = rowEnd,
                                 colStart = minIdx + 1,
@@ -349,20 +359,40 @@ class MilestoneHistoryComponent(
                             )
                           case _ => Seq.empty
                         }
-                        val newMarkers = days.indexOf(milestone.estimatedEndDate) match {
+                        val estimatedEndDateMarker = days.indexOf(milestone.estimatedEndDate) match {
                           case -1 => Seq.empty
                           case idx =>
                             Seq(
-                              EstimatedEndDateMarker(
+                              MilestoneDateMarker(
                                 rowStart = rowStart,
                                 rowEnd = rowEnd,
                                 colIndex = idx + 1,
-                                milestoneName = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
-                                date = milestone.estimatedEndDate
+                                tooltipText =
+                                  s"$milestoneName — estimated end date: ${tgDateFormater.asEuropeanDate(milestone.estimatedEndDate)}"
                               )
                             )
                         }
-                        (boxAcc ++ newBoxes, markerAcc ++ newMarkers)
+                        // Custom, user-defined dates attached to this milestone (distinct from its own
+                        // startDate/estimatedEndDate/endDate fields) — each gets its own marker when its
+                        // day is currently visible.
+                        val customDateMarkers = milestoneDatesByMilestoneId.getOrElse(milestoneId, Seq.empty).flatMap {
+                          milestoneDate =>
+                            val date = toLocalDate(milestoneDate.date)
+                            days.indexOf(date) match {
+                              case -1 => None
+                              case idx =>
+                                Some(
+                                  MilestoneDateMarker(
+                                    rowStart = rowStart,
+                                    rowEnd = rowEnd,
+                                    colIndex = idx + 1,
+                                    tooltipText =
+                                      s"$milestoneName — ${milestoneDate.name}: ${tgDateFormater.asEuropeanDate(date)}"
+                                  )
+                                )
+                            }
+                        }
+                        (boxAcc ++ newBoxes, markerAcc ++ estimatedEndDateMarker ++ customDateMarkers)
                       case None => (boxAcc, markerAcc)
                     }
                   case _ => (boxAcc, markerAcc)
@@ -378,7 +408,7 @@ class MilestoneHistoryComponent(
             milestoneBoxes,
             hasAnyLogEntries = allLogEntries.nonEmpty,
             latestStatusColorByTask,
-            estimatedEndDateMarkers
+            milestoneDateMarkers
           )
       }
 
@@ -396,12 +426,9 @@ class MilestoneHistoryComponent(
           s"background-color: ${box.color}47; border-color: ${box.color}66;"
     )
 
-  private def estimatedEndDateMarkerElement(marker: EstimatedEndDateMarker) = {
+  private def milestoneDateMarkerElement(marker: MilestoneDateMarker) = {
     val trigger = div(cls("w-full h-full border-2 border-black rounded-sm hover:bg-black/10"))
-    TgTooltip(
-      trigger = trigger,
-      text = s"${marker.milestoneName} — estimated end date: ${tgDateFormater.asEuropeanDate(marker.date)}"
-    ).element.amend(
+    TgTooltip(trigger = trigger, text = marker.tooltipText).element.amend(
       styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
     )
   }
@@ -560,7 +587,7 @@ class MilestoneHistoryComponent(
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 1, rowIndex)
             }
           },
-          layout.estimatedEndDateMarkers.map(estimatedEndDateMarkerElement),
+          layout.milestoneDateMarkers.map(milestoneDateMarkerElement),
           child.maybe <-- hoveredRowIndexVar.signal.map(
             _.map(rowIndex => rightRowHoverOverlay(rowIndex, layout.days.size + 1))
           )

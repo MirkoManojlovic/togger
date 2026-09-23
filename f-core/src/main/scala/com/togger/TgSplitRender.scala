@@ -330,6 +330,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new MilestoneHistoryComponent(
                   taskService,
                   milestoneService,
+                  milestoneDateService,
                   projectService,
                   router,
                   spinnerService,
