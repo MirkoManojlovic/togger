@@ -233,8 +233,6 @@ class MilestoneHistoryComponent(
               .mapValues(_.sortBy(_.createdAt).last.status.color)
               .toMap
 
-          val dayIndex: Map[LocalDate, Int] = days.zipWithIndex.toMap
-
           val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
           val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
 
@@ -259,6 +257,7 @@ class MilestoneHistoryComponent(
             }
 
           val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
+          val milestonesById: Map[UUID, FindMilestoneResp] = milestones.map(m => m.id -> m).toMap
           val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
           val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
             visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
@@ -283,24 +282,36 @@ class MilestoneHistoryComponent(
 
             milestoneIdOpt match {
               case Some(milestoneId) if groupTasks.nonEmpty =>
-                val groupTaskIds = groupTasks.map(_.id).toSet
-                val groupDates = logEntries
-                  .filter(e => groupTaskIds.contains(e.taskId))
-                  .map(e => toLocalDate(e.createdAt))
-                  .filter(dayIndex.contains)
-                if (groupDates.isEmpty) Seq.empty
-                else {
-                  val minIdx = dayIndex(groupDates.min)
-                  val maxIdx = dayIndex(groupDates.max)
-                  Seq(
-                    MilestoneBox(
-                      name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
-                      rowStart = rowStart,
-                      rowEnd = rowEnd,
-                      colStart = minIdx + 1,
-                      colEnd = maxIdx + 2
-                    )
-                  )
+                milestonesById.get(milestoneId) match {
+                  case Some(milestone) =>
+                    val startDate = milestone.startDate
+                    val endDate = milestone.endDate.getOrElse(milestone.estimatedEndDate)
+                    // Milestone dates are always work days, but may fall outside the currently visible
+                    // `days` (e.g. before the earliest logged day, or excluded by the active date filter).
+                    // Clip the box to the nearest visible column on each side, and drop it entirely if the
+                    // milestone's own range doesn't overlap the visible days at all.
+                    val minIdxOpt = days.indexWhere(!_.isBefore(startDate)) match {
+                      case -1  => None
+                      case idx => Some(idx)
+                    }
+                    val maxIdxOpt = days.lastIndexWhere(!_.isAfter(endDate)) match {
+                      case -1  => None
+                      case idx => Some(idx)
+                    }
+                    (minIdxOpt, maxIdxOpt) match {
+                      case (Some(minIdx), Some(maxIdx)) if minIdx <= maxIdx =>
+                        Seq(
+                          MilestoneBox(
+                            name = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
+                            rowStart = rowStart,
+                            rowEnd = rowEnd,
+                            colStart = minIdx + 1,
+                            colEnd = maxIdx + 2
+                          )
+                        )
+                      case _ => Seq.empty
+                    }
+                  case None => Seq.empty
                 }
               case _ => Seq.empty
             }
