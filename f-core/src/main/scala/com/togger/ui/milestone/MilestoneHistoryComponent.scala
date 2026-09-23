@@ -8,7 +8,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgTooltip}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -168,7 +168,13 @@ class MilestoneHistoryComponent(
 
   private case class MonthHeader(name: String, monthNumber: Int, colStart: Int, colEnd: Int)
 
-  private case class EstimatedEndDateMarker(rowStart: Int, rowEnd: Int, colIndex: Int)
+  private case class EstimatedEndDateMarker(
+    rowStart: Int,
+    rowEnd: Int,
+    colIndex: Int,
+    milestoneName: String,
+    date: LocalDate
+  )
 
   private case class HistoryLayout(
     orderedTasks: Seq[FindTaskRespFull],
@@ -344,8 +350,17 @@ class MilestoneHistoryComponent(
                           case _ => Seq.empty
                         }
                         val newMarkers = days.indexOf(milestone.estimatedEndDate) match {
-                          case -1  => Seq.empty
-                          case idx => Seq(EstimatedEndDateMarker(rowStart = rowStart, rowEnd = rowEnd, colIndex = idx + 1))
+                          case -1 => Seq.empty
+                          case idx =>
+                            Seq(
+                              EstimatedEndDateMarker(
+                                rowStart = rowStart,
+                                rowEnd = rowEnd,
+                                colIndex = idx + 1,
+                                milestoneName = milestoneNamesById.getOrElse(milestoneId, "Milestone"),
+                                date = milestone.estimatedEndDate
+                              )
+                            )
                         }
                         (boxAcc ++ newBoxes, markerAcc ++ newMarkers)
                       case None => (boxAcc, markerAcc)
@@ -381,11 +396,15 @@ class MilestoneHistoryComponent(
           s"background-color: ${box.color}47; border-color: ${box.color}66;"
     )
 
-  private def estimatedEndDateMarkerElement(marker: EstimatedEndDateMarker) =
-    div(
-      cls("border-2 border-black rounded-sm pointer-events-none"),
+  private def estimatedEndDateMarkerElement(marker: EstimatedEndDateMarker) = {
+    val trigger = div(cls("w-full h-full border-2 border-black rounded-sm hover:bg-black/10"))
+    TgTooltip(
+      trigger = trigger,
+      text = s"${marker.milestoneName} — estimated end date: ${tgDateFormater.asEuropeanDate(marker.date)}"
+    ).element.amend(
       styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
     )
+  }
 
   private def milestoneNameCell(box: MilestoneBox) =
     div(
