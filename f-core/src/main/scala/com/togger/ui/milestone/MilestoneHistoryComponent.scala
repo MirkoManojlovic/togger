@@ -3,6 +3,7 @@ package com.togger.ui.milestone
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
+import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
@@ -122,6 +123,15 @@ class MilestoneHistoryComponent(
 
   private val milestoneFilter = new TableFilterComponent(milestoneItemsSignal, label = "Filter by milestone")
 
+  private val milestoneStatusItemsSignal: Signal[Seq[MultiSelectItem]] = Val(
+    MilestoneStatus.values
+      .sortBy(_.value)
+      .map(s => MultiSelectItem(id = s.value.toString, name = s.statusName, isSelected = s == MilestoneStatus.InProgress))
+  )
+
+  private val milestoneStatusFilter =
+    new TableFilterComponent(milestoneStatusItemsSignal, label = "Filter by milestone status")
+
   private val searchTermVar = Var("")
   private val searchBox = TableSearchComponent(
     inputSignal = searchTermVar.signal,
@@ -180,6 +190,7 @@ class MilestoneHistoryComponent(
         dateFilterComponent.activeFilter,
         taskStatusFilter.selectedIds,
         milestoneFilter.selectedIds,
+        milestoneStatusFilter.selectedIds,
         searchBox.inputSignal
       )
       .map {
@@ -190,6 +201,7 @@ class MilestoneHistoryComponent(
               activeFilter,
               selectedStatusIds,
               selectedMilestoneIds,
+              selectedMilestoneStatusIds,
               searchTerm
             ) =>
           val byStatus: Seq[FindTaskRespFull] =
@@ -202,11 +214,25 @@ class MilestoneHistoryComponent(
             if (selectedMilestoneIds.isEmpty) byStatus
             else byStatus.filter(t => selectedMilestoneIds.contains(milestoneKey(t)))
 
+          val milestoneStatusById: Map[UUID, MilestoneStatus] = milestones.map(m => m.id -> m.status).toMap
+
+          val byMilestoneStatus: Seq[FindTaskRespFull] =
+            if (selectedMilestoneStatusIds.isEmpty) byMilestone
+            else
+              byMilestone.filter(t =>
+                t.milestone.flatMap(milestoneStatusById.get) match {
+                  case Some(status) => selectedMilestoneStatusIds.contains(status.value.toString)
+                  case None         => true
+                }
+              )
+
           val needle = searchTerm.trim.toLowerCase
           val tasks: Seq[FindTaskRespFull] =
-            if (needle.isEmpty) byMilestone
+            if (needle.isEmpty) byMilestoneStatus
             else
-              byMilestone.filter(t => t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle))
+              byMilestoneStatus.filter(t =>
+                t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle)
+              )
 
           val allDays: Seq[LocalDate] =
             if (allLogEntries.isEmpty) Seq.empty
@@ -527,7 +553,13 @@ class MilestoneHistoryComponent(
               div(
                 cls("flex justify-between items-start mb-4"),
                 searchBox.element,
-                div(cls("flex"), dateFilterComponent.element, taskStatusFilter.element, milestoneFilter.element)
+                div(
+                  cls("flex"),
+                  dateFilterComponent.element,
+                  taskStatusFilter.element,
+                  milestoneFilter.element,
+                  milestoneStatusFilter.element
+                )
               ),
               child <-- historySignal.map { layout =>
                 if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
