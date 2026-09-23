@@ -280,6 +280,8 @@ lazy val tgCommon = (crossProject(JSPlatform, JVMPlatform) in file("c-01-common"
     libraryDependencies ++= Seq(
       // Enumeration
       `com.beachape` %%% enumeratum % `enumeration-version`,
+      // java.time on ScalaJS
+      `io.github.cquiroz` %%% `scala-java-time` % `scala-java-time-version`,
       // cats
       `org.typelevel` %%% `cats-core` % `cats-version`,
       `org.typelevel` %%% `cats-effect` % `cats-effect-version`,
