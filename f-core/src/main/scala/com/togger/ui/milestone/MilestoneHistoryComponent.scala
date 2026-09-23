@@ -176,7 +176,8 @@ class MilestoneHistoryComponent(
     monthHeaders: Seq[MonthHeader],
     milestoneBoxes: Seq[MilestoneBox],
     hasAnyLogEntries: Boolean,
-    latestStatusColorByTask: Map[UUID, String]
+    latestStatusColorByTask: Map[UUID, String],
+    estimatedEndDateColByTask: Map[UUID, Int]
   )
 
   // Row order: one contiguous block per milestone (alphabetical by milestone name, tasks sorted by name within
@@ -299,6 +300,18 @@ class MilestoneHistoryComponent(
 
           val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
 
+          // 1-based grid column of each task's own milestone's estimated_end_date, when that day is
+          // currently visible. Used to draw a black border around just that milestone's own rows in
+          // that column, mirroring how the shaded milestone box only spans its own tasks' rows.
+          val estimatedEndDateColByTask: Map[UUID, Int] = orderedGroups.flatMap { case (milestoneIdOpt, groupTasks) =>
+            milestoneIdOpt
+              .flatMap(milestonesById.get)
+              .map(m => days.indexOf(m.estimatedEndDate))
+              .filter(_ >= 0)
+              .toSeq
+              .flatMap(idx => groupTasks.map(_.id -> (idx + 1)))
+          }.toMap
+
           var rowCursor = 0
           val milestoneBoxes: Seq[MilestoneBox] = orderedGroups.flatMap { case (milestoneIdOpt, groupTasks) =>
             val rowStart = rowCursor + 3
@@ -351,7 +364,8 @@ class MilestoneHistoryComponent(
             monthHeaders,
             milestoneBoxes,
             hasAnyLogEntries = allLogEntries.nonEmpty,
-            latestStatusColorByTask
+            latestStatusColorByTask,
+            estimatedEndDateColByTask
           )
       }
 
@@ -399,8 +413,9 @@ class MilestoneHistoryComponent(
       div(tgDateFormater.dayOnly(day))
     )
 
-  private def dayCell(entries: Seq[LogEntryDto], colIndex: Int, rowIndex: Int) = {
+  private def dayCell(entries: Seq[LogEntryDto], colIndex: Int, rowIndex: Int, isEstimatedEndDate: Boolean) = {
     val latest = entries.sortBy(_.createdAt).lastOption
+    val estimatedEndDateCls = if (isEstimatedEndDate) " border-2 border-black" else ""
     div(
       cls("flex items-center justify-center"),
       styleAttr := gridCellPlacement(colIndex, rowIndex),
@@ -410,11 +425,11 @@ class MilestoneHistoryComponent(
         case Some(e) =>
           div(
             title(e.status.toString),
-            cls("w-5.5 h-5.5 rounded-md"),
+            cls("w-5.5 h-5.5 rounded-md" + estimatedEndDateCls),
             styleAttr := s"background-color: ${e.status.color};"
           )
         case None =>
-          div(cls("w-5.5 h-5.5 rounded-md bg-gray-200"))
+          div(cls("w-5.5 h-5.5 rounded-md bg-gray-200" + estimatedEndDateCls))
       }
     )
   }
@@ -520,7 +535,14 @@ class MilestoneHistoryComponent(
           layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
             val rowIndex = taskIdx + 3
             layout.days.zipWithIndex.map { case (day, idx) =>
-              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 1, rowIndex)
+              val colIndex = idx + 1
+              val isEstimatedEndDate = layout.estimatedEndDateColByTask.get(task.id).contains(colIndex)
+              dayCell(
+                layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty),
+                colIndex,
+                rowIndex,
+                isEstimatedEndDate
+              )
             }
           },
           child.maybe <-- hoveredRowIndexVar.signal.map(
