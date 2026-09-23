@@ -9,7 +9,7 @@ import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, CreateMilestoneReq, FindMilestoneResp, UpdateMilestoneReq}
-import com.togger.milestone.MilestoneEndpoints
+import com.togger.milestone.{MilestoneDateValidation, MilestoneEndpoints}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -34,6 +34,7 @@ class CreateMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
+  milestoneDateValidation: MilestoneDateValidation,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -101,18 +102,30 @@ class CreateMilestoneComponent(
     labelValue = "Milestone description"
   )
 
-  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (
-      form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
-      LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
-    )
-      Seq("Estimated end date must be on or after start date")
+  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (form.startDate.nonEmpty && milestoneDateValidation.isWeekend(LocalDate.parse(form.startDate)))
+      Seq("Start date must be a work day, not a Saturday or Sunday")
     else Seq.empty
+  }
+
+  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    val orderError =
+      if (
+        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
+        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+      )
+        Seq("Estimated end date must be on or after start date")
+      else Seq.empty
+    val weekendError =
+      if (form.estimatedEndDate.nonEmpty && milestoneDateValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
+        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      else Seq.empty
+    orderError ++ weekendError
   }
 
   private val startDateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = EventStream.empty,
+    errors = startDateErrors,
     labelValue = "Start date",
     tgInputType = TgInputType.Date
   )

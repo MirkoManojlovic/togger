@@ -9,6 +9,7 @@ import com.raquo.waypoint.SplitRender
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.backendcalls.{ProtectedBackendClient, SecurityLogicJs, UnprotectedBackendClient}
 import com.togger.common.TgClockImpl
+import com.togger.milestone.MilestoneDateValidation
 import com.togger.routes.Pages._
 import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
@@ -67,6 +68,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
+  lazy val milestoneDateValidation = new MilestoneDateValidation
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
   lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
@@ -302,6 +304,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
+                  milestoneDateValidation,
                   projectId,
                   toast
                 ).element
@@ -310,6 +313,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
+                  milestoneDateValidation,
                   id,
                   toast
                 ).element
