@@ -340,7 +340,7 @@ class MilestoneHistoryComponent(
       cls("border rounded-sm pointer-events-none"),
       styleAttr :=
         s"${gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)} " +
-          s"background-color: ${box.color}1A; border-color: ${box.color}66;"
+          s"background-color: ${box.color}47; border-color: ${box.color}66;"
     )
 
   private def milestoneNameCell(box: MilestoneBox) =
