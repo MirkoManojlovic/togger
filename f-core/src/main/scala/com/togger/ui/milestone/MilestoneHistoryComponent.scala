@@ -332,7 +332,17 @@ class MilestoneHistoryComponent(
                       case Some(milestone) =>
                         val milestoneName = milestoneNamesById.getOrElse(milestoneId, "Milestone")
                         val startDate = milestone.startDate
-                        val endDate = milestone.endDate.getOrElse(milestone.estimatedEndDate)
+                        // The box's end column tracks the milestone's actual progress, so it's driven by the
+                        // last logged activity on the milestone's own tasks (ignoring active filters, so the
+                        // box doesn't shrink/grow as the user filters the view) rather than the milestone's
+                        // estimated/actual end date fields.
+                        val groupTaskIds: Set[UUID] = groupTasks.map(_.id).toSet
+                        val lastLogEntryDate: Option[LocalDate] =
+                          allLogEntries
+                            .filter(e => groupTaskIds.contains(e.taskId))
+                            .map(e => toLocalDate(e.createdAt))
+                            .maxOption
+                        val endDate = lastLogEntryDate.getOrElse(startDate)
                         // Milestone dates are always work days, but may fall outside the currently visible
                         // `days` (e.g. before the earliest logged day, or excluded by the active date filter).
                         // Clip the box to the nearest visible column on each side, and drop it entirely if the
