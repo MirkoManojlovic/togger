@@ -154,7 +154,7 @@ class MilestoneHistoryComponent(
 
   private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
 
-  private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int)
+  private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int, color: String)
 
   private case class MonthHeader(name: String, monthNumber: Int, colStart: Int, colEnd: Int)
 
@@ -206,9 +206,7 @@ class MilestoneHistoryComponent(
           val tasks: Seq[FindTaskRespFull] =
             if (needle.isEmpty) byMilestone
             else
-              byMilestone.filter(t =>
-                t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle)
-              )
+              byMilestone.filter(t => t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle))
 
           val allDays: Seq[LocalDate] =
             if (allLogEntries.isEmpty) Seq.empty
@@ -220,7 +218,8 @@ class MilestoneHistoryComponent(
             }
           val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
 
-          val logEntries: Seq[LogEntryDto] = allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
+          val logEntries: Seq[LogEntryDto] =
+            allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
           val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
 
           val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
@@ -306,7 +305,8 @@ class MilestoneHistoryComponent(
                             rowStart = rowStart,
                             rowEnd = rowEnd,
                             colStart = minIdx + 1,
-                            colEnd = maxIdx + 2
+                            colEnd = maxIdx + 2,
+                            color = milestone.status.color
                           )
                         )
                       case _ => Seq.empty
@@ -327,7 +327,7 @@ class MilestoneHistoryComponent(
             hasAnyLogEntries = allLogEntries.nonEmpty,
             latestStatusColorByTask
           )
-        }
+      }
 
   private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
     s"grid-column: $colStart / $colEnd; grid-row: $rowStart / $rowEnd;"
@@ -337,8 +337,10 @@ class MilestoneHistoryComponent(
 
   private def milestoneBoxElement(box: MilestoneBox) =
     div(
-      cls("bg-gray-600/5 border border-gray-600/40 rounded-sm pointer-events-none"),
-      styleAttr := gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)
+      cls("border rounded-sm pointer-events-none"),
+      styleAttr :=
+        s"${gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)} " +
+          s"background-color: ${box.color}1A; border-color: ${box.color}66;"
     )
 
   private def milestoneNameCell(box: MilestoneBox) =
@@ -352,7 +354,8 @@ class MilestoneHistoryComponent(
 
   private def monthHeaderCell(month: MonthHeader) = {
     val colorCls =
-      if (month.monthNumber % 2 == 1) " border-black-600 border-x-8 border-y-2 text-black" else " border-black-600 border-y-2 border-x-8 text-black"
+      if (month.monthNumber % 2 == 1) " border-black-600 border-x-8 border-y-2 text-black"
+      else " border-black-600 border-y-2 border-x-8 text-black"
     div(
       cls("flex items-center justify-center text-xs font-semibold rounded-md"),
       cls(colorCls),
@@ -408,7 +411,9 @@ class MilestoneHistoryComponent(
   private def taskStatusBadgeElement(badge: TaskStatusBadge) =
     div(
       title(badge.text),
-      cls("flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-3.5 text-[8px] font-semibold leading-none"),
+      cls(
+        "flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-3.5 text-[8px] font-semibold leading-none"
+      ),
       styleAttr := s"background-color: ${badge.bgColor}; color: ${badge.textColor};",
       badge.text
     )
@@ -465,7 +470,9 @@ class MilestoneHistoryComponent(
       cls("flex items-start"),
       div(
         cls("shrink-0"),
-        styleAttr <-- taskColWidthPxVar.signal.map(width => s"display: grid; grid-template-columns: ${width}px 2rem; $rowsTemplate"),
+        styleAttr <-- taskColWidthPxVar.signal.map(width =>
+          s"display: grid; grid-template-columns: ${width}px 2rem; $rowsTemplate"
+        ),
         div(cls("bg-neutral-primary-soft"), styleAttr := gridPlacement(1, 2, 1, 3)),
         div(styleAttr := gridPlacement(2, 3, 1, 3)),
         layout.milestoneBoxes.map(milestoneNameCell),
@@ -490,7 +497,9 @@ class MilestoneHistoryComponent(
               dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 1, rowIndex)
             }
           },
-          child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => rightRowHoverOverlay(rowIndex, layout.days.size + 1)))
+          child.maybe <-- hoveredRowIndexVar.signal.map(
+            _.map(rowIndex => rightRowHoverOverlay(rowIndex, layout.days.size + 1))
+          )
         )
       )
     )
