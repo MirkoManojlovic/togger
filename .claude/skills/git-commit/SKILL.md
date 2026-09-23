@@ -87,3 +87,5 @@ Process groups sequentially so each commit only contains its intended files. Aft
 - Never amend, force-push, or skip hooks (`--no-verify`).
 - Never invent changes — only commit what's actually present in the diff/status.
 - If a file's changes are unrelated to any other pending change, it gets its own commit rather than being forced into a group.
+- Do not add Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com> to the commit message.
+
