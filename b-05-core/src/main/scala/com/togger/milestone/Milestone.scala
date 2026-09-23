@@ -14,7 +14,7 @@ case class MilestoneVersion(
   milestoneId: UUID,
   name: String,
   description: String,
-  status: MilestoneStatus = MilestoneStatus.Open,
+  status: MilestoneStatus = MilestoneStatus.InProgress,
   startDate: LocalDate,
   estimatedEndDate: LocalDate,
   endDate: Option[LocalDate] = None,
@@ -25,7 +25,7 @@ case class MilestoneVersion(
   def withNewContent(
     name: String,
     description: String,
-    status: MilestoneStatus = MilestoneStatus.Open,
+    status: MilestoneStatus = MilestoneStatus.InProgress,
     startDate: LocalDate,
     estimatedEndDate: LocalDate,
     endDate: Option[LocalDate] = None

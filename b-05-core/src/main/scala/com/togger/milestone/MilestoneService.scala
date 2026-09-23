@@ -77,7 +77,7 @@ class MilestoneService(
     version: UUID,
     name: String,
     description: String,
-    status: MilestoneStatus = MilestoneStatus.Open,
+    status: MilestoneStatus = MilestoneStatus.InProgress,
     startDate: LocalDate,
     estimatedEndDate: LocalDate,
     endDate: Option[LocalDate] = None

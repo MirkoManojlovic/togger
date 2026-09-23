@@ -122,7 +122,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             milestoneId = TgIds.UNASSIGNED_UUID,
             name = milestoneName,
             description = "",
-            status = MilestoneStatus.Open,
+            status = MilestoneStatus.InProgress,
             startDate = LocalDate.now(),
             estimatedEndDate = LocalDate.now().plusMonths(1),
             createdAt = now,
