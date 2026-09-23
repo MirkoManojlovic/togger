@@ -47,7 +47,7 @@ object LogEntryForm {
   def default(taskId: UUID, tgClock: TgClock) =
     LogEntryForm(
       taskId = taskId,
-      status = LogEntryStatus.InProgress.toString,
+      status = LogEntryStatus.InProgress.statusName,
       date = tgClock.currentDate().toString
     )
 
