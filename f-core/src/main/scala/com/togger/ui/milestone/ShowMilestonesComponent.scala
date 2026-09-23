@@ -42,8 +42,8 @@ class ShowMilestonesComponent(
     MilestoneStatus.values.map(status =>
       MultiSelectItem(
         id = status.value.toString,
-        name = status.toString,
-        isSelected = status == MilestoneStatus.Open
+        name = status.statusName,
+        isSelected = status == MilestoneStatus.InProgress
       )
     )
   )

@@ -25,7 +25,7 @@ case class EditMilestoneForm(
   id: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
-  status: String = MilestoneStatus.Open.value.toString,
+  status: String = MilestoneStatus.InProgress.value.toString,
   startDate: String = "",
   estimatedEndDate: String = "",
   endDate: String = ""
@@ -155,7 +155,8 @@ class EditMilestoneComponent(
   private val statusSelect = formState.tgSelectManualError(
     inputAndUpdater = selectorAndUpdaterMacro(_.status),
     labelValue = "Status",
-    valuesAndDisplays = ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.toString))
+    valuesAndDisplays =
+      ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.statusName))
   )
 
   private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
