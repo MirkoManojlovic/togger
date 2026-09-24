@@ -6,6 +6,7 @@ case class CreateProjectReq(
   organizationId: UUID,
   name: String,
   description: String,
+  icon: String,
   membersToAdd: Seq[UUID]
 )
 
@@ -14,6 +15,7 @@ case class FindProjectResp(
   organizationId: UUID,
   name: String,
   description: String,
+  icon: String,
   members: Seq[SearchAccountDto]
 )
 
@@ -22,6 +24,7 @@ case class UpdateProjectReq(
   organizationId: UUID,
   name: String,
   description: String,
+  icon: String,
   membersToAdd: Seq[UUID],
   membersToRemove: Seq[UUID]
 )
