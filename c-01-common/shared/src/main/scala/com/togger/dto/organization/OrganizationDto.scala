@@ -4,11 +4,12 @@ import com.togger.dto.SearchAccountDto
 
 import java.util.UUID
 
-case class CreateOrganizationReq(name: String, description: String, membersToAdd: Seq[UUID])
+case class CreateOrganizationReq(name: String, description: String, icon: String, membersToAdd: Seq[UUID])
 case class FindOrganizationResp(
   id: UUID,
   name: String,
   description: String,
+  icon: String,
   members: Seq[SearchAccountDto]
 )
 
@@ -29,6 +30,7 @@ case class UpdateOrganizationReq(
   id: UUID,
   name: String,
   description: String,
+  icon: String,
   membersToAdd: Seq[UUID],
   membersToRemove: Seq[UUID]
 )
