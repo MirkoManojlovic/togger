@@ -17,13 +17,15 @@ case class FindOrganizationsAndProjects(
   id: UUID,
   name: String,
   description: String,
+  icon: String,
   projects: Seq[OrganizationProjectResp]
 )
 
 case class OrganizationProjectResp(
   id: UUID,
   name: String,
-  description: String
+  description: String,
+  icon: String
 )
 
 case class UpdateOrganizationReq(
