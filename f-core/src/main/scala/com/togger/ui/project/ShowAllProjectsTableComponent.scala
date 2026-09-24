@@ -130,7 +130,7 @@ class ShowAllProjectsTableComponent(
                             cls(rowCls),
                             //                textAlign.center,
                             createTd(dto.id.toString),
-                            createTd(dto.name),
+                            createTd(s"${dto.icon} ${dto.name}"),
                             createTd(dto.description),
                             createTd(
                               div(
