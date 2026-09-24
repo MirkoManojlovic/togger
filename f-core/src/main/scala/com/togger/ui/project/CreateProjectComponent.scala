@@ -25,6 +25,7 @@ case class CreateProjectForm(
   organizationId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
+  icon: String = "",
   members: Seq[UUID] = Seq.empty
 )
 
@@ -101,6 +102,7 @@ class CreateProjectComponent(
       organizationId = state.organizationId,
       name = state.name,
       description = state.description,
+      icon = state.icon,
       membersToAdd = findAccountsComponent.membersToAdd.map(_.id)
     )
 
@@ -123,6 +125,13 @@ class CreateProjectComponent(
     labelValue = "Project description"
   )
 
+  private val iconInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.icon),
+    errors = EventStream.empty,
+    labelValue = "Project icon",
+    tgInputType = TgInputType.Text
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -133,6 +142,7 @@ class CreateProjectComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.create(EventStream.fromValue(false))

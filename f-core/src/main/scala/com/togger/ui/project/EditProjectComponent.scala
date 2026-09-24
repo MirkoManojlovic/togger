@@ -23,6 +23,7 @@ case class EditProjectForm(
   projectId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
+  icon: String = "",
   organizationId: UUID = UUID.randomUUID()
 )
 
@@ -81,6 +82,7 @@ class EditProjectComponent(
                   projectId = dto.id,
                   name = dto.name,
                   description = dto.description,
+                  icon = dto.icon,
                   organizationId = dto.organizationId
                 )
               )
@@ -98,6 +100,7 @@ class EditProjectComponent(
       organizationId = state.organizationId,
       name = state.name,
       description = state.description,
+      icon = state.icon,
       membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
       membersToRemove = findAccountsComponent.membersToRemove.map(_.id)
     )
@@ -121,6 +124,13 @@ class EditProjectComponent(
     labelValue = "Project description"
   )
 
+  private val iconInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.icon),
+    errors = EventStream.empty,
+    labelValue = "Project icon",
+    tgInputType = TgInputType.Text
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -131,6 +141,7 @@ class EditProjectComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> updateSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))

@@ -66,6 +66,7 @@ class ShowMilestonesComponent(
       organizationId = UUID.randomUUID(),
       name = "",
       description = "",
+      icon = "",
       members = Seq.empty
     )
   )

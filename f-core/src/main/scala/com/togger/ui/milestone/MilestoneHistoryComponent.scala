@@ -38,6 +38,7 @@ class MilestoneHistoryComponent(
       organizationId = UUID.randomUUID(),
       name = "",
       description = "",
+      icon = "",
       members = Seq.empty
     )
   )
