@@ -69,6 +69,7 @@ class ShowAllProjectsStatusComponent(
       id = UUID.randomUUID(),
       name = "",
       description = "",
+      icon = "",
       members = Seq.empty
     )
   )

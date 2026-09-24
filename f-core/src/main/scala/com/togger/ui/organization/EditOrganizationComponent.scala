@@ -23,7 +23,8 @@ import java.util.UUID
 case class EditOrganizationForm(
   id: UUID = UUID.randomUUID(),
   name: String = "",
-  description: String = ""
+  description: String = "",
+  icon: String = ""
 )
 
 class EditOrganizationComponent(
@@ -72,7 +73,8 @@ class EditOrganizationComponent(
                     EditOrganizationForm(
                       id = dto.id,
                       name = dto.name,
-                      description = dto.description
+                      description = dto.description,
+                      icon = dto.icon
                     )
                   )
                 }
@@ -87,6 +89,7 @@ class EditOrganizationComponent(
       id = state.id,
       name = state.name,
       description = state.description,
+      icon = state.icon,
       membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
       membersToRemove = findAccountsComponent.membersToRemove.map(_.id)
     )
@@ -110,6 +113,13 @@ class EditOrganizationComponent(
     labelValue = "Organization description"
   )
 
+  private val iconInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.icon),
+    errors = EventStream.empty,
+    labelValue = "Organization icon",
+    tgInputType = TgInputType.Text
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -120,6 +130,7 @@ class EditOrganizationComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))

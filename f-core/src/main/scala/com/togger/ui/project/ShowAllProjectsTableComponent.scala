@@ -31,6 +31,7 @@ class ShowAllProjectsTableComponent(
       id = UUID.randomUUID(),
       name = "",
       description = "",
+      icon = "",
       members = Seq.empty
     )
   )

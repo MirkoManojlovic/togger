@@ -29,6 +29,7 @@ import java.util.UUID
 case class CreateOrganizationForm(
   name: String = "",
   description: String = "",
+  icon: String = "",
   members: Seq[UUID] = Seq.empty
 )
 
@@ -96,6 +97,7 @@ class CreateOrganizationComponent(
     val request = CreateOrganizationReq(
       name = state.name,
       description = state.description,
+      icon = state.icon,
       membersToAdd = findAccountsComponent.membersToAdd.map(_.id)
     )
 
@@ -118,6 +120,13 @@ class CreateOrganizationComponent(
     labelValue = "Organization description"
   )
 
+  private val iconInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.icon),
+    errors = EventStream.empty,
+    labelValue = "Organization icon",
+    tgInputType = TgInputType.Text
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -128,6 +137,7 @@ class CreateOrganizationComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.create(EventStream.fromValue(false))
