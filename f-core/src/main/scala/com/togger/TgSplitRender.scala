@@ -230,6 +230,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   organizationService,
                   accountService,
                   spinnerService,
+                  localStorage,
                   organizationId,
                   toast
                 ).element
@@ -261,6 +262,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   organizationService,
                   accountService,
                   spinnerService,
+                  localStorage,
                   toast
                 ).element
               case ShowAllOrganizationsPage =>
@@ -278,6 +280,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   router,
                   spinnerService,
+                  localStorage,
                   toast
                 ).element
               case EditProjectPage(projectId) =>
@@ -288,6 +291,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   router,
                   spinnerService,
+                  localStorage,
                   projectId,
                   toast
                 ).element

@@ -11,6 +11,8 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
+import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
+import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -34,6 +36,7 @@ class EditProjectComponent(
   accountService: AccountService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  localStorage: LocalStorage,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -124,11 +127,11 @@ class EditProjectComponent(
     labelValue = "Project description"
   )
 
-  private val iconInput = formState.tgInputManualErrorLPSig(
+  private val iconInput = formState.tgEmojiPicker(
     inputAndUpdater = selectorAndUpdaterMacro(_.icon),
     errors = EventStream.empty,
     labelValue = "Project icon",
-    tgInputType = TgInputType.Text
+    localStorage = localStorage
   )
 
   val element = div(
