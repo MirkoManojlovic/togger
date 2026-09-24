@@ -69,12 +69,20 @@ class MilestoneController(
   }
 
   val update = milestoneEndpoints.updateEndpoint.serverLogic { auth => dto =>
-    milestoneDateValidation.validate(dto.startDate, dto.estimatedEndDate, dto.endDate) match {
-      case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
-      case Right(_) =>
-        milestoneService.getCurrent(dto.id).flatMap {
-          case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
-          case Right(current) =>
+    milestoneService.getCurrent(dto.id).flatMap {
+      case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
+      case Right(current) =>
+        val effectiveStartDate = dto.startDate.getOrElse(current.version.startDate)
+        val effectiveEstimatedEndDate = dto.estimatedEndDate.getOrElse(current.version.estimatedEndDate)
+        val effectiveEndDate = dto.endDate.orElse(current.version.endDate)
+
+        milestoneDateValidation.validate(
+          Some(effectiveStartDate),
+          Some(effectiveEstimatedEndDate),
+          effectiveEndDate
+        ) match {
+          case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
+          case Right(_) =>
             val now = java.time.Instant.now()
             val newVersion = MilestoneVersion(
               version = UUID.randomUUID(),
@@ -82,9 +90,9 @@ class MilestoneController(
               name = dto.name,
               description = dto.description,
               status = dto.status.getOrElse(current.version.status),
-              startDate = dto.startDate.getOrElse(current.version.startDate),
-              estimatedEndDate = dto.estimatedEndDate.getOrElse(current.version.estimatedEndDate),
-              endDate = dto.endDate.orElse(current.version.endDate),
+              startDate = effectiveStartDate,
+              estimatedEndDate = effectiveEstimatedEndDate,
+              endDate = effectiveEndDate,
               createdAt = now,
               updatedAt = now
             )

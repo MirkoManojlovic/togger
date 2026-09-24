@@ -1,38 +1,60 @@
 package com.togger.controllers.milestone
 
+import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.controllers.milestone.MilestoneDateDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{FindMilestoneDateResp, MilestoneDateVersionDto}
-import com.togger.milestone.{MilestoneDate, MilestoneDateEndpoints, MilestoneDateService, MilestoneDateVersion}
+import com.togger.milestone.{
+  MilestoneDate,
+  MilestoneDateEndpoints,
+  MilestoneDateService,
+  MilestoneDateValidation,
+  MilestoneDateVersion,
+  MilestoneService
+}
 
+import java.time.ZoneOffset
 import java.util.UUID
 
 class MilestoneDateController(
   milestoneDateEndpoints: MilestoneDateEndpoints,
-  milestoneDateService: MilestoneDateService
+  milestoneDateService: MilestoneDateService,
+  milestoneService: MilestoneService,
+  milestoneDateValidation: MilestoneDateValidation
 ) {
 
   val save = milestoneDateEndpoints.saveEndpoint.serverLogic { auth => dto =>
-    val now = java.time.Instant.now()
-    val milestoneDate = MilestoneDate(
-      id = UUID.randomUUID(),
-      milestoneId = dto.milestoneId,
-      createdAt = now
-    )
-    val firstVersion = MilestoneDateVersion(
-      version = UUID.randomUUID(),
-      milestoneDateId = milestoneDate.id,
-      name = dto.name,
-      description = dto.description,
-      date = dto.date,
-      createdAt = now,
-      updatedAt = now
-    )
+    milestoneService.getCurrent(dto.milestoneId).flatMap {
+      case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
+      case Right(milestone) =>
+        val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
+        milestoneDateValidation
+          .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
+          .toEither match {
+          case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneDateResp])
+          case Right(_) =>
+            val now = java.time.Instant.now()
+            val milestoneDate = MilestoneDate(
+              id = UUID.randomUUID(),
+              milestoneId = dto.milestoneId,
+              createdAt = now
+            )
+            val firstVersion = MilestoneDateVersion(
+              version = UUID.randomUUID(),
+              milestoneDateId = milestoneDate.id,
+              name = dto.name,
+              description = dto.description,
+              date = dto.date,
+              createdAt = now,
+              updatedAt = now
+            )
 
-    milestoneDateService
-      .createMilestoneDate(milestoneDate, firstVersion)
-      .map(result => TgJsonSuccess.justBodyRight(toDto(result.milestoneDate, result.version)))
+            milestoneDateService
+              .createMilestoneDate(milestoneDate, firstVersion)
+              .map(result => TgJsonSuccess.justBodyRight(toDto(result.milestoneDate, result.version)))
+        }
+    }
   }
 
   val findById = milestoneDateEndpoints.findByIdEndpoint.serverLogic { auth => id =>
@@ -61,23 +83,38 @@ class MilestoneDateController(
   }
 
   val update = milestoneDateEndpoints.updateEndpoint.serverLogic { auth => dto =>
-    val now = java.time.Instant.now()
-    val newVersion = MilestoneDateVersion(
-      version = UUID.randomUUID(),
-      milestoneDateId = dto.id,
-      name = dto.name,
-      description = dto.description,
-      date = dto.date,
-      createdAt = now,
-      updatedAt = now
-    )
+    milestoneDateService.getCurrent(dto.id).flatMap {
+      case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
+      case Right(currentMilestoneDate) =>
+        milestoneService.getCurrent(currentMilestoneDate.milestoneDate.milestoneId).flatMap {
+          case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
+          case Right(milestone) =>
+            val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
+            milestoneDateValidation
+              .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
+              .toEither match {
+              case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneDateResp])
+              case Right(_) =>
+                val now = java.time.Instant.now()
+                val newVersion = MilestoneDateVersion(
+                  version = UUID.randomUUID(),
+                  milestoneDateId = dto.id,
+                  name = dto.name,
+                  description = dto.description,
+                  date = dto.date,
+                  createdAt = now,
+                  updatedAt = now
+                )
 
-    milestoneDateService
-      .saveNewVersion(dto.id, newVersion)
-      .map {
-        case Right(result) => TgJsonSuccess.justBodyRight(toDto(result.milestoneDate, result.version))
-        case Left(error)   => error.toBadRequestLeft[FindMilestoneDateResp]
-      }
+                milestoneDateService
+                  .saveNewVersion(dto.id, newVersion)
+                  .map {
+                    case Right(result) => TgJsonSuccess.justBodyRight(toDto(result.milestoneDate, result.version))
+                    case Left(error)   => error.toBadRequestLeft[FindMilestoneDateResp]
+                  }
+            }
+        }
+    }
   }
 
   val delete = milestoneDateEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
@@ -93,12 +130,27 @@ class MilestoneDateController(
   }
 
   val updateVersion = milestoneDateEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
-    milestoneDateService
-      .updateVersionContent(dto.version, dto.name, dto.description, dto.date)
-      .map {
-        case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
-        case Left(error)    => error.toBadRequestLeft[MilestoneDateVersionDto]
-      }
+    milestoneDateService.getCurrent(dto.milestoneDateId).flatMap {
+      case Left(error) => IO.pure(error.toBadRequestLeft[MilestoneDateVersionDto])
+      case Right(currentMilestoneDate) =>
+        milestoneService.getCurrent(currentMilestoneDate.milestoneDate.milestoneId).flatMap {
+          case Left(error) => IO.pure(error.toBadRequestLeft[MilestoneDateVersionDto])
+          case Right(milestone) =>
+            val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
+            milestoneDateValidation
+              .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
+              .toEither match {
+              case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneDateVersionDto])
+              case Right(_) =>
+                milestoneDateService
+                  .updateVersionContent(dto.version, dto.name, dto.description, dto.date)
+                  .map {
+                    case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
+                    case Left(error)    => error.toBadRequestLeft[MilestoneDateVersionDto]
+                  }
+            }
+        }
+    }
   }
 
   val deleteVersion = milestoneDateEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
