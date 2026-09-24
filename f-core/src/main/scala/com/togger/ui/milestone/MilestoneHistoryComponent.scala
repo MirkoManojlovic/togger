@@ -535,10 +535,10 @@ class MilestoneHistoryComponent(
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
     )
 
-  private def taskNameResizeHandle(box: MilestoneBox) =
+  private def taskNameResizeHandle(rowStart: Int, rowEnd: Int) =
     div(
       cls("pointer-events-none flex items-center justify-end"),
-      styleAttr := s"grid-column: 1 / 2; grid-row: ${box.rowStart} / ${box.rowEnd};",
+      styleAttr := s"grid-column: 1 / 2; grid-row: $rowStart / $rowEnd;",
       div(
         cls("w-2 h-20 bg-gray-300 hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
         cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
@@ -579,7 +579,7 @@ class MilestoneHistoryComponent(
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
           taskNameCell(task, taskIdx + 3, layout.latestStatusColorByTask.get(task.id))
         },
-        layout.milestoneBoxes.map(taskNameResizeHandle),
+        taskNameResizeHandle(rowStart = 3, rowEnd = layout.orderedTasks.size + 3),
         child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => leftRowHoverOverlay(rowIndex)))
       ),
       div(
