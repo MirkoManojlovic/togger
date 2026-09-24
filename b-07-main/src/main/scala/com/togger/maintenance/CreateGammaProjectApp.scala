@@ -30,6 +30,7 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
           id = TgIds.UNASSIGNED_UUID,
           name = ORGANIZATION_NAME,
           description = "",
+          icon = "🏢",
           createdAt = now,
           updatedAt = now
         ),

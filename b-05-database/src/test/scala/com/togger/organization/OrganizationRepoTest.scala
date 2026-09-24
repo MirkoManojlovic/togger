@@ -61,6 +61,7 @@ trait TgOrganization { self: TimeHelpers =>
     id = UUID.randomUUID(),
     name = "Organization name",
     description = "Organization description",
+    icon = "🚀",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -81,6 +82,7 @@ class OrganizationRepoTest extends BusinessTgDbSpec with TgAccount with TimeHelp
     id = UUID.randomUUID(),
     name = "Organization name",
     description = "Organization description",
+    icon = "🚀",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

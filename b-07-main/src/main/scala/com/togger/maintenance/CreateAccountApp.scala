@@ -177,6 +177,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           id = TgIds.UNASSIGNED_UUID,
           name = "Maths",
           description = "",
+          icon = "🏢",
           createdAt = now,
           updatedAt = now
         ),

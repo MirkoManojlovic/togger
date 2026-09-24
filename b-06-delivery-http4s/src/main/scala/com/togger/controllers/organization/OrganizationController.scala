@@ -25,6 +25,7 @@ class OrganizationController(
               id = organization.id,
               name = organization.name,
               description = organization.description,
+              icon = organization.icon,
               members = members.map(account =>
                 SearchAccountDto(
                   id = account.id,
@@ -46,6 +47,7 @@ class OrganizationController(
       id = UUID.randomUUID(),
       name = dto.name,
       description = dto.description,
+      icon = dto.icon,
       createdAt = now,
       updatedAt = now
     )
@@ -57,6 +59,7 @@ class OrganizationController(
           id = organization.id,
           name = organization.name,
           description = dto.description,
+          icon = organization.icon,
           members = members.map(account =>
             SearchAccountDto(
               id = account.id,
@@ -78,6 +81,7 @@ class OrganizationController(
       id = dto.id,
       name = dto.name,
       description = dto.description,
+      icon = dto.icon,
       createdAt = now,
       updatedAt = now
     )
@@ -94,6 +98,7 @@ class OrganizationController(
             id = organization.id,
             name = organization.name,
             description = organization.description,
+            icon = organization.icon,
             members = members.map(account =>
               SearchAccountDto(
                 id = account.id,
@@ -124,6 +129,7 @@ class OrganizationController(
               id = organization.id,
               name = organization.name,
               description = organization.description,
+              icon = organization.icon,
               members = Seq.empty
             )
           )
@@ -141,6 +147,7 @@ class OrganizationController(
               id = organization.id,
               name = organization.name,
               description = organization.description,
+              icon = organization.icon,
               members = Seq.empty
             )
           )

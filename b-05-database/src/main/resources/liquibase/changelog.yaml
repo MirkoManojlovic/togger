@@ -117,6 +117,12 @@ databaseChangeLog:
                     nullable: false
                     unique: false
               - column:
+                  name: icon
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
                   name: created_at
                   type: timestamp with time zone
                   defaultValueComputed: now()

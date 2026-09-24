@@ -26,13 +26,14 @@ class OrganizationRepoImpl extends OrganizationRepo {
     import organization._
     logAroundInfoQuery(
       insertStatement(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(fr"""
-        (name, description, created_at, updated_at)
-        values ($name, $description, $createdAt, $updatedAt)
+        (name, description, icon, created_at, updated_at)
+        values ($name, $description, $icon, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[Organization](
           "id",
           "name",
           "description",
+          "icon",
           "created_at",
           "updated_at"
         )
@@ -55,6 +56,7 @@ class OrganizationRepoImpl extends OrganizationRepo {
       updateStatementUUID(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG)(organization.id)(fr"""
         name = ${organization.name},
         description = ${organization.description},
+        icon = ${organization.icon},
         created_at = ${organization.createdAt},
         updated_at = $updatedAt
       """).update
@@ -62,6 +64,7 @@ class OrganizationRepoImpl extends OrganizationRepo {
           "id",
           "name",
           "description",
+          "icon",
           "created_at",
           "updated_at"
         )
