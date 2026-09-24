@@ -27,7 +27,8 @@ case class SidebarLink(
   isSelected: Boolean = false,
   onDumpClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
-  onLoadClick: Option[() => Unit] = None
+  onLoadClick: Option[() => Unit] = None,
+  icon: String = ""
 ) {
 
   def selected: ReactiveHtmlElement[HTMLLIElement] =
@@ -44,7 +45,7 @@ case class SidebarLink(
       cls("flex items-center justify-between"),
       a(
         cls("inline-flex items-center"),
-        TgIcons.briefcaseIcon("w-4 h-4 me-1.5 -ms-0.5"),
+        span(cls("me-1.5 -ms-0.5"), icon),
         linkName,
         link
       ),
@@ -85,7 +86,7 @@ case class SidebarLink(
   private def linkElementOrg =
     a(
       cls("inline-flex items-center w-100"),
-      TgIcons.userGroupIcon("w-4 h-4 me-1.5 -ms-0.5"),
+      span(cls("me-1.5 -ms-0.5"), icon),
       linkName,
       link
     )
@@ -281,8 +282,9 @@ class Sidebar(
             children <-- organizationState.signal.map { organizations =>
               organizations.sortBy(_.name).flatMap { organization =>
                 SidebarLink(
-                  organization.name,
-                  router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id))
+                  linkName = organization.name,
+                  link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
+                  icon = organization.icon
                 ).deselectedOrg.amend(cls("border-b-1 border-gray-200")) +:
                   organization.projects
                     .sortBy(_.name)
@@ -292,7 +294,8 @@ class Sidebar(
                         link = router.navigateTo(ShowAllTasksPage(project.id)),
                         onDumpClick = Some(() => dumpProject(project.id)),
                         onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
-                        onLoadClick = Some(() => loadAllForProject(project.id))
+                        onLoadClick = Some(() => loadAllForProject(project.id)),
+                        icon = project.icon
                       ).deselectedProject
                     )
               }
