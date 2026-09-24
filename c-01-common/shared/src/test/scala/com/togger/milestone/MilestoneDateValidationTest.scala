@@ -1,7 +1,7 @@
 package com.togger.milestone
 
 import com.togger.common.NonEmptyChainHelpers
-import com.togger.milestone.MilestoneDateValidation.WeekendDateNotAllowed
+import com.togger.milestone.MilestoneDateValidation.{DateBeforeStartDate, WeekendDateNotAllowed}
 import org.scalatest.EitherValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -77,6 +77,41 @@ class MilestoneDateValidationTest
         WeekendDateNotAllowed("Start date", saturday),
         WeekendDateNotAllowed("Estimated end date", sunday),
         WeekendDateNotAllowed("End date", saturday)
+      )
+    }
+
+    it("should accept an estimated end date equal to the start date") {
+      milestoneDateValidation.validate(Some(monday), Some(monday), None).value shouldBe (())
+    }
+
+    it("should accept an end date equal to the start date") {
+      milestoneDateValidation.validate(Some(monday), Some(nextMonday), Some(monday)).value shouldBe (())
+    }
+
+    it("should reject an estimated end date before the start date") {
+      milestoneDateValidation
+        .validate(Some(nextMonday), Some(monday), None)
+        .left
+        .value
+        .asList should contain only DateBeforeStartDate("Estimated end date", monday, nextMonday)
+    }
+
+    it("should reject an end date before the start date") {
+      milestoneDateValidation
+        .validate(Some(nextMonday), Some(nextMonday), Some(monday))
+        .left
+        .value
+        .asList should contain only DateBeforeStartDate("End date", monday, nextMonday)
+    }
+
+    it("should accumulate weekend and before-start-date errors together") {
+      milestoneDateValidation
+        .validate(Some(nextMonday), Some(saturday), None)
+        .left
+        .value
+        .asList should contain theSameElementsAs Seq(
+        WeekendDateNotAllowed("Estimated end date", saturday),
+        DateBeforeStartDate("Estimated end date", saturday, nextMonday)
       )
     }
   }
