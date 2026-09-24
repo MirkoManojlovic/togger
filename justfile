@@ -1,3 +1,6 @@
+update-emoji-data:
+    node tools/emoji/build-emoji-data.mjs
+
 build-tauri-backend:
     sbt "backendMain/Universal/packageZipTarball"
     rm -rf b-07-main/target/universal/deploy
