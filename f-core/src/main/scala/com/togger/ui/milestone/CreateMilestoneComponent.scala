@@ -42,7 +42,9 @@ class CreateMilestoneComponent(
 
   val formState = Var(CreateMilestoneForm(projectId = projectId))
 
-  val firstMilestoneDate = new CreateMilestoneDateComponent()
+  private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
+
+  val firstMilestoneDate = new CreateMilestoneDateComponent(milestoneStartDate)
   val milestoneDatesVar = Var(Seq(firstMilestoneDate))
 
   lazy val addNewMilestoneDate =
@@ -51,7 +53,9 @@ class CreateMilestoneComponent(
       .amend(
         typ("button"),
         cls("mb-4"),
-        onClick --> (_ => milestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent()))
+        onClick --> (_ =>
+          milestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate))
+        )
       )
 
   private def createMilestoneDates(

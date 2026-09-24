@@ -33,8 +33,18 @@ object EditMilestoneDateForm {
     )
 }
 
-class EditMilestoneDateComponent(dto: FindMilestoneDateResp) {
+class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate: Signal[String] = Val("")) {
   val formState = Var(EditMilestoneDateForm.fromDto(dto))
+
+  private val dateErrors: EventStream[Seq[String]] =
+    formState.signal.combineWith(milestoneStartDate).changes.map { case (form, startDate) =>
+      if (
+        form.date.nonEmpty && startDate.nonEmpty &&
+        LocalDate.parse(form.date).isBefore(LocalDate.parse(startDate))
+      )
+        Seq("Date must be on or after the milestone start date")
+      else Seq.empty
+    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -54,7 +64,7 @@ class EditMilestoneDateComponent(dto: FindMilestoneDateResp) {
 
   private val dateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.date),
-    errors = EventStream.empty,
+    errors = dateErrors,
     labelValue = "Date",
     tgInputType = TgInputType.Date,
     isRequired = false

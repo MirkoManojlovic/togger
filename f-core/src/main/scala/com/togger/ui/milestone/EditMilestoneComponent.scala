@@ -45,13 +45,17 @@ class EditMilestoneComponent(
   val milestoneDatesVar = Var(Seq.empty[EditMilestoneDateComponent])
   val newMilestoneDatesVar = Var(Seq.empty[CreateMilestoneDateComponent])
 
+  private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
+
   lazy val addNewMilestoneDate =
     TgHtmlButton
       .extraSmall("+")
       .amend(
         typ("button"),
         cls("mb-4"),
-        onClick --> (_ => newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent()))
+        onClick --> (_ =>
+          newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate))
+        )
       )
 
   spinnerService
@@ -82,7 +86,7 @@ class EditMilestoneComponent(
     .map(
       _.fold(
         error => println(error),
-        success => milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_)))
+        success => milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_, milestoneStartDate)))
       )
     )
     .unsafeRunAndForget()

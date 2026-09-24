@@ -25,8 +25,18 @@ case class CreateMilestoneDateForm(
     LocalDate.parse(date).atTime(0, 0, 0).toInstant(ZoneOffset.UTC)
 }
 
-class CreateMilestoneDateComponent {
+class CreateMilestoneDateComponent(milestoneStartDate: Signal[String] = Val("")) {
   val formState = Var(CreateMilestoneDateForm())
+
+  private val dateErrors: EventStream[Seq[String]] =
+    formState.signal.combineWith(milestoneStartDate).changes.map { case (form, startDate) =>
+      if (
+        form.date.nonEmpty && startDate.nonEmpty &&
+        LocalDate.parse(form.date).isBefore(LocalDate.parse(startDate))
+      )
+        Seq("Date must be on or after the milestone start date")
+      else Seq.empty
+    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -46,7 +56,7 @@ class CreateMilestoneDateComponent {
 
   private val dateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.date),
-    errors = EventStream.empty,
+    errors = dateErrors,
     labelValue = "Date",
     tgInputType = TgInputType.Date,
     isRequired = false
