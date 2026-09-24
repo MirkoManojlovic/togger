@@ -183,11 +183,13 @@ class OrganizationController(
               id = organization.id,
               name = organization.name,
               description = organization.description,
+              icon = organization.icon,
               projects = projects.map(project =>
                 OrganizationProjectResp(
                   id = project.id,
                   name = project.name,
-                  description = project.description
+                  description = project.description,
+                  icon = project.icon
                 )
               )
             )
