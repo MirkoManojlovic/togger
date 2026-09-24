@@ -40,6 +40,7 @@ trait TgProject extends TgOrganization { self: TimeHelpers =>
     organizationId = UUID.randomUUID(),
     name = "Project name",
     description = "Project description",
+    icon = "🚀",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

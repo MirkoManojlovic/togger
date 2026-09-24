@@ -7,6 +7,7 @@ case class Project(
   organizationId: UUID,
   name: String,
   description: String,
+  icon: String,
   createdAt: Instant,
   updatedAt: Instant
 )

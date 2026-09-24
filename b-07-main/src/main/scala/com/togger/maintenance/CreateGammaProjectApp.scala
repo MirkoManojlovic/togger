@@ -66,6 +66,7 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
           organizationId = organization.id,
           name = "Gamma",
           description = "",
+          icon = "📁",
           createdAt = now,
           updatedAt = now
         ),

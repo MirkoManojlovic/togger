@@ -25,14 +25,15 @@ class ProjectRepoImpl extends ProjectRepo {
     import project._
     logAroundInfoQuery(
       insertStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(fr"""
-        (organization_id, name, description, created_at, updated_at)
-        values ($organizationId, $name, $description, $createdAt, $updatedAt)
+        (organization_id, name, description, icon, created_at, updated_at)
+        values ($organizationId, $name, $description, $icon, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[Project](
           "id",
           "organization_id",
           "name",
           "description",
+          "icon",
           "created_at",
           "updated_at"
         )
@@ -56,6 +57,7 @@ class ProjectRepoImpl extends ProjectRepo {
         name = ${project.name},
         organization_id = ${project.organizationId},
         description = ${project.description},
+        icon = ${project.icon},
         created_at = ${project.createdAt},
         updated_at = $updatedAt
       """).update
@@ -64,6 +66,7 @@ class ProjectRepoImpl extends ProjectRepo {
           "organization_id",
           "name",
           "description",
+          "icon",
           "created_at",
           "updated_at"
         )

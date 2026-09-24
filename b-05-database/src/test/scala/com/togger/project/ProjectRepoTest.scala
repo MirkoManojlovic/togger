@@ -19,6 +19,7 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
     organizationId = UUID.randomUUID(),
     name = "Project name",
     description = "Project description",
+    icon = "🚀",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

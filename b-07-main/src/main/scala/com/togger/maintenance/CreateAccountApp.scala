@@ -192,6 +192,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           organizationId = savedOrg.id,
           name = "Alpha",
           description = "",
+          icon = "📁",
           createdAt = now,
           updatedAt = now
         ),
@@ -283,6 +284,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           organizationId = savedOrg.id,
           name = "Beta",
           description = "",
+          icon = "📁",
           createdAt = now,
           updatedAt = now
         ),

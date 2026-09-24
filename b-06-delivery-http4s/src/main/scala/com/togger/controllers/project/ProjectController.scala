@@ -20,6 +20,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
             foundProject.organizationId,
             foundProject.name,
             foundProject.description,
+            foundProject.icon,
             members = members.map(account =>
               SearchAccountDto(
                 id = account.id,
@@ -42,6 +43,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       organizationId = dto.organizationId,
       name = dto.name,
       description = dto.description,
+      icon = dto.icon,
       createdAt = now,
       updatedAt = now
     )
@@ -55,6 +57,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
             organizationId = savedProject.organizationId,
             name = savedProject.name,
             description = savedProject.description,
+            icon = savedProject.icon,
             members = members.map(account =>
               SearchAccountDto(
                 id = account.id,
@@ -77,6 +80,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       organizationId = dto.organizationId,
       name = dto.name,
       description = dto.description,
+      icon = dto.icon,
       createdAt = now,
       updatedAt = now
     )
@@ -94,6 +98,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
             organizationId = project.organizationId,
             name = project.name,
             description = project.description,
+            icon = project.icon,
             members = members.map(account =>
               SearchAccountDto(
                 id = account.id,
@@ -121,6 +126,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                   organizationId = project.organizationId,
                   name = project.name,
                   description = project.description,
+                  icon = project.icon,
                   members = Seq.empty
                 )
               )
