@@ -44,6 +44,13 @@ class ShowAllProjectsStatusComponent(
 ) {
 
   val stateFormVar = Var(ShowAllProjectsState())
+  private val currentWeekStart: LocalDate = {
+    val today = LocalDate.now(ZoneOffset.UTC)
+    today.minusDays(today.getDayOfWeek.getValue - 1L)
+  }
+  private val currentWeekEnd: LocalDate = currentWeekStart.plusDays(6L)
+  private val lastTwoWeeksStart: LocalDate = currentWeekStart.minusDays(7L)
+  private val lastTwoWeeksEnd: LocalDate = currentWeekEnd
   private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map { state =>
@@ -242,6 +249,14 @@ class ShowAllProjectsStatusComponent(
                         b("Description: "),
                         task.description
                       ),
+                      div(
+                        cls("flex-1 min-w-0"),
+                        weekRangeStatus(task.logEntries, currentWeekStart, currentWeekEnd, "Last week status")
+                      ),
+                      div(
+                        cls("flex-1 min-w-0"),
+                        weekRangeStatus(task.logEntries, lastTwoWeeksStart, lastTwoWeeksEnd, "Last 2 weeks status")
+                      ),
                       div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar)),
                       div(cls("flex-1 min-w-0"), logEntryCalendar(task.logEntries, selectedDayVar))
                     )
@@ -347,5 +362,34 @@ class ShowAllProjectsStatusComponent(
           )
       }
     )
+
+  private def weekRangeStatus(logEntries: Seq[LogEntryDto], start: LocalDate, end: LocalDate, title: String) = {
+    val entriesByDate = logEntries
+      .filter { entry =>
+        val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
+        !day.isBefore(start) && !day.isAfter(end)
+      }
+      .groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+
+    div(
+      cls("mb-4"),
+      p(b(title)),
+      if (entriesByDate.isEmpty) p("No status update")
+      else
+        entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
+          div(
+            cls("mb-2"),
+            p(b(tgDateFormater.asEuropeanDate(day))),
+            dayEntries.sortBy(_.createdAt).map(entry =>
+              div(
+                cls("mb-2"),
+                p(b(entry.status.toStringWithEmoji)),
+                entry.textExternal.split("\n").map(line => p(line)).toSeq
+              )
+            )
+          )
+        }
+    )
+  }
 
 }
