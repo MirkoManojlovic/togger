@@ -5,7 +5,7 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.TaskLoadResp
-import com.togger.dto.organization.FindOrganizationsAndProjects
+import com.togger.dto.organization.{FindOrganizationsAndProjects, OrganizationProjectResp}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
@@ -134,6 +134,17 @@ case class SidebarLink(
       linkElementOrg.amend(cls(Sidebar.sideBarLinkStyle))
     )
 
+  def selectedProject: ReactiveHtmlElement[HTMLLIElement] =
+    li(
+      cls("pl-2"),
+      linkElementProject.amend(cls(Sidebar.sidebarSelectedLink))
+    )
+
+  def selectedOrg: ReactiveHtmlElement[HTMLLIElement] =
+    li(
+      linkElementOrg.amend(cls(Sidebar.sidebarSelectedLink))
+    )
+
 }
 
 class Sidebar(
@@ -182,6 +193,40 @@ class Sidebar(
     }
     spinnerService.runWithSpinner(program).unsafeRunAndForget()
   }
+
+  private def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
+    case CreateTaskPage(projectId) => Some(projectId)
+    case CreateTaskStatusPage(projectId) => Some(projectId)
+    case EditTaskStatusPage(projectId, _) => Some(projectId)
+    case ShowAllTasksPage(projectId) => Some(projectId)
+    case ShowAllTaskStatusesPage(projectId) => Some(projectId)
+    case EditTaskPage(projectId, _) => Some(projectId)
+    case ShowAllTaskConfigsPage(projectId) => Some(projectId)
+    case CreateTaskDumpConfigPage(projectId) => Some(projectId)
+    case TaskDumpStatusPage(projectId) => Some(projectId)
+    case CreateTaskLoadConfigPage(projectId) => Some(projectId)
+    case CreateProjectMappingPage(projectId) => Some(projectId)
+    case CreateMilestonePage(projectId) => Some(projectId)
+    case ShowMilestonesPage(projectId) => Some(projectId)
+    case ShowMilestoneHistoryPage(projectId) => Some(projectId)
+    case EditProjectPage(id) => Some(id)
+    case _ => None
+  }
+
+  private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
+    case CreateProjectPage(organizationId) => Some(organizationId)
+    case ShowProjectsForOrganizationIdTable(id) => Some(id)
+    case ShowProjectsForOrganizationIdStatus(id) => Some(id)
+    case EditOrganizationPage(id) => Some(id)
+    case _ => None
+  }
+
+  private def isProjectSelected(project: OrganizationProjectResp, page: FrontendPage): Boolean =
+    projectIdForPage(page).contains(project.id)
+
+  private def isOrganizationSelected(organization: FindOrganizationsAndProjects, page: FrontendPage): Boolean =
+    organizationIdForPage(page).contains(organization.id) ||
+      projectIdForPage(page).exists(projectId => organization.projects.exists(_.id == projectId))
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
 
@@ -338,28 +383,34 @@ class Sidebar(
             children <-- router.currentPageSignal.map(page =>
               SidebarItems.allDeselected.selectItem(page).asHtmlElementList
             ),
-            children <-- organizationState.signal.map { organizations =>
-              organizations.sortBy(_.name).flatMap { organization =>
-                SidebarLink(
-                  linkName = organization.name,
-                  link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
-                  collapsed = collapsed,
-                  icon = organization.icon
-                ).deselectedOrg.amend(cls("border-b-1 border-gray-200")) +:
-                  organization.projects
-                    .sortBy(_.name)
-                    .map(project =>
-                      SidebarLink(
-                        linkName = project.name,
-                        link = router.navigateTo(ShowAllTasksPage(project.id)),
-                        collapsed = collapsed,
-                        onDumpClick = Some(() => dumpProject(project.id)),
-                        onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
-                        onLoadClick = Some(() => loadAllForProject(project.id)),
-                        icon = project.icon
-                      ).deselectedProject
-                    )
-              }
+            children <-- organizationState.signal.combineWith(router.currentPageSignal).map {
+              case (organizations, page) =>
+                organizations.sortBy(_.name).flatMap { organization =>
+                  val orgLink = SidebarLink(
+                    linkName = organization.name,
+                    link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
+                    collapsed = collapsed,
+                    icon = organization.icon
+                  )
+                  val orgRow =
+                    if (isOrganizationSelected(organization, page)) orgLink.selectedOrg else orgLink.deselectedOrg
+                  orgRow.amend(cls("border-b-1 border-gray-200")) +:
+                    organization.projects
+                      .sortBy(_.name)
+                      .map { project =>
+                        val projectLink = SidebarLink(
+                          linkName = project.name,
+                          link = router.navigateTo(ShowAllTasksPage(project.id)),
+                          collapsed = collapsed,
+                          onDumpClick = Some(() => dumpProject(project.id)),
+                          onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
+                          onLoadClick = Some(() => loadAllForProject(project.id)),
+                          icon = project.icon
+                        )
+                        if (isProjectSelected(project, page)) projectLink.selectedProject
+                        else projectLink.deselectedProject
+                      }
+                }
             }
 //            li(
 //              a(
