@@ -236,16 +236,14 @@ class ShowAllProjectsStatusComponent(
                     ),
                   body = TgCard.HtmlCardContent(
                     div(
+                      cls("flex flex-col md:flex-row gap-4 items-start"),
                       div(
-                        cls("mb-4"),
+                        cls("flex-1 min-w-0"),
                         b("Description: "),
                         task.description
                       ),
-                      div(
-                        cls("flex flex-col md:flex-row gap-4 items-start"),
-                        div(cls("w-fit"), logEntryCalendar(task.logEntries, selectedDayVar)),
-                        div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar))
-                      )
+                      div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar)),
+                      div(cls("flex-1 min-w-0"), logEntryCalendar(task.logEntries, selectedDayVar))
                     )
                   )
                 )
