@@ -1,69 +1,84 @@
 package com.togger.ui.navbar
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.auth.AuthAccountFe
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
+import com.togger.ui.organization.TgIcons
+import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
-
-import java.util.UUID
 
 case class MenuLink(
   linkName: String,
   link: Binder[HtmlElement],
-  isSelected: Boolean = false
+  linkClass: String = NavbarComponent.navLinkClass,
+  selectedClass: String = NavbarComponent.selectedNavLinkClass,
+  onNavigate: () => Unit = () => ()
 ) {
 
   def selected: ReactiveHtmlElement[HTMLLIElement] =
-    li(linkElement.amend(cls(NavbarComponent.selectedNavLinkClass)))
+    li(linkElement.amend(cls(selectedClass)))
 
   private def linkElement =
     a(
       linkName,
-      link
+      link,
+      onClick.mapToUnit --> (_ => onNavigate())
     )
 
   def deselected: ReactiveHtmlElement[HTMLLIElement] =
-    li(linkElement.amend(cls(NavbarComponent.navLinkClass)))
+    li(linkElement.amend(cls(linkClass)))
 
 }
 
-class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPage]) {
+class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPage], loginRepo: LoginRepo) {
 
-  private val mobileNavShow: Var[Boolean] = Var(false)
+  private val userMenuOpen: Var[Boolean] = Var(false)
 
-  private val taskMenuLink = MenuLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())))
-  private val projectMenuLink = MenuLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
+  private val closeUserMenu = Observer[Unit](_ => userMenuOpen.set(false))
+
+  private val accountSignal: Signal[Option[AuthAccountFe]] = loginRepo.authenticatedSignal
+
+  private val initialsSignal: Signal[Option[String]] =
+    accountSignal.map(_.flatMap { account =>
+      val letters =
+        account.firstName.flatMap(_.trim.headOption).toSeq ++ account.lastName.flatMap(_.trim.headOption).toSeq
+      Option.when(letters.nonEmpty)(letters.map(_.toUpper).mkString)
+    })
+
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
-  private val passwordMenuLink = MenuLink("Change Password", router.navigateTo(ChangePasswordPage))
-  private val logoutElement = li(logout.logoutButton.amend(cls(NavbarComponent.navLinkClass)))
+
+  private val passwordMenuLink =
+    MenuLink(
+      "Change Password",
+      router.navigateTo(ChangePasswordPage),
+      linkClass = NavbarComponent.dropdownItemClass,
+      selectedClass = NavbarComponent.dropdownItemSelectedClass,
+      onNavigate = () => userMenuOpen.set(false)
+    )
+
+  private val logoutElement =
+    li(
+      logout.logoutButton.amend(
+        cls(NavbarComponent.dropdownItemClass),
+        onClick.mapToUnit --> (_ => userMenuOpen.set(false))
+      )
+    )
 
   case class NavbarItems(
-    task: ReactiveHtmlElement[HTMLLIElement],
-    project: ReactiveHtmlElement[HTMLLIElement],
     organization: ReactiveHtmlElement[HTMLLIElement],
     changePassword: ReactiveHtmlElement[HTMLLIElement],
     logout: ReactiveHtmlElement[HTMLLIElement]
   ) {
 
-    lazy val asHtmlElementList: Seq[ReactiveHtmlElement[HTMLLIElement]] =
-      Seq(
-        organization,
-//        project,
-//        task,
-        changePassword,
-        logout
-      )
-
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
         case ChangePasswordPage => NavbarItems.changePasswordSelected
-        case CreateTaskPage(_) | ShowAllTasksPage(_) | EditTaskPage(_, _) | HomePage | CreateTaskStatusPage(_) =>
-          NavbarItems.taskSelected
-        case ShowProjectsForOrganizationIdTable(_) | CreateProjectPage(_) => NavbarItems.projectSelected
         case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
           NavbarItems.organizationSelected
-        case _ => NavbarItems.taskSelected
+        case _ => NavbarItems.allDeselected
       }
     }
   }
@@ -71,8 +86,6 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
   object NavbarItems {
     lazy val allDeselected: NavbarItems =
       NavbarItems(
-        task = taskMenuLink.deselected,
-        project = projectMenuLink.deselected,
         organization = organizationMenuLink.deselected,
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
@@ -81,72 +94,145 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
     lazy val changePasswordSelected: NavbarItems =
       NavbarItems.allDeselected.copy(changePassword = passwordMenuLink.selected)
 
-    lazy val taskSelected: NavbarItems =
-      NavbarItems.allDeselected.copy(task = taskMenuLink.selected)
-
-    lazy val projectSelected: NavbarItems =
-      NavbarItems.allDeselected.copy(project = projectMenuLink.selected)
-
     lazy val organizationSelected: NavbarItems =
       NavbarItems.allDeselected.copy(organization = organizationMenuLink.selected)
   }
 
   val element =
     div(
-//      cls("mb-[5rem]"),
       navTag(
-//        cls("bg-neutral-primary fixed w-full z-20 top-0 start-0 border-b border-default"),
-        cls("bg-neutral-primary w-full z-20 border-b border-default"),
+        cls("fixed top-0 z-50 w-full bg-neutral-primary-soft border-b border-default"),
         div(
-          cls("max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4"),
-          a(
-            cls("block py-2 px-3 text-heading flex items-center space-x-3 rtl:space-x-reverse"),
-            TgSvgIcons.tgIconLogo,
-            span(cls("self-center text-xl text-heading font-semibold whitespace-nowrap"), "Togger"),
-            router.navigateTo(HomePage)
-          ),
-          button(
-            cls(
-              "inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-body rounded-base md:hidden hover:bg-neutral-secondary-soft hover:text-heading focus:outline-none focus:ring-2 focus:ring-neutral-tertiary"
-            ),
-            span(cls("sr-only"), "Open main menu"),
-            svg.svg(
-              onClick.mapToUnit --> (_ => mobileNavShow.update(value => !value)),
-              svg.className("w-6 h-6"),
-              svg.width("24"),
-              svg.height("24"),
-              svg.fill("none"),
-              svg.viewBox("0 0 24 24"),
-              svg.path(
-                svg.stroke("currentColor"),
-                svg.strokeLineCap("round"),
-                svg.strokeWidth("2"),
-                svg.d("M5 7h14M5 12h14M5 17h14")
-              )
-            )
-          ),
+          cls("px-3 lg:px-5 lg:pl-3"),
           div(
-            idAttr("navbar-default"),
-            cls <-- mobileNavShow.signal.map(shouldShow => if (shouldShow) Seq.empty else Seq("hidden")),
-            cls("w-full md:block md:w-auto"),
-            ul(
-              cls(
-                "font-medium flex flex-col p-4 md:p-0 mt-4 border border-default rounded-base bg-neutral-secondary-soft md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-neutral-primary"
-              ),
-              children <-- router.currentPageSignal.map(page =>
-                NavbarItems.allDeselected.selectItem(page).asHtmlElementList
+            cls("flex items-center justify-between h-14"),
+            div(
+              cls("flex items-center justify-start rtl:justify-end"),
+              mobileSidebarButton,
+              a(
+                cls("flex items-center ms-2 md:me-24"),
+                TgSvgIcons.tgIconLogo,
+                span(cls("self-center ms-3 text-lg text-heading font-semibold whitespace-nowrap"), "Togger"),
+                router.navigateTo(HomePage)
               )
+            ),
+            div(
+              cls("flex items-center"),
+              ul(
+                cls("flex items-center font-medium"),
+                children <-- router.currentPageSignal.map(page =>
+                  Seq(NavbarItems.allDeselected.selectItem(page).organization)
+                )
+              ),
+              div(cls("flex items-center ms-3"), userMenu)
             )
           )
         )
       )
     )
 
+  /** Relocated from the sidebar unchanged, including its commented out drawer attributes: below `sm` the sidebar is
+    * translated off screen and nothing toggles it back, exactly as before.
+    */
+  private lazy val mobileSidebarButton =
+    button(
+//        data-drawer-target="logo-sidebar"
+//        data-drawer-toggle="logo-sidebar"
+//          aria-controls="logo-sidebar"
+      `type`("button"),
+      cls(
+        "sm:hidden text-heading bg-transparent box-border border border-transparent hover:bg-neutral-secondary-medium focus:ring-4 focus:ring-neutral-tertiary font-medium leading-5 rounded-base text-sm p-2 focus:outline-none"
+      ),
+      span(cls("sr-only"), "Open sidebar"),
+      svg.svg(
+        svg.className("w-6 h-6"),
+        svg.width("24"),
+        svg.height("24"),
+        svg.fill("none"),
+        svg.viewBox("0 0 24 24"),
+        svg.path(
+          svg.stroke("currentColor"),
+          svg.strokeLineCap("round"),
+          svg.strokeWidth("2"),
+          svg.d("M5 7h14M5 12h14M5 17h10")
+        )
+      )
+    )
+
+  private lazy val userMenu =
+    div(
+      cls("relative"),
+      avatarButton,
+      child <-- userMenuOpen.signal.map(isOpen => if (isOpen) userMenuPopover else emptyNode)
+    )
+
+  private lazy val avatarButton =
+    button(
+      `type`("button"),
+      cls(NavbarComponent.avatarButtonClass),
+      aria.expanded <-- userMenuOpen.signal,
+      title("Open user menu"),
+      span(cls("sr-only"), "Open user menu"),
+      child <-- initialsSignal.map {
+        case Some(initials) => span(initials)
+        case None           => span(TgIcons.userIcon("w-4 h-4"))
+      },
+      onClick.stopPropagation.mapToUnit --> (_ => userMenuOpen.update(isOpen => !isOpen))
+    )
+
+  private def userMenuPopover =
+    div(
+      cls(NavbarComponent.dropdownPanelClass),
+      onMountBind { ctx =>
+        val rootNode = ctx.thisNode.ref
+
+        documentEvents(_.onClick)
+          .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
+          .mapToUnit --> closeUserMenu
+      },
+      onMountBind { _ =>
+        documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> closeUserMenu
+      },
+      identityHeader,
+      ul(
+        cls("p-2 text-sm text-body font-medium"),
+        children <-- router.currentPageSignal.map { page =>
+          val items = NavbarItems.allDeselected.selectItem(page)
+          Seq(items.changePassword, items.logout)
+        }
+      )
+    )
+
+  private def identityHeader =
+    child <-- accountSignal.map {
+      case Some(account) if account.email.nonEmpty || account.firstName.nonEmpty =>
+        div(
+          cls("px-4 py-3 border-b border-default-medium"),
+          p(cls("text-sm font-medium text-heading"), fullName(account)),
+          account.email.map(email => p(cls("text-sm text-body truncate"), email))
+        )
+      case _ => emptyNode
+    }
+
+  private def fullName(account: AuthAccountFe): String =
+    Seq(account.firstName, account.lastName).flatten.map(_.trim).filter(_.nonEmpty).mkString(" ")
+
 }
 
 object NavbarComponent {
   val navLinkClass: String =
-    "block py-2 px-3 text-heading rounded hover:bg-neutral-tertiary md:hover:bg-transparent md:border-0 md:hover:text-fg-brand md:p-0 md:dark:hover:bg-transparent"
+    "block px-3 py-2 text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand"
   val selectedNavLinkClass: String =
-    "block py-2 px-3 text-white bg-brand rounded md:bg-transparent md:text-fg-brand md:p-0"
+    "block px-3 py-2 text-fg-brand bg-neutral-tertiary rounded-base"
+  val dropdownItemClass: String =
+    "inline-flex items-center w-full p-2 text-body rounded-base hover:bg-neutral-tertiary-medium hover:text-heading cursor-pointer"
+  val dropdownItemSelectedClass: String =
+    "inline-flex items-center w-full p-2 text-fg-brand bg-neutral-tertiary rounded-base"
+  val avatarButtonClass: String =
+    "flex items-center justify-center w-8 h-8 rounded-full border border-default bg-neutral-secondary-medium " +
+      "text-sm font-medium text-heading hover:bg-neutral-tertiary-medium focus:outline-none focus:ring-2 " +
+      "focus:ring-brand cursor-pointer"
+  val dropdownPanelClass: String =
+    "absolute right-0 top-full mt-2 z-50 w-56 bg-neutral-primary-medium border border-default-medium " +
+      "rounded-base shadow-lg"
 }

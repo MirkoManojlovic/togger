@@ -10,8 +10,6 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
-import com.togger.ui.icons.TgSvgIcons
-import com.togger.ui.navbar.Sidebar.sideBarLinkStyle
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
@@ -25,7 +23,6 @@ case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
   collapsed: Signal[Boolean],
-  isSelected: Boolean = false,
   onDumpClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
   onLoadClick: Option[() => Unit] = None,
@@ -35,27 +32,6 @@ case class SidebarLink(
   private def initials: String = linkName.trim.headOption.map(_.toUpper.toString).getOrElse("")
 
   private def glyph: String = if (icon.nonEmpty) icon else initials
-
-  def selected: ReactiveHtmlElement[HTMLLIElement] =
-    li(linkElement.amend(cls(Sidebar.sidebarSelectedLink)))
-
-  private def linkElement =
-    a(
-      cls("flex items-center"),
-      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
-      title(linkName),
-      span(
-        cls <-- collapsed.map(isCollapsed =>
-          if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("hidden")
-        ),
-        initials
-      ),
-      span(
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-        linkName
-      ),
-      link
-    )
 
   private def linkElementProject =
     div(
@@ -132,9 +108,6 @@ case class SidebarLink(
       )
     )
 
-  def deselected: ReactiveHtmlElement[HTMLLIElement] =
-    li(linkElement.amend(cls(Sidebar.sideBarLinkStyle)))
-
   def deselectedProject: ReactiveHtmlElement[HTMLLIElement] =
     li(
       cls("pl-2"),
@@ -167,7 +140,6 @@ case class SidebarLink(
 
 class Sidebar(
   router: TgRouter[FrontendPage],
-  logout: Logout[FrontendPage],
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   taskDumpService: TaskDumpFeService,
@@ -213,30 +185,30 @@ class Sidebar(
   }
 
   private def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
-    case CreateTaskPage(projectId) => Some(projectId)
-    case CreateTaskStatusPage(projectId) => Some(projectId)
-    case EditTaskStatusPage(projectId, _) => Some(projectId)
-    case ShowAllTasksPage(projectId) => Some(projectId)
-    case ShowAllTaskStatusesPage(projectId) => Some(projectId)
-    case EditTaskPage(projectId, _) => Some(projectId)
-    case ShowAllTaskConfigsPage(projectId) => Some(projectId)
+    case CreateTaskPage(projectId)           => Some(projectId)
+    case CreateTaskStatusPage(projectId)     => Some(projectId)
+    case EditTaskStatusPage(projectId, _)    => Some(projectId)
+    case ShowAllTasksPage(projectId)         => Some(projectId)
+    case ShowAllTaskStatusesPage(projectId)  => Some(projectId)
+    case EditTaskPage(projectId, _)          => Some(projectId)
+    case ShowAllTaskConfigsPage(projectId)   => Some(projectId)
     case CreateTaskDumpConfigPage(projectId) => Some(projectId)
-    case TaskDumpStatusPage(projectId) => Some(projectId)
+    case TaskDumpStatusPage(projectId)       => Some(projectId)
     case CreateTaskLoadConfigPage(projectId) => Some(projectId)
     case CreateProjectMappingPage(projectId) => Some(projectId)
-    case CreateMilestonePage(projectId) => Some(projectId)
-    case ShowMilestonesPage(projectId) => Some(projectId)
+    case CreateMilestonePage(projectId)      => Some(projectId)
+    case ShowMilestonesPage(projectId)       => Some(projectId)
     case ShowMilestoneHistoryPage(projectId) => Some(projectId)
-    case EditProjectPage(id) => Some(id)
-    case _ => None
+    case EditProjectPage(id)                 => Some(id)
+    case _                                   => None
   }
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
-    case CreateProjectPage(organizationId) => Some(organizationId)
-    case ShowProjectsForOrganizationIdTable(id) => Some(id)
+    case CreateProjectPage(organizationId)       => Some(organizationId)
+    case ShowProjectsForOrganizationIdTable(id)  => Some(id)
     case ShowProjectsForOrganizationIdStatus(id) => Some(id)
-    case EditOrganizationPage(id) => Some(id)
-    case _ => None
+    case EditOrganizationPage(id)                => Some(id)
+    case _                                       => None
   }
 
   private def isProjectSelected(project: OrganizationProjectResp, page: FrontendPage): Boolean =
@@ -262,138 +234,21 @@ class Sidebar(
     )
     .unsafeRunAndForget()
 
-  private val taskMenuLink =
-    SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())), collapsed)
-  private val projectMenuLink =
-    SidebarLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())), collapsed)
-  private val organizationMenuLink =
-    SidebarLink("Organizations", router.navigateTo(ShowAllOrganizationsPage), collapsed)
-  private val passwordMenuLink =
-    SidebarLink("Change Password", router.navigateTo(ChangePasswordPage), collapsed)
-  private val logoutElement = li(
-    logout
-      .logoutButtonWithLabel(
-        collapsed.map(isCollapsed =>
-          if (isCollapsed) span(cls(Sidebar.collapsedGlyphBoxStyle.mkString(" ")), "L")
-          else span("Log out")
-        )
-      )
-      .amend(
-        cls(Sidebar.sideBarLinkStyle),
-        cls("flex items-center"),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
-        title("Log out")
-      )
-  )
-
-  case class SidebarItems(
-    task: ReactiveHtmlElement[HTMLLIElement],
-    project: ReactiveHtmlElement[HTMLLIElement],
-    organization: ReactiveHtmlElement[HTMLLIElement],
-    changePassword: ReactiveHtmlElement[HTMLLIElement],
-    logout: ReactiveHtmlElement[HTMLLIElement]
-  ) {
-
-    lazy val asHtmlElementList: Seq[ReactiveHtmlElement[HTMLLIElement]] =
-      Seq(
-        organization,
-        //        project,
-        //        task,
-        changePassword,
-        logout
-      )
-
-    def selectItem(page: FrontendPage): SidebarItems = {
-      page match {
-        case ChangePasswordPage => SidebarItems.changePasswordSelected
-        case CreateTaskPage(_) | ShowAllTasksPage(_) | EditTaskPage(_, _) | HomePage | CreateTaskStatusPage(_) =>
-          SidebarItems.taskSelected
-        case ShowProjectsForOrganizationIdTable(_) | CreateProjectPage(_) => SidebarItems.projectSelected
-        case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
-          SidebarItems.organizationSelected
-        case _ => SidebarItems.taskSelected
-      }
-    }
-  }
-
-  object SidebarItems {
-    lazy val allDeselected: SidebarItems =
-      SidebarItems(
-        task = taskMenuLink.deselected,
-        project = projectMenuLink.deselected,
-        organization = organizationMenuLink.deselected,
-        changePassword = passwordMenuLink.deselected,
-        logout = logoutElement
-      )
-
-    lazy val changePasswordSelected: SidebarItems =
-      SidebarItems.allDeselected.copy(changePassword = passwordMenuLink.selected)
-
-    lazy val taskSelected: SidebarItems =
-      SidebarItems.allDeselected.copy(task = taskMenuLink.selected)
-
-    lazy val projectSelected: SidebarItems =
-      SidebarItems.allDeselected.copy(project = projectMenuLink.selected)
-
-    lazy val organizationSelected: SidebarItems =
-      SidebarItems.allDeselected.copy(organization = organizationMenuLink.selected)
-  }
-
   val element = {
     div(
-      "Sidebar",
-      button(
-//        data-drawer-target="logo-sidebar"
-//        data-drawer-toggle="logo-sidebar"
-//          aria-controls="logo-sidebar"
-        `type`("button"),
-        cls(
-          "text-heading bg-transparent box-border border border-transparent hover:bg-neutral-secondary-medium focus:ring-4 focus:ring-neutral-tertiary font-medium leading-5 rounded-base ms-3 mt-3 text-sm p-2 focus:outline-none inline-flex sm:hidden"
-        ),
-        svg.svg(
-//          onClick.mapToUnit --> (_ => mobileNavShow.update(value => !value)),
-//          aria-hidden="true"
-//          xmlns="http://www.w3.org/2000/svg"
-          svg.className("w-6 h-6"),
-          svg.width("24"),
-          svg.height("24"),
-          svg.fill("none"),
-          svg.viewBox("0 0 24 24"),
-          svg.path(
-            svg.stroke("currentColor"),
-            svg.strokeLineCap("round"),
-            svg.strokeWidth("2"),
-            svg.d("M5 7h14M5 12h14M5 17h10")
-          )
-        )
-      ), // btn end
-
       asideTag(
         idAttr("logo-sidebar"),
-        cls("fixed top-0 left-0 z-40 h-full transition-[width] duration-200 -translate-x-full sm:translate-x-0"),
+        cls(
+          "fixed top-14 left-0 z-40 h-[calc(100%-3.5rem)] transition-[width] duration-200 -translate-x-full sm:translate-x-0"
+        ),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) "w-16" else "w-64"),
 //        aria-label="Sidebar"
 
         div(
           cls("h-full px-3 py-4 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
           div(
-            cls("flex items-center justify-between mb-5"),
-            cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("flex-col", "gap-2") else Seq.empty),
-            a(
-              cls("flex items-center ps-2.5"),
-              cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("ps-0") else Seq.empty),
-              div(
-                cls("flex items-center me-3"),
-                cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("me-0") else Seq.empty),
-                TgSvgIcons.tgIconLogo
-              ),
-              span(
-                cls("self-center text-lg text-heading font-semibold whitespace-nowrap"),
-                cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-                "Togger"
-              ),
-              router.navigateTo(HomePage)
-            ),
+            cls("flex items-center mb-5"),
+            cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq("justify-end")),
             button(
               `type`("button"),
               title <-- collapsed.map(isCollapsed => if (isCollapsed) "Expand sidebar" else "Collapse sidebar"),
@@ -408,65 +263,44 @@ class Sidebar(
           ),
           ul(
             cls("space-y-2 font-medium"),
-            children <-- router.currentPageSignal.map(page =>
-              SidebarItems.allDeselected.selectItem(page).asHtmlElementList
-            ),
             children <-- organizationState.signal.combineWith(router.currentPageSignal).map {
               case (organizations, page) =>
-                organizations.sortBy(_.name).flatMap { organization =>
-                  val orgLink = SidebarLink(
-                    linkName = organization.name,
-                    link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
-                    collapsed = collapsed,
-                    icon = organization.icon
-                  )
-                  val orgRow =
-                    if (isOrganizationSelected(organization, page)) orgLink.selectedOrg else orgLink.deselectedOrg
-                  orgRow.amend(cls("border-b-1 border-gray-200")) +:
-                    organization.projects
-                      .sortBy(_.name)
-                      .map { project =>
-                        val projectLink = SidebarLink(
-                          linkName = project.name,
-                          link = router.navigateTo(ShowAllTasksPage(project.id)),
-                          collapsed = collapsed,
-                          onDumpClick = Some(() => dumpProject(project.id)),
-                          onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
-                          onLoadClick = Some(() => loadAllForProject(project.id)),
-                          icon = project.icon
-                        )
-                        if (isProjectSelected(project, page)) projectLink.selectedProject
-                        else projectLink.deselectedProject
-                      }
-                }
+                organizations
+                  .sortBy(_.name)
+                  .flatMap {
+                    organization =>
+                      val orgLink = SidebarLink(
+                        linkName = organization.name,
+                        link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
+                        collapsed = collapsed,
+                        icon = organization.icon
+                      )
+                      val orgRow =
+                        if (isOrganizationSelected(organization, page)) orgLink.selectedOrg else orgLink.deselectedOrg
+                      orgRow.amend(cls("border-b-1 border-gray-200")) +:
+                        organization.projects
+                          .sortBy(_.name)
+                          .map { project =>
+                            val projectLink = SidebarLink(
+                              linkName = project.name,
+                              link = router.navigateTo(ShowAllTasksPage(project.id)),
+                              collapsed = collapsed,
+                              onDumpClick = Some(() => dumpProject(project.id)),
+                              onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
+                              onLoadClick = Some(() => loadAllForProject(project.id)),
+                              icon = project.icon
+                            )
+                            if (isProjectSelected(project, page)) projectLink.selectedProject
+                            else projectLink.deselectedProject
+                          }
+                  }
             }
-//            li(
-//              a(
-//                cls(sideBarLinkStyle),
-//                span(cls("ms-3"), "Dashboard"),
-//                router.navigateTo(HomePage)
-//              )
-//            ),
-//            createSidebarLink("Change Password", router.navigateTo(ChangePasswordPage))
           )
         )
       )
     )
   }
 
-  def createSidebarLink(
-    linkName: String,
-    link: Binder[HtmlElement],
-    isSelected: Boolean = true
-  ) = {
-    li(
-      a(
-        cls(sideBarLinkStyle),
-        span(cls("ms-3"), linkName),
-        link
-      )
-    )
-  }
 }
 
 object Sidebar {

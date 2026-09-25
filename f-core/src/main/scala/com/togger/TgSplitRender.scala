@@ -15,7 +15,7 @@ import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
-import com.togger.ui.navbar.{Logout, Sidebar, SidebarCollapseStore}
+import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore}
 import com.togger.ui.organization._
 import com.togger.ui.project._
 import com.togger.ui.projectmapping._
@@ -129,7 +129,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectService,
                   projectId,
-                  toast,
+                  toast
                 ).element
               case CreateTaskStatusPage(projectId: UUID) =>
                 new CreateTaskStatusComponent(
@@ -354,8 +354,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 }
 
 object TgSplitRender {
-  lazy val sidebarPadding = "p-4 sm:ml-64"
-  lazy val sidebarPaddingCollapsed = "p-4 sm:ml-16"
+  lazy val sidebarPadding = "p-4 sm:ml-64 mt-14"
+  lazy val sidebarPaddingCollapsed = "p-4 sm:ml-16 mt-14"
 }
 
 case class NavigationSelection(
@@ -374,18 +374,19 @@ case class NavigationSelection(
     loginRepo.authenticatedSignal.map(returnedAuthAccount =>
       returnedAuthAccount
         .map(_ =>
-//          new NavbarComponent(router, Logout(loginRepo, router)).element
-          new Sidebar(
-            router,
-            Logout(loginRepo, router),
-            organizationServiceFe,
-            accountService,
-            taskDumpService,
-            taskLoadConfigService,
-            spinnerService,
-            sidebarCollapseStore,
-            toast
-          ).element
+          div(
+            new NavbarComponent(router, Logout(loginRepo, router), loginRepo).element,
+            new Sidebar(
+              router,
+              organizationServiceFe,
+              accountService,
+              taskDumpService,
+              taskLoadConfigService,
+              spinnerService,
+              sidebarCollapseStore,
+              toast
+            ).element
+          )
         )
         .getOrElse(div())
     )
