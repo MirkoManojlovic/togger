@@ -33,7 +33,10 @@ class LoginRepo(
     val authAccount = AuthAccountFe(
       id = dto.accountId,
       sessionId = dto.sessionId,
-      userRole = NoPermissionsUserRole
+      userRole = NoPermissionsUserRole,
+      firstName = Some(dto.firstName),
+      lastName = Some(dto.lastName),
+      email = Some(dto.email)
     )
     localStorage.setItem(accessTokenKey, authAccount.asJson.noSpaces)
     userAuthState.set(Some(authAccount))

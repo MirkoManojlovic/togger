@@ -5,6 +5,8 @@ import com.togger.auth.UserRole.NoPermissionsUserRole
 import com.togger.common.suites.{AsyncJsWordSpec, OwnerForTestingTrait, TestEvents}
 import com.togger.dto.login.LoginResponseDto
 import com.togger.ui.localstorage.LocalStorageTest
+import io.circe.generic.auto._
+import io.circe.syntax.EncoderOps
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.OptionValues
 
@@ -14,7 +16,13 @@ class LoginRepoTest extends AsyncJsWordSpec with AsyncMockFactory with OwnerForT
 
   val accountId: UUID = UUID.randomUUID()
   val sessionId = "sessionId"
-  val dto = LoginResponseDto(accountId, sessionId)
+  val firstName = "Ada"
+  val lastName = "Lovelace"
+  val email = "ada@togger.com"
+  val dto = LoginResponseDto(accountId, sessionId, firstName, lastName, email)
+
+  val savedAccount: AuthAccountFe =
+    AuthAccountFe(accountId, sessionId, NoPermissionsUserRole, Some(firstName), Some(lastName), Some(email))
 
   testNameFromClassName should {
 
@@ -25,9 +33,27 @@ class LoginRepoTest extends AsyncJsWordSpec with AsyncMockFactory with OwnerForT
 
       loginRepo.account shouldBe None
       loginRepo.save(dto)
-      loginRepo.account.value shouldBe AuthAccountFe(accountId, sessionId, NoPermissionsUserRole)
+      loginRepo.account.value shouldBe savedAccount
       loginRepo.delete()
       loginRepo.account shouldBe None
+    }
+
+    "retrieve an account stored before the name and email fields existed" in { _ =>
+      lazy val localStorage = new LocalStorageTest
+      lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
+
+      val accountWithoutNameAndEmail = AuthAccountFe(accountId, sessionId, NoPermissionsUserRole)
+
+      val storedBeforeNameAndEmailExisted =
+        accountWithoutNameAndEmail.asJson
+          .mapObject(_.remove("firstName").remove("lastName").remove("email"))
+          .noSpaces
+
+      localStorage.setItem(tokenStorageKeys.accessTokenKey, storedBeforeNameAndEmailExisted)
+
+      lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
+
+      loginRepo.account.value shouldBe accountWithoutNameAndEmail
     }
 
     "set and unset authenticated signal" in { owner =>
@@ -56,9 +82,9 @@ class LoginRepoTest extends AsyncJsWordSpec with AsyncMockFactory with OwnerForT
 
             testEventsNew.printEvents()
             testEventsNew.events should have size 2
-            testEventsNew.nTh(1).value shouldBe AuthAccountFe(accountId, sessionId, NoPermissionsUserRole)
+            testEventsNew.nTh(1).value shouldBe savedAccount
 
-            loginRepo.account shouldBe Some(AuthAccountFe(accountId, sessionId, NoPermissionsUserRole))
+            loginRepo.account shouldBe Some(savedAccount)
           }
         ),
         DelayedTask(
