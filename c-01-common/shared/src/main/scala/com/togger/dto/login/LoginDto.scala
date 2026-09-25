@@ -18,7 +18,10 @@ case class DeviceInfo(
 
 case class LoginResponseDto(
   accountId: UUID,
-  sessionId: String
+  sessionId: String,
+  firstName: String,
+  lastName: String,
+  email: String
 )
 
 case class ExpireSessionResult(deleted: Long, inDb: Long)
