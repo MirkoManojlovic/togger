@@ -12,7 +12,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgTab, TgTabs}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -249,14 +249,7 @@ class ShowAllProjectsStatusComponent(
                         b("Description: "),
                         task.description
                       ),
-                      div(
-                        cls("flex-1 min-w-0"),
-                        weekRangeStatus(task.logEntries, currentWeekStart, currentWeekEnd, "Last week status")
-                      ),
-                      div(
-                        cls("flex-1 min-w-0"),
-                        weekRangeStatus(task.logEntries, lastTwoWeeksStart, lastTwoWeeksEnd, "Last 2 weeks status")
-                      ),
+                      div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries)),
                       div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar)),
                       div(cls("flex-1 min-w-0"), logEntryCalendar(task.logEntries, selectedDayVar))
                     )
@@ -363,7 +356,7 @@ class ShowAllProjectsStatusComponent(
       }
     )
 
-  private def weekRangeStatus(logEntries: Seq[LogEntryDto], start: LocalDate, end: LocalDate, title: String) = {
+  private def weekRangeStatus(logEntries: Seq[LogEntryDto], start: LocalDate, end: LocalDate) = {
     val entriesByDate = logEntries
       .filter { entry =>
         val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
@@ -373,7 +366,6 @@ class ShowAllProjectsStatusComponent(
 
     div(
       cls("mb-4"),
-      p(b(title)),
       if (entriesByDate.isEmpty) p("No status update")
       else
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
@@ -390,6 +382,23 @@ class ShowAllProjectsStatusComponent(
           )
         }
     )
+  }
+
+  private def weekRangeStatusTabs(logEntries: Seq[LogEntryDto]): HtmlElement = {
+    val selectedTabVar = Var("last-week")
+    val tabs = Seq(
+      TgTab(
+        id = "last-week",
+        label = "Last week",
+        content = weekRangeStatus(logEntries, currentWeekStart, currentWeekEnd)
+      ),
+      TgTab(
+        id = "last-2-weeks",
+        label = "Last 2 weeks",
+        content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd)
+      )
+    )
+    new TgTabs(tabs, selectedTabVar).element
   }
 
 }
