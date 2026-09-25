@@ -241,8 +241,11 @@ class ShowAllProjectsStatusComponent(
                         b("Description: "),
                         task.description
                       ),
-                      logEntryCalendar(task.logEntries, selectedDayVar),
-                      selectedDayStatus(task.logEntries, selectedDayVar)
+                      div(
+                        cls("flex flex-col md:flex-row gap-4 items-start"),
+                        div(cls("w-fit"), logEntryCalendar(task.logEntries, selectedDayVar)),
+                        div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar))
+                      )
                     )
                   )
                 )
