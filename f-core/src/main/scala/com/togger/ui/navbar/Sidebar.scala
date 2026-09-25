@@ -137,12 +137,18 @@ case class SidebarLink(
   def selectedProject: ReactiveHtmlElement[HTMLLIElement] =
     li(
       cls("pl-2"),
-      linkElementProject.amend(cls(Sidebar.sidebarSelectedLink))
+      linkElementProject.amend(
+        cls(Sidebar.sidebarSelectedLink),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("border", "border-fg-brand") else Seq.empty)
+      )
     )
 
   def selectedOrg: ReactiveHtmlElement[HTMLLIElement] =
     li(
-      linkElementOrg.amend(cls(Sidebar.sidebarSelectedLink))
+      linkElementOrg.amend(
+        cls(Sidebar.sidebarSelectedLink),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("border", "border-fg-brand") else Seq.empty)
+      )
     )
 
 }
