@@ -105,16 +105,19 @@ case class SidebarLink(
     )
 
   private def linkElementOrg =
-    a(
-      cls("inline-flex items-center w-100"),
-      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
-      title(linkName),
-      span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
-      span(
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-        linkName
-      ),
-      link
+    div(
+      cls("flex items-center"),
+      a(
+        cls("inline-flex items-center"),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
+        title(linkName),
+        span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
+        span(
+          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+          linkName
+        ),
+        link
+      )
     )
 
   def deselected: ReactiveHtmlElement[HTMLLIElement] =
