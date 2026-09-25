@@ -56,7 +56,13 @@ class AccountService(
           accountSessionRepo
             .insert(accountSession)
             .map(accountSession =>
-              LoginResponseDto(accountId = accountSession.accountId, sessionId = accountSession.sessionToken)
+              LoginResponseDto(
+                accountId = accountSession.accountId,
+                sessionId = accountSession.sessionToken,
+                firstName = accountFromDb.firstName,
+                lastName = accountFromDb.lastName,
+                email = accountFromDb.email
+              )
             )
         } else {
           throw InvalidCredentials

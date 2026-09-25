@@ -91,7 +91,15 @@ class AccountServiceTest
 
       accountService
         .login(dto)
-        .map(responseDto => responseDto shouldBe LoginResponseDto(accountId = account.id, sessionId = sessionToken))
+        .map(responseDto =>
+          responseDto shouldBe LoginResponseDto(
+            accountId = account.id,
+            sessionId = sessionToken,
+            firstName = account.firstName,
+            lastName = account.lastName,
+            email = account.email
+          )
+        )
         .unsafeToFuture()
     }
 
