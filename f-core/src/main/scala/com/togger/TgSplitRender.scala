@@ -15,7 +15,7 @@ import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
-import com.togger.ui.navbar.{Logout, Sidebar}
+import com.togger.ui.navbar.{Logout, Sidebar, SidebarCollapseStore}
 import com.togger.ui.organization._
 import com.togger.ui.project._
 import com.togger.ui.projectmapping._
@@ -43,6 +43,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val baseEndpoint = BaseEndpoint.baseEndpoint
 
   lazy val localStorage = new LocalStorageBrowser
+  lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
@@ -57,6 +58,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       taskDumpService,
       taskLoadConfigService,
       spinnerService,
+      sidebarCollapseStore,
       toast
     )
 
@@ -105,9 +107,12 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         elementForSpinner,
         toastHolder,
         div(
-          cls <-- loginRepo.authenticatedSignal.map(accountOpt =>
-            if (accountOpt.isDefined) TgSplitRender.sidebarPadding else ""
-          ),
+          cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
+            case (accountOpt, collapsed) =>
+              if (accountOpt.isDefined) {
+                if (collapsed) TgSplitRender.sidebarPaddingCollapsed else TgSplitRender.sidebarPadding
+              } else ""
+          },
           child <-- signal
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
@@ -350,6 +355,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
 object TgSplitRender {
   lazy val sidebarPadding = "p-4 sm:ml-64"
+  lazy val sidebarPaddingCollapsed = "p-4 sm:ml-16"
 }
 
 case class NavigationSelection(
@@ -360,6 +366,7 @@ case class NavigationSelection(
   taskDumpService: TaskDumpFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
+  sidebarCollapseStore: SidebarCollapseStore,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
 
@@ -376,6 +383,7 @@ case class NavigationSelection(
             taskDumpService,
             taskLoadConfigService,
             spinnerService,
+            sidebarCollapseStore,
             toast
           ).element
         )

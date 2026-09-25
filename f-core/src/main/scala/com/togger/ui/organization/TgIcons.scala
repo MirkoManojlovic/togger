@@ -363,4 +363,36 @@ object TgIcons {
       )
     )
 
+  def chevronLeftIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("m15 19-7-7 7-7")
+      )
+    )
+
+  def chevronRightIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("m9 5 7 7-7 7")
+      )
+    )
+
 }

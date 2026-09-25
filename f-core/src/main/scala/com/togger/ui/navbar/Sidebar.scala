@@ -24,6 +24,7 @@ import java.util.UUID
 case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
+  collapsed: Signal[Boolean],
   isSelected: Boolean = false,
   onDumpClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
@@ -31,12 +32,26 @@ case class SidebarLink(
   icon: String = ""
 ) {
 
+  private def initials: String = linkName.trim.headOption.map(_.toUpper.toString).getOrElse("")
+
+  private def glyph: String = if (icon.nonEmpty) icon else initials
+
   def selected: ReactiveHtmlElement[HTMLLIElement] =
     li(linkElement.amend(cls(Sidebar.sidebarSelectedLink)))
 
   private def linkElement =
     a(
-      linkName,
+      cls("flex items-center"),
+      title(linkName),
+      span(
+        cls("w-full text-center"),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq.empty else Seq("hidden")),
+        initials
+      ),
+      span(
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+        linkName
+      ),
       link
     )
 
@@ -45,11 +60,17 @@ case class SidebarLink(
       cls("flex items-center justify-between"),
       a(
         cls("inline-flex items-center"),
-        span(cls("me-1.5 -ms-0.5"), icon),
-        linkName,
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
+        title(linkName),
+        span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
+        span(
+          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+          linkName
+        ),
         link
       ),
       div(
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
         onDumpClick.map(dumpAction =>
           button(
             `type`("button"),
@@ -86,8 +107,13 @@ case class SidebarLink(
   private def linkElementOrg =
     a(
       cls("inline-flex items-center w-100"),
-      span(cls("me-1.5 -ms-0.5"), icon),
-      linkName,
+      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
+      title(linkName),
+      span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
+      span(
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+        linkName
+      ),
       link
     )
 
@@ -115,9 +141,12 @@ class Sidebar(
   taskDumpService: TaskDumpFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
+  sidebarCollapseStore: SidebarCollapseStore,
   val toast: Toast
 )(implicit IORuntime: IORuntime)
     extends ToastMessages {
+
+  private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
 
   private def dumpProject(projectId: UUID): Unit =
     spinnerService
@@ -167,11 +196,19 @@ class Sidebar(
     )
     .unsafeRunAndForget()
 
-  private val taskMenuLink = SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())))
-  private val projectMenuLink = SidebarLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())))
-  private val organizationMenuLink = SidebarLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
-  private val passwordMenuLink = SidebarLink("Change Password", router.navigateTo(ChangePasswordPage))
-  private val logoutElement = li(logout.logoutButton.amend(cls(Sidebar.sideBarLinkStyle)))
+  private val taskMenuLink =
+    SidebarLink("Tasks", router.navigateTo(ShowAllTasksPage(UUID.randomUUID())), collapsed)
+  private val projectMenuLink =
+    SidebarLink("Projects", router.navigateTo(CreateProjectPage(UUID.randomUUID())), collapsed)
+  private val organizationMenuLink =
+    SidebarLink("Organizations", router.navigateTo(ShowAllOrganizationsPage), collapsed)
+  private val passwordMenuLink =
+    SidebarLink("Change Password", router.navigateTo(ChangePasswordPage), collapsed)
+  private val logoutElement = li(
+    logout
+      .logoutButtonWithLabel(collapsed.map(isCollapsed => if (isCollapsed) "L" else "Log out"))
+      .amend(cls(Sidebar.sideBarLinkStyle), cls("flex items-center"), title("Log out"))
+  )
 
   case class SidebarItems(
     task: ReactiveHtmlElement[HTMLLIElement],
@@ -257,22 +294,41 @@ class Sidebar(
 
       asideTag(
         idAttr("logo-sidebar"),
-        cls("fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0"),
+        cls("fixed top-0 left-0 z-40 h-full transition-[width] duration-200 -translate-x-full sm:translate-x-0"),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) "w-16" else "w-64"),
 //        aria-label="Sidebar"
 
         div(
           cls("h-full px-3 py-4 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
-          a(
-            cls("flex items-center ps-2.5 mb-5"),
-            div(
-              cls("flex items-center me-3"),
-              TgSvgIcons.tgIconLogo
+          div(
+            cls("flex items-center justify-between mb-5"),
+            cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("flex-col", "gap-2") else Seq.empty),
+            a(
+              cls("flex items-center ps-2.5"),
+              cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("ps-0") else Seq.empty),
+              div(
+                cls("flex items-center me-3"),
+                cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("me-0") else Seq.empty),
+                TgSvgIcons.tgIconLogo
+              ),
+              span(
+                cls("self-center text-lg text-heading font-semibold whitespace-nowrap"),
+                cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+                "Togger"
+              ),
+              router.navigateTo(HomePage)
             ),
-            span(
-              cls("self-center text-lg text-heading font-semibold whitespace-nowrap"),
-              "Togger"
-            ),
-            router.navigateTo(HomePage)
+            button(
+              `type`("button"),
+              title <-- collapsed.map(isCollapsed => if (isCollapsed) "Expand sidebar" else "Collapse sidebar"),
+              cls(
+                "inline-flex items-center justify-center w-6 h-6 text-body bg-transparent hover:bg-neutral-tertiary hover:text-fg-brand rounded-base focus:outline-none cursor-pointer"
+              ),
+              child <-- collapsed.map(isCollapsed =>
+                if (isCollapsed) TgIcons.chevronRightIcon("w-4 h-4") else TgIcons.chevronLeftIcon("w-4 h-4")
+              ),
+              onClick.mapToUnit --> (_ => sidebarCollapseStore.toggle())
+            )
           ),
           ul(
             cls("space-y-2 font-medium"),
@@ -284,6 +340,7 @@ class Sidebar(
                 SidebarLink(
                   linkName = organization.name,
                   link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
+                  collapsed = collapsed,
                   icon = organization.icon
                 ).deselectedOrg.amend(cls("border-b-1 border-gray-200")) +:
                   organization.projects
@@ -292,6 +349,7 @@ class Sidebar(
                       SidebarLink(
                         linkName = project.name,
                         link = router.navigateTo(ShowAllTasksPage(project.id)),
+                        collapsed = collapsed,
                         onDumpClick = Some(() => dumpProject(project.id)),
                         onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
                         onLoadClick = Some(() => loadAllForProject(project.id)),

@@ -16,6 +16,9 @@ case class Logout[PAGE](
   def logoutButton: ReactiveHtmlElement[HTMLAnchorElement] =
     a("Log out", onClick --> logout, href("#"))
 
+  def logoutButtonWithLabel(label: Signal[String]): ReactiveHtmlElement[HTMLAnchorElement] =
+    a(child.text <-- label, onClick --> logout, href("#"))
+
   private def logout: MouseEvent => Unit = { _ =>
     loginRepo.delete()
     router.route(LoginPage)
