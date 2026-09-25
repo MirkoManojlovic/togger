@@ -42,10 +42,12 @@ case class SidebarLink(
   private def linkElement =
     a(
       cls("flex items-center"),
+      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
       title(linkName),
       span(
-        cls("w-full text-center"),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq.empty else Seq("hidden")),
+        cls <-- collapsed.map(isCollapsed =>
+          if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("hidden")
+        ),
         initials
       ),
       span(
@@ -62,7 +64,12 @@ case class SidebarLink(
         cls("inline-flex items-center"),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
-        span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
+        span(
+          cls <-- collapsed.map(isCollapsed =>
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5")
+          ),
+          child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
+        ),
         span(
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
@@ -111,7 +118,12 @@ case class SidebarLink(
         cls("inline-flex items-center"),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
-        span(cls("me-1.5 -ms-0.5"), child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)),
+        span(
+          cls <-- collapsed.map(isCollapsed =>
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5")
+          ),
+          child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
+        ),
         span(
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
@@ -260,8 +272,18 @@ class Sidebar(
     SidebarLink("Change Password", router.navigateTo(ChangePasswordPage), collapsed)
   private val logoutElement = li(
     logout
-      .logoutButtonWithLabel(collapsed.map(isCollapsed => if (isCollapsed) "L" else "Log out"))
-      .amend(cls(Sidebar.sideBarLinkStyle), cls("flex items-center"), title("Log out"))
+      .logoutButtonWithLabel(
+        collapsed.map(isCollapsed =>
+          if (isCollapsed) span(cls(Sidebar.collapsedGlyphBoxStyle.mkString(" ")), "L")
+          else span("Log out")
+        )
+      )
+      .amend(
+        cls(Sidebar.sideBarLinkStyle),
+        cls("flex items-center"),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
+        title("Log out")
+      )
   )
 
   case class SidebarItems(
@@ -453,4 +475,7 @@ object Sidebar {
 
   val sidebarSelectedLink =
     "flex items-center px-2 py-1.5 text-body rounded-base bg-neutral-tertiary text-fg-brand group"
+
+  val collapsedGlyphBoxStyle: Seq[String] =
+    Seq("w-6", "h-6", "flex", "items-center", "justify-center", "leading-none", "shrink-0")
 }
