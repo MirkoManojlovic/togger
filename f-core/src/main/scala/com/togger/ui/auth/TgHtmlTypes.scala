@@ -13,6 +13,7 @@ object TgHtmlTypes {
   type HtmlUl = ReactiveHtmlElement[HTMLUListElement]
   type HtmlAnchor = ReactiveHtmlElement[HTMLAnchorElement]
   type HtmlButton = ReactiveHtmlElement[HTMLButtonElement]
+  type HtmlSpan = ReactiveHtmlElement[HTMLSpanElement]
   type HtmlHeading = ReactiveHtmlElement[HTMLHeadingElement]
   type TgHtmlElement = ReactiveHtmlElement[html.Element]
 
