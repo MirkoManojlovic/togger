@@ -4,6 +4,12 @@
 @plugin "flowbite/plugin";
 @source "../node_modules/flowbite";
 
+/* Tailwind's `dark:` defaults to `@media (prefers-color-scheme: dark)`, but Flowbite's theme swaps its semantic
+   tokens under a `.dark` class. Without this the two disagree: `dark:` utilities would flip with the OS setting
+   while every `bg-brand-softer`/`text-heading` stayed light. Point `dark:` at the same `.dark` class so the whole
+   UI switches together. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 
 @keyframes myAnimation {
   0%   {background-color: red;}
