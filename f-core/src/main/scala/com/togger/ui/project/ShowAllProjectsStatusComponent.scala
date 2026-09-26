@@ -228,14 +228,14 @@ class ShowAllProjectsStatusComponent(
                   header = TgCard.CardHeader
                     .html(
                       div(
-                        cls("flex", "justify-between"),
+                        cls("flex", "items-center"),
+                        TgBadge(text = task.taskStatus.name, color = task.taskStatus.badgeColor, bordered = true).element,
                         a(
                           cls("font-medium text-fg-brand hover:underline"),
-                          cls("mr-2"),
+                          cls("ml-2"),
                           task.name,
                           router.navigateTo(EditTaskPage(task.projectId, task.id))
-                        ),
-                        TgBadge(text = task.taskStatus.name, color = task.taskStatus.badgeColor, bordered = true).element
+                        )
 
                         //                              s"${task.name} - ${task.taskStatus.name} - ${task.assignedTo.map(_.fullName).getOrElse("Not assigned")} "
                       ),
