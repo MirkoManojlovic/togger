@@ -42,12 +42,12 @@ class TgTabs(
   private val listCls = "flex flex-wrap -mb-px"
 
   private val tabBaseCls =
-    "inline-flex items-center p-4 border-b border-transparent rounded-t-base focus:outline-none " +
+    "inline-flex items-center p-4 border-b rounded-t-base focus:outline-none " +
       "focus-visible:ring-2 focus-visible:ring-brand-subtle"
 
-  private val tabInactiveCls = "hover:text-fg-brand hover:border-brand cursor-pointer"
-  private val tabActiveCls = "text-fg-brand border-b border-brand active"
-  private val tabDisabledCls = "text-fg-disabled cursor-not-allowed"
+  private val tabInactiveCls = "border-transparent hover:text-fg-brand hover:border-brand cursor-pointer"
+  private val tabActiveCls = "text-fg-brand border-brand active"
+  private val tabDisabledCls = "border-transparent text-fg-disabled cursor-not-allowed"
 
   private val badgeCls = "ms-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-neutral-secondary-medium"
   private val iconCls = "w-4 h-4 me-2"
