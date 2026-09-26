@@ -12,7 +12,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgTab, TgTabs}
+import com.togger.ui.components._
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -316,7 +316,7 @@ class ShowAllProjectsStatusComponent(
   ) = {
     val tooltip =
       if (entries.isEmpty) ""
-      else (tgDateFormater.asEuropeanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
+      else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
 
     div(
       cls("border-1 border-gray-200 rounded-md cursor-pointer"),
@@ -342,7 +342,10 @@ class ShowAllProjectsStatusComponent(
 
           div(
             cls("mb-4"),
-            p(b(s"Status on ${tgDateFormater.asEuropeanDate(day)}")),
+            div(
+              cls("mb-2"),
+              TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element
+            ),
             if (dayEntries.isEmpty) p("No status update")
             else
               dayEntries.map(entry =>
@@ -371,14 +374,16 @@ class ShowAllProjectsStatusComponent(
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
           div(
             cls("mb-2"),
-            p(b(tgDateFormater.asEuropeanDate(day))),
-            dayEntries.sortBy(_.createdAt).map(entry =>
-              div(
-                cls("mb-2"),
-                p(b(entry.status.toStringWithEmoji)),
-                entry.textExternal.split("\n").map(line => p(line)).toSeq
+            div(cls("mb-2"), TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element),
+            dayEntries
+              .sortBy(_.createdAt)
+              .map(entry =>
+                div(
+                  cls("mb-2"),
+                  p(b(entry.status.toStringWithEmoji)),
+                  entry.textExternal.split("\n").map(line => p(line)).toSeq
+                )
               )
-            )
           )
         }
     )
