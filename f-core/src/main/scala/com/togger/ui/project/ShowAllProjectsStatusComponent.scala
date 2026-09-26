@@ -13,6 +13,7 @@ import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components._
+import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -351,7 +352,10 @@ class ShowAllProjectsStatusComponent(
               dayEntries.map(entry =>
                 div(
                   cls("mb-2"),
-                  p(b(entry.status.toStringWithEmoji)),
+                  div(
+                    cls("mb-2"),
+                    TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                  ),
                   entry.textExternal.split("\n").map(line => p(line)).toSeq
                 )
               )
@@ -380,7 +384,10 @@ class ShowAllProjectsStatusComponent(
               .map(entry =>
                 div(
                   cls("mb-2"),
-                  p(b(entry.status.toStringWithEmoji)),
+                  div(
+                    cls("mb-2"),
+                    TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                  ),
                   entry.textExternal.split("\n").map(line => p(line)).toSeq
                 )
               )
