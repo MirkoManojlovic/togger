@@ -250,8 +250,7 @@ class ShowAllProjectsStatusComponent(
                         b("Description: "),
                         task.description
                       ),
-                      div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries)),
-                      div(cls("flex-1 min-w-0"), selectedDayStatus(task.logEntries, selectedDayVar)),
+                      div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
                       div(cls("flex-1 min-w-0"), logEntryCalendar(task.logEntries, selectedDayVar))
                     )
                   )
@@ -400,9 +399,14 @@ class ShowAllProjectsStatusComponent(
     )
   }
 
-  private def weekRangeStatusTabs(logEntries: Seq[LogEntryDto]): HtmlElement = {
-    val selectedTabVar = Var("last-week")
+  private def weekRangeStatusTabs(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]): HtmlElement = {
+    val selectedTabVar = Var("single-day")
     val tabs = Seq(
+      TgTab(
+        id = "single-day",
+        label = "Single day",
+        content = selectedDayStatus(logEntries, selectedDayVar)
+      ),
       TgTab(
         id = "last-week",
         label = "Last week",
