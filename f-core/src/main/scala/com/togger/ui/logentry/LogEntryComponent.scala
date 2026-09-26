@@ -15,6 +15,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
+import com.togger.ui.components.TextToHtmlRender
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.toast.Toast
@@ -151,7 +152,7 @@ class LogEntryComponent(
                   body = TgCard.HtmlCardContent(
                     div(
                       p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toStringWithEmoji, cls("mb-4")),
-                      div(p(b(s"Status update")), markdownToHtml(state.textExternal), cls("mb-4"))
+                      div(p(b(s"Status update")), new TextToHtmlRender().textToHtmlList(state.textExternal), cls("mb-4"))
 //                      div(p(b("Text internal")), markdownToHtml(state.textInternal), cls("mb-4"))
                     )
                   )
@@ -244,17 +245,6 @@ class LogEntryComponent(
       )
       .element
       .amend(heightAndWidthFitContent)
-
-  }
-
-  def markdownToHtml(text: String) = {
-    val splitText = text.split("\n").toSeq
-
-    splitText.collect {
-//      case line if line.startsWith("##") => h2(line.replaceAll("##", ""))
-//      case line if line.startsWith("#")  => h1(line.replaceAll("#", ""))
-      case line => p(line)
-    }
 
   }
 

@@ -359,7 +359,7 @@ class ShowAllProjectsStatusComponent(
                     dateBadge(),
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
-                  entry.textExternal.split("\n").map(line => p(line)).toSeq
+                  new TextToHtmlRender().textToHtmlList(entry.textExternal)
                 )
               )
           )
@@ -391,7 +391,7 @@ class ShowAllProjectsStatusComponent(
                     TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element,
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
-                  entry.textExternal.split("\n").map(line => p(line)).toSeq
+                  new TextToHtmlRender().textToHtmlList(entry.textExternal)
                 )
               )
           )
