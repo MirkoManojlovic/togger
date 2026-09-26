@@ -14,6 +14,7 @@ import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -234,9 +235,7 @@ class ShowAllProjectsStatusComponent(
                           task.name,
                           router.navigateTo(EditTaskPage(task.projectId, task.id))
                         ),
-                        div(
-                          task.taskStatus.name
-                        )
+                        TgBadge(text = task.taskStatus.name, color = task.taskStatus.badgeColor, bordered = true).element
 
                         //                              s"${task.name} - ${task.taskStatus.name} - ${task.assignedTo.map(_.fullName).getOrElse("Not assigned")} "
                       ),
