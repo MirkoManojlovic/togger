@@ -3,17 +3,24 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.{HtmlLi, HtmlUl}
 
+/** Classes follow Flowbite's typography/lists example (https://flowbite.com/docs/typography/lists/), with the
+  * nested `<ul>` kept on `list-disc` (bullets) rather than Flowbite's own `list-decimal` nested example, since this
+  * parser's nested items are still unordered bullet items, never a numbered list.
+  */
 class TextToHtmlRender {
 
+  private val listCls = "text-body list-disc list-inside space-y-1"
+  private val nestedListCls = "list-disc list-inside ps-5 mt-2 space-y-1"
+
   def textToHtmlList(input: String): HtmlUl =
-    ul(TextToHtmlListParser.parse(input).map(renderItem))
+    ul(cls(listCls), TextToHtmlListParser.parse(input).map(renderItem))
 
   private def renderItem(item: TextToHtmlListParser.ListItem): HtmlLi =
     li(
       item.text,
       item.children match {
         case Nil      => emptyMod
-        case children => ul(children.map(renderItem))
+        case children => ul(cls(nestedListCls), children.map(renderItem))
       }
     )
 }
