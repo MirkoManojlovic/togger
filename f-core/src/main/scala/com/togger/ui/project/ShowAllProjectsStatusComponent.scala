@@ -251,7 +251,7 @@ class ShowAllProjectsStatusComponent(
                         task.description
                       ),
                       div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
-                      div(cls("flex-1 min-w-0"), logEntryCalendar(task.logEntries, selectedDayVar))
+                      div(cls("w-fit"), logEntryCalendar(task.logEntries, selectedDayVar))
                     )
                   )
                 )
