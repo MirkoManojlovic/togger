@@ -30,14 +30,36 @@ class TgBadgeTest extends AsyncJsWordSpec {
   private def hasClass(name: String, action: Option[TgBadgeAction]): Boolean =
     containerClasses(action = action).contains(name)
 
+  /** A color fragment can itself be several classes (`"bg-indigo-100 dark:bg-indigo-900"`), so match on every token. */
+  private def hasAll(classes: Set[String], fragment: String): Boolean =
+    fragment.split(" ").forall(classes.contains)
+
+  private val paletteColors =
+    TgBadgeColor.values.filter(color => color.bgCls.startsWith("bg-") && color.bgCls.contains("-100"))
+
   testNameFromClassName should {
 
     "carry the background and text class of every color" in { _ =>
       val missing = TgBadgeColor.values.filterNot { color =>
         val classes = containerClasses(color = color)
-        classes.contains(color.bgCls) && classes.contains(color.textCls)
+        hasAll(classes, color.bgCls) && hasAll(classes, color.textCls)
       }
       missing shouldBe empty
+    }
+
+    "give every palette color a dark counterpart for background and text" in { _ =>
+      val missing = paletteColors.filterNot { color =>
+        color.bgCls.contains("dark:bg-") && color.textCls.contains("dark:text-")
+      }
+      (paletteColors.size, missing) shouldBe ((14, IndexedSeq.empty))
+    }
+
+    "leave the semantic colors free of dark: classes, since the theme swaps their tokens" in { _ =>
+      val semantic = TgBadgeColor.values.diff(paletteColors)
+      val leaked = semantic.filter { color =>
+        Seq(color.bgCls, color.textCls, color.borderCls, color.linkHoverCls).exists(_.contains("dark:"))
+      }
+      (semantic.size, leaked) shouldBe ((6, IndexedSeq.empty))
     }
 
     "omit the border when not bordered" in { _ =>
@@ -47,7 +69,7 @@ class TgBadgeTest extends AsyncJsWordSpec {
     "add the border and the color's border class of every color when bordered" in { _ =>
       val missing = TgBadgeColor.values.filterNot { color =>
         val classes = containerClasses(color = color, bordered = true)
-        classes.contains("border") && classes.contains(color.borderCls)
+        classes.contains("border") && hasAll(classes, color.borderCls)
       }
       missing shouldBe empty
     }

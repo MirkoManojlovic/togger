@@ -19,10 +19,15 @@ object TgBadgeAction {
   case class Dismiss(onDismiss: Observer[Unit]) extends TgBadgeAction
 }
 
-/** The six badge colors Flowbite's theme exposes with a matching soft background, subtle border and foreground token.
+/** A badge color, as the five class fragments a badge needs.
   *
-  * Dark mode comes from the theme (`@import "flowbite/src/themes/default"` in `style.css`), so no `dark:` class is
-  * written here.
+  * Two families live here. The **semantic six** (`Brand` .. `Warning`) use Flowbite's theme tokens, which swap
+  * themselves under `.dark`, so they carry no `dark:` class. The **palette colors** (`Blue` .. `Rose`) are raw
+  * Tailwind shades, which do not, so each spells out its own `dark:` pair. `style.css` points the `dark:` variant at
+  * the same `.dark` class the theme uses, so both families flip together.
+  *
+  * Every class is a literal string on purpose: Tailwind scans source text for whole class names, so a fragment built
+  * with interpolation (`s"bg-$hue-100"`) would generate no CSS at all.
   */
 sealed abstract class TgBadgeColor(
   val bgCls: String,
@@ -89,6 +94,135 @@ object TgBadgeColor extends Enum[TgBadgeColor] {
         borderCls = "border-warning-subtle",
         linkHoverCls = "hover:bg-warning-medium",
         dismissHoverCls = "hover:bg-warning-medium"
+      )
+
+  case object Blue
+      extends TgBadgeColor(
+        bgCls = "bg-blue-100 dark:bg-blue-900",
+        textCls = "text-blue-800 dark:text-blue-300",
+        borderCls = "border-blue-400",
+        linkHoverCls = "hover:bg-blue-200 dark:hover:bg-blue-800",
+        dismissHoverCls = "hover:bg-blue-200 dark:hover:bg-blue-800"
+      )
+
+  case object Red
+      extends TgBadgeColor(
+        bgCls = "bg-red-100 dark:bg-red-900",
+        textCls = "text-red-800 dark:text-red-300",
+        borderCls = "border-red-400",
+        linkHoverCls = "hover:bg-red-200 dark:hover:bg-red-800",
+        dismissHoverCls = "hover:bg-red-200 dark:hover:bg-red-800"
+      )
+
+  case object Green
+      extends TgBadgeColor(
+        bgCls = "bg-green-100 dark:bg-green-900",
+        textCls = "text-green-800 dark:text-green-300",
+        borderCls = "border-green-400",
+        linkHoverCls = "hover:bg-green-200 dark:hover:bg-green-800",
+        dismissHoverCls = "hover:bg-green-200 dark:hover:bg-green-800"
+      )
+
+  case object Yellow
+      extends TgBadgeColor(
+        bgCls = "bg-yellow-100 dark:bg-yellow-900",
+        textCls = "text-yellow-800 dark:text-yellow-300",
+        borderCls = "border-yellow-400",
+        linkHoverCls = "hover:bg-yellow-200 dark:hover:bg-yellow-800",
+        dismissHoverCls = "hover:bg-yellow-200 dark:hover:bg-yellow-800"
+      )
+
+  case object Indigo
+      extends TgBadgeColor(
+        bgCls = "bg-indigo-100 dark:bg-indigo-900",
+        textCls = "text-indigo-800 dark:text-indigo-300",
+        borderCls = "border-indigo-400",
+        linkHoverCls = "hover:bg-indigo-200 dark:hover:bg-indigo-800",
+        dismissHoverCls = "hover:bg-indigo-200 dark:hover:bg-indigo-800"
+      )
+
+  case object Purple
+      extends TgBadgeColor(
+        bgCls = "bg-purple-100 dark:bg-purple-900",
+        textCls = "text-purple-800 dark:text-purple-300",
+        borderCls = "border-purple-400",
+        linkHoverCls = "hover:bg-purple-200 dark:hover:bg-purple-800",
+        dismissHoverCls = "hover:bg-purple-200 dark:hover:bg-purple-800"
+      )
+
+  case object Pink
+      extends TgBadgeColor(
+        bgCls = "bg-pink-100 dark:bg-pink-900",
+        textCls = "text-pink-800 dark:text-pink-300",
+        borderCls = "border-pink-400",
+        linkHoverCls = "hover:bg-pink-200 dark:hover:bg-pink-800",
+        dismissHoverCls = "hover:bg-pink-200 dark:hover:bg-pink-800"
+      )
+
+  /** Flowbite's name for its gray *palette* badge. Distinct from [[Gray]], which is the theme's neutral token and
+    * therefore tracks whatever the theme decides neutral means.
+    */
+  case object Dark
+      extends TgBadgeColor(
+        bgCls = "bg-gray-100 dark:bg-gray-700",
+        textCls = "text-gray-800 dark:text-gray-300",
+        borderCls = "border-gray-500",
+        linkHoverCls = "hover:bg-gray-200 dark:hover:bg-gray-600",
+        dismissHoverCls = "hover:bg-gray-200 dark:hover:bg-gray-600"
+      )
+
+  case object Teal
+      extends TgBadgeColor(
+        bgCls = "bg-teal-100 dark:bg-teal-900",
+        textCls = "text-teal-800 dark:text-teal-300",
+        borderCls = "border-teal-400",
+        linkHoverCls = "hover:bg-teal-200 dark:hover:bg-teal-800",
+        dismissHoverCls = "hover:bg-teal-200 dark:hover:bg-teal-800"
+      )
+
+  case object Cyan
+      extends TgBadgeColor(
+        bgCls = "bg-cyan-100 dark:bg-cyan-900",
+        textCls = "text-cyan-800 dark:text-cyan-300",
+        borderCls = "border-cyan-400",
+        linkHoverCls = "hover:bg-cyan-200 dark:hover:bg-cyan-800",
+        dismissHoverCls = "hover:bg-cyan-200 dark:hover:bg-cyan-800"
+      )
+
+  case object Sky
+      extends TgBadgeColor(
+        bgCls = "bg-sky-100 dark:bg-sky-900",
+        textCls = "text-sky-800 dark:text-sky-300",
+        borderCls = "border-sky-400",
+        linkHoverCls = "hover:bg-sky-200 dark:hover:bg-sky-800",
+        dismissHoverCls = "hover:bg-sky-200 dark:hover:bg-sky-800"
+      )
+
+  case object Lime
+      extends TgBadgeColor(
+        bgCls = "bg-lime-100 dark:bg-lime-900",
+        textCls = "text-lime-800 dark:text-lime-300",
+        borderCls = "border-lime-400",
+        linkHoverCls = "hover:bg-lime-200 dark:hover:bg-lime-800",
+        dismissHoverCls = "hover:bg-lime-200 dark:hover:bg-lime-800"
+      )
+
+  case object Orange
+      extends TgBadgeColor(
+        bgCls = "bg-orange-100 dark:bg-orange-900",
+        textCls = "text-orange-800 dark:text-orange-300",
+        borderCls = "border-orange-400",
+        linkHoverCls = "hover:bg-orange-200 dark:hover:bg-orange-800",
+        dismissHoverCls = "hover:bg-orange-200 dark:hover:bg-orange-800"
+      )
+
+  case object Rose
+      extends TgBadgeColor(
+        bgCls = "bg-rose-100 dark:bg-rose-900",
+        textCls = "text-rose-800 dark:text-rose-300",
+        borderCls = "border-rose-400",
+        linkHoverCls = "hover:bg-rose-200 dark:hover:bg-rose-800",
+        dismissHoverCls = "hover:bg-rose-200 dark:hover:bg-rose-800"
       )
 
 }
