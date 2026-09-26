@@ -395,4 +395,20 @@ object TgIcons {
       )
     )
 
+  def closeIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("M6 18 17.94 6M18 18 6.06 6")
+      )
+    )
+
 }
