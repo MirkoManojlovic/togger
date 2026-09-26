@@ -13,6 +13,12 @@ class TgDateFormater {
   def asAmericanDate(date: LocalDate): String =
     AmericanDashes.formater.format(date)
 
+  def asAmericanDateWithDayAbrv(date: LocalDate): String = {
+    val day = dayOfWeekAbbrev(date)
+    val americanDate = AmericanDashes.formater.format(date)
+    s"$americanDate | $day"
+  }
+
   def dayAndMonth(date: LocalDate): String =
     LogEntryFormat.formater.format(date)
 

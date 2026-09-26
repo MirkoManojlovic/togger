@@ -340,7 +340,7 @@ class ShowAllProjectsStatusComponent(
             .sortBy(_.createdAt)
 
           def dateBadge() =
-            TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element
+            TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element
 
           div(
             cls("mb-4"),
@@ -387,7 +387,7 @@ class ShowAllProjectsStatusComponent(
                   cls("mb-2"),
                   div(
                     cls("flex items-center gap-2 mb-2"),
-                    TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element,
+                    TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element,
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
                   new TextToHtmlRender().textToHtmlList(entry.textExternal)
