@@ -8,7 +8,8 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgTooltip}
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadgeColor, TgTooltip}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -494,20 +495,24 @@ class MilestoneHistoryComponent(
     )
   }
 
-  private case class TaskStatusBadge(text: String, bgColor: String, textColor: String)
+  private case class TaskStatusBadge(text: String, color: TgBadgeColor)
+
+  private val taskStatusAbbreviation: Map[DefaultTaskStatus, String] = Map(
+    DefaultTaskStatus.InProgress -> "progress",
+    DefaultTaskStatus.Testing -> "test",
+    DefaultTaskStatus.InReviewWaiting -> "wait",
+    DefaultTaskStatus.Blocked -> "block",
+    DefaultTaskStatus.Todo -> "todo",
+    DefaultTaskStatus.Backlog -> "blog",
+    DefaultTaskStatus.Done -> "done",
+    DefaultTaskStatus.WontDo -> "wontdo",
+    DefaultTaskStatus.Archived -> "archive"
+  )
 
   private def taskStatusBadge(task: FindTaskRespFull): Option[TaskStatusBadge] =
-    DefaultTaskStatus.values.find(_.statusName == task.taskStatus.name).map {
-      case DefaultTaskStatus.InProgress      => TaskStatusBadge("progress", "#3B82F6", "#FFFFFF")
-      case DefaultTaskStatus.Testing         => TaskStatusBadge("test", "#3B82F6", "#FFFFFF")
-      case DefaultTaskStatus.InReviewWaiting => TaskStatusBadge("wait", "#EAB308", "#000000")
-      case DefaultTaskStatus.Blocked         => TaskStatusBadge("block", "#EF4444", "#FFFFFF")
-      case DefaultTaskStatus.Todo            => TaskStatusBadge("todo", "#9CA3AF", "#000000")
-      case DefaultTaskStatus.Backlog         => TaskStatusBadge("blog", "#9CA3AF", "#000000")
-      case DefaultTaskStatus.Done            => TaskStatusBadge("done", "#22C55E", "#FFFFFF")
-      case DefaultTaskStatus.WontDo          => TaskStatusBadge("wontdo", "#000000", "#FFFFFF")
-      case DefaultTaskStatus.Archived        => TaskStatusBadge("archive", "#000000", "#FFFFFF")
-    }
+    DefaultTaskStatus.values
+      .find(_.statusName == task.taskStatus.name)
+      .flatMap(status => taskStatusAbbreviation.get(status).map(TaskStatusBadge(_, task.taskStatus.badgeColor)))
 
   private def taskStatusBadgeElement(badge: TaskStatusBadge) =
     div(
@@ -515,7 +520,8 @@ class MilestoneHistoryComponent(
       cls(
         "flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-3.5 text-[8px] font-semibold leading-none"
       ),
-      styleAttr := s"background-color: ${badge.bgColor}; color: ${badge.textColor};",
+      cls(badge.color.bgCls),
+      cls(badge.color.textCls),
       badge.text
     )
 
