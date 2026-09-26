@@ -103,7 +103,7 @@ class TgTabs(
       tabIndex(0),
       hidden <-- isHidden,
       cls.toggle("hidden") <-- isHidden,
-      tab.content
+      tab.content.amend(cls("mt-4"))
     )
   }
 
