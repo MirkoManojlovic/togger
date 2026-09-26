@@ -341,19 +341,23 @@ class ShowAllProjectsStatusComponent(
             .filter(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate == day)
             .sortBy(_.createdAt)
 
+          def dateBadge() =
+            TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element
+
           div(
             cls("mb-4"),
-            div(
-              cls("mb-2"),
-              TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element
-            ),
-            if (dayEntries.isEmpty) p("No status update")
+            if (dayEntries.isEmpty)
+              div(
+                div(cls("flex items-center gap-2 mb-2"), dateBadge()),
+                p("No status update")
+              )
             else
               dayEntries.map(entry =>
                 div(
                   cls("mb-2"),
                   div(
-                    cls("mb-2"),
+                    cls("flex items-center gap-2 mb-2"),
+                    dateBadge(),
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
                   entry.textExternal.split("\n").map(line => p(line)).toSeq
@@ -378,14 +382,14 @@ class ShowAllProjectsStatusComponent(
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
           div(
             cls("mb-2"),
-            div(cls("mb-2"), TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element),
             dayEntries
               .sortBy(_.createdAt)
               .map(entry =>
                 div(
                   cls("mb-2"),
                   div(
-                    cls("mb-2"),
+                    cls("flex items-center gap-2 mb-2"),
+                    TgBadge(text = tgDateFormater.asAmericanDate(day), bordered = true, color = TgBadgeColor.Gray).element,
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
                   entry.textExternal.split("\n").map(line => p(line)).toSeq
