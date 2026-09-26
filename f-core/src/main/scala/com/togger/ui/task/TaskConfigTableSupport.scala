@@ -6,6 +6,7 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import org.scalajs.dom.HTMLButtonElement
 
 object TaskConfigTableSupport {
@@ -22,12 +23,6 @@ object TaskConfigTableSupport {
   val headerButtonMarginCls = "mr-2"
   val rowButtonMarginCls = "mr-2 mt-1 mb-1"
   val lastRowButtonMarginCls = "mt-1 mb-1"
-
-  val greenBadgeCls = "bg-green-100 text-green-800"
-  val yellowBadgeCls = "bg-yellow-100 text-yellow-800"
-  val blueBadgeCls = "bg-blue-100 text-blue-800"
-  val grayBadgeCls = "bg-gray-100 text-gray-800"
-  val redBadgeCls = "bg-red-100 text-red-800"
 
   val tableWrapperCls =
     "relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"
@@ -51,15 +46,12 @@ object TaskConfigTableSupport {
       action
     )
 
-  def badge(text: String, colorCls: String) =
-    span(cls(s"px-2 py-1 rounded-base text-xs font-medium $colorCls"), text)
-
-  private def dumpSyncStatusBadgeCls(status: TaskDumpSyncStatusResp): String = status match {
-    case TaskDumpSyncStatusResp.InSync          => greenBadgeCls
-    case TaskDumpSyncStatusResp.OutOfSync       => yellowBadgeCls
-    case TaskDumpSyncStatusResp.MissingFromDump => redBadgeCls
-    case TaskDumpSyncStatusResp.MissingFromDb   => redBadgeCls
-    case TaskDumpSyncStatusResp.Malformed       => redBadgeCls
+  private def dumpSyncStatusBadgeColor(status: TaskDumpSyncStatusResp): TgBadgeColor = status match {
+    case TaskDumpSyncStatusResp.InSync          => TgBadgeColor.Green
+    case TaskDumpSyncStatusResp.OutOfSync       => TgBadgeColor.Yellow
+    case TaskDumpSyncStatusResp.MissingFromDump => TgBadgeColor.Red
+    case TaskDumpSyncStatusResp.MissingFromDb   => TgBadgeColor.Red
+    case TaskDumpSyncStatusResp.Malformed       => TgBadgeColor.Red
   }
 
   def dumpPathStatusCard(pathStatus: TaskDumpPathStatusResp, header: String) =
@@ -95,6 +87,6 @@ object TaskConfigTableSupport {
       .element
 
   private def dumpSyncStatusBadge(status: TaskDumpSyncStatusResp) =
-    badge(status.entryName, dumpSyncStatusBadgeCls(status))
+    TgBadge(status.entryName, dumpSyncStatusBadgeColor(status)).element
 
 }

@@ -11,6 +11,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}
@@ -210,15 +211,15 @@ class ShowAllTaskLoadConfigsComponent(
       )
       .element
 
-  private def loadStatusBadgeCls(status: TaskLoadStatusResp): String = status match {
-    case TaskLoadStatusResp.Inserted  => greenBadgeCls
-    case TaskLoadStatusResp.Merged    => blueBadgeCls
-    case TaskLoadStatusResp.Unchanged => grayBadgeCls
-    case TaskLoadStatusResp.Malformed => redBadgeCls
-    case TaskLoadStatusResp.Failed    => redBadgeCls
+  private def loadStatusBadgeColor(status: TaskLoadStatusResp): TgBadgeColor = status match {
+    case TaskLoadStatusResp.Inserted  => TgBadgeColor.Green
+    case TaskLoadStatusResp.Merged    => TgBadgeColor.Blue
+    case TaskLoadStatusResp.Unchanged => TgBadgeColor.Dark
+    case TaskLoadStatusResp.Malformed => TgBadgeColor.Red
+    case TaskLoadStatusResp.Failed    => TgBadgeColor.Red
   }
 
   private def loadStatusBadge(status: TaskLoadStatusResp) =
-    badge(status.entryName, loadStatusBadgeCls(status))
+    TgBadge(status.entryName, loadStatusBadgeColor(status)).element
 
 }
