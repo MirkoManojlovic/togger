@@ -57,6 +57,8 @@ lazy val frontendCore = (project in file("f-core"))
   .settings(markdownSettings)
   .settings(
     name := "frontend-core",
+    // Laminar builds real DOM nodes, so component tests need a document
+    Test / jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv(),
     libraryDependencies ++= Seq(
       // HTML
       `com.raquo` %%% laminar % `laminar-version`,
