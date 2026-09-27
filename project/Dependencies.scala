@@ -61,6 +61,8 @@ object Libraries {
 
     val `org.scala-lang` = "org.scala-lang"
     val `scala-reflect` = "scala-reflect"
+    // last scala3-library release that still ships Scala-3-only class files (3.8.x publishes an empty jar)
+    val `scala3-library-version` = "3.7.4"
 
     val `org.scala-js` = "org.scala-js"
     val `scala-js-macrotask-executor` = "scala-js-macrotask-executor"
@@ -157,6 +159,10 @@ object Libraries {
     val `io.github.cquiroz` = "io.github.cquiroz"
     val `scala-java-time` = "scala-java-time"
     val `scala-java-time-version` = "2.5.0"
+
+    val `io.github.edadma` = "io.github.edadma"
+    val markdown = "markdown"
+    val `markdown-version` = "0.4.9"
 
     val `io.getquill` = "io.getquill"
     val `quill-doobie` = "quill-doobie"

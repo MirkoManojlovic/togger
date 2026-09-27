@@ -17,11 +17,44 @@ Global / tpolecatExcludeOptions ++= Set(
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+// `io.github.edadma:markdown` (used by frontendCore) is a Scala 3 library and is consumed from Scala 2.13
+// through the TASTy reader. It is built against the Scala 3 "Next" standard library, which ships as
+// `scalajs-scalalib_2.13:3.x` (ScalaJS IR only) plus `scala-library:3.x` (JVM signatures). These overrides keep
+// Scala 2.13 signatures on the compile classpath while letting the Next scalalib provide the ScalaJS IR:
+//   - scala-library stays at our 2.13 version, so the SIP-51 check does not see a newer scala-library than the
+//     compiler,
+//   - scala3-library_3 is pinned to the last release that still ships Scala-3-only class files
+//     (scala.annotation.internal.*, scala.runtime.*, ...); 3.8.x publishes an empty jar, and the ScalaJS variant
+//     cannot be used because its IR would shadow the Next scalalib's.
+ThisBuild / dependencyOverrides ++= Seq(
+  `org.scala-lang` % "scala-library" % scalaVersion.value,
+  `org.scala-lang` % "scala3-library_3" % `scala3-library-version`
+)
+
 val Cctt: String =
   "compile->compile;test->test"
 
+// Applied to every ScalaJS project that compiles against or links `markdown`. Cross-version-shifted
+// dependencies are not carried over an inter-project `dependsOn`, so frontendMain has to declare it as well or
+// the library's ScalaJS IR is missing at link time.
+lazy val markdownSettings: Seq[Setting[_]] = Seq(
+  // `markdown` is a Scala 3 library; the TASTy reader lets a Scala 2.13 module consume it
+  scalacOptions += "-Ytasty-reader",
+  libraryDependencies ++= Seq(
+    // Scala 3 artifact, resolved for 2.13 (see the dependencyOverrides note at the top of the build).
+    // Its Scala 3 build of scala-java-time is dropped in favour of the 2.13 one already on this classpath,
+    // otherwise both cross-versions of java.time end up in the link.
+    (`io.github.edadma` %%% markdown % `markdown-version`)
+      .cross(CrossVersion.for2_13Use3)
+      .excludeAll(ExclusionRule(organization = `io.github.cquiroz`)),
+    // supplies the Scala-3-only class files the TASTy reader needs (scala.annotation.internal.* and friends)
+    `org.scala-lang` % "scala3-library_3" % `scala3-library-version`
+  )
+)
+
 lazy val frontendCore = (project in file("f-core"))
   .enablePlugins(ScalaJSPlugin)
+  .settings(markdownSettings)
   .settings(
     name := "frontend-core",
     libraryDependencies ++= Seq(
@@ -68,6 +101,7 @@ val fullLinkOutputDir = taskKey[String]("output dir for frontent app `npm run bu
 
 lazy val frontendMain = (project in file("f-main"))
   .enablePlugins(ScalaJSPlugin)
+  .settings(markdownSettings)
   .settings(
     name := "frontend-main",
     scalaJSUseMainModuleInitializer := true,
