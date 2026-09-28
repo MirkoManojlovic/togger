@@ -2,6 +2,8 @@ package com.togger.ui.components.wysiwyg
 
 import com.raquo.laminar.api.L._
 import com.togger.common.suites.AsyncJsWordSpec
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditor.WYSIWYGTextEditorSyntax
+import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 import org.scalatest.Assertion
 
@@ -11,8 +13,13 @@ import scala.scalajs.js
 
 class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
 
+  private case class TestForm(name: String = "untouched", description: String = "")
+
   private val debounce = 10
   private val settle = debounce * 6
+
+  /** The syntax helper takes the component's own default debounce, not this suite's shortened one. */
+  private val settleAtDefaultDebounce = 600
 
   /** Mounts a real editor over a caller-owned `Var`, wired the way a form would wire it — the observer writes back
     * into the same `Var` the signal is read from, which is exactly the loop the editor has to absorb.
@@ -142,6 +149,37 @@ class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
 
           editor.getElementsByTagName("button").length should be > 0
         }
+      }
+    }
+
+    /** The shape `CreateTaskComponent` and `EditTaskComponent` use: a form `Var`, a field selected by macro, and
+      * the editor writing back into that field.
+      */
+    "write back into a form field through the syntax helper" in { _ =>
+      val formState = Var(TestForm(description = "start"))
+      val container = dom.document.createElement("div")
+
+      dom.document.body.appendChild(container)
+
+      val editor = formState.wysiwygEditorSig(
+        inputAndUpdater = selectorAndUpdaterMacro(_.description),
+        labelValue = "Description"
+      )
+      val root = render(container, editor.htmlElement.amend(cls("mb-4")))
+      val surface = container.querySelector("[contenteditable]")
+
+      surface.textContent shouldBe "start"
+      typeInto(surface, " and more")
+
+      inAsyncContextFuture(
+        {
+          formState.now().description shouldBe "start and more\n"
+          formState.now().name shouldBe "untouched"
+        },
+        settleAtDefaultDebounce
+      ).andThen { case _ =>
+        root.unmount()
+        dom.document.body.removeChild(container)
       }
     }
 

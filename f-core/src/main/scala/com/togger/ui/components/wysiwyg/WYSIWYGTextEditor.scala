@@ -7,6 +7,7 @@ import com.togger.markdown.{TgMarkdown, TgMarkdownStyles}
 import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
 import com.togger.ui.components.wysiwyg.WYSIWYGDom._
 import com.togger.ui.organization.TgIcons
+import com.togger.util.FrontendMacros.SelectAndUpdate
 import io.github.edadma.markdown.MarkdownConfig
 import org.scalajs.dom
 import org.scalajs.dom.SVGSVGElement
@@ -317,4 +318,29 @@ case class WYSIWYGTextEditor(
       }
       isEmptyVar.set(element.textContent.trim.isEmpty)
     }
+}
+
+object WYSIWYGTextEditor {
+
+  /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using
+    * it reads like the ones around it and swapping a textarea for the editor is a one-line change.
+    */
+  implicit class WYSIWYGTextEditorSyntax[A](formState: Var[A]) {
+
+    def wysiwygEditorSig(
+      inputAndUpdater: SelectAndUpdate[A, String],
+      labelValue: String,
+      placeholderValue: String = "",
+      minHeightRem: Int = 12,
+      showToolbar: Boolean = true
+    ): WYSIWYGTextEditor =
+      WYSIWYGTextEditor(
+        inputSignal = formState.signal.map(inputAndUpdater.selector),
+        inputStateUpdater = formState.updater(inputAndUpdater.updater),
+        labelValue = labelValue,
+        placeholderValue = placeholderValue,
+        minHeightRem = minHeightRem,
+        showToolbar = showToolbar
+      )
+  }
 }
