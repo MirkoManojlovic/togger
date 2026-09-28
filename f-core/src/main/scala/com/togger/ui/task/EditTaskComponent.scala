@@ -12,7 +12,7 @@ import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditor.WYSIWYGTextEditorSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
@@ -175,10 +175,10 @@ class EditTaskComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val descriptionTextArea = formState.tgTextAreaManualErrorSig(
+  private val descriptionEditor = formState.wysiwygEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
-    errors = EventStream.empty,
-    labelValue = "Task name"
+    labelValue = "Description",
+    placeholderValue = "Describe the task"
   )
 
   def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
@@ -205,7 +205,7 @@ class EditTaskComponent(
               form(
                 onSubmit.preventDefault.mapTo(formState.now() -> linksVar.now()) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4")),
-                descriptionTextArea.htmlElement.amend(cls("mb-4")),
+                descriptionEditor.htmlElement.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
