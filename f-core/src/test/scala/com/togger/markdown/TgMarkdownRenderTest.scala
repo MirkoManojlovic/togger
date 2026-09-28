@@ -9,14 +9,14 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
 
   private def html(
       markdown: String,
-      config: MarkdownConfig = TgMarkdown.defaultConfig,
+      config: MarkdownConfig = MarkdownConfig.default,
       allowRawHtml: Boolean = false
   ): String = {
     val container = dom.document.createElement("div")
 
     dom.document.body.appendChild(container)
 
-    val root = render(container, TgMarkdown.toLaminarDiv(markdown, config, allowRawHtml))
+    val root = render(container, new TgMarkdown(config, allowRawHtml).toLaminarDiv(markdown))
     val rendered = container.firstElementChild.innerHTML
 
     root.unmount()

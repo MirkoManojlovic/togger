@@ -10,34 +10,23 @@ import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
   * The library is Scala 3 and is read through the TASTy reader, which does not expose Scala 3 top-level
   * definitions under their package. They live in a synthetic object named after their source file, hence the
   * `renderToHTML$package` alias above.
+  *
+  * `allowRawHtml` decides what happens to raw HTML in the source: escaped and shown as text by default, so
+  * markdown written by one user cannot inject markup into another user's page, or inserted as markup when it is
+  * turned on — only safe for markdown the viewer wrote themselves. [[toHtml]] always inserts it, since that is
+  * the library's own behaviour.
   */
-object TgMarkdown {
+class TgMarkdown(config: MarkdownConfig = MarkdownConfig.default, allowRawHtml: Boolean = false) {
 
-  val defaultConfig: MarkdownConfig = MarkdownConfig.default
+  private lazy val render = new TgMarkdownRender(config, allowRawHtml)
 
-  def toHtml(markdown: String, config: MarkdownConfig = defaultConfig): String =
-    Markdown.renderToHTML(markdown, config)
+  def toHtml(markdown: String): String = Markdown.renderToHTML(markdown, config)
 
-  /** The markdown's top-level blocks as Laminar elements, ready to splice into a component.
-    *
-    * Raw HTML in the source is escaped and shown as text. Pass `allowRawHtml = true` to insert it as markup
-    * instead, the way [[toHtml]] does — only for markdown the viewer wrote themselves.
-    */
-  def toLaminar(
-      markdown: String,
-      config: MarkdownConfig = defaultConfig,
-      allowRawHtml: Boolean = false
-  ): Seq[HtmlElement] =
-    new TgMarkdownRender(config, allowRawHtml).blocks(parse(markdown, config))
+  /** The markdown's top-level blocks as Laminar elements, ready to splice into a component. */
+  def toLaminar(markdown: String): Seq[HtmlElement] = render.blocks(parse(markdown))
 
   /** Same as [[toLaminar]], wrapped in a single `<div>`. */
-  def toLaminarDiv(
-      markdown: String,
-      config: MarkdownConfig = defaultConfig,
-      allowRawHtml: Boolean = false
-  ): HtmlDiv =
-    div(toLaminar(markdown, config, allowRawHtml))
+  def toLaminarDiv(markdown: String): HtmlDiv = div(toLaminar(markdown))
 
-  def parse(markdown: String, config: MarkdownConfig = defaultConfig): Document =
-    Markdown.parseDocumentContent(markdown, config)
+  def parse(markdown: String): Document = Markdown.parseDocumentContent(markdown, config)
 }
