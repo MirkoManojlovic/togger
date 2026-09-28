@@ -411,4 +411,41 @@ object TgIcons {
       )
     )
 
+  private def strokeIcon(className: String, path: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d(path)
+      )
+    )
+
+  def boldIcon(className: String) =
+    strokeIcon(className, "M8 5h4.5a3.5 3.5 0 1 1 0 7H8V5Zm0 7h5.5a3.5 3.5 0 1 1 0 7H8v-7Z")
+
+  def italicIcon(className: String) =
+    strokeIcon(className, "M10 5h6M8 19h6m.5-14-5 14")
+
+  def codeIcon(className: String) =
+    strokeIcon(className, "m9 8-4 4 4 4m6-8 4 4-4 4")
+
+  def headingIcon(className: String) =
+    strokeIcon(className, "M6 5v14M18 5v14M6 12h12")
+
+  def linkIcon(className: String) =
+    strokeIcon(
+      className,
+      "M13.2 10.8a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1.4-1.4m-2.8-6.7a4 4 0 0 1 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1.4 1.4"
+    )
+
+  def orderedListIcon(className: String) =
+    strokeIcon(className, "M10 7h9m-9 5h9m-9 5h9M5 6v3m0 0H4m1 0h1m-2 3h2l-2 3h2")
+
 }
