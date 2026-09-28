@@ -15,10 +15,17 @@ import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
   * markdown written by one user cannot inject markup into another user's page, or inserted as markup when it is
   * turned on — only safe for markdown the viewer wrote themselves. [[toHtml]] always inserts it, since that is
   * the library's own behaviour.
+  *
+  * `styles` only reaches the Laminar output. [[toHtml]] goes straight to the library's string renderer and comes
+  * back unstyled.
   */
-class TgMarkdown(config: MarkdownConfig = MarkdownConfig.default, allowRawHtml: Boolean = false) {
+class TgMarkdown(
+  config: MarkdownConfig = MarkdownConfig.default,
+  allowRawHtml: Boolean = false,
+  styles: TgMarkdownStyles = TgMarkdownStyles.default
+) {
 
-  private lazy val render = new TgMarkdownRender(config, allowRawHtml)
+  private lazy val render = new TgMarkdownRender(config, allowRawHtml, styles)
 
   def toHtml(markdown: String): String = Markdown.renderToHTML(markdown, config)
 

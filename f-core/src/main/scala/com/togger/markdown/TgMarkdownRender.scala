@@ -1,62 +1,55 @@
 package com.togger.markdown
 
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.codecs.{BooleanAsAttrPresenceCodec, IntAsStringCodec, StringAsIsCodec}
+import com.raquo.laminar.codecs.StringAsIsCodec
 import com.raquo.laminar.modifiers.KeySetter.StyleSetter
 import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.{ReactiveHtmlElement, TextNode}
-import com.raquo.laminar.tags.HtmlTag
-import com.togger.ui.auth.TgHtmlTypes.HtmlLi
+import com.raquo.laminar.nodes.TextNode
+import com.togger.ui.auth.TgHtmlTypes.{HtmlLi, HtmlTableCell, HtmlTableRow}
 import io.github.edadma.markdown._
 import io.github.edadma.markdown.{Image => MarkdownImage}
 import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
-import org.scalajs.dom.{HTMLElement, HTMLHeadingElement, HTMLTableCellElement}
 
-/** Renders a parsed markdown [[Document]] as Laminar elements, instead of going through the library's HTML string
+/** Renders a parsed markdown [[Document]] as Tg components, instead of going through the library's HTML string
   * renderer.
+  *
+  * This walk owns the markdown semantics — which node becomes which component, tight-list flattening, the code
+  * block's trailing newline, the raw-HTML policy — and [[TgMarkdownStyles]] owns what each one looks like.
   *
   * With `allowRawHtml` off, raw HTML in the source is escaped and shown as text, so markdown written by one user
   * cannot inject markup into another user's page. Turning it on reproduces what `TgMarkdown.toHtml` does — the
-  * markup is inserted as-is — and is only safe for markdown the viewer wrote themselves. Laminar has no raw-HTML
-  * child node, so an inserted `HTMLBlock` gains a wrapping `<div>` that the string renderer does not emit; raw
-  * HTML between inlines is injected into the element holding those inlines and comes out unwrapped.
+  * markup is inserted as-is — and is only safe for markdown the viewer wrote themselves.
   */
-class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean) {
-
-  import TgMarkdownRender._
+class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean, styles: TgMarkdownStyles) {
 
   def blocks(document: Document): Seq[HtmlElement] = document.children.map(block)
 
   private def block(node: Block): HtmlElement = node match {
-    case Paragraph(is)                   => withInlines(p, is)
-    case Heading(level, is, attrs)       => withInlines(headingTag(level), is, attributes(attrs))
-    case BlockQuote(children)            => blockQuote(children.map(block))
-    case c: Code                         => codeBlock(c)
-    case ListBlock(data, items)          => list(data, items)
-    case item: ListItem                  => listItem(item, tight = false)
-    case HTMLBlock(content)              => if (allowRawHtml) rawHtml(div, content) else div(content)
-    case Table(header, rows, alignments) => table(tableHeader(header, alignments), tableBody(rows, alignments))
-    case row: TableRow                   => tableRow(row, Nil, td)
-    case TableCell(content)              => withInlines(td, content)
-    case DefinitionListBlock(items)      => dl(items.flatMap(definition))
-    case MathBlock(content)              => pre(code(content))
-    case CalloutBlock(kind, t, children) => callout(kind, t, children)
+    case Paragraph(is)             => TgMarkdownParagraph(inlineContent(is), styles).element
+    case Heading(level, is, attrs) => TgMarkdownHeading(level, attributes(attrs) ++ inlineContent(is), styles).element
+    case BlockQuote(children)      => TgMarkdownBlockQuote(children.map(block), styles).element
+    case c: Code                   => codeBlock(c)
+    case ListBlock(data, items)    => list(data, items, nested = false)
+    case item: ListItem            => TgMarkdownListItem(itemContent(item, tight = false), styles).element
+    case HTMLBlock(content)        => TgMarkdownRawHtmlBlock(content, allowRawHtml, styles).element
+    case Table(header, rows, alignments) =>
+      TgMarkdownTable(
+        Some(tableRow(header, alignments, header = true)),
+        rows.map(tableRow(_, alignments, header = false)),
+        styles
+      ).element
+    case row: TableRow              => tableRow(row, Nil, header = false)
+    case TableCell(content)         => tableCell(content, None, header = false)
+    case DefinitionListBlock(items) => definitionList(items)
+    case MathBlock(content)         => TgMarkdownCodeBlock(content, None, Nil, styles).element
+    case CalloutBlock(kind, t, children) => TgMarkdownCallout(kind, t, children.map(block), styles).element
     case CollapsibleBlock(t, isOpen, children) =>
-      detailsTag(openAttr(isOpen), withInlines(summaryTag, t), children.map(block))
-    case FootnoteDefinition(label, content) => div(idAttr(footnoteId(label)), content.map(block))
-    case DocTagBlock(name, target, body, _) =>
-      div(cls(s"doc-tag doc-tag-$name"), target.map(t => strong(t)), body.map(block))
-    case _: ThematicBreak => hr()
-    case other            => div(other.toString)
-  }
-
-  private def headingTag(level: Int): HtmlTag[HTMLHeadingElement] = level match {
-    case 1 => h1
-    case 2 => h2
-    case 3 => h3
-    case 4 => h4
-    case 5 => h5
-    case _ => h6
+      TgMarkdownCollapsible(inlineContent(t), isOpen, children.map(block), styles).element
+    case FootnoteDefinition(label, content) =>
+      TgMarkdownFootnote(footnoteId(label), content.map(block), styles).element
+    case DocTagBlock(name, target, body, _) => TgMarkdownDocTag(name, target, body.map(block), styles).element
+    case _: ThematicBreak                   => TgMarkdownThematicBreak(styles).element
+    case other                              => TgMarkdownUnknownBlock(other.toString, styles).element
   }
 
   /** Mirrors the string renderer: an indented block falls back to the configured language, and non-empty content
@@ -66,43 +59,50 @@ class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean) {
     val language = c.infoString.orElse(if (c.indented) config.indentedCodeLanguage else None)
     val trailing = if (c.content.nonEmpty) "\n" else ""
 
-    pre(code(attributes(c.attrs), language.map(l => cls(s"language-$l")), c.content + trailing))
+    TgMarkdownCodeBlock(c.content + trailing, language, attributes(c.attrs), styles).element
   }
 
-  private def list(data: ListData, items: List[ListItem]): HtmlElement = {
-    val children = items.map(listItem(_, data.isTight))
+  private def list(data: ListData, items: List[ListItem], nested: Boolean): HtmlElement =
+    TgMarkdownList(
+      ordered = data.isOrdered,
+      start = data.startNumber.filter(_ != 1),
+      nested = nested,
+      items = items.map(item => TgMarkdownListItem(itemContent(item, data.isTight), styles).element),
+      styles = styles
+    ).element
 
-    if (data.isOrdered) ol(data.startNumber.filter(_ != 1).map(startAttr(_)), children)
-    else ul(children)
-  }
+  /** A tight list item drops the `<p>` around its paragraphs, the way CommonMark renders them — which also keeps
+    * the paragraph's bottom margin out of a tight list. A list nested here is the only place one can appear, so
+    * this is where the indent gets applied.
+    */
+  private def itemContent(item: ListItem, tight: Boolean): Seq[Modifier[HtmlElement]] =
+    item.content.flatMap {
+      case Paragraph(is) if tight   => inlineContent(is)
+      case ListBlock(data, entries) => Seq(list(data, entries, nested = true))
+      case child                    => Seq(block(child))
+    }
 
-  /** A tight list item drops the `<p>` around its paragraphs, the way CommonMark renders them. */
-  private def listItem(item: ListItem, tight: Boolean): HtmlLi =
-    li(item.content.flatMap {
-      case Paragraph(is) if tight => inlines(is)
-      case child                  => Seq(block(child))
-    })
+  private def definitionList(items: List[(List[Inline], List[Block])]): HtmlElement =
+    TgMarkdownDefinitionList(
+      items.map { case (term, definitions) => (inlineContent(term), definitions.map(block)) },
+      styles
+    ).element
 
-  private def definition(item: (List[Inline], List[Block])): Seq[HtmlElement] =
-    withInlines(dt, item._1) +: item._2.map(d => dd(block(d)))
+  private def tableRow(row: TableRow, alignments: List[TableAlignment], header: Boolean): HtmlTableRow =
+    TgMarkdownTableRow(
+      row.cells.zipWithIndex.map { case (TableCell(content), index) =>
+        tableCell(content, alignments.lift(index).flatMap(alignment), header)
+      },
+      header,
+      styles
+    ).element
 
-  private def callout(kind: String, title: Option[String], children: List[Block]): HtmlElement =
-    div(cls(s"callout callout-$kind"), title.map(t => strong(t)), children.map(block))
-
-  private def tableHeader(header: TableRow, alignments: List[TableAlignment]): HtmlElement =
-    thead(tableRow(header, alignments, th))
-
-  private def tableBody(rows: List[TableRow], alignments: List[TableAlignment]): HtmlElement =
-    tbody(rows.map(tableRow(_, alignments, td)))
-
-  private def tableRow(
-      row: TableRow,
-      alignments: List[TableAlignment],
-      cellTag: HtmlTag[HTMLTableCellElement]
-  ): HtmlElement =
-    tr(row.cells.zipWithIndex.map { case (TableCell(content), index) =>
-      withInlines(cellTag, content, alignments.lift(index).flatMap(alignment).toSeq)
-    })
+  private def tableCell(
+    content: List[Inline],
+    align: Option[StyleSetter],
+    header: Boolean
+  ): HtmlTableCell =
+    TgMarkdownTableCell(align.toSeq ++ inlineContent(content), header, styles).element
 
   private def alignment(value: TableAlignment): Option[StyleSetter] = value match {
     case TableAlignment.Left   => Some(textAlign("left"))
@@ -119,51 +119,46 @@ class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean) {
     }
 
   /** Inserted raw HTML arrives as separate opening and closing fragments, so a run of inlines containing any of it
-    * can only be rendered as one string — element by element the fragments would nest instead of pairing up.
-    * Escaped raw HTML is just text, and needs none of that.
+    * can only be rendered as one string — element by element the fragments would nest instead of pairing up. It
+    * goes into whichever element hosts the run, so it comes out unwrapped. Escaped raw HTML is just text, and
+    * needs none of that.
     */
-  private def withInlines[Ref <: HTMLElement](
-      tag: HtmlTag[Ref],
-      is: List[Inline],
-      extra: Seq[Modifier[HtmlElement]] = Nil
-  ): ReactiveHtmlElement[Ref] =
-    if (allowRawHtml && is.exists(_.isInstanceOf[RawHTML])) tag(extra, rawHtmlContent(Markdown.renderInlines(is)))
-    else tag(extra, inlines(is))
-
-  private def inlines(is: List[Inline]): Seq[Modifier[HtmlElement]] = is.map(inline)
+  private def inlineContent(is: List[Inline]): Seq[Modifier[HtmlElement]] =
+    if (allowRawHtml && is.exists(_.isInstanceOf[RawHTML])) Seq(rawHtmlContent(Markdown.renderInlines(is)))
+    else is.map(inline)
 
   private def inline(node: Inline): Modifier[HtmlElement] = node match {
     case Text(content)            => new TextNode(content)
-    case CodeSpan(content)        => code(content)
-    case Emphasis(is)             => withInlines(em, is)
-    case Strong(is)               => withInlines(strong, is)
-    case Strikethrough(is)        => withInlines(del, is)
-    case Link(destination, t, is) => withInlines(a, is, Seq(href(destination)) ++ t.map(title(_)))
-    case AutoLink(destination, t) => a(href(destination), t)
+    case CodeSpan(content)        => TgMarkdownCodeSpan(content, styles).element
+    case Emphasis(is)             => em(cls(styles.emphasis), inlineContent(is))
+    case Strong(is)               => strong(cls(styles.strong), inlineContent(is))
+    case Strikethrough(is)        => del(cls(styles.strikethrough), inlineContent(is))
+    case Link(destination, t, is) => TgMarkdownLink(destination, t, inlineContent(is), styles).element
+    case AutoLink(destination, t) => TgMarkdownLink(destination, None, Seq(new TextNode(t)), styles).element
     case i: MarkdownImage         => image(i)
-    case RawHTML(content)         => if (allowRawHtml) rawHtml(span, content) else new TextNode(content)
-    case MathExpr(content)        => code(content)
+    case RawHTML(content)         => if (allowRawHtml) rawHtml(content) else new TextNode(content)
+    case MathExpr(content)        => TgMarkdownCodeSpan(content, styles).element
     case Emoji(name)              => new TextNode(s":$name:")
-    case FootnoteReference(label) => sup(a(href(s"#${footnoteId(label)}"), label))
+    case FootnoteReference(label) => TgMarkdownFootnoteRef(label, footnoteId(label), styles).element
     case _: SoftLineBreak         => new TextNode("\n")
     case _: HardLineBreak         => br()
     case other                    => new TextNode(other.toString)
   }
 
   private def image(i: MarkdownImage): HtmlElement =
-    img(attributes(i.attrs), src(i.destination), alt(Markdown.plainText(i.inlines, false)), i.title.map(title(_)))
+    TgMarkdownImage(
+      i.destination,
+      Markdown.plainText(i.inlines, false),
+      i.title,
+      attributes(i.attrs),
+      styles
+    ).element
 
   private def footnoteId(label: String): String = s"fn-$label"
 
-  private def rawHtml[Ref <: HTMLElement](tag: HtmlTag[Ref], content: String): ReactiveHtmlElement[Ref] =
-    tag(rawHtmlContent(content))
+  private def rawHtml(content: String): HtmlElement = span(rawHtmlContent(content))
 
   /** The markup is handed to the DOM once the element is mounted — Laminar has no raw-HTML child node. */
   private def rawHtmlContent(content: String): Modifier[HtmlElement] =
     onMountCallback(_.thisNode.ref.innerHTML = content)
-}
-
-object TgMarkdownRender {
-  private val startAttr = htmlAttr("start", IntAsStringCodec)
-  private val openAttr = htmlAttr("open", BooleanAsAttrPresenceCodec)
 }

@@ -17,6 +17,14 @@ object TgHtmlTypes {
   type HtmlHeading = ReactiveHtmlElement[HTMLHeadingElement]
   type TgHtmlElement = ReactiveHtmlElement[html.Element]
 
+  type HtmlPre = ReactiveHtmlElement[HTMLPreElement]
+  type HtmlBlockQuote = ReactiveHtmlElement[HTMLQuoteElement]
+  type HtmlDl = ReactiveHtmlElement[HTMLDListElement]
+  type HtmlTableRow = ReactiveHtmlElement[HTMLTableRowElement]
+  type HtmlTableCell = ReactiveHtmlElement[HTMLTableCellElement]
+  type HtmlImage = ReactiveHtmlElement[HTMLImageElement]
+  type HtmlHr = ReactiveHtmlElement[HTMLHRElement]
+
   type HtmlForm = ReactiveHtmlElement[HTMLFormElement]
 }
 
