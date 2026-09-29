@@ -33,6 +33,7 @@ class TaskServiceTest
   val linkVersionRepo: LinkVersionRepo = mock[LinkVersionRepo]
   val logEntryRepo: LogEntryRepo = mock[LogEntryRepo]
   val logEntryVersionRepo: LogEntryVersionRepo = mock[LogEntryVersionRepo]
+  val taskLabelAssignmentRepo: TaskLabelAssignmentRepo = mock[TaskLabelAssignmentRepo]
 
   val taskService =
     new TaskService(
@@ -42,6 +43,7 @@ class TaskServiceTest
       linkVersionRepo,
       logEntryRepo,
       logEntryVersionRepo,
+      taskLabelAssignmentRepo,
       transactorMock
     )
 
@@ -127,6 +129,7 @@ class TaskServiceTest
       (linkVersionRepo.findLatestByLinkId _).expects(link1.id).returns(version1.pure[ConnectionIO])
       (linkVersionRepo.insert _).expects(updatedLinkVersion).returns(updatedLinkVersion.pure[ConnectionIO])
       (linkRepo.findById _).expects(link1.id).returns(link1.pure[ConnectionIO])
+      (taskLabelAssignmentRepo.deleteAllByTaskId _).expects(task.id).returns(0.pure[ConnectionIO])
 
       val resultIO: IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] =
         taskService.updateTask(task.id, newTaskVersion, Seq(updatedLinkVersion), Seq.empty)
@@ -152,6 +155,7 @@ class TaskServiceTest
       (linkVersionRepo.findLatestByLinkId _).expects(link1.id).returns(version1.pure[ConnectionIO])
       (linkVersionRepo.insert _).expects(updatedLinkVersion).returns(updatedLinkVersion.pure[ConnectionIO])
       (linkRepo.findById _).expects(link1.id).returns(link1.pure[ConnectionIO])
+      (taskLabelAssignmentRepo.deleteAllByTaskId _).expects(task.id).returns(0.pure[ConnectionIO])
 
       val resultIO: IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] =
         taskService.updateTask(task.id, sameContentVersion, Seq(updatedLinkVersion), Seq.empty)
@@ -175,6 +179,7 @@ class TaskServiceTest
       (taskVersionRepo.findLatestByTaskId _).expects(task.id).returns(firstVersion.pure[ConnectionIO])
       (linkVersionRepo.findLatestByLinkId _).expects(link1.id).returns(version1.pure[ConnectionIO])
       (linkRepo.findById _).expects(link1.id).returns(link1.pure[ConnectionIO])
+      (taskLabelAssignmentRepo.deleteAllByTaskId _).expects(task.id).returns(0.pure[ConnectionIO])
 
       val resultIO: IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] =
         taskService.updateTask(task.id, firstVersion, Seq(sameContentLinkVersion), Seq.empty)

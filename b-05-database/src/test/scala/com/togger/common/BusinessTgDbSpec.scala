@@ -8,7 +8,14 @@ import com.togger.milestone.{MilestoneDateRepoImpl, MilestoneDateVersionRepoImpl
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl}
 import com.togger.projectmapping.ProjectMappingRepoImpl
-import com.togger.task.{LinkRepoImpl, LinkVersionRepoImpl, TaskRepoImpl, TaskVersionRepoImpl}
+import com.togger.task.{
+  LinkRepoImpl,
+  LinkVersionRepoImpl,
+  TaskLabelAssignmentRepoImpl,
+  TaskLabelRepoImpl,
+  TaskRepoImpl,
+  TaskVersionRepoImpl
+}
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl
@@ -30,9 +37,11 @@ trait BusinessTgDbSpec extends TgDbSpec {
         MilestoneRepoImpl.MILESTONE_TABLE,
         LinkVersionRepoImpl.LINK_VERSION_TABLE,
         LinkRepoImpl.LINK_TABLE,
+        TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE,
         TaskVersionRepoImpl.TASK_VERSION_TABLE,
         TaskRepoImpl.TASK_TABLE,
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
+        TaskLabelRepoImpl.TASK_LABEL_TABLE,
         AccountSessionRepo.ACCOUNT_SESSION_TABLE,
         OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE,
         ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE,
