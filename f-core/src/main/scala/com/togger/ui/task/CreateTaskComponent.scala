@@ -18,6 +18,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -56,9 +57,18 @@ case class TaskStatusSelect(id: UUID, name: String) {
   lazy val asTuple: (String, String) = id.toString -> name
 }
 
+/** Deliberately does not mirror [[TaskStatusesState.idToOrder]]'s name-matching-against-a-fixed-enum pattern -
+  * labels are expected to be renamed/added to more freely than statuses, so sorting is plain alphabetical.
+  */
+case class TaskLabelsState(taskLabels: Seq[FindTaskLabelResp] = Seq.empty) {
+  lazy val asMultiSelectItems: Seq[MultiSelectItem] =
+    taskLabels.sortBy(_.name).map(dto => MultiSelectItem(id = dto.id.toString, name = dto.name, isSelected = false))
+}
+
 class CreateTaskComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
+  taskLabelFeService: TaskLabelFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -72,10 +82,13 @@ class CreateTaskComponent(
     CreateTaskForm(assignedToSelected = accountService.get.map(_.id.toString).getOrElse(""))
   )
   val statusesVar = Var(TaskStatusesState())
+  val labelsVar = Var(TaskLabelsState())
   val membersVar = Var(Seq.empty[SearchAccountDto])
 
   val firstLink = new TaskLinkComponent()
   val linksVar = Var(Seq(firstLink))
+
+  private val labelPicker = new TableFilterComponent(labelsVar.signal.map(_.asMultiSelectItems), label = "Select labels")
 
   spinnerService
     .runWithSpinner {
@@ -85,9 +98,13 @@ class CreateTaskComponent(
       val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
         projectService.findAllMembers(projectId)
 
-      (call1, call2).parMapN { (findTaskStatusRespEither, searchAccountDtoEither) =>
+      val call3: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
+        taskLabelFeService.findByProjectId(projectId)
+
+      (call1, call2, call3).parMapN { (findTaskStatusRespEither, searchAccountDtoEither, findTaskLabelRespEither) =>
         findTaskStatusRespEither.map(success => statusesVar.set(TaskStatusesState(success.body.get)))
         searchAccountDtoEither.map(success => membersVar.set(success.body.get))
+        findTaskLabelRespEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
       }
     }
     .unsafeRunAndForget()
@@ -101,32 +118,34 @@ class CreateTaskComponent(
         onClick --> (_ => linksVar.update(state => state :+ new TaskLinkComponent()))
       )
 
-  lazy val submitter = Observer[(CreateTaskForm, Seq[TaskLinkComponent])] { case (form, linkComponents) =>
-    val now = tgClock.currentInstant
+  lazy val submitter = Observer[(CreateTaskForm, Seq[TaskLinkComponent], Set[String])] {
+    case (form, linkComponents, selectedLabelIds) =>
+      val now = tgClock.currentInstant
 
-    val dto = CreateTaskAndLinksReq(
-      task = CreateTaskReq(
-        projectId = projectId,
-        name = form.name,
-        description = form.description,
-        assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
-        createdBy = accountService.get.get.id,
-        taskStatusId = UUID.fromString(form.taskStatusSelected),
-        createdAt = now,
-        updatedAt = now
-      ),
-      links = linkComponents.map { linkComponent =>
-        val linkForm = linkComponent.formState.now()
-        CreateLinkReq(
-          name = linkForm.name,
-          url = linkForm.url
-        )
-      }
-    )
-    spinnerService
-      .runWithSpinner(taskService.createTask(dto))
-      .toastMessageJustMessage("Task created successfully")
-      .unsafeRunAndForget()
+      val dto = CreateTaskAndLinksReq(
+        task = CreateTaskReq(
+          projectId = projectId,
+          name = form.name,
+          description = form.description,
+          assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
+          createdBy = accountService.get.get.id,
+          taskStatusId = UUID.fromString(form.taskStatusSelected),
+          createdAt = now,
+          updatedAt = now,
+          taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
+        ),
+        links = linkComponents.map { linkComponent =>
+          val linkForm = linkComponent.formState.now()
+          CreateLinkReq(
+            name = linkForm.name,
+            url = linkForm.url
+          )
+        }
+      )
+      spinnerService
+        .runWithSpinner(taskService.createTask(dto))
+        .toastMessageJustMessage("Task created successfully")
+        .unsafeRunAndForget()
   }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
@@ -164,11 +183,14 @@ class CreateTaskComponent(
           body = TgCard.HtmlCardContent(
             div(
               form(
-                onSubmit.preventDefault.mapTo(formState.now() -> linksVar.now()) --> submitter,
+                onSubmit.preventDefault
+                  .mapTo(formState.now() -> linksVar.now())
+                  .compose(_.withCurrentValueOf(labelPicker.selectedIds)) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
+                labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),

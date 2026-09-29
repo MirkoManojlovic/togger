@@ -68,6 +68,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
+  lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
@@ -127,6 +128,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new CreateTaskComponent(
                   taskService,
                   taskStatusService,
+                  taskLabelService,
                   spinnerService,
                   tgClock,
                   accountService,
@@ -159,6 +161,33 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId,
                   taskStatusId,
+                  toast
+                ).element
+              case CreateTaskLabelPage(projectId: UUID) =>
+                new CreateTaskLabelComponent(
+                  taskLabelService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllTaskLabelsPage(projectId) =>
+                new ShowAllTaskLabelsComponent(
+                  taskLabelService,
+                  router,
+                  spinnerService,
+                  accountService,
+                  projectId
+                ).element
+              case EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) =>
+                new EditTaskLabelComponent(
+                  taskLabelService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  projectId,
+                  taskLabelId,
                   toast
                 ).element
               case ShowAllTaskConfigsPage(projectId: UUID) =>
@@ -213,6 +242,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ShowAllTasksComponent(
                   taskService,
                   taskStatusService,
+                  taskLabelService,
                   projectService,
                   router,
                   spinnerService,
@@ -225,6 +255,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   taskService,
                   taskStatusService,
+                  taskLabelService,
                   spinnerService,
                   tgClock,
                   accountService,

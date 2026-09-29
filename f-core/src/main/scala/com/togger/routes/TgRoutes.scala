@@ -68,6 +68,28 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
+        encode = (page: CreateTaskLabelPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTaskLabelPage(UUID.fromString(projectId)),
+        pattern = root / "create-task-label" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditTaskLabelPage) => page.projectId.toString -> page.taskLabelId.toString,
+        decode = { (projectIdAndTaskLabelId: (String, String)) =>
+          EditTaskLabelPage(
+            UUID.fromString(projectIdAndTaskLabelId._1),
+            UUID.fromString(projectIdAndTaskLabelId._2)
+          )
+        },
+        pattern = root / "edit-task-label" / "project-id" / segment[String] / "task-label-id" / segment[
+          String
+        ] / endOfSegments
+      ),
+      Route(
+        encode = (page: ShowAllTaskLabelsPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowAllTaskLabelsPage(UUID.fromString(projectId)),
+        pattern = root / "task-label" / segment[String] / endOfSegments
+      ),
+      Route(
         encode = (page: CreateProjectPage) => page.organizationId.toString,
         decode = (organizationId: String) => CreateProjectPage(UUID.fromString(organizationId)),
         pattern = root / "create-project" / segment[String] / endOfSegments

@@ -48,6 +48,12 @@ object Pages {
 
   case class EditTaskStatusPage(projectId: UUID, taskStatusId: UUID) extends PrivatePage
 
+  case class CreateTaskLabelPage(projectId: UUID) extends PrivatePage
+
+  case class EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) extends PrivatePage
+
+  case class ShowAllTaskLabelsPage(projectId: UUID) extends PrivatePage
+
   case class ShowAllTasksPage(projectId: UUID) extends PrivatePage
 
   case class ShowAllTaskStatusesPage(projectId: UUID) extends PrivatePage

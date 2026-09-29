@@ -15,6 +15,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -40,6 +41,7 @@ class EditTaskComponent(
   projectId: UUID,
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
+  taskLabelFeService: TaskLabelFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -54,7 +56,17 @@ class EditTaskComponent(
   val linksVar: Var[Seq[TaskLinkComponent]] = Var(Seq.empty)
   val createLogEntryVar: Var[Seq[LogEntryComponent]] = Var(Seq.empty)
   val statusesVar = Var(TaskStatusesState())
+  val labelsVar = Var(TaskLabelsState())
+  val currentLabelIdsVar = Var(Set.empty[String])
   val membersVar = Var(Seq.empty[SearchAccountDto])
+
+  private val labelItemsSignal: Signal[Seq[MultiSelectItem]] =
+    labelsVar.signal.combineWith(currentLabelIdsVar.signal).map { case (state, currentIds) =>
+      state.taskLabels.sortBy(_.name).map(dto =>
+        MultiSelectItem(id = dto.id.toString, name = dto.name, isSelected = currentIds.contains(dto.id.toString))
+      )
+    }
+  private val labelPicker = new TableFilterComponent(labelItemsSignal, label = "Select labels")
 
   spinnerService
     .runWithSpinner {
@@ -81,6 +93,7 @@ class EditTaskComponent(
                         taskStatusSelected = dto.task.taskStatusId.toString
                       )
                     )
+                    currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
                     linksVar
                       .set(dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto)))))
                     val logEntryComponents =
@@ -122,49 +135,55 @@ class EditTaskComponent(
       val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
         projectService.findAllMembers(projectId)
 
-      (statusesAndTaskCall, membersCall).parMapN { (_, membersEither) =>
+      val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
+        taskLabelFeService.findByProjectId(projectId)
+
+      (statusesAndTaskCall, membersCall, labelsCall).parMapN { (_, membersEither, labelsEither) =>
         membersEither.map(success => membersVar.set(success.body.get))
+        labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
       }
     }
     .unsafeRunAndForget()
 
-  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent])] { case (form, linkComponents) =>
-    val now = tgClock.currentInstant
+  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], Set[String])] {
+    case (form, linkComponents, selectedLabelIds) =>
+      val now = tgClock.currentInstant
 
-    val (linksToCreate, linksToUpdate) = linkComponents.partition(_.formState.now().id.isEmpty)
+      val (linksToCreate, linksToUpdate) = linkComponents.partition(_.formState.now().id.isEmpty)
 
-    val dto = UpdateTaskReq(
-      task = UpdateTaskReq1(
-        id = form.taskId,
-        projectId = form.projectId,
-        name = form.name,
-        description = form.description,
-        assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
-        createdBy = form.createBy,
-        taskStatusId = UUID.fromString(form.taskStatusSelected),
-        createdAt = now,
-        updatedAt = now
-      ),
-      linksForUpdate = linksToUpdate.map { linkComponent =>
-        val linkForm = linkComponent.formState.now()
-        UpdateLinkReq(
-          id = linkForm.id.get,
-          name = linkForm.name,
-          url = linkForm.url
-        )
-      },
-      linksToCreate = linksToCreate.map { linkComponent =>
-        val linkForm = linkComponent.formState.now()
-        CreateLinkReq(
-          name = linkForm.name,
-          url = linkForm.url
-        )
-      }
-    )
-    spinnerService
-      .runWithSpinner(taskService.updateTask(dto))
-      .toastMessageJustMessage("Task updated successfully")
-      .unsafeRunAndForget()
+      val dto = UpdateTaskReq(
+        task = UpdateTaskReq1(
+          id = form.taskId,
+          projectId = form.projectId,
+          name = form.name,
+          description = form.description,
+          assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
+          createdBy = form.createBy,
+          taskStatusId = UUID.fromString(form.taskStatusSelected),
+          createdAt = now,
+          updatedAt = now,
+          taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
+        ),
+        linksForUpdate = linksToUpdate.map { linkComponent =>
+          val linkForm = linkComponent.formState.now()
+          UpdateLinkReq(
+            id = linkForm.id.get,
+            name = linkForm.name,
+            url = linkForm.url
+          )
+        },
+        linksToCreate = linksToCreate.map { linkComponent =>
+          val linkForm = linkComponent.formState.now()
+          CreateLinkReq(
+            name = linkForm.name,
+            url = linkForm.url
+          )
+        }
+      )
+      spinnerService
+        .runWithSpinner(taskService.updateTask(dto))
+        .toastMessageJustMessage("Task updated successfully")
+        .unsafeRunAndForget()
   }
 
   lazy val addNewLink =
@@ -209,12 +228,15 @@ class EditTaskComponent(
           body = TgCard.HtmlCardContent(
             div(
               form(
-                onSubmit.preventDefault.mapTo(formState.now() -> linksVar.now()) --> submitter,
+                onSubmit.preventDefault
+                  .mapTo(formState.now() -> linksVar.now())
+                  .compose(_.withCurrentValueOf(labelPicker.selectedIds)) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 progress.element.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
+                labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),

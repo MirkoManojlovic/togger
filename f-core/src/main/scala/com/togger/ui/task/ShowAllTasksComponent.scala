@@ -7,6 +7,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadge, TgHtmlTable}
@@ -26,6 +27,7 @@ import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 class ShowAllTasksComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
+  taskLabelFeService: TaskLabelFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -37,6 +39,7 @@ class ShowAllTasksComponent(
 
   val stateFormVar = Var(Seq.empty[FindTaskRespFull])
   val statusesVar = Var(TaskStatusesState())
+  val taskLabelsVar = Var(TaskLabelsState())
   private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     statusesVar.signal.map(
@@ -47,6 +50,12 @@ class ShowAllTasksComponent(
         }
     )
   private val statusFilterSelectedIdsVar = Var(Set.empty[String])
+
+  private val labelFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
+    taskLabelsVar.signal.map(
+      _.taskLabels.sortBy(_.name).map(l => MultiSelectItem(id = l.id.toString, name = l.name, isSelected = true))
+    )
+  private val labelFilterSelectedIdsVar = Var(Set.empty[String])
 
   val searchTermVar = Var("")
   private val searchBox =TableSearchComponent(
@@ -76,14 +85,24 @@ class ShowAllTasksComponent(
     )
 
   private def visibleRowsSignal(dtos: Seq[FindTaskRespFull]): Signal[Seq[FindTaskRespFull]] =
-    statusFilterSelectedIdsVar.signal.combineWith(searchBox.inputSignal).map { case (selectedIds, term) =>
-      val byStatus =
-        if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
-      val needle = term.trim.toLowerCase
-      if (needle.isEmpty) byStatus
-      else
-        byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
-    }
+    statusFilterSelectedIdsVar.signal
+      .combineWith(labelFilterSelectedIdsVar.signal, searchBox.inputSignal)
+      .map { case (selectedIds, selectedLabelIds, term) =>
+        val byStatus =
+          if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+        // Unlabeled tasks always pass: with every label selected by default, the "any-of-selected" test below
+        // would otherwise hide them, since an empty label set can never match a selected label id.
+        val byLabel =
+          if (selectedLabelIds.isEmpty) byStatus
+          else
+            byStatus.filter(dto =>
+              dto.taskLabels.isEmpty || dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString))
+            )
+        val needle = term.trim.toLowerCase
+        if (needle.isEmpty) byLabel
+        else
+          byLabel.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
+      }
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = UUID.randomUUID(),
@@ -112,11 +131,15 @@ class ShowAllTasksComponent(
         .findByProjectId(projectId)
         .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
 
+      val taskLabelCall = taskLabelFeService
+        .findByProjectId(projectId)
+        .map(response => response.map(success => taskLabelsVar.set(TaskLabelsState(success.body.get))))
+
       val taskCall = taskService
         .findByProjectId(projectId)
         .map(response => response.map(success => stateFormVar.set(success.body.get)))
 
-      projectCall.flatMap(_ => taskStatusCall).flatMap(_ => taskCall)
+      projectCall.flatMap(_ => taskStatusCall).flatMap(_ => taskLabelCall).flatMap(_ => taskCall)
     }
     .unsafeRunAndForget()
 
@@ -170,6 +193,13 @@ class ShowAllTasksComponent(
                   router.navigateTo(ShowAllTaskStatusesPage(projectId))
                 ),
                 iconButton(
+                  "Task labels",
+                  TgIcons.listIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowAllTaskLabelsPage(projectId))
+                ),
+                iconButton(
                   "Create Milestone",
                   TgIcons.plusIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
@@ -205,6 +235,11 @@ class ShowAllTasksComponent(
                             label = "Status",
                             statusFilterSelectedIdsVar
                           ).element,
+                          new TableFilterComponent(
+                            labelFilterItemsSignal,
+                            label = "Labels",
+                            labelFilterSelectedIdsVar
+                          ).element,
                           "Action"
                         )
                       )(
@@ -239,6 +274,14 @@ class ShowAllTasksComponent(
                                     color = dto.taskStatus.badgeColor,
                                     bordered = true
                                   ).element
+                                ),
+                                createTd(
+                                  div(
+                                    cls("flex flex-wrap gap-1"),
+                                    dto.taskLabels.map(label =>
+                                      TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
+                                    )
+                                  )
                                 ),
                                 createTd(
                                   div(
