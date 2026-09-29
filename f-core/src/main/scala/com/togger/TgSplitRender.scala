@@ -216,7 +216,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectService,
                   router,
                   spinnerService,
-                  projectId
+                  projectId,
+                  toast
                 ).element
               case EditTaskPage(projectId, taskId) =>
                 new EditTaskComponent(

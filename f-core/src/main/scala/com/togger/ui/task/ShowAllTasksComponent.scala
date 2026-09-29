@@ -14,8 +14,12 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.toast.Toast
+import org.scalajs.dom
 
 import java.util.UUID
+import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+import scala.scalajs.js.Thenable.Implicits._
 
 class ShowAllTasksComponent(
   taskService: TaskFeService,
@@ -23,7 +27,8 @@ class ShowAllTasksComponent(
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  projectId: UUID
+  projectId: UUID,
+  toast: Toast
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -185,14 +190,32 @@ class ShowAllTasksComponent(
                       cls("mb-4"),
                       h5(cls("text-xl font-bold text-heading mb-2"), accountDto.fullName),
                       TgHtmlTable.tableElement(
-                        Seq("Id", "Name", "Description", "Status", "Action")
+                        Seq("Name", "Description", "Status", "Action")
                       )(
                         dtos
                           .sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
                           .map { dto =>
                             Seq(
-                              createTd(dto.id.toString),
-                              createTd(dto.name),
+                              createTd(
+                                div(
+                                  cls("flex items-center gap-1"),
+                                  button(
+                                    `type`("button"),
+                                    title("Copy task ID"),
+                                    cls(
+                                      "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
+                                    ),
+                                    TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
+                                    onClick.mapToUnit --> (_ =>
+                                      dom.window.navigator.clipboard
+                                        .writeText(dto.id.toString)
+                                        .toFuture
+                                        .foreach(_ => toast.success("Task ID copied"))
+                                    )
+                                  ),
+                                  span(dto.name)
+                                )
+                              ),
                               createTdOverflow(dto.description),
                               createTd(
                                 TgBadge(text = dto.taskStatus.name, color = dto.taskStatus.badgeColor, bordered = true).element
