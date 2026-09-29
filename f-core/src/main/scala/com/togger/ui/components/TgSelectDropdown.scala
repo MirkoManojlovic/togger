@@ -6,7 +6,9 @@ import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import org.scalajs.dom
 
-case class TgSelectDropdownOption(value: String, render: () => HtmlElement)
+case class DropdownMeta(label: String, description: String)
+
+case class TgSelectDropdownOption(value: String, meta: DropdownMeta, render: () => HtmlElement)
 
 case class TgSelectDropdown(
   inputSignal: Signal[String],
@@ -36,11 +38,21 @@ case class TgSelectDropdown(
       button(
         `type`("button"),
         cls(
-          "inline-flex items-center justify-between w-full p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium hover:text-heading rounded-md cursor-pointer"
+          "flex flex-col items-start w-full p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium hover:text-heading rounded-md cursor-pointer"
         ),
+        aria.label(option.meta.label),
         onClick.mapToUnit --> (_ => select(option.value)),
-        span(option.render()),
-        Option.when(option.value == currentValue)(TgIcons.checkIcon("w-4 h-4 ms-1.5"))
+        div(
+          cls("inline-flex items-center w-full gap-1.5"),
+          div(
+            cls("w-4 h-4 shrink-0"),
+            Option.when(option.value == currentValue)(TgIcons.checkIcon("w-4 h-4"))
+          ),
+          span(option.render())
+        ),
+        Option.when(option.meta.description.nonEmpty)(
+          p(cls("w-full text-left text-xs font-normal text-body mt-0.5"), option.meta.description)
+        )
       )
     )
 

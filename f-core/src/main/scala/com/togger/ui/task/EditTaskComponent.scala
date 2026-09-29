@@ -18,7 +18,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgSelectDropdown.TgSelectDropdownSyntax
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgBadge, TgSelectDropdownOption}
+import com.togger.ui.components.{DropdownMeta, MultiSelectItem, TableFilterComponent, TgBadge, TgSelectDropdownOption}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -214,14 +214,14 @@ class EditTaskComponent(
 
   private val priorityOptions: Seq[TgSelectDropdownOption] =
     TaskPriority.values.map { priority =>
+      val meta = DropdownMeta(
+        label = s"${priority.shortCode.toUpperCase} - ${priority.priorityName}",
+        description = priority.description
+      )
       TgSelectDropdownOption(
         value = priority.value.toString,
-        render = () =>
-          TgBadge(
-            text = s"${priority.shortCode.toUpperCase} - ${priority.priorityName}",
-            color = priority.badgeColor,
-            bordered = true
-          ).element
+        meta = meta,
+        render = () => TgBadge(text = meta.label, color = priority.badgeColor, bordered = true).element
       )
     }
 
