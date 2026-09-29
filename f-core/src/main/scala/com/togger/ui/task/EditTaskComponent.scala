@@ -16,7 +16,9 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
+import com.togger.ui.components.TgSelectDropdown.TgSelectDropdownSyntax
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TgBadge, TgSelectDropdownOption}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -210,6 +212,19 @@ class EditTaskComponent(
 
   private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
 
+  private val priorityOptions: Seq[TgSelectDropdownOption] =
+    TaskPriority.values.map { priority =>
+      TgSelectDropdownOption(
+        value = priority.value.toString,
+        render = () =>
+          TgBadge(
+            text = s"${priority.shortCode.toUpperCase} - ${priority.priorityName}",
+            color = priority.badgeColor,
+            bordered = true
+          ).element
+      )
+    }
+
   def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
     val statusInputSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.taskStatusSelected),
@@ -217,10 +232,10 @@ class EditTaskComponent(
       valuesAndDisplays = ListMap.from(selectValues.map(_.asTuple))
     )
 
-    val priorityInputSelect = formState.tgSelectManualError(
+    val priorityInputSelect = formState.tgSelectDropdownManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.prioritySelected),
       labelValue = "Priority",
-      valuesAndDisplays = TaskPriority.namesToValuesMapString
+      options = priorityOptions
     )
 
     val assignedToSelect = formState.tgSelectManualError(
