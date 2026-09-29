@@ -205,8 +205,8 @@ case class WYSIWYGTextEditorSplit(
       onClick.preventDefault.mapToUnit --> Observer[Unit](_ => runCommand(command))
     )
 
-  /** Only the three formatting shortcuts are intercepted. Enter, Tab, Backspace and undo stay the browser's — the
-    * whole reason this editor is a textarea.
+  /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the
+    * browser's — the whole reason this editor is a textarea.
     */
   private def handleKeyDown(event: dom.KeyboardEvent): Unit =
     if (event.ctrlKey || event.metaKey)
@@ -222,6 +222,20 @@ case class WYSIWYGTextEditorSplit(
           runCommand(linkCommand)
         case _ => ()
       }
+    else if (event.key == "Enter" && !event.shiftKey) handleEnter(event)
+
+  /** Plain Enter is only intercepted when the caret sits in a list item — everywhere else it stays the browser's,
+    * so `preventDefault` waits until `continueList` has actually found something to do.
+    */
+  private def handleEnter(event: dom.KeyboardEvent): Unit =
+    sourceRef.foreach { element =>
+      WYSIWYGMarkdownCommands
+        .continueList(TextSelection(element.value, element.selectionStart, element.selectionEnd))
+        .foreach { result =>
+          event.preventDefault()
+          applyResult(result, element)
+        }
+    }
 
   private def linkCommand(selection: TextSelection): TextSelection =
     Option(dom.window.prompt("Link address", "https://")).map(_.trim).filter(_.nonEmpty) match {
@@ -229,20 +243,22 @@ case class WYSIWYGTextEditorSplit(
       case None              => selection
     }
 
+  private def runCommand(command: TextSelection => TextSelection): Unit =
+    sourceRef.foreach(element =>
+      applyResult(command(TextSelection(element.value, element.selectionStart, element.selectionEnd)), element)
+    )
+
   /** The `Var` is written before the DOM on purpose: the controlled binding assigns `value` synchronously while
     * `set` runs, and assigning a textarea's value is what clears its selection. Restoring the selection afterwards
     * is therefore the last step, not the first.
     */
-  private def runCommand(command: TextSelection => TextSelection): Unit =
-    sourceRef.foreach { element =>
-      val result = command(TextSelection(element.value, element.selectionStart, element.selectionEnd))
-
-      sourceVar.set(result.text)
-      if (element.value != result.text) element.value = result.text
-      element.setSelectionRange(result.start, result.end)
-      element.focus()
-      refreshActiveMarks()
-    }
+  private def applyResult(result: TextSelection, element: dom.html.TextArea): Unit = {
+    sourceVar.set(result.text)
+    if (element.value != result.text) element.value = result.text
+    element.setSelectionRange(result.start, result.end)
+    element.focus()
+    refreshActiveMarks()
+  }
 
   private def refreshActiveMarks(): Unit =
     sourceRef.foreach { element =>

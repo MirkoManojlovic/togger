@@ -28,6 +28,7 @@ object WYSIWYGMarkdownCommands {
   private val listMarker: Regex = """^(?:[-*+] |\d+\. )(?:\[[ xX]\] )?""".r
   private val bulletMarker: Regex = """^[-*+] """.r
   private val orderedMarker: Regex = """^\d+\. """.r
+  private val orderedNumber: Regex = """^(\d+)\. """.r
   private val taskMarker: Regex = """^[-*+] \[[ xX]\] """.r
   private val headingMarker: Regex = """^#{1,6} """.r
   private val quoteMarker: Regex = """^> """.r
@@ -90,6 +91,56 @@ object WYSIWYGMarkdownCommands {
 
       if (lines.forall(line => taskMarker.findFirstIn(line).isDefined)) stripped else stripped.map("- [ ] " + _)
     }
+
+  /** Enter's effect inside a list: a non-empty item continues the list with a new item of the same kind; an empty
+    * one breaks out, leaving a plain, unstyled line for the marker to have disappeared from. `None` outside a
+    * list, so the caller lets Enter do its ordinary job.
+    *
+    * Only a caret is handled — a selection lands here collapsed already, its content simply gone, the way a
+    * textarea's own Enter would leave it, rather than being kept as a mark this command has an opinion about.
+    */
+  def continueList(selection: TextSelection): Option[TextSelection] =
+    if (!selection.collapsed) None
+    else {
+      val text = selection.text
+      val at = clamp(selection.start, 0, text.length)
+      val start = lineStart(text, at)
+      val line = text.substring(start, lineEnd(text, at))
+
+      itemMarker(line).map { matched =>
+        if (line == matched) breakOutOfList(text, start, matched) else continueItem(text, at, matched)
+      }
+    }
+
+  private def itemMarker(line: String): Option[String] =
+    taskMarker.findFirstIn(line).orElse(orderedMarker.findFirstIn(line)).orElse(bulletMarker.findFirstIn(line))
+
+  /** The empty item's own marker disappears along with it, so the list does not end in a bare, dangling bullet. */
+  private def breakOutOfList(text: String, lineStartAt: Int, matched: String): TextSelection = {
+    val newText = text.take(lineStartAt) + "\n" + text.drop(lineStartAt + matched.length)
+    val caret = lineStartAt + 1
+
+    TextSelection(newText, caret, caret)
+  }
+
+  private def continueItem(text: String, at: Int, matched: String): TextSelection = {
+    val prefix = nextItemPrefix(matched)
+    val newText = text.take(at) + "\n" + prefix + text.drop(at)
+    val caret = at + 1 + prefix.length
+
+    TextSelection(newText, caret, caret)
+  }
+
+  /** A task's next item opens unchecked; an ordered item's number moves on by one; a bullet repeats its own
+    * character, so a list typed with `*` keeps using `*`.
+    */
+  private def nextItemPrefix(matched: String): String =
+    if (taskMarker.findFirstIn(matched).isDefined) "- [ ] "
+    else
+      matched match {
+        case orderedNumber(number) => s"${number.toInt + 1}. "
+        case bullet                => bullet
+      }
 
   /** `[text](destination)`, leaving the label selected — or the caret inside empty brackets when nothing was. */
   def insertLink(selection: TextSelection, destination: String): TextSelection = {

@@ -85,6 +85,20 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
   private def toolbarButton(editor: dom.Element, label: String): dom.Element =
     editor.querySelector(s"button[aria-label='$label']")
 
+  /** jsdom has no native textarea behind it, so pressing Enter inserts nothing on its own — a test that stayed
+    * quiet about the event either way would prove nothing. `defaultPrevented` says whether the component actually
+    * stepped in.
+    */
+  private def pressEnter(source: dom.html.TextArea, shiftKey: Boolean = false): dom.KeyboardEvent = {
+    val init = js.Dynamic
+      .literal(bubbles = true, cancelable = true, key = "Enter", shiftKey = shiftKey)
+      .asInstanceOf[dom.KeyboardEventInit]
+    val event = new dom.KeyboardEvent("keydown", init)
+
+    source.dispatchEvent(event)
+    event
+  }
+
   testNameFromClassName should {
 
     "fill the source pane with the initial value" in { _ =>
@@ -261,6 +275,33 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
         click(toolbarButton(view.editor, "Task list"))
 
         Future.successful(view.source.value shouldBe "- [ ] buy milk")
+      }
+    }
+
+    "continue a bullet list onto a new item when Enter is pressed at its end" in { _ =>
+      mounted("- one") { view =>
+        view.source.setSelectionRange(5, 5)
+        pressEnter(view.source)
+
+        Future.successful(view.source.value shouldBe "- one\n- ")
+      }
+    }
+
+    "break out of an empty item into a plain line when Enter is pressed on it" in { _ =>
+      mounted("- one\n- ") { view =>
+        view.source.setSelectionRange(8, 8)
+        pressEnter(view.source)
+
+        Future.successful(view.source.value shouldBe "- one\n\n")
+      }
+    }
+
+    "leave Enter alone outside a list" in { _ =>
+      mounted("plain text") { view =>
+        view.source.setSelectionRange(5, 5)
+        val event = pressEnter(view.source)
+
+        Future.successful(event.defaultPrevented shouldBe false)
       }
     }
 

@@ -112,6 +112,46 @@ class WYSIWYGMarkdownCommandsTest extends AsyncJsWordSpec {
       run("{- [x] done}")(toggleList(_, ordered = false)) shouldBe "{done}"
     }
 
+    "continue a bullet list onto a new item" in { _ =>
+      run("- one|")(continueList(_).get) shouldBe "- one\n- |"
+    }
+
+    "continue an ordered list, moving the number on by one" in { _ =>
+      run("1. one|")(continueList(_).get) shouldBe "1. one\n2. |"
+    }
+
+    "continue a task list with a new, unchecked item" in { _ =>
+      run("- [x] done|")(continueList(_).get) shouldBe "- [x] done\n- [ ] |"
+    }
+
+    "keep a bullet's own character when continuing it" in { _ =>
+      run("* one|")(continueList(_).get) shouldBe "* one\n* |"
+    }
+
+    "split an item in two at the caret rather than only appending" in { _ =>
+      run("- one |two")(continueList(_).get) shouldBe "- one \n- |two"
+    }
+
+    "break out of an empty bullet into a plain, unstyled line" in { _ =>
+      run("- one\n- |")(continueList(_).get) shouldBe "- one\n\n|"
+    }
+
+    "break out of an empty ordered item" in { _ =>
+      run("1. one\n2. |")(continueList(_).get) shouldBe "1. one\n\n|"
+    }
+
+    "break out of an empty task item" in { _ =>
+      run("- [ ] one\n- [ ] |")(continueList(_).get) shouldBe "- [ ] one\n\n|"
+    }
+
+    "leave Enter to the caller outside a list" in { _ =>
+      continueList(parse("plain |text")) shouldBe None
+    }
+
+    "leave Enter to the caller when a range is selected" in { _ =>
+      continueList(parse("- {one}")) shouldBe None
+    }
+
     "link a selection and keep the label selected" in { _ =>
       run("see {the docs} now")(insertLink(_, "https://x")) shouldBe "see [{the docs}](https://x) now"
     }
