@@ -128,6 +128,11 @@ class MarkdownDomSerializerTest extends AsyncJsWordSpec {
       fromHtml("<p><code>a ` b</code></p>") shouldBe "``a ` b``\n"
     }
 
+    "write a browser's non-breaking space as an ordinary space" in { _ =>
+      fromHtml("<p>one\u00a0two</p>") shouldBe "one two\n"
+      fromHtml("<ul><li>an\u00a0item</li></ul>") shouldBe "- an item\n"
+    }
+
     "turn a hard break into two trailing spaces" in { _ =>
       fromHtml("<p>a<br>b</p>") shouldBe "a  \nb\n"
     }

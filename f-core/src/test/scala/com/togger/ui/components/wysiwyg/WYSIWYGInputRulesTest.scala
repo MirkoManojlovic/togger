@@ -107,6 +107,37 @@ class WYSIWYGInputRulesTest extends AsyncJsWordSpec {
       }
     }
 
+    /** Browsers insert U+00A0 for a space that would otherwise collapse — which is every space typed at the end
+      * of the content, and therefore every block marker.
+      */
+    "fire a block rule on a non-breaking space" in { _ =>
+      typed("#\u00a0") { (element, fired) =>
+        fired shouldBe true
+        element.innerHTML should include("<h1")
+      }
+    }
+
+    "fire the bullet rule on a non-breaking space" in { _ =>
+      typed("-\u00a0") { (element, fired) =>
+        fired shouldBe true
+        element.innerHTML should include("<ul")
+      }
+    }
+
+    "fire the ordered rule on a non-breaking space" in { _ =>
+      typed("1.\u00a0") { (element, fired) =>
+        fired shouldBe true
+        element.innerHTML should include("<ol")
+      }
+    }
+
+    "fire the quote rule on a non-breaking space" in { _ =>
+      typed(">\u00a0") { (element, fired) =>
+        fired shouldBe true
+        element.innerHTML should include("<blockquote")
+      }
+    }
+
     "not fire a block rule away from the start of a block" in { _ =>
       typed("text # ") { (_, fired) => fired shouldBe false }
     }

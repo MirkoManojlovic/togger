@@ -131,7 +131,7 @@ object MarkdownDomSerializer {
   private def codeFence(pre: dom.Element): String = {
     val codeElement = children(pre).collectFirst { case e: dom.Element if tagOf(e) == "code" => e }
     val language = codeElement.flatMap(languageOf).getOrElse("")
-    val body = codeElement.map(_.textContent).getOrElse(pre.textContent).stripSuffix("\n")
+    val body = withPlainSpaces(codeElement.map(_.textContent).getOrElse(pre.textContent)).stripSuffix("\n")
     val backticks = "`" * math.max(3, longestRun(body, '`') + 1)
 
     s"$backticks$language\n$body\n$backticks"
@@ -198,7 +198,7 @@ object MarkdownDomSerializer {
         case "strong" | "b"          => wrap(inline(e), "**")
         case "em" | "i"              => wrap(inline(e), "*")
         case "del" | "s" | "strike"  => wrap(inline(e), "~~")
-        case "code"                  => codeSpan(e.textContent)
+        case "code"                  => codeSpan(withPlainSpaces(e.textContent))
         case "a"                     => link(e)
         case "img"                   => image(e)
         case "br"                    => "  \n"
@@ -257,6 +257,12 @@ object MarkdownDomSerializer {
       .filter(_.startsWith("#fn-"))
       .map(href => s"[^${href.drop("#fn-".length)}]")
 
+  /** contenteditable produces U+00A0 mechanically wherever a typed space would collapse, so one in the DOM says
+    * nothing about intent. Markdown has no use for the distinction either — `-\u00a0item` is not a list — so the
+    * two are flattened on the way out.
+    */
+  private def withPlainSpaces(text: String): String = text.replace('\u00a0', ' ')
+
   private def longestRun(text: String, char: Char): Int =
     text
       .foldLeft((0, 0)) {
@@ -269,7 +275,8 @@ object MarkdownDomSerializer {
     * someone's text, so this errs toward escaping — `&` and `<` only where they could start an entity or a tag,
     * which keeps ordinary prose readable.
     */
-  private def escapeText(text: String): String = {
+  private def escapeText(source: String): String = {
+    val text = withPlainSpaces(source)
     val escaped = new StringBuilder
 
     text.zipWithIndex.foreach { case (char, index) =>

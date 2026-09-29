@@ -38,8 +38,14 @@ class WYSIWYGInputRules(commands: WYSIWYGCommands) {
       }
     }
 
+  /** A browser inserts U+00A0 for a space that would otherwise collapse — which is every space typed at the end of
+    * the content, and so every block marker the author types. Matching treats it as an ordinary space; the
+    * replacement keeps the same length, so offsets taken from `typed` still line up with the real text node.
+    */
+  private def withPlainSpaces(text: String): String = text.replace('\u00a0', ' ')
+
   private def blockRule(surface: dom.Element, text: dom.Text, range: dom.Range): Boolean = {
-    val typed = text.data.substring(0, range.startOffset)
+    val typed = withPlainSpaces(text.data.substring(0, range.startOffset))
     val isBlockStart = blockOf(surface, text).exists(block => firstTextNode(block).contains(text))
 
     if (!isBlockStart) false
@@ -60,7 +66,7 @@ class WYSIWYGInputRules(commands: WYSIWYGCommands) {
   }
 
   private def inlineRule(text: dom.Text, range: dom.Range): Boolean = {
-    val typed = text.data.substring(0, range.startOffset)
+    val typed = withPlainSpaces(text.data.substring(0, range.startOffset))
 
     inlineRules.view
       .flatMap { case (pattern, tag) => pattern.findFirstMatchIn(typed).map(found => (found, tag)) }
