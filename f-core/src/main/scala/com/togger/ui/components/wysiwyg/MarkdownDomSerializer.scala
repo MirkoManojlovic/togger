@@ -67,7 +67,7 @@ object MarkdownDomSerializer {
     case "p"          => Some(escapeBlockStart(inline(e))).filter(_.trim.nonEmpty)
     case "ul"         => Some(list(e, ordered = false)).filter(_.nonEmpty)
     case "ol"         => Some(list(e, ordered = true)).filter(_.nonEmpty)
-    case "li"         => Some(withMarker("- ", listItemBody(e))).filter(_.trim.nonEmpty)
+    case "li"         => listItemBlock(e)
     case "blockquote" => Some(prefixLines(childBlocks(e).mkString("\n\n"), "> ")).filter(_.trim.nonEmpty)
     case "pre"        => Some(codeFence(e))
     case "hr"         => Some("---")
@@ -84,20 +84,39 @@ object MarkdownDomSerializer {
     if (hasBlockChildren(e)) Some(childBlocks(e).mkString("\n\n")).filter(_.trim.nonEmpty)
     else Some(escapeBlockStart(inline(e))).filter(_.trim.nonEmpty)
 
+  /** An `<li>` reached on its own rather than through its list — a paste, or a browser leaving one behind. */
+  private def listItemBlock(item: dom.Element): Option[String] =
+    Some(listItemBody(item)).filter(_.trim.nonEmpty).map(body => withMarker("- ", taskMarker(item) + body))
+
   private def list(e: dom.Element, ordered: Boolean): String = {
     val start = if (ordered) Option(e.getAttribute("start")).flatMap(_.toIntOption).getOrElse(1) else 1
 
     children(e)
       .collect { case item: dom.Element if tagOf(item) == "li" => item }
-      .map(listItemBody)
+      .map(item => (taskMarker(item), listItemBody(item)))
       // An item with no content would serialize to a bare marker, which the parser chokes on when the document
       // comes back through it — and an empty bullet carries nothing anyway. The author gets one while typing a
       // new item; dropping it is invisible to them because their own edits never trigger a repaint.
-      .filter(_.trim.nonEmpty)
+      //
+      // The test runs on the body alone: a checkbox is not content, and prefixing `[ ] ` first would keep every
+      // empty task item alive and put the bare marker back.
+      .filter { case (_, body) => body.trim.nonEmpty }
       .zipWithIndex
-      .map { case (body, index) => withMarker(if (ordered) s"${start + index}. " else "- ", body) }
+      .map { case ((task, body), index) =>
+        withMarker(if (ordered) s"${start + index}. " else "- ", task + body)
+      }
       .mkString("\n")
   }
+
+  /** `- [x] ` for an item whose first child is a checkbox, so a task list survives the editor's round trip. The
+    * *attribute* is what the renderer set; the property is whatever anyone has since clicked, and this is a
+    * function of the rendered document rather than of that.
+    */
+  private def taskMarker(item: dom.Element): String =
+    children(item).headOption
+      .collect { case e: dom.Element if tagOf(e) == "input" && e.getAttribute("type") == "checkbox" => e }
+      .map(e => if (e.hasAttribute("checked")) "[x] " else "[ ] ")
+      .getOrElse("")
 
   /** A nested list joins its parent item with a single newline — a blank line there would make the whole list
     * loose, which changes how every item renders.

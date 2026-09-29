@@ -110,5 +110,26 @@ class MarkdownRoundTripTest extends AsyncJsWordSpec {
 
       ten shouldBe once
     }
+
+    /** A task list is the one construct where the round trip is not just stable but *exact*: the renderer drops
+      * the same four characters the serializer puts back.
+      */
+    "return a task list unchanged after one pass" in { _ =>
+      pass("- [ ] open\n- [x] done\n- plain", TgMarkdown.defaultConfig) shouldBe "- [ ] open\n- [x] done\n- plain\n"
+    }
+
+    "be stable over task lists" in { _ =>
+      stable("- [ ] open\n- [x] done", TgMarkdown.defaultConfig)
+      stable("1. [x] numbered\n2. [ ] also", TgMarkdown.defaultConfig)
+      stable("- [x] parent\n  - [ ] child", TgMarkdown.defaultConfig)
+      succeed
+    }
+
+    /** With the extension off the marker is text, so it has to come back escaped rather than as a checkbox — and
+      * escaped exactly once, however many passes it makes.
+      */
+    "be stable over a task marker when the extension is off" in { _ =>
+      stable("- [ ] open", MarkdownConfig.default)
+    }
   }
 }

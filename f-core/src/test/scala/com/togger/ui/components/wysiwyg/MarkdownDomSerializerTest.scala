@@ -136,5 +136,34 @@ class MarkdownDomSerializerTest extends AsyncJsWordSpec {
     "turn a hard break into two trailing spaces" in { _ =>
       fromHtml("<p>a<br>b</p>") shouldBe "a  \nb\n"
     }
+
+    /** Without this the checkbox evaporates: an `<input>` is an unknown element, unknown elements are unwrapped,
+      * and an input has no children — so opening a task list in the live editor and saving would store `- done`.
+      */
+    "write a checkbox back as a task marker" in { _ =>
+      fromHtml("<ul><li><input type=\"checkbox\">open</li></ul>") shouldBe "- [ ] open\n"
+      fromHtml("<ul><li><input type=\"checkbox\" checked>done</li></ul>") shouldBe "- [x] done\n"
+    }
+
+    "keep the ordered marker on a task item" in { _ =>
+      fromHtml("<ol><li><input type=\"checkbox\" checked>done</li></ol>") shouldBe "1. [x] done\n"
+    }
+
+    /** The emptiness test runs on the body, before the marker is prefixed — otherwise an empty task item would
+      * survive as a bare `- [ ] ` and put back the parser crash that filter exists for.
+      */
+    "still drop a task item with no text" in { _ =>
+      fromHtml("<ul><li><input type=\"checkbox\"></li><li><input type=\"checkbox\">real</li></ul>") shouldBe
+        "- [ ] real\n"
+    }
+
+    "leave a plain item in the same list unmarked" in { _ =>
+      fromHtml("<ul><li><input type=\"checkbox\">task</li><li>plain</li></ul>") shouldBe "- [ ] task\n- plain\n"
+    }
+
+    /** A checkbox anywhere but the front of the item is not a task marker — it is whatever someone pasted. */
+    "ignore a checkbox that does not start the item" in { _ =>
+      fromHtml("<ul><li>text<input type=\"checkbox\"></li></ul>") shouldBe "- text\n"
+    }
   }
 }
