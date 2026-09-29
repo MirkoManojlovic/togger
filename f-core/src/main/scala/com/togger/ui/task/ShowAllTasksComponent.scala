@@ -7,8 +7,9 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgHtmlTable}
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadge, TgHtmlTable}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -193,7 +194,9 @@ class ShowAllTasksComponent(
                               createTd(dto.id.toString),
                               createTd(dto.name),
                               createTdOverflow(dto.description),
-                              createTd(statusesVar.now().idToName(dto.taskStatus.id)),
+                              createTd(
+                                TgBadge(text = dto.taskStatus.name, color = dto.taskStatus.badgeColor, bordered = true).element
+                              ),
                               createTd(
                                 div(
                                   iconButton(

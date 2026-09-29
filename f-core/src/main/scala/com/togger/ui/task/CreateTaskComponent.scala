@@ -39,9 +39,6 @@ case class TaskStatusesState(
   lazy val asTaskStatusSelect =
     taskStatusesSorted.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
 
-  lazy val idToName: Map[UUID, String] =
-    taskStatuses.map(dto => dto.id -> dto.name).toMap
-
   lazy val idToOrder: Map[UUID, Int] =
     taskStatuses.map(dto => dto.id -> DefaultTaskStatus.values.find(_.statusName == dto.name).get.i).toMap
 
