@@ -12,7 +12,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
+import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints, TaskPriority}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -31,6 +31,7 @@ case class CreateTaskForm(
   name: String = "",
   description: String = "",
   taskStatusSelected: String = "",
+  prioritySelected: String = TaskPriority.Medium.value.toString,
   assignedToSelected: String = ""
 )
 
@@ -132,6 +133,7 @@ class CreateTaskComponent(
           taskStatusId = UUID.fromString(form.taskStatusSelected),
           createdAt = now,
           updatedAt = now,
+          priority = TaskPriority.withValue(form.prioritySelected.toInt),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
         links = linkComponents.map { linkComponent =>
@@ -168,6 +170,12 @@ class CreateTaskComponent(
       valuesAndDisplays = ListMap.from(selectValues.map(_.asTuple))
     )
 
+    val priorityInputSelect = formState.tgSelectManualError(
+      inputAndUpdater = selectorAndUpdaterMacro(_.prioritySelected),
+      labelValue = "Priority",
+      valuesAndDisplays = TaskPriority.namesToValuesMapString
+    )
+
     val assignedToSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.assignedToSelected),
       labelValue = "Assigned to",
@@ -189,6 +197,7 @@ class CreateTaskComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
+                priorityInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
                 labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>

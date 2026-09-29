@@ -6,8 +6,10 @@ import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
+import com.togger.task.TaskPriority
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
+import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadge, TgHtmlTable}
@@ -51,6 +53,13 @@ class ShowAllTasksComponent(
     )
   private val statusFilterSelectedIdsVar = Var(Set.empty[String])
 
+  private val priorityFilterItemsSignal: Signal[Seq[MultiSelectItem]] = Val(
+    TaskPriority.values
+      .sortBy(_.value)
+      .map(p => MultiSelectItem(id = p.value.toString, name = p.priorityName, isSelected = true))
+  )
+  private val priorityFilterSelectedIdsVar = Var(Set.empty[String])
+
   private val labelFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     taskLabelsVar.signal.map(
       _.taskLabels.sortBy(_.name).map(l => MultiSelectItem(id = l.id.toString, name = l.name, isSelected = true))
@@ -86,16 +95,19 @@ class ShowAllTasksComponent(
 
   private def visibleRowsSignal(dtos: Seq[FindTaskRespFull]): Signal[Seq[FindTaskRespFull]] =
     statusFilterSelectedIdsVar.signal
-      .combineWith(labelFilterSelectedIdsVar.signal, searchBox.inputSignal)
-      .map { case (selectedIds, selectedLabelIds, term) =>
+      .combineWith(priorityFilterSelectedIdsVar.signal, labelFilterSelectedIdsVar.signal, searchBox.inputSignal)
+      .map { case (selectedIds, selectedPriorityIds, selectedLabelIds, term) =>
         val byStatus =
           if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+        val byPriority =
+          if (selectedPriorityIds.isEmpty) byStatus
+          else byStatus.filter(dto => selectedPriorityIds.contains(dto.priority.value.toString))
         // Unlabeled tasks always pass: with every label selected by default, the "any-of-selected" test below
         // would otherwise hide them, since an empty label set can never match a selected label id.
         val byLabel =
-          if (selectedLabelIds.isEmpty) byStatus
+          if (selectedLabelIds.isEmpty) byPriority
           else
-            byStatus.filter(dto =>
+            byPriority.filter(dto =>
               dto.taskLabels.isEmpty || dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString))
             )
         val needle = term.trim.toLowerCase
@@ -236,6 +248,11 @@ class ShowAllTasksComponent(
                             statusFilterSelectedIdsVar
                           ).element,
                           new TableFilterComponent(
+                            priorityFilterItemsSignal,
+                            label = "Priority",
+                            priorityFilterSelectedIdsVar
+                          ).element,
+                          new TableFilterComponent(
                             labelFilterItemsSignal,
                             label = "Labels",
                             labelFilterSelectedIdsVar
@@ -272,6 +289,13 @@ class ShowAllTasksComponent(
                                   TgBadge(
                                     text = dto.taskStatus.name,
                                     color = dto.taskStatus.badgeColor,
+                                    bordered = true
+                                  ).element
+                                ),
+                                createTd(
+                                  TgBadge(
+                                    text = dto.priority.priorityName,
+                                    color = dto.priority.badgeColor,
                                     bordered = true
                                   ).element
                                 ),

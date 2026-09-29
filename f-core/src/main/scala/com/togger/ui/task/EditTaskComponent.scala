@@ -9,6 +9,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.task.TaskPriority
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -33,7 +34,8 @@ case class EditTaskForm(
   description: String = "",
   createBy: UUID = TgIds.UNASSIGNED_UUID,
   assignedToSelected: String = "",
-  taskStatusSelected: String = ""
+  taskStatusSelected: String = "",
+  prioritySelected: String = ""
 )
 
 class EditTaskComponent(
@@ -90,7 +92,8 @@ class EditTaskComponent(
                         description = dto.task.description,
                         createBy = dto.task.createdBy,
                         assignedToSelected = dto.task.assignedTo.map(_.toString).getOrElse(""),
-                        taskStatusSelected = dto.task.taskStatusId.toString
+                        taskStatusSelected = dto.task.taskStatusId.toString,
+                        prioritySelected = dto.task.priority.value.toString
                       )
                     )
                     currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
@@ -162,6 +165,7 @@ class EditTaskComponent(
           taskStatusId = UUID.fromString(form.taskStatusSelected),
           createdAt = now,
           updatedAt = now,
+          priority = TaskPriority.withValue(form.prioritySelected.toInt),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
         linksForUpdate = linksToUpdate.map { linkComponent =>
@@ -213,6 +217,12 @@ class EditTaskComponent(
       valuesAndDisplays = ListMap.from(selectValues.map(_.asTuple))
     )
 
+    val priorityInputSelect = formState.tgSelectManualError(
+      inputAndUpdater = selectorAndUpdaterMacro(_.prioritySelected),
+      labelValue = "Priority",
+      valuesAndDisplays = TaskPriority.namesToValuesMapString
+    )
+
     val assignedToSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.assignedToSelected),
       labelValue = "Assigned to",
@@ -235,6 +245,7 @@ class EditTaskComponent(
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 progress.element.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
+                priorityInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
                 labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
