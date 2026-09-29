@@ -10,7 +10,7 @@ import com.togger.dto._
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -18,7 +18,14 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgSelectDropdown.TgSelectDropdownSyntax
-import com.togger.ui.components.{DropdownMeta, MultiSelectItem, TableFilterComponent, TgBadge, TgSelectDropdownOption}
+import com.togger.ui.components.{
+  DropdownMeta,
+  LogEntryCalendarComponent,
+  MultiSelectItem,
+  TableFilterComponent,
+  TgBadge,
+  TgSelectDropdownOption
+}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -28,6 +35,12 @@ import org.scalajs.dom
 
 import java.util.UUID
 import scala.collection.immutable.ListMap
+
+case class LogEntryPanelState(
+  newEntryComponent: Option[LogEntryComponent] = None,
+  logEntryComponents: Seq[LogEntryComponent] = Seq.empty,
+  calendarComponent: Option[LogEntryCalendarComponent] = None
+)
 
 case class EditTaskForm(
   taskId: UUID,
@@ -58,7 +71,7 @@ class EditTaskComponent(
 
   val formState = Var(EditTaskForm(taskId = taskId, projectId = projectId))
   val linksVar: Var[Seq[TaskLinkComponent]] = Var(Seq.empty)
-  val createLogEntryVar: Var[Seq[LogEntryComponent]] = Var(Seq.empty)
+  val logEntryPanelVar: Var[LogEntryPanelState] = Var(LogEntryPanelState())
   val statusesVar = Var(TaskStatusesState())
   val labelsVar = Var(TaskLabelsState())
   val currentLabelIdsVar = Var(Set.empty[String])
@@ -71,6 +84,7 @@ class EditTaskComponent(
       )
     }
   private val labelPicker = new TableFilterComponent(labelItemsSignal, label = "Select labels")
+  private val tgDateFormater = new TgDateFormater
 
   spinnerService
     .runWithSpinner {
@@ -130,8 +144,18 @@ class EditTaskComponent(
                         tgMarkdown
                       )
 
-                    val allComps = Seq(newEntryComponent).++(logEntryComponents)
-                    createLogEntryVar.set(allComps)
+                    val calendarComponent = new LogEntryCalendarComponent(
+                      dto.logEntries,
+                      tgDateFormater,
+                      Var(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries))
+                    )
+                    logEntryPanelVar.set(
+                      LogEntryPanelState(
+                        newEntryComponent = Some(newEntryComponent),
+                        logEntryComponents = logEntryComponents,
+                        calendarComponent = Some(calendarComponent)
+                      )
+                    )
                   }
                 )
               )
@@ -246,7 +270,9 @@ class EditTaskComponent(
     )
 
     div(
-      justifyCenterFlex,
+      display.flex,
+      flexDirection.column,
+      alignItems.center,
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Edit task", TgCard.CardHeaderSize.H3),
@@ -256,13 +282,24 @@ class EditTaskComponent(
                 onSubmit.preventDefault
                   .mapTo(formState.now() -> linksVar.now())
                   .compose(_.withCurrentValueOf(labelPicker.selectedIds)) --> submitter,
-                nameInput.htmlElement.amend(cls("mb-4")),
-                descriptionEditor.htmlElement.amend(cls("mb-4")),
-                progress.element.amend(cls("mb-4")),
-                statusInputSelect.htmlElement.amend(cls("mb-4")),
-                priorityInputSelect.htmlElement.amend(cls("mb-4")),
-                assignedToSelect.htmlElement.amend(cls("mb-4")),
-                labelPicker.element.amend(cls("mb-4")),
+                div(
+                  display.flex,
+                  columnGap("2rem"),
+                  cls("mb-4"),
+                  div(
+                    nameInput.htmlElement.amend(cls("mb-4")),
+                    descriptionEditor.htmlElement.amend(cls("mb-4")),
+                    progress.element
+                  ),
+                  div(
+                    flexShrink(0),
+                    width("280px"),
+                    statusInputSelect.htmlElement.amend(cls("mb-4")),
+                    priorityInputSelect.htmlElement.amend(cls("mb-4")),
+                    assignedToSelect.htmlElement.amend(cls("mb-4")),
+                    labelPicker.element
+                  )
+                ),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
@@ -272,9 +309,33 @@ class EditTaskComponent(
           )
         )
         .element
-        .amend(heightAndWidthFitContent, cls("mr-4")),
-      hr(),
-      child <-- createLogEntryVar.signal.map(logEntryComponents => div(logEntryComponents.map(_.element)))
+        .amend(heightAndWidthFitContent, cls("mb-4")),
+      hr(alignSelf.stretch),
+      child <-- logEntryPanelVar.signal.map { state =>
+        div(
+          display.flex,
+          columnGap("2rem"),
+          alignItems.flexStart,
+          div(
+            flexGrow(1),
+            minWidth("0"),
+            h4(cls("text-lg font-semibold text-heading mb-2"), "Add new log status"),
+            state.newEntryComponent.map(_.element).getOrElse(emptyNode)
+          ),
+          div(
+            flexGrow(1),
+            minWidth("0"),
+            h4(cls("text-lg font-semibold text-heading mb-2"), "Log entries"),
+            div(state.logEntryComponents.map(_.element))
+          ),
+          div(
+            flexShrink(0),
+            cls("w-fit"),
+            h4(cls("text-lg font-semibold text-heading mb-2"), "Calendar"),
+            state.calendarComponent.map(_.element).getOrElse(emptyNode)
+          )
+        )
+      }
     )
   }
 
