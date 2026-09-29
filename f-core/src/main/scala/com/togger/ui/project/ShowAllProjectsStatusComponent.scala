@@ -224,7 +224,7 @@ class ShowAllProjectsStatusComponent(
           tasks
             .sortBy(_.taskStatus.id)
             .map { task =>
-              val selectedDayVar: Var[Option[LocalDate]] = Var(lastCalendarDay(task.logEntries))
+              val selectedDayVar: Var[Option[LocalDate]] = Var(LogEntryCalendarComponent.lastCalendarDay(task.logEntries))
               val taskCard = TgCard
                 .headerNoFooter(
                   header = TgCard.CardHeader
@@ -259,7 +259,10 @@ class ShowAllProjectsStatusComponent(
                         tgMarkdown.toLaminarDiv(task.description)
                       ),
                       div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
-                      div(cls("w-fit"), logEntryCalendar(task.logEntries, selectedDayVar))
+                      div(
+                        cls("w-fit"),
+                        new LogEntryCalendarComponent(task.logEntries, tgDateFormater, selectedDayVar).element
+                      )
                     )
                   )
                 )
@@ -271,72 +274,6 @@ class ShowAllProjectsStatusComponent(
     }.toSeq
 
     div(elements)
-  }
-
-  private def isWeekend(day: LocalDate): Boolean = {
-    val dow = day.getDayOfWeek.getValue
-    dow == 6 || dow == 7
-  }
-
-  private def lastCalendarDay(logEntries: Seq[LogEntryDto]): Option[LocalDate] =
-    logEntries
-      .map(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-      .filterNot(isWeekend)
-      .maxOption
-
-  private def logEntryCalendar(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) = {
-    val weekdayEntries = logEntries.filterNot(entry => isWeekend(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate))
-
-    if (weekdayEntries.isEmpty) emptyNode
-    else {
-      val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
-        weekdayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-
-      val minDate = entriesByDate.keys.min
-      val maxDate = entriesByDate.keys.max
-
-      val calendarStart = minDate.minusDays(minDate.getDayOfWeek.getValue - 1L)
-      val calendarEnd = maxDate.plusDays(5L - maxDate.getDayOfWeek.getValue)
-
-      val allDays =
-        Iterator
-          .iterate(calendarStart)(_.plusDays(1))
-          .takeWhile(!_.isAfter(calendarEnd))
-          .filterNot(isWeekend)
-          .toSeq
-
-      div(
-        marginBottom.rem(1),
-        cls("grid grid-cols-5 gap-1"),
-        Seq("Mon", "Tue", "Wed", "Thu", "Fri")
-          .map(label => div(cls("text-xs font-semibold text-center text-gray-500"), label)),
-        allDays.map(day =>
-          calendarDayCell(day, entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt), selectedDayVar)
-        )
-      )
-    }
-  }
-
-  private def calendarDayCell(
-    day: LocalDate,
-    entries: Seq[LogEntryDto],
-    selectedDayVar: Var[Option[LocalDate]]
-  ) = {
-    val tooltip =
-      if (entries.isEmpty) ""
-      else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
-
-    div(
-      cls("border-1 border-gray-200 rounded-md cursor-pointer"),
-      cls(if (entries.isEmpty) "bg-white" else "bg-gray-50"),
-      cls("p-1"),
-      cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
-      textAlign.center,
-      title(tooltip),
-      onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
-      div(cls("text-xs text-gray-500"), tgDateFormater.dayAndMonth(day)),
-      div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.emoji)))
-    )
   }
 
   private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
