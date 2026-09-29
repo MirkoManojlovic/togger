@@ -11,7 +11,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
+import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
@@ -250,23 +250,31 @@ class ShowAllTasksComponent(
                       TgHtmlTable.tableElement(
                         Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
                           "Name",
-                          "Description",
-                          new TableFilterComponent(
-                            statusFilterItemsSignal,
-                            label = "Status",
-                            statusFilterSelectedIdsVar
-                          ).element,
-                          new TableFilterComponent(
-                            priorityFilterItemsSignal,
-                            label = "Priority",
-                            priorityFilterSelectedIdsVar
-                          ).element,
-                          new TableFilterComponent(
-                            labelFilterItemsSignal,
-                            label = "Labels",
-                            labelFilterSelectedIdsVar
-                          ).element,
-                          "Action"
+                          Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                            cls("!px-2 w-0 whitespace-nowrap"),
+                            div(
+                              cls("flex items-center gap-2"),
+                              new TableFilterComponent(
+                                statusFilterItemsSignal,
+                                label = "Status",
+                                statusFilterSelectedIdsVar
+                              ).element,
+                              new TableFilterComponent(
+                                priorityFilterItemsSignal,
+                                label = "Priority",
+                                priorityFilterSelectedIdsVar
+                              ).element,
+                              new TableFilterComponent(
+                                labelFilterItemsSignal,
+                                label = "Labels",
+                                labelFilterSelectedIdsVar
+                              ).element
+                            )
+                          ),
+                          Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                            cls("!px-2 w-0 whitespace-nowrap"),
+                            "Action"
+                          )
                         )
                       )(
                         visibleRowsSignal(dtos).map(
@@ -275,53 +283,59 @@ class ShowAllTasksComponent(
                               Seq(
                                 createTd(
                                   div(
-                                    cls("flex items-center gap-1"),
-                                    button(
-                                      `type`("button"),
-                                      title("Copy task ID"),
-                                      cls(
-                                        "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
+                                    cls("flex flex-col gap-1"),
+                                    div(
+                                      cls("flex items-center gap-3"),
+                                      // button(
+                                      //   `type`("button"),
+                                      //   title("Copy task ID"),
+                                      //   cls(
+                                      //     "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
+                                      //   ),
+                                      //   TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
+                                      //   onClick.mapToUnit --> (_ =>
+                                      //     dom.window.navigator.clipboard
+                                      //       .writeText(dto.id.toString)
+                                      //       .toFuture
+                                      //       .foreach(_ => toast.success("Task ID copied"))
+                                      //   )
+                                      // ),
+                                      TgTooltip(
+                                        trigger = span(
+                                          cls(
+                                            TgBadgeStyles.square(
+                                              dto.priority.badgeColor,
+                                              TgBadgeSize.Default,
+                                              bordered = true,
+                                              extraCls = ""
+                                            )
+                                          ),
+                                          dto.priority.shortCode
+                                        ),
+                                        text = dto.priority.priorityName
+                                      ).element,
+                                      a(
+                                        cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
+                                        dto.name,
+                                        router.navigateTo(EditTaskPage(dto.projectId, dto.id))
                                       ),
-                                      TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
-                                      onClick.mapToUnit --> (_ =>
-                                        dom.window.navigator.clipboard
-                                          .writeText(dto.id.toString)
-                                          .toFuture
-                                          .foreach(_ => toast.success("Task ID copied"))
+                                      TgBadge(
+                                        text = dto.taskStatus.name,
+                                        color = dto.taskStatus.badgeColor,
+                                        bordered = true
+                                      ).element
+                                    ),
+                                    div(
+                                      cls("flex items-center gap-1"),
+                                      dto.taskLabels.map(label =>
+                                        TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
                                       )
-                                    ),
-                                    span(dto.name)
-                                  )
-                                ),
-                                createTdOverflow(dto.description),
-                                createTd(
-                                  TgBadge(
-                                    text = dto.taskStatus.name,
-                                    color = dto.taskStatus.badgeColor,
-                                    bordered = true
-                                  ).element
-                                ),
-                                createTd(
-                                  TgTooltip(
-                                    trigger = span(
-                                      cls(
-                                        TgBadgeStyles
-                                          .square(dto.priority.badgeColor, TgBadgeSize.Default, bordered = true, extraCls = "")
-                                      ),
-                                      dto.priority.shortCode
-                                    ),
-                                    text = dto.priority.priorityName
-                                  ).element
-                                ),
-                                createTd(
-                                  div(
-                                    cls("flex flex-wrap gap-1"),
-                                    dto.taskLabels.map(label =>
-                                      TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
                                     )
                                   )
                                 ),
-                                createTd(
+                                createTd(emptyMod),
+                                td(
+                                  cls("!px-2 w-0 whitespace-nowrap"),
                                   div(
                                     iconButton(
                                       "Edit",
