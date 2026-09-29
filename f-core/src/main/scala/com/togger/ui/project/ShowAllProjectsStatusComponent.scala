@@ -19,7 +19,7 @@ import com.togger.ui.components._
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.{TaskFeService, TaskProgressComponent, TgDateFormater}
 
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
@@ -241,7 +241,11 @@ class ShowAllProjectsStatusComponent(
                           cls("ml-2"),
                           task.name,
                           router.navigateTo(EditTaskPage(task.projectId, task.id))
-                        )
+                        ),
+                        TaskProgressComponent
+                          .fromDescription(Val(task.description), ringSizeCls = "w-5 h-5")
+                          .element
+                          .amend(cls("ml-2"))
 
                         //                              s"${task.name} - ${task.taskStatus.name} - ${task.assignedTo.map(_.fullName).getOrElse("Not assigned")} "
                       ),

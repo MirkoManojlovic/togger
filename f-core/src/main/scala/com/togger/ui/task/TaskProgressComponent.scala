@@ -21,7 +21,8 @@ object TaskProgressVariant {
   */
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
-  variant: TaskProgressVariant = TaskProgressVariant.Doughnut
+  variant: TaskProgressVariant = TaskProgressVariant.Doughnut,
+  ringSizeCls: String = "w-8 h-8"
 ) {
 
   val element: HtmlDiv =
@@ -47,7 +48,7 @@ case class TaskProgressComponent(
     */
   private def doughnutRing(percent: Int) =
     svg.svg(
-      svg.className("w-8 h-8 -rotate-90"),
+      svg.className(s"$ringSizeCls -rotate-90"),
       svg.viewBox("0 0 36 36"),
       svg.circle(
         svg.cx("18"),
@@ -55,8 +56,8 @@ case class TaskProgressComponent(
         svg.r("15.9155"),
         svg.fill("none"),
         svg.stroke("currentColor"),
-        svg.className("text-neutral-secondary-medium"),
-        svg.strokeWidth("3")
+        svg.className("text-blue-200 dark:text-blue-900"),
+        svg.strokeWidth("5")
       ),
       svg.circle(
         svg.cx("18"),
@@ -65,7 +66,7 @@ case class TaskProgressComponent(
         svg.fill("none"),
         svg.stroke("currentColor"),
         svg.className("text-fg-brand"),
-        svg.strokeWidth("3"),
+        svg.strokeWidth("5"),
         svg.strokeLineCap("round"),
         svg.strokeDashArray(s"$percent 100")
       )
@@ -76,7 +77,8 @@ object TaskProgressComponent {
 
   def fromDescription(
     descriptionSignal: Signal[String],
-    variant: TaskProgressVariant = TaskProgressVariant.Doughnut
+    variant: TaskProgressVariant = TaskProgressVariant.Doughnut,
+    ringSizeCls: String = "w-8 h-8"
   ): TaskProgressComponent =
-    TaskProgressComponent(descriptionSignal.map(TaskProgressParser.parse), variant)
+    TaskProgressComponent(descriptionSignal.map(TaskProgressParser.parse), variant, ringSizeCls)
 }
