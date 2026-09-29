@@ -16,9 +16,8 @@ case class TextSelection(text: String, start: Int, end: Int) {
 
 /** Toolbar operations for [[WYSIWYGTextEditorSplit]], as pure transforms of text plus selection.
   *
-  * The markdown string is the model there, so a command is string editing rather than the DOM surgery
-  * [[WYSIWYGCommands]] performs for [[WYSIWYGTextEditorLive]]. Keeping the DOM out of the signatures is what lets
-  * the whole set be tested without a fixture.
+  * The markdown string is the model there, so a command is string editing rather than surgery on a rendered
+  * document. Keeping the DOM out of the signatures is what lets the whole set be tested without a fixture.
   *
   * Two rules shape every command: the returned selection covers the same *text* it did before, never the markers
   * around it, so clicking a button twice undoes it; and a line command works on whole lines, expanding the
@@ -94,8 +93,7 @@ object WYSIWYGMarkdownCommands {
 
   /** What the selection currently sits inside, keyed the way the toolbar's buttons are.
     *
-    * Headings report `h2` at every level, because the toolbar has one heading button — the same key
-    * [[WYSIWYGTextEditorLive]]'s toolbar uses.
+    * Headings report `h2` at every level, because the toolbar has one heading button.
     */
   def activeMarks(selection: TextSelection): Set[String] = {
     val current = normalised(selection)

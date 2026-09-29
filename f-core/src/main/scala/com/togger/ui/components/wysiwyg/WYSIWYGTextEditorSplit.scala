@@ -21,12 +21,12 @@ object SplitPane {
 
 /** A two-pane markdown editor: the source on one side, a live preview on the other, the way GitHub does it.
   *
-  * Shaped like [[WYSIWYGTextEditorLive]] and [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an
-  * `Observer[String]` out — so the three are interchangeable in the same form wiring.
+  * Shaped like [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an `Observer[String]` out — so it drops
+  * into the same form wiring and can replace one in place.
   *
-  * The markdown string is the model here, not the DOM. The source pane is a plain `<textarea>`, so the caret, undo
-  * and IME are the browser's, and the value reported back is exactly what the author typed: unlike the live
-  * editor, this one never re-renders the source and so never rewrites it into a canonical form.
+  * The markdown string is the model, not the DOM. The source pane is a plain `<textarea>`, so the caret, undo and
+  * IME are the browser's, and the value reported back is exactly what the author typed — this editor never
+  * re-renders the source and so never rewrites it into a canonical form.
   *
   * That is also why the preview can use an ordinary `children <--`. Nothing but Laminar touches those nodes, so
   * there is no hand-mounting, no `replaceChildren` and no mount-callback caveat.
@@ -281,7 +281,7 @@ case class WYSIWYGTextEditorSplit(
 object WYSIWYGTextEditorSplit {
 
   /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using
-    * it reads like the ones around it. Named apart from `wysiwygLiveEditorSig` so a file can import both.
+    * it reads like the ones around it.
     */
   implicit class WYSIWYGTextEditorSplitSyntax[A](formState: Var[A]) {
 

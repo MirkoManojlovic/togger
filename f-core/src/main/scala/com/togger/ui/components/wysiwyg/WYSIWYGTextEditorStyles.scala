@@ -1,10 +1,7 @@
 package com.togger.ui.components.wysiwyg
 
-/** Classes for the editor's own frame only. What the author types *into* keeps coming from `TgMarkdownStyles`, so
-  * the editing surface and the rendered entry look the same.
-  *
-  * Shared by both editors: the label, wrapper and toolbar are identical in [[WYSIWYGTextEditorLive]] and
-  * [[WYSIWYGTextEditorSplit]], and only the section below `surface` differs between them.
+/** Classes for [[WYSIWYGTextEditorSplit]]'s own frame only. What the author writes *about* keeps its look from
+  * `TgMarkdownStyles`, so the preview pane and the rendered entry match.
   *
   * Taken from `TgTabs`' button vocabulary and `Sidebar`'s icon buttons. `TgTextArea`'s classes are deliberately not
   * reused — they are raw `gray-*` palette with hand-written `dark:` pairs, predating the Flowbite 4 tokens.
@@ -32,14 +29,6 @@ object WYSIWYGTextEditorStyles {
   val toolbarSeparator = "w-px h-5 mx-1 bg-neutral-quaternary"
 
   val toolbarIcon = "w-4 h-4"
-
-  /** `relative` anchors the placeholder overlay; `break-words` stops a long unbroken paste widening the card. */
-  val surfaceContainer = "relative"
-
-  val surface = "p-3 overflow-y-auto break-words focus:outline-none"
-
-  /** Not a DOM node inside the surface — anything in there would be serialized as content. */
-  val placeholder = "absolute top-3 left-3 pointer-events-none select-none text-body opacity-60 text-sm"
 
   /** Side by side from `md` up, stacked under it, where [[splitTabBar]] decides which pane is visible. */
   val splitPanes = "flex flex-col md:flex-row items-stretch"

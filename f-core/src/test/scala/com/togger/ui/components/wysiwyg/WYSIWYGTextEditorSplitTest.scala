@@ -126,8 +126,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
       }
     }
 
-    /** The whole reason for this editor next to the live one: the value is the author's text, not a rendering of a
-      * rendering of it. `WYSIWYGTextEditorLive` canonicalizes `_a_` into `*a*` on the first edit.
+    /** The editor's central promise: the value is the author's text, not a rendering of a rendering of it. An
+      * editor that parsed and re-serialized would hand back `*a*` for `_a_` and `- x` for `+ x`.
       */
     "report the author's own markdown rather than a canonical form of it" in { _ =>
       mounted("_italic_ and + a list marker") { view =>
