@@ -2,7 +2,7 @@ package com.togger.ui.components.wysiwyg
 
 import com.raquo.laminar.api.L._
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditor.WYSIWYGTextEditorSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorLive.WYSIWYGTextEditorLiveSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 import org.scalatest.Assertion
@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.scalajs.js
 
-class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
+class WYSIWYGTextEditorLiveTest extends AsyncJsWordSpec {
 
   private case class TestForm(name: String = "untouched", description: String = "")
 
@@ -33,7 +33,7 @@ class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
 
     dom.document.body.appendChild(container)
 
-    val editor = WYSIWYGTextEditor(
+    val editor = WYSIWYGTextEditorLive(
       inputSignal = state.signal,
       inputStateUpdater = Observer[String] { value =>
         emitted += value
@@ -61,7 +61,62 @@ class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
     surface.dispatchEvent(new dom.Event("input", js.Dynamic.literal(bubbles = true).asInstanceOf[dom.EventInit]))
   }
 
+  /** Types one character at a time through the caret, the way a browser does — including reading the offset
+    * before touching the node, since a live range shifts when text data changes underneath it.
+    */
+  private def typeAtCaret(surface: dom.Element, text: String): Unit = {
+    val selection = dom.window.getSelection()
+
+    if (selection.rangeCount > 0) {
+      val range = selection.getRangeAt(0)
+
+      range.startContainer match {
+        case node: dom.Text =>
+          val at = range.startOffset
+
+          node.data = node.data.substring(0, at) + text + node.data.substring(at)
+          WYSIWYGDom.caretAt(node, at + text.length)
+        case element: dom.Element =>
+          val node = dom.document.createTextNode(text)
+
+          if (element.firstChild != null && WYSIWYGDom.tagOf(element.firstChild) == "br")
+            element.replaceChild(node, element.firstChild)
+          else element.appendChild(node)
+          WYSIWYGDom.caretAt(node, text.length)
+      }
+    }
+    surface.dispatchEvent(new dom.Event("input", js.Dynamic.literal(bubbles = true).asInstanceOf[dom.EventInit]))
+  }
+
   testNameFromClassName should {
+
+    /** The reported bug: typing `# Heading` in an empty editor left the text as it was. Browsers insert U+00A0
+      * for a space at the end of the content, and the block rules only matched an ordinary space.
+      */
+    "turn a hash and the space a browser inserts into a heading" in { _ =>
+      mounted("") { (surface, _, _) =>
+        WYSIWYGDom.caretAtStartOf(surface.firstChild)
+        typeAtCaret(surface, "#")
+        typeAtCaret(surface, "\u00a0")
+        typeAtCaret(surface, "E")
+
+        Future.successful {
+          surface.innerHTML should include("<h1")
+          surface.textContent should include("E")
+        }
+      }
+    }
+
+    "turn a dash and the space a browser inserts into a list" in { _ =>
+      mounted("") { (surface, _, _) =>
+        WYSIWYGDom.caretAtStartOf(surface.firstChild)
+        typeAtCaret(surface, "-")
+        typeAtCaret(surface, "\u00a0")
+
+        Future.successful(surface.innerHTML should include("<ul"))
+      }
+    }
+
 
     "paint the initial value" in { _ =>
       mounted("# Hello\n\nbody text") { (surface, _, _) =>
@@ -161,7 +216,7 @@ class WYSIWYGTextEditorTest extends AsyncJsWordSpec {
 
       dom.document.body.appendChild(container)
 
-      val editor = formState.wysiwygEditorSig(
+      val editor = formState.wysiwygLiveEditorSig(
         inputAndUpdater = selectorAndUpdaterMacro(_.description),
         labelValue = "Description"
       )

@@ -14,6 +14,11 @@ import org.scalajs.dom.SVGSVGElement
 
 /** A contenteditable markdown editor: the author edits the rendered elements, the component reports markdown.
   *
+  * The *live* half of the pair — [[WYSIWYGTextEditorSplit]] is the other, showing the source and a preview side by
+  * side. This one has no visible syntax at all, at the price of everything in this package that the split editor
+  * does not need: the DOM is the model here, so the document is serialized back out of it, and a value that goes
+  * through a full render-and-serialize round trip comes back canonicalized rather than as the author wrote it.
+  *
   * Shaped like [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an `Observer[String]` out — so it drops
   * into the same form wiring and can replace one in place.
   *
@@ -30,7 +35,7 @@ import org.scalajs.dom.SVGSVGElement
   * @param debounceTimeMillis
   *   how long typing settles before the document is serialized and reported
   */
-case class WYSIWYGTextEditor(
+case class WYSIWYGTextEditorLive(
   inputSignal: Signal[String],
   inputStateUpdater: Observer[String],
   labelValue: String,
@@ -320,21 +325,21 @@ case class WYSIWYGTextEditor(
     }
 }
 
-object WYSIWYGTextEditor {
+object WYSIWYGTextEditorLive {
 
   /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using
     * it reads like the ones around it and swapping a textarea for the editor is a one-line change.
     */
-  implicit class WYSIWYGTextEditorSyntax[A](formState: Var[A]) {
+  implicit class WYSIWYGTextEditorLiveSyntax[A](formState: Var[A]) {
 
-    def wysiwygEditorSig(
+    def wysiwygLiveEditorSig(
       inputAndUpdater: SelectAndUpdate[A, String],
       labelValue: String,
       placeholderValue: String = "",
       minHeightRem: Int = 12,
       showToolbar: Boolean = true
-    ): WYSIWYGTextEditor =
-      WYSIWYGTextEditor(
+    ): WYSIWYGTextEditorLive =
+      WYSIWYGTextEditorLive(
         inputSignal = formState.signal.map(inputAndUpdater.selector),
         inputStateUpdater = formState.updater(inputAndUpdater.updater),
         labelValue = labelValue,

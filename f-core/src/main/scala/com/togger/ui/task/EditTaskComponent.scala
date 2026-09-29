@@ -12,7 +12,7 @@ import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditor.WYSIWYGTextEditorSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.project.ProjectService
@@ -175,7 +175,7 @@ class EditTaskComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val descriptionEditor = formState.wysiwygEditorSig(
+  private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Description",
     placeholderValue = "Describe the task"
