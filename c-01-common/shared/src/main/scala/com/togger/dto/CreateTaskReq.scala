@@ -1,6 +1,7 @@
 package com.togger.dto
 
 import com.togger.logentry.LogEntryStatus
+import com.togger.task.TaskPriority
 
 import java.time.Instant
 import java.util.UUID
@@ -14,6 +15,7 @@ case class CreateTaskReq(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
+  priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
@@ -28,6 +30,7 @@ case class UpdateTaskReq1(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
+  priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
@@ -43,6 +46,7 @@ case class FindTaskResp1(
   createdAt: Instant,
   updatedAt: Instant,
   latestVersion: UUID,
+  priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
@@ -56,6 +60,7 @@ case class FindTaskRespFull(
   createdBy: SearchAccountDto,
   closedBy: Option[SearchAccountDto],
   taskStatus: FindTaskStatusResp,
+  priority: TaskPriority,
   createdAt: Instant,
   updatedAt: Instant,
   latestVersion: UUID,
@@ -75,6 +80,7 @@ case class TaskVersionDto(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
+  priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None
 )
 
