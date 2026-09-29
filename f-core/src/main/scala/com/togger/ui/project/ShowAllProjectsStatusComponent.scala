@@ -371,7 +371,7 @@ class ShowAllProjectsStatusComponent(
                     dateBadge(),
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
-                  new TextToHtmlRender().textToHtmlList(entry.textExternal)
+                  tgMarkdown.toLaminarDiv(entry.textExternal)
                 )
               )
           )
@@ -407,7 +407,7 @@ class ShowAllProjectsStatusComponent(
                     ).element,
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
-                  new TextToHtmlRender().textToHtmlList(entry.textExternal)
+                  tgMarkdown.toLaminarDiv(entry.textExternal)
                 )
               )
           )

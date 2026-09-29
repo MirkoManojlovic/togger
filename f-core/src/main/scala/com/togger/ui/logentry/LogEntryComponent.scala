@@ -8,6 +8,7 @@ import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
@@ -15,7 +16,6 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
-import com.togger.ui.components.TextToHtmlRender
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.toast.Toast
@@ -70,7 +70,8 @@ class LogEntryComponent(
   accountService: AccountService,
   tgClock: TgClock,
   router: TgRouter[FrontendPage],
-  val toast: Toast
+  val toast: Toast,
+  tgMarkdown: TgMarkdown
 )(implicit
   IORuntime: IORuntime
 ) extends ToastMessages {
@@ -152,7 +153,7 @@ class LogEntryComponent(
                   body = TgCard.HtmlCardContent(
                     div(
                       p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toStringWithEmoji, cls("mb-4")),
-                      div(p(b(s"Status update")), new TextToHtmlRender().textToHtmlList(state.textExternal), cls("mb-4"))
+                      div(p(b(s"Status update")), tgMarkdown.toLaminarDiv(state.textExternal), cls("mb-4"))
 //                      div(p(b("Text internal")), markdownToHtml(state.textInternal), cls("mb-4"))
                     )
                   )

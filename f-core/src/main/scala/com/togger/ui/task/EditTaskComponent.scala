@@ -7,6 +7,7 @@ import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, TgIds, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -44,7 +45,8 @@ class EditTaskComponent(
   accountService: AccountService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
-  val toast: Toast
+  val toast: Toast,
+  tgMarkdown: TgMarkdown
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -93,7 +95,8 @@ class EditTaskComponent(
                             accountService,
                             tgClock,
                             router,
-                            toast
+                            toast,
+                            tgMarkdown
                           )
                         )
 
@@ -105,7 +108,8 @@ class EditTaskComponent(
                         accountService,
                         tgClock,
                         router,
-                        toast
+                        toast,
+                        tgMarkdown
                       )
 
                     val allComps = Seq(newEntryComponent).++(logEntryComponents)

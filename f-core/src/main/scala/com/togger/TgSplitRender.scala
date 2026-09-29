@@ -229,7 +229,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectService,
                   router,
-                  toast
+                  toast,
+                  tgMarkdown
                 ).element
               case CreateProjectPage(organizationId) =>
                 new CreateProjectComponent(
