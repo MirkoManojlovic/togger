@@ -16,12 +16,14 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
+import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
+import java.time.{Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 case class LogEntryForm(
@@ -36,11 +38,6 @@ case class LogEntryForm(
     val localDate = LocalDate.parse(date)
     val localDateTime = localDate.atTime(0, 0, 0)
     localDateTime.toInstant(ZoneOffset.UTC)
-  }
-
-  lazy val dateDay: DayOfWeek = {
-    val localDate = LocalDate.parse(date)
-    localDate.getDayOfWeek
   }
 }
 
@@ -77,6 +74,7 @@ class LogEntryComponent(
 ) extends ToastMessages {
   private val formState = Var(logEntryForm)
   private val displayAsEditVar = Var(false)
+  private val tgDateFormater = new TgDateFormater
 
   lazy val saveSubmitter = Observer[LogEntryForm] { form =>
     val dto = LogEntryDto(
@@ -133,13 +131,23 @@ class LogEntryComponent(
           div(
             {
               val state = formState.now()
+              val status = LogEntryStatus.withValue(state.status.toInt)
+              val date = LocalDate.parse(state.date)
               TgCard
                 .headerNoFooter(
                   header = TgCard.CardHeader.html(
                     div(
                       cls("flex"),
                       justifyContent.spaceBetween, // TODO: fix this
-                      div(b("Date: "), s"${state.date} ${state.dateDay.toString.toLowerCase.capitalize.take(3)}"),
+                      div(
+                        cls("flex items-center gap-2"),
+                        TgBadge(
+                          text = tgDateFormater.asAmericanDateWithDayAbrv(date),
+                          bordered = true,
+                          color = TgBadgeColor.Gray
+                        ).element,
+                        TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+                      ),
                       TgHtmlButton
                         .extraSmall("Edit")
                         .amend(
@@ -151,11 +159,7 @@ class LogEntryComponent(
                     TgCard.CardHeaderSize.H3
                   ),
                   body = TgCard.HtmlCardContent(
-                    div(
-                      p(b("Status: "), LogEntryStatus.withValue(state.status.toInt).toStringWithEmoji, cls("mb-4")),
-                      div(p(b(s"Status update")), tgMarkdown.toLaminarDiv(state.textExternal), cls("mb-4"))
-//                      div(p(b("Text internal")), markdownToHtml(state.textInternal), cls("mb-4"))
-                    )
+                    div(tgMarkdown.toLaminarDiv(state.textExternal))
                   )
                 )
                 .element
