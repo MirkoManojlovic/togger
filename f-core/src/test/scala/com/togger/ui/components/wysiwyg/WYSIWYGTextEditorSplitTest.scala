@@ -246,6 +246,58 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
       }
     }
 
+    "render task markers in the preview as checkboxes" in { _ =>
+      mounted("- [ ] open\n- [x] done") { view =>
+        inAsyncContextFuture(
+          {
+            view.preview.querySelectorAll("input[type='checkbox']").length shouldBe 2
+            view.preview.textContent should not include "[ ]"
+          },
+          settle
+        )
+      }
+    }
+
+    "check the source's marker when a preview checkbox is clicked" in { _ =>
+      mounted("- [ ] open\n- [ ] also open") { view =>
+        inAsyncContextFuture((), settle).flatMap { _ =>
+          click(view.preview.querySelectorAll("input[type='checkbox']")(1))
+
+          view.source.value shouldBe "- [ ] open\n- [x] also open"
+
+          inAsyncContextFuture(view.emitted.toSeq shouldBe Seq("- [ ] open\n- [x] also open"), settle)
+        }
+      }
+    }
+
+    "uncheck it again on a second click" in { _ =>
+      mounted("- [x] done") { view =>
+        inAsyncContextFuture((), settle).flatMap { _ =>
+          click(view.preview.querySelector("input[type='checkbox']"))
+          view.source.value shouldBe "- [ ] done"
+
+          // The preview has to be rebuilt from the new source before the second click has a box to land on.
+          inAsyncContextFuture((), settle).map { _ =>
+            click(view.preview.querySelector("input[type='checkbox']"))
+            view.source.value shouldBe "- [x] done"
+          }
+        }
+      }
+    }
+
+    /** The click happened in the preview, so where the author was in the source pane is none of its business. */
+    "leave the source pane's selection alone when a checkbox is clicked" in { _ =>
+      mounted("- [ ] open") { view =>
+        inAsyncContextFuture((), settle).map { _ =>
+          view.source.setSelectionRange(2, 4)
+          click(view.preview.querySelector("input[type='checkbox']"))
+
+          view.source.selectionStart shouldBe 2
+          view.source.selectionEnd shouldBe 4
+        }
+      }
+    }
+
     /** The shape `CreateTaskComponent` and `EditTaskComponent` use: a form `Var`, a field selected by macro, and
       * the editor writing back into that field.
       */

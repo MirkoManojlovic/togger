@@ -3,7 +3,7 @@ package com.togger.ui.components.wysiwyg
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.markdown.{TgMarkdown, TgMarkdownStyles}
+import com.togger.markdown.{TaskToggle, TgMarkdown, TgMarkdownStyles, TgMarkdownTasks}
 import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
 import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
@@ -47,7 +47,7 @@ case class WYSIWYGTextEditorSplit(
   placeholderValue: String = "",
   minHeightRem: Int = 12,
   showToolbar: Boolean = true,
-  config: MarkdownConfig = MarkdownConfig.default,
+  config: MarkdownConfig = TgMarkdown.defaultConfig,
   styles: TgMarkdownStyles = TgMarkdownStyles.default,
   debounceTimeMillis: Int = 300,
   previewDebounceMillis: Int = 150,
@@ -57,7 +57,11 @@ case class WYSIWYGTextEditorSplit(
   /** Laminar has no prop for a textarea's own selection event, which is the one that fires on every caret move. */
   private val onSelectionChange = eventProp[dom.Event]("select")
 
-  private val markdown = new TgMarkdown(config, allowRawHtml = false, styles)
+  /** The preview's checkboxes are live: the source pane is right there to write the change back into. The live
+    * editor passes no observer, because a click inside its contenteditable places a caret rather than toggling.
+    */
+  private val markdown =
+    new TgMarkdown(config, allowRawHtml = false, styles, onTaskToggle = Some(Observer[TaskToggle](applyTaskToggle)))
 
   private val sourceVar = Var("")
   private val activePaneVar = Var[SplitPane](SplitPane.Source)
@@ -243,6 +247,22 @@ case class WYSIWYGTextEditorSplit(
       activeMarksVar.set(
         WYSIWYGMarkdownCommands.activeMarks(TextSelection(element.value, element.selectionStart, element.selectionEnd))
       )
+    }
+
+  /** The click landed in the preview, so the author's place in the source pane is untouched by it and should
+    * survive the rewrite — the same reason `runCommand` restores the selection.
+    *
+    * A rewrite the source declines leaves everything alone; the checkbox undoes itself, being controlled.
+    */
+  private def applyTaskToggle(toggle: TaskToggle): Unit =
+    TgMarkdownTasks.setChecked(sourceVar.now(), toggle.index, toggle.checked).foreach { updated =>
+      val selection = sourceRef.map(element => (element.selectionStart, element.selectionEnd))
+
+      sourceVar.set(updated)
+      sourceRef.foreach { element =>
+        if (element.value != updated) element.value = updated
+        selection.foreach { case (start, end) => element.setSelectionRange(start, end) }
+      }
     }
 
   private def emit(value: String): Unit =
