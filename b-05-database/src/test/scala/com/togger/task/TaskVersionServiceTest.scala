@@ -62,7 +62,7 @@ class TaskVersionServiceTest
       val firstVersion = newVersion("v1")
       val secondVersion = newVersion("v2")
       val editedFirstVersion =
-        firstVersion.withNewContent("old name edit", "old description edit", None, None, taskStatusId)
+        firstVersion.withNewContent("old name edit", "old description edit", None, None, taskStatusId, TaskPriority.Medium)
 
       (taskVersionRepo.findByVersion _).expects(secondVersion.version).returns(secondVersion.pure[ConnectionIO])
       (taskVersionRepo.findLatestByTaskId _).expects(taskId).returns(secondVersion.pure[ConnectionIO])
@@ -79,7 +79,8 @@ class TaskVersionServiceTest
           "edited description",
           None,
           None,
-          taskStatusId
+          taskStatusId,
+          TaskPriority.Medium
         )
         editOldResult <- service.updateVersionContent(
           firstVersion.version,
@@ -87,7 +88,8 @@ class TaskVersionServiceTest
           "old description edit",
           None,
           None,
-          taskStatusId
+          taskStatusId,
+          TaskPriority.Medium
         )
       } yield {
         val cp = new Checkpoint

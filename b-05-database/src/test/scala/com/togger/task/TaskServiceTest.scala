@@ -120,7 +120,8 @@ class TaskServiceTest
     }
 
     "save a new task version instead of overwriting, and a new version for an updated link" in {
-      val newTaskVersion = firstVersion.withNewContent("new name", "new description", None, None, UUID.randomUUID())
+      val newTaskVersion =
+        firstVersion.withNewContent("new name", "new description", None, None, UUID.randomUUID(), TaskPriority.Medium)
       val updatedLinkVersion = version1.withNewContent("new name", "http://example.com/new")
 
       (taskRepo.findById _).expects(task.id).returns(task.pure[ConnectionIO])

@@ -24,7 +24,13 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
   val v1 = "v1"
   val v2 = "v2"
 
-  def taskVersion(taskId: UUID, taskStatusId: UUID, assignedTo: Option[UUID], suffix: String) = TaskVersion(
+  def taskVersion(
+    taskId: UUID,
+    taskStatusId: UUID,
+    assignedTo: Option[UUID],
+    suffix: String,
+    priority: TaskPriority = TaskPriority.Medium
+  ) = TaskVersion(
     version = UUID.randomUUID(),
     taskId = taskId,
     name = s"Task name $suffix",
@@ -32,6 +38,7 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
     assignedTo = assignedTo,
     closedBy = None,
     taskStatusId = taskStatusId,
+    priority = priority,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -52,18 +59,22 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
         fixtures <- createTaskAndFixtures()
         (savedAccount, _, taskStatusSaved, savedTask) = fixtures
         savedVersion <- taskVersionRepo.insert(
-          taskVersion(savedTask.id, taskStatusSaved.id, Some(savedAccount.id), v1)
+          taskVersion(savedTask.id, taskStatusSaved.id, Some(savedAccount.id), v1, TaskPriority.Critical)
         )
         foundVersion1 <- taskVersionRepo.findByVersion(savedVersion.version)
-        updatedVersion <- taskVersionRepo.updateContent(savedVersion.copy(description = "new description"))
+        updatedVersion <- taskVersionRepo.updateContent(
+          savedVersion.copy(description = "new description", priority = TaskPriority.Planned)
+        )
         foundVersion2 <- taskVersionRepo.findByVersion(savedVersion.version)
         _ <- taskVersionRepo.deleteByVersion(foundVersion2.version)
         foundVersion3 <- taskVersionRepo.findByVersion(savedVersion.version).attempt
       } yield {
         val cp = new Checkpoint
         cp(savedVersion shouldBe foundVersion1)
+        cp(foundVersion1.priority shouldBe TaskPriority.Critical)
         cp(updatedVersion shouldBe foundVersion2)
         cp(updatedVersion.description shouldBe "new description")
+        cp(updatedVersion.priority shouldBe TaskPriority.Planned)
         cp.reportAll()
         foundVersion3.isLeft shouldBe true
       }
