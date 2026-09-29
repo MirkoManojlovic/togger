@@ -61,6 +61,7 @@ case class TaskFull(
   createdBy: Account,
   closedBy: Option[Account] = None,
   taskStatus: TaskStatus,
+  taskLabels: Seq[TaskLabel] = Seq.empty,
   milestone: Option[UUID] = None,
   createdAt: Instant,
   updatedAt: Instant,
@@ -75,4 +76,15 @@ case class TaskStatus(
   createdAt: Instant,
   updatedAt: Instant
 )
+
+case class TaskLabel(
+  id: UUID,
+  projectId: UUID,
+  name: String,
+  description: String,
+  createdAt: Instant,
+  updatedAt: Instant
+)
+
+case class TaskLabelAssignment(taskId: UUID, taskLabelId: UUID, createdAt: Instant)
 

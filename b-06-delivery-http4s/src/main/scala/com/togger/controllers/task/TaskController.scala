@@ -24,10 +24,10 @@ class TaskController(
     findByIdEndpoint.serverLogic { auth => taskId =>
       taskService
         .findById(taskId)
-        .map { case (taskWithVersions, links, logEntries) =>
+        .map { case (taskWithVersions, links, logEntries, taskLabels) =>
           TgJsonSuccess.justBodyRight(
             FindTaskResp(
-              task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion),
+              task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion, taskLabels.map(_.id)),
               links = links.map(link => toLinkDto(link.link, link.latestVersion)),
               logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion))
             )
@@ -62,7 +62,10 @@ class TaskController(
                   latestVersion = taskFull.latestVersion,
                   logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
                   links = links.map(link => toLinkDto(link.link, link.latestVersion)),
-                  milestone = taskFull.milestone
+                  milestone = taskFull.milestone,
+                  taskLabels = taskFull.taskLabels.map(l =>
+                    FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
+                  )
                 )
               }
           )
@@ -119,9 +122,9 @@ class TaskController(
         )
       }
 
-    taskService.createTask(task, firstVersion, newLinks).map { case (savedTask, savedLinks) =>
+    taskService.createTask(task, firstVersion, newLinks, taskDto.taskLabelIds).map { case (savedTask, savedLinks) =>
       val savedDto = FindTaskResp(
-        task = toTaskDto(savedTask.task, savedTask.version),
+        task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
         links = savedLinks.map(link => toLinkDto(link.link, link.version)),
         logEntries = Seq.empty
       )
@@ -177,10 +180,10 @@ class TaskController(
         )
       }
 
-    taskService.updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks).map {
+    taskService.updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks, taskDto.taskLabelIds).map {
       case (savedTask, updatedLinks, savedLinks) =>
         val savedDto = FindTaskResp(
-          task = toTaskDto(savedTask.task, savedTask.version),
+          task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
           links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
           logEntries = Seq.empty
         )

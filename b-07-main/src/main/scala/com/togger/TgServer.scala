@@ -6,10 +6,16 @@ import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController}
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
-import com.togger.controllers.project.{DefaultTaskStatusService, ProjectController, ProjectService, TaskDumpController}
+import com.togger.controllers.project.{
+  DefaultTaskLabelService,
+  DefaultTaskStatusService,
+  ProjectController,
+  ProjectService,
+  TaskDumpController
+}
 import com.togger.controllers.accountmapping.AccountMappingController
 import com.togger.controllers.projectmapping.ProjectMappingController
-import com.togger.controllers.task.{LinkController, TaskController, TaskStatusController}
+import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
 import com.togger.dep.AuthDependenciesModule
@@ -110,6 +116,11 @@ object TgServer {
         taskStatusController.save,
         taskStatusController.update,
         taskStatusController.delete,
+        taskLabelController.findByProjectId,
+        taskLabelController.findById,
+        taskLabelController.save,
+        taskLabelController.update,
+        taskLabelController.delete,
         taskDumpController.dumpTasks,
         taskDumpController.checkStatus,
         taskDumpController.dumpByConfig,
@@ -174,7 +185,16 @@ class DependenciesModule(
   lazy val linkEndpoints = new LinkEndpoints(securedEndpoint)
   lazy val linkController = new LinkController(linkEndpoints, linkService)
   lazy val taskService =
-    new TaskService(taskRepo, taskVersionRepo, linkRepo, linkVersionRepo, logEntryRepo, logEntryVersionRepo, transactor)
+    new TaskService(
+      taskRepo,
+      taskVersionRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo,
+      taskLabelAssignmentRepo,
+      transactor
+    )
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
   lazy val taskController = new TaskController(taskService, taskVersionService, taskEndpoints, tgClock)
 
@@ -182,8 +202,18 @@ class DependenciesModule(
   lazy val projectRepo = new ProjectRepoImpl
   lazy val projectAccountRepo = new ProjectAccountRepoImpl
   lazy val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
+  lazy val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
   lazy val projectService =
-    new ProjectService(projectRepo, projectAccountRepo, taskStatusRepo, tgClock, defaultTaskStatusService, transactor)
+    new ProjectService(
+      projectRepo,
+      projectAccountRepo,
+      taskStatusRepo,
+      taskLabelRepo,
+      tgClock,
+      defaultTaskStatusService,
+      defaultTaskLabelService,
+      transactor
+    )
   lazy val projectController = new ProjectController(projectEndpoints, projectService, tgClock)
   lazy val accountEndpoints = new AccountEndpoints(securedEndpoint)
   lazy val accountTypeRepo = new AccountTypeRepo
@@ -203,6 +233,12 @@ class DependenciesModule(
   lazy val taskStatusService = new TaskStatusService(taskStatusRepo, tgClock, transactor)
   lazy val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
   lazy val taskStatusController = new TaskStatusController(taskStatusService, taskStatusEndpoints, tgClock)
+
+  lazy val taskLabelRepo = new TaskLabelRepoImpl
+  lazy val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
+  lazy val taskLabelService = new TaskLabelService(taskLabelRepo, tgClock, transactor)
+  lazy val taskLabelEndpoints = new TaskLabelEndpoints(securedEndpoint)
+  lazy val taskLabelController = new TaskLabelController(taskLabelService, taskLabelEndpoints, tgClock)
 
   lazy val taskDumpDiskOps = new DiskOps
   lazy val taskDumpRepo =

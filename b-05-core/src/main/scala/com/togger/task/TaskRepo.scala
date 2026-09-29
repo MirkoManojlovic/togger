@@ -56,3 +56,29 @@ trait TaskStatusRepo {
   def findByProjectId(projectId: UUID): ConnectionIO[List[TaskStatus]]
 
 }
+
+trait TaskLabelRepo {
+
+  def findById(id: UUID): ConnectionIO[TaskLabel]
+
+  def insert(taskLabel: TaskLabel): ConnectionIO[TaskLabel]
+
+  def deleteById(id: UUID): ConnectionIO[Int]
+
+  def update(taskLabel: TaskLabel, updatedAt: Instant): ConnectionIO[TaskLabel]
+
+  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLabel]]
+
+}
+
+trait TaskLabelAssignmentRepo {
+
+  def insert(assignment: TaskLabelAssignment): ConnectionIO[TaskLabelAssignment]
+
+  def deleteAllByTaskId(taskId: UUID): ConnectionIO[Int]
+
+  def findLabelsByTaskId(taskId: UUID): ConnectionIO[List[TaskLabel]]
+
+  def findLabelsByTaskIds(taskIds: Seq[UUID]): ConnectionIO[Map[UUID, List[TaskLabel]]]
+
+}

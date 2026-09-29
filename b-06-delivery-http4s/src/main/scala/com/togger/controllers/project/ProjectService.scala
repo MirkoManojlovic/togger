@@ -5,7 +5,7 @@ import com.togger.account.Account
 import com.togger.common.TgClock
 import com.togger.logging.TgLogging
 import com.togger.project.{Project, ProjectAccount, ProjectAccountRepo, ProjectRepo}
-import com.togger.task.TaskStatusRepo
+import com.togger.task.{TaskLabelRepo, TaskStatusRepo}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -16,8 +16,10 @@ class ProjectService(
   projectRepo: ProjectRepo,
   projectAccountRepo: ProjectAccountRepo,
   taskStatusRepo: TaskStatusRepo,
+  taskLabelRepo: TaskLabelRepo,
   tgClock: TgClock,
   defaultTaskStatusService: DefaultTaskStatusService,
+  defaultTaskLabelService: DefaultTaskLabelService,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
@@ -38,6 +40,7 @@ class ProjectService(
       _ <- addMembers(savedProject, membersToAdd)
       members <- findMembersLocal(savedProject.id)
       _ <- defaultTaskStatusService.createDefaultTaskStatuses(savedProject.id).map(taskStatusRepo.insert).sequence
+      _ <- defaultTaskLabelService.createDefaultTaskLabels(savedProject.id).map(taskLabelRepo.insert).sequence
     } yield savedProject -> members).transact(transactor)
   }
 

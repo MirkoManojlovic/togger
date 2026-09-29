@@ -17,19 +17,24 @@ class TaskService(
   linkVersionRepo: LinkVersionRepo,
   logEntryRepo: LogEntryRepo,
   logEntryVersionRepo: LogEntryVersionRepo,
+  taskLabelAssignmentRepo: TaskLabelAssignmentRepo,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
   def createTask(
     task: Task,
     firstVersion: TaskVersion,
-    newLinks: Seq[LinkWithOneVersion]
+    newLinks: Seq[LinkWithOneVersion],
+    labelIds: Seq[UUID] = Seq.empty
   ): IO[(TaskWithOneVersion, List[LinkWithOneVersion])] = {
     logger.info(s"Creating a ${sp(task)}, with ${sp(firstVersion)} and ${sp(newLinks)}")
     (for {
       savedTask <- taskRepo.insert(task)
       savedVersion <- taskVersionRepo.insert(firstVersion.copy(taskId = savedTask.id))
       savedLinks <- insertLinksWithVersions(savedTask.id, newLinks)
+      _ <- labelIds.toList.traverse(labelId =>
+        taskLabelAssignmentRepo.insert(TaskLabelAssignment(savedTask.id, labelId, task.createdAt))
+      )
     } yield {
       logger.info(s"Task created successfully ${sp(savedTask)} with links ${sp(savedLinks)}")
       TaskWithOneVersion(savedTask, savedVersion) -> savedLinks
@@ -51,15 +56,17 @@ class TaskService(
     taskVersionRepo
       .findByProjectIdWithLatest(projectId)
       .flatMap { tasks =>
-        tasks
-          .map(task =>
-            for {
-              links <- findLinksWithLatestVersion(task.id)
-              logEntries <- findLogEntriesWithLatestVersion(task.id)
-            } yield (task, links, logEntries)
-          )
-          .toList
-          .sequence
+        taskLabelAssignmentRepo.findLabelsByTaskIds(tasks.map(_.id)).flatMap { labelsByTaskId =>
+          tasks
+            .map(task =>
+              for {
+                links <- findLinksWithLatestVersion(task.id)
+                logEntries <- findLogEntriesWithLatestVersion(task.id)
+              } yield (task.copy(taskLabels = labelsByTaskId.getOrElse(task.id, List.empty)), links, logEntries)
+            )
+            .toList
+            .sequence
+        }
       }
       .transact(transactor)
 
@@ -85,28 +92,33 @@ class TaskService(
         )
     } yield logEntriesWithVersion
 
-  def findById(id: UUID): IO[(TaskWithVersions, List[LinkWithVersions], List[LogEntryWithVersions])] =
+  def findById(
+    id: UUID
+  ): IO[(TaskWithVersions, List[LinkWithVersions], List[LogEntryWithVersions], List[TaskLabel])] =
     (for {
       task <- taskRepo.findById(id)
       latestVersion <- taskVersionRepo.findLatestByTaskId(task.id)
       links <- findLinksWithLatestVersion(task.id)
       logEntries <- findLogEntriesWithLatestVersion(task.id)
-    } yield (TaskWithVersions(task, Seq(latestVersion)), links, logEntries)).transact(transactor)
+      taskLabels <- taskLabelAssignmentRepo.findLabelsByTaskId(id)
+    } yield (TaskWithVersions(task, Seq(latestVersion)), links, logEntries, taskLabels)).transact(transactor)
 
   def findByIdWithTaskStatusAndAccount(
     id: UUID
   ): IO[(TaskFull, List[LinkWithVersions], List[LogEntryWithVersions])] =
     (for {
       taskFull <- taskVersionRepo.findByIdWithLatest(id)
+      labels <- taskLabelAssignmentRepo.findLabelsByTaskId(taskFull.id)
       links <- findLinksWithLatestVersion(taskFull.id)
       logEntries <- findLogEntriesWithLatestVersion(taskFull.id)
-    } yield (taskFull, links, logEntries)).transact(transactor)
+    } yield (taskFull.copy(taskLabels = labels), links, logEntries)).transact(transactor)
 
   def updateTask(
     taskId: UUID,
     newVersionContent: TaskVersion,
     linkVersionUpdates: Seq[LinkVersion],
-    newLinks: Seq[LinkWithOneVersion]
+    newLinks: Seq[LinkWithOneVersion],
+    labelIds: Seq[UUID] = Seq.empty
   ): IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] = {
     logger.info(s"Updating task ${sp(taskId)}, with ${sp(newVersionContent)} and ${sp(linkVersionUpdates)}")
     (for {
@@ -129,6 +141,10 @@ class TaskService(
         } yield LinkWithOneVersion(link, savedVersion)
       }
       savedNewLinks <- insertLinksWithVersions(taskId, newLinks)
+      _ <- taskLabelAssignmentRepo.deleteAllByTaskId(taskId)
+      _ <- labelIds.toList.traverse(labelId =>
+        taskLabelAssignmentRepo.insert(TaskLabelAssignment(taskId, labelId, newVersionContent.updatedAt))
+      )
     } yield {
       logger.info(s"Task updated successfully ${sp(task)} with links ${sp(updatedLinks)}")
       (TaskWithOneVersion(task, savedVersion), updatedLinks, savedNewLinks)

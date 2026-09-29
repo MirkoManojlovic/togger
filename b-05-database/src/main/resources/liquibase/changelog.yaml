@@ -396,6 +396,47 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
+            tableName: task_label
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_project_task_label
+                    references: project(id)
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: varchar(256)
+                  constraints:
+                    nullable: true
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
             tableName: task
             columns:
               - column:
@@ -503,6 +544,33 @@ databaseChangeLog:
               - column:
                   name: version
                   descending: true
+        - createTable:
+            tableName: task_label_assignment
+            columns:
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_task_label_assignment_task
+                    references: task(id)
+                    deleteCascade: true
+              - column:
+                  name: task_label_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_task_label_assignment_task_label
+                    references: task_label(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
         - createTable:
             tableName: link
             columns:

@@ -5,7 +5,7 @@ import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
 import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.controllers.organization.OrganizationService
-import com.togger.controllers.project.{DefaultTaskStatusService, ProjectService}
+import com.togger.controllers.project.{DefaultTaskLabelService, DefaultTaskStatusService, ProjectService}
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.login.SessionTokenFactoryImpl
 import com.togger.milestone.{MilestoneRepoImpl, MilestoneService, MilestoneVersionRepoImpl}
@@ -52,6 +52,8 @@ trait SeedAppModule {
   protected val projectRepo = new ProjectRepoImpl
   protected val projectAccountRepo = new ProjectAccountRepoImpl
   protected val taskStatusRepo = new TaskStatusRepoImpl
+  protected val taskLabelRepo = new TaskLabelRepoImpl
+  protected val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
   protected val taskRepo = new TaskRepoImpl
   protected val taskVersionRepo = new TaskVersionRepoImpl
   protected val linkRepo = new LinkRepoImpl
@@ -61,6 +63,7 @@ trait SeedAppModule {
   protected val milestoneRepo = new MilestoneRepoImpl
   protected val milestoneVersionRepo = new MilestoneVersionRepoImpl
   protected val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
+  protected val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
 
   protected val organizationService =
     new OrganizationService(
@@ -76,8 +79,10 @@ trait SeedAppModule {
       projectRepo = projectRepo,
       projectAccountRepo = projectAccountRepo,
       taskStatusRepo = taskStatusRepo,
+      taskLabelRepo = taskLabelRepo,
       tgClock = tgClock,
       defaultTaskStatusService = defaultTaskStatusService,
+      defaultTaskLabelService = defaultTaskLabelService,
       transactor = xa
     )
 
@@ -89,6 +94,7 @@ trait SeedAppModule {
       linkVersionRepo = linkVersionRepo,
       logEntryRepo = logEntryRepo,
       logEntryVersionRepo = logEntryVersionRepo,
+      taskLabelAssignmentRepo = taskLabelAssignmentRepo,
       transactor = xa
     )
 

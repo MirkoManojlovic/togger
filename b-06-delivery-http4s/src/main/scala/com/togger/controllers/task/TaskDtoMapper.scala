@@ -3,9 +3,11 @@ package com.togger.controllers.task
 import com.togger.dto.{FindTaskResp1, TaskVersionDto}
 import com.togger.task.{Task, TaskVersion}
 
+import java.util.UUID
+
 object TaskDtoMapper {
 
-  def toDto(task: Task, version: TaskVersion): FindTaskResp1 =
+  def toDto(task: Task, version: TaskVersion, taskLabelIds: Seq[UUID] = Seq.empty): FindTaskResp1 =
     FindTaskResp1(
       id = task.id,
       projectId = task.projectId,
@@ -17,7 +19,8 @@ object TaskDtoMapper {
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
       latestVersion = version.version,
-      milestone = version.milestone
+      milestone = version.milestone,
+      taskLabelIds = taskLabelIds
     )
 
   def toVersionDto(version: TaskVersion): TaskVersionDto =

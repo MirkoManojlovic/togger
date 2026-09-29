@@ -66,7 +66,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       taskStatusId: UUID,
       ownerId: UUID,
       taskName: String,
-      taskIndex: Int
+      taskIndex: Int,
+      taskLabelIds: Seq[UUID] = Seq.empty
     ): IO[Unit] =
       for {
         taskResult <- taskService.createTask(
@@ -82,7 +83,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             createdAt = now,
             updatedAt = now
           ),
-          Seq.empty
+          Seq.empty,
+          taskLabelIds
         )
         task = taskResult._1
         entryDates = entryDatesForTask(taskIndex)
@@ -112,7 +114,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       projectId: UUID,
       taskStatusId: UUID,
       ownerId: UUID,
-      taskIndexOffset: Int
+      taskIndexOffset: Int,
+      labelPool: Seq[UUID] = Seq.empty
     ): IO[Unit] =
       for {
         milestoneResult <- milestoneService.createMilestone(
@@ -132,13 +135,17 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         milestone = milestoneResult.milestone
         _ <- (1 to 10).toList.traverse { i =>
           val taskNumber = f"$i%02d"
+          val taskIndex = taskIndexOffset + (i - 1)
+          // Rotates through the pool so consecutive milestone tasks don't all carry the same label.
+          val taskLabelIds = if (labelPool.isEmpty) Seq.empty else Seq(labelPool(taskIndex % labelPool.size))
           createTaskWithLogEntries(
             projectId = projectId,
             milestoneId = milestone.id,
             taskStatusId = taskStatusId,
             ownerId = ownerId,
             taskName = s"Task - Alpha - $quarterLabel - $taskNumber",
-            taskIndex = taskIndexOffset + (i - 1)
+            taskIndex = taskIndex,
+            taskLabelIds = taskLabelIds
           )
         }
       } yield ()
@@ -205,6 +212,12 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       alphaInProgressStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
       alphaDoneStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
 
+      alphaTaskLabels <- taskLabelRepo.findByProjectId(savedAlpha.id).transact(xa)
+      alphaFeatureLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Feature.labelName).get
+      alphaBugLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Bug.labelName).get
+      alphaTestLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Test.labelName).get
+      alphaLabelPool = alphaTaskLabels.map(_.id)
+
       alphaTask1Result <- taskService.createTask(
         Task(id = TgIds.UNASSIGNED_UUID, projectId = savedAlpha.id, createdBy = owner.id, createdAt = now),
         TaskVersion(
@@ -229,7 +242,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
               updatedAt = now
             )
           )
-        )
+        ),
+        Seq(alphaFeatureLabel.id, alphaTestLabel.id)
       )
       alphaTask1 = alphaTask1Result._1
       _ <- logEntryService.createLogEntry(
@@ -258,7 +272,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           createdAt = now,
           updatedAt = now
         ),
-        Seq.empty
+        Seq.empty,
+        Seq(alphaBugLabel.id)
       )
       alphaTask2 = alphaTask2Result._1
       _ <- logEntryService.createLogEntry(
@@ -275,8 +290,24 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         )
       )
 
-      _ <- createMilestoneWithTasks("Milestone Q1", "Q1", savedAlpha.id, alphaInProgressStatus.id, owner.id, 0)
-      _ <- createMilestoneWithTasks("Milestone Q2", "Q2", savedAlpha.id, alphaInProgressStatus.id, owner.id, 10)
+      _ <- createMilestoneWithTasks(
+        "Milestone Q1",
+        "Q1",
+        savedAlpha.id,
+        alphaInProgressStatus.id,
+        owner.id,
+        0,
+        alphaLabelPool
+      )
+      _ <- createMilestoneWithTasks(
+        "Milestone Q2",
+        "Q2",
+        savedAlpha.id,
+        alphaInProgressStatus.id,
+        owner.id,
+        10,
+        alphaLabelPool
+      )
 
       savedBetaResult <- projectService.saveProject(
         Project(
@@ -297,6 +328,11 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       betaInProgressStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
       betaDoneStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
       betaWaitingStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InReviewWaiting.statusName).get
+
+      betaTaskLabels <- taskLabelRepo.findByProjectId(savedBeta.id).transact(xa)
+      betaFeatureLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Feature.labelName).get
+      betaDocsLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Docs.labelName).get
+      betaChoreLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Chore.labelName).get
 
       betaTask1Result <- taskService.createTask(
         Task(id = TgIds.UNASSIGNED_UUID, projectId = savedBeta.id, createdBy = owner.id, createdAt = now),
@@ -322,7 +358,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
               updatedAt = now
             )
           )
-        )
+        ),
+        Seq(betaFeatureLabel.id)
       )
       betaTask1 = betaTask1Result._1
       _ <- logEntryService.createLogEntry(
@@ -351,7 +388,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           createdAt = now,
           updatedAt = now
         ),
-        Seq.empty
+        Seq.empty,
+        Seq(betaChoreLabel.id)
       )
       betaTask2 = betaTask2Result._1
       _ <- logEntryService.createLogEntry(
@@ -380,7 +418,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           createdAt = now,
           updatedAt = now
         ),
-        Seq.empty
+        Seq.empty,
+        Seq(betaDocsLabel.id)
       )
       betaTask3 = betaTask3Result._1
       _ <- logEntryService.createLogEntry(
