@@ -96,6 +96,22 @@ class WYSIWYGMarkdownCommandsTest extends AsyncJsWordSpec {
       run("- al|ready")(toggleList(_, ordered = false)) shouldBe "al|ready"
     }
 
+    "mark touched lines as tasks" in { _ =>
+      run("{one\ntwo}")(toggleTaskList) shouldBe "{- [ ] one\n- [ ] two}"
+    }
+
+    "convert an existing list to tasks rather than prefixing it twice" in { _ =>
+      run("{- one\n2. two}")(toggleTaskList) shouldBe "{- [ ] one\n- [ ] two}"
+    }
+
+    "strip a task marker whole, checkbox included" in { _ =>
+      run("{- [ ] one\n- [x] two}")(toggleTaskList) shouldBe "{one\ntwo}"
+    }
+
+    "strip a task line back to plain text with the bullet button" in { _ =>
+      run("{- [x] done}")(toggleList(_, ordered = false)) shouldBe "{done}"
+    }
+
     "link a selection and keep the label selected" in { _ =>
       run("see {the docs} now")(insertLink(_, "https://x")) shouldBe "see [{the docs}](https://x) now"
     }
@@ -123,6 +139,11 @@ class WYSIWYGMarkdownCommandsTest extends AsyncJsWordSpec {
     "report the list kind the caret is in" in { _ =>
       activeMarks(parse("- it|em")) shouldBe Set("ul")
       activeMarks(parse("1. it|em")) shouldBe Set("ol")
+    }
+
+    "report a task line as a task and not also as a bullet list" in { _ =>
+      activeMarks(parse("- [ ] it|em")) shouldBe Set("task")
+      activeMarks(parse("- [x] do|ne")) shouldBe Set("task")
     }
 
     "report a block quote" in { _ =>

@@ -448,4 +448,13 @@ object TgIcons {
   def orderedListIcon(className: String) =
     strokeIcon(className, "M10 7h9m-9 5h9m-9 5h9M5 6v3m0 0H4m1 0h1m-2 3h2l-2 3h2")
 
+  def quoteIcon(className: String) =
+    strokeIcon(
+      className,
+      "M9 6H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4v2a2 2 0 0 1-2 2H6m13-10h-4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4v2a2 2 0 0 1-2 2h-1"
+    )
+
+  def taskListIcon(className: String) =
+    strokeIcon(className, "M11 7h9m-9 10h9M3 7.5 4.5 9 7.5 6M3 16.5 4.5 18l3-3")
+
 }

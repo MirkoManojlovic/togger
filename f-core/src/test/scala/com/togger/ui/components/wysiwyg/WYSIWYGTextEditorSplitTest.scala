@@ -235,6 +235,35 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
       }
     }
 
+    "carry every formatting button the toolbar promises, in order" in { _ =>
+      mounted("text") { view =>
+        val labels = view.editor.querySelectorAll("button[title]").map(_.getAttribute("title")).toSeq
+
+        Future.successful(
+          labels shouldBe Seq(
+            "Heading",
+            "Bold",
+            "Italic",
+            "Quote",
+            "Code",
+            "Link",
+            "Numbered list",
+            "Bullet list",
+            "Task list"
+          )
+        )
+      }
+    }
+
+    "turn the caret's line into a task from the task list button" in { _ =>
+      mounted("buy milk") { view =>
+        view.source.setSelectionRange(2, 2)
+        click(toolbarButton(view.editor, "Task list"))
+
+        Future.successful(view.source.value shouldBe "- [ ] buy milk")
+      }
+    }
+
     "offer a Write and a Preview tab for narrow screens" in { _ =>
       mounted("text") { view =>
         val tabs = view.editor.querySelectorAll("[role='tab']")

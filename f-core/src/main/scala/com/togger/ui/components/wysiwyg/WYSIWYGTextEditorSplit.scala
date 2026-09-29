@@ -167,20 +167,22 @@ case class WYSIWYGTextEditorSplit(
   private def toolbarElement: HtmlDiv =
     div(
       cls(WYSIWYGTextEditorStyles.toolbar),
+      toolbarButton("Heading", "h2", TgIcons.headingIcon, WYSIWYGMarkdownCommands.togglePrefix(_, "## ")),
       toolbarButton("Bold", "strong", TgIcons.boldIcon, WYSIWYGMarkdownCommands.toggleInline(_, "**")),
       toolbarButton("Italic", "em", TgIcons.italicIcon, WYSIWYGMarkdownCommands.toggleInline(_, "*")),
+      toolbarButton("Quote", "blockquote", TgIcons.quoteIcon, WYSIWYGMarkdownCommands.togglePrefix(_, "> ")),
       toolbarButton("Code", "code", TgIcons.codeIcon, WYSIWYGMarkdownCommands.toggleInline(_, "`")),
       div(cls(WYSIWYGTextEditorStyles.toolbarSeparator)),
-      toolbarButton("Heading", "h2", TgIcons.headingIcon, WYSIWYGMarkdownCommands.togglePrefix(_, "## ")),
       toolbarButton("Link", "a", TgIcons.linkIcon, linkCommand),
       div(cls(WYSIWYGTextEditorStyles.toolbarSeparator)),
-      toolbarButton("Bullet list", "ul", TgIcons.listIcon, WYSIWYGMarkdownCommands.toggleList(_, ordered = false)),
       toolbarButton(
         "Numbered list",
         "ol",
         TgIcons.orderedListIcon,
         WYSIWYGMarkdownCommands.toggleList(_, ordered = true)
-      )
+      ),
+      toolbarButton("Bullet list", "ul", TgIcons.listIcon, WYSIWYGMarkdownCommands.toggleList(_, ordered = false)),
+      toolbarButton("Task list", "task", TgIcons.taskListIcon, WYSIWYGMarkdownCommands.toggleTaskList)
     )
 
   /** `onMouseDown.preventDefault` keeps the textarea focused: a button taking focus would collapse the selection

@@ -25,9 +25,10 @@ case class TextSelection(text: String, start: Int, end: Int) {
   */
 object WYSIWYGMarkdownCommands {
 
-  private val listMarker: Regex = """^(?:[-*+] |\d+\. )""".r
+  private val listMarker: Regex = """^(?:[-*+] |\d+\. )(?:\[[ xX]\] )?""".r
   private val bulletMarker: Regex = """^[-*+] """.r
   private val orderedMarker: Regex = """^\d+\. """.r
+  private val taskMarker: Regex = """^[-*+] \[[ xX]\] """.r
   private val headingMarker: Regex = """^#{1,6} """.r
   private val quoteMarker: Regex = """^> """.r
 
@@ -78,6 +79,18 @@ object WYSIWYGMarkdownCommands {
       else stripped.zipWithIndex.map { case (line, index) => listPrefix(ordered, index) + line }
     }
 
+  /** `- [ ] ` per line — a bullet list whose items open with a checkbox.
+    *
+    * A line already carrying a list marker of any kind is converted rather than nested, and a line already a task
+    * loses the whole marker, checkbox included, so a second click returns it to plain text.
+    */
+  def toggleTaskList(selection: TextSelection): TextSelection =
+    rewriteLines(normalised(selection)) { lines =>
+      val stripped = lines.map(line => listMarker.replaceFirstIn(line, ""))
+
+      if (lines.forall(line => taskMarker.findFirstIn(line).isDefined)) stripped else stripped.map("- [ ] " + _)
+    }
+
   /** `[text](destination)`, leaving the label selected — or the caret inside empty brackets when nothing was. */
   def insertLink(selection: TextSelection, destination: String): TextSelection = {
     val current = normalised(selection)
@@ -93,7 +106,8 @@ object WYSIWYGMarkdownCommands {
 
   /** What the selection currently sits inside, keyed the way the toolbar's buttons are.
     *
-    * Headings report `h2` at every level, because the toolbar has one heading button.
+    * Headings report `h2` at every level, because the toolbar has one heading button. A task line reports `task`
+    * alone rather than also `ul`, so that the two list buttons never light together.
     */
   def activeMarks(selection: TextSelection): Set[String] = {
     val current = normalised(selection)
@@ -103,8 +117,11 @@ object WYSIWYGMarkdownCommands {
       case (name, marker) if enclosingSpan(current, marker).isDefined => name
     }
 
-    val block = Seq("h2" -> headingMarker, "ul" -> bulletMarker, "ol" -> orderedMarker, "blockquote" -> quoteMarker)
-      .collect { case (name, marker) if marker.findFirstIn(line).isDefined => name }
+    val block =
+      if (taskMarker.findFirstIn(line).isDefined) Seq("task")
+      else
+        Seq("h2" -> headingMarker, "ul" -> bulletMarker, "ol" -> orderedMarker, "blockquote" -> quoteMarker)
+          .collect { case (name, marker) if marker.findFirstIn(line).isDefined => name }
 
     (inline ++ block).toSet
   }
