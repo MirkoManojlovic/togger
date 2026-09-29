@@ -18,14 +18,19 @@ import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
   *
   * `styles` only reaches the Laminar output. [[toHtml]] goes straight to the library's string renderer and comes
   * back unstyled.
+  *
+  * `onTaskToggle` makes rendered `- [ ]` checkboxes live: without one they render disabled, which is what the
+  * library's HTML renderer emits and the right default for a rendering of someone else's text. With one, ticking
+  * a box reports which task item it was, and the caller rewrites the source — see [[TgMarkdownTasks]].
   */
 class TgMarkdown(
-  config: MarkdownConfig = MarkdownConfig.default,
+  config: MarkdownConfig = TgMarkdown.defaultConfig,
   allowRawHtml: Boolean = false,
-  styles: TgMarkdownStyles = TgMarkdownStyles.default
+  styles: TgMarkdownStyles = TgMarkdownStyles.default,
+  onTaskToggle: Option[Observer[TaskToggle]] = None
 ) {
 
-  private lazy val render = new TgMarkdownRender(config, allowRawHtml, styles)
+  private lazy val render = new TgMarkdownRender(config, allowRawHtml, styles, onTaskToggle)
 
   def toHtml(markdown: String): String = Markdown.renderToHTML(markdown, config)
 
@@ -36,4 +41,12 @@ class TgMarkdown(
   def toLaminarDiv(markdown: String): HtmlDiv = div(toLaminar(markdown))
 
   def parse(markdown: String): Document = Markdown.parseDocumentContent(markdown, config)
+}
+
+object TgMarkdown {
+
+  /** CommonMark plus task lists. `MarkdownConfig.default` has `taskListItems` off, so `- [ ]` would render as
+    * literal text everywhere in the app; a caller wanting strict CommonMark still passes it explicitly.
+    */
+  val defaultConfig: MarkdownConfig = MarkdownConfig.default.copy(taskListItems = true)
 }

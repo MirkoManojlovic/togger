@@ -34,6 +34,17 @@ case class TgMarkdownStyles(
   orderedList: String = "mb-3 space-y-1 text-sm text-body list-decimal list-inside",
   nestedList: String = "ps-5 mt-2 space-y-1",
   listItem: String = "",
+  /** Per item rather than per list: one list can hold task items and plain ones, and only the task items lose
+    * their bullet.
+    */
+  taskListItem: String = "list-none",
+  /** Lifted from `TgCheckbox`, so a markdown checkbox and a form checkbox are the same control. `me-2
+    * align-middle` rather than a flex row — a tight list item's content is a run of inline nodes, and making the
+    * `<li>` a flex container would turn every word into a flex item.
+    */
+  taskCheckbox: String =
+    "w-4 h-4 me-2 align-middle border border-default-strong rounded-xs bg-neutral-secondary-strong " +
+      "focus:ring-2 focus:ring-brand-soft",
   thematicBreak: String = "h-px my-6 bg-neutral-quaternary border-0",
   tableWrapper: String =
     "relative overflow-x-auto mb-3 bg-neutral-primary-soft shadow-xs rounded-base border border-default",

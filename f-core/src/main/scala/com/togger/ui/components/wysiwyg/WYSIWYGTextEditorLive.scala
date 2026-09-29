@@ -42,7 +42,7 @@ case class WYSIWYGTextEditorLive(
   placeholderValue: String = "",
   minHeightRem: Int = 12,
   showToolbar: Boolean = true,
-  config: MarkdownConfig = MarkdownConfig.default,
+  config: MarkdownConfig = TgMarkdown.defaultConfig,
   styles: TgMarkdownStyles = TgMarkdownStyles.default,
   debounceTimeMillis: Int = 300
 ) {

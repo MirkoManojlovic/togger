@@ -86,6 +86,45 @@ case class TgMarkdownListItem(content: Seq[Modifier[HtmlElement]], styles: TgMar
   val element: HtmlLi = li(cls(styles.listItem), content)
 }
 
+/** A `- [ ]` / `- [x]` item. The marker has already been taken off `content` by the renderer.
+  *
+  * @param toggle
+  *   `None` renders the checkbox disabled, which is what the markdown library's own HTML renderer emits and the
+  *   right default for a rendering of someone else's text. `Some` makes it live.
+  */
+case class TgMarkdownTaskListItem(
+  isChecked: Boolean,
+  toggle: Option[Observer[Boolean]],
+  content: Seq[Modifier[HtmlElement]],
+  styles: TgMarkdownStyles
+) {
+
+  val element: HtmlLi =
+    li(
+      cls(styles.listItem),
+      cls(styles.taskListItem),
+      input(
+        L.typ("checkbox"),
+        cls(styles.taskCheckbox),
+        L.disabled(toggle.isEmpty),
+        TgMarkdownTaskListItem.checkedAttr(isChecked),
+        // Controlled against a constant: the box shows what the *source* says, so a click the rewrite declines
+        // snaps back instead of leaving the DOM claiming something the document does not. A click that does
+        // change the source arrives back as a re-render carrying a new element.
+        toggle.map(observer => controlled(L.checked <-- Val(isChecked), onClick.mapToChecked --> observer))
+      ),
+      content
+    )
+}
+
+object TgMarkdownTaskListItem {
+
+  /** The content attribute, not Laminar's `checked` *prop*. A prop assigns `element.checked`, which leaves no
+    * trace in the markup — and the markup is what `MarkdownDomSerializer` reads to put `- [x] ` back.
+    */
+  val checkedAttr: HtmlAttr[Boolean] = htmlAttr("checked", BooleanAsAttrPresenceCodec)
+}
+
 case class TgMarkdownThematicBreak(styles: TgMarkdownStyles) {
   val element: HtmlHr = hr(cls(styles.thematicBreak))
 }

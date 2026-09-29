@@ -4,6 +4,9 @@ import com.raquo.laminar.api.L._
 import com.togger.common.suites.AsyncJsWordSpec
 import io.github.edadma.markdown.MarkdownConfig
 import org.scalajs.dom
+import org.scalatest.Assertion
+
+import scala.collection.mutable
 
 class TgMarkdownRenderTest extends AsyncJsWordSpec {
 
@@ -35,6 +38,32 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
     html(markdown, config).replaceAll(""" class="[^"]*"""", "")
 
   private def occurrences(haystack: String, needle: String): Int = haystack.split(needle, -1).length - 1
+
+  /** Task lists need `taskListItems` on, which `MarkdownConfig.default` does not have — `TgMarkdown.defaultConfig`
+    * is what the app renders with.
+    */
+  private def taskStructure(markdown: String): String = structure(markdown, TgMarkdown.defaultConfig)
+
+  /** Renders with a live toggle observer and hands back the checkboxes, so a test can click one. */
+  private def withCheckboxes(
+    markdown: String
+  )(body: (Seq[dom.html.Input], mutable.Buffer[TaskToggle]) => Assertion): Assertion = {
+    val toggles = mutable.Buffer.empty[TaskToggle]
+    val container = dom.document.createElement("div")
+
+    dom.document.body.appendChild(container)
+
+    val markdownRender =
+      new TgMarkdown(TgMarkdown.defaultConfig, onTaskToggle = Some(Observer[TaskToggle](toggles += _)))
+    val root = render(container, markdownRender.toLaminarDiv(markdown))
+    val inputs = container.querySelectorAll("input").toSeq.map(_.asInstanceOf[dom.html.Input])
+
+    try body(inputs, toggles)
+    finally {
+      root.unmount()
+      dom.document.body.removeChild(container)
+    }
+  }
 
   testNameFromClassName should {
 
@@ -156,6 +185,101 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       val rendered = html("hello", styles = styles.copy(paragraph = "text-xs text-body"))
 
       rendered shouldBe "<p class=\"text-xs text-body\">hello</p>"
+    }
+
+    "render a task item as a checkbox and drop the marker from the text" in { _ =>
+      taskStructure("- [ ] Unchecked checkbox") shouldBe
+        "<ul><li><input type=\"checkbox\" disabled=\"\">Unchecked checkbox</li></ul>"
+    }
+
+    "check the box for both marker spellings" in { _ =>
+      taskStructure("- [x] lower") should include("checked=\"\"")
+      taskStructure("- [X] upper") should include("checked=\"\"")
+    }
+
+    /** The attribute, not the property: the property leaves no trace in the markup, and the markup is what
+      * `MarkdownDomSerializer` reads to put the marker back.
+      */
+    "leave no checked attribute on an unchecked box" in { _ =>
+      taskStructure("- [ ] open") should not include "checked="
+    }
+
+    "leave the marker as text when the extension is off" in { _ =>
+      val rendered = structure("- [ ] not a task", MarkdownConfig.default)
+
+      rendered should include("[ ] not a task")
+      rendered should not include "<input"
+    }
+
+    "leave a plain item in the same list alone" in { _ =>
+      val rendered = taskStructure("- [x] task\n- plain")
+
+      occurrences(rendered, "<input") shouldBe 1
+      rendered should include("<li>plain</li>")
+    }
+
+    "keep inline markup that follows the marker" in { _ =>
+      taskStructure("- [x] **bold** tail") should include("<strong>bold</strong> tail")
+    }
+
+    "carry the task item's own class so the bullet is hidden" in { _ =>
+      html("- [ ] one", TgMarkdown.defaultConfig) should include(styles.taskListItem)
+    }
+
+    "render checkboxes in ordered and nested lists" in { _ =>
+      occurrences(taskStructure("1. [ ] one\n   - [x] nested"), "<input") shouldBe 2
+    }
+
+    "disable the checkbox when no toggle observer is given" in { _ =>
+      taskStructure("- [ ] one") should include("disabled")
+    }
+
+    "leave the checkbox enabled when a toggle observer is given" in { _ =>
+      withCheckboxes("- [ ] one") { (inputs, _) =>
+        inputs.head.disabled shouldBe false
+      }
+    }
+
+    "report the item's index and its new state when clicked" in { _ =>
+      withCheckboxes("- [ ] zero\n- [ ] one\n- [x] two") { (inputs, toggles) =>
+        inputs(1).click()
+        inputs(2).click()
+
+        toggles.toSeq shouldBe Seq(TaskToggle(1, checked = true), TaskToggle(2, checked = false))
+      }
+    }
+
+    /** Numbering is what `TgMarkdownTasks` looks an index up by, so the walk has to hand out indices in source
+      * order — a nested item after the parent that contains it.
+      */
+    "number a nested task item after its parent" in { _ =>
+      withCheckboxes("- [ ] parent\n  - [ ] child\n- [ ] sibling") { (inputs, toggles) =>
+        inputs(1).click()
+        inputs(2).click()
+
+        toggles.map(_.index).toSeq shouldBe Seq(1, 2)
+      }
+    }
+
+    /** The index counter lives on the render instance, so a second render through the same `TgMarkdown` has to
+      * start over — the split editor's preview re-renders on every keystroke.
+      */
+    "number from zero again on a second render" in { _ =>
+      val toggles = mutable.Buffer.empty[TaskToggle]
+      val markdownRender =
+        new TgMarkdown(TgMarkdown.defaultConfig, onTaskToggle = Some(Observer[TaskToggle](toggles += _)))
+      val container = dom.document.createElement("div")
+
+      dom.document.body.appendChild(container)
+      markdownRender.toLaminar("- [ ] one")
+
+      val root = render(container, markdownRender.toLaminarDiv("- [ ] one"))
+
+      container.querySelector("input").asInstanceOf[dom.html.Input].click()
+      root.unmount()
+      dom.document.body.removeChild(container)
+
+      toggles.map(_.index).toSeq shouldBe Seq(0)
     }
   }
 }

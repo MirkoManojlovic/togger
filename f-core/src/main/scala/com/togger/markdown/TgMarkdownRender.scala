@@ -20,9 +20,22 @@ import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
   * cannot inject markup into another user's page. Turning it on reproduces what `TgMarkdown.toHtml` does — the
   * markup is inserted as-is — and is only safe for markdown the viewer wrote themselves.
   */
-class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean, styles: TgMarkdownStyles) {
+class TgMarkdownRender(
+  config: MarkdownConfig,
+  allowRawHtml: Boolean,
+  styles: TgMarkdownStyles,
+  onTaskToggle: Option[Observer[TaskToggle]] = None
+) {
 
-  def blocks(document: Document): Seq[HtmlElement] = document.children.map(block)
+  /** Numbers the document's task items as the walk meets them. Reset per call, so each render counts from zero —
+    * which also means `blocks` is not reentrant. Safe here: ScalaJS is single-threaded and the walk is synchronous.
+    */
+  private var nextTaskIndex = 0
+
+  def blocks(document: Document): Seq[HtmlElement] = {
+    nextTaskIndex = 0
+    document.children.map(block)
+  }
 
   private def block(node: Block): HtmlElement = node match {
     case Paragraph(is)             => TgMarkdownParagraph(inlineContent(is), styles).element
@@ -30,7 +43,7 @@ class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean, styles: Tg
     case BlockQuote(children)      => TgMarkdownBlockQuote(children.map(block), styles).element
     case c: Code                   => codeBlock(c)
     case ListBlock(data, items)    => list(data, items, nested = false)
-    case item: ListItem            => TgMarkdownListItem(itemContent(item, tight = false), styles).element
+    case item: ListItem            => listItem(item, tight = false)
     case HTMLBlock(content)        => TgMarkdownRawHtmlBlock(content, allowRawHtml, styles).element
     case Table(header, rows, alignments) =>
       TgMarkdownTable(
@@ -67,9 +80,45 @@ class TgMarkdownRender(config: MarkdownConfig, allowRawHtml: Boolean, styles: Tg
       ordered = data.isOrdered,
       start = data.startNumber.filter(_ != 1),
       nested = nested,
-      items = items.map(item => TgMarkdownListItem(itemContent(item, data.isTight), styles).element),
+      items = items.map(item => listItem(item, data.isTight)),
       styles = styles
     ).element
+
+  /** The item's index is taken before its content is rendered, so a task list nested inside a task item numbers
+    * after its parent — the order the source has them in, and the order [[TgMarkdownTasks]] scans them in.
+    */
+  private def listItem(item: ListItem, tight: Boolean): HtmlLi = taskMarker(item) match {
+    case Some(isChecked) =>
+      val index = nextTaskIndex
+
+      nextTaskIndex += 1
+      TgMarkdownTaskListItem(isChecked, toggleObserver(index), itemContent(withoutMarker(item), tight), styles).element
+
+    case None => TgMarkdownListItem(itemContent(item, tight), styles).element
+  }
+
+  /** The markdown library models no task item — `ListItem` has no checked flag, and `taskListItems` is read only
+    * by its HTML string renderer, never by the parser. The marker is therefore still sitting in the text, and is
+    * read back off it the same way `renderToHTML` does, so `toLaminar` and `toHtml` call the same things a task.
+    */
+  private def taskMarker(item: ListItem): Option[Boolean] =
+    if (!config.taskListItems) None
+    else
+      item.content.headOption
+        .collect { case Paragraph(inlines) => inlines }
+        .flatMap(_.headOption)
+        .collect {
+          case Text(text) if text.startsWith("[ ] ")             => false
+          case Text(text) if text.toLowerCase.startsWith("[x] ") => true
+        }
+
+  private def withoutMarker(item: ListItem): ListItem = item.content match {
+    case Paragraph(Text(text) :: rest) :: tail => ListItem(Paragraph(Text(text.drop(4)) :: rest) :: tail)
+    case _                                     => item
+  }
+
+  private def toggleObserver(index: Int): Option[Observer[Boolean]] =
+    onTaskToggle.map(_.contramap[Boolean](checked => TaskToggle(index, checked)))
 
   /** A tight list item drops the `<p>` around its paragraphs, the way CommonMark renders them — which also keeps
     * the paragraph's bottom margin out of a tight list. A list nested here is the only place one can appear, so
