@@ -181,6 +181,8 @@ class EditTaskComponent(
     placeholderValue = "Describe the task"
   )
 
+  private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
+
   def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
     val statusInputSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.taskStatusSelected),
@@ -206,6 +208,7 @@ class EditTaskComponent(
                 onSubmit.preventDefault.mapTo(formState.now() -> linksVar.now()) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
+                progress.element.amend(cls("mb-4")),
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
