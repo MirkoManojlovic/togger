@@ -14,7 +14,8 @@ case class CreateTaskReq(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
-  milestone: Option[UUID] = None
+  milestone: Option[UUID] = None,
+  taskLabelIds: Seq[UUID] = Seq.empty
 )
 
 case class UpdateTaskReq1(
@@ -27,7 +28,8 @@ case class UpdateTaskReq1(
   taskStatusId: UUID,
   createdAt: Instant,
   updatedAt: Instant,
-  milestone: Option[UUID] = None
+  milestone: Option[UUID] = None,
+  taskLabelIds: Seq[UUID] = Seq.empty
 )
 
 case class FindTaskResp1(
@@ -41,7 +43,8 @@ case class FindTaskResp1(
   createdAt: Instant,
   updatedAt: Instant,
   latestVersion: UUID,
-  milestone: Option[UUID] = None
+  milestone: Option[UUID] = None,
+  taskLabelIds: Seq[UUID] = Seq.empty
 )
 
 case class FindTaskRespFull(
@@ -58,7 +61,8 @@ case class FindTaskRespFull(
   latestVersion: UUID,
   logEntries: Seq[LogEntryDto],
   links: Seq[FindLinkResp],
-  milestone: Option[UUID] = None
+  milestone: Option[UUID] = None,
+  taskLabels: Seq[FindTaskLabelResp] = Seq.empty
 )
 
 case class TaskVersionDto(
@@ -127,3 +131,8 @@ case class CreateTaskStatusReq(projectId: UUID, name: String, description: Strin
 case class CreateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
 case class FindTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
 case class UpdateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
+
+case class CreateTaskLabelReq(projectId: UUID, name: String, description: String)
+case class CreateTaskLabelResp(id: UUID, projectId: UUID, name: String, description: String)
+case class FindTaskLabelResp(id: UUID, projectId: UUID, name: String, description: String)
+case class UpdateTaskLabelResp(id: UUID, projectId: UUID, name: String, description: String)
