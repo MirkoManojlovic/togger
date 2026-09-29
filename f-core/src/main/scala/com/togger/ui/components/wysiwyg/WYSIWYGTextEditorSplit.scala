@@ -35,6 +35,8 @@ object SplitPane {
   *
   * @param minHeightRem
   *   the panes' resting height; they grow together with the content
+  * @param minWidthRem
+  *   the editor's resting width; the enclosing card (sized `fit-content` in the task forms) grows to match
   * @param debounceTimeMillis
   *   how long typing settles before the value is reported to `inputStateUpdater`
   * @param previewDebounceMillis
@@ -45,7 +47,8 @@ case class WYSIWYGTextEditorSplit(
   inputStateUpdater: Observer[String],
   labelValue: String,
   placeholderValue: String = "",
-  minHeightRem: Int = 12,
+  minHeightRem: Int = 20,
+  minWidthRem: Int = 40,
   showToolbar: Boolean = true,
   config: MarkdownConfig = TgMarkdown.defaultConfig,
   styles: TgMarkdownStyles = TgMarkdownStyles.default,
@@ -79,6 +82,7 @@ case class WYSIWYGTextEditorSplit(
       label(cls(WYSIWYGTextEditorStyles.label), labelValue),
       div(
         cls(WYSIWYGTextEditorStyles.wrapper),
+        minWidth.rem(minWidthRem),
         if (showToolbar) toolbarElement else emptyNode,
         tabBarElement,
         div(
@@ -307,7 +311,8 @@ object WYSIWYGTextEditorSplit {
       inputAndUpdater: SelectAndUpdate[A, String],
       labelValue: String,
       placeholderValue: String = "",
-      minHeightRem: Int = 12,
+      minHeightRem: Int = 30,
+      minWidthRem: Int = 60,
       showToolbar: Boolean = true
     ): WYSIWYGTextEditorSplit =
       WYSIWYGTextEditorSplit(
@@ -316,6 +321,7 @@ object WYSIWYGTextEditorSplit {
         labelValue = labelValue,
         placeholderValue = placeholderValue,
         minHeightRem = minHeightRem,
+        minWidthRem = minWidthRem,
         showToolbar = showToolbar
       )
   }
