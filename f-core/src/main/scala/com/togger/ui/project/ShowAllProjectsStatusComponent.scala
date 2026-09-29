@@ -7,14 +7,15 @@ import com.raquo.laminar.api.L._
 import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components._
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -40,6 +41,7 @@ class ShowAllProjectsStatusComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   organizationId: UUID
 )(implicit
   ioRuntime: IORuntime
@@ -229,7 +231,11 @@ class ShowAllProjectsStatusComponent(
                     .html(
                       div(
                         cls("flex", "items-center"),
-                        TgBadge(text = task.taskStatus.name, color = task.taskStatus.badgeColor, bordered = true).element,
+                        TgBadge(
+                          text = task.taskStatus.name,
+                          color = task.taskStatus.badgeColor,
+                          bordered = true
+                        ).element,
                         a(
                           cls("font-medium text-fg-brand hover:underline"),
                           cls("ml-2"),
@@ -246,8 +252,7 @@ class ShowAllProjectsStatusComponent(
                       cls("flex flex-col md:flex-row gap-4 items-start"),
                       div(
                         cls("flex-1 min-w-0"),
-                        b("Description: "),
-                        task.description
+                        tgMarkdown.toLaminarDiv(task.description)
                       ),
                       div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
                       div(cls("w-fit"), logEntryCalendar(task.logEntries, selectedDayVar))
@@ -340,7 +345,11 @@ class ShowAllProjectsStatusComponent(
             .sortBy(_.createdAt)
 
           def dateBadge() =
-            TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element
+            TgBadge(
+              text = tgDateFormater.asAmericanDateWithDayAbrv(day),
+              bordered = true,
+              color = TgBadgeColor.Gray
+            ).element
 
           div(
             cls("mb-4"),
@@ -387,7 +396,11 @@ class ShowAllProjectsStatusComponent(
                   cls("mb-2"),
                   div(
                     cls("flex items-center gap-2 mb-2"),
-                    TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element,
+                    TgBadge(
+                      text = tgDateFormater.asAmericanDateWithDayAbrv(day),
+                      bordered = true,
+                      color = TgBadgeColor.Gray
+                    ).element,
                     TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
                   ),
                   new TextToHtmlRender().textToHtmlList(entry.textExternal)
