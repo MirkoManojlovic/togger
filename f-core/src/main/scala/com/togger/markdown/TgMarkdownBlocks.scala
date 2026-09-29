@@ -119,8 +119,9 @@ case class TgMarkdownTaskListItem(
 
 object TgMarkdownTaskListItem {
 
-  /** The content attribute, not Laminar's `checked` *prop*. A prop assigns `element.checked`, which leaves no
-    * trace in the markup — and the markup is what `MarkdownDomSerializer` reads to put `- [x] ` back.
+  /** The content attribute, not Laminar's `checked` *prop*. A prop assigns `element.checked` and leaves nothing in
+    * the markup, so the rendered document would not say which boxes are ticked — the state would exist only as
+    * live DOM, invisible to anything reading the HTML back.
     */
   val checkedAttr: HtmlAttr[Boolean] = htmlAttr("checked", BooleanAsAttrPresenceCodec)
 }

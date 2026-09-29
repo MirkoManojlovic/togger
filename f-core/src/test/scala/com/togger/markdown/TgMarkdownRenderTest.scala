@@ -197,8 +197,8 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       taskStructure("- [X] upper") should include("checked=\"\"")
     }
 
-    /** The attribute, not the property: the property leaves no trace in the markup, and the markup is what
-      * `MarkdownDomSerializer` reads to put the marker back.
+    /** The attribute, not the property: a property assignment leaves no trace in the markup, so the rendered
+      * document would not say which boxes are ticked.
       */
     "leave no checked attribute on an unchecked box" in { _ =>
       taskStructure("- [ ] open") should not include "checked="
