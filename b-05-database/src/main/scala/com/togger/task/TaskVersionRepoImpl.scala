@@ -8,7 +8,7 @@ import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.ConnectionIO
+import doobie.{ConnectionIO, Meta}
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
@@ -16,6 +16,7 @@ import doobie.util.fragment.Fragment
 import java.util.UUID
 
 class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
+  import TaskVersionRepoImpl.taskPriorityCodec
 
   private lazy val returnFields = List(
     "version",
@@ -25,6 +26,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     "assigned_to",
     "closed_by",
     "task_status_id",
+    "priority",
     "milestone_id",
     "created_at",
     "updated_at"
@@ -48,6 +50,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       createdBy = createdBy,
       closedBy = closedByOpt,
       taskStatus = status,
+      priority = version.priority,
       milestone = version.milestone,
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
@@ -59,8 +62,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (task_id, name, description, assigned_to, closed_by, task_status_id, milestone_id, created_at, updated_at)
-        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $milestone, $createdAt, $updatedAt)
+        (task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, created_at, updated_at)
+        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(s"Inserting ${sp(taskVersion)}", taskVersion => s"Task version inserted ${sp(taskVersion)}")
@@ -70,8 +73,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (version, task_id, name, description, assigned_to, closed_by, task_status_id, milestone_id, created_at, updated_at)
-        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $milestone, $createdAt, $updatedAt)
+        (version, task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, created_at, updated_at)
+        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(
@@ -114,6 +117,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
             assigned_to = ${taskVersion.assignedTo},
             closed_by = ${taskVersion.closedBy},
             task_status_id = ${taskVersion.taskStatusId},
+            priority = ${taskVersion.priority},
             milestone_id = ${taskVersion.milestone},
             updated_at = ${taskVersion.updatedAt}
           where version = ${taskVersion.version}""").update
@@ -185,4 +189,6 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
 object TaskVersionRepoImpl {
   val TASK_VERSION_TABLE: String = "task_version"
   val TASK_VERSION_TABLE_FRAG: Fragment = Fragment.const(TASK_VERSION_TABLE)
+
+  implicit val taskPriorityCodec: Meta[TaskPriority] = Meta[Int].imap(TaskPriority.withValue)(_.value)
 }

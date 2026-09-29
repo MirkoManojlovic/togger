@@ -57,6 +57,7 @@ class TaskController(
                     name = taskFull.taskStatus.name,
                     description = taskFull.taskStatus.description
                   ),
+                  priority = taskFull.priority,
                   createdAt = taskFull.createdAt,
                   updatedAt = taskFull.updatedAt,
                   latestVersion = taskFull.latestVersion,
@@ -100,6 +101,7 @@ class TaskController(
       assignedTo = taskDto.assignedTo,
       closedBy = None,
       taskStatusId = taskDto.taskStatusId,
+      priority = taskDto.priority,
       milestone = taskDto.milestone,
       createdAt = taskDto.createdAt,
       updatedAt = taskDto.createdAt
@@ -147,6 +149,7 @@ class TaskController(
       assignedTo = taskDto.assignedTo,
       closedBy = None,
       taskStatusId = taskDto.taskStatusId,
+      priority = taskDto.priority,
       milestone = taskDto.milestone,
       createdAt = newUpdatedAt,
       updatedAt = newUpdatedAt
@@ -206,6 +209,7 @@ class TaskController(
         dto.assignedTo,
         dto.closedBy,
         dto.taskStatusId,
+        dto.priority,
         dto.milestone
       )
       .map {

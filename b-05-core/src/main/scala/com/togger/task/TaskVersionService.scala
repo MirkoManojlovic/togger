@@ -25,6 +25,7 @@ class TaskVersionService(
     assignedTo: Option[UUID],
     closedBy: Option[UUID],
     taskStatusId: UUID,
+    priority: TaskPriority,
     milestone: Option[UUID] = None
   ): IO[Either[TaskError, TaskVersion]] =
     (for {
@@ -36,7 +37,8 @@ class TaskVersionService(
         else
           taskVersionRepo
             .updateContent(
-              existingVersion.withNewContent(name, description, assignedTo, closedBy, taskStatusId, milestone)
+              existingVersion
+                .withNewContent(name, description, assignedTo, closedBy, taskStatusId, priority, milestone)
             )
             .map(_.asRight[TaskError])
     } yield result)

@@ -15,6 +15,7 @@ case class TaskVersion(
   assignedTo: Option[UUID],
   closedBy: Option[UUID] = None,
   taskStatusId: UUID,
+  priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   createdAt: Instant,
   updatedAt: Instant
@@ -26,6 +27,7 @@ case class TaskVersion(
     assignedTo: Option[UUID],
     closedBy: Option[UUID],
     taskStatusId: UUID,
+    priority: TaskPriority,
     milestone: Option[UUID] = None
   ): TaskVersion =
     this.copy(
@@ -34,6 +36,7 @@ case class TaskVersion(
       assignedTo = assignedTo,
       closedBy = closedBy,
       taskStatusId = taskStatusId,
+      priority = priority,
       milestone = milestone
     )
 
@@ -43,6 +46,7 @@ case class TaskVersion(
       assignedTo == other.assignedTo &&
       closedBy == other.closedBy &&
       taskStatusId == other.taskStatusId &&
+      priority == other.priority &&
       milestone == other.milestone
 
 }
@@ -61,6 +65,7 @@ case class TaskFull(
   createdBy: Account,
   closedBy: Option[Account] = None,
   taskStatus: TaskStatus,
+  priority: TaskPriority,
   taskLabels: Seq[TaskLabel] = Seq.empty,
   milestone: Option[UUID] = None,
   createdAt: Instant,

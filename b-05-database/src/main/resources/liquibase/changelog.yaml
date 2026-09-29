@@ -518,6 +518,13 @@ databaseChangeLog:
                     foreignKeyName: fk_task_version_task_status
                     references: task_status(id)
               - column:
+                  name: priority
+                  type: int
+                  defaultValueNumeric: 3
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
                   name: milestone_id
                   type: uuid
                   constraints:

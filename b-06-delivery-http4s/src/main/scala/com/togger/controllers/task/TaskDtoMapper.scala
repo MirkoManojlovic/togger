@@ -19,6 +19,7 @@ object TaskDtoMapper {
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
       latestVersion = version.version,
+      priority = version.priority,
       milestone = version.milestone,
       taskLabelIds = taskLabelIds
     )
@@ -34,6 +35,7 @@ object TaskDtoMapper {
       taskStatusId = version.taskStatusId,
       createdAt = version.createdAt,
       updatedAt = version.updatedAt,
+      priority = version.priority,
       milestone = version.milestone
     )
 
