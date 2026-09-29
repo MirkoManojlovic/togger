@@ -12,7 +12,16 @@ import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadge, TgHtmlTable}
+import com.togger.ui.components.{
+  MultiSelectItem,
+  TableFilterComponent,
+  TableSearchComponent,
+  TgBadge,
+  TgBadgeSize,
+  TgBadgeStyles,
+  TgHtmlTable,
+  TgTooltip
+}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -293,10 +302,15 @@ class ShowAllTasksComponent(
                                   ).element
                                 ),
                                 createTd(
-                                  TgBadge(
-                                    text = dto.priority.priorityName,
-                                    color = dto.priority.badgeColor,
-                                    bordered = true
+                                  TgTooltip(
+                                    trigger = span(
+                                      cls(
+                                        TgBadgeStyles
+                                          .square(dto.priority.badgeColor, TgBadgeSize.Default, bordered = true, extraCls = "")
+                                      ),
+                                      dto.priority.shortCode
+                                    ),
+                                    text = dto.priority.priorityName
                                   ).element
                                 ),
                                 createTd(
