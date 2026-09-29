@@ -10,13 +10,20 @@ import org.scalajs.dom.HTMLButtonElement
 
 case class MultiSelectItem(id: String, name: String, isSelected: Boolean)
 
-class TableFilterComponent(itemsSignal: Signal[Seq[MultiSelectItem]], label: String) {
+/** @param selectedIdsVar
+  *   defaults to a fresh, private `Var` (one filter, one selection). Callers that render several instances of the
+  *   same logical filter (e.g. one per table section) pass in a shared `Var` so all instances stay in sync.
+  */
+class TableFilterComponent(
+  itemsSignal: Signal[Seq[MultiSelectItem]],
+  label: String,
+  selectedIdsVar: Var[Set[String]] = Var(Set.empty)
+) {
 
   private val filterButtonCls =
     "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
 
   private val isOpenVar = Var(false)
-  private val selectedIdsVar = Var(Set.empty[String])
   private val seededIdsVar = Var(Set.empty[String])
 
   val selectedIds: Signal[Set[String]] = selectedIdsVar.signal

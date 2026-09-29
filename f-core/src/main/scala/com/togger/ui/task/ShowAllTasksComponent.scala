@@ -15,11 +15,13 @@ import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.toast.Toast
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom
+import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
-import scala.scalajs.js.Thenable.Implicits._
 
 class ShowAllTasksComponent(
   taskService: TaskFeService,
@@ -44,7 +46,7 @@ class ShowAllTasksComponent(
           MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
         }
     )
-  private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
+  private val statusFilterSelectedIdsVar = Var(Set.empty[String])
 
   val searchTermVar = Var("")
   private val searchBox =TableSearchComponent(
@@ -54,16 +56,6 @@ class ShowAllTasksComponent(
     debounceMs = 0
   )
 
-  private val filteredTasksSignal: Signal[Seq[FindTaskRespFull]] =
-    stateFormVar.signal.combineWith(statusFilter.selectedIds, searchBox.inputSignal).map {
-      case (tasks, selectedIds, term) =>
-        val byStatus =
-          if (selectedIds.isEmpty) tasks else tasks.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
-        val needle = term.trim.toLowerCase
-        if (needle.isEmpty) byStatus
-        else
-          byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
-    }
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
     firstName = "Not",
@@ -71,12 +63,27 @@ class ShowAllTasksComponent(
     email = "notassigned@email.com",
     accountTypeId = TgIds.UNASSIGNED_UUID
   )
-  private val tasksByAccountSignal: Signal[Seq[(SearchAccountDto, Seq[FindTaskRespFull])]] =
-    filteredTasksSignal.map(
+
+  /** Grouped from the raw fetched tasks only, unaffected by search/status filtering, so this signal - and the table
+    * header (with its embedded status filter) built from it - stays mounted while the user searches or toggles the
+    * status filter; only [[visibleRowsSignal]] reacts to those.
+    */
+  private val accountGroupsSignal: Signal[Seq[(SearchAccountDto, Seq[FindTaskRespFull])]] =
+    stateFormVar.signal.map(
       _.groupBy(_.assignedTo.getOrElse(unassignedDto)).toSeq.sortBy { case (accountDto, _) =>
         accountDto.fullName.toLowerCase
       }
     )
+
+  private def visibleRowsSignal(dtos: Seq[FindTaskRespFull]): Signal[Seq[FindTaskRespFull]] =
+    statusFilterSelectedIdsVar.signal.combineWith(searchBox.inputSignal).map { case (selectedIds, term) =>
+      val byStatus =
+        if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
+      val needle = term.trim.toLowerCase
+      if (needle.isEmpty) byStatus
+      else
+        byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
+    }
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = UUID.randomUUID(),
@@ -183,56 +190,70 @@ class ShowAllTasksComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
-                div(children <-- tasksByAccountSignal.map { groups =>
+                div(cls("mb-4"), searchBox.element),
+                div(children <-- accountGroupsSignal.map { groups =>
                   groups.map { case (accountDto, dtos) =>
                     div(
                       cls("mb-4"),
                       h5(cls("text-xl font-bold text-heading mb-2"), accountDto.fullName),
                       TgHtmlTable.tableElement(
-                        Seq("Name", "Description", "Status", "Action")
+                        Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                          "Name",
+                          "Description",
+                          new TableFilterComponent(
+                            statusFilterItemsSignal,
+                            label = "Status",
+                            statusFilterSelectedIdsVar
+                          ).element,
+                          "Action"
+                        )
                       )(
-                        dtos
-                          .sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
-                          .map { dto =>
-                            Seq(
-                              createTd(
-                                div(
-                                  cls("flex items-center gap-1"),
-                                  button(
-                                    `type`("button"),
-                                    title("Copy task ID"),
-                                    cls(
-                                      "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
+                        visibleRowsSignal(dtos).map(
+                          _.sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
+                            .map { dto =>
+                              Seq(
+                                createTd(
+                                  div(
+                                    cls("flex items-center gap-1"),
+                                    button(
+                                      `type`("button"),
+                                      title("Copy task ID"),
+                                      cls(
+                                        "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
+                                      ),
+                                      TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
+                                      onClick.mapToUnit --> (_ =>
+                                        dom.window.navigator.clipboard
+                                          .writeText(dto.id.toString)
+                                          .toFuture
+                                          .foreach(_ => toast.success("Task ID copied"))
+                                      )
                                     ),
-                                    TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
-                                    onClick.mapToUnit --> (_ =>
-                                      dom.window.navigator.clipboard
-                                        .writeText(dto.id.toString)
-                                        .toFuture
-                                        .foreach(_ => toast.success("Task ID copied"))
+                                    span(dto.name)
+                                  )
+                                ),
+                                createTdOverflow(dto.description),
+                                createTd(
+                                  TgBadge(
+                                    text = dto.taskStatus.name,
+                                    color = dto.taskStatus.badgeColor,
+                                    bordered = true
+                                  ).element
+                                ),
+                                createTd(
+                                  div(
+                                    iconButton(
+                                      "Edit",
+                                      TgIcons.editIcon(className = "w-4 h-4"),
+                                      rowIconButtonCls,
+                                      rowButtonMarginCls,
+                                      onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
                                     )
-                                  ),
-                                  span(dto.name)
-                                )
-                              ),
-                              createTdOverflow(dto.description),
-                              createTd(
-                                TgBadge(text = dto.taskStatus.name, color = dto.taskStatus.badgeColor, bordered = true).element
-                              ),
-                              createTd(
-                                div(
-                                  iconButton(
-                                    "Edit",
-                                    TgIcons.editIcon(className = "w-4 h-4"),
-                                    rowIconButtonCls,
-                                    rowButtonMarginCls,
-                                    onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
                                   )
                                 )
                               )
-                            )
-                          }
+                            }
+                        )
                       )
                     )
                   }
