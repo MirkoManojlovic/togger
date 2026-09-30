@@ -5,6 +5,7 @@ import com.togger.common.TgIds
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.toast.ToastMessages
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
 import com.togger.ui.auth.TgCard
@@ -27,10 +28,17 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.{
+  headerIconButtonCls,
+  iconButton,
+  rowButtonMarginCls,
+  rowIconButtonCls,
+  rowIconButtonDangerCls
+}
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -45,10 +53,10 @@ class ShowAllTasksComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   projectId: UUID,
-  toast: Toast
+  val toast: Toast
 )(implicit
   ioRuntime: IORuntime
-) {
+) extends ToastMessages {
 
   val stateFormVar = Var(Seq.empty[FindTaskRespFull])
   val statusesVar = Var(TaskStatusesState())
@@ -199,6 +207,15 @@ class ShowAllTasksComponent(
         .flatMap(_ => taskCall)
     }
     .unsafeRunAndForget()
+
+  private def deleteTask(dto: FindTaskRespFull): Unit =
+    if (dom.window.confirm(s"Delete task '${dto.name}' and all its log entries and links?"))
+      spinnerService
+        .runWithSpinner(taskService.deleteTask(dto.id))
+        .toastBackendMessageCodeBlock {
+          stateFormVar.update(_.filterNot(_.id == dto.id))
+        }
+        .unsafeRunAndForget()
 
   val element = {
     div(
@@ -389,6 +406,13 @@ class ShowAllTasksComponent(
                                 rowIconButtonCls,
                                 rowButtonMarginCls,
                                 onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                              ),
+                              iconButton(
+                                "Delete",
+                                TgIcons.trashIcon(className = "w-4 h-4"),
+                                rowIconButtonDangerCls,
+                                rowButtonMarginCls,
+                                onClick.mapToUnit --> (_ => deleteTask(dto))
                               )
                             )
                           )

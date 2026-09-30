@@ -7,6 +7,7 @@ import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -231,6 +232,9 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
 
   def updateTask(dto: UpdateTaskReq): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.updateEndpoint)(dto)
+
+  def deleteTask(id: UUID): TgRespIO[TgEmptyBody] =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.deleteEndpoint)(id)
 
   def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)(projectId)
