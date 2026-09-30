@@ -302,7 +302,7 @@ class CreateTaskQuick(
     input(
       `type`("text"),
       cls(tgInputStyle),
-      placeholder("New task  ~project  #label  !priority  +status"),
+      placeholder("Task name"),
       autoFocus(true),
       controlled(
         value <-- state.signal.map(_.rawInput),
@@ -356,7 +356,8 @@ class CreateTaskQuick(
         div(
           cls("relative mb-3"),
           nameInput,
-          child.maybe <-- state.signal.map(popupFor).map(_.map(popupElement))
+          child.maybe <-- state.signal.map(popupFor).map(_.map(popupElement)),
+          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  +status")
         ),
         div(cls("flex flex-wrap gap-1.5 mb-4"), children <-- badges),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
