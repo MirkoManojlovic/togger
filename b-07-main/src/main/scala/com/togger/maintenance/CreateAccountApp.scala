@@ -327,7 +327,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       betaTaskStatuses <- taskStatusRepo.findByProjectId(savedBeta.id).transact(xa)
       betaInProgressStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
       betaDoneStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
-      betaWaitingStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InReviewWaiting.statusName).get
+      betaWaitingStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Waiting.statusName).get
 
       betaTaskLabels <- taskLabelRepo.findByProjectId(savedBeta.id).transact(xa)
       betaFeatureLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Feature.labelName).get
