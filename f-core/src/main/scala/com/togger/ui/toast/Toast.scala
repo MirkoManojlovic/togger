@@ -42,7 +42,7 @@ class Toast(
           idAttr("toast"),
           position.fixed,
           cls(
-            "flex items-center w-full max-w-sm p-4 text-body bg-neutral-primary-soft rounded-base shadow-xs border border-default top-14 right-4 z-50"
+            "flex items-center w-full max-w-sm p-4 text-body bg-neutral-primary-soft rounded-base shadow-xs border border-default top-14 right-4 z-[300]"
           ),
           toastIcons(toastMessage.toastType),
           div(
