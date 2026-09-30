@@ -12,7 +12,7 @@ object TaskStatusBadgeColor {
   private val colorByStatus: Map[DefaultTaskStatus, TgBadgeColor] = Map(
     DefaultTaskStatus.InProgress -> TgBadgeColor.Blue,
     DefaultTaskStatus.Testing -> TgBadgeColor.Blue,
-    DefaultTaskStatus.InReviewWaiting -> TgBadgeColor.Yellow,
+    DefaultTaskStatus.Waiting -> TgBadgeColor.Yellow,
     DefaultTaskStatus.Blocked -> TgBadgeColor.Red,
     DefaultTaskStatus.Todo -> TgBadgeColor.Gray,
     DefaultTaskStatus.Backlog -> TgBadgeColor.Gray,

@@ -500,7 +500,7 @@ class MilestoneHistoryComponent(
   private val taskStatusAbbreviation: Map[DefaultTaskStatus, String] = Map(
     DefaultTaskStatus.InProgress -> "progress",
     DefaultTaskStatus.Testing -> "test",
-    DefaultTaskStatus.InReviewWaiting -> "wait",
+    DefaultTaskStatus.Waiting -> "wait",
     DefaultTaskStatus.Blocked -> "block",
     DefaultTaskStatus.Todo -> "todo",
     DefaultTaskStatus.Backlog -> "blog",
