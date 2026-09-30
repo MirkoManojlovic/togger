@@ -1,6 +1,7 @@
 package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
@@ -33,7 +34,63 @@ case class TgSelectDropdown(
       case None         => span(cls("text-body"), placeholder)
     }
 
-  private def optionRow(option: TgSelectDropdownOption, currentValue: String) =
+  private def panel: HtmlElement =
+    div(
+      cls(TgSelectDropdown.panelCls),
+      TgSelectDropdown.closeOnOutsideClickOrEscape(close),
+      ul(
+        cls("p-2 text-sm text-body font-medium max-h-96 overflow-y-auto"),
+        options.map(option =>
+          TgSelectDropdown.optionRow(option, inputSignal.map(_ == option.value), () => select(option.value))
+        )
+      )
+    )
+
+  val htmlElement: HtmlDiv =
+    div(
+      label(labelValue, cls(TgSelectDropdown.labelCls)),
+      div(
+        cls("relative"),
+        button(
+          `type`("button"),
+          cls(TgSelectDropdown.triggerButtonCls),
+          onClick.stopPropagation.mapToUnit --> (_ => isOpenVar.update(isOpened => !isOpened)),
+          child <-- inputSignal.map(triggerContent),
+          TgIcons.chevronDownIcon("w-4 h-4 ms-1.5")
+        ),
+        child <-- isOpenVar.signal.map {
+          case true  => panel
+          case false => emptyNode
+        }
+      )
+    )
+}
+
+object TgSelectDropdown {
+
+  private[components] val triggerButtonCls =
+    "inline-flex items-center justify-between w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs cursor-pointer"
+  private[components] val panelCls =
+    "absolute z-10 mt-1 w-full bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"
+  private[components] val labelCls = "block mb-2.5 text-sm font-medium text-heading"
+
+  private[components] def closeOnOutsideClickOrEscape(close: Observer[Unit]): Seq[Modifier[HtmlElement]] = Seq(
+    onMountBind { ctx =>
+      val rootNode = ctx.thisNode.ref
+      documentEvents(_.onClick)
+        .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
+        .mapToUnit --> close
+    },
+    onMountBind { _ =>
+      documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> close
+    }
+  )
+
+  private[components] def optionRow(
+    option: TgSelectDropdownOption,
+    isSelected: Signal[Boolean],
+    onSelect: () => Unit
+  ): HtmlElement =
     li(
       button(
         `type`("button"),
@@ -41,12 +98,12 @@ case class TgSelectDropdown(
           "flex flex-col items-start w-full p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium hover:text-heading rounded-md cursor-pointer"
         ),
         aria.label(option.meta.label),
-        onClick.mapToUnit --> (_ => select(option.value)),
+        onClick.mapToUnit --> (_ => onSelect()),
         div(
           cls("inline-flex items-center w-full gap-1.5"),
           div(
             cls("w-4 h-4 shrink-0"),
-            Option.when(option.value == currentValue)(TgIcons.checkIcon("w-4 h-4"))
+            child.maybe <-- isSelected.map(selected => Option.when(selected)(TgIcons.checkIcon("w-4 h-4")))
           ),
           span(option.render())
         ),
@@ -56,49 +113,6 @@ case class TgSelectDropdown(
       )
     )
 
-  private def panel(currentValue: String) =
-    div(
-      cls(
-        "absolute z-10 mt-1 w-full bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"
-      ),
-      onMountBind { ctx =>
-        val rootNode = ctx.thisNode.ref
-        documentEvents(_.onClick)
-          .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
-          .mapToUnit --> close
-      },
-      onMountBind { _ =>
-        documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> close
-      },
-      ul(
-        cls("p-2 text-sm text-body font-medium max-h-64 overflow-y-auto"),
-        children <-- inputSignal.map(currentValue => options.map(optionRow(_, currentValue)))
-      )
-    )
-
-  val htmlElement: HtmlDiv =
-    div(
-      label(labelValue, cls("block mb-2.5 text-sm font-medium text-heading")),
-      div(
-        cls("relative"),
-        button(
-          `type`("button"),
-          cls(
-            "inline-flex items-center justify-between w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs cursor-pointer"
-          ),
-          onClick.stopPropagation.mapToUnit --> (_ => isOpenVar.update(isOpened => !isOpened)),
-          child <-- inputSignal.map(triggerContent),
-          TgIcons.chevronDownIcon("w-4 h-4 ms-1.5")
-        ),
-        child <-- isOpenVar.signal.combineWith(inputSignal).map {
-          case (true, currentValue) => panel(currentValue)
-          case (false, _)           => emptyNode
-        }
-      )
-    )
-}
-
-object TgSelectDropdown {
   implicit class TgSelectDropdownSyntax[A](formState: Var[A]) {
     def tgSelectDropdownManualError(
       inputAndUpdater: SelectAndUpdate[A, String],

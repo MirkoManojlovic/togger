@@ -21,9 +21,8 @@ import com.togger.ui.components.TgSelectDropdown.TgSelectDropdownSyntax
 import com.togger.ui.components.{
   DropdownMeta,
   LogEntryCalendarComponent,
-  MultiSelectItem,
-  TableFilterComponent,
   TgBadge,
+  TgSelectDropdownMultSelect,
   TgSelectDropdownOption
 }
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
@@ -77,13 +76,6 @@ class EditTaskComponent(
   val currentLabelIdsVar = Var(Set.empty[String])
   val membersVar = Var(Seq.empty[SearchAccountDto])
 
-  private val labelItemsSignal: Signal[Seq[MultiSelectItem]] =
-    labelsVar.signal.combineWith(currentLabelIdsVar.signal).map { case (state, currentIds) =>
-      state.taskLabels.sortBy(_.name).map(dto =>
-        MultiSelectItem(id = dto.id.toString, name = dto.name, isSelected = currentIds.contains(dto.id.toString))
-      )
-    }
-  private val labelPicker = new TableFilterComponent(labelItemsSignal, label = "Select labels")
   private val tgDateFormater = new TgDateFormater
 
   spinnerService
@@ -249,7 +241,11 @@ class EditTaskComponent(
       )
     }
 
-  def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
+  def renderElement(
+    selectValues: Seq[TaskStatusSelect],
+    members: Seq[SearchAccountDto],
+    labels: Seq[FindTaskLabelResp]
+  ) = {
     val statusInputSelect = formState.tgSelectManualError(
       inputAndUpdater = selectorAndUpdaterMacro(_.taskStatusSelected),
       labelValue = "Status",
@@ -269,6 +265,21 @@ class EditTaskComponent(
       valuesAndDisplays = ListMap.from(members.map(member => member.id.toString -> member.fullName))
     )
 
+    val labelOptions: Seq[TgSelectDropdownOption] = labels.sortBy(_.name).map { dto =>
+      TgSelectDropdownOption(
+        value = dto.id.toString,
+        meta = DropdownMeta(label = dto.name, description = dto.description),
+        render = () => span(dto.name)
+      )
+    }
+
+    val labelPicker = TgSelectDropdownMultSelect(
+      inputSignal = currentLabelIdsVar.signal,
+      inputStateUpdater = currentLabelIdsVar.writer,
+      labelValue = "Labels",
+      options = labelOptions
+    )
+
     div(
       display.flex,
       flexDirection.column,
@@ -281,7 +292,7 @@ class EditTaskComponent(
               form(
                 onSubmit.preventDefault
                   .mapTo(formState.now() -> linksVar.now())
-                  .compose(_.withCurrentValueOf(labelPicker.selectedIds)) --> submitter,
+                  .compose(_.withCurrentValueOf(currentLabelIdsVar.signal)) --> submitter,
                 div(
                   display.flex,
                   columnGap("2rem"),
@@ -297,7 +308,7 @@ class EditTaskComponent(
                     statusInputSelect.htmlElement.amend(cls("mb-4")),
                     priorityInputSelect.htmlElement.amend(cls("mb-4")),
                     assignedToSelect.htmlElement.amend(cls("mb-4")),
-                    labelPicker.element
+                    labelPicker.htmlElement
                   )
                 ),
                 child <-- linksVar.signal.map(taskLinkComponent =>
@@ -340,8 +351,9 @@ class EditTaskComponent(
   }
 
   val element = div(
-    child <-- statusesVar.signal.combineWith(membersVar.signal).map { case (state, members) =>
-      renderElement(state.asTaskStatusSelect, members)
+    child <-- statusesVar.signal.combineWith(membersVar.signal, labelsVar.signal).map {
+      case (state, members, labelsState) =>
+        renderElement(state.asTaskStatusSelect, members, labelsState.taskLabels)
     }
   )
 
