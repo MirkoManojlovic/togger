@@ -1,13 +1,15 @@
 package com.togger.ui.modal
 
 import com.raquo.laminar.api.L._
-import com.togger.components.button.TgHtmlButton
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.components.button.TgHtmlButton
+import com.togger.ui.organization.TgIcons
 import org.scalajs.dom.MouseEvent
 
 case class FormForModal(element: HtmlDiv, hasErrorsEvents: EventStream[Boolean])
 
-case class ModalForForm(title: String = "Attention", message: FormForModal, onClose: (() => Unit) => Unit) {
+case class ModalForForm(title: String = "Attention", message: FormForModal, onClose: (() => Unit) => Unit)
+    extends TgModal {
 
   private val confirmButton: String = "Confirm"
   private val cancelButton: String = "Cancel"
@@ -16,43 +18,53 @@ case class ModalForForm(title: String = "Attention", message: FormForModal, onCl
   private val modalClickedWriter = modalClickedBus.writer
   val isClicked: Signal[Option[ModalResult]] = modalClickedBus.events.toWeakSignal
 
+  private val cancelWriterObserver: Observer[Unit] = modalClickedWriter.contramap(_ => Cancel)
+
   private val cancelObserver = (_: MouseEvent) => {
     modalClickedWriter.onNext(Cancel)
   }
 
   val element: HtmlDiv =
     div(
-      cls("modal active"),
-      a(cls("modal-overlay")),
+      cls(ModalStyles.wrapperCls),
+      tabIndex(-1),
+      ModalStyles.closeOnBackdropOrEscape(cancelWriterObserver),
       div(
-        cls("modal-container"),
+        cls("relative w-full max-w-md max-h-full"),
         div(
-          cls("modal-header"),
-          //          a(cls("btn btn-clear float-right"), href := "#"),
-          div(cls("modal-title h5"), title)
-        ),
-        div(
-          cls("modal-body"),
-          div(cls("content"), message.element)
-        ),
-        div(
-          cls("modal-footer"),
-          TgHtmlButton
-            .withError(
-              disabledEvents = message.hasErrorsEvents,
-              debounceTimeInMillis = 0
+          cls(ModalStyles.contentBoxCls),
+          div(
+            cls(ModalStyles.headerCls),
+            h3(cls(ModalStyles.titleCls), title),
+            button(
+              `type`("button"),
+              cls(ModalStyles.closeButtonCls),
+              TgIcons.closeIcon("w-3 h-3"),
+              span(cls("sr-only"), "Close"),
+              onClick --> cancelObserver
             )
-            .amend(
-              cls("btn btn-primary"),
-              confirmButton,
-              onClick --> { _ =>
-                onClose(() => modalClickedWriter.onNext(Confirm))
-              }
-            ),
-          a(
-            cls("btn btn-link"),
-            cancelButton,
-            onClick --> cancelObserver
+          ),
+          message.element,
+          div(
+            cls(ModalStyles.footerCls),
+            TgHtmlButton
+              .withError(
+                disabledEvents = message.hasErrorsEvents,
+                debounceTimeInMillis = 0
+              )
+              .amend(
+                cls(ModalStyles.primaryButtonCls),
+                confirmButton,
+                onClick --> { _ =>
+                  onClose(() => modalClickedWriter.onNext(Confirm))
+                }
+              ),
+            button(
+              `type`("button"),
+              cls(ModalStyles.secondaryButtonCls),
+              cancelButton,
+              onClick --> cancelObserver
+            )
           )
         )
       )

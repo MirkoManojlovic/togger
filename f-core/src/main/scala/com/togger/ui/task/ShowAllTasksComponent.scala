@@ -25,6 +25,7 @@ import com.togger.ui.components.{
   TgTooltip
 }
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -38,7 +39,6 @@ import com.togger.ui.task.TaskConfigTableSupport.{
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -53,7 +53,8 @@ class ShowAllTasksComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   projectId: UUID,
-  val toast: Toast
+  val toast: Toast,
+  modalFactory: ModalFactory
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -209,13 +210,21 @@ class ShowAllTasksComponent(
     .unsafeRunAndForget()
 
   private def deleteTask(dto: FindTaskRespFull): Unit =
-    if (dom.window.confirm(s"Delete task '${dto.name}' and all its log entries and links?"))
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete task '${dto.name}' and all its log entries and links?"),
+      title = "Delete task",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
       spinnerService
         .runWithSpinner(taskService.deleteTask(dto.id))
         .toastBackendMessageCodeBlock {
           stateFormVar.update(_.filterNot(_.id == dto.id))
         }
         .unsafeRunAndForget()
+      close()
+    }
 
   val element = {
     div(

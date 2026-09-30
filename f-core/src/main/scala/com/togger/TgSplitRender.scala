@@ -114,6 +114,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         child <-- navigationSelection.navigationSignal,
         elementForSpinner,
         toastHolder,
+        elementForModal,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -252,7 +253,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   projectId,
-                  toast
+                  toast,
+                  modalFactory
                 ).element
               case EditTaskPage(projectId, taskId) =>
                 new EditTaskComponent(
