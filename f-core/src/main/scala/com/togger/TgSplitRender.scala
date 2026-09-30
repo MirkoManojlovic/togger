@@ -16,6 +16,7 @@ import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
+import com.togger.ui.modal.ModalFactory
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore}
 import com.togger.ui.organization._
 import com.togger.ui.project._
@@ -39,6 +40,9 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val elementForSpinner = div()
   lazy val spinnerService = SpinnerService.globalSpinner(elementForSpinner)
+
+  val elementForModal = div()
+  lazy val modalFactory = new ModalFactory(elementForModal)
 
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
   lazy val baseEndpoint = BaseEndpoint.baseEndpoint
