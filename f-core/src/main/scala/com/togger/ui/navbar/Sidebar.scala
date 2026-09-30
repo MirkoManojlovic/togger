@@ -146,6 +146,7 @@ class Sidebar(
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
+  onQuickCreate: () => Unit,
   val toast: Toast
 )(implicit IORuntime: IORuntime)
     extends ToastMessages {
@@ -184,25 +185,6 @@ class Sidebar(
     spinnerService.runWithSpinner(program).unsafeRunAndForget()
   }
 
-  private def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
-    case CreateTaskPage(projectId)           => Some(projectId)
-    case CreateTaskStatusPage(projectId)     => Some(projectId)
-    case EditTaskStatusPage(projectId, _)    => Some(projectId)
-    case ShowAllTasksPage(projectId)         => Some(projectId)
-    case ShowAllTaskStatusesPage(projectId)  => Some(projectId)
-    case EditTaskPage(projectId, _)          => Some(projectId)
-    case ShowAllTaskConfigsPage(projectId)   => Some(projectId)
-    case CreateTaskDumpConfigPage(projectId) => Some(projectId)
-    case TaskDumpStatusPage(projectId)       => Some(projectId)
-    case CreateTaskLoadConfigPage(projectId) => Some(projectId)
-    case CreateProjectMappingPage(projectId) => Some(projectId)
-    case CreateMilestonePage(projectId)      => Some(projectId)
-    case ShowMilestonesPage(projectId)       => Some(projectId)
-    case ShowMilestoneHistoryPage(projectId) => Some(projectId)
-    case EditProjectPage(id)                 => Some(id)
-    case _                                   => None
-  }
-
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)       => Some(organizationId)
     case ShowProjectsForOrganizationIdTable(id)  => Some(id)
@@ -212,11 +194,11 @@ class Sidebar(
   }
 
   private def isProjectSelected(project: OrganizationProjectResp, page: FrontendPage): Boolean =
-    projectIdForPage(page).contains(project.id)
+    Sidebar.projectIdForPage(page).contains(project.id)
 
   private def isOrganizationSelected(organization: FindOrganizationsAndProjects, page: FrontendPage): Boolean =
     organizationIdForPage(page).contains(organization.id) ||
-      projectIdForPage(page).exists(projectId => organization.projects.exists(_.id == projectId))
+      Sidebar.projectIdForPage(page).exists(projectId => organization.projects.exists(_.id == projectId))
 
   private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
 
@@ -245,7 +227,7 @@ class Sidebar(
 //        aria-label="Sidebar"
 
         div(
-          cls("h-full px-3 py-4 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
+          cls("h-full px-3 py-4 pb-24 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
           div(
             cls("flex items-center mb-5"),
             cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq("justify-end")),
@@ -296,6 +278,16 @@ class Sidebar(
                   }
             }
           )
+        ),
+        button(
+          `type`("button"),
+          title("Create task"),
+          cls(
+            "absolute bottom-4 left-1/2 -translate-x-1/2 inline-flex items-center justify-center w-14 h-14 text-white bg-brand hover:bg-brand-strong rounded-full shadow-lg focus:ring-4 focus:ring-brand-medium focus:outline-none cursor-pointer"
+          ),
+          TgIcons.plusIcon("w-6 h-6"),
+          span(cls("sr-only"), "Create task"),
+          onClick.mapToUnit --> (_ => onQuickCreate())
         )
       )
     )
@@ -304,6 +296,25 @@ class Sidebar(
 }
 
 object Sidebar {
+  def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
+    case CreateTaskPage(projectId)           => Some(projectId)
+    case CreateTaskStatusPage(projectId)     => Some(projectId)
+    case EditTaskStatusPage(projectId, _)    => Some(projectId)
+    case ShowAllTasksPage(projectId)         => Some(projectId)
+    case ShowAllTaskStatusesPage(projectId)  => Some(projectId)
+    case EditTaskPage(projectId, _)          => Some(projectId)
+    case ShowAllTaskConfigsPage(projectId)   => Some(projectId)
+    case CreateTaskDumpConfigPage(projectId) => Some(projectId)
+    case TaskDumpStatusPage(projectId)       => Some(projectId)
+    case CreateTaskLoadConfigPage(projectId) => Some(projectId)
+    case CreateProjectMappingPage(projectId) => Some(projectId)
+    case CreateMilestonePage(projectId)      => Some(projectId)
+    case ShowMilestonesPage(projectId)       => Some(projectId)
+    case ShowMilestoneHistoryPage(projectId) => Some(projectId)
+    case EditProjectPage(id)                 => Some(id)
+    case _                                   => None
+  }
+
   val sideBarLinkStyle =
     "flex items-center px-2 py-1.5 text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group"
 

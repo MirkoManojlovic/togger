@@ -27,6 +27,7 @@ import com.togger.ui.taskconfig._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskloadconfig._
+import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -42,6 +43,23 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val spinnerService = SpinnerService.globalSpinner(elementForSpinner)
 
   val elementForModal = div()
+  val elementForQuickCreate = div()
+  lazy val quickCreateHost = new QuickCreateHost(
+    elementForQuickCreate,
+    onClose =>
+      new CreateTaskQuick(
+        taskService,
+        taskStatusService,
+        taskLabelService,
+        organizationService,
+        spinnerService,
+        tgClock,
+        accountService,
+        Sidebar.projectIdForPage(router.currentPageSignal.now()),
+        toast,
+        onClose
+      ).element
+  )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
@@ -64,6 +82,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       taskLoadConfigService,
       spinnerService,
       sidebarCollapseStore,
+      () => quickCreateHost.open(),
       toast
     )
 
@@ -115,6 +134,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         elementForSpinner,
         toastHolder,
         elementForModal,
+        elementForQuickCreate,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -411,6 +431,7 @@ case class NavigationSelection(
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
+  onQuickCreate: () => Unit,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
 
@@ -428,6 +449,7 @@ case class NavigationSelection(
               taskLoadConfigService,
               spinnerService,
               sidebarCollapseStore,
+              onQuickCreate,
               toast
             ).element
           )
