@@ -57,6 +57,11 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[TaskVersionDto])
       .out(jsonBody[TgJsonSuccess[TaskVersionDto]])
 
+  val deleteEndpoint: TgSecuredEndpointEmptyBody[UUID] =
+    securedEndpoint.endpoint.delete
+      .in(basePath / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
+
   val deleteVersionEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
       .in(basePath / "version" / path[UUID]("version"))
