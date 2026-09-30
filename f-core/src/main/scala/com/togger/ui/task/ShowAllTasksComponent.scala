@@ -17,6 +17,7 @@ import com.togger.ui.components.{
   TableFilterComponent,
   TableSearchComponent,
   TgBadge,
+  TgBadgeColor,
   TgBadgeSize,
   TgBadgeStyles,
   TgHtmlTable,
@@ -29,7 +30,6 @@ import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButto
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -75,14 +75,6 @@ class ShowAllTasksComponent(
     )
   private val labelFilterSelectedIdsVar = Var(Set.empty[String])
 
-  val searchTermVar = Var("")
-  private val searchBox =TableSearchComponent(
-    inputSignal = searchTermVar.signal,
-    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description",
-    debounceMs = 0
-  )
-
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
     firstName = "Not",
@@ -91,21 +83,33 @@ class ShowAllTasksComponent(
     accountTypeId = TgIds.UNASSIGNED_UUID
   )
 
-  /** Grouped from the raw fetched tasks only, unaffected by search/status filtering, so this signal - and the table
-    * header (with its embedded status filter) built from it - stays mounted while the user searches or toggles the
-    * status filter; only [[visibleRowsSignal]] reacts to those.
-    */
-  private val accountGroupsSignal: Signal[Seq[(SearchAccountDto, Seq[FindTaskRespFull])]] =
+  private val assigneeFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map(
-      _.groupBy(_.assignedTo.getOrElse(unassignedDto)).toSeq.sortBy { case (accountDto, _) =>
-        accountDto.fullName.toLowerCase
-      }
+      _.map(_.assignedTo.getOrElse(unassignedDto))
+        .distinctBy(_.id)
+        .sortBy(_.fullName.toLowerCase)
+        .map(a => MultiSelectItem(id = a.id.toString, name = a.fullName, isSelected = true))
     )
+  private val assigneeFilterSelectedIdsVar = Var(Set.empty[String])
 
-  private def visibleRowsSignal(dtos: Seq[FindTaskRespFull]): Signal[Seq[FindTaskRespFull]] =
-    statusFilterSelectedIdsVar.signal
-      .combineWith(priorityFilterSelectedIdsVar.signal, labelFilterSelectedIdsVar.signal, searchBox.inputSignal)
-      .map { case (selectedIds, selectedPriorityIds, selectedLabelIds, term) =>
+  val searchTermVar = Var("")
+  private val searchBox =TableSearchComponent(
+    inputSignal = searchTermVar.signal,
+    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
+    placeholderValue = "Search by name, description",
+    debounceMs = 0
+  )
+
+  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
+    stateFormVar.signal
+      .combineWith(
+        statusFilterSelectedIdsVar.signal,
+        priorityFilterSelectedIdsVar.signal,
+        labelFilterSelectedIdsVar.signal,
+        assigneeFilterSelectedIdsVar.signal,
+        searchBox.inputSignal
+      )
+      .map { case (dtos, selectedIds, selectedPriorityIds, selectedLabelIds, selectedAssigneeIds, term) =>
         val byStatus =
           if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
         val byPriority =
@@ -119,10 +123,15 @@ class ShowAllTasksComponent(
             byPriority.filter(dto =>
               dto.taskLabels.isEmpty || dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString))
             )
+        val byAssignee =
+          if (selectedAssigneeIds.isEmpty) byLabel
+          else byLabel.filter(dto => selectedAssigneeIds.contains(dto.assignedTo.getOrElse(unassignedDto).id.toString))
         val needle = term.trim.toLowerCase
-        if (needle.isEmpty) byLabel
+        if (needle.isEmpty) byAssignee
         else
-          byLabel.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
+          byAssignee.filter(dto =>
+            dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
+          )
       }
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
@@ -242,117 +251,108 @@ class ShowAllTasksComponent(
             .HtmlCardContent(
               div(
                 div(cls("mb-4"), searchBox.element),
-                div(children <-- accountGroupsSignal.map { groups =>
-                  groups.map { case (accountDto, dtos) =>
-                    div(
-                      cls("mb-4"),
-                      h5(cls("text-xl font-bold text-heading mb-2"), accountDto.fullName),
-                      TgHtmlTable.tableElement(
-                        Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                          "Name",
-                          Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                            cls("!px-2 w-0 whitespace-nowrap"),
+                TgHtmlTable.tableElement(
+                  Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                    "Name",
+                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                      cls("!px-2 w-0 whitespace-nowrap"),
+                      div(
+                        cls("flex items-center gap-2"),
+                        new TableFilterComponent(
+                          statusFilterItemsSignal,
+                          label = "Status",
+                          statusFilterSelectedIdsVar
+                        ).element,
+                        new TableFilterComponent(
+                          priorityFilterItemsSignal,
+                          label = "Priority",
+                          priorityFilterSelectedIdsVar
+                        ).element,
+                        new TableFilterComponent(
+                          labelFilterItemsSignal,
+                          label = "Labels",
+                          labelFilterSelectedIdsVar
+                        ).element,
+                        new TableFilterComponent(
+                          assigneeFilterItemsSignal,
+                          label = "Assigned to",
+                          assigneeFilterSelectedIdsVar
+                        ).element
+                      )
+                    ),
+                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                      cls("!px-2 w-0 whitespace-nowrap"),
+                      "Action"
+                    )
+                  )
+                )(
+                  visibleRowsSignal.map(
+                    _.sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
+                      .map { dto =>
+                        Seq(
+                          createTd(
                             div(
-                              cls("flex items-center gap-2"),
-                              new TableFilterComponent(
-                                statusFilterItemsSignal,
-                                label = "Status",
-                                statusFilterSelectedIdsVar
-                              ).element,
-                              new TableFilterComponent(
-                                priorityFilterItemsSignal,
-                                label = "Priority",
-                                priorityFilterSelectedIdsVar
-                              ).element,
-                              new TableFilterComponent(
-                                labelFilterItemsSignal,
-                                label = "Labels",
-                                labelFilterSelectedIdsVar
-                              ).element
+                              cls("flex flex-col gap-1"),
+                              div(
+                                cls("flex items-center gap-3"),
+                                TgTooltip(
+                                  trigger = span(
+                                    cls(
+                                      TgBadgeStyles.square(
+                                        dto.priority.badgeColor,
+                                        TgBadgeSize.Default,
+                                        bordered = true,
+                                        extraCls = ""
+                                      )
+                                    ),
+                                    dto.priority.shortCode
+                                  ),
+                                  text = dto.priority.priorityName
+                                ).element,
+                                a(
+                                  cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
+                                  dto.name,
+                                  router.navigateTo(EditTaskPage(dto.projectId, dto.id))
+                                ),
+                                TgBadge(
+                                  text = dto.taskStatus.name,
+                                  color = dto.taskStatus.badgeColor,
+                                  bordered = true
+                                ).element
+                              ),
+                              div(
+                                cls("flex items-center gap-1"),
+                                dto.taskLabels.map(label =>
+                                  TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
+                                )
+                              ),
+                              div(
+                                cls("flex items-center gap-1"),
+                                TgBadge(
+                                  text = dto.assignedTo.getOrElse(unassignedDto).fullName,
+                                  color = TgBadgeColor.Gray,
+                                  bordered = true
+                                ).element
+                              )
                             )
                           ),
-                          Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                          createTd(emptyMod),
+                          td(
                             cls("!px-2 w-0 whitespace-nowrap"),
-                            "Action"
+                            div(
+                              iconButton(
+                                "Edit",
+                                TgIcons.editIcon(className = "w-4 h-4"),
+                                rowIconButtonCls,
+                                rowButtonMarginCls,
+                                onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
+                              )
+                            )
                           )
                         )
-                      )(
-                        visibleRowsSignal(dtos).map(
-                          _.sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
-                            .map { dto =>
-                              Seq(
-                                createTd(
-                                  div(
-                                    cls("flex flex-col gap-1"),
-                                    div(
-                                      cls("flex items-center gap-3"),
-                                      // button(
-                                      //   `type`("button"),
-                                      //   title("Copy task ID"),
-                                      //   cls(
-                                      //     "inline-flex items-center justify-center text-body hover:text-fg-brand focus:outline-none"
-                                      //   ),
-                                      //   TgIcons.copyIcon(className = "w-5 h-5 mr-2"),
-                                      //   onClick.mapToUnit --> (_ =>
-                                      //     dom.window.navigator.clipboard
-                                      //       .writeText(dto.id.toString)
-                                      //       .toFuture
-                                      //       .foreach(_ => toast.success("Task ID copied"))
-                                      //   )
-                                      // ),
-                                      TgTooltip(
-                                        trigger = span(
-                                          cls(
-                                            TgBadgeStyles.square(
-                                              dto.priority.badgeColor,
-                                              TgBadgeSize.Default,
-                                              bordered = true,
-                                              extraCls = ""
-                                            )
-                                          ),
-                                          dto.priority.shortCode
-                                        ),
-                                        text = dto.priority.priorityName
-                                      ).element,
-                                      a(
-                                        cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
-                                        dto.name,
-                                        router.navigateTo(EditTaskPage(dto.projectId, dto.id))
-                                      ),
-                                      TgBadge(
-                                        text = dto.taskStatus.name,
-                                        color = dto.taskStatus.badgeColor,
-                                        bordered = true
-                                      ).element
-                                    ),
-                                    div(
-                                      cls("flex items-center gap-1"),
-                                      dto.taskLabels.map(label =>
-                                        TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
-                                      )
-                                    )
-                                  )
-                                ),
-                                createTd(emptyMod),
-                                td(
-                                  cls("!px-2 w-0 whitespace-nowrap"),
-                                  div(
-                                    iconButton(
-                                      "Edit",
-                                      TgIcons.editIcon(className = "w-4 h-4"),
-                                      rowIconButtonCls,
-                                      rowButtonMarginCls,
-                                      onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
-                                    )
-                                  )
-                                )
-                              )
-                            }
-                        )
-                      )
-                    )
-                  }
-                })
+                      }
+                  )
+                )
               )
             )
         )
