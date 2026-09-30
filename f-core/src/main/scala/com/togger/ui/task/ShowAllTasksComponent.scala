@@ -316,7 +316,8 @@ class ShowAllTasksComponent(
                       cls("!px-2 w-0 whitespace-nowrap"),
                       "Action"
                     )
-                  )
+                  ),
+                  striped = false
                 )(
                   visibleRowsSignal.map(
                     _.sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))

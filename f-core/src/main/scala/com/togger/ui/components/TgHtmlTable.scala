@@ -32,8 +32,11 @@ object TgHtmlTable {
   private val oddRowClass =
     "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
 
-  def choseRowCls(index: Int): String =
-    if (index % 2 == 0) evenRowClass
+  private val plainRowClass = "bg-neutral-primary border-b border-default"
+
+  def choseRowCls(index: Int, striped: Boolean = true): String =
+    if (!striped) plainRowClass
+    else if (index % 2 == 0) evenRowClass
     else oddRowClass
 
   def tableElement(headers: Seq[String])(rows: Seq[Seq[ReactiveHtmlElement[HTMLTableCellElement]]]): HtmlDiv =
@@ -64,7 +67,8 @@ object TgHtmlTable {
     * update - so `rows` is reactive here while `headers` is built once.
     */
   def tableElement(
-    headers: Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]]
+    headers: Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]],
+    striped: Boolean = true
   )(rowsSignal: Signal[Seq[Seq[ReactiveHtmlElement[HTMLTableCellElement]]]]): HtmlDiv =
     div(
       cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
@@ -81,7 +85,7 @@ object TgHtmlTable {
             _.zipWithIndex
               .map { case (rowElement, index) =>
                 tr(
-                  cls(choseRowCls(index)),
+                  cls(choseRowCls(index, striped)),
                   rowElement
                 )
               }
