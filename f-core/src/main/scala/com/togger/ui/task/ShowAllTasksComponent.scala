@@ -330,7 +330,7 @@ class ShowAllTasksComponent(
                       )
                     ),
                     Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                      cls("!px-2 w-0 whitespace-nowrap"),
+                      cls("!px-2 w-0 whitespace-nowrap text-center"),
                       "Action"
                     )
                   ),
