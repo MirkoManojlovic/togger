@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo, LogEntryWithVersions}
 import com.togger.logging.TgLogging
+import com.togger.task.TaskError.{TaskError, TaskNotFound}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -112,6 +113,14 @@ class TaskService(
       links <- findLinksWithLatestVersion(taskFull.id)
       logEntries <- findLogEntriesWithLatestVersion(taskFull.id)
     } yield (taskFull.copy(taskLabels = labels), links, logEntries)).transact(transactor)
+
+  def deleteTask(taskId: UUID): IO[Either[TaskError, Int]] = {
+    logger.info(s"Deleting task ${sp(taskId)} with all its versions, links, log entries and label assignments")
+    taskRepo
+      .deleteById(taskId)
+      .map(deleted => Either.cond(deleted > 0, deleted, TaskNotFound: TaskError))
+      .transact(transactor)
+  }
 
   def updateTask(
     taskId: UUID,

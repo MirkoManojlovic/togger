@@ -195,6 +195,18 @@ class TaskServiceTest
         }
         .unsafeToFuture()
     }
+
+    "delete the task" in {
+      (taskRepo.deleteById _).expects(task.id).returns(1.pure[ConnectionIO])
+
+      taskService.deleteTask(task.id).map(_ shouldBe Right(1)).unsafeToFuture()
+    }
+
+    "return TaskNotFound when deleting a task that does not exist" in {
+      (taskRepo.deleteById _).expects(task.id).returns(0.pure[ConnectionIO])
+
+      taskService.deleteTask(task.id).map(_ shouldBe Left(TaskError.TaskNotFound)).unsafeToFuture()
+    }
   }
 
 }

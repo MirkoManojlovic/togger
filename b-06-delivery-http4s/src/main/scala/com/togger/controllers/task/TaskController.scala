@@ -194,6 +194,15 @@ class TaskController(
     }
   }
 
+  val delete = deleteEndpoint.serverLogic { auth => taskId =>
+    taskService
+      .deleteTask(taskId)
+      .map {
+        case Right(_)    => TgJsonSuccess.justMessageRight("Task deleted successfully")
+        case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]
+      }
+  }
+
   val listVersions = listVersionsEndpoint.serverLogic { auth => taskId =>
     taskVersionService
       .listVersions(taskId)

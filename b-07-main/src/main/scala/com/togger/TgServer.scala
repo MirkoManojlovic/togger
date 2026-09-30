@@ -68,6 +68,7 @@ object TgServer {
         taskController.findByProjectId,
         taskController.save,
         taskController.update,
+        taskController.delete,
         taskController.listVersions,
         taskController.updateVersion,
         taskController.deleteVersion,

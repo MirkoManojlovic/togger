@@ -595,6 +595,7 @@ databaseChangeLog:
                     nullable: false
                     foreignKeyName: fk_task_link
                     references: task(id)
+                    deleteCascade: true
               - column:
                   name: created_at
                   type: timestamp with time zone
@@ -668,6 +669,7 @@ databaseChangeLog:
                     nullable: false
                     foreignKeyName: fk_task_log_entry
                     references: task(id)
+                    deleteCascade: true
               - column:
                   name: created_by
                   type: uuid
