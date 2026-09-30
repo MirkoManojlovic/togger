@@ -2,7 +2,7 @@ package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgIds
-import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
+import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
@@ -23,6 +23,7 @@ import com.togger.ui.components.{
   TgHtmlTable,
   TgTooltip
 }
+import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -39,6 +40,7 @@ class ShowAllTasksComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
+  milestoneService: MilestoneFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -51,6 +53,7 @@ class ShowAllTasksComponent(
   val stateFormVar = Var(Seq.empty[FindTaskRespFull])
   val statusesVar = Var(TaskStatusesState())
   val taskLabelsVar = Var(TaskLabelsState())
+  val milestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     statusesVar.signal.map(
@@ -92,6 +95,14 @@ class ShowAllTasksComponent(
     )
   private val assigneeFilterSelectedIdsVar = Var(Set.empty[String])
 
+  private val noMilestoneId = "none"
+  private val milestoneFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
+    milestonesVar.signal.map(milestones =>
+      milestones.sortBy(_.name.toLowerCase).map(m => MultiSelectItem(id = m.id.toString, name = m.name, isSelected = true)) :+
+        MultiSelectItem(id = noMilestoneId, name = "No milestone", isSelected = true)
+    )
+  private val milestoneFilterSelectedIdsVar = Var(Set.empty[String])
+
   val searchTermVar = Var("")
   private val searchBox =TableSearchComponent(
     inputSignal = searchTermVar.signal,
@@ -107,9 +118,11 @@ class ShowAllTasksComponent(
         priorityFilterSelectedIdsVar.signal,
         labelFilterSelectedIdsVar.signal,
         assigneeFilterSelectedIdsVar.signal,
+        milestoneFilterSelectedIdsVar.signal,
         searchBox.inputSignal
       )
-      .map { case (dtos, selectedIds, selectedPriorityIds, selectedLabelIds, selectedAssigneeIds, term) =>
+      .map {
+        case (dtos, selectedIds, selectedPriorityIds, selectedLabelIds, selectedAssigneeIds, selectedMilestoneIds, term) =>
         val byStatus =
           if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
         val byPriority =
@@ -126,10 +139,16 @@ class ShowAllTasksComponent(
         val byAssignee =
           if (selectedAssigneeIds.isEmpty) byLabel
           else byLabel.filter(dto => selectedAssigneeIds.contains(dto.assignedTo.getOrElse(unassignedDto).id.toString))
+        val byMilestone =
+          if (selectedMilestoneIds.isEmpty) byAssignee
+          else
+            byAssignee.filter(dto =>
+              selectedMilestoneIds.contains(dto.milestone.map(_.toString).getOrElse(noMilestoneId))
+            )
         val needle = term.trim.toLowerCase
-        if (needle.isEmpty) byAssignee
+        if (needle.isEmpty) byMilestone
         else
-          byAssignee.filter(dto =>
+          byMilestone.filter(dto =>
             dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
           )
       }
@@ -165,11 +184,19 @@ class ShowAllTasksComponent(
         .findByProjectId(projectId)
         .map(response => response.map(success => taskLabelsVar.set(TaskLabelsState(success.body.get))))
 
+      val milestoneCall = milestoneService
+        .findByProjectId(projectId)
+        .map(response => response.map(success => milestonesVar.set(success.body.get)))
+
       val taskCall = taskService
         .findByProjectId(projectId)
         .map(response => response.map(success => stateFormVar.set(success.body.get)))
 
-      projectCall.flatMap(_ => taskStatusCall).flatMap(_ => taskLabelCall).flatMap(_ => taskCall)
+      projectCall
+        .flatMap(_ => taskStatusCall)
+        .flatMap(_ => taskLabelCall)
+        .flatMap(_ => milestoneCall)
+        .flatMap(_ => taskCall)
     }
     .unsafeRunAndForget()
 
@@ -237,7 +264,7 @@ class ShowAllTasksComponent(
                   router.navigateTo(CreateMilestonePage(projectId))
                 ),
                 iconButton(
-                  "Milestones",
+                  "Milestone",
                   TgIcons.listIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   "mr-2",
@@ -277,6 +304,11 @@ class ShowAllTasksComponent(
                           assigneeFilterItemsSignal,
                           label = "Assigned to",
                           assigneeFilterSelectedIdsVar
+                        ).element,
+                        new TableFilterComponent(
+                          milestoneFilterItemsSignal,
+                          label = "Milestone",
+                          milestoneFilterSelectedIdsVar
                         ).element
                       )
                     ),
@@ -330,6 +362,16 @@ class ShowAllTasksComponent(
                                 cls("flex items-center gap-1"),
                                 TgBadge(
                                   text = dto.assignedTo.getOrElse(unassignedDto).fullName,
+                                  color = TgBadgeColor.Gray,
+                                  bordered = true
+                                ).element
+                              ),
+                              div(
+                                cls("flex items-center gap-1"),
+                                TgBadge(
+                                  text = dto.milestone
+                                    .flatMap(id => milestonesVar.now().find(_.id == id).map(_.name))
+                                    .getOrElse("No milestone"),
                                   color = TgBadgeColor.Gray,
                                   bordered = true
                                 ).element

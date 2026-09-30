@@ -243,6 +243,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskService,
                   taskStatusService,
                   taskLabelService,
+                  milestoneService,
                   projectService,
                   router,
                   spinnerService,
