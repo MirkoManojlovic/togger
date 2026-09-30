@@ -261,7 +261,7 @@ class CreateTaskQuick(
         Some(badge(current.effectivePriority.priorityName, priorityClear))
       ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
         badge(
-          s"#${label.name}",
+          label.name,
           Some(() => state.update(current => current.copy(labelIds = current.labelIds - label.id)))
         )
       }
