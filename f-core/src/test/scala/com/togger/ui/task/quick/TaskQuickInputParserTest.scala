@@ -12,7 +12,7 @@ class TaskQuickInputParserTest extends AnyWordSpec with Matchers {
     }
 
     "recognise each trigger char" in {
-      TaskQuickInputParser.parse("Fix ~app #bug !p1 $todo @me").dropdowns shouldBe
+      TaskQuickInputParser.parse("Fix ~app #bug !p1 $todo %me").dropdowns shouldBe
         Seq(ProjectDropdown, LabelsDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
     }
 

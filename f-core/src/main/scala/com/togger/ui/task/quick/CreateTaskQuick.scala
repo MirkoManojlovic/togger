@@ -308,7 +308,7 @@ class CreateTaskQuick(
         statusDto.map(dto =>
           badge(dto.name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))), Some(dto.badgeColor))
         ),
-        assignee.map(member => badge(s"@${member.fullName}", assigneeClear))
+        assignee.map(member => badge(member.fullName, assigneeClear))
       ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
         badge(
           label.name,
@@ -422,7 +422,7 @@ class CreateTaskQuick(
             .map(_.map(_.copy(highlighted = 0)))
             .distinct
             .map(_.map(popupElement)),
-          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  @assignee")
+          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  %assignee")
         ),
         div(cls("flex flex-wrap gap-1.5 mb-4"), children <-- badges),
         descriptionEditor.htmlElement.amend(cls("mb-4")),

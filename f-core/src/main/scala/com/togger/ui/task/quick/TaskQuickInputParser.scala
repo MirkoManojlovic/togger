@@ -15,7 +15,7 @@ object QuickDropdown {
       '#' -> LabelsDropdown,
       '!' -> PriorityDropdown,
       '$' -> TaskStatusDropdown,
-      '@' -> AssignedToDropdown
+      '%' -> AssignedToDropdown
     )
 }
 
