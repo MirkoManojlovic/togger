@@ -233,6 +233,12 @@ class CreateTaskQuick(
     state.update(current => if (current.caret == caret) current else current.copy(caret = caret, highlighted = 0))
   }
 
+  private def focusDescription(): Unit =
+    Option(descriptionEditor.htmlElement.ref.querySelector("textarea")).foreach {
+      case textarea: dom.html.TextArea => textarea.focus()
+      case _                           => ()
+    }
+
   private def onInputKeyDown(event: dom.KeyboardEvent): Unit =
     (popupFor(state.now()), event.key) match {
       case (Some(_), "Escape") =>
@@ -247,6 +253,9 @@ class CreateTaskQuick(
       case (Some(QuickPopup(token, options, highlighted)), "Enter" | "Tab") if options.nonEmpty =>
         event.preventDefault()
         choose(token, options(highlighted))
+      case (_, "Tab") if !event.shiftKey =>
+        event.preventDefault()
+        focusDescription()
       case _ => ()
     }
 
