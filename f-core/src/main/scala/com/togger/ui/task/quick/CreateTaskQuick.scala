@@ -266,9 +266,15 @@ class CreateTaskQuick(
       case _ => ()
     }
 
+  private def isDescriptionTextArea(target: dom.EventTarget): Boolean =
+    target.isInstanceOf[dom.html.TextArea] && descriptionEditor.htmlElement.ref.contains(target.asInstanceOf[dom.Node])
+
   private def onWrapperKeyDown(event: dom.KeyboardEvent): Unit =
     if (event.key == "Escape") onClose()
-    else if (event.key == "Enter" && (event.ctrlKey || event.metaKey)) {
+    else if (event.key == "Tab" && event.shiftKey && isDescriptionTextArea(event.target)) {
+      event.preventDefault()
+      nameInput.ref.focus()
+    } else if (event.key == "Enter" && (event.ctrlKey || event.metaKey)) {
       event.preventDefault()
       submit()
     }
