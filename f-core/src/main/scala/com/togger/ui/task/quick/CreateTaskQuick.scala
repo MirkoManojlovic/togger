@@ -15,7 +15,7 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadgeColor, TgBadgeSize, TgBadgeStyles}
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgBadgeSize, TgBadgeStyles}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
@@ -68,7 +68,13 @@ case class QuickState(
     TaskQuickInputParser.activeTokenAt(rawInput, caret).filterNot(token => dismissedTokenStart.contains(token.start))
 }
 
-case class QuickOption(id: String, label: String, description: String, isSelected: Boolean)
+case class QuickOption(
+  id: String,
+  label: String,
+  description: String,
+  isSelected: Boolean,
+  badgeColor: Option[TgBadgeColor] = None
+)
 
 case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int)
 
@@ -114,9 +120,10 @@ class CreateTaskQuick(
           .map(priority =>
             QuickOption(
               priority.value.toString,
-              priority.priorityName,
+              s"${priority.shortCode.toUpperCase} - ${priority.priorityName}",
               priority.description,
-              current.effectivePriority == priority
+              current.effectivePriority == priority,
+              Some(priority.badgeColor)
             )
           )
       case AssignedToDropdown =>
@@ -331,7 +338,9 @@ class CreateTaskQuick(
         div(
           cls("inline-flex items-center w-full gap-1.5"),
           div(cls("w-4 h-4 shrink-0"), Option.when(option.isSelected)(TgIcons.checkIcon("w-4 h-4"))),
-          span(option.label)
+          option.badgeColor.fold[HtmlElement](span(option.label))(color =>
+            TgBadge(text = option.label, color = color, bordered = true).element
+          )
         ),
         Option.when(option.description.nonEmpty)(
           p(cls("w-full text-left text-xs font-normal text-body mt-0.5 line-clamp-1"), option.description)
