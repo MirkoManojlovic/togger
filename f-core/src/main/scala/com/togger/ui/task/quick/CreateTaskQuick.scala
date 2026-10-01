@@ -30,11 +30,15 @@ import org.scalajs.dom
 import java.util.UUID
 import scala.scalajs.js
 
+/** A popup opened by clicking a badge, anchored `left` pixels from the badge row's left edge. */
+case class BadgePopup(dropdown: QuickDropdown, left: Double)
+
 case class QuickState(
   currentAccountId: Option[UUID] = None,
   rawInput: String = "",
   caret: Int = 0,
   dismissedTokenStart: Option[Int] = None,
+  badgePopup: Option[BadgePopup] = None,
   highlighted: Int = 0,
   description: String = "",
   projects: Seq[OrganizationProjectResp] = Seq.empty,
@@ -76,7 +80,7 @@ case class QuickOption(
   badgeColor: Option[TgBadgeColor] = None
 )
 
-case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int)
+case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int, left: Option[Double] = None)
 
 class CreateTaskQuick(
   taskService: TaskFeService,
@@ -146,15 +150,39 @@ class CreateTaskQuick(
           )
     }
 
+  private def popupAt(current: QuickState, token: QuickToken, left: Option[Double]): QuickPopup = {
+    val options = optionsFor(current, token)
+    QuickPopup(token, options, current.highlighted.min((options.size - 1).max(0)), left)
+  }
+
+  /** A token being typed wins over a popup opened from a badge. A badge popup has no token text to filter or remove,
+    * hence the token with an empty query and a negative start.
+    */
   private def popupFor(current: QuickState): Option[QuickPopup] =
-    current.activeToken.map { token =>
-      val options = optionsFor(current, token)
-      QuickPopup(token, options, current.highlighted.min((options.size - 1).max(0)))
-    }
+    current.activeToken
+      .map(token => popupAt(current, token, left = None))
+      .orElse(current.badgePopup.map { badgePopup =>
+        popupAt(current, QuickToken(badgePopup.dropdown, "", -1, -1), Some(badgePopup.left))
+      })
+
+  private def isBadgeToken(token: QuickToken): Boolean = token.start < 0
+
+  private def toggleBadgePopup(dropdown: QuickDropdown, left: Double): Unit = {
+    state.update(current =>
+      current.copy(
+        badgePopup = Option.when(!current.badgePopup.exists(_.dropdown == dropdown))(BadgePopup(dropdown, left)),
+        highlighted = 0
+      )
+    )
+    nameInput.ref.focus()
+  }
 
   private def choose(token: QuickToken, option: QuickOption): Unit =
     state.update { current =>
-      val cleared = current.withoutToken(token)
+      val cleared =
+        if (!isBadgeToken(token)) current.withoutToken(token)
+        else if (token.dropdown == LabelsDropdown) current
+        else current.copy(badgePopup = None, highlighted = 0)
       token.dropdown match {
         case ProjectDropdown    => cleared.copy(projectId = Some(UUID.fromString(option.id)))
         case PriorityDropdown   => cleared.copy(priority = Some(TaskPriority.withValue(option.id.toInt)))
@@ -250,14 +278,17 @@ class CreateTaskQuick(
     (popupFor(state.now()), event.key) match {
       case (Some(_), "Escape") =>
         event.stopPropagation()
-        state.update(current => current.copy(dismissedTokenStart = current.activeToken.map(_.start)))
-      case (Some(QuickPopup(_, options, _)), "ArrowDown" | "ArrowUp") if options.nonEmpty =>
+        state.update(current =>
+          if (current.activeToken.isDefined) current.copy(dismissedTokenStart = current.activeToken.map(_.start))
+          else current.copy(badgePopup = None)
+        )
+      case (Some(QuickPopup(_, options, _, _)), "ArrowDown" | "ArrowUp") if options.nonEmpty =>
         event.preventDefault()
         val step = if (event.key == "ArrowDown") 1 else -1
         state.update(current =>
           current.copy(highlighted = (popupFor(current).get.highlighted + step + options.size) % options.size)
         )
-      case (Some(QuickPopup(token, options, highlighted)), "Enter" | "Tab") if options.nonEmpty =>
+      case (Some(QuickPopup(token, options, highlighted, _)), "Enter" | "Tab") if options.nonEmpty =>
         event.preventDefault()
         choose(token, options(highlighted))
       case (_, "Tab") if !event.shiftKey =>
@@ -282,12 +313,23 @@ class CreateTaskQuick(
   private val uncoloredBadgeCls =
     "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-base bg-neutral-tertiary text-heading"
 
-  private def badge(text: String, onClear: Option[() => Unit], color: Option[TgBadgeColor] = None): HtmlElement =
+  private def badge(
+    dropdown: QuickDropdown,
+    text: String,
+    onClear: Option[() => Unit],
+    color: Option[TgBadgeColor] = None
+  ): HtmlElement =
     span(
       cls(
         color.fold(uncoloredBadgeCls)(
           TgBadgeStyles.container(_, TgBadgeSize.Default, bordered = true, pill = false, action = None, "gap-1")
         )
+      ),
+      cls("cursor-pointer"),
+      // keeps the name input focused, so its blur does not close the popup this click is about to toggle
+      onMouseDown.preventDefault --> Observer.empty,
+      onClick --> (event =>
+        toggleBadgePopup(dropdown, event.currentTarget.asInstanceOf[dom.html.Element].offsetLeft)
       ),
       text,
       onClear.map(clear =>
@@ -296,7 +338,7 @@ class CreateTaskQuick(
           cls("text-body hover:text-heading cursor-pointer"),
           aria.label(s"Remove $text"),
           TgIcons.closeIcon("w-3 h-3"),
-          onClick.mapToUnit --> (_ => clear())
+          onClick.stopPropagation.mapToUnit --> (_ => clear())
         )
       )
     )
@@ -309,20 +351,40 @@ class CreateTaskQuick(
       val assignee = current.members.find(member => current.effectiveAssigneeId.contains(member.id))
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
-        Some(badge(project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
-        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor))),
-        statusDto.map(dto =>
-          badge(dto.name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))), Some(dto.badgeColor))
+        Some(badge(ProjectDropdown, project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
+        Some(
+          badge(
+            PriorityDropdown,
+            current.effectivePriority.priorityName,
+            priorityClear,
+            Some(current.effectivePriority.badgeColor)
+          )
         ),
-        assignee.map(member => badge(member.fullName, assigneeClear))
-      ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
+        statusDto.map(dto =>
+          badge(
+            TaskStatusDropdown,
+            dto.name,
+            current.statusId.map(_ => () => state.update(_.copy(statusId = None))),
+            Some(dto.badgeColor)
+          )
+        ),
+        assignee.map(member => badge(AssignedToDropdown, member.fullName, assigneeClear))
+      ).flatten ++ labelBadges(current)
+    }
+
+  private def labelBadges(current: QuickState): Seq[HtmlElement] = {
+    val selected = current.labels.filter(label => current.labelIds.contains(label.id))
+    if (selected.isEmpty) Seq(badge(LabelsDropdown, "+ Labels", None))
+    else
+      selected.map { label =>
         badge(
+          LabelsDropdown,
           label.name,
           Some(() => state.update(current => current.copy(labelIds = current.labelIds - label.id))),
           Some(label.badgeColor)
         )
       }
-    }
+  }
 
   private def popupRow(popup: QuickPopup, option: QuickOption, index: Int): HtmlElement = {
     val isHighlighted: Signal[Boolean] =
@@ -357,13 +419,22 @@ class CreateTaskQuick(
 
   private def popupElement(popup: QuickPopup): HtmlElement =
     div(
-      cls("absolute z-10 mt-1 w-full bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      cls("absolute z-10 mt-1 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      popup.left.fold[Modifier[HtmlElement]](cls("w-full"))(left => Seq(cls("w-72 max-w-full"), styleProp("left") := s"${left}px")),
       ul(
         cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
         if (popup.options.isEmpty) Seq(li(cls("p-2 text-sm text-body"), "No matches"))
         else popup.options.zipWithIndex.map { case (option, index) => popupRow(popup, option, index) }
       )
     )
+
+  /** Rebuilt only when the token or options change, not on every highlight move, so the list keeps its scroll. */
+  private def popupSlot(belongsHere: QuickPopup => Boolean): Signal[Option[HtmlElement]] =
+    state.signal
+      .map(popupFor)
+      .map(_.filter(belongsHere).map(_.copy(highlighted = 0)))
+      .distinct
+      .map(_.map(popupElement))
 
   private val nameInput =
     input(
@@ -374,7 +445,7 @@ class CreateTaskQuick(
       controlled(
         value <-- state.signal.map(_.rawInput),
         onInput.mapToValue --> (raw =>
-          state.update(_.copy(rawInput = raw, dismissedTokenStart = None, highlighted = 0))
+          state.update(_.copy(rawInput = raw, dismissedTokenStart = None, badgePopup = None, highlighted = 0))
         )
       ),
       onInput --> (event => updateCaret(event)),
@@ -382,7 +453,9 @@ class CreateTaskQuick(
       onClick --> (event => updateCaret(event)),
       onKeyDown --> (event => onInputKeyDown(event)),
       onBlur.mapToUnit --> (_ =>
-        state.update(current => current.copy(dismissedTokenStart = current.activeToken.map(_.start)))
+        state.update(current =>
+          current.copy(dismissedTokenStart = current.activeToken.map(_.start), badgePopup = None)
+        )
       ),
       state.signal.map(_.caret).distinct.changes --> (caret =>
         Option(dom.document.activeElement).collect { case el: dom.html.Input => el }.foreach { el =>
@@ -423,14 +496,14 @@ class CreateTaskQuick(
         div(
           cls("relative mb-3"),
           nameInput,
-          child.maybe <-- state.signal
-            .map(popupFor)
-            .map(_.map(_.copy(highlighted = 0)))
-            .distinct
-            .map(_.map(popupElement)),
+          child.maybe <-- popupSlot(_.left.isEmpty),
           p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  %assignee")
         ),
-        div(cls("flex flex-wrap gap-1.5 mb-4"), children <-- badges),
+        div(
+          cls("relative mb-4"),
+          div(cls("flex flex-wrap gap-1.5"), children <-- badges),
+          child.maybe <-- popupSlot(_.left.isDefined)
+        ),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
         div(
           cls("flex justify-end gap-2"),
