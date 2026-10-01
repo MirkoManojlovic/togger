@@ -19,6 +19,7 @@ import com.togger.ui.components.{TgBadgeColor, TgBadgeSize, TgBadgeStyles}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.quick.QuickDropdown._
 import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TaskStatusesState}
@@ -30,6 +31,7 @@ import java.util.UUID
 import scala.scalajs.js
 
 case class QuickState(
+  currentAccountId: Option[UUID] = None,
   rawInput: String = "",
   caret: Int = 0,
   dismissedTokenStart: Option[Int] = None,
@@ -38,6 +40,8 @@ case class QuickState(
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   statuses: Seq[FindTaskStatusResp] = Seq.empty,
   labels: Seq[FindTaskLabelResp] = Seq.empty,
+  members: Seq[SearchAccountDto] = Seq.empty,
+  assigneeId: Option[UUID] = None,
   projectId: Option[UUID] = None,
   statusId: Option[UUID] = None,
   priority: Option[TaskPriority] = None,
@@ -49,6 +53,7 @@ case class QuickState(
   lazy val sortedStatuses: Seq[FindTaskStatusResp] = TaskStatusesState(statuses).taskStatusesSorted
 
   def effectiveStatusId: Option[UUID] = statusId.orElse(sortedStatuses.headOption.map(_.id))
+  def effectiveAssigneeId: Option[UUID] = assigneeId.orElse(currentAccountId)
   def effectivePriority: TaskPriority = priority.getOrElse(TaskPriority.Medium)
 
   def withoutToken(token: QuickToken): QuickState =
@@ -71,6 +76,7 @@ class CreateTaskQuick(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
+  projectService: ProjectService,
   organizationServiceFe: OrganizationServiceFe,
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -81,7 +87,7 @@ class CreateTaskQuick(
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  private val state = Var(QuickState(projectId = currentProjectId))
+  private val state = Var(QuickState(currentAccountId = accountService.get.map(_.id), projectId = currentProjectId))
 
   private def matches(query: String, texts: String*): Boolean =
     texts.exists(_.toLowerCase.contains(query.toLowerCase))
@@ -113,6 +119,13 @@ class CreateTaskQuick(
               current.effectivePriority == priority
             )
           )
+      case AssignedToDropdown =>
+        current.members
+          .filter(member => matches(token.query, member.fullName, member.email))
+          .sortBy(_.fullName)
+          .map(member =>
+            QuickOption(member.id.toString, member.fullName, member.email, current.effectiveAssigneeId.contains(member.id))
+          )
       case TaskStatusDropdown =>
         current.sortedStatuses
           .filter(status => matches(token.query, status.name))
@@ -139,6 +152,7 @@ class CreateTaskQuick(
         case ProjectDropdown    => cleared.copy(projectId = Some(UUID.fromString(option.id)))
         case PriorityDropdown   => cleared.copy(priority = Some(TaskPriority.withValue(option.id.toInt)))
         case TaskStatusDropdown => cleared.copy(statusId = Some(UUID.fromString(option.id)))
+        case AssignedToDropdown => cleared.copy(assigneeId = Some(UUID.fromString(option.id)))
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
           cleared.copy(labelIds = if (cleared.labelIds.contains(id)) cleared.labelIds - id else cleared.labelIds + id)
@@ -152,18 +166,23 @@ class CreateTaskQuick(
       .unsafeRunAndForget()
 
   private def loadProjectData(projectId: Option[UUID]): Unit = {
-    state.update(_.copy(statuses = Seq.empty, labels = Seq.empty, statusId = None, labelIds = Set.empty))
+    state.update(
+      _.copy(statuses = Seq.empty, labels = Seq.empty, members = Seq.empty, statusId = None, labelIds = Set.empty)
+    )
     projectId.foreach { id =>
       val statusesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
         taskStatusFeService.findByProjectId(id)
       val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
         taskLabelFeService.findByProjectId(id)
-      (statusesCall, labelsCall)
-        .parMapN { (statusesResp, labelsResp) =>
+      val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
+        projectService.findAllMembers(id)
+      (statusesCall, labelsCall, membersCall)
+        .parMapN { (statusesResp, labelsResp, membersResp) =>
           if (state.now().projectId.contains(id)) {
             val statuses = statusesResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
             val labels = labelsResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
-            state.update(_.copy(statuses = statuses, labels = labels))
+            val members = membersResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
+            state.update(_.copy(statuses = statuses, labels = labels, members = members))
           }
         }
         .unsafeRunAndForget()
@@ -184,7 +203,7 @@ class CreateTaskQuick(
             projectId = projectId,
             name = name,
             description = current.description,
-            assignedTo = accountService.get.map(_.id),
+            assignedTo = current.effectiveAssigneeId,
             createdBy = accountService.get.get.id,
             taskStatusId = statusId,
             createdAt = now,
@@ -264,13 +283,16 @@ class CreateTaskQuick(
     state.signal.map { current =>
       val project = current.projects.find(p => current.projectId.contains(p.id)).map(_.name).getOrElse("No project")
       val priorityClear = current.priority.map(_ => () => state.update(_.copy(priority = None)))
+      val assigneeClear = current.assigneeId.map(_ => () => state.update(_.copy(assigneeId = None)))
+      val assignee = current.members.find(member => current.effectiveAssigneeId.contains(member.id))
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
         Some(badge(project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
         statusDto.map(dto =>
           badge(dto.name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))), Some(dto.badgeColor))
         ),
-        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor)))
+        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor))),
+        assignee.map(member => badge(s"@${member.fullName}", assigneeClear))
       ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
         badge(
           label.name,
@@ -382,7 +404,7 @@ class CreateTaskQuick(
             .map(_.map(_.copy(highlighted = 0)))
             .distinct
             .map(_.map(popupElement)),
-          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  +status")
+          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  @assignee")
         ),
         div(cls("flex flex-wrap gap-1.5 mb-4"), children <-- badges),
         descriptionEditor.htmlElement.amend(cls("mb-4")),

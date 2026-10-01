@@ -7,9 +7,16 @@ object QuickDropdown {
   case object LabelsDropdown extends QuickDropdown
   case object PriorityDropdown extends QuickDropdown
   case object TaskStatusDropdown extends QuickDropdown
+  case object AssignedToDropdown extends QuickDropdown
 
   val triggerChars: Map[Char, QuickDropdown] =
-    Map('~' -> ProjectDropdown, '#' -> LabelsDropdown, '!' -> PriorityDropdown, '+' -> TaskStatusDropdown)
+    Map(
+      '~' -> ProjectDropdown,
+      '#' -> LabelsDropdown,
+      '!' -> PriorityDropdown,
+      '$' -> TaskStatusDropdown,
+      '@' -> AssignedToDropdown
+    )
 }
 
 /** @param start
