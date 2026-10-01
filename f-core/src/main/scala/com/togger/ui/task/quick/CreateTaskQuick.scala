@@ -304,10 +304,10 @@ class CreateTaskQuick(
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
         Some(badge(project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
+        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor))),
         statusDto.map(dto =>
           badge(dto.name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))), Some(dto.badgeColor))
         ),
-        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor))),
         assignee.map(member => badge(s"@${member.fullName}", assigneeClear))
       ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
         badge(
