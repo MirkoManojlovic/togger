@@ -20,9 +20,10 @@ case class QuickOption(
   * [[com.togger.ui.task.quick.CreateTaskQuick]] (where it first lived) and anything else that needs the same look.
   *
   * Row-highlighting is the caller's concern: `isHighlighted` is a function rather than a plain `Seq[Boolean]` so a
-  * caller driving it from arrow-key state (as `CreateTaskQuick` does) can hand this component a live per-row signal
-  * without this component knowing anything about keyboard navigation. A caller with no keyboard nav just passes
-  * `_ => Val(false)`.
+  * caller driving it from arrow-key state (as `CreateTaskQuick` does, and as `LogEntryComponent` does by forwarding
+  * its editor's keydown events) can hand this component a live per-row signal without this component knowing
+  * anything about keyboard navigation or where DOM focus sits — that is deliberately the caller's job, since the
+  * element arrow keys should be read from (a text input, a textarea) is also the caller's.
   *
   * @param widthCls
   *   a Tailwind width class; `CreateTaskQuick`'s name-input popup matches its full-width input (`"w-full""`), its
@@ -35,7 +36,7 @@ case class QuickOption(
   */
 case class QuickOptionsPopup(
   options: Seq[QuickOption],
-  isHighlighted: Int => Signal[Boolean],
+  isHighlighted: Int => Signal[Boolean] = _ => Val(false),
   onChoose: QuickOption => Unit,
   widthCls: String = "w-full",
   leftPx: Option[Double] = None

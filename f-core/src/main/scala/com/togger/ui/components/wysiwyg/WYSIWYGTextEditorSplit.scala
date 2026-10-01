@@ -86,7 +86,8 @@ case class WYSIWYGTextEditorSplit(
   previewDebounceMillis: Int = 150,
   previewEmptyText: String = "Nothing to preview",
   triggerChars: Set[Char] = Set.empty,
-  onTriggerChange: Observer[Option[WYSIWYGTriggerEvent]] = Observer.empty
+  onTriggerChange: Observer[Option[WYSIWYGTriggerEvent]] = Observer.empty,
+  onEditorKeyDown: dom.KeyboardEvent => Unit = _ => ()
 ) {
 
   /** Laminar has no prop for a textarea's own selection event, which is the one that fires on every caret move. */
@@ -124,6 +125,12 @@ case class WYSIWYGTextEditorSplit(
   private var lastKnown: Option[String] = None
 
   private var sourceRef: Option[dom.html.TextArea] = None
+
+  /** Pulls DOM focus back onto the textarea — the caller's job after something else (clicking a badge, say) opens a
+    * popup that should still read arrow keys from here, the way `CreateTaskQuick` refocuses `nameInput` after a
+    * badge click so the same keydown handler keeps driving the popup it just opened.
+    */
+  def focus(): Unit = sourceRef.foreach(_.focus())
 
   val htmlElement: HtmlDiv =
     div(
@@ -281,27 +288,35 @@ case class WYSIWYGTextEditorSplit(
 
   /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the
     * browser's — the whole reason this editor is a textarea.
+    *
+    * `onEditorKeyDown` runs first and gets to claim the key (via `preventDefault`) before any of this editor's own
+    * handling — the caller's popup (e.g. a status dropdown open above this field) needs ArrowUp/ArrowDown/Enter
+    * before they'd otherwise move the caret or insert a newline.
     */
-  private def handleKeyDown(event: dom.KeyboardEvent): Unit =
-    if (event.key == "Escape")
-      currentActiveTriggerToken().foreach { token =>
-        event.stopPropagation()
-        dismissedTriggerStartVar.set(Some(token.start))
-      }
-    else if (event.ctrlKey || event.metaKey)
-      event.key.toLowerCase match {
-        case "b" =>
-          event.preventDefault()
-          runCommand(WYSIWYGMarkdownCommands.toggleInline(_, "**"))
-        case "i" =>
-          event.preventDefault()
-          runCommand(WYSIWYGMarkdownCommands.toggleInline(_, "*"))
-        case "k" =>
-          event.preventDefault()
-          runCommand(linkCommand)
-        case _ => ()
-      }
-    else if (event.key == "Enter" && !event.shiftKey) handleEnter(event)
+  private def handleKeyDown(event: dom.KeyboardEvent): Unit = {
+    onEditorKeyDown(event)
+    if (!event.defaultPrevented) {
+      if (event.key == "Escape")
+        currentActiveTriggerToken().foreach { token =>
+          event.stopPropagation()
+          dismissedTriggerStartVar.set(Some(token.start))
+        }
+      else if (event.ctrlKey || event.metaKey)
+        event.key.toLowerCase match {
+          case "b" =>
+            event.preventDefault()
+            runCommand(WYSIWYGMarkdownCommands.toggleInline(_, "**"))
+          case "i" =>
+            event.preventDefault()
+            runCommand(WYSIWYGMarkdownCommands.toggleInline(_, "*"))
+          case "k" =>
+            event.preventDefault()
+            runCommand(linkCommand)
+          case _ => ()
+        }
+      else if (event.key == "Enter" && !event.shiftKey) handleEnter(event)
+    }
+  }
 
   /** Plain Enter is only intercepted when the caret sits in a list item — everywhere else it stays the browser's,
     * so `preventDefault` waits until `continueList` has actually found something to do.
@@ -391,7 +406,8 @@ object WYSIWYGTextEditorSplit {
       minWidthRem: Int = 60,
       showToolbar: Boolean = true,
       triggerChars: Set[Char] = Set.empty,
-      onTriggerChange: Observer[Option[WYSIWYGTriggerEvent]] = Observer.empty
+      onTriggerChange: Observer[Option[WYSIWYGTriggerEvent]] = Observer.empty,
+      onEditorKeyDown: dom.KeyboardEvent => Unit = _ => ()
     ): WYSIWYGTextEditorSplit =
       WYSIWYGTextEditorSplit(
         inputSignal = formState.signal.map(inputAndUpdater.selector),
@@ -402,7 +418,8 @@ object WYSIWYGTextEditorSplit {
         minWidthRem = minWidthRem,
         showToolbar = showToolbar,
         triggerChars = triggerChars,
-        onTriggerChange = onTriggerChange
+        onTriggerChange = onTriggerChange,
+        onEditorKeyDown = onEditorKeyDown
       )
   }
 }

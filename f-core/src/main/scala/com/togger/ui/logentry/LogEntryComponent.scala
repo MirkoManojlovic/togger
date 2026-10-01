@@ -21,6 +21,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+import org.scalajs.dom
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 import java.util.UUID
@@ -191,22 +192,66 @@ class LogEntryComponent(
   private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
 
     val activePopupVar: Var[Option[ActivePopup]] = Var(None)
+    val highlightedVar: Var[Int] = Var(0)
+
+    def currentStatusMatches: Seq[LogEntryStatus] =
+      activePopupVar.now() match {
+        case Some(ActivePopup.StatusOpen(query, _)) =>
+          LogEntryStatus.values.filter(_.statusName.toLowerCase.contains(query.toLowerCase))
+        case _ => Seq.empty
+      }
 
     val triggerObserver = Observer[Option[WYSIWYGTriggerEvent]] {
       case Some(WYSIWYGTriggerEvent('@', _, consume)) =>
         activePopupVar.set(Some(ActivePopup.DateOpen(Some(consume))))
       case Some(WYSIWYGTriggerEvent('$', query, consume)) =>
         activePopupVar.set(Some(ActivePopup.StatusOpen(query, Some(consume))))
+        highlightedVar.set(0)
       case Some(_) => ()
       case None    => activePopupVar.update(current => if (current.exists(_.viaTrigger)) None else current)
     }
 
-    val textExternalEditor = formState.wysiwygSplitEditorSig(
+    /** Mirrors `CreateTaskQuick`'s `onInputKeyDown`: the editor keeps focus throughout, so typing a query and
+      * navigating it with arrow keys both work from the same keydown stream — unlike a popup that grabs focus for
+      * itself, which would stop the editor from ever seeing another keystroke to type with.
+      */
+    def handleEditorKeyDown(event: dom.KeyboardEvent): Unit =
+      activePopupVar.now() match {
+        case Some(ActivePopup.StatusOpen(_, consumeOpt)) =>
+          val matches = currentStatusMatches
+          event.key match {
+            case "ArrowDown" if matches.nonEmpty =>
+              event.preventDefault()
+              highlightedVar.update(index => (index + 1) % matches.size)
+            case "ArrowUp" if matches.nonEmpty =>
+              event.preventDefault()
+              highlightedVar.update(index => (index - 1 + matches.size) % matches.size)
+            case "Enter" if matches.nonEmpty =>
+              event.preventDefault()
+              val chosen = matches(highlightedVar.now())
+              formState.update(_.copy(status = chosen.value.toString))
+              consumeOpt.foreach(consume => consume())
+              activePopupVar.set(None)
+              textExternalEditor.focus()
+            case "Escape" if consumeOpt.isEmpty =>
+              // a click-opened popup has no token for the editor's own Escape handling to dismiss
+              event.preventDefault()
+              activePopupVar.set(None)
+            case _ => ()
+          }
+        case Some(ActivePopup.DateOpen(consumeOpt)) if consumeOpt.isEmpty && event.key == "Escape" =>
+          event.preventDefault()
+          activePopupVar.set(None)
+        case _ => ()
+      }
+
+    lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
       labelValue = "Status update",
       minWidthRem = 40,
       triggerChars = Set('@', '$'),
-      onTriggerChange = triggerObserver
+      onTriggerChange = triggerObserver,
+      onEditorKeyDown = handleEditorKeyDown
     )
 
     def dateBadge: HtmlElement =
@@ -223,6 +268,7 @@ class LogEntryComponent(
                   case Some(ActivePopup.DateOpen(None)) => None
                   case _                                 => Some(ActivePopup.DateOpen(None))
                 }
+                textExternalEditor.focus()
               }
             )
         },
@@ -239,6 +285,7 @@ class LogEntryComponent(
                   formState.update(_.copy(date = day.toString))
                   consumeOpt.foreach(consume => consume())
                   activePopupVar.set(None)
+                  textExternalEditor.focus()
                 }
               ).element
             )
@@ -260,6 +307,8 @@ class LogEntryComponent(
                   case Some(ActivePopup.StatusOpen(_, None)) => None
                   case _                                       => Some(ActivePopup.StatusOpen("", None))
                 }
+                highlightedVar.set(0)
+                textExternalEditor.focus()
               }
             )
         },
@@ -277,11 +326,12 @@ class LogEntryComponent(
                     badgeColor = Some(status.badgeColor)
                   )
                 ),
-                isHighlighted = _ => Val(false),
+                isHighlighted = index => highlightedVar.signal.map(_ == index),
                 onChoose = option => {
                   formState.update(_.copy(status = option.id))
                   consumeOpt.foreach(consume => consume())
                   activePopupVar.set(None)
+                  textExternalEditor.focus()
                 },
                 widthCls = "w-96"
               ).element
