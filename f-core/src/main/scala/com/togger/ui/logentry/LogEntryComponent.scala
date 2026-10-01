@@ -14,9 +14,9 @@ import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -178,11 +178,10 @@ class LogEntryComponent(
       valuesAndDisplays = LogEntryStatus.namesToValuesMapString
     )
 
-    val textExternalTextArea = formState.tgTextAreaManualErrorSig(
+    val textExternalEditor = formState.wysiwygSplitEditorSig(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
-      errors = EventStream.empty,
       labelValue = "Status update",
-      numberOfColumns = 80
+      minWidthRem = 40
     )
 
 //    val textInternalTextArea = formState.tgTextAreaManualErrorSig(
@@ -223,16 +222,14 @@ class LogEntryComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              statusInputSelect.htmlElement.amend(cls("mb-4")),
               div(
                 cls("flex mb-4"),
-                textExternalTextArea.htmlElement
-//                div(
-//                  marginLeft.rem(1),
-//                  h3("Preview external"),
-//                  children <-- formState.signal.map(_.textExternal).map(markdownToHtml)
-//                )
-              ),
+                columnGap("2rem"),
+                div(
+                  flexGrow(1),
+                  minWidth("0"),
+                  textExternalEditor.htmlElement
+                ),
 //              div(
 //                cls("flex mb-4"),
 //                textInternalTextArea.htmlElement,
@@ -242,7 +239,13 @@ class LogEntryComponent(
 //                  children <-- formState.signal.map(_.textInternal).map(markdownToHtml)
 //                )
 //              ),
-              dateInput.htmlElement.amend(cls("mb-4")),
+                div(
+                  flexShrink(0),
+                  width("280px"),
+                  statusInputSelect.htmlElement.amend(cls("mb-4")),
+                  dateInput.htmlElement.amend(cls("mb-4"))
+                )
+              ),
               div(TgHtmlButton.primary(buttonLabel))
             )
           )
