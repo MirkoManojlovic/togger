@@ -19,6 +19,35 @@ object SplitPane {
   case object Preview extends SplitPane
 }
 
+/** A `trigger` char (e.g. `@`) typed at the start of a word, and the word's text after it. Modeled on
+  * [[com.togger.ui.task.quick.TaskQuickInputParser.QuickToken]], kept separate since this one lives inside a
+  * textarea rather than a single-line input and has no fixed set of trigger meanings.
+  */
+case class WYSIWYGTriggerToken(trigger: Char, query: String, start: Int, end: Int)
+
+object WYSIWYGTriggerToken {
+  def activeAt(raw: String, caret: Int, triggers: Set[Char]): Option[WYSIWYGTriggerToken] = {
+    def isTokenStart(index: Int): Boolean =
+      triggers.contains(raw(index)) && (index == 0 || raw(index - 1).isWhitespace)
+
+    def tokenEnd(start: Int): Int = {
+      val whitespaceIndex = raw.indexWhere(_.isWhitespace, start)
+      if (whitespaceIndex == -1) raw.length else whitespaceIndex
+    }
+
+    raw.indices
+      .filter(isTokenStart)
+      .map(start => WYSIWYGTriggerToken(raw(start), raw.substring(start + 1, tokenEnd(start)), start, tokenEnd(start)))
+      .find(token => caret > token.start && caret <= token.end)
+  }
+}
+
+/** Passed to a trigger's popup builder. `consume` deletes the token text (the caller has already written its pick
+  * into the form state) and refocuses the editor; `dismiss` hides the popup until the caret leaves this token,
+  * mirroring Escape in [[com.togger.ui.task.quick.CreateTaskQuick]].
+  */
+case class WYSIWYGTriggerContext(token: WYSIWYGTriggerToken, consume: () => Unit, dismiss: () => Unit)
+
 /** A two-pane markdown editor: the source on one side, a live preview on the other, the way GitHub does it.
   *
   * Shaped like [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an `Observer[String]` out — so it drops
@@ -54,7 +83,8 @@ case class WYSIWYGTextEditorSplit(
   styles: TgMarkdownStyles = TgMarkdownStyles.default,
   debounceTimeMillis: Int = 300,
   previewDebounceMillis: Int = 150,
-  previewEmptyText: String = "Nothing to preview"
+  previewEmptyText: String = "Nothing to preview",
+  triggers: Map[Char, WYSIWYGTriggerContext => HtmlElement] = Map.empty
 ) {
 
   /** Laminar has no prop for a textarea's own selection event, which is the one that fires on every caret move. */
@@ -69,6 +99,28 @@ case class WYSIWYGTextEditorSplit(
   private val sourceVar = Var("")
   private val activePaneVar = Var[SplitPane](SplitPane.Source)
   private val activeMarksVar = Var(Set.empty[String])
+  private val caretVar = Var(0)
+  private val dismissedTriggerStartVar = Var(Option.empty[Int])
+
+  /** Token plus the caret that made it active: the popup repositions to the caret as the author keeps typing the
+    * query, not just once when the trigger char appears.
+    */
+  private val activeTriggerSignal: Signal[Option[(WYSIWYGTriggerToken, Int)]] =
+    sourceVar.signal.combineWith(caretVar.signal, dismissedTriggerStartVar.signal).map {
+      case (text, caret, dismissed) =>
+        WYSIWYGTriggerToken
+          .activeAt(text, caret, triggers.keySet)
+          .filterNot(token => dismissed.contains(token.start))
+          .map(token => token -> caret)
+    }
+
+  /** `Signal#now` is protected outside Airstream internals, so the one synchronous read (Escape's key handler) goes
+    * straight to the three `Var`s instead of the derived signal above.
+    */
+  private def currentActiveTriggerToken(): Option[WYSIWYGTriggerToken] =
+    WYSIWYGTriggerToken
+      .activeAt(sourceVar.now(), caretVar.now(), triggers.keySet)
+      .filterNot(token => dismissedTriggerStartVar.now().contains(token.start))
 
   /** The last markdown the editor and its caller agree on. An incoming value equal to this is the echo of our own
     * emit; acting on it would re-assign the textarea's value and drop the caret to the end of the text.
@@ -82,6 +134,7 @@ case class WYSIWYGTextEditorSplit(
       label(cls(WYSIWYGTextEditorStyles.label), labelValue),
       div(
         cls(WYSIWYGTextEditorStyles.wrapper),
+        position.relative, // anchors the trigger popup below the panes
         minWidth.rem(minWidthRem),
         if (showToolbar) toolbarElement else emptyNode,
         tabBarElement,
@@ -90,11 +143,89 @@ case class WYSIWYGTextEditorSplit(
           minHeight.rem(minHeightRem),
           sourcePane,
           previewPane
-        )
+        ),
+        child.maybe <-- activeTriggerSignal.distinct.map(renderTriggerPopup)
       ),
       inputSignal --> Observer[String](onExternalValue),
       sourceVar.signal.changes.debounce(debounceTimeMillis) --> Observer[String](emit)
     )
+
+  /** Wraps the trigger's own popup content in a container positioned at the caret, via [[caretCoordinates]]. The
+    * popup builders stay focused on their own look (background, border, list) and know nothing about layout.
+    */
+  private def renderTriggerPopup(active: Option[(WYSIWYGTriggerToken, Int)]): Option[HtmlElement] =
+    active.flatMap { case (activeToken, caret) =>
+      triggers.get(activeToken.trigger).map { builder =>
+        val content = builder(
+          WYSIWYGTriggerContext(
+            token = activeToken,
+            consume = () => consumeTriggerToken(activeToken),
+            dismiss = () => dismissedTriggerStartVar.set(Some(activeToken.start))
+          )
+        )
+        val (caretTop, caretLeft, lineHeight) =
+          sourceRef.map(caretCoordinates(_, caret)).getOrElse((0.0, 0.0, 0.0))
+        div(
+          cls("absolute z-20"),
+          top(s"${caretTop + lineHeight}px"),
+          left(s"${caretLeft}px"),
+          content
+        )
+      }
+    }
+
+  /** Where the caret sits inside the textarea, in pixels relative to its own border box (`lineHeight` is returned
+    * alongside so the popup can sit a full line below it, rather than over the text being typed).
+    *
+    * Textareas have no API for this, so the standard trick applies: clone every CSS property that affects text
+    * layout onto a hidden mirror div, fill it with the text up to the caret, and read the offset of a marker span
+    * right after it. `scrollTop`/`scrollLeft` are subtracted because the mirror is never scrolled, but the real
+    * textarea might be.
+    */
+  private def caretCoordinates(element: dom.html.TextArea, position: Int): (Double, Double, Double) = {
+    val computed = dom.window.getComputedStyle(element)
+    val mirror = dom.document.createElement("div").asInstanceOf[dom.html.Element]
+    val mirrorStyle = mirror.style
+
+    mirrorStyle.setProperty("position", "absolute")
+    mirrorStyle.setProperty("visibility", "hidden")
+    mirrorStyle.setProperty("top", "0")
+    mirrorStyle.setProperty("left", "-9999px")
+    WYSIWYGTextEditorSplit.caretMirrorProperties.foreach(prop =>
+      mirrorStyle.setProperty(prop, computed.getPropertyValue(prop))
+    )
+
+    dom.document.body.appendChild(mirror): Unit
+    mirror.textContent = element.value.substring(0, position)
+
+    val marker = dom.document.createElement("span").asInstanceOf[dom.html.Element]
+    marker.textContent = "​" // zero-width space: keeps the span measurable even right after a newline
+    mirror.appendChild(marker): Unit
+
+    val top = marker.offsetTop.toDouble - element.scrollTop
+    val left = marker.offsetLeft.toDouble - element.scrollLeft
+    val lineHeight = computed.getPropertyValue("line-height").stripSuffix("px").toDoubleOption.getOrElse(20.0)
+
+    dom.document.body.removeChild(mirror): Unit
+
+    (top, left, lineHeight)
+  }
+
+  /** Deletes the token's text (the caller already wrote its pick into the form state) and puts the caret back where
+    * the token used to start, the same order `applyResult` uses for the same reason: assigning a textarea's value
+    * clears its selection.
+    */
+  private def consumeTriggerToken(token: WYSIWYGTriggerToken): Unit = {
+    val updated = sourceVar.now().patch(token.start, "", token.end - token.start)
+    sourceVar.set(updated)
+    sourceRef.foreach { element =>
+      if (element.value != updated) element.value = updated
+      element.setSelectionRange(token.start, token.start)
+      element.focus()
+    }
+    caretVar.set(token.start)
+    dismissedTriggerStartVar.set(None)
+  }
 
   private def sourcePane: HtmlDiv =
     div(
@@ -213,7 +344,12 @@ case class WYSIWYGTextEditorSplit(
     * browser's — the whole reason this editor is a textarea.
     */
   private def handleKeyDown(event: dom.KeyboardEvent): Unit =
-    if (event.ctrlKey || event.metaKey)
+    if (event.key == "Escape")
+      currentActiveTriggerToken().foreach { token =>
+        event.stopPropagation()
+        dismissedTriggerStartVar.set(Some(token.start))
+      }
+    else if (event.ctrlKey || event.metaKey)
       event.key.toLowerCase match {
         case "b" =>
           event.preventDefault()
@@ -266,6 +402,7 @@ case class WYSIWYGTextEditorSplit(
 
   private def refreshActiveMarks(): Unit =
     sourceRef.foreach { element =>
+      caretVar.set(element.selectionStart)
       activeMarksVar.set(
         WYSIWYGMarkdownCommands.activeMarks(TextSelection(element.value, element.selectionStart, element.selectionEnd))
       )
@@ -302,6 +439,41 @@ case class WYSIWYGTextEditorSplit(
 
 object WYSIWYGTextEditorSplit {
 
+  /** The CSS properties [[WYSIWYGTextEditorSplit.caretCoordinates]] copies onto its mirror div — every property
+    * that affects where text wraps or how wide/tall a character renders, kebab-cased for `getPropertyValue`.
+    */
+  private val caretMirrorProperties: Seq[String] = Seq(
+    "box-sizing",
+    "width",
+    "overflow-x",
+    "overflow-y",
+    "border-top-width",
+    "border-right-width",
+    "border-bottom-width",
+    "border-left-width",
+    "padding-top",
+    "padding-right",
+    "padding-bottom",
+    "padding-left",
+    "font-style",
+    "font-variant",
+    "font-weight",
+    "font-stretch",
+    "font-size",
+    "line-height",
+    "font-family",
+    "text-align",
+    "text-transform",
+    "text-indent",
+    "text-decoration",
+    "letter-spacing",
+    "word-spacing",
+    "tab-size",
+    "white-space",
+    "word-wrap",
+    "word-break"
+  )
+
   /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using
     * it reads like the ones around it.
     */
@@ -313,7 +485,8 @@ object WYSIWYGTextEditorSplit {
       placeholderValue: String = "",
       minHeightRem: Int = 30,
       minWidthRem: Int = 60,
-      showToolbar: Boolean = true
+      showToolbar: Boolean = true,
+      triggers: Map[Char, WYSIWYGTriggerContext => HtmlElement] = Map.empty
     ): WYSIWYGTextEditorSplit =
       WYSIWYGTextEditorSplit(
         inputSignal = formState.signal.map(inputAndUpdater.selector),
@@ -322,7 +495,8 @@ object WYSIWYGTextEditorSplit {
         placeholderValue = placeholderValue,
         minHeightRem = minHeightRem,
         minWidthRem = minWidthRem,
-        showToolbar = showToolbar
+        showToolbar = showToolbar,
+        triggers = triggers
       )
   }
 }

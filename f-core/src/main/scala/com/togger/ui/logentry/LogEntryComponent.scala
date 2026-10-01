@@ -17,7 +17,8 @@ import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.wysiwyg.WYSIWYGTriggerContext
+import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
@@ -25,6 +26,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 import java.util.UUID
+import scala.util.Try
 
 case class LogEntryForm(
   logEntryId: Option[UUID] = None,
@@ -170,6 +172,51 @@ class LogEntryComponent(
     )
   )
 
+  /** `$` trigger popup: a filterable list of log entry statuses, the same values `statusInputSelect` offers. */
+  private def statusTriggerPopup(ctx: WYSIWYGTriggerContext): HtmlElement = {
+    val query = ctx.token.query.toLowerCase
+    val matches = LogEntryStatus.values.filter(_.statusName.toLowerCase.contains(query))
+    div(
+      cls("w-56 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      ul(
+        cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
+        if (matches.isEmpty) Seq(li(cls("p-2 text-sm text-body"), "No matches"))
+        else
+          matches.map { status =>
+            li(
+              button(
+                `type`("button"),
+                cls(
+                  "flex items-center w-full p-2 text-sm font-medium hover:bg-neutral-tertiary-medium rounded-md cursor-pointer"
+                ),
+                onMouseDown.preventDefault --> Observer.empty,
+                onClick.mapToUnit --> { _ =>
+                  formState.update(_.copy(status = status.value.toString))
+                  ctx.consume()
+                },
+                TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+              )
+            )
+          }
+      )
+    )
+  }
+
+  /** `@` trigger popup: a month calendar, the same `date` field `dateInput` edits directly. */
+  private def dateTriggerPopup(ctx: WYSIWYGTriggerContext): HtmlElement = {
+    val currentDate = Try(LocalDate.parse(formState.now().date)).getOrElse(tgClock.currentDate())
+    CalendarPickerPopup(
+      initialMonth = currentDate,
+      today = tgClock.currentDate(),
+      tgDateFormater = tgDateFormater,
+      selected = Some(currentDate),
+      onPick = day => {
+        formState.update(_.copy(date = day.toString))
+        ctx.consume()
+      }
+    ).element
+  }
+
   private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
 
     val statusInputSelect = formState.tgSelectManualError(
@@ -181,7 +228,11 @@ class LogEntryComponent(
     val textExternalEditor = formState.wysiwygSplitEditorSig(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
       labelValue = "Status update",
-      minWidthRem = 40
+      minWidthRem = 40,
+      triggers = Map(
+        '$' -> statusTriggerPopup _,
+        '@' -> dateTriggerPopup _
+      )
     )
 
 //    val textInternalTextArea = formState.tgTextAreaManualErrorSig(
@@ -228,7 +279,8 @@ class LogEntryComponent(
                 div(
                   flexGrow(1),
                   minWidth("0"),
-                  textExternalEditor.htmlElement
+                  textExternalEditor.htmlElement,
+                  p(cls("mt-1 text-xs text-gray-500"), "@ date  $ status")
                 ),
 //              div(
 //                cls("flex mb-4"),
