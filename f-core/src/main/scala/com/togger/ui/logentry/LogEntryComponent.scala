@@ -272,7 +272,7 @@ class LogEntryComponent(
                   QuickOption(
                     id = status.value.toString,
                     label = status.statusName,
-                    description = "",
+                    description = status.description,
                     isSelected = formState.now().status == status.value.toString,
                     badgeColor = Some(status.badgeColor)
                   )
@@ -283,7 +283,7 @@ class LogEntryComponent(
                   consumeOpt.foreach(consume => consume())
                   activePopupVar.set(None)
                 },
-                widthCls = "w-56"
+                widthCls = "w-96"
               ).element
             )
           case _ => None
