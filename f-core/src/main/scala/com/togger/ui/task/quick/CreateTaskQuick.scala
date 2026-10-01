@@ -12,6 +12,10 @@ import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
+import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.{TgBadgeColor, TgBadgeSize, TgBadgeStyles}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
@@ -23,6 +27,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
 import java.util.UUID
+import scala.scalajs.js
 
 case class QuickState(
   rawInput: String = "",
@@ -233,10 +238,15 @@ class CreateTaskQuick(
       submit()
     }
 
-  private def badge(text: String, onClear: Option[() => Unit]): HtmlElement =
+  private val uncoloredBadgeCls =
+    "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-base bg-neutral-tertiary text-heading"
+
+  private def badge(text: String, onClear: Option[() => Unit], color: Option[TgBadgeColor] = None): HtmlElement =
     span(
       cls(
-        "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-base bg-neutral-tertiary text-heading"
+        color.fold(uncoloredBadgeCls)(
+          TgBadgeStyles.container(_, TgBadgeSize.Default, bordered = true, pill = false, action = None, "gap-1")
+        )
       ),
       text,
       onClear.map(clear =>
@@ -253,28 +263,38 @@ class CreateTaskQuick(
   private def badges: Signal[Seq[HtmlElement]] =
     state.signal.map { current =>
       val project = current.projects.find(p => current.projectId.contains(p.id)).map(_.name).getOrElse("No project")
-      val status = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id)).map(_.name)
       val priorityClear = current.priority.map(_ => () => state.update(_.copy(priority = None)))
+      val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
         Some(badge(project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
-        status.map(name => badge(name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))))),
-        Some(badge(current.effectivePriority.priorityName, priorityClear))
+        statusDto.map(dto =>
+          badge(dto.name, current.statusId.map(_ => () => state.update(_.copy(statusId = None))), Some(dto.badgeColor))
+        ),
+        Some(badge(current.effectivePriority.priorityName, priorityClear, Some(current.effectivePriority.badgeColor)))
       ).flatten ++ current.labels.filter(label => current.labelIds.contains(label.id)).map { label =>
         badge(
           label.name,
-          Some(() => state.update(current => current.copy(labelIds = current.labelIds - label.id)))
+          Some(() => state.update(current => current.copy(labelIds = current.labelIds - label.id))),
+          Some(label.badgeColor)
         )
       }
     }
 
-  private def popupRow(popup: QuickPopup, option: QuickOption, index: Int): HtmlElement =
+  private def popupRow(popup: QuickPopup, option: QuickOption, index: Int): HtmlElement = {
+    val isHighlighted: Signal[Boolean] =
+      state.signal.map(popupFor).map(_.exists(_.highlighted == index)).distinct
     li(
       button(
         `type`("button"),
         cls(
           "flex flex-col items-start w-full p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium rounded-md cursor-pointer"
         ),
-        cls(if (index == popup.highlighted) "bg-neutral-tertiary-medium" else ""),
+        cls("bg-neutral-tertiary-medium") <-- isHighlighted,
+        inContext(row =>
+          isHighlighted.changes.filter(highlighted => highlighted) --> (_ =>
+            row.ref.asInstanceOf[js.Dynamic].scrollIntoView(js.Dynamic.literal(block = "nearest"))
+          )
+        ),
         onMouseDown.preventDefault --> Observer.empty,
         onClick.mapToUnit --> (_ => choose(popup.token, option)),
         div(
@@ -287,6 +307,7 @@ class CreateTaskQuick(
         )
       )
     )
+  }
 
   private def popupElement(popup: QuickPopup): HtmlElement =
     div(
@@ -356,7 +377,11 @@ class CreateTaskQuick(
         div(
           cls("relative mb-3"),
           nameInput,
-          child.maybe <-- state.signal.map(popupFor).map(_.map(popupElement)),
+          child.maybe <-- state.signal
+            .map(popupFor)
+            .map(_.map(_.copy(highlighted = 0)))
+            .distinct
+            .map(_.map(popupElement)),
           p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  +status")
         ),
         div(cls("flex flex-wrap gap-1.5 mb-4"), children <-- badges),
