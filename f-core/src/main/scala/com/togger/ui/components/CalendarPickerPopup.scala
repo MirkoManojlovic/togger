@@ -25,7 +25,7 @@ case class CalendarPickerPopup(
 
   val element: HtmlDiv =
     div(
-      cls("p-3 w-64 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      cls("absolute z-10 mt-1 p-3 w-64 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
       headerRow,
       weekdayRow,
       div(cls("grid grid-cols-7 gap-1"), children <-- monthVar.signal.map(daysOf))

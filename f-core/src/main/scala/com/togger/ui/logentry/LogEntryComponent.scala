@@ -12,13 +12,11 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.wysiwyg.WYSIWYGTriggerContext
-import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor}
+import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
+import com.togger.ui.components.{CalendarPickerPopup, QuickOption, QuickOptionsPopup, TgBadge, TgBadgeColor}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
@@ -47,7 +45,7 @@ object LogEntryForm {
   def default(taskId: UUID, tgClock: TgClock) =
     LogEntryForm(
       taskId = taskId,
-      status = LogEntryStatus.InProgress.statusName,
+      status = LogEntryStatus.InProgress.value.toString,
       date = tgClock.currentDate().toString
     )
 
@@ -60,6 +58,24 @@ object LogEntryForm {
       textInternal = dto.textInternal,
       date = dto.updatedAt.toLocalDate().toString
     )
+}
+
+/** The date/status badge popup currently open above the editor, if any. `consume` is `Some` when a typed trigger
+  * (`@`/`+`) opened it — picking a value then also deletes the trigger text from the editor — and `None` when a
+  * click on the badge itself opened it, which has no token to remove.
+  */
+sealed trait ActivePopup {
+  def viaTrigger: Boolean
+}
+
+object ActivePopup {
+  case class DateOpen(consume: Option[() => Unit]) extends ActivePopup {
+    override val viaTrigger: Boolean = consume.isDefined
+  }
+
+  case class StatusOpen(query: String, consume: Option[() => Unit]) extends ActivePopup {
+    override val viaTrigger: Boolean = consume.isDefined
+  }
 }
 
 class LogEntryComponent(
@@ -172,83 +188,107 @@ class LogEntryComponent(
     )
   )
 
-  /** `$` trigger popup: a filterable list of log entry statuses, the same values `statusInputSelect` offers. */
-  private def statusTriggerPopup(ctx: WYSIWYGTriggerContext): HtmlElement = {
-    val query = ctx.token.query.toLowerCase
-    val matches = LogEntryStatus.values.filter(_.statusName.toLowerCase.contains(query))
-    div(
-      cls("w-56 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
-      ul(
-        cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
-        if (matches.isEmpty) Seq(li(cls("p-2 text-sm text-body"), "No matches"))
-        else
-          matches.map { status =>
-            li(
-              button(
-                `type`("button"),
-                cls(
-                  "flex items-center w-full p-2 text-sm font-medium hover:bg-neutral-tertiary-medium rounded-md cursor-pointer"
-                ),
-                onMouseDown.preventDefault --> Observer.empty,
-                onClick.mapToUnit --> { _ =>
-                  formState.update(_.copy(status = status.value.toString))
-                  ctx.consume()
-                },
-                TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
-              )
-            )
-          }
-      )
-    )
-  }
-
-  /** `@` trigger popup: a month calendar, the same `date` field `dateInput` edits directly. */
-  private def dateTriggerPopup(ctx: WYSIWYGTriggerContext): HtmlElement = {
-    val currentDate = Try(LocalDate.parse(formState.now().date)).getOrElse(tgClock.currentDate())
-    CalendarPickerPopup(
-      initialMonth = currentDate,
-      today = tgClock.currentDate(),
-      tgDateFormater = tgDateFormater,
-      selected = Some(currentDate),
-      onPick = day => {
-        formState.update(_.copy(date = day.toString))
-        ctx.consume()
-      }
-    ).element
-  }
-
   private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
 
-    val statusInputSelect = formState.tgSelectManualError(
-      inputAndUpdater = selectorAndUpdaterMacro(_.status),
-      labelValue = "Status",
-      valuesAndDisplays = LogEntryStatus.namesToValuesMapString
-    )
+    val activePopupVar: Var[Option[ActivePopup]] = Var(None)
+
+    val triggerObserver = Observer[Option[WYSIWYGTriggerEvent]] {
+      case Some(WYSIWYGTriggerEvent('@', _, consume)) =>
+        activePopupVar.set(Some(ActivePopup.DateOpen(Some(consume))))
+      case Some(WYSIWYGTriggerEvent('$', query, consume)) =>
+        activePopupVar.set(Some(ActivePopup.StatusOpen(query, Some(consume))))
+      case Some(_) => ()
+      case None    => activePopupVar.update(current => if (current.exists(_.viaTrigger)) None else current)
+    }
 
     val textExternalEditor = formState.wysiwygSplitEditorSig(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
       labelValue = "Status update",
       minWidthRem = 40,
-      triggers = Map(
-        '$' -> statusTriggerPopup _,
-        '@' -> dateTriggerPopup _
+      triggerChars = Set('@', '$'),
+      onTriggerChange = triggerObserver
+    )
+
+    def dateBadge: HtmlElement =
+      div(
+        cls("relative"),
+        child <-- formState.signal.map(_.date).distinct.map { dateStr =>
+          val date = Try(LocalDate.parse(dateStr)).getOrElse(tgClock.currentDate())
+          TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element
+            .amend(
+              cls("cursor-pointer"),
+              cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.DateOpen])),
+              onClick.mapToUnit --> { _ =>
+                activePopupVar.update {
+                  case Some(ActivePopup.DateOpen(None)) => None
+                  case _                                 => Some(ActivePopup.DateOpen(None))
+                }
+              }
+            )
+        },
+        child.maybe <-- activePopupVar.signal.map {
+          case Some(ActivePopup.DateOpen(consumeOpt)) =>
+            val currentDate = Try(LocalDate.parse(formState.now().date)).getOrElse(tgClock.currentDate())
+            Some(
+              CalendarPickerPopup(
+                initialMonth = currentDate,
+                today = tgClock.currentDate(),
+                tgDateFormater = tgDateFormater,
+                selected = Some(currentDate),
+                onPick = day => {
+                  formState.update(_.copy(date = day.toString))
+                  consumeOpt.foreach(consume => consume())
+                  activePopupVar.set(None)
+                }
+              ).element
+            )
+          case _ => None
+        }
       )
-    )
 
-//    val textInternalTextArea = formState.tgTextAreaManualErrorSig(
-//      inputAndUpdater = selectorAndUpdaterMacro(_.textInternal),
-//      errors = EventStream.empty,
-//      labelValue = "Internal text",
-//      isRequired = false,
-//      numberOfColumns = 80
-//    )
-
-    val dateInput = formState.tgInputManualErrorLPSig(
-      inputAndUpdater = selectorAndUpdaterMacro(_.date),
-      errors = EventStream.empty,
-      labelValue = "Date created",
-      tgInputType = TgInputType.Date
-    )
+    def statusBadge: HtmlElement =
+      div(
+        cls("relative"),
+        child <-- formState.signal.map(_.status).distinct.map { statusStr =>
+          val status = LogEntryStatus.withValue(statusStr.toInt)
+          TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+            .amend(
+              cls("cursor-pointer"),
+              cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.StatusOpen])),
+              onClick.mapToUnit --> { _ =>
+                activePopupVar.update {
+                  case Some(ActivePopup.StatusOpen(_, None)) => None
+                  case _                                       => Some(ActivePopup.StatusOpen("", None))
+                }
+              }
+            )
+        },
+        child.maybe <-- activePopupVar.signal.map {
+          case Some(ActivePopup.StatusOpen(query, consumeOpt)) =>
+            val matches = LogEntryStatus.values.filter(_.statusName.toLowerCase.contains(query.toLowerCase))
+            Some(
+              QuickOptionsPopup(
+                options = matches.map(status =>
+                  QuickOption(
+                    id = status.value.toString,
+                    label = status.statusName,
+                    description = "",
+                    isSelected = formState.now().status == status.value.toString,
+                    badgeColor = Some(status.badgeColor)
+                  )
+                ),
+                isHighlighted = _ => Val(false),
+                onChoose = option => {
+                  formState.update(_.copy(status = option.id))
+                  consumeOpt.foreach(consume => consume())
+                  activePopupVar.set(None)
+                },
+                widthCls = "w-56"
+              ).element
+            )
+          case _ => None
+        }
+      )
 
     TgCard
       .headerNoFooter(
@@ -273,31 +313,9 @@ class LogEntryComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              div(
-                cls("flex mb-4"),
-                columnGap("2rem"),
-                div(
-                  flexGrow(1),
-                  minWidth("0"),
-                  textExternalEditor.htmlElement,
-                  p(cls("mt-1 text-xs text-gray-500"), "@ date  $ status")
-                ),
-//              div(
-//                cls("flex mb-4"),
-//                textInternalTextArea.htmlElement,
-//                div(
-//                  marginLeft.rem(1),
-//                  h3("Preview internal"),
-//                  children <-- formState.signal.map(_.textInternal).map(markdownToHtml)
-//                )
-//              ),
-                div(
-                  flexShrink(0),
-                  width("280px"),
-                  statusInputSelect.htmlElement.amend(cls("mb-4")),
-                  dateInput.htmlElement.amend(cls("mb-4"))
-                )
-              ),
+              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge),
+              textExternalEditor.htmlElement.amend(cls("mb-1")),
+              p(cls("mt-1 mb-4 text-xs text-gray-500"), "@ date  $ status"),
               div(TgHtmlButton.primary(buttonLabel))
             )
           )

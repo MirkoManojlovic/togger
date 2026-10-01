@@ -15,7 +15,7 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgBadgeSize, TgBadgeStyles}
+import com.togger.ui.components.{QuickOption, QuickOptionsPopup, TgBadgeColor, TgBadgeSize, TgBadgeStyles}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
@@ -28,7 +28,6 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
 import java.util.UUID
-import scala.scalajs.js
 
 /** A popup opened by clicking a badge, anchored `left` pixels from the badge row's left edge. */
 case class BadgePopup(dropdown: QuickDropdown, left: Double)
@@ -71,14 +70,6 @@ case class QuickState(
   def activeToken: Option[QuickToken] =
     TaskQuickInputParser.activeTokenAt(rawInput, caret).filterNot(token => dismissedTokenStart.contains(token.start))
 }
-
-case class QuickOption(
-  id: String,
-  label: String,
-  description: String,
-  isSelected: Boolean,
-  badgeColor: Option[TgBadgeColor] = None
-)
 
 case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int, left: Option[Double] = None)
 
@@ -386,47 +377,14 @@ class CreateTaskQuick(
       }
   }
 
-  private def popupRow(popup: QuickPopup, option: QuickOption, index: Int): HtmlElement = {
-    val isHighlighted: Signal[Boolean] =
-      state.signal.map(popupFor).map(_.exists(_.highlighted == index)).distinct
-    li(
-      button(
-        `type`("button"),
-        cls(
-          "flex flex-col items-start w-full p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium rounded-md cursor-pointer"
-        ),
-        cls("bg-neutral-tertiary-medium") <-- isHighlighted,
-        inContext(row =>
-          isHighlighted.changes.filter(highlighted => highlighted) --> (_ =>
-            row.ref.asInstanceOf[js.Dynamic].scrollIntoView(js.Dynamic.literal(block = "nearest"))
-          )
-        ),
-        onMouseDown.preventDefault --> Observer.empty,
-        onClick.mapToUnit --> (_ => choose(popup.token, option)),
-        div(
-          cls("inline-flex items-center w-full gap-1.5"),
-          div(cls("w-4 h-4 shrink-0"), Option.when(option.isSelected)(TgIcons.checkIcon("w-4 h-4"))),
-          option.badgeColor.fold[HtmlElement](span(option.label))(color =>
-            TgBadge(text = option.label, color = color, bordered = true).element
-          )
-        ),
-        Option.when(option.description.nonEmpty)(
-          p(cls("w-full text-left text-xs font-normal text-body mt-0.5 line-clamp-1"), option.description)
-        )
-      )
-    )
-  }
-
   private def popupElement(popup: QuickPopup): HtmlElement =
-    div(
-      cls("absolute z-10 mt-1 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
-      popup.left.fold[Modifier[HtmlElement]](cls("w-full"))(left => Seq(cls("w-72 max-w-full"), styleProp("left") := s"${left}px")),
-      ul(
-        cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
-        if (popup.options.isEmpty) Seq(li(cls("p-2 text-sm text-body"), "No matches"))
-        else popup.options.zipWithIndex.map { case (option, index) => popupRow(popup, option, index) }
-      )
-    )
+    QuickOptionsPopup(
+      options = popup.options,
+      isHighlighted = index => state.signal.map(popupFor).map(_.exists(_.highlighted == index)).distinct,
+      onChoose = option => choose(popup.token, option),
+      widthCls = popup.left.fold("w-full")(_ => "w-72 max-w-full"),
+      leftPx = popup.left
+    ).element
 
   /** Rebuilt only when the token or options change, not on every highlight move, so the list keeps its scroll. */
   private def popupSlot(belongsHere: QuickPopup => Boolean): Signal[Option[HtmlElement]] =
