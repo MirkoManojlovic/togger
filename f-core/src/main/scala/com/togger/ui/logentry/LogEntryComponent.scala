@@ -353,7 +353,7 @@ class LogEntryComponent(
           div(
             cls("flex"),
             justifyContent.spaceBetween, // TODO: fix this
-            div("Create a daily log entry"),
+            div("Status for the day"),
             if (addShowToggle) {
               TgHtmlButton
                 .extraSmall("Show")
