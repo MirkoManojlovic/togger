@@ -18,6 +18,10 @@ import java.time.LocalDate
   * nothing is reported until "OK" is clicked, which calls `onPick` with the staged date and then `onClose`. "Cancel",
   * Escape, and an outside click all call `onClose` without picking anything. Meant to be dropped into a popup slot the
   * caller owns (e.g. opened by clicking a badge), not mounted standalone.
+  *
+  * @param isDisabled
+  *   an extra, caller-defined exclusion on top of `minDate`/`maxDate` (e.g. weekends, or dates already taken by
+  *   another record) — a disabled day can't be typed, quick-picked, or clicked, same as one outside the min/max range.
   */
 case class CalendarPickerPopup(
   initialMonth: LocalDate,
@@ -27,7 +31,8 @@ case class CalendarPickerPopup(
   onClose: () => Unit,
   selected: Option[LocalDate] = None,
   minDate: Option[LocalDate] = None,
-  maxDate: Option[LocalDate] = None
+  maxDate: Option[LocalDate] = None,
+  isDisabled: LocalDate => Boolean = _ => false
 ) {
 
   private val monthVar = Var(initialMonth.withDayOfMonth(1))
@@ -36,7 +41,7 @@ case class CalendarPickerPopup(
   private val pendingVar = Var(selected)
 
   private def inRange(day: LocalDate): Boolean =
-    !minDate.exists(day.isBefore) && !maxDate.exists(day.isAfter)
+    !minDate.exists(day.isBefore) && !maxDate.exists(day.isAfter) && !isDisabled(day)
 
   private def matches(query: String, label: String): Boolean =
     query.trim.isEmpty || label.toLowerCase.contains(query.trim.toLowerCase)
@@ -71,9 +76,15 @@ case class CalendarPickerPopup(
   private def onInputChange(raw: String): Unit = {
     inputVar.set(raw)
     highlightedVar.set(0)
-    DatePickerInput.parse(raw, today).filter(inRange).foreach { day =>
-      monthVar.set(day.withDayOfMonth(1))
-      pendingVar.set(Some(day))
+    DatePickerInput.parse(raw, today) match {
+      case Some(day) if inRange(day) =>
+        monthVar.set(day.withDayOfMonth(1))
+        pendingVar.set(Some(day))
+      case Some(_) =>
+        // a complete, parseable date that's forbidden (weekend, before the min date, or otherwise disabled) can't
+        // be staged — clear any earlier staged pick so OK can't confirm it while a forbidden date is shown typed
+        pendingVar.set(None)
+      case None => ()
     }
   }
 
