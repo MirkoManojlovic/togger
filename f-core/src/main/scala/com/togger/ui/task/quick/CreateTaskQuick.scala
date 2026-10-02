@@ -292,8 +292,7 @@ class CreateTaskQuick(
     target.isInstanceOf[dom.html.TextArea] && descriptionEditor.htmlElement.ref.contains(target.asInstanceOf[dom.Node])
 
   private def onWrapperKeyDown(event: dom.KeyboardEvent): Unit =
-    if (event.key == "Escape") onClose()
-    else if (event.key == "Tab" && event.shiftKey && isDescriptionTextArea(event.target)) {
+    if (event.key == "Tab" && event.shiftKey && isDescriptionTextArea(event.target)) {
       event.preventDefault()
       nameInput.ref.focus()
     } else if (event.key == "Enter" && (event.ctrlKey || event.metaKey)) {
@@ -435,7 +434,13 @@ class CreateTaskQuick(
       cls("fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-white/90"),
       onKeyDown --> (event => onWrapperKeyDown(event)),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => onClose()),
-      onMountCallback(_ => loadProjects()),
+      onMountCallback { _ =>
+        loadProjects()
+        nameInput.ref.focus()
+      },
+      // on the document, not the wrapper, so Escape closes even when focus has dropped to the page body; a popup
+      // handling its own Escape stops the event before it gets here
+      documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => onClose()),
       state.signal.map(_.projectId).distinct --> (projectId => loadProjectData(projectId)),
       div(
         cls(ModalStyles.contentBoxCls),
