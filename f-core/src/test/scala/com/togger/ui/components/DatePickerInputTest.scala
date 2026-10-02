@@ -54,4 +54,27 @@ class DatePickerInputTest extends AnyWordSpec with Matchers {
       DatePickerInput.parse("123", today) shouldBe None
     }
   }
+
+  "DatePickerSuggestions.all" should {
+    // `today` (2026-10-02) is a Friday
+    def resolve(label: String): LocalDate =
+      DatePickerSuggestions.all.find(_.label == label).map(_.resolve(today)).get
+
+    "resolve a plain weekday to that day in today's own week, even if already past" in {
+      resolve("Monday") shouldBe LocalDate.of(2026, 9, 28)
+    }
+
+    "resolve a plain weekday to today itself when today is that weekday" in {
+      resolve("Friday") shouldBe today
+    }
+
+    "resolve \"Next <weekday>\" to that weekday in the following week, distinct from the plain weekday" in {
+      resolve("Next Monday") shouldBe LocalDate.of(2026, 10, 5)
+      resolve("Next Monday") should not be resolve("Monday")
+    }
+
+    "resolve \"Previous <weekday>\" to that weekday in the prior week" in {
+      resolve("Previous Monday") shouldBe LocalDate.of(2026, 9, 21)
+    }
+  }
 }

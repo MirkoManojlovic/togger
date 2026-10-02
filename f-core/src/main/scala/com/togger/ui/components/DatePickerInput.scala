@@ -1,7 +1,6 @@
 package com.togger.ui.components
 
 import java.time.format.TextStyle
-import java.time.temporal.TemporalAdjusters
 import java.time.{DayOfWeek, LocalDate}
 import java.util.Locale
 import scala.util.Try
@@ -35,13 +34,19 @@ object DatePickerSuggestions {
 
   private def name(day: DayOfWeek): String = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
 
+  /** `day` on the same Monday-Sunday week as `today`, whether that's before, on, or after `today` itself — e.g. if
+    * `today` is a Wednesday, `sameWeek(MONDAY)` is this past Monday and `sameWeek(FRIDAY)` is this coming Friday.
+    */
+  private def sameWeek(day: DayOfWeek)(today: LocalDate): LocalDate =
+    today.plusDays((day.getValue - today.getDayOfWeek.getValue).toLong)
+
   val all: Seq[DateSuggestion] =
     Seq(
       DateSuggestion("Today", identity),
       DateSuggestion("Tomorrow", _.plusDays(1)),
       DateSuggestion("Yesterday", _.minusDays(1))
     ) ++
-      weekdays.map(day => DateSuggestion(name(day), _.`with`(TemporalAdjusters.nextOrSame(day)))) ++
-      weekdays.map(day => DateSuggestion(s"Previous ${name(day)}", _.`with`(TemporalAdjusters.previous(day)))) ++
-      weekdays.map(day => DateSuggestion(s"Next ${name(day)}", _.`with`(TemporalAdjusters.next(day))))
+      weekdays.map(day => DateSuggestion(name(day), sameWeek(day)(_))) ++
+      weekdays.map(day => DateSuggestion(s"Previous ${name(day)}", sameWeek(day)(_).minusDays(7))) ++
+      weekdays.map(day => DateSuggestion(s"Next ${name(day)}", sameWeek(day)(_).plusDays(7)))
 }
