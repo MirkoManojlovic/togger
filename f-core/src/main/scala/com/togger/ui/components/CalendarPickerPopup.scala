@@ -204,6 +204,9 @@ case class CalendarPickerPopup(
       `type`("button"),
       aria.label(label),
       cls("p-1 rounded-base hover:bg-neutral-tertiary-medium cursor-pointer"),
+      // kept out of tab order so Tab from the input goes straight to the OK/Cancel buttons instead of
+      // walking through month navigation and every day cell first
+      tabIndex(-1),
       onMouseDown.preventDefault --> Observer.empty,
       onClick.mapToUnit --> (_ => action()),
       icon("w-4 h-4")
@@ -236,6 +239,9 @@ case class CalendarPickerPopup(
       cls(if (day == today) "font-bold ring-1 ring-brand-subtle" else ""),
       cls(if (pending.contains(day)) "bg-neutral-tertiary-medium" else ""),
       disabled(outOfRange),
+      // kept out of tab order so Tab from the input goes straight to the OK/Cancel buttons instead of
+      // walking through every day cell first
+      tabIndex(-1),
       onMouseDown.preventDefault --> Observer.empty,
       // stopPropagation: selectPending rebuilds this whole grid (monthVar/pendingVar both feed `children <--`),
       // detaching this very button mid-click — without this, the outside-click listener on the root would see the
