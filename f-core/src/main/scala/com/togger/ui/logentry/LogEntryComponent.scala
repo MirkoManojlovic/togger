@@ -16,7 +16,7 @@ import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
-import com.togger.ui.components.{CalendarPickerPopup, QuickOption, QuickOptionsPopup, TgBadge, TgBadgeColor}
+import com.togger.ui.components._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
@@ -62,8 +62,8 @@ object LogEntryForm {
 }
 
 /** The date/status badge popup currently open above the editor, if any. `consume` is `Some` when a typed trigger
-  * (`@`/`+`) opened it — picking a value then also deletes the trigger text from the editor — and `None` when a
-  * click on the badge itself opened it, which has no token to remove.
+  * (`@`/`+`) opened it — picking a value then also deletes the trigger text from the editor — and `None` when a click
+  * on the badge itself opened it, which has no token to remove.
   */
 sealed trait ActivePopup {
   def viaTrigger: Boolean
@@ -211,6 +211,15 @@ class LogEntryComponent(
       case None    => activePopupVar.update(current => if (current.exists(_.viaTrigger)) None else current)
     }
 
+    lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
+      inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
+      labelValue = "Status update",
+      minWidthRem = 40,
+      triggerChars = Set('@', '$'),
+      onTriggerChange = triggerObserver,
+      onEditorKeyDown = handleEditorKeyDown
+    )
+
     /** Mirrors `CreateTaskQuick`'s `onInputKeyDown`: the editor keeps focus throughout, so typing a query and
       * navigating it with arrow keys both work from the same keydown stream — unlike a popup that grabs focus for
       * itself, which would stop the editor from ever seeing another keystroke to type with.
@@ -245,28 +254,23 @@ class LogEntryComponent(
         case _ => ()
       }
 
-    lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
-      inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
-      labelValue = "Status update",
-      minWidthRem = 40,
-      triggerChars = Set('@', '$'),
-      onTriggerChange = triggerObserver,
-      onEditorKeyDown = handleEditorKeyDown
-    )
-
     def dateBadge: HtmlElement =
       div(
         cls("relative"),
         child <-- formState.signal.map(_.date).distinct.map { dateStr =>
           val date = Try(LocalDate.parse(dateStr)).getOrElse(tgClock.currentDate())
-          TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element
+          TgBadge(
+            text = tgDateFormater.asAmericanDateWithDayAbrv(date),
+            bordered = true,
+            color = TgBadgeColor.Gray
+          ).element
             .amend(
               cls("cursor-pointer"),
               cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.DateOpen])),
               onClick.mapToUnit --> { _ =>
                 activePopupVar.update {
                   case Some(ActivePopup.DateOpen(None)) => None
-                  case _                                 => Some(ActivePopup.DateOpen(None))
+                  case _                                => Some(ActivePopup.DateOpen(None))
                 }
                 textExternalEditor.focus()
               }
@@ -301,11 +305,12 @@ class LogEntryComponent(
           TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
             .amend(
               cls("cursor-pointer"),
-              cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.StatusOpen])),
+              cls("ring-2 ring-blue-400") <-- activePopupVar.signal
+                .map(_.exists(_.isInstanceOf[ActivePopup.StatusOpen])),
               onClick.mapToUnit --> { _ =>
                 activePopupVar.update {
                   case Some(ActivePopup.StatusOpen(_, None)) => None
-                  case _                                       => Some(ActivePopup.StatusOpen("", None))
+                  case _                                     => Some(ActivePopup.StatusOpen("", None))
                 }
                 highlightedVar.set(0)
                 textExternalEditor.focus()
