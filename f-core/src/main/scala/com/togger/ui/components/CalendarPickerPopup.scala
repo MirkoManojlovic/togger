@@ -129,15 +129,21 @@ case class CalendarPickerPopup(
 
   val element: HtmlDiv =
     div(
-      cls("absolute z-10 mt-1 p-3 w-64 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      cls(
+        "absolute z-10 mt-1 flex flex-row gap-3 p-3 bg-neutral-primary-medium border border-default-medium " +
+          "rounded-base shadow-lg"
+      ),
       onMountBind { ctx =>
         val rootNode = ctx.thisNode.ref
         documentEvents(_.onClick)
           .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
           .mapToUnit --> (_ => onClose())
       },
+      // stretches to the calendar column's height by default (flex row, align-items: stretch), so the dropdown has
+      // room to open downward without covering the calendar, and any leftover space below the input is just the
+      // popup's own background rather than an empty gap
       div(
-        cls("relative mb-3"),
+        cls("relative w-64"),
         inputElement,
         child.maybe <-- suggestionsPopup,
         child.maybe <-- inputVar.signal
@@ -146,9 +152,12 @@ case class CalendarPickerPopup(
             _.map(message => p(cls("mt-1 text-xs text-fg-danger-strong"), message))
           )
       ),
-      headerRow,
-      weekdayRow,
-      div(cls("grid grid-cols-7 gap-1"), children <-- monthVar.signal.map(daysOf))
+      div(
+        cls("w-64"),
+        headerRow,
+        weekdayRow,
+        div(cls("grid grid-cols-7 gap-1"), children <-- monthVar.signal.map(daysOf))
+      )
     )
 
   private def headerRow: HtmlDiv =
