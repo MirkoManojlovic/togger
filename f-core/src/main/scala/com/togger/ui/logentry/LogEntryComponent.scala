@@ -248,9 +248,7 @@ class LogEntryComponent(
               activePopupVar.set(None)
             case _ => ()
           }
-        case Some(ActivePopup.DateOpen(consumeOpt)) if consumeOpt.isEmpty && event.key == "Escape" =>
-          event.preventDefault()
-          activePopupVar.set(None)
+        // DateOpen's Escape is handled inside CalendarPickerPopup's own input, via its `onClose`
         case _ => ()
       }
 
@@ -288,6 +286,8 @@ class LogEntryComponent(
                 onPick = day => {
                   formState.update(_.copy(date = day.toString))
                   consumeOpt.foreach(consume => consume())
+                },
+                onClose = () => {
                   activePopupVar.set(None)
                   textExternalEditor.focus()
                 }
