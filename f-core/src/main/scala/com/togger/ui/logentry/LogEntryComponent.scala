@@ -215,6 +215,7 @@ class LogEntryComponent(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
       labelValue = "",
       minWidthRem = 40,
+      minHeightRem = 20,
       triggerChars = Set('@', '$'),
       onTriggerChange = triggerObserver,
       onEditorKeyDown = handleEditorKeyDown
