@@ -29,7 +29,7 @@ case class CalendarPickerPopup(
 ) {
 
   private val monthVar = Var(initialMonth.withDayOfMonth(1))
-  private val inputVar = Var(tgDateFormater.asAmericanDate(selected.getOrElse(initialMonth)))
+  private val inputVar = Var("")
   private val highlightedVar = Var(0)
 
   private def inRange(day: LocalDate): Boolean =
