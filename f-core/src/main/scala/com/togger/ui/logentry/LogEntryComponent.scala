@@ -79,6 +79,12 @@ object ActivePopup {
   }
 }
 
+/** @param taskCreatedAt
+  *   the earliest date selectable in the date picker — a log entry can't predate its own task.
+  * @param takenDates
+  *   dates the task already has another log entry on (the caller excludes this entry's own date, if any), disabled
+  *   in the date picker to keep one entry per day.
+  */
 class LogEntryComponent(
   logEntryForm: LogEntryForm,
   taskService: TaskFeService,
@@ -87,7 +93,9 @@ class LogEntryComponent(
   tgClock: TgClock,
   router: TgRouter[FrontendPage],
   val toast: Toast,
-  tgMarkdown: TgMarkdown
+  tgMarkdown: TgMarkdown,
+  taskCreatedAt: LocalDate,
+  takenDates: Set[LocalDate]
 )(implicit
   IORuntime: IORuntime
 ) extends ToastMessages {
@@ -285,6 +293,8 @@ class LogEntryComponent(
                 today = tgClock.currentDate(),
                 tgDateFormater = tgDateFormater,
                 selected = Some(currentDate),
+                minDate = Some(taskCreatedAt),
+                isDisabled = day => LogEntryCalendarComponent.isWeekend(day) || takenDates.contains(day),
                 onPick = day => {
                   formState.update(_.copy(date = day.toString))
                   consumeOpt.foreach(consume => consume())

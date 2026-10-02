@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
+import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.common.{TgClock, TgIds, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -107,6 +108,11 @@ class EditTaskComponent(
                     currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
                     linksVar
                       .set(dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto)))))
+
+                    val taskCreatedAt = dto.task.createdAt.toLocalDate()
+                    def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
+                    val allLogEntryDates = dto.logEntries.map(dateOf)
+
                     val logEntryComponents =
                       dto.logEntries
                         .sortBy(_.createdAt)
@@ -120,7 +126,9 @@ class EditTaskComponent(
                             tgClock,
                             router,
                             toast,
-                            tgMarkdown
+                            tgMarkdown,
+                            taskCreatedAt,
+                            (allLogEntryDates.toSet - dateOf(logEntry))
                           )
                         )
 
@@ -133,7 +141,9 @@ class EditTaskComponent(
                         tgClock,
                         router,
                         toast,
-                        tgMarkdown
+                        tgMarkdown,
+                        taskCreatedAt,
+                        allLogEntryDates.toSet
                       )
 
                     val calendarComponent = new LogEntryCalendarComponent(
