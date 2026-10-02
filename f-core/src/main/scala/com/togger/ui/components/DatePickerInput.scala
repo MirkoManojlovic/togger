@@ -1,7 +1,9 @@
 package com.togger.ui.components
 
+import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.time.{DayOfWeek, LocalDate}
+import java.util.Locale
 import scala.util.Try
 
 object DatePickerInput {
@@ -18,11 +20,20 @@ object DatePickerInput {
 case class DateSuggestion(label: String, resolve: LocalDate => LocalDate)
 
 object DatePickerSuggestions {
-  val all: Seq[DateSuggestion] = Seq(
-    DateSuggestion("Today", identity),
-    DateSuggestion("Tomorrow", _.plusDays(1)),
-    DateSuggestion("Yesterday", _.minusDays(1)),
-    DateSuggestion("Next Monday", _.`with`(TemporalAdjusters.next(DayOfWeek.MONDAY))),
-    DateSuggestion("Next Friday", _.`with`(TemporalAdjusters.next(DayOfWeek.FRIDAY)))
-  )
+
+  /** Weekdays only, Monday-Friday — this app has no use for picking a weekend date via a quick-pick. */
+  private val weekdays: Seq[DayOfWeek] =
+    Seq(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
+
+  private def name(day: DayOfWeek): String = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+
+  val all: Seq[DateSuggestion] =
+    Seq(
+      DateSuggestion("Today", identity),
+      DateSuggestion("Tomorrow", _.plusDays(1)),
+      DateSuggestion("Yesterday", _.minusDays(1))
+    ) ++
+      weekdays.map(day => DateSuggestion(name(day), _.`with`(TemporalAdjusters.nextOrSame(day)))) ++
+      weekdays.map(day => DateSuggestion(s"Previous ${name(day)}", _.`with`(TemporalAdjusters.previous(day)))) ++
+      weekdays.map(day => DateSuggestion(s"Next ${name(day)}", _.`with`(TemporalAdjusters.next(day))))
 }
