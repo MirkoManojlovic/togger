@@ -213,7 +213,7 @@ class LogEntryComponent(
 
     lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
       inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
-      labelValue = "Status update",
+      labelValue = "",
       minWidthRem = 40,
       triggerChars = Set('@', '$'),
       onTriggerChange = triggerObserver,
