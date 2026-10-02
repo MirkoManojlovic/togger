@@ -248,6 +248,14 @@ case class CalendarPickerPopup(
   private def actionButtons: HtmlDiv =
     div(
       cls("flex justify-end gap-2 mt-3"),
+      TgHtmlButton
+        .extraSmall("OK")
+        .amend(
+          cls("disabled:opacity-50 disabled:cursor-not-allowed"),
+          disabled <-- pendingVar.signal.map(_.isEmpty),
+          onMouseDown.preventDefault --> Observer.empty,
+          onClick.mapToUnit --> (_ => confirm())
+        ),
       button(
         `type`("button"),
         cls(
@@ -257,14 +265,6 @@ case class CalendarPickerPopup(
         onMouseDown.preventDefault --> Observer.empty,
         onClick.mapToUnit --> (_ => cancel()),
         "Cancel"
-      ),
-      TgHtmlButton
-        .extraSmall("OK")
-        .amend(
-          cls("disabled:opacity-50 disabled:cursor-not-allowed"),
-          disabled <-- pendingVar.signal.map(_.isEmpty),
-          onMouseDown.preventDefault --> Observer.empty,
-          onClick.mapToUnit --> (_ => confirm())
-        )
+      )
     )
 }
