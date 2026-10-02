@@ -87,7 +87,10 @@ case class CalendarPickerPopup(
       cls(tgInputStyle),
       cls("text-sm"),
       aria.label("Date"),
-      autoFocus(true),
+      onMountCallback { ctx =>
+        ctx.thisNode.ref.focus()
+        ctx.thisNode.ref.select()
+      },
       controlled(
         value <-- inputVar.signal,
         onInput.mapToValue --> (raw => onInputChange(raw))

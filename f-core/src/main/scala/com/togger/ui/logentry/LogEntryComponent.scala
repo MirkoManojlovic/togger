@@ -265,12 +265,13 @@ class LogEntryComponent(
             .amend(
               cls("cursor-pointer"),
               cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.DateOpen])),
-              onClick.mapToUnit --> { _ =>
-                activePopupVar.update {
-                  case Some(ActivePopup.DateOpen(None)) => None
-                  case _                                => Some(ActivePopup.DateOpen(None))
-                }
-                textExternalEditor.focus()
+              // stopPropagation keeps this click from reaching CalendarPickerPopup's own outside-click listener,
+              // which mounts (and starts listening) synchronously within this same click when the popup opens
+              onClick.stopPropagation.mapToUnit --> { _ =>
+                val closing = activePopupVar.now().contains(ActivePopup.DateOpen(None))
+                activePopupVar.set(if (closing) None else Some(ActivePopup.DateOpen(None)))
+                // opening hands focus to the popup's own input instead (see CalendarPickerPopup's onMountCallback)
+                if (closing) textExternalEditor.focus()
               }
             )
         },
