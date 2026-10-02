@@ -42,7 +42,7 @@ case class CalendarPickerPopup(
     * sync that a parseable date drives.
     */
   private def suggestionsFor(raw: String): Seq[DateSuggestion] =
-    if (DatePickerInput.parse(raw).isDefined) Seq.empty
+    if (DatePickerInput.parse(raw, today).isDefined) Seq.empty
     else
       DatePickerSuggestions.all.filter(suggestion =>
         matches(raw, suggestion.label) && inRange(suggestion.resolve(today))
@@ -56,13 +56,13 @@ case class CalendarPickerPopup(
   private def onInputChange(raw: String): Unit = {
     inputVar.set(raw)
     highlightedVar.set(0)
-    DatePickerInput.parse(raw).filter(inRange).foreach(day => monthVar.set(day.withDayOfMonth(1)))
+    DatePickerInput.parse(raw, today).filter(inRange).foreach(day => monthVar.set(day.withDayOfMonth(1)))
   }
 
   private def commitHighlightedOrTyped(): Unit = {
     val options = suggestionsFor(inputVar.now())
     if (options.nonEmpty) commit(options(highlightedVar.now().min(options.size - 1)).resolve(today))
-    else DatePickerInput.parse(inputVar.now()).filter(inRange).foreach(commit)
+    else DatePickerInput.parse(inputVar.now(), today).filter(inRange).foreach(commit)
   }
 
   private def onInputKeyDown(event: dom.KeyboardEvent): Unit =
@@ -101,7 +101,7 @@ case class CalendarPickerPopup(
   private def errorMessage(raw: String): Option[String] =
     if (raw.trim.isEmpty || suggestionsFor(raw).nonEmpty) None
     else
-      DatePickerInput.parse(raw) match {
+      DatePickerInput.parse(raw, today) match {
         case Some(day) if !inRange(day) => Some("That date is outside the allowed range")
         case Some(_)                    => None
         case None                       => Some("Enter a valid date (yyyy-mm-dd)")

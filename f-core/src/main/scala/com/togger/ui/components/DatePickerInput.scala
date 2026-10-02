@@ -8,10 +8,18 @@ import scala.util.Try
 
 object DatePickerInput {
 
-  /** Parses the same `yyyy-MM-dd` shape `TgDateFormater.asAmericanDate` produces; anything else parses to `None` rather
-    * than throwing.
+  private val dayOnly = "^\\d{1,2}$".r
+
+  /** Parses either the `yyyy-MM-dd` shape `TgDateFormater.asAmericanDate` produces, or a bare 1-2 digit day (e.g.
+    * "12"), which is taken as a day in `today`'s month/year. Anything else parses to `None` rather than throwing.
     */
-  def parse(raw: String): Option[LocalDate] = Try(LocalDate.parse(raw.trim)).toOption
+  def parse(raw: String, today: LocalDate): Option[LocalDate] = {
+    val trimmed = raw.trim
+    trimmed match {
+      case dayOnly() => Try(today.withDayOfMonth(trimmed.toInt)).toOption
+      case _         => Try(LocalDate.parse(trimmed)).toOption
+    }
+  }
 }
 
 /** One quick-pick row in a [[CalendarPickerPopup]]'s suggestion dropdown: `resolve` turns "today" into the suggested
