@@ -82,8 +82,9 @@ object ActivePopup {
 /** @param taskCreatedAt
   *   the earliest date selectable in the date picker — a log entry can't predate its own task.
   * @param takenDates
-  *   dates the task already has another log entry on (the caller excludes this entry's own date, if any), disabled
-  *   in the date picker to keep one entry per day.
+  *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's
+  *   own date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in
+  *   that status's badge color so it's visibly distinct from a plain disabled (weekend) day.
   */
 class LogEntryComponent(
   logEntryForm: LogEntryForm,
@@ -95,7 +96,7 @@ class LogEntryComponent(
   val toast: Toast,
   tgMarkdown: TgMarkdown,
   taskCreatedAt: LocalDate,
-  takenDates: Set[LocalDate]
+  takenDates: Map[LocalDate, LogEntryStatus]
 )(implicit
   IORuntime: IORuntime
 ) extends ToastMessages {
@@ -295,6 +296,7 @@ class LogEntryComponent(
                 selected = Some(currentDate),
                 minDate = Some(taskCreatedAt),
                 isDisabled = day => LogEntryCalendarComponent.isWeekend(day) || takenDates.contains(day),
+                dayMarkerCls = day => takenDates.get(day).map(status => TgBadgeStyles.ring(status.badgeColor)),
                 onPick = day => {
                   formState.update(_.copy(date = day.toString))
                   consumeOpt.foreach(consume => consume())

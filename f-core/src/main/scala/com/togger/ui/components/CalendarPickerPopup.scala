@@ -21,7 +21,11 @@ import java.time.LocalDate
   *
   * @param isDisabled
   *   an extra, caller-defined exclusion on top of `minDate`/`maxDate` (e.g. weekends, or dates already taken by
-  *   another record) — a disabled day can't be typed, quick-picked, or clicked, same as one outside the min/max range.
+  *   another record) — a disabled day can't be typed, quick-picked, or clicked, same as one outside the min/max
+  *   range.
+  * @param dayMarkerCls
+  *   an optional Tailwind ring-color class (e.g. `TgBadgeStyles.ring(someColor)`) for a day the caller wants visibly
+  *   marked in the grid — e.g. a day that already has a record on it, which is typically also `isDisabled`.
   */
 case class CalendarPickerPopup(
   initialMonth: LocalDate,
@@ -32,7 +36,8 @@ case class CalendarPickerPopup(
   selected: Option[LocalDate] = None,
   minDate: Option[LocalDate] = None,
   maxDate: Option[LocalDate] = None,
-  isDisabled: LocalDate => Boolean = _ => false
+  isDisabled: LocalDate => Boolean = _ => false,
+  dayMarkerCls: LocalDate => Option[String] = _ => None
 ) {
 
   private val monthVar = Var(initialMonth.withDayOfMonth(1))
@@ -242,13 +247,15 @@ case class CalendarPickerPopup(
 
   private def dayCell(day: LocalDate, pending: Option[LocalDate], inCurrentMonth: Boolean): HtmlElement = {
     val outOfRange = !inRange(day)
+    val marker = dayMarkerCls(day)
     button(
       `type`("button"),
-      cls("text-xs rounded-base p-1.5 text-center"),
+      cls(if (marker.isDefined) "text-xs rounded-full p-1.5 text-center" else "text-xs rounded-base p-1.5 text-center"),
       cls(if (outOfRange) "cursor-not-allowed text-gray-300" else "cursor-pointer hover:bg-neutral-tertiary-medium"),
       cls(if (inCurrentMonth && !outOfRange) "text-heading" else if (!outOfRange) "text-gray-400" else ""),
       cls(if (day == today) "font-bold ring-1 ring-brand-subtle" else ""),
       cls(if (pending.contains(day)) "bg-neutral-tertiary-medium" else ""),
+      cls(marker.map(c => s"ring-2 $c").getOrElse("")),
       disabled(outOfRange),
       // kept out of tab order so Tab from the input goes straight to the OK/Cancel buttons instead of
       // walking through every day cell first

@@ -111,7 +111,7 @@ class EditTaskComponent(
 
                     val taskCreatedAt = dto.task.createdAt.toLocalDate()
                     def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
-                    val allLogEntryDates = dto.logEntries.map(dateOf)
+                    val allLogEntryDates = dto.logEntries.map(logEntry => dateOf(logEntry) -> logEntry.status).toMap
 
                     val logEntryComponents =
                       dto.logEntries
@@ -128,7 +128,7 @@ class EditTaskComponent(
                             toast,
                             tgMarkdown,
                             taskCreatedAt,
-                            (allLogEntryDates.toSet - dateOf(logEntry))
+                            (allLogEntryDates - dateOf(logEntry))
                           )
                         )
 
@@ -143,7 +143,7 @@ class EditTaskComponent(
                         toast,
                         tgMarkdown,
                         taskCreatedAt,
-                        allLogEntryDates.toSet
+                        allLogEntryDates
                       )
 
                     val calendarComponent = new LogEntryCalendarComponent(

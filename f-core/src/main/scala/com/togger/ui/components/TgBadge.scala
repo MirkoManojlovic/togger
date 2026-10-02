@@ -402,6 +402,33 @@ object TgBadgeStyles {
   def dismissButton(color: TgBadgeColor): String =
     join("inline-flex items-center p-0.5 text-sm bg-transparent rounded-xs", color.dismissHoverCls, focusCls)
 
+  /** A solid ring in the given color, for marking something elsewhere in the UI with a badge's color without
+    * drawing a full badge (e.g. a calendar day that already has an entry of that status). Each branch is a literal
+    * string for the same Tailwind-scanning reason [[TgBadgeColor]]'s own fields are - see its doc comment.
+    */
+  def ring(color: TgBadgeColor): String = color match {
+    case TgBadgeColor.Brand       => "ring-brand-subtle"
+    case TgBadgeColor.Alternative => "ring-default"
+    case TgBadgeColor.Gray        => "ring-default-medium"
+    case TgBadgeColor.Danger      => "ring-danger-subtle"
+    case TgBadgeColor.Success     => "ring-success-subtle"
+    case TgBadgeColor.Warning     => "ring-warning-subtle"
+    case TgBadgeColor.Blue        => "ring-blue-400"
+    case TgBadgeColor.Red         => "ring-red-400"
+    case TgBadgeColor.Green       => "ring-green-400"
+    case TgBadgeColor.Yellow      => "ring-yellow-400"
+    case TgBadgeColor.Indigo      => "ring-indigo-400"
+    case TgBadgeColor.Purple      => "ring-purple-400"
+    case TgBadgeColor.Pink        => "ring-pink-400"
+    case TgBadgeColor.Dark        => "ring-gray-500"
+    case TgBadgeColor.Teal        => "ring-teal-400"
+    case TgBadgeColor.Cyan        => "ring-cyan-400"
+    case TgBadgeColor.Sky         => "ring-sky-400"
+    case TgBadgeColor.Lime        => "ring-lime-400"
+    case TgBadgeColor.Orange      => "ring-orange-400"
+    case TgBadgeColor.Rose        => "ring-rose-400"
+  }
+
   def icon(size: TgBadgeSize): String = s"${size.iconCls} me-1"
 
   private def paddingCls(size: TgBadgeSize, action: Option[TgBadgeAction]): String = action match {
