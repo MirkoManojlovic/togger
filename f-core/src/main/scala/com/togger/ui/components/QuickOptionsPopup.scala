@@ -20,19 +20,19 @@ case class QuickOption(
   * [[com.togger.ui.task.quick.CreateTaskQuick]] (where it first lived) and anything else that needs the same look.
   *
   * Row-highlighting is the caller's concern: `isHighlighted` is a function rather than a plain `Seq[Boolean]` so a
-  * caller driving it from arrow-key state (as `CreateTaskQuick` does, and as `LogEntryComponent` does by forwarding
-  * its editor's keydown events) can hand this component a live per-row signal without this component knowing
-  * anything about keyboard navigation or where DOM focus sits — that is deliberately the caller's job, since the
-  * element arrow keys should be read from (a text input, a textarea) is also the caller's.
+  * caller driving it from arrow-key state (as `CreateTaskQuick` does, and as `LogEntryComponent` does by forwarding its
+  * editor's keydown events) can hand this component a live per-row signal without this component knowing anything about
+  * keyboard navigation or where DOM focus sits — that is deliberately the caller's job, since the element arrow keys
+  * should be read from (a text input, a textarea) is also the caller's.
   *
   * @param widthCls
   *   a Tailwind width class; `CreateTaskQuick`'s name-input popup matches its full-width input (`"w-full""`), its
   *   badge-row popup and a popup anchored to its own small badge both need a fixed width instead
   * @param leftPx
-  *   an explicit pixel offset from the nearest positioned ancestor, for a popup that must anchor somewhere other
-  *   than its own static position — `CreateTaskQuick`'s shared badge row, where every badge shares one popup slot.
-  *   A popup with its own dedicated positioned wrapper (the name input, or one badge in its own wrapper) leaves this
-  *   `None` and relies on the browser's static-position fallback for an absolutely positioned element.
+  *   an explicit pixel offset from the nearest positioned ancestor, for a popup that must anchor somewhere other than
+  *   its own static position — `CreateTaskQuick`'s shared badge row, where every badge shares one popup slot. A popup
+  *   with its own dedicated positioned wrapper (the name input, or one badge in its own wrapper) leaves this `None` and
+  *   relies on the browser's static-position fallback for an absolutely positioned element.
   */
 case class QuickOptionsPopup(
   options: Seq[QuickOption],
@@ -44,7 +44,9 @@ case class QuickOptionsPopup(
 
   val element: HtmlElement =
     div(
-      cls(s"absolute z-10 mt-1 $widthCls bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"),
+      cls(
+        s"absolute z-10 mt-1 $widthCls bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"
+      ),
       leftPx.map(px => left(s"${px}px")),
       ul(
         cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
@@ -68,7 +70,11 @@ case class QuickOptionsPopup(
           }
         ),
         onMouseDown.preventDefault --> Observer.empty,
-        onClick.mapToUnit --> (_ => onChoose(option)),
+        // stopPropagation: `onChoose` can unmount this very row (e.g. a caller closing the popup, or re-filtering
+        // it away) before the click finishes bubbling — by then `event.target` is detached, so an ancestor's
+        // outside-click listener would see `!rootNode.contains(target)` and misfire as if this had been an
+        // outside click
+        onClick.stopPropagation.mapToUnit --> (_ => onChoose(option)),
         div(
           cls("inline-flex items-center w-full gap-1.5"),
           div(cls("w-4 h-4 shrink-0"), Option.when(option.isSelected)(TgIcons.checkIcon("w-4 h-4"))),
