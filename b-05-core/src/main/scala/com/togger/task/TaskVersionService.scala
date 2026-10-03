@@ -8,6 +8,7 @@ import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
+import java.time.LocalDate
 import java.util.UUID
 
 class TaskVersionService(
@@ -26,7 +27,10 @@ class TaskVersionService(
     closedBy: Option[UUID],
     taskStatusId: UUID,
     priority: TaskPriority,
-    milestone: Option[UUID] = None
+    milestone: Option[UUID] = None,
+    startDate: LocalDate,
+    estimatedEndDate: LocalDate,
+    endDate: Option[LocalDate] = None
   ): IO[Either[TaskError, TaskVersion]] =
     (for {
       existingVersion <- taskVersionRepo.findByVersion(version)
@@ -37,8 +41,18 @@ class TaskVersionService(
         else
           taskVersionRepo
             .updateContent(
-              existingVersion
-                .withNewContent(name, description, assignedTo, closedBy, taskStatusId, priority, milestone)
+              existingVersion.withNewContent(
+                name,
+                description,
+                assignedTo,
+                closedBy,
+                taskStatusId,
+                priority,
+                milestone,
+                startDate,
+                estimatedEndDate,
+                endDate
+              )
             )
             .map(_.asRight[TaskError])
     } yield result)

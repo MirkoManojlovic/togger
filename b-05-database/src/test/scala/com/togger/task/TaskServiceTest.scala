@@ -15,6 +15,7 @@ import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.time.LocalDate
 import java.util.UUID
 
 class TaskServiceTest
@@ -54,6 +55,9 @@ class TaskServiceTest
     createdAt = nowAsInstant
   )
 
+  val testStartDate: LocalDate = LocalDate.now()
+  val testEstimatedEndDate: LocalDate = testStartDate.plusDays(7)
+
   val firstVersion = TaskVersion(
     version = UUID.randomUUID(),
     taskId = task.id,
@@ -62,6 +66,8 @@ class TaskServiceTest
     assignedTo = None,
     closedBy = None,
     taskStatusId = UUID.randomUUID(),
+    startDate = testStartDate,
+    estimatedEndDate = testEstimatedEndDate,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -121,7 +127,16 @@ class TaskServiceTest
 
     "save a new task version instead of overwriting, and a new version for an updated link" in {
       val newTaskVersion =
-        firstVersion.withNewContent("new name", "new description", None, None, UUID.randomUUID(), TaskPriority.Medium)
+        firstVersion.withNewContent(
+          "new name",
+          "new description",
+          None,
+          None,
+          UUID.randomUUID(),
+          TaskPriority.Medium,
+          startDate = testStartDate,
+          estimatedEndDate = testEstimatedEndDate
+        )
       val updatedLinkVersion = version1.withNewContent("new name", "http://example.com/new")
 
       (taskRepo.findById _).expects(task.id).returns(task.pure[ConnectionIO])

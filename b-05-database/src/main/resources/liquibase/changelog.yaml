@@ -532,6 +532,23 @@ databaseChangeLog:
                     foreignKeyName: fk_task_version_milestone
                     references: milestone(id)
               - column:
+                  name: start_date
+                  type: date
+                  defaultValueComputed: CURRENT_DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: estimated_end_date
+                  type: date
+                  defaultValueComputed: CURRENT_DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: true
+              - column:
                   name: created_at
                   type: timestamp with time zone
                   constraints:

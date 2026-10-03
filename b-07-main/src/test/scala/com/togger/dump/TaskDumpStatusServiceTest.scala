@@ -14,6 +14,7 @@ import doobie.postgres.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
 
+import java.time.LocalDate
 import java.util.UUID
 
 class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
@@ -55,6 +56,8 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
           assignedTo = None,
           closedBy = None,
           taskStatusId = taskStatusId,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusDays(7),
           createdAt = nowAsInstant,
           updatedAt = nowAsInstant
         )
@@ -204,6 +207,8 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
               assignedTo = None,
               closedBy = None,
               taskStatusId = taskStatusId,
+              startDate = LocalDate.now(),
+              estimatedEndDate = LocalDate.now().plusDays(7),
               createdAt = nowAsInstant,
               updatedAt = nowAsInstant
             )

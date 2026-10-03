@@ -100,6 +100,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           assignedTo = None,
           closedBy = None,
           taskStatusId = taskStatusId,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusDays(7),
           createdAt = nowAsInstant,
           updatedAt = nowAsInstant
         )
@@ -234,6 +236,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
               assignedTo = None,
               closedBy = None,
               taskStatusId = savedTaskStatus.id,
+              startDate = LocalDate.now(),
+              estimatedEndDate = LocalDate.now().plusDays(7),
               createdAt = nowAsInstant,
               updatedAt = nowAsInstant
             )
@@ -569,6 +573,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
               assignedTo = None,
               closedBy = None,
               taskStatusId = taskStatusId,
+              startDate = LocalDate.now(),
+              estimatedEndDate = LocalDate.now().plusDays(7),
               createdAt = nowAsInstant,
               updatedAt = nowAsInstant
             )
@@ -707,6 +713,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
                 assignedTo = Some(dumpSideAccountId),
                 closedBy = Some(dumpSideAccountId),
                 taskStatusId = savedTaskStatus.id,
+                startDate = LocalDate.now(),
+                estimatedEndDate = LocalDate.now().plusDays(7),
                 createdAt = nowAsInstant,
                 updatedAt = nowAsInstant
               )
@@ -988,6 +996,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
                 assignedTo = Some(assigneeDumpId),
                 closedBy = Some(closerDumpId),
                 taskStatusId = savedTaskStatus.id,
+                startDate = LocalDate.now(),
+                estimatedEndDate = LocalDate.now().plusDays(7),
                 createdAt = nowAsInstant,
                 updatedAt = nowAsInstant
               )

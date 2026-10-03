@@ -2,7 +2,7 @@ package com.togger.task
 
 import com.togger.account.Account
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 case class Task(id: UUID, projectId: UUID, createdBy: UUID, createdAt: Instant)
@@ -17,6 +17,9 @@ case class TaskVersion(
   taskStatusId: UUID,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant
 ) {
@@ -28,7 +31,10 @@ case class TaskVersion(
     closedBy: Option[UUID],
     taskStatusId: UUID,
     priority: TaskPriority,
-    milestone: Option[UUID] = None
+    milestone: Option[UUID] = None,
+    startDate: LocalDate,
+    estimatedEndDate: LocalDate,
+    endDate: Option[LocalDate] = None
   ): TaskVersion =
     this.copy(
       name = name,
@@ -37,7 +43,10 @@ case class TaskVersion(
       closedBy = closedBy,
       taskStatusId = taskStatusId,
       priority = priority,
-      milestone = milestone
+      milestone = milestone,
+      startDate = startDate,
+      estimatedEndDate = estimatedEndDate,
+      endDate = endDate
     )
 
   def hasSameContentAs(other: TaskVersion): Boolean =
@@ -47,7 +56,10 @@ case class TaskVersion(
       closedBy == other.closedBy &&
       taskStatusId == other.taskStatusId &&
       priority == other.priority &&
-      milestone == other.milestone
+      milestone == other.milestone &&
+      startDate == other.startDate &&
+      estimatedEndDate == other.estimatedEndDate &&
+      endDate == other.endDate
 
 }
 
@@ -68,6 +80,9 @@ case class TaskFull(
   priority: TaskPriority,
   taskLabels: Seq[TaskLabel] = Seq.empty,
   milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant,
   latestVersion: UUID

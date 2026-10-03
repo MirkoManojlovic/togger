@@ -80,6 +80,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             assignedTo = None,
             taskStatusId = taskStatusId,
             milestone = Some(milestoneId),
+            startDate = LocalDate.now(),
+            estimatedEndDate = LocalDate.now().plusMonths(1),
             createdAt = now,
             updatedAt = now
           ),
@@ -227,6 +229,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           description = "",
           assignedTo = None,
           taskStatusId = alphaInProgressStatus.id,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusMonths(1),
           createdAt = now,
           updatedAt = now
         ),
@@ -269,6 +273,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           description = "",
           assignedTo = None,
           taskStatusId = alphaDoneStatus.id,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusMonths(1),
           createdAt = now,
           updatedAt = now
         ),
@@ -343,6 +349,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           description = "",
           assignedTo = None,
           taskStatusId = betaInProgressStatus.id,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusMonths(1),
           createdAt = now,
           updatedAt = now
         ),
@@ -385,6 +393,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           description = "",
           assignedTo = None,
           taskStatusId = betaDoneStatus.id,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusMonths(1),
           createdAt = now,
           updatedAt = now
         ),
@@ -415,6 +425,8 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           description = "",
           assignedTo = None,
           taskStatusId = betaWaitingStatus.id,
+          startDate = LocalDate.now(),
+          estimatedEndDate = LocalDate.now().plusMonths(1),
           createdAt = now,
           updatedAt = now
         ),

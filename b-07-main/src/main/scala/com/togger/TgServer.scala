@@ -18,6 +18,7 @@ import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
+import com.togger.common.DateRangeValidation
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
@@ -167,15 +168,15 @@ class DependenciesModule(
   lazy val milestoneVersionRepo = new MilestoneVersionRepoImpl
   lazy val milestoneService = new MilestoneService(milestoneRepo, milestoneVersionRepo, transactor)
   lazy val milestoneEndpoints = new MilestoneEndpoints(securedEndpoint)
-  lazy val milestoneDateValidation = new MilestoneDateValidation
-  lazy val milestoneController = new MilestoneController(milestoneEndpoints, milestoneService, milestoneDateValidation)
+  lazy val dateRangeValidation = new DateRangeValidation
+  lazy val milestoneController = new MilestoneController(milestoneEndpoints, milestoneService, dateRangeValidation)
 
   lazy val milestoneDateRepo = new MilestoneDateRepoImpl
   lazy val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
   lazy val milestoneDateService = new MilestoneDateService(milestoneDateRepo, milestoneDateVersionRepo, transactor)
   lazy val milestoneDateEndpoints = new MilestoneDateEndpoints(securedEndpoint)
   lazy val milestoneDateController =
-    new MilestoneDateController(milestoneDateEndpoints, milestoneDateService, milestoneService, milestoneDateValidation)
+    new MilestoneDateController(milestoneDateEndpoints, milestoneDateService, milestoneService, dateRangeValidation)
 
   lazy val taskRepo = new TaskRepoImpl
   lazy val taskVersionRepo = new TaskVersionRepoImpl
@@ -197,7 +198,8 @@ class DependenciesModule(
       transactor
     )
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
-  lazy val taskController = new TaskController(taskService, taskVersionService, taskEndpoints, tgClock)
+  lazy val taskController =
+    new TaskController(taskService, taskVersionService, taskEndpoints, tgClock, dateRangeValidation)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl

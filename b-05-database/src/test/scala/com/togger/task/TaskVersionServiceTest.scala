@@ -14,6 +14,7 @@ import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.time.LocalDate
 import java.util.UUID
 
 class TaskVersionServiceTest
@@ -32,6 +33,8 @@ class TaskVersionServiceTest
 
   val taskId: UUID = UUID.randomUUID()
   val taskStatusId: UUID = UUID.randomUUID()
+  val testStartDate: LocalDate = LocalDate.now()
+  val testEstimatedEndDate: LocalDate = testStartDate.plusDays(7)
 
   def newVersion(suffix: String) = TaskVersion(
     version = UUID.randomUUID(),
@@ -41,6 +44,8 @@ class TaskVersionServiceTest
     assignedTo = None,
     closedBy = None,
     taskStatusId = taskStatusId,
+    startDate = testStartDate,
+    estimatedEndDate = testEstimatedEndDate,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -62,7 +67,16 @@ class TaskVersionServiceTest
       val firstVersion = newVersion("v1")
       val secondVersion = newVersion("v2")
       val editedFirstVersion =
-        firstVersion.withNewContent("old name edit", "old description edit", None, None, taskStatusId, TaskPriority.Medium)
+        firstVersion.withNewContent(
+          "old name edit",
+          "old description edit",
+          None,
+          None,
+          taskStatusId,
+          TaskPriority.Medium,
+          startDate = testStartDate,
+          estimatedEndDate = testEstimatedEndDate
+        )
 
       (taskVersionRepo.findByVersion _).expects(secondVersion.version).returns(secondVersion.pure[ConnectionIO])
       (taskVersionRepo.findLatestByTaskId _).expects(taskId).returns(secondVersion.pure[ConnectionIO])
@@ -80,7 +94,9 @@ class TaskVersionServiceTest
           None,
           None,
           taskStatusId,
-          TaskPriority.Medium
+          TaskPriority.Medium,
+          startDate = testStartDate,
+          estimatedEndDate = testEstimatedEndDate
         )
         editOldResult <- service.updateVersionContent(
           firstVersion.version,
@@ -89,7 +105,9 @@ class TaskVersionServiceTest
           None,
           None,
           taskStatusId,
-          TaskPriority.Medium
+          TaskPriority.Medium,
+          startDate = testStartDate,
+          estimatedEndDate = testEstimatedEndDate
         )
       } yield {
         val cp = new Checkpoint

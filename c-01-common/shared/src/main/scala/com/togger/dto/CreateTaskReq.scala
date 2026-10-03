@@ -3,7 +3,7 @@ package com.togger.dto
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 case class CreateTaskReq(
@@ -17,6 +17,8 @@ case class CreateTaskReq(
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
 
@@ -32,6 +34,9 @@ case class UpdateTaskReq1(
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  startDate: Option[LocalDate] = None,
+  estimatedEndDate: Option[LocalDate] = None,
+  endDate: Option[LocalDate] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
 
@@ -48,6 +53,9 @@ case class FindTaskResp1(
   latestVersion: UUID,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
 
@@ -67,6 +75,9 @@ case class FindTaskRespFull(
   logEntries: Seq[LogEntryDto],
   links: Seq[FindLinkResp],
   milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None,
   taskLabels: Seq[FindTaskLabelResp] = Seq.empty
 )
 
@@ -81,7 +92,10 @@ case class TaskVersionDto(
   createdAt: Instant,
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
-  milestone: Option[UUID] = None
+  milestone: Option[UUID] = None,
+  startDate: LocalDate,
+  estimatedEndDate: LocalDate,
+  endDate: Option[LocalDate] = None
 )
 
 case class CreateLinkReq(name: String, url: String)
