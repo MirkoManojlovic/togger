@@ -16,6 +16,16 @@ class TaskQuickInputParserTest extends AnyWordSpec with Matchers {
         Seq(ProjectDropdown, LabelsDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
     }
 
+    "recognise @s and @d as the start and due date triggers" in {
+      TaskQuickInputParser.parse("Fix @s @d").dropdowns shouldBe Seq(StartDateDropdown, DueDateDropdown)
+    }
+
+    "ignore @s and @d when they are only the start of a longer word" in {
+      val parsed = TaskQuickInputParser.parse("meet @sam @dave @x")
+      parsed.tokens shouldBe empty
+      parsed.taskName shouldBe "meet @sam @dave @x"
+    }
+
     "strip tokens from the name and collapse whitespace" in {
       TaskQuickInputParser.parse("  Fix ~app   the #bug thing ").taskName shouldBe "Fix the thing"
     }

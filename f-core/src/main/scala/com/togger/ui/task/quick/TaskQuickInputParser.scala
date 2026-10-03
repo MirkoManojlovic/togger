@@ -8,6 +8,10 @@ object QuickDropdown {
   case object PriorityDropdown extends QuickDropdown
   case object TaskStatusDropdown extends QuickDropdown
   case object AssignedToDropdown extends QuickDropdown
+  case object StartDateDropdown extends QuickDropdown
+  case object DueDateDropdown extends QuickDropdown
+
+  val dateDropdowns: Set[QuickDropdown] = Set(StartDateDropdown, DueDateDropdown)
 
   val triggerChars: Map[Char, QuickDropdown] =
     Map(
@@ -17,6 +21,10 @@ object QuickDropdown {
       '$' -> TaskStatusDropdown,
       '%' -> AssignedToDropdown
     )
+
+  /** Whole-word triggers: unlike [[triggerChars]] they take no query, so `@sprint` is plain text, not a start date. */
+  val triggerWords: Map[String, QuickDropdown] =
+    Map("@s" -> StartDateDropdown, "@d" -> DueDateDropdown)
 }
 
 /** @param start
@@ -47,17 +55,22 @@ object TaskQuickInputParser {
   }
 
   private def tokens(raw: String): Seq[QuickToken] = {
-    def isTokenStart(index: Int): Boolean =
-      QuickDropdown.triggerChars.contains(raw(index)) && (index == 0 || raw(index - 1).isWhitespace)
-
     def tokenEnd(start: Int): Int = {
       val whitespaceIndex = raw.indexWhere(_.isWhitespace, start)
       if (whitespaceIndex == -1) raw.length else whitespaceIndex
     }
 
-    raw.indices.filter(isTokenStart).map { start =>
+    def isWordStart(index: Int): Boolean = index == 0 || raw(index - 1).isWhitespace
+
+    def tokenAt(start: Int): Option[QuickToken] = {
       val end = tokenEnd(start)
-      QuickToken(QuickDropdown.triggerChars(raw(start)), raw.substring(start + 1, end), start, end)
+      val word = raw.substring(start, end)
+      QuickDropdown.triggerWords
+        .get(word)
+        .map(QuickToken(_, "", start, end))
+        .orElse(QuickDropdown.triggerChars.get(raw(start)).map(QuickToken(_, word.tail, start, end)))
     }
+
+    raw.indices.filter(isWordStart).flatMap(tokenAt)
   }
 }

@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{DateRangeValidation, TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.OrganizationProjectResp
@@ -15,24 +15,38 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{QuickOption, QuickOptionsPopup, TgBadgeColor, TgBadgeSize, TgBadgeStyles}
+import com.togger.ui.components.{
+  CalendarPickerPopup,
+  QuickOption,
+  QuickOptionsPopup,
+  TgBadgeColor,
+  TgBadgeSize,
+  TgBadgeStyles
+}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.quick.QuickDropdown._
-import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TaskStatusesState}
+import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TaskStatusesState, TgDateFormater}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 /** A popup opened by clicking a badge, anchored `left` pixels from the badge row's left edge. */
 case class BadgePopup(dropdown: QuickDropdown, left: Double)
 
+/** What a date picker is built from. Its own case class so the picker is rebuilt only when one of these changes, not
+  * on every keystroke in the name input.
+  */
+case class DatePickerRequest(dropdown: QuickDropdown, selected: LocalDate, minDate: Option[LocalDate])
+
 case class QuickState(
+  today: LocalDate,
   currentAccountId: Option[UUID] = None,
   rawInput: String = "",
   caret: Int = 0,
@@ -48,7 +62,9 @@ case class QuickState(
   projectId: Option[UUID] = None,
   statusId: Option[UUID] = None,
   priority: Option[TaskPriority] = None,
-  labelIds: Set[UUID] = Set.empty
+  labelIds: Set[UUID] = Set.empty,
+  startDate: Option[LocalDate] = None,
+  dueDate: Option[LocalDate] = None
 ) {
 
   lazy val parsed: ParsedQuickInput = TaskQuickInputParser.parse(rawInput)
@@ -58,6 +74,22 @@ case class QuickState(
   def effectiveStatusId: Option[UUID] = statusId.orElse(sortedStatuses.headOption.map(_.id))
   def effectiveAssigneeId: Option[UUID] = assigneeId.orElse(currentAccountId)
   def effectivePriority: TaskPriority = priority.getOrElse(TaskPriority.Medium)
+
+  /** Today, or the coming Monday when today is a weekend, since the backend rejects weekend dates. */
+  def effectiveStartDate: LocalDate = startDate.getOrElse(firstWorkDayFrom(today))
+
+  private def firstWorkDayFrom(day: LocalDate): LocalDate =
+    day.getDayOfWeek match {
+      case DayOfWeek.SATURDAY => day.plusDays(2)
+      case DayOfWeek.SUNDAY   => day.plusDays(1)
+      case _                  => day
+    }
+
+  /** One week after the start date unless picked; a pick that falls before a later-chosen start date is dropped for
+    * the same default, rather than left to fail validation.
+    */
+  def effectiveDueDate: LocalDate =
+    dueDate.filterNot(_.isBefore(effectiveStartDate)).getOrElse(effectiveStartDate.plusWeeks(1))
 
   def withoutToken(token: QuickToken): QuickState =
     copy(
@@ -69,6 +101,17 @@ case class QuickState(
 
   def activeToken: Option[QuickToken] =
     TaskQuickInputParser.activeTokenAt(rawInput, caret).filterNot(token => dismissedTokenStart.contains(token.start))
+
+  /** The date picker a typed `@s`/`@d` or a clicked date badge is asking for, with whether a typed token asked. */
+  def datePicker: Option[(DatePickerRequest, Boolean)] = {
+    val typed = activeToken.map(_.dropdown).filter(QuickDropdown.dateDropdowns.contains).map(_ -> true)
+    typed.orElse(badgePopup.map(_.dropdown).filter(QuickDropdown.dateDropdowns.contains).map(_ -> false)).map {
+      case (StartDateDropdown, viaToken) =>
+        (DatePickerRequest(StartDateDropdown, effectiveStartDate, minDate = None), viaToken)
+      case (dropdown, viaToken) =>
+        (DatePickerRequest(dropdown, effectiveDueDate, minDate = Some(effectiveStartDate)), viaToken)
+    }
+  }
 }
 
 case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int, left: Option[Double] = None)
@@ -88,13 +131,21 @@ class CreateTaskQuick(
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  private val state = Var(QuickState(currentAccountId = accountService.get.map(_.id), projectId = currentProjectId))
+  private val state = Var(QuickState(
+      today = tgClock.currentDate(),
+      currentAccountId = accountService.get.map(_.id),
+      projectId = currentProjectId
+    ))
+
+  private val tgDateFormater = new TgDateFormater
+  private val dateRangeValidation = new DateRangeValidation
 
   private def matches(query: String, texts: String*): Boolean =
     texts.exists(_.toLowerCase.contains(query.toLowerCase))
 
   private def optionsFor(current: QuickState, token: QuickToken): Seq[QuickOption] =
     token.dropdown match {
+      case StartDateDropdown | DueDateDropdown => Seq.empty
       case ProjectDropdown =>
         current.projects
           .filter(project => matches(token.query, project.name))
@@ -151,10 +202,13 @@ class CreateTaskQuick(
     */
   private def popupFor(current: QuickState): Option[QuickPopup] =
     current.activeToken
+      .filterNot(token => QuickDropdown.dateDropdowns.contains(token.dropdown))
       .map(token => popupAt(current, token, left = None))
-      .orElse(current.badgePopup.map { badgePopup =>
-        popupAt(current, QuickToken(badgePopup.dropdown, "", -1, -1), Some(badgePopup.left))
-      })
+      .orElse(
+        current.badgePopup.filterNot(popup => QuickDropdown.dateDropdowns.contains(popup.dropdown)).map { badgePopup =>
+          popupAt(current, QuickToken(badgePopup.dropdown, "", -1, -1), Some(badgePopup.left))
+        }
+      )
 
   private def isBadgeToken(token: QuickToken): Boolean = token.start < 0
 
@@ -165,6 +219,27 @@ class CreateTaskQuick(
         highlighted = 0
       )
     )
+    // a date picker takes focus for its own input as it mounts; pulling it back here would close it again
+    if (!QuickDropdown.dateDropdowns.contains(dropdown) || state.now().badgePopup.isEmpty) nameInput.ref.focus()
+  }
+
+  private def pickDate(dropdown: QuickDropdown, day: LocalDate): Unit =
+    state.update { current =>
+      val withoutToken =
+        current.activeToken.filter(token => QuickDropdown.dateDropdowns.contains(token.dropdown)).fold(current)(current.withoutToken)
+      val cleared = withoutToken.copy(badgePopup = None)
+      if (dropdown == StartDateDropdown) cleared.copy(startDate = Some(day)) else cleared.copy(dueDate = Some(day))
+    }
+
+  /** Cancel, Escape, outside click, and (after `pickDate`) OK all end up here. A typed token that is still in the
+    * input is dismissed, otherwise the picker would reopen at once.
+    */
+  private def closeDatePicker(): Unit = {
+    state.update { current =>
+      current.activeToken
+        .filter(token => QuickDropdown.dateDropdowns.contains(token.dropdown))
+        .fold(current.copy(badgePopup = None))(token => current.copy(dismissedTokenStart = Some(token.start)))
+    }
     nameInput.ref.focus()
   }
 
@@ -179,6 +254,7 @@ class CreateTaskQuick(
         case PriorityDropdown   => cleared.copy(priority = Some(TaskPriority.withValue(option.id.toInt)))
         case TaskStatusDropdown => cleared.copy(statusId = Some(UUID.fromString(option.id)))
         case AssignedToDropdown => cleared.copy(assigneeId = Some(UUID.fromString(option.id)))
+        case StartDateDropdown | DueDateDropdown => cleared
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
           cleared.copy(labelIds = if (cleared.labelIds.contains(id)) cleared.labelIds - id else cleared.labelIds + id)
@@ -235,8 +311,8 @@ class CreateTaskQuick(
             createdAt = now,
             updatedAt = now,
             priority = current.effectivePriority,
-            startDate = tgClock.currentDate(),
-            dueDate = tgClock.currentDate(),
+            startDate = current.effectiveStartDate,
+            dueDate = current.effectiveDueDate,
             taskLabelIds = current.labelIds.toSeq
           ),
           links = Seq.empty
@@ -309,7 +385,8 @@ class CreateTaskQuick(
     dropdown: QuickDropdown,
     text: String,
     onClear: Option[() => Unit],
-    color: Option[TgBadgeColor] = None
+    color: Option[TgBadgeColor] = None,
+    isOpen: Boolean = false
   ): HtmlElement =
     span(
       cls(
@@ -318,9 +395,12 @@ class CreateTaskQuick(
         )
       ),
       cls("cursor-pointer"),
+      cls(if (isOpen) "ring-2 ring-blue-400" else ""),
       // keeps the name input focused, so its blur does not close the popup this click is about to toggle
       onMouseDown.preventDefault --> Observer.empty,
-      onClick --> (event =>
+      // stopPropagation: a date picker opened by this click starts listening for outside clicks as it mounts, and
+      // would otherwise treat the very click that opened it as one
+      onClick.stopPropagation --> (event =>
         toggleBadgePopup(dropdown, event.currentTarget.asInstanceOf[dom.html.Element].offsetLeft)
       ),
       text,
@@ -364,6 +444,42 @@ class CreateTaskQuick(
       ).flatten ++ labelBadges(current)
     }
 
+  /** On a row of their own, below the other badges. */
+  private def dateBadges: Signal[Seq[HtmlElement]] =
+    state.signal.map { current =>
+      Seq(
+        dateBadge(
+          StartDateDropdown,
+          "Start",
+          current.effectiveStartDate,
+          current.startDate.map(_ => () => state.update(_.copy(startDate = None))),
+          current
+        ),
+        dateBadge(
+          DueDateDropdown,
+          "Due",
+          current.effectiveDueDate,
+          current.dueDate.map(_ => () => state.update(_.copy(dueDate = None))),
+          current
+        )
+      )
+    }
+
+  private def dateBadge(
+    dropdown: QuickDropdown,
+    prefix: String,
+    date: LocalDate,
+    onClear: Option[() => Unit],
+    current: QuickState
+  ): HtmlElement =
+    badge(
+      dropdown,
+      s"$prefix ${tgDateFormater.asAmericanDateWithDayAbrv(date)}",
+      onClear,
+      Some(TgBadgeColor.Gray),
+      isOpen = current.datePicker.exists(_._1.dropdown == dropdown)
+    )
+
   private def labelBadges(current: QuickState): Seq[HtmlElement] = {
     val selected = current.labels.filter(label => current.labelIds.contains(label.id))
     if (selected.isEmpty) Seq(badge(LabelsDropdown, "+ Labels", None))
@@ -395,6 +511,34 @@ class CreateTaskQuick(
       .distinct
       .map(_.map(popupElement))
 
+  private def datePicker(request: DatePickerRequest): HtmlElement =
+    div(
+      cls("quick-date-picker"),
+      CalendarPickerPopup(
+        initialMonth = request.selected,
+        today = state.now().today,
+        tgDateFormater = tgDateFormater,
+        selected = Some(request.selected),
+        minDate = request.minDate,
+        isDisabled = dateRangeValidation.isWeekend,
+        onPick = day => pickDate(request.dropdown, day),
+        onClose = () => closeDatePicker()
+      ).element
+    )
+
+  /** The picker for a typed `@s`/`@d` goes under the name input, the one for a clicked badge under the badge row. */
+  private def datePickerSlot(viaToken: Boolean): Signal[Option[HtmlElement]] =
+    state.signal
+      .map(_.datePicker.collect { case (request, typed) if typed == viaToken => request })
+      .distinct
+      .map(_.map(datePicker))
+
+  private def isInsideDatePicker(target: dom.EventTarget): Boolean =
+    target match {
+      case element: dom.Element => element.closest(".quick-date-picker") != null
+      case _                    => false
+    }
+
   private val nameInput =
     input(
       `type`("text"),
@@ -411,7 +555,8 @@ class CreateTaskQuick(
       onKeyUp --> (event => updateCaret(event)),
       onClick --> (event => updateCaret(event)),
       onKeyDown --> (event => onInputKeyDown(event)),
-      onBlur.mapToUnit --> (_ =>
+      // focus moving into a date picker is the picker opening, not the name input being left
+      onBlur.filterNot(event => isInsideDatePicker(event.relatedTarget)).mapToUnit --> (_ =>
         state.update(current =>
           current.copy(dismissedTokenStart = current.activeToken.map(_.start), badgePopup = None)
         )
@@ -462,12 +607,16 @@ class CreateTaskQuick(
           cls("relative mb-3"),
           nameInput,
           child.maybe <-- popupSlot(_.left.isEmpty),
-          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  %assignee")
+          child.maybe <-- datePickerSlot(viaToken = true),
+          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  %assignee  @s start  @d due")
         ),
         div(
           cls("relative mb-4"),
           div(cls("flex flex-wrap gap-1.5"), children <-- badges),
-          child.maybe <-- popupSlot(_.left.isDefined)
+          // between the rows, so an option popup opens right under the badge row it came from
+          child.maybe <-- popupSlot(_.left.isDefined),
+          div(cls("flex flex-wrap gap-1.5 mt-1.5"), children <-- dateBadges),
+          child.maybe <-- datePickerSlot(viaToken = false)
         ),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
         div(
