@@ -6,10 +6,11 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.DateRangeValidation
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, CreateMilestoneReq, FindMilestoneResp, UpdateMilestoneReq}
-import com.togger.milestone.{MilestoneDateValidation, MilestoneEndpoints}
+import com.togger.milestone.MilestoneEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -34,7 +35,7 @@ class CreateMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
-  milestoneDateValidation: MilestoneDateValidation,
+  dateRangeValidation: DateRangeValidation,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -107,7 +108,7 @@ class CreateMilestoneComponent(
   )
 
   private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && milestoneDateValidation.isWeekend(LocalDate.parse(form.startDate)))
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
       Seq("Start date must be a work day, not a Saturday or Sunday")
     else Seq.empty
   }
@@ -121,7 +122,7 @@ class CreateMilestoneComponent(
         Seq("Estimated end date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.estimatedEndDate.nonEmpty && milestoneDateValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
+      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
         Seq("Estimated end date must be a work day, not a Saturday or Sunday")
       else Seq.empty
     orderError ++ weekendError

@@ -2,14 +2,13 @@ package com.togger.controllers.milestone
 
 import cats.effect.IO
 import com.togger.common.TgError._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.{DateRangeValidation, TgJsonSuccess}
 import com.togger.controllers.milestone.MilestoneDateDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{FindMilestoneDateResp, MilestoneDateVersionDto}
 import com.togger.milestone.{
   MilestoneDate,
   MilestoneDateEndpoints,
   MilestoneDateService,
-  MilestoneDateValidation,
   MilestoneDateVersion,
   MilestoneService
 }
@@ -21,7 +20,7 @@ class MilestoneDateController(
   milestoneDateEndpoints: MilestoneDateEndpoints,
   milestoneDateService: MilestoneDateService,
   milestoneService: MilestoneService,
-  milestoneDateValidation: MilestoneDateValidation
+  dateRangeValidation: DateRangeValidation
 ) {
 
   val save = milestoneDateEndpoints.saveEndpoint.serverLogic { auth => dto =>
@@ -29,7 +28,7 @@ class MilestoneDateController(
       case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
       case Right(milestone) =>
         val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
-        milestoneDateValidation
+        dateRangeValidation
           .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
           .toEither match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneDateResp])
@@ -90,7 +89,7 @@ class MilestoneDateController(
           case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
           case Right(milestone) =>
             val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
-            milestoneDateValidation
+            dateRangeValidation
               .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
               .toEither match {
               case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneDateResp])
@@ -137,7 +136,7 @@ class MilestoneDateController(
           case Left(error) => IO.pure(error.toBadRequestLeft[MilestoneDateVersionDto])
           case Right(milestone) =>
             val dateAsLocalDate = dto.date.atOffset(ZoneOffset.UTC).toLocalDate
-            milestoneDateValidation
+            dateRangeValidation
               .validateOnOrAfterStart("Date", dateAsLocalDate, milestone.version.startDate)
               .toEither match {
               case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneDateVersionDto])

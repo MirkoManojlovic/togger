@@ -2,28 +2,21 @@ package com.togger.controllers.milestone
 
 import cats.effect.IO
 import com.togger.common.TgError._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.{DateRangeValidation, TgJsonSuccess}
 import com.togger.controllers.milestone.MilestoneDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{FindMilestoneResp, MilestoneVersionDto}
-import com.togger.milestone.{
-  Milestone,
-  MilestoneDateValidation,
-  MilestoneEndpoints,
-  MilestoneService,
-  MilestoneStatus,
-  MilestoneVersion
-}
+import com.togger.milestone.{Milestone, MilestoneEndpoints, MilestoneService, MilestoneStatus, MilestoneVersion}
 
 import java.util.UUID
 
 class MilestoneController(
   milestoneEndpoints: MilestoneEndpoints,
   milestoneService: MilestoneService,
-  milestoneDateValidation: MilestoneDateValidation
+  dateRangeValidation: DateRangeValidation
 ) {
 
   val save = milestoneEndpoints.saveEndpoint.serverLogic { auth => dto =>
-    milestoneDateValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), None) match {
+    dateRangeValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), None) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
       case Right(_) =>
         val now = java.time.Instant.now()
@@ -76,7 +69,7 @@ class MilestoneController(
         val effectiveEstimatedEndDate = dto.estimatedEndDate.getOrElse(current.version.estimatedEndDate)
         val effectiveEndDate = dto.endDate.orElse(current.version.endDate)
 
-        milestoneDateValidation.validate(
+        dateRangeValidation.validate(
           Some(effectiveStartDate),
           Some(effectiveEstimatedEndDate),
           effectiveEndDate
@@ -120,7 +113,7 @@ class MilestoneController(
   }
 
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
-    milestoneDateValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), dto.endDate) match {
+    dateRangeValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), dto.endDate) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneVersionDto])
       case Right(_) =>
         milestoneService

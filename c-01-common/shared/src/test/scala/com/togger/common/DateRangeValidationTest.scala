@@ -1,7 +1,6 @@
-package com.togger.milestone
+package com.togger.common
 
-import com.togger.common.NonEmptyChainHelpers
-import com.togger.milestone.MilestoneDateValidation.{DateBeforeStartDate, WeekendDateNotAllowed}
+import com.togger.common.DateRangeValidation.{DateBeforeStartDate, WeekendDateNotAllowed}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -9,14 +8,14 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.LocalDate
 
-class MilestoneDateValidationTest
+class DateRangeValidationTest
     extends AnyWordSpec
     with Matchers
     with EitherValues
     with TableDrivenPropertyChecks
     with NonEmptyChainHelpers {
 
-  private val milestoneDateValidation = new MilestoneDateValidation
+  private val dateRangeValidation = new DateRangeValidation
 
   // 2024-01-01 is a Monday
   private val monday = LocalDate.of(2024, 1, 1)
@@ -24,28 +23,28 @@ class MilestoneDateValidationTest
   private val sunday = LocalDate.of(2024, 1, 7)
   private val nextMonday = LocalDate.of(2024, 1, 8)
 
-  "MilestoneDateValidation.isWeekend" should {
+  "DateRangeValidation.isWeekend" should {
     "identify Saturdays and Sundays as weekends" in {
       val weekendDays = Table("date", saturday, sunday)
-      forAll(weekendDays)(date => milestoneDateValidation.isWeekend(date) shouldBe true)
+      forAll(weekendDays)(date => dateRangeValidation.isWeekend(date) shouldBe true)
     }
 
     "not treat week days as weekends" in {
-      milestoneDateValidation.isWeekend(monday) shouldBe false
+      dateRangeValidation.isWeekend(monday) shouldBe false
     }
   }
 
-  "MilestoneDateValidation.validate" should {
+  "DateRangeValidation.validate" should {
     "accept work days for all fields" in {
-      milestoneDateValidation.validate(Some(monday), Some(nextMonday), None).value shouldBe (())
+      dateRangeValidation.validate(Some(monday), Some(nextMonday), None).value shouldBe (())
     }
 
     "accept missing (optional) fields" in {
-      milestoneDateValidation.validate(None, None, None).value shouldBe (())
+      dateRangeValidation.validate(None, None, None).value shouldBe (())
     }
 
     "reject a weekend start date" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(saturday), Some(nextMonday), None)
         .left
         .value
@@ -53,7 +52,7 @@ class MilestoneDateValidationTest
     }
 
     "reject a weekend estimated end date" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(monday), Some(sunday), None)
         .left
         .value
@@ -61,7 +60,7 @@ class MilestoneDateValidationTest
     }
 
     "reject a weekend end date" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(monday), Some(nextMonday), Some(saturday))
         .left
         .value
@@ -69,7 +68,7 @@ class MilestoneDateValidationTest
     }
 
     "accumulate errors for multiple weekend dates" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(saturday), Some(sunday), Some(saturday))
         .left
         .value
@@ -81,15 +80,15 @@ class MilestoneDateValidationTest
     }
 
     "accept an estimated end date equal to the start date" in {
-      milestoneDateValidation.validate(Some(monday), Some(monday), None).value shouldBe (())
+      dateRangeValidation.validate(Some(monday), Some(monday), None).value shouldBe (())
     }
 
     "accept an end date equal to the start date" in {
-      milestoneDateValidation.validate(Some(monday), Some(nextMonday), Some(monday)).value shouldBe (())
+      dateRangeValidation.validate(Some(monday), Some(nextMonday), Some(monday)).value shouldBe (())
     }
 
     "reject an estimated end date before the start date" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(nextMonday), Some(monday), None)
         .left
         .value
@@ -97,7 +96,7 @@ class MilestoneDateValidationTest
     }
 
     "reject an end date before the start date" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(nextMonday), Some(nextMonday), Some(monday))
         .left
         .value
@@ -105,7 +104,7 @@ class MilestoneDateValidationTest
     }
 
     "accumulate weekend and before-start-date errors together" in {
-      milestoneDateValidation
+      dateRangeValidation
         .validate(Some(nextMonday), Some(saturday), None)
         .left
         .value

@@ -1,18 +1,17 @@
-package com.togger.milestone
+package com.togger.common
 
 import cats.data.{EitherNec, ValidatedNec}
 import cats.implicits._
-import com.togger.common.TgError
 
 import java.time.{DayOfWeek, LocalDate}
 
-class MilestoneDateValidation {
+class DateRangeValidation {
 
   def isWeekend(date: LocalDate): Boolean =
     date.getDayOfWeek == DayOfWeek.SATURDAY || date.getDayOfWeek == DayOfWeek.SUNDAY
 
   def validateWorkDay(fieldName: String, date: LocalDate): ValidatedNec[TgError, LocalDate] =
-    if (isWeekend(date)) MilestoneDateValidation.WeekendDateNotAllowed(fieldName, date).invalidNec else date.validNec
+    if (isWeekend(date)) DateRangeValidation.WeekendDateNotAllowed(fieldName, date).invalidNec else date.validNec
 
   private def validateWorkDay(fieldName: String, date: Option[LocalDate]): ValidatedNec[TgError, Option[LocalDate]] =
     date.traverse(validateWorkDay(fieldName, _))
@@ -22,7 +21,7 @@ class MilestoneDateValidation {
     date: LocalDate,
     startDate: LocalDate
   ): ValidatedNec[TgError, LocalDate] =
-    if (date.isBefore(startDate)) MilestoneDateValidation.DateBeforeStartDate(fieldName, date, startDate).invalidNec
+    if (date.isBefore(startDate)) DateRangeValidation.DateBeforeStartDate(fieldName, date, startDate).invalidNec
     else date.validNec
 
   private def validateOnOrAfterStart(
@@ -50,15 +49,15 @@ class MilestoneDateValidation {
 
 }
 
-object MilestoneDateValidation {
+object DateRangeValidation {
 
-  sealed trait MilestoneDateError extends TgError
+  sealed trait DateRangeError extends TgError
 
-  case class WeekendDateNotAllowed(fieldName: String, date: LocalDate) extends MilestoneDateError {
+  case class WeekendDateNotAllowed(fieldName: String, date: LocalDate) extends DateRangeError {
     override def message: String = s"$fieldName must be a work day, not a Saturday or Sunday (was $date)"
   }
 
-  case class DateBeforeStartDate(fieldName: String, date: LocalDate, startDate: LocalDate) extends MilestoneDateError {
+  case class DateBeforeStartDate(fieldName: String, date: LocalDate, startDate: LocalDate) extends DateRangeError {
     override def message: String = s"$fieldName must be on or after the start date ($startDate), but was $date"
   }
 
