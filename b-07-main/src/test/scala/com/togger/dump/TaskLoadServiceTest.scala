@@ -101,7 +101,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           closedBy = None,
           taskStatusId = taskStatusId,
           startDate = LocalDate.now(),
-          estimatedEndDate = LocalDate.now().plusDays(7),
+          dueDate = LocalDate.now().plusDays(7),
           createdAt = nowAsInstant,
           updatedAt = nowAsInstant
         )
@@ -237,7 +237,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
               closedBy = None,
               taskStatusId = savedTaskStatus.id,
               startDate = LocalDate.now(),
-              estimatedEndDate = LocalDate.now().plusDays(7),
+              dueDate = LocalDate.now().plusDays(7),
               createdAt = nowAsInstant,
               updatedAt = nowAsInstant
             )
@@ -574,7 +574,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
               closedBy = None,
               taskStatusId = taskStatusId,
               startDate = LocalDate.now(),
-              estimatedEndDate = LocalDate.now().plusDays(7),
+              dueDate = LocalDate.now().plusDays(7),
               createdAt = nowAsInstant,
               updatedAt = nowAsInstant
             )
@@ -714,7 +714,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
                 closedBy = Some(dumpSideAccountId),
                 taskStatusId = savedTaskStatus.id,
                 startDate = LocalDate.now(),
-                estimatedEndDate = LocalDate.now().plusDays(7),
+                dueDate = LocalDate.now().plusDays(7),
                 createdAt = nowAsInstant,
                 updatedAt = nowAsInstant
               )
@@ -997,7 +997,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
                 closedBy = Some(closerDumpId),
                 taskStatusId = savedTaskStatus.id,
                 startDate = LocalDate.now(),
-                estimatedEndDate = LocalDate.now().plusDays(7),
+                dueDate = LocalDate.now().plusDays(7),
                 createdAt = nowAsInstant,
                 updatedAt = nowAsInstant
               )

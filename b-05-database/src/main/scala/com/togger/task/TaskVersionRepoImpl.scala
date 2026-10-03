@@ -29,7 +29,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     "priority",
     "milestone_id",
     "start_date",
-    "estimated_end_date",
+    "due_date",
     "end_date",
     "created_at",
     "updated_at"
@@ -56,7 +56,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       priority = version.priority,
       milestone = version.milestone,
       startDate = version.startDate,
-      estimatedEndDate = version.estimatedEndDate,
+      dueDate = version.dueDate,
       endDate = version.endDate,
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
@@ -68,8 +68,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, estimated_end_date, end_date, created_at, updated_at)
-        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $estimatedEndDate, $endDate, $createdAt, $updatedAt)
+        (task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, due_date, end_date, created_at, updated_at)
+        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(s"Inserting ${sp(taskVersion)}", taskVersion => s"Task version inserted ${sp(taskVersion)}")
@@ -79,8 +79,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (version, task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, estimated_end_date, end_date, created_at, updated_at)
-        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $estimatedEndDate, $endDate, $createdAt, $updatedAt)
+        (version, task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, due_date, end_date, created_at, updated_at)
+        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(
@@ -126,7 +126,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
             priority = ${taskVersion.priority},
             milestone_id = ${taskVersion.milestone},
             start_date = ${taskVersion.startDate},
-            estimated_end_date = ${taskVersion.estimatedEndDate},
+            due_date = ${taskVersion.dueDate},
             end_date = ${taskVersion.endDate},
             updated_at = ${taskVersion.updatedAt}
           where version = ${taskVersion.version}""").update

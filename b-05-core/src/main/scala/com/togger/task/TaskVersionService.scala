@@ -29,7 +29,7 @@ class TaskVersionService(
     priority: TaskPriority,
     milestone: Option[UUID] = None,
     startDate: LocalDate,
-    estimatedEndDate: LocalDate,
+    dueDate: LocalDate,
     endDate: Option[LocalDate] = None
   ): IO[Either[TaskError, TaskVersion]] =
     (for {
@@ -50,7 +50,7 @@ class TaskVersionService(
                 priority,
                 milestone,
                 startDate,
-                estimatedEndDate,
+                dueDate,
                 endDate
               )
             )

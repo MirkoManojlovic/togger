@@ -22,7 +22,7 @@ object TaskDtoMapper {
       priority = version.priority,
       milestone = version.milestone,
       startDate = version.startDate,
-      estimatedEndDate = version.estimatedEndDate,
+      dueDate = version.dueDate,
       endDate = version.endDate,
       taskLabelIds = taskLabelIds
     )
@@ -41,7 +41,7 @@ object TaskDtoMapper {
       priority = version.priority,
       milestone = version.milestone,
       startDate = version.startDate,
-      estimatedEndDate = version.estimatedEndDate,
+      dueDate = version.dueDate,
       endDate = version.endDate
     )
 

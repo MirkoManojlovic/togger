@@ -56,7 +56,7 @@ class TaskServiceTest
   )
 
   val testStartDate: LocalDate = LocalDate.now()
-  val testEstimatedEndDate: LocalDate = testStartDate.plusDays(7)
+  val testDueDate: LocalDate = testStartDate.plusDays(7)
 
   val firstVersion = TaskVersion(
     version = UUID.randomUUID(),
@@ -67,7 +67,7 @@ class TaskServiceTest
     closedBy = None,
     taskStatusId = UUID.randomUUID(),
     startDate = testStartDate,
-    estimatedEndDate = testEstimatedEndDate,
+    dueDate = testDueDate,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -135,7 +135,7 @@ class TaskServiceTest
           UUID.randomUUID(),
           TaskPriority.Medium,
           startDate = testStartDate,
-          estimatedEndDate = testEstimatedEndDate
+          dueDate = testDueDate
         )
       val updatedLinkVersion = version1.withNewContent("new name", "http://example.com/new")
 

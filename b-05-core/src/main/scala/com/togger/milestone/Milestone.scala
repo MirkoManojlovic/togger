@@ -16,7 +16,7 @@ case class MilestoneVersion(
   description: String,
   status: MilestoneStatus = MilestoneStatus.InProgress,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant
@@ -27,7 +27,7 @@ case class MilestoneVersion(
     description: String,
     status: MilestoneStatus = MilestoneStatus.InProgress,
     startDate: LocalDate,
-    estimatedEndDate: LocalDate,
+    dueDate: LocalDate,
     endDate: Option[LocalDate] = None
   ): MilestoneVersion =
     this.copy(
@@ -35,7 +35,7 @@ case class MilestoneVersion(
       description = description,
       status = status,
       startDate = startDate,
-      estimatedEndDate = estimatedEndDate,
+      dueDate = dueDate,
       endDate = endDate
     )
 

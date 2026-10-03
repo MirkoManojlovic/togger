@@ -46,7 +46,7 @@ class MilestoneServiceTest
     name = s"Milestone $suffix",
     description = s"Description $suffix",
     startDate = LocalDate.now(),
-    estimatedEndDate = LocalDate.now().plusMonths(1),
+    dueDate = LocalDate.now().plusMonths(1),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -113,7 +113,7 @@ class MilestoneServiceTest
         "old name edit",
         "old description edit",
         startDate = firstVersion.startDate,
-        estimatedEndDate = firstVersion.estimatedEndDate
+        dueDate = firstVersion.dueDate
       )
 
       (milestoneRepo.insert _).expects(milestone).returns(milestone.pure[ConnectionIO])
@@ -136,14 +136,14 @@ class MilestoneServiceTest
           "edited name",
           "edited description",
           startDate = secondVersion.startDate,
-          estimatedEndDate = secondVersion.estimatedEndDate
+          dueDate = secondVersion.dueDate
         )
         editOldResult <- service.updateVersionContent(
           firstVersion.version,
           "old name edit",
           "old description edit",
           startDate = firstVersion.startDate,
-          estimatedEndDate = firstVersion.estimatedEndDate
+          dueDate = firstVersion.dueDate
         )
       } yield {
         val cp = new Checkpoint

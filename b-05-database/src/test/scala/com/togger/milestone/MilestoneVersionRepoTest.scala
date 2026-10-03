@@ -24,7 +24,7 @@ class MilestoneVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgPr
     name = s"Milestone $suffix",
     description = s"Description $suffix",
     startDate = LocalDate.now(),
-    estimatedEndDate = LocalDate.now().plusMonths(1),
+    dueDate = LocalDate.now().plusMonths(1),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

@@ -66,7 +66,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           closedBy = None,
           taskStatusId = taskStatusId,
           startDate = LocalDate.now(),
-          estimatedEndDate = LocalDate.now().plusDays(7),
+          dueDate = LocalDate.now().plusDays(7),
           createdAt = nowAsInstant,
           updatedAt = nowAsInstant
         )
@@ -390,7 +390,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             closedBy = Some(closerAccount.id),
             taskStatusId = savedTaskStatus.id,
             startDate = LocalDate.now(),
-            estimatedEndDate = LocalDate.now().plusDays(7),
+            dueDate = LocalDate.now().plusDays(7),
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
@@ -409,7 +409,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             closedBy = None,
             taskStatusId = savedTaskStatus.id,
             startDate = LocalDate.now(),
-            estimatedEndDate = LocalDate.now().plusDays(7),
+            dueDate = LocalDate.now().plusDays(7),
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )

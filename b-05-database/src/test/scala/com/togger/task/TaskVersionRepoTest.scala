@@ -25,7 +25,7 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
   val v1 = "v1"
   val v2 = "v2"
   val testStartDate: LocalDate = LocalDate.now()
-  val testEstimatedEndDate: LocalDate = testStartDate.plusDays(7)
+  val testDueDate: LocalDate = testStartDate.plusDays(7)
 
   def taskVersion(
     taskId: UUID,
@@ -43,7 +43,7 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
     taskStatusId = taskStatusId,
     priority = priority,
     startDate = testStartDate,
-    estimatedEndDate = testEstimatedEndDate,
+    dueDate = testDueDate,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -71,7 +71,7 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
           savedVersion.copy(
             description = "new description",
             priority = TaskPriority.Planned,
-            endDate = Some(testEstimatedEndDate)
+            endDate = Some(testDueDate)
           )
         )
         foundVersion2 <- taskVersionRepo.findByVersion(savedVersion.version)
@@ -82,12 +82,12 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
         cp(savedVersion shouldBe foundVersion1)
         cp(foundVersion1.priority shouldBe TaskPriority.Critical)
         cp(foundVersion1.startDate shouldBe testStartDate)
-        cp(foundVersion1.estimatedEndDate shouldBe testEstimatedEndDate)
+        cp(foundVersion1.dueDate shouldBe testDueDate)
         cp(foundVersion1.endDate shouldBe None)
         cp(updatedVersion shouldBe foundVersion2)
         cp(updatedVersion.description shouldBe "new description")
         cp(updatedVersion.priority shouldBe TaskPriority.Planned)
-        cp(updatedVersion.endDate shouldBe Some(testEstimatedEndDate))
+        cp(updatedVersion.endDate shouldBe Some(testDueDate))
         cp.reportAll()
         foundVersion3.isLeft shouldBe true
       }

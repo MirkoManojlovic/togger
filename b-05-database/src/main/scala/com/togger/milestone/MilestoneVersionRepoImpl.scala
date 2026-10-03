@@ -19,7 +19,7 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
     "description",
     "status",
     "start_date",
-    "estimated_end_date",
+    "due_date",
     "end_date",
     "created_at",
     "updated_at"
@@ -29,8 +29,8 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
     import milestoneVersion._
     logAroundInfoQuery(
       insertStatement(MILESTONE_VERSION_TABLE_FRAG)(fr"""
-        (milestone_id, name, description, status, start_date, estimated_end_date, end_date, created_at, updated_at)
-        values ($milestoneId, $name, $description, $status, $startDate, $estimatedEndDate, $endDate, $createdAt, $updatedAt)
+        (milestone_id, name, description, status, start_date, due_date, end_date, created_at, updated_at)
+        values ($milestoneId, $name, $description, $status, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[MilestoneVersion](returnFields: _*)
     )(s"Inserting ${sp(milestoneVersion)}", milestoneVersion => s"Milestone version inserted ${sp(milestoneVersion)}")
@@ -69,7 +69,7 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
             description = ${milestoneVersion.description},
             status = ${milestoneVersion.status},
             start_date = ${milestoneVersion.startDate},
-            estimated_end_date = ${milestoneVersion.estimatedEndDate},
+            due_date = ${milestoneVersion.dueDate},
             end_date = ${milestoneVersion.endDate},
             updated_at = ${milestoneVersion.updatedAt}
           where version = ${milestoneVersion.version}""").update

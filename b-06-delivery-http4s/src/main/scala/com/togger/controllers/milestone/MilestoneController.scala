@@ -16,7 +16,7 @@ class MilestoneController(
 ) {
 
   val save = milestoneEndpoints.saveEndpoint.serverLogic { auth => dto =>
-    dateRangeValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), None) match {
+    dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), None) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
       case Right(_) =>
         val now = java.time.Instant.now()
@@ -32,7 +32,7 @@ class MilestoneController(
           description = dto.description,
           status = MilestoneStatus.InProgress,
           startDate = dto.startDate,
-          estimatedEndDate = dto.estimatedEndDate,
+          dueDate = dto.dueDate,
           endDate = None,
           createdAt = now,
           updatedAt = now
@@ -66,12 +66,12 @@ class MilestoneController(
       case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
       case Right(current) =>
         val effectiveStartDate = dto.startDate.getOrElse(current.version.startDate)
-        val effectiveEstimatedEndDate = dto.estimatedEndDate.getOrElse(current.version.estimatedEndDate)
+        val effectiveDueDate = dto.dueDate.getOrElse(current.version.dueDate)
         val effectiveEndDate = dto.endDate.orElse(current.version.endDate)
 
         dateRangeValidation.validate(
           Some(effectiveStartDate),
-          Some(effectiveEstimatedEndDate),
+          Some(effectiveDueDate),
           effectiveEndDate
         ) match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
@@ -84,7 +84,7 @@ class MilestoneController(
               description = dto.description,
               status = dto.status.getOrElse(current.version.status),
               startDate = effectiveStartDate,
-              estimatedEndDate = effectiveEstimatedEndDate,
+              dueDate = effectiveDueDate,
               endDate = effectiveEndDate,
               createdAt = now,
               updatedAt = now
@@ -113,7 +113,7 @@ class MilestoneController(
   }
 
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
-    dateRangeValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), dto.endDate) match {
+    dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneVersionDto])
       case Right(_) =>
         milestoneService
@@ -123,7 +123,7 @@ class MilestoneController(
             dto.description,
             dto.status,
             dto.startDate,
-            dto.estimatedEndDate,
+            dto.dueDate,
             dto.endDate
           )
           .map {

@@ -67,7 +67,7 @@ class TaskController(
                   links = links.map(link => toLinkDto(link.link, link.latestVersion)),
                   milestone = taskFull.milestone,
                   startDate = taskFull.startDate,
-                  estimatedEndDate = taskFull.estimatedEndDate,
+                  dueDate = taskFull.dueDate,
                   endDate = taskFull.endDate,
                   taskLabels = taskFull.taskLabels.map(l =>
                     FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
@@ -91,7 +91,7 @@ class TaskController(
     val taskDto = dto.task
     val linksDto = dto.links
 
-    dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.estimatedEndDate), None) match {
+    dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
       case Right(_) =>
         val task = Task(
@@ -112,7 +112,7 @@ class TaskController(
           priority = taskDto.priority,
           milestone = taskDto.milestone,
           startDate = taskDto.startDate,
-          estimatedEndDate = taskDto.estimatedEndDate,
+          dueDate = taskDto.dueDate,
           endDate = None,
           createdAt = taskDto.createdAt,
           updatedAt = taskDto.createdAt
@@ -155,10 +155,10 @@ class TaskController(
     taskVersionService.listVersions(taskDto.id).flatMap { versions =>
       val currentVersion = versions.head
       val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
-      val effectiveEstimatedEndDate = taskDto.estimatedEndDate.getOrElse(currentVersion.estimatedEndDate)
+      val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
       val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
 
-      dateRangeValidation.validate(Some(effectiveStartDate), Some(effectiveEstimatedEndDate), effectiveEndDate) match {
+      dateRangeValidation.validate(Some(effectiveStartDate), Some(effectiveDueDate), effectiveEndDate) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
         case Right(_) =>
           val newUpdatedAt = tgClock.currentInstant
@@ -174,7 +174,7 @@ class TaskController(
             priority = taskDto.priority,
             milestone = taskDto.milestone,
             startDate = effectiveStartDate,
-            estimatedEndDate = effectiveEstimatedEndDate,
+            dueDate = effectiveDueDate,
             endDate = effectiveEndDate,
             createdAt = newUpdatedAt,
             updatedAt = newUpdatedAt
@@ -238,7 +238,7 @@ class TaskController(
   }
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
-    dateRangeValidation.validate(Some(dto.startDate), Some(dto.estimatedEndDate), dto.endDate) match {
+    dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
       case Right(_) =>
         taskVersionService
@@ -252,7 +252,7 @@ class TaskController(
             dto.priority,
             dto.milestone,
             dto.startDate,
-            dto.estimatedEndDate,
+            dto.dueDate,
             dto.endDate
           )
           .map {

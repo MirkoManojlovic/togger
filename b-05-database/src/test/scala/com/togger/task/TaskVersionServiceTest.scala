@@ -34,7 +34,7 @@ class TaskVersionServiceTest
   val taskId: UUID = UUID.randomUUID()
   val taskStatusId: UUID = UUID.randomUUID()
   val testStartDate: LocalDate = LocalDate.now()
-  val testEstimatedEndDate: LocalDate = testStartDate.plusDays(7)
+  val testDueDate: LocalDate = testStartDate.plusDays(7)
 
   def newVersion(suffix: String) = TaskVersion(
     version = UUID.randomUUID(),
@@ -45,7 +45,7 @@ class TaskVersionServiceTest
     closedBy = None,
     taskStatusId = taskStatusId,
     startDate = testStartDate,
-    estimatedEndDate = testEstimatedEndDate,
+    dueDate = testDueDate,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -75,7 +75,7 @@ class TaskVersionServiceTest
           taskStatusId,
           TaskPriority.Medium,
           startDate = testStartDate,
-          estimatedEndDate = testEstimatedEndDate
+          dueDate = testDueDate
         )
 
       (taskVersionRepo.findByVersion _).expects(secondVersion.version).returns(secondVersion.pure[ConnectionIO])
@@ -96,7 +96,7 @@ class TaskVersionServiceTest
           taskStatusId,
           TaskPriority.Medium,
           startDate = testStartDate,
-          estimatedEndDate = testEstimatedEndDate
+          dueDate = testDueDate
         )
         editOldResult <- service.updateVersionContent(
           firstVersion.version,
@@ -107,7 +107,7 @@ class TaskVersionServiceTest
           taskStatusId,
           TaskPriority.Medium,
           startDate = testStartDate,
-          estimatedEndDate = testEstimatedEndDate
+          dueDate = testDueDate
         )
       } yield {
         val cp = new Checkpoint

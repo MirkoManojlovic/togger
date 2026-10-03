@@ -18,7 +18,7 @@ case class TaskVersion(
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant
@@ -33,7 +33,7 @@ case class TaskVersion(
     priority: TaskPriority,
     milestone: Option[UUID] = None,
     startDate: LocalDate,
-    estimatedEndDate: LocalDate,
+    dueDate: LocalDate,
     endDate: Option[LocalDate] = None
   ): TaskVersion =
     this.copy(
@@ -45,7 +45,7 @@ case class TaskVersion(
       priority = priority,
       milestone = milestone,
       startDate = startDate,
-      estimatedEndDate = estimatedEndDate,
+      dueDate = dueDate,
       endDate = endDate
     )
 
@@ -58,7 +58,7 @@ case class TaskVersion(
       priority == other.priority &&
       milestone == other.milestone &&
       startDate == other.startDate &&
-      estimatedEndDate == other.estimatedEndDate &&
+      dueDate == other.dueDate &&
       endDate == other.endDate
 
 }
@@ -81,7 +81,7 @@ case class TaskFull(
   taskLabels: Seq[TaskLabel] = Seq.empty,
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant,

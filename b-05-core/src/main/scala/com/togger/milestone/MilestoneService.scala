@@ -79,7 +79,7 @@ class MilestoneService(
     description: String,
     status: MilestoneStatus = MilestoneStatus.InProgress,
     startDate: LocalDate,
-    estimatedEndDate: LocalDate,
+    dueDate: LocalDate,
     endDate: Option[LocalDate] = None
   ): IO[Either[MilestoneError, MilestoneVersion]] =
     (for {
@@ -90,7 +90,7 @@ class MilestoneService(
           (CannotEditLatestVersion: MilestoneError).asLeft[MilestoneVersion].pure[doobie.ConnectionIO]
         else
           milestoneVersionRepo
-            .updateContent(existingVersion.withNewContent(name, description, status, startDate, estimatedEndDate, endDate))
+            .updateContent(existingVersion.withNewContent(name, description, status, startDate, dueDate, endDate))
             .map(_.asRight[MilestoneError])
     } yield result)
       .transact(transactor)

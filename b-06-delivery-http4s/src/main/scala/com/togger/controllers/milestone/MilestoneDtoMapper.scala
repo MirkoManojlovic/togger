@@ -15,7 +15,7 @@ object MilestoneDtoMapper {
       description = version.description,
       status = version.status,
       startDate = version.startDate,
-      estimatedEndDate = version.estimatedEndDate,
+      dueDate = version.dueDate,
       endDate = version.endDate,
       updatedAt = version.updatedAt
     )
@@ -28,7 +28,7 @@ object MilestoneDtoMapper {
       description = version.description,
       status = version.status,
       startDate = version.startDate,
-      estimatedEndDate = version.estimatedEndDate,
+      dueDate = version.dueDate,
       endDate = version.endDate,
       createdAt = version.createdAt,
       updatedAt = version.updatedAt
