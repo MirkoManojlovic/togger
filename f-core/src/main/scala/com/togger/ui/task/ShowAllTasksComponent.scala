@@ -52,6 +52,7 @@ class ShowAllTasksComponent(
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  tgDateFormater: TgDateFormater,
   projectId: UUID,
   val toast: Toast,
   modalFactory: ModalFactory
@@ -399,6 +400,18 @@ class ShowAllTasksComponent(
                                   text = dto.milestone
                                     .flatMap(id => milestonesVar.now().find(_.id == id).map(_.name))
                                     .getOrElse("No milestone"),
+                                  color = TgBadgeColor.Gray,
+                                  bordered = true
+                                ).element
+                              ),
+                              div(
+                                cls("flex items-center gap-1"),
+                                TgBadge(
+                                  text = Seq(
+                                    Some(s"Start: ${tgDateFormater.asEuropeanDate(dto.startDate)}"),
+                                    Some(s"Est. end: ${tgDateFormater.asEuropeanDate(dto.estimatedEndDate)}"),
+                                    dto.endDate.map(date => s"End: ${tgDateFormater.asEuropeanDate(date)}")
+                                  ).flatten.mkString(" · "),
                                   color = TgBadgeColor.Gray,
                                   bordered = true
                                 ).element

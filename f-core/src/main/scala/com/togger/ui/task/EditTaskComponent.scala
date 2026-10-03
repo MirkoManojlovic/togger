@@ -5,7 +5,7 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJavaTimeSyntax.TgInstantOps
-import com.togger.common.{TgClock, TgIds, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{DateRangeValidation, TgClock, TgIds, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
@@ -33,6 +33,7 @@ import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
+import java.time.LocalDate
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -50,7 +51,10 @@ case class EditTaskForm(
   createBy: UUID = TgIds.UNASSIGNED_UUID,
   assignedToSelected: String = "",
   taskStatusSelected: String = "",
-  prioritySelected: String = ""
+  prioritySelected: String = "",
+  startDate: String = "",
+  estimatedEndDate: String = "",
+  endDate: String = ""
 )
 
 class EditTaskComponent(
@@ -64,6 +68,7 @@ class EditTaskComponent(
   accountService: AccountService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
+  dateRangeValidation: DateRangeValidation,
   val toast: Toast,
   tgMarkdown: TgMarkdown
 )(implicit ioRuntime: IORuntime)
@@ -102,7 +107,10 @@ class EditTaskComponent(
                         createBy = dto.task.createdBy,
                         assignedToSelected = dto.task.assignedTo.map(_.toString).getOrElse(""),
                         taskStatusSelected = dto.task.taskStatusId.toString,
-                        prioritySelected = dto.task.priority.value.toString
+                        prioritySelected = dto.task.priority.value.toString,
+                        startDate = dto.task.startDate.toString,
+                        estimatedEndDate = dto.task.estimatedEndDate.toString,
+                        endDate = dto.task.endDate.map(_.toString).getOrElse("")
                       )
                     )
                     currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
@@ -194,6 +202,9 @@ class EditTaskComponent(
           createdAt = now,
           updatedAt = now,
           priority = TaskPriority.withValue(form.prioritySelected.toInt),
+          startDate = Some(LocalDate.parse(form.startDate)),
+          estimatedEndDate = Some(LocalDate.parse(form.estimatedEndDate)),
+          endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate)),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
         linksForUpdate = linksToUpdate.map { linkComponent =>
@@ -237,6 +248,64 @@ class EditTaskComponent(
   )
 
   private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
+
+  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
+      Seq("Start date must be a work day, not a Saturday or Sunday")
+    else Seq.empty
+  }
+
+  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    val orderError =
+      if (
+        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
+        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+      )
+        Seq("Estimated end date must be on or after start date")
+      else Seq.empty
+    val weekendError =
+      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
+        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      else Seq.empty
+    orderError ++ weekendError
+  }
+
+  private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    val orderError =
+      if (
+        form.startDate.nonEmpty && form.endDate.nonEmpty &&
+        LocalDate.parse(form.endDate).isBefore(LocalDate.parse(form.startDate))
+      )
+        Seq("End date must be on or after start date")
+      else Seq.empty
+    val weekendError =
+      if (form.endDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.endDate)))
+        Seq("End date must be a work day, not a Saturday or Sunday")
+      else Seq.empty
+    orderError ++ weekendError
+  }
+
+  private val startDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
+    errors = startDateErrors,
+    labelValue = "Start date",
+    tgInputType = TgInputType.Date
+  )
+
+  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
+    errors = estimatedEndDateErrors,
+    labelValue = "Estimated end date",
+    tgInputType = TgInputType.Date
+  )
+
+  private val endDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
+    errors = endDateErrors,
+    labelValue = "End date",
+    tgInputType = TgInputType.Date,
+    isRequired = false
+  )
 
   private val priorityOptions: Seq[TgSelectDropdownOption] =
     TaskPriority.values.map { priority =>
@@ -318,6 +387,9 @@ class EditTaskComponent(
                     statusInputSelect.htmlElement.amend(cls("mb-4")),
                     priorityInputSelect.htmlElement.amend(cls("mb-4")),
                     assignedToSelect.htmlElement.amend(cls("mb-4")),
+                    startDateInput.htmlElement.amend(cls("mb-4")),
+                    estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+                    endDateInput.htmlElement.amend(cls("mb-4")),
                     labelPicker.htmlElement
                   )
                 ),

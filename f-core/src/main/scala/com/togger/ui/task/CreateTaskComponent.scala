@@ -8,7 +8,7 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{DateRangeValidation, TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
@@ -25,6 +25,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
+import java.time.LocalDate
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -33,7 +34,9 @@ case class CreateTaskForm(
   description: String = "",
   taskStatusSelected: String = "",
   prioritySelected: String = TaskPriority.Medium.value.toString,
-  assignedToSelected: String = ""
+  assignedToSelected: String = "",
+  startDate: String = "",
+  estimatedEndDate: String = ""
 )
 
 case class TaskStatusesState(
@@ -75,6 +78,7 @@ class CreateTaskComponent(
   tgClock: TgClock,
   accountService: AccountService,
   projectService: ProjectService,
+  dateRangeValidation: DateRangeValidation,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -135,6 +139,8 @@ class CreateTaskComponent(
           createdAt = now,
           updatedAt = now,
           priority = TaskPriority.withValue(form.prioritySelected.toInt),
+          startDate = LocalDate.parse(form.startDate),
+          estimatedEndDate = LocalDate.parse(form.estimatedEndDate),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
         links = linkComponents.map { linkComponent =>
@@ -162,6 +168,41 @@ class CreateTaskComponent(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Description",
     placeholderValue = "Describe the task"
+  )
+
+  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
+      Seq("Start date must be a work day, not a Saturday or Sunday")
+    else Seq.empty
+  }
+
+  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+    val orderError =
+      if (
+        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
+        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+      )
+        Seq("Estimated end date must be on or after start date")
+      else Seq.empty
+    val weekendError =
+      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
+        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      else Seq.empty
+    orderError ++ weekendError
+  }
+
+  private val startDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
+    errors = startDateErrors,
+    labelValue = "Start date",
+    tgInputType = TgInputType.Date
+  )
+
+  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
+    errors = estimatedEndDateErrors,
+    labelValue = "Estimated end date",
+    tgInputType = TgInputType.Date
   )
 
   def renderElement(selectValues: Seq[TaskStatusSelect], members: Seq[SearchAccountDto]) = {
@@ -200,6 +241,8 @@ class CreateTaskComponent(
                 statusInputSelect.htmlElement.amend(cls("mb-4")),
                 priorityInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
+                startDateInput.htmlElement.amend(cls("mb-4")),
+                estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
                 labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))

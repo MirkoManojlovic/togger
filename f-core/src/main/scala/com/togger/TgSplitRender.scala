@@ -8,9 +8,8 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.raquo.waypoint.SplitRender
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.backendcalls.{ProtectedBackendClient, SecurityLogicJs, UnprotectedBackendClient}
-import com.togger.common.TgClockImpl
+import com.togger.common.{DateRangeValidation, TgClockImpl}
 import com.togger.markdown.TgMarkdown
-import com.togger.milestone.MilestoneDateValidation
 import com.togger.routes.Pages._
 import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
@@ -96,7 +95,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
-  lazy val milestoneDateValidation = new MilestoneDateValidation
+  lazy val dateRangeValidation = new DateRangeValidation
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
   lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
@@ -159,6 +158,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgClock,
                   accountService,
                   projectService,
+                  dateRangeValidation,
                   projectId,
                   toast
                 ).element
@@ -273,6 +273,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectService,
                   router,
                   spinnerService,
+                  tgDateFormater,
                   projectId,
                   toast,
                   modalFactory
@@ -289,6 +290,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectService,
                   router,
+                  dateRangeValidation,
                   toast,
                   tgMarkdown
                 ).element
@@ -378,7 +380,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
-                  milestoneDateValidation,
+                  dateRangeValidation,
                   projectId,
                   toast
                 ).element
@@ -387,7 +389,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
-                  milestoneDateValidation,
+                  dateRangeValidation,
                   id,
                   toast
                 ).element
