@@ -28,7 +28,7 @@ case class CreateMilestoneForm(
   name: String = "",
   description: String = "",
   startDate: String = "",
-  estimatedEndDate: String = ""
+  dueDate: String = ""
 )
 
 class CreateMilestoneComponent(
@@ -86,7 +86,7 @@ class CreateMilestoneComponent(
         name = form.name,
         description = form.description,
         startDate = LocalDate.parse(form.startDate),
-        estimatedEndDate = LocalDate.parse(form.estimatedEndDate)
+        dueDate = LocalDate.parse(form.dueDate)
       )
       spinnerService
         .runWithSpinner(milestoneService.createMilestone(dto))
@@ -113,17 +113,17 @@ class CreateMilestoneComponent(
     else Seq.empty
   }
 
-  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (
-        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
-        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
+        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
       )
-        Seq("Estimated end date must be on or after start date")
+        Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
-        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
+        Seq("Due date must be a work day, not a Saturday or Sunday")
       else Seq.empty
     orderError ++ weekendError
   }
@@ -135,10 +135,10 @@ class CreateMilestoneComponent(
     tgInputType = TgInputType.Date
   )
 
-  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
-    errors = estimatedEndDateErrors,
-    labelValue = "Estimated end date",
+  private val dueDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
+    errors = dueDateErrors,
+    labelValue = "Due date",
     tgInputType = TgInputType.Date
   )
 
@@ -154,7 +154,7 @@ class CreateMilestoneComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               startDateInput.htmlElement.amend(cls("mb-4")),
-              estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+              dueDateInput.htmlElement.amend(cls("mb-4")),
               h5(cls("mb-2"), "Additional Milestone dates"),
               addNewMilestoneDate,
               child <-- milestoneDatesVar.signal.map(dateComponents =>

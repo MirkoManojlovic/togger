@@ -53,7 +53,7 @@ case class EditTaskForm(
   taskStatusSelected: String = "",
   prioritySelected: String = "",
   startDate: String = "",
-  estimatedEndDate: String = "",
+  dueDate: String = "",
   endDate: String = ""
 )
 
@@ -109,7 +109,7 @@ class EditTaskComponent(
                         taskStatusSelected = dto.task.taskStatusId.toString,
                         prioritySelected = dto.task.priority.value.toString,
                         startDate = dto.task.startDate.toString,
-                        estimatedEndDate = dto.task.estimatedEndDate.toString,
+                        dueDate = dto.task.dueDate.toString,
                         endDate = dto.task.endDate.map(_.toString).getOrElse("")
                       )
                     )
@@ -203,7 +203,7 @@ class EditTaskComponent(
           updatedAt = now,
           priority = TaskPriority.withValue(form.prioritySelected.toInt),
           startDate = Some(LocalDate.parse(form.startDate)),
-          estimatedEndDate = Some(LocalDate.parse(form.estimatedEndDate)),
+          dueDate = Some(LocalDate.parse(form.dueDate)),
           endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate)),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
@@ -255,17 +255,17 @@ class EditTaskComponent(
     else Seq.empty
   }
 
-  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (
-        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
-        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
+        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
       )
-        Seq("Estimated end date must be on or after start date")
+        Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
-        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
+        Seq("Due date must be a work day, not a Saturday or Sunday")
       else Seq.empty
     orderError ++ weekendError
   }
@@ -292,10 +292,10 @@ class EditTaskComponent(
     tgInputType = TgInputType.Date
   )
 
-  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
-    errors = estimatedEndDateErrors,
-    labelValue = "Estimated end date",
+  private val dueDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
+    errors = dueDateErrors,
+    labelValue = "Due date",
     tgInputType = TgInputType.Date
   )
 
@@ -388,7 +388,7 @@ class EditTaskComponent(
                     priorityInputSelect.htmlElement.amend(cls("mb-4")),
                     assignedToSelect.htmlElement.amend(cls("mb-4")),
                     startDateInput.htmlElement.amend(cls("mb-4")),
-                    estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+                    dueDateInput.htmlElement.amend(cls("mb-4")),
                     endDateInput.htmlElement.amend(cls("mb-4")),
                     labelPicker.htmlElement
                   )

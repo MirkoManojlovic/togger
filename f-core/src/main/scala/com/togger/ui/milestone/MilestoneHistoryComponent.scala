@@ -371,7 +371,7 @@ class MilestoneHistoryComponent(
                             )
                           case _ => Seq.empty
                         }
-                        val estimatedEndDateMarker = days.indexOf(milestone.estimatedEndDate) match {
+                        val dueDateMarker = days.indexOf(milestone.dueDate) match {
                           case -1 => Seq.empty
                           case idx =>
                             Seq(
@@ -380,12 +380,12 @@ class MilestoneHistoryComponent(
                                 rowEnd = rowEnd,
                                 colIndex = idx + 1,
                                 tooltipText =
-                                  s"$milestoneName — estimated end date: ${tgDateFormater.asEuropeanDate(milestone.estimatedEndDate)}"
+                                  s"$milestoneName — due date: ${tgDateFormater.asEuropeanDate(milestone.dueDate)}"
                               )
                             )
                         }
                         // Custom, user-defined dates attached to this milestone (distinct from its own
-                        // startDate/estimatedEndDate/endDate fields) — each gets its own marker when its
+                        // startDate/dueDate/endDate fields) — each gets its own marker when its
                         // day is currently visible.
                         val customDateMarkers = milestoneDatesByMilestoneId.getOrElse(milestoneId, Seq.empty).flatMap {
                           milestoneDate =>
@@ -404,7 +404,7 @@ class MilestoneHistoryComponent(
                                 )
                             }
                         }
-                        (boxAcc ++ newBoxes, markerAcc ++ estimatedEndDateMarker ++ customDateMarkers)
+                        (boxAcc ++ newBoxes, markerAcc ++ dueDateMarker ++ customDateMarkers)
                       case None => (boxAcc, markerAcc)
                     }
                   case _ => (boxAcc, markerAcc)

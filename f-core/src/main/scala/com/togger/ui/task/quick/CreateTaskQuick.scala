@@ -236,7 +236,7 @@ class CreateTaskQuick(
             updatedAt = now,
             priority = current.effectivePriority,
             startDate = tgClock.currentDate(),
-            estimatedEndDate = tgClock.currentDate(),
+            dueDate = tgClock.currentDate(),
             taskLabelIds = current.labelIds.toSeq
           ),
           links = Seq.empty

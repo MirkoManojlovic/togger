@@ -151,7 +151,7 @@ class ShowMilestonesComponent(
                 div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
                 child <-- filteredMilestonesSignal.map { milestones =>
                   TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Description", "Status", "Start date", "Estimated end date", "End date", "Action")
+                    Seq("Id", "Name", "Description", "Status", "Start date", "Due date", "End date", "Action")
                   )(
                     milestones
                       .sortBy(_.name)
@@ -162,7 +162,7 @@ class ShowMilestonesComponent(
                           createTdOverflow(dto.description),
                           createTd(dto.status.toString),
                           createTd(tgDateFormater.asEuropeanDate(dto.startDate)),
-                          createTd(tgDateFormater.asEuropeanDate(dto.estimatedEndDate)),
+                          createTd(tgDateFormater.asEuropeanDate(dto.dueDate)),
                           createTd(dto.endDate.fold("-")(date => tgDateFormater.asEuropeanDate(date))),
                           createTd(
                             div(

@@ -28,7 +28,7 @@ case class EditMilestoneForm(
   description: String = "",
   status: String = MilestoneStatus.InProgress.value.toString,
   startDate: String = "",
-  estimatedEndDate: String = "",
+  dueDate: String = "",
   endDate: String = ""
 )
 
@@ -73,7 +73,7 @@ class EditMilestoneComponent(
               description = dto.description,
               status = dto.status.value.toString,
               startDate = dto.startDate.toString,
-              estimatedEndDate = dto.estimatedEndDate.toString,
+              dueDate = dto.dueDate.toString,
               endDate = dto.endDate.map(_.toString).getOrElse("")
             )
           )
@@ -134,7 +134,7 @@ class EditMilestoneComponent(
           description = form.description,
           status = Some(MilestoneStatus.withValue(form.status.toInt)),
           startDate = Some(LocalDate.parse(form.startDate)),
-          estimatedEndDate = Some(LocalDate.parse(form.estimatedEndDate)),
+          dueDate = Some(LocalDate.parse(form.dueDate)),
           endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
         )
         spinnerService
@@ -171,17 +171,17 @@ class EditMilestoneComponent(
     else Seq.empty
   }
 
-  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (
-        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
-        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
+        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
       )
-        Seq("Estimated end date must be on or after start date")
+        Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
-        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
+        Seq("Due date must be a work day, not a Saturday or Sunday")
       else Seq.empty
     orderError ++ weekendError
   }
@@ -208,10 +208,10 @@ class EditMilestoneComponent(
     tgInputType = TgInputType.Date,
   )
 
-  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
-    errors = estimatedEndDateErrors,
-    labelValue = "Estimated end date",
+  private val dueDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
+    errors = dueDateErrors,
+    labelValue = "Due date",
     tgInputType = TgInputType.Date,
   )
 
@@ -238,7 +238,7 @@ class EditMilestoneComponent(
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               statusSelect.htmlElement.amend(cls("mb-4")),
               startDateInput.htmlElement.amend(cls("mb-4")),
-              estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+              dueDateInput.htmlElement.amend(cls("mb-4")),
               endDateInput.htmlElement.amend(cls("mb-4")),
               addNewMilestoneDate,
               h5(cls("mb-2"), "Additional Milestone dates"),

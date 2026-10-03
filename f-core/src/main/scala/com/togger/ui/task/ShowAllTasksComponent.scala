@@ -409,7 +409,7 @@ class ShowAllTasksComponent(
                                 TgBadge(
                                   text = Seq(
                                     Some(s"Start: ${tgDateFormater.asEuropeanDate(dto.startDate)}"),
-                                    Some(s"Est. end: ${tgDateFormater.asEuropeanDate(dto.estimatedEndDate)}"),
+                                    Some(s"Due: ${tgDateFormater.asEuropeanDate(dto.dueDate)}"),
                                     dto.endDate.map(date => s"End: ${tgDateFormater.asEuropeanDate(date)}")
                                   ).flatten.mkString(" · "),
                                   color = TgBadgeColor.Gray,

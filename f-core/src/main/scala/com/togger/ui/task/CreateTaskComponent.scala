@@ -36,7 +36,7 @@ case class CreateTaskForm(
   prioritySelected: String = TaskPriority.Medium.value.toString,
   assignedToSelected: String = "",
   startDate: String = "",
-  estimatedEndDate: String = ""
+  dueDate: String = ""
 )
 
 case class TaskStatusesState(
@@ -140,7 +140,7 @@ class CreateTaskComponent(
           updatedAt = now,
           priority = TaskPriority.withValue(form.prioritySelected.toInt),
           startDate = LocalDate.parse(form.startDate),
-          estimatedEndDate = LocalDate.parse(form.estimatedEndDate),
+          dueDate = LocalDate.parse(form.dueDate),
           taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
         ),
         links = linkComponents.map { linkComponent =>
@@ -176,17 +176,17 @@ class CreateTaskComponent(
     else Seq.empty
   }
 
-  private val estimatedEndDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
+  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (
-        form.startDate.nonEmpty && form.estimatedEndDate.nonEmpty &&
-        LocalDate.parse(form.estimatedEndDate).isBefore(LocalDate.parse(form.startDate))
+        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
+        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
       )
-        Seq("Estimated end date must be on or after start date")
+        Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.estimatedEndDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.estimatedEndDate)))
-        Seq("Estimated end date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
+        Seq("Due date must be a work day, not a Saturday or Sunday")
       else Seq.empty
     orderError ++ weekendError
   }
@@ -198,10 +198,10 @@ class CreateTaskComponent(
     tgInputType = TgInputType.Date
   )
 
-  private val estimatedEndDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.estimatedEndDate),
-    errors = estimatedEndDateErrors,
-    labelValue = "Estimated end date",
+  private val dueDateInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
+    errors = dueDateErrors,
+    labelValue = "Due date",
     tgInputType = TgInputType.Date
   )
 
@@ -242,7 +242,7 @@ class CreateTaskComponent(
                 priorityInputSelect.htmlElement.amend(cls("mb-4")),
                 assignedToSelect.htmlElement.amend(cls("mb-4")),
                 startDateInput.htmlElement.amend(cls("mb-4")),
-                estimatedEndDateInput.htmlElement.amend(cls("mb-4")),
+                dueDateInput.htmlElement.amend(cls("mb-4")),
                 labelPicker.element.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
