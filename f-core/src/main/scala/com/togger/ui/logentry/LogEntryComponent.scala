@@ -297,6 +297,7 @@ class LogEntryComponent(
                 minDate = Some(taskCreatedAt),
                 isDisabled = day => LogEntryCalendarComponent.isWeekend(day) || takenDates.contains(day),
                 dayMarkerCls = day => takenDates.get(day).map(status => TgBadgeStyles.ring(status.badgeColor)),
+                dayMarkerEmoji = day => takenDates.get(day).map(_.emoji),
                 onPick = day => {
                   formState.update(_.copy(date = day.toString))
                   consumeOpt.foreach(consume => consume())

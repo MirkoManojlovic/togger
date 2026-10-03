@@ -26,6 +26,9 @@ import java.time.LocalDate
   * @param dayMarkerCls
   *   an optional Tailwind ring-color class (e.g. `TgBadgeStyles.ring(someColor)`) for a day the caller wants visibly
   *   marked in the grid — e.g. a day that already has a record on it, which is typically also `isDisabled`.
+  * @param dayMarkerEmoji
+  *   an optional single emoji shown under a marked day's number, in a line every cell reserves (blank on an
+  *   unmarked day) so the grid's row heights stay uniform regardless of which days are marked.
   */
 case class CalendarPickerPopup(
   initialMonth: LocalDate,
@@ -37,7 +40,8 @@ case class CalendarPickerPopup(
   minDate: Option[LocalDate] = None,
   maxDate: Option[LocalDate] = None,
   isDisabled: LocalDate => Boolean = _ => false,
-  dayMarkerCls: LocalDate => Option[String] = _ => None
+  dayMarkerCls: LocalDate => Option[String] = _ => None,
+  dayMarkerEmoji: LocalDate => Option[String] = _ => None
 ) {
 
   private val monthVar = Var(initialMonth.withDayOfMonth(1))
@@ -248,9 +252,10 @@ case class CalendarPickerPopup(
   private def dayCell(day: LocalDate, pending: Option[LocalDate], inCurrentMonth: Boolean): HtmlElement = {
     val outOfRange = !inRange(day)
     val marker = dayMarkerCls(day)
+    val emoji: String = dayMarkerEmoji(day).getOrElse("")
     button(
       `type`("button"),
-      cls(if (marker.isDefined) "text-xs rounded-full p-1.5 text-center" else "text-xs rounded-base p-1.5 text-center"),
+      cls("flex flex-col items-center justify-center gap-0.5 rounded-base p-1"),
       cls(if (outOfRange) "cursor-not-allowed text-gray-300" else "cursor-pointer hover:bg-neutral-tertiary-medium"),
       cls(if (inCurrentMonth && !outOfRange) "text-heading" else if (!outOfRange) "text-gray-400" else ""),
       cls(if (day == today) "font-bold ring-1 ring-brand-subtle" else ""),
@@ -265,7 +270,9 @@ case class CalendarPickerPopup(
       // detaching this very button mid-click — without this, the outside-click listener on the root would see the
       // click's target as no longer contained and misfire as a cancel (see QuickOptionsPopup's same fix)
       onClick.stopPropagation.mapToUnit --> (_ => if (!outOfRange) selectPending(day)),
-      day.getDayOfMonth.toString
+      div(cls("text-xs"), day.getDayOfMonth.toString),
+      // always rendered, blank on an unmarked day, so every cell reserves the same height and grid rows line up
+      div(cls("text-xs leading-none"), emoji)
     )
   }
 
