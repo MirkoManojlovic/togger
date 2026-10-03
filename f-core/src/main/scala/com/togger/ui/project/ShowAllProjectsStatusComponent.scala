@@ -369,6 +369,11 @@ class ShowAllProjectsStatusComponent(
         id = "last-2-weeks",
         label = "Last 2 weeks",
         content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd)
+      ),
+      TgTab(
+        id = "everything",
+        label = "Everything",
+        content = weekRangeStatus(logEntries, LocalDate.MIN, LocalDate.MAX)
       )
     )
     new TgTabs(tabs, selectedTabVar).element
