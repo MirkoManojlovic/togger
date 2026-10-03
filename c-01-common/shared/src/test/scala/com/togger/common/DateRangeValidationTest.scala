@@ -51,12 +51,12 @@ class DateRangeValidationTest
         .asList should contain only WeekendDateNotAllowed("Start date", saturday)
     }
 
-    "reject a weekend estimated end date" in {
+    "reject a weekend due date" in {
       dateRangeValidation
         .validate(Some(monday), Some(sunday), None)
         .left
         .value
-        .asList should contain only WeekendDateNotAllowed("Estimated end date", sunday)
+        .asList should contain only WeekendDateNotAllowed("Due date", sunday)
     }
 
     "reject a weekend end date" in {
@@ -74,12 +74,12 @@ class DateRangeValidationTest
         .value
         .asList should contain theSameElementsAs Seq(
         WeekendDateNotAllowed("Start date", saturday),
-        WeekendDateNotAllowed("Estimated end date", sunday),
+        WeekendDateNotAllowed("Due date", sunday),
         WeekendDateNotAllowed("End date", saturday)
       )
     }
 
-    "accept an estimated end date equal to the start date" in {
+    "accept an due date equal to the start date" in {
       dateRangeValidation.validate(Some(monday), Some(monday), None).value shouldBe (())
     }
 
@@ -87,12 +87,12 @@ class DateRangeValidationTest
       dateRangeValidation.validate(Some(monday), Some(nextMonday), Some(monday)).value shouldBe (())
     }
 
-    "reject an estimated end date before the start date" in {
+    "reject an due date before the start date" in {
       dateRangeValidation
         .validate(Some(nextMonday), Some(monday), None)
         .left
         .value
-        .asList should contain only DateBeforeStartDate("Estimated end date", monday, nextMonday)
+        .asList should contain only DateBeforeStartDate("Due date", monday, nextMonday)
     }
 
     "reject an end date before the start date" in {
@@ -109,8 +109,8 @@ class DateRangeValidationTest
         .left
         .value
         .asList should contain theSameElementsAs Seq(
-        WeekendDateNotAllowed("Estimated end date", saturday),
-        DateBeforeStartDate("Estimated end date", saturday, nextMonday)
+        WeekendDateNotAllowed("Due date", saturday),
+        DateBeforeStartDate("Due date", saturday, nextMonday)
       )
     }
   }

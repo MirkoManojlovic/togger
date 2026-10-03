@@ -10,7 +10,7 @@ case class CreateMilestoneReq(
   name: String,
   description: String,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate
+  dueDate: LocalDate
 )
 
 case class UpdateMilestoneReq(
@@ -19,7 +19,7 @@ case class UpdateMilestoneReq(
   description: String,
   status: Option[MilestoneStatus] = None,
   startDate: Option[LocalDate] = None,
-  estimatedEndDate: Option[LocalDate] = None,
+  dueDate: Option[LocalDate] = None,
   endDate: Option[LocalDate] = None
 )
 
@@ -32,7 +32,7 @@ case class FindMilestoneResp(
   description: String,
   status: MilestoneStatus,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate],
   updatedAt: Instant
 )
@@ -44,7 +44,7 @@ case class MilestoneVersionDto(
   description: String,
   status: MilestoneStatus,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate],
   createdAt: Instant,
   updatedAt: Instant

@@ -18,7 +18,7 @@ case class CreateTaskReq(
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
 
@@ -35,7 +35,7 @@ case class UpdateTaskReq1(
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   startDate: Option[LocalDate] = None,
-  estimatedEndDate: Option[LocalDate] = None,
+  dueDate: Option[LocalDate] = None,
   endDate: Option[LocalDate] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
@@ -54,7 +54,7 @@ case class FindTaskResp1(
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
   taskLabelIds: Seq[UUID] = Seq.empty
 )
@@ -76,7 +76,7 @@ case class FindTaskRespFull(
   links: Seq[FindLinkResp],
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
   taskLabels: Seq[FindTaskLabelResp] = Seq.empty
 )
@@ -94,7 +94,7 @@ case class TaskVersionDto(
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
   startDate: LocalDate,
-  estimatedEndDate: LocalDate,
+  dueDate: LocalDate,
   endDate: Option[LocalDate] = None
 )
 

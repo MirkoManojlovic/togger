@@ -36,14 +36,14 @@ class DateRangeValidation {
 
   def validate(
     startDate: Option[LocalDate],
-    estimatedEndDate: Option[LocalDate],
+    dueDate: Option[LocalDate],
     endDate: Option[LocalDate]
   ): EitherNec[TgError, Unit] =
     (
       validateWorkDay("Start date", startDate),
-      validateWorkDay("Estimated end date", estimatedEndDate),
+      validateWorkDay("Due date", dueDate),
       validateWorkDay("End date", endDate),
-      validateOnOrAfterStart("Estimated end date", estimatedEndDate, startDate),
+      validateOnOrAfterStart("Due date", dueDate, startDate),
       validateOnOrAfterStart("End date", endDate, startDate)
     ).mapN((_, _, _, _, _) => ()).toEither
 
