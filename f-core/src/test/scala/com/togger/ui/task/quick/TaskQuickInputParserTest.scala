@@ -12,8 +12,15 @@ class TaskQuickInputParserTest extends AnyWordSpec with Matchers {
     }
 
     "recognise each trigger char" in {
-      TaskQuickInputParser.parse("Fix ~app #bug !p1 $todo %me").dropdowns shouldBe
-        Seq(ProjectDropdown, LabelsDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
+      TaskQuickInputParser.parse("Fix ~app #bug !p1 $todo %me -v2").dropdowns shouldBe
+        Seq(
+          ProjectDropdown,
+          LabelsDropdown,
+          PriorityDropdown,
+          TaskStatusDropdown,
+          AssignedToDropdown,
+          MilestoneDropdown
+        )
     }
 
     "recognise @s and @d as the start and due date triggers" in {
@@ -35,9 +42,9 @@ class TaskQuickInputParserTest extends AnyWordSpec with Matchers {
     }
 
     "ignore trigger chars inside a word" in {
-      val parsed = TaskQuickInputParser.parse("C++ a#b hello!")
+      val parsed = TaskQuickInputParser.parse("C++ a#b hello! well-known")
       parsed.tokens shouldBe empty
-      parsed.taskName shouldBe "C++ a#b hello!"
+      parsed.taskName shouldBe "C++ a#b hello! well-known"
     }
 
     "accept a trailing trigger with an empty query" in {

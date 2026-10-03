@@ -8,6 +8,7 @@ import com.togger.common.{DateRangeValidation, TgClock, TgJsonFailure, TgJsonSuc
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.milestone.MilestoneStatus
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
@@ -15,21 +16,15 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{
-  CalendarPickerPopup,
-  QuickOption,
-  QuickOptionsPopup,
-  TgBadgeColor,
-  TgBadgeSize,
-  TgBadgeStyles
-}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.components._
+import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.quick.QuickDropdown._
-import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TaskStatusesState, TgDateFormater}
+import com.togger.ui.task._
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -40,8 +35,8 @@ import java.util.UUID
 /** A popup opened by clicking a badge, anchored `left` pixels from the badge row's left edge. */
 case class BadgePopup(dropdown: QuickDropdown, left: Double)
 
-/** What a date picker is built from. Its own case class so the picker is rebuilt only when one of these changes, not
-  * on every keystroke in the name input.
+/** What a date picker is built from. Its own case class so the picker is rebuilt only when one of these changes, not on
+  * every keystroke in the name input.
   */
 case class DatePickerRequest(dropdown: QuickDropdown, selected: LocalDate, minDate: Option[LocalDate])
 
@@ -58,6 +53,8 @@ case class QuickState(
   statuses: Seq[FindTaskStatusResp] = Seq.empty,
   labels: Seq[FindTaskLabelResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
+  milestoneId: Option[UUID] = None,
   assigneeId: Option[UUID] = None,
   projectId: Option[UUID] = None,
   statusId: Option[UUID] = None,
@@ -78,6 +75,13 @@ case class QuickState(
   /** Today, or the coming Monday when today is a weekend, since the backend rejects weekend dates. */
   def effectiveStartDate: LocalDate = startDate.getOrElse(firstWorkDayFrom(today))
 
+  /** Work days from the start date to the due date, counting both ends. */
+  def workDays: Int =
+    Iterator
+      .iterate(effectiveStartDate)(_.plusDays(1))
+      .takeWhile(!_.isAfter(effectiveDueDate))
+      .count(day => day.getDayOfWeek != DayOfWeek.SATURDAY && day.getDayOfWeek != DayOfWeek.SUNDAY)
+
   private def firstWorkDayFrom(day: LocalDate): LocalDate =
     day.getDayOfWeek match {
       case DayOfWeek.SATURDAY => day.plusDays(2)
@@ -85,8 +89,8 @@ case class QuickState(
       case _                  => day
     }
 
-  /** One week after the start date unless picked; a pick that falls before a later-chosen start date is dropped for
-    * the same default, rather than left to fail validation.
+  /** One week after the start date unless picked; a pick that falls before a later-chosen start date is dropped for the
+    * same default, rather than left to fail validation.
     */
   def effectiveDueDate: LocalDate =
     dueDate.filterNot(_.isBefore(effectiveStartDate)).getOrElse(effectiveStartDate.plusWeeks(1))
@@ -121,6 +125,7 @@ class CreateTaskQuick(
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
   projectService: ProjectService,
+  milestoneFeService: MilestoneFeService,
   organizationServiceFe: OrganizationServiceFe,
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -131,11 +136,16 @@ class CreateTaskQuick(
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  private val state = Var(QuickState(
+  private val state = Var(
+    QuickState(
       today = tgClock.currentDate(),
       currentAccountId = accountService.get.map(_.id),
       projectId = currentProjectId
-    ))
+    )
+  )
+
+  /** Milestones still being worked on: a finished or abandoned one is no place for a new task. */
+  private val OpenMilestoneStatuses: Set[MilestoneStatus] = Set(MilestoneStatus.InProgress, MilestoneStatus.Paused)
 
   private val tgDateFormater = new TgDateFormater
   private val dateRangeValidation = new DateRangeValidation
@@ -146,6 +156,18 @@ class CreateTaskQuick(
   private def optionsFor(current: QuickState, token: QuickToken): Seq[QuickOption] =
     token.dropdown match {
       case StartDateDropdown | DueDateDropdown => Seq.empty
+      case MilestoneDropdown =>
+        current.milestones
+          .filter(milestone => matches(token.query, milestone.name))
+          .sortBy(_.name)
+          .map(milestone =>
+            QuickOption(
+              milestone.id.toString,
+              milestone.name,
+              milestone.status.statusName,
+              current.milestoneId.contains(milestone.id)
+            )
+          )
       case ProjectDropdown =>
         current.projects
           .filter(project => matches(token.query, project.name))
@@ -177,7 +199,12 @@ class CreateTaskQuick(
           .filter(member => matches(token.query, member.fullName, member.email))
           .sortBy(_.fullName)
           .map(member =>
-            QuickOption(member.id.toString, member.fullName, member.email, current.effectiveAssigneeId.contains(member.id))
+            QuickOption(
+              member.id.toString,
+              member.fullName,
+              member.email,
+              current.effectiveAssigneeId.contains(member.id)
+            )
           )
       case TaskStatusDropdown =>
         current.sortedStatuses
@@ -226,13 +253,15 @@ class CreateTaskQuick(
   private def pickDate(dropdown: QuickDropdown, day: LocalDate): Unit =
     state.update { current =>
       val withoutToken =
-        current.activeToken.filter(token => QuickDropdown.dateDropdowns.contains(token.dropdown)).fold(current)(current.withoutToken)
+        current.activeToken
+          .filter(token => QuickDropdown.dateDropdowns.contains(token.dropdown))
+          .fold(current)(current.withoutToken)
       val cleared = withoutToken.copy(badgePopup = None)
       if (dropdown == StartDateDropdown) cleared.copy(startDate = Some(day)) else cleared.copy(dueDate = Some(day))
     }
 
-  /** Cancel, Escape, outside click, and (after `pickDate`) OK all end up here. A typed token that is still in the
-    * input is dismissed, otherwise the picker would reopen at once.
+  /** Cancel, Escape, outside click, and (after `pickDate`) OK all end up here. A typed token that is still in the input
+    * is dismissed, otherwise the picker would reopen at once.
     */
   private def closeDatePicker(): Unit = {
     state.update { current =>
@@ -255,6 +284,7 @@ class CreateTaskQuick(
         case TaskStatusDropdown => cleared.copy(statusId = Some(UUID.fromString(option.id)))
         case AssignedToDropdown => cleared.copy(assigneeId = Some(UUID.fromString(option.id)))
         case StartDateDropdown | DueDateDropdown => cleared
+        case MilestoneDropdown                   => cleared.copy(milestoneId = Some(UUID.fromString(option.id)))
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
           cleared.copy(labelIds = if (cleared.labelIds.contains(id)) cleared.labelIds - id else cleared.labelIds + id)
@@ -269,7 +299,15 @@ class CreateTaskQuick(
 
   private def loadProjectData(projectId: Option[UUID]): Unit = {
     state.update(
-      _.copy(statuses = Seq.empty, labels = Seq.empty, members = Seq.empty, statusId = None, labelIds = Set.empty)
+      _.copy(
+        statuses = Seq.empty,
+        labels = Seq.empty,
+        members = Seq.empty,
+        milestones = Seq.empty,
+        statusId = None,
+        labelIds = Set.empty,
+        milestoneId = None
+      )
     )
     projectId.foreach { id =>
       val statusesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
@@ -278,13 +316,19 @@ class CreateTaskQuick(
         taskLabelFeService.findByProjectId(id)
       val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
         projectService.findAllMembers(id)
-      (statusesCall, labelsCall, membersCall)
-        .parMapN { (statusesResp, labelsResp, membersResp) =>
+      val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
+        milestoneFeService.findByProjectId(id)
+      (statusesCall, labelsCall, membersCall, milestonesCall)
+        .parMapN { (statusesResp, labelsResp, membersResp, milestonesResp) =>
           if (state.now().projectId.contains(id)) {
             val statuses = statusesResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
             val labels = labelsResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
             val members = membersResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
-            state.update(_.copy(statuses = statuses, labels = labels, members = members))
+            val milestones = milestonesResp.toOption
+              .flatMap(_.body)
+              .getOrElse(Seq.empty)
+              .filter(milestone => OpenMilestoneStatuses.contains(milestone.status))
+            state.update(_.copy(statuses = statuses, labels = labels, members = members, milestones = milestones))
           }
         }
         .unsafeRunAndForget()
@@ -311,6 +355,7 @@ class CreateTaskQuick(
             createdAt = now,
             updatedAt = now,
             priority = current.effectivePriority,
+            milestone = current.milestoneId,
             startDate = current.effectiveStartDate,
             dueDate = current.effectiveDueDate,
             taskLabelIds = current.labelIds.toSeq
@@ -415,15 +460,20 @@ class CreateTaskQuick(
       )
     )
 
-  private def badges: Signal[Seq[HtmlElement]] =
+  private def primaryBadges: Signal[Seq[HtmlElement]] =
     state.signal.map { current =>
       val project = current.projects.find(p => current.projectId.contains(p.id)).map(_.name).getOrElse("No project")
       val priorityClear = current.priority.map(_ => () => state.update(_.copy(priority = None)))
-      val assigneeClear = current.assigneeId.map(_ => () => state.update(_.copy(assigneeId = None)))
-      val assignee = current.members.find(member => current.effectiveAssigneeId.contains(member.id))
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
         Some(badge(ProjectDropdown, project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
+        Some(
+          badge(
+            MilestoneDropdown,
+            current.milestones.find(m => current.milestoneId.contains(m.id)).fold("No milestone")(_.name),
+            current.milestoneId.map(_ => () => state.update(_.copy(milestoneId = None)))
+          )
+        ),
         Some(
           badge(
             PriorityDropdown,
@@ -439,12 +489,21 @@ class CreateTaskQuick(
             current.statusId.map(_ => () => state.update(_.copy(statusId = None))),
             Some(dto.badgeColor)
           )
-        ),
-        assignee.map(member => badge(AssignedToDropdown, member.fullName, assigneeClear))
-      ).flatten ++ labelBadges(current)
+        )
+      ).flatten
     }
 
-  /** On a row of their own, below the other badges. */
+  private def assigneeBadges: Signal[Seq[HtmlElement]] =
+    state.signal.map { current =>
+      val assigneeClear = current.assigneeId.map(_ => () => state.update(_.copy(assigneeId = None)))
+      current.members
+        .find(member => current.effectiveAssigneeId.contains(member.id))
+        .map(member => badge(AssignedToDropdown, member.fullName, assigneeClear))
+        .toSeq
+    }
+
+  private def labelRowBadges: Signal[Seq[HtmlElement]] = state.signal.map(labelBadges)
+
   private def dateBadges: Signal[Seq[HtmlElement]] =
     state.signal.map { current =>
       Seq(
@@ -461,7 +520,12 @@ class CreateTaskQuick(
           current.effectiveDueDate,
           current.dueDate.map(_ => () => state.update(_.copy(dueDate = None))),
           current
-        )
+        ),
+        TgBadge(
+          text = if (current.workDays == 1) "1 day left" else s"${current.workDays} days left",
+          color = TgBadgeColor.Gray,
+          bordered = true
+        ).element
       )
     }
 
@@ -539,6 +603,21 @@ class CreateTaskQuick(
       case _                    => false
     }
 
+  /** One row of badges. It is its own positioned box, so the popup of a clicked badge opens right under that row, and
+    * `offsetLeft` of a badge is measured from the same box the popup is positioned in.
+    */
+  private def badgeRow(
+    badges: Signal[Seq[HtmlElement]],
+    dropdowns: Set[QuickDropdown],
+    extra: Modifier[HtmlElement]*
+  ): HtmlElement =
+    div(
+      cls("relative"),
+      div(cls("flex flex-wrap gap-1.5"), children <-- badges),
+      child.maybe <-- popupSlot(popup => popup.left.isDefined && dropdowns.contains(popup.token.dropdown)),
+      extra
+    )
+
   private val nameInput =
     input(
       `type`("text"),
@@ -557,9 +636,7 @@ class CreateTaskQuick(
       onKeyDown --> (event => onInputKeyDown(event)),
       // focus moving into a date picker is the picker opening, not the name input being left
       onBlur.filterNot(event => isInsideDatePicker(event.relatedTarget)).mapToUnit --> (_ =>
-        state.update(current =>
-          current.copy(dismissedTokenStart = current.activeToken.map(_.start), badgePopup = None)
-        )
+        state.update(current => current.copy(dismissedTokenStart = current.activeToken.map(_.start), badgePopup = None))
       ),
       state.signal.map(_.caret).distinct.changes --> (caret =>
         Option(dom.document.activeElement).collect { case el: dom.html.Input => el }.foreach { el =>
@@ -608,15 +685,17 @@ class CreateTaskQuick(
           nameInput,
           child.maybe <-- popupSlot(_.left.isEmpty),
           child.maybe <-- datePickerSlot(viaToken = true),
-          p(cls("mt-1.5 text-xs text-gray-500"), "~project  #label  !priority  $status  %assignee  @s start  @d due")
+          p(
+            cls("mt-1.5 text-xs text-gray-500"),
+            "~project  #label  !priority  $status  %assignee  -milestone  @s start  @d due"
+          )
         ),
         div(
-          cls("relative mb-4"),
-          div(cls("flex flex-wrap gap-1.5"), children <-- badges),
-          // between the rows, so an option popup opens right under the badge row it came from
-          child.maybe <-- popupSlot(_.left.isDefined),
-          div(cls("flex flex-wrap gap-1.5 mt-1.5"), children <-- dateBadges),
-          child.maybe <-- datePickerSlot(viaToken = false)
+          cls("flex flex-col gap-1.5 mb-4"),
+          badgeRow(primaryBadges, Set(ProjectDropdown, MilestoneDropdown, PriorityDropdown, TaskStatusDropdown)),
+          badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false)),
+          badgeRow(labelRowBadges, Set(LabelsDropdown)),
+          badgeRow(assigneeBadges, Set(AssignedToDropdown))
         ),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
         div(
