@@ -657,7 +657,7 @@ class CreateTaskQuick(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Description",
     placeholderValue = "Describe the task",
-    minHeightRem = 10,
+    minHeightRem = 20,
     minWidthRem = 30
   )
 
