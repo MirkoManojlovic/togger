@@ -7,6 +7,7 @@ import com.togger.common.{DateRangeValidation, TgClock, TgJsonSuccess}
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
 import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
 import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto, toVersionDto}
+import com.togger.controllers.project.ProjectService
 import com.togger.dto._
 import com.togger.task._
 
@@ -17,7 +18,8 @@ class TaskController(
   taskVersionService: TaskVersionService,
   taskEndpoints: TaskEndpoints,
   tgClock: TgClock,
-  dateRangeValidation: DateRangeValidation
+  dateRangeValidation: DateRangeValidation,
+  projectService: ProjectService
 ) {
 
   import taskEndpoints._
@@ -91,59 +93,61 @@ class TaskController(
     val taskDto = dto.task
     val linksDto = dto.links
 
-    dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None) match {
-      case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
-      case Right(_) =>
-        val task = Task(
-          id = UUID.randomUUID(),
-          projectId = taskDto.projectId,
-          createdBy = auth.body.get.id,
-          createdAt = taskDto.createdAt
-        )
+    projectService.findById(taskDto.projectId).flatMap { case (project, _) =>
+      dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None, project.workDays) match {
+        case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
+        case Right(_) =>
+          val task = Task(
+            id = UUID.randomUUID(),
+            projectId = taskDto.projectId,
+            createdBy = auth.body.get.id,
+            createdAt = taskDto.createdAt
+          )
 
-        val firstVersion = TaskVersion(
-          version = UUID.randomUUID(),
-          taskId = task.id,
-          name = taskDto.name,
-          description = taskDto.description,
-          assignedTo = taskDto.assignedTo,
-          closedBy = None,
-          taskStatusId = taskDto.taskStatusId,
-          priority = taskDto.priority,
-          milestone = taskDto.milestone,
-          startDate = taskDto.startDate,
-          dueDate = taskDto.dueDate,
-          endDate = None,
-          createdAt = taskDto.createdAt,
-          updatedAt = taskDto.createdAt
-        )
+          val firstVersion = TaskVersion(
+            version = UUID.randomUUID(),
+            taskId = task.id,
+            name = taskDto.name,
+            description = taskDto.description,
+            assignedTo = taskDto.assignedTo,
+            closedBy = None,
+            taskStatusId = taskDto.taskStatusId,
+            priority = taskDto.priority,
+            milestone = taskDto.milestone,
+            startDate = taskDto.startDate,
+            dueDate = taskDto.dueDate,
+            endDate = None,
+            createdAt = taskDto.createdAt,
+            updatedAt = taskDto.createdAt
+          )
 
-        val now = tgClock.currentInstant
-        val newLinks =
-          linksDto.map { linkDto =>
-            val linkId = UUID.randomUUID()
-            LinkWithOneVersion(
-              link = Link(id = linkId, taskId = UUID.randomUUID(), createdAt = now),
-              version = LinkVersion(
-                version = UUID.randomUUID(),
-                linkId = linkId,
-                name = linkDto.name,
-                url = linkDto.url,
-                createdAt = now,
-                updatedAt = now
+          val now = tgClock.currentInstant
+          val newLinks =
+            linksDto.map { linkDto =>
+              val linkId = UUID.randomUUID()
+              LinkWithOneVersion(
+                link = Link(id = linkId, taskId = UUID.randomUUID(), createdAt = now),
+                version = LinkVersion(
+                  version = UUID.randomUUID(),
+                  linkId = linkId,
+                  name = linkDto.name,
+                  url = linkDto.url,
+                  createdAt = now,
+                  updatedAt = now
+                )
               )
-            )
-          }
+            }
 
-        taskService.createTask(task, firstVersion, newLinks, taskDto.taskLabelIds).map {
-          case (savedTask, savedLinks) =>
-            val savedDto = FindTaskResp(
-              task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
-              links = savedLinks.map(link => toLinkDto(link.link, link.version)),
-              logEntries = Seq.empty
-            )
-            TgJsonSuccess.justBodyRight(savedDto)
-        }
+          taskService.createTask(task, firstVersion, newLinks, taskDto.taskLabelIds).map {
+            case (savedTask, savedLinks) =>
+              val savedDto = FindTaskResp(
+                task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
+                links = savedLinks.map(link => toLinkDto(link.link, link.version)),
+                logEntries = Seq.empty
+              )
+              TgJsonSuccess.justBodyRight(savedDto)
+          }
+      }
     }
   }
 
@@ -152,72 +156,81 @@ class TaskController(
     val linksForUpdate = dto.linksForUpdate
     val linksToCreate = dto.linksToCreate
 
-    taskVersionService.listVersions(taskDto.id).flatMap { versions =>
-      val currentVersion = versions.head
-      val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
-      val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
-      val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
+    taskService.findProjectId(taskDto.id).flatMap { projectId =>
+      projectService.findById(projectId).flatMap { case (project, _) =>
+        taskVersionService.listVersions(taskDto.id).flatMap { versions =>
+          val currentVersion = versions.head
+          val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
+          val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
+          val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
 
-      dateRangeValidation.validate(Some(effectiveStartDate), Some(effectiveDueDate), effectiveEndDate) match {
-        case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
-        case Right(_) =>
-          val newUpdatedAt = tgClock.currentInstant
+          dateRangeValidation.validate(
+            Some(effectiveStartDate),
+            Some(effectiveDueDate),
+            effectiveEndDate,
+            project.workDays
+          ) match {
+            case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
+            case Right(_) =>
+              val newUpdatedAt = tgClock.currentInstant
 
-          val newVersionContent = TaskVersion(
-            version = UUID.randomUUID(),
-            taskId = taskDto.id,
-            name = taskDto.name,
-            description = taskDto.description,
-            assignedTo = taskDto.assignedTo,
-            closedBy = None,
-            taskStatusId = taskDto.taskStatusId,
-            priority = taskDto.priority,
-            milestone = taskDto.milestone,
-            startDate = effectiveStartDate,
-            dueDate = effectiveDueDate,
-            endDate = effectiveEndDate,
-            createdAt = newUpdatedAt,
-            updatedAt = newUpdatedAt
-          )
-
-          val linkVersionUpdates =
-            linksForUpdate.map(dto =>
-              LinkVersion(
+              val newVersionContent = TaskVersion(
                 version = UUID.randomUUID(),
-                linkId = dto.id,
-                name = dto.name,
-                url = dto.url,
+                taskId = taskDto.id,
+                name = taskDto.name,
+                description = taskDto.description,
+                assignedTo = taskDto.assignedTo,
+                closedBy = None,
+                taskStatusId = taskDto.taskStatusId,
+                priority = taskDto.priority,
+                milestone = taskDto.milestone,
+                startDate = effectiveStartDate,
+                dueDate = effectiveDueDate,
+                endDate = effectiveEndDate,
                 createdAt = newUpdatedAt,
                 updatedAt = newUpdatedAt
               )
-            )
 
-          val newLinks =
-            linksToCreate.map { linkDto =>
-              val linkId = UUID.randomUUID()
-              LinkWithOneVersion(
-                link = Link(id = linkId, taskId = taskDto.id, createdAt = newUpdatedAt),
-                version = LinkVersion(
-                  version = UUID.randomUUID(),
-                  linkId = linkId,
-                  name = linkDto.name,
-                  url = linkDto.url,
-                  createdAt = newUpdatedAt,
-                  updatedAt = newUpdatedAt
+              val linkVersionUpdates =
+                linksForUpdate.map(dto =>
+                  LinkVersion(
+                    version = UUID.randomUUID(),
+                    linkId = dto.id,
+                    name = dto.name,
+                    url = dto.url,
+                    createdAt = newUpdatedAt,
+                    updatedAt = newUpdatedAt
+                  )
                 )
-              )
-            }
 
-          taskService
-            .updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks, taskDto.taskLabelIds)
-            .map { case (savedTask, updatedLinks, savedLinks) =>
-              val savedDto = FindTaskResp(
-                task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
-                links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
-                logEntries = Seq.empty
-              )
-              TgJsonSuccess.justBodyRight(savedDto)
-            }
+              val newLinks =
+                linksToCreate.map { linkDto =>
+                  val linkId = UUID.randomUUID()
+                  LinkWithOneVersion(
+                    link = Link(id = linkId, taskId = taskDto.id, createdAt = newUpdatedAt),
+                    version = LinkVersion(
+                      version = UUID.randomUUID(),
+                      linkId = linkId,
+                      name = linkDto.name,
+                      url = linkDto.url,
+                      createdAt = newUpdatedAt,
+                      updatedAt = newUpdatedAt
+                    )
+                  )
+                }
+
+              taskService
+                .updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks, taskDto.taskLabelIds)
+                .map { case (savedTask, updatedLinks, savedLinks) =>
+                  val savedDto = FindTaskResp(
+                    task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
+                    links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
+                    logEntries = Seq.empty
+                  )
+                  TgJsonSuccess.justBodyRight(savedDto)
+                }
+          }
+        }
       }
     }
   }
@@ -238,27 +251,31 @@ class TaskController(
   }
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
-    dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate) match {
-      case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
-      case Right(_) =>
-        taskVersionService
-          .updateVersionContent(
-            dto.version,
-            dto.name,
-            dto.description,
-            dto.assignedTo,
-            dto.closedBy,
-            dto.taskStatusId,
-            dto.priority,
-            dto.milestone,
-            dto.startDate,
-            dto.dueDate,
-            dto.endDate
-          )
-          .map {
-            case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
-            case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
-          }
+    taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
+      projectService.findById(projectId).flatMap { case (project, _) =>
+        dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays) match {
+          case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
+          case Right(_) =>
+            taskVersionService
+              .updateVersionContent(
+                dto.version,
+                dto.name,
+                dto.description,
+                dto.assignedTo,
+                dto.closedBy,
+                dto.taskStatusId,
+                dto.priority,
+                dto.milestone,
+                dto.startDate,
+                dto.dueDate,
+                dto.endDate
+              )
+              .map {
+                case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
+                case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
+              }
+        }
+      }
     }
   }
 

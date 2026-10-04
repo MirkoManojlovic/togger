@@ -169,7 +169,8 @@ class DependenciesModule(
   lazy val milestoneService = new MilestoneService(milestoneRepo, milestoneVersionRepo, transactor)
   lazy val milestoneEndpoints = new MilestoneEndpoints(securedEndpoint)
   lazy val dateRangeValidation = new DateRangeValidation
-  lazy val milestoneController = new MilestoneController(milestoneEndpoints, milestoneService, dateRangeValidation)
+  lazy val milestoneController =
+    new MilestoneController(milestoneEndpoints, milestoneService, dateRangeValidation, projectService)
 
   lazy val milestoneDateRepo = new MilestoneDateRepoImpl
   lazy val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
@@ -199,7 +200,7 @@ class DependenciesModule(
     )
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
   lazy val taskController =
-    new TaskController(taskService, taskVersionService, taskEndpoints, tgClock, dateRangeValidation)
+    new TaskController(taskService, taskVersionService, taskEndpoints, tgClock, dateRangeValidation, projectService)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl

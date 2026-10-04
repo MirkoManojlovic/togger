@@ -93,6 +93,15 @@ class TaskService(
         )
     } yield logEntriesWithVersion
 
+  def findProjectId(taskId: UUID): IO[UUID] =
+    taskRepo.findById(taskId).map(_.projectId).transact(transactor)
+
+  def findProjectIdByVersion(version: UUID): IO[UUID] =
+    (for {
+      existingVersion <- taskVersionRepo.findByVersion(version)
+      task <- taskRepo.findById(existingVersion.taskId)
+    } yield task.projectId).transact(transactor)
+
   def findById(
     id: UUID
   ): IO[(TaskWithVersions, List[LinkWithVersions], List[LogEntryWithVersions], List[TaskLabel])] =

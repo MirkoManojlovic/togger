@@ -49,6 +49,15 @@ class MilestoneService(
         IO.pure(Left(MilestoneNotFound))
       }
 
+  def findProjectId(milestoneId: UUID): IO[UUID] =
+    milestoneRepo.findById(milestoneId).map(_.projectId).transact(transactor)
+
+  def findProjectIdByVersion(version: UUID): IO[UUID] =
+    (for {
+      existingVersion <- milestoneVersionRepo.findByVersion(version)
+      milestone <- milestoneRepo.findById(existingVersion.milestoneId)
+    } yield milestone.projectId).transact(transactor)
+
   def getCurrent(milestoneId: UUID): IO[Either[MilestoneError, MilestoneWithOneVersion]] =
     (for {
       milestone <- milestoneRepo.findById(milestoneId)
