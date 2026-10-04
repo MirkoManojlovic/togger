@@ -11,6 +11,8 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
+import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
+import com.togger.ui.components.TgSelectDropdownMultSelect.TgSelectDropdownMultSelectSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
@@ -19,14 +21,17 @@ import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.util.UUID
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.{Locale, UUID}
 
 case class EditProjectForm(
   projectId: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
   icon: String = "",
-  organizationId: UUID = UUID.randomUUID()
+  organizationId: UUID = UUID.randomUUID(),
+  workDays: Set[String] = Set.empty
 )
 
 class EditProjectComponent(
@@ -86,7 +91,8 @@ class EditProjectComponent(
                   name = dto.name,
                   description = dto.description,
                   icon = dto.icon,
-                  organizationId = dto.organizationId
+                  organizationId = dto.organizationId,
+                  workDays = dto.workDays.map(i => DayOfWeek.of(i).name())
                 )
               )
             }
@@ -98,20 +104,25 @@ class EditProjectComponent(
     .unsafeRunAndForget()
 
   lazy val updateSubmitter = Observer[EditProjectForm] { state =>
-    val request = UpdateProjectReq(
-      id = state.projectId,
-      organizationId = state.organizationId,
-      name = state.name,
-      description = state.description,
-      icon = state.icon,
-      membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
-      membersToRemove = findAccountsComponent.membersToRemove.map(_.id)
-    )
+    if (state.workDays.isEmpty) {
+      toast.error("Select at least one work day")
+    } else {
+      val request = UpdateProjectReq(
+        id = state.projectId,
+        organizationId = state.organizationId,
+        name = state.name,
+        description = state.description,
+        icon = state.icon,
+        workDays = state.workDays.map(name => DayOfWeek.valueOf(name).getValue),
+        membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
+        membersToRemove = findAccountsComponent.membersToRemove.map(_.id)
+      )
 
-    spinnerService
-      .runWithSpinner(projectService.updateProject(request))
-      .toastMessageFn("Project updated successfully")(_ => router.route(EditProjectPage(projectId)))
-      .unsafeRunAndForget()
+      spinnerService
+        .runWithSpinner(projectService.updateProject(request))
+        .toastMessageFn("Project updated successfully")(_ => router.route(EditProjectPage(projectId)))
+        .unsafeRunAndForget()
+    }
   }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
@@ -134,6 +145,24 @@ class EditProjectComponent(
     localStorage = localStorage
   )
 
+  private val workDaysOptions: Seq[TgSelectDropdownOption] =
+    DayOfWeek
+      .values()
+      .toSeq
+      .map(day =>
+        TgSelectDropdownOption(
+          value = day.name(),
+          meta = DropdownMeta(label = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH), description = ""),
+          render = () => span(day.getDisplayName(TextStyle.FULL, Locale.ENGLISH))
+        )
+      )
+
+  private val workDaysSelect = formState.tgSelectDropdownMultSelectManualError(
+    inputAndUpdater = selectorAndUpdaterMacro(_.workDays),
+    labelValue = "Work days",
+    options = workDaysOptions
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -146,6 +175,7 @@ class EditProjectComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
+              workDaysSelect.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))
             )
