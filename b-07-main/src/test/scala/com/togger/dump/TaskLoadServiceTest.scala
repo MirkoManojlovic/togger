@@ -19,6 +19,7 @@ import com.togger.task.{
   TaskVersionRepoImpl
 }
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
+import com.togger.dump.DayOfWeekCodec._
 import doobie.ConnectionIO
 import doobie.implicits._
 import io.circe.generic.auto._

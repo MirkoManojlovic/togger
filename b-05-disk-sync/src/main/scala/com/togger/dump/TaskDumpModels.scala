@@ -4,9 +4,19 @@ import com.togger.account.Account
 import com.togger.logentry.{LogEntry, LogEntryVersion}
 import com.togger.project.Project
 import com.togger.task._
+import io.circe.{Decoder, Encoder}
 
-import java.time.Instant
+import java.time.{DayOfWeek, Instant}
 import java.util.UUID
+
+// `Project.workDays: Set[DayOfWeek]` has no circe instance by default (unlike LocalDate/Instant, circe has no
+// built-in support for java.time.DayOfWeek) -- `ProjectDumpManifest` embeds `Project` directly and is
+// (de)serialized via `io.circe.generic.auto._` in TaskDumpDiskWriter/TaskDumpServiceTest, so those call sites
+// need this imported into scope.
+object DayOfWeekCodec {
+  implicit val dayOfWeekEncoder: Encoder[DayOfWeek] = Encoder.encodeInt.contramap(_.getValue)
+  implicit val dayOfWeekDecoder: Decoder[DayOfWeek] = Decoder.decodeInt.map(DayOfWeek.of)
+}
 
 case class LinkDumpData(link: Link, versions: List[LinkVersion])
 

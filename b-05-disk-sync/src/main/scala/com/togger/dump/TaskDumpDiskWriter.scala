@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.dump.DayOfWeekCodec._
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.util.SplunkMacro.sp

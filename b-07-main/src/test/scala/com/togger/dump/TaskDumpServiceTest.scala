@@ -3,6 +3,7 @@ package com.togger.dump
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
 import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TgIds, TimeHelpers}
+import com.togger.dump.DayOfWeekCodec._
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
