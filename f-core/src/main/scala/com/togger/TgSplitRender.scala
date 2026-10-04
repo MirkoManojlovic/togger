@@ -382,6 +382,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneDateService,
                   spinnerService,
                   dateRangeValidation,
+                  projectService,
                   projectId,
                   toast
                 ).element
@@ -391,6 +392,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   milestoneDateService,
                   spinnerService,
                   dateRangeValidation,
+                  projectService,
                   id,
                   toast
                 ).element

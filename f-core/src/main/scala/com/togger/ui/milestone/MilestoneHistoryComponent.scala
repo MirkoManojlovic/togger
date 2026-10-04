@@ -40,6 +40,7 @@ class MilestoneHistoryComponent(
       name = "",
       description = "",
       icon = "",
+      workDays = Set.empty,
       members = Seq.empty
     )
   )
@@ -80,8 +81,8 @@ class MilestoneHistoryComponent(
   private def toLocalDate(instant: Instant): LocalDate =
     instant.atOffset(ZoneOffset.UTC).toLocalDate
 
-  private def isWeekend(date: LocalDate): Boolean =
-    date.getDayOfWeek == DayOfWeek.SATURDAY || date.getDayOfWeek == DayOfWeek.SUNDAY
+  private def isWeekend(date: LocalDate, workDays: Set[DayOfWeek]): Boolean =
+    !workDays.contains(date.getDayOfWeek)
 
   private def weekStart(date: LocalDate): LocalDate =
     date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -211,6 +212,7 @@ class MilestoneHistoryComponent(
         milestoneStatusFilter.selectedIds,
         searchBox.inputSignal
       )
+      .combineWith(projectVar.signal)
       .map {
         case (
               allTasks,
@@ -221,8 +223,10 @@ class MilestoneHistoryComponent(
               selectedStatusIds,
               selectedMilestoneIds,
               selectedMilestoneStatusIds,
-              searchTerm
+              searchTerm,
+              project
             ) =>
+          val workDays = project.workDays.map(DayOfWeek.of)
           val byStatus: Seq[FindTaskRespFull] =
             if (selectedStatusIds.isEmpty) allTasks
             else allTasks.filter(t => selectedStatusIds.contains(t.taskStatus.id.toString))
@@ -259,7 +263,11 @@ class MilestoneHistoryComponent(
               val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
               val minDate = dates.min
               val maxDate = dates.max
-              Iterator.iterate(minDate)(_.plusDays(1)).takeWhile(!_.isAfter(maxDate)).filterNot(isWeekend).toSeq
+              Iterator
+                .iterate(minDate)(_.plusDays(1))
+                .takeWhile(!_.isAfter(maxDate))
+                .filterNot(isWeekend(_, workDays))
+                .toSeq
             }
           val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
 

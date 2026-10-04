@@ -169,6 +169,7 @@ class ShowAllTasksComponent(
       name = "",
       description = "",
       icon = "",
+      workDays = Set.empty,
       members = Seq.empty
     )
   )

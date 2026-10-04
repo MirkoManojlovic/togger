@@ -72,7 +72,16 @@ case class QuickState(
   def effectiveAssigneeId: Option[UUID] = assigneeId.orElse(currentAccountId)
   def effectivePriority: TaskPriority = priority.getOrElse(TaskPriority.Medium)
 
-  /** Today, or the coming Monday when today is a weekend, since the backend rejects weekend dates. */
+  /** The selected project's configured work days, or a Mon-Fri fallback when no project is selected yet (this
+    * module has no access to the backend-only `Project.DefaultWorkDays` constant).
+    */
+  def effectiveWorkDays: Set[DayOfWeek] =
+    projectId
+      .flatMap(id => projects.find(_.id == id))
+      .map(_.workDays.map(DayOfWeek.of))
+      .getOrElse(QuickState.DefaultWorkDays)
+
+  /** Today, or the next work day when today isn't one, since the backend rejects non-work-day dates. */
   def effectiveStartDate: LocalDate = startDate.getOrElse(firstWorkDayFrom(today))
 
   /** Work days from the start date to the due date, counting both ends. */
@@ -80,14 +89,10 @@ case class QuickState(
     Iterator
       .iterate(effectiveStartDate)(_.plusDays(1))
       .takeWhile(!_.isAfter(effectiveDueDate))
-      .count(day => day.getDayOfWeek != DayOfWeek.SATURDAY && day.getDayOfWeek != DayOfWeek.SUNDAY)
+      .count(day => effectiveWorkDays.contains(day.getDayOfWeek))
 
   private def firstWorkDayFrom(day: LocalDate): LocalDate =
-    day.getDayOfWeek match {
-      case DayOfWeek.SATURDAY => day.plusDays(2)
-      case DayOfWeek.SUNDAY   => day.plusDays(1)
-      case _                  => day
-    }
+    Iterator.iterate(day)(_.plusDays(1)).find(d => effectiveWorkDays.contains(d.getDayOfWeek)).get
 
   /** One week after the start date unless picked; a pick that falls before a later-chosen start date is dropped for the
     * same default, rather than left to fail validation.
@@ -116,6 +121,11 @@ case class QuickState(
         (DatePickerRequest(dropdown, effectiveDueDate, minDate = Some(effectiveStartDate)), viaToken)
     }
   }
+}
+
+object QuickState {
+  val DefaultWorkDays: Set[DayOfWeek] =
+    Set(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
 }
 
 case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int, left: Option[Double] = None)
@@ -592,7 +602,7 @@ class CreateTaskQuick(
         tgDateFormater = tgDateFormater,
         selected = Some(request.selected),
         minDate = request.minDate,
-        isDisabled = dateRangeValidation.isWeekend,
+        isDisabled = day => dateRangeValidation.isWeekend(day, state.now().effectiveWorkDays),
         onPick = day => pickDate(request.dropdown, day),
         onClose = () => closeDatePicker()
       ).element

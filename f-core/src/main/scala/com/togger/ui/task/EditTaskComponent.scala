@@ -33,7 +33,7 @@ import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -81,6 +81,7 @@ class EditTaskComponent(
   val labelsVar = Var(TaskLabelsState())
   val currentLabelIdsVar = Var(Set.empty[String])
   val membersVar = Var(Seq.empty[SearchAccountDto])
+  val workDaysVar = Var(Set.empty[DayOfWeek])
 
   private val tgDateFormater = new TgDateFormater
 
@@ -177,9 +178,14 @@ class EditTaskComponent(
       val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
         taskLabelFeService.findByProjectId(projectId)
 
-      (statusesAndTaskCall, membersCall, labelsCall).parMapN { (_, membersEither, labelsEither) =>
-        membersEither.map(success => membersVar.set(success.body.get))
-        labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+      val projectCall: IO[Either[TgJsonFailure, TgJsonSuccess[FindProjectResp]]] =
+        projectService.findById(projectId)
+
+      (statusesAndTaskCall, membersCall, labelsCall, projectCall).parMapN {
+        (_, membersEither, labelsEither, projectEither) =>
+          membersEither.map(success => membersVar.set(success.body.get))
+          labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+          projectEither.map(success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of)))
       }
     }
     .unsafeRunAndForget()
@@ -250,8 +256,8 @@ class EditTaskComponent(
   private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
 
   private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
-      Seq("Start date must be a work day, not a Saturday or Sunday")
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
+      Seq("Start date must be one of this project's configured work days")
     else Seq.empty
   }
 
@@ -264,8 +270,8 @@ class EditTaskComponent(
         Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
-        Seq("Due date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
+        Seq("Due date must be one of this project's configured work days")
       else Seq.empty
     orderError ++ weekendError
   }
@@ -279,8 +285,8 @@ class EditTaskComponent(
         Seq("End date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.endDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.endDate)))
-        Seq("End date must be a work day, not a Saturday or Sunday")
+      if (form.endDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.endDate), workDaysVar.now()))
+        Seq("End date must be one of this project's configured work days")
       else Seq.empty
     orderError ++ weekendError
   }

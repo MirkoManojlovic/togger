@@ -25,7 +25,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -90,6 +90,7 @@ class CreateTaskComponent(
   val statusesVar = Var(TaskStatusesState())
   val labelsVar = Var(TaskLabelsState())
   val membersVar = Var(Seq.empty[SearchAccountDto])
+  val workDaysVar = Var(Set.empty[DayOfWeek])
 
   val firstLink = new TaskLinkComponent()
   val linksVar = Var(Seq(firstLink))
@@ -107,10 +108,15 @@ class CreateTaskComponent(
       val call3: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
         taskLabelFeService.findByProjectId(projectId)
 
-      (call1, call2, call3).parMapN { (findTaskStatusRespEither, searchAccountDtoEither, findTaskLabelRespEither) =>
-        findTaskStatusRespEither.map(success => statusesVar.set(TaskStatusesState(success.body.get)))
-        searchAccountDtoEither.map(success => membersVar.set(success.body.get))
-        findTaskLabelRespEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+      val call4: IO[Either[TgJsonFailure, TgJsonSuccess[FindProjectResp]]] =
+        projectService.findById(projectId)
+
+      (call1, call2, call3, call4).parMapN {
+        (findTaskStatusRespEither, searchAccountDtoEither, findTaskLabelRespEither, findProjectRespEither) =>
+          findTaskStatusRespEither.map(success => statusesVar.set(TaskStatusesState(success.body.get)))
+          searchAccountDtoEither.map(success => membersVar.set(success.body.get))
+          findTaskLabelRespEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+          findProjectRespEither.map(success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of)))
       }
     }
     .unsafeRunAndForget()
@@ -171,8 +177,8 @@ class CreateTaskComponent(
   )
 
   private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
-      Seq("Start date must be a work day, not a Saturday or Sunday")
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
+      Seq("Start date must be one of this project's configured work days")
     else Seq.empty
   }
 
@@ -185,8 +191,8 @@ class CreateTaskComponent(
         Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
-        Seq("Due date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
+        Seq("Due date must be one of this project's configured work days")
       else Seq.empty
     orderError ++ weekendError
   }

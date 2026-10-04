@@ -16,11 +16,12 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 case class CreateMilestoneForm(
@@ -36,12 +37,22 @@ class CreateMilestoneComponent(
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
   dateRangeValidation: DateRangeValidation,
+  projectService: ProjectService,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
   val formState = Var(CreateMilestoneForm(projectId = projectId))
+  val workDaysVar = Var(Set.empty[DayOfWeek])
+
+  spinnerService
+    .runWithSpinner(
+      projectService
+        .findById(projectId)
+        .map(_.fold(error => println(error), success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of))))
+    )
+    .unsafeRunAndForget()
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
 
@@ -108,8 +119,8 @@ class CreateMilestoneComponent(
   )
 
   private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate)))
-      Seq("Start date must be a work day, not a Saturday or Sunday")
+    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
+      Seq("Start date must be one of this project's configured work days")
     else Seq.empty
   }
 
@@ -122,8 +133,8 @@ class CreateMilestoneComponent(
         Seq("Due date must be on or after start date")
       else Seq.empty
     val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate)))
-        Seq("Due date must be a work day, not a Saturday or Sunday")
+      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
+        Seq("Due date must be one of this project's configured work days")
       else Seq.empty
     orderError ++ weekendError
   }
