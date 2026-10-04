@@ -4,14 +4,17 @@ import com.togger.db.Util._
 import com.togger.project.ProjectRepoImpl.PROJECT_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
+import doobie.Meta
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
-import java.time.Instant
+import java.time.{DayOfWeek, Instant}
 import java.util.UUID
 
 class ProjectRepoImpl extends ProjectRepo {
+
+  implicit val workDaysCodec: Meta[Set[DayOfWeek]] = Meta[Int].imap(ProjectRepoImpl.decodeWorkDays)(ProjectRepoImpl.encodeWorkDays)
 
   override def findById(id: UUID): ConnectionIO[Project] =
     logAroundInfoQuery(
@@ -25,8 +28,8 @@ class ProjectRepoImpl extends ProjectRepo {
     import project._
     logAroundInfoQuery(
       insertStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(fr"""
-        (organization_id, name, description, icon, created_at, updated_at)
-        values ($organizationId, $name, $description, $icon, $createdAt, $updatedAt)
+        (organization_id, name, description, icon, work_days, created_at, updated_at)
+        values ($organizationId, $name, $description, $icon, $workDays, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[Project](
           "id",
@@ -34,6 +37,7 @@ class ProjectRepoImpl extends ProjectRepo {
           "name",
           "description",
           "icon",
+          "work_days",
           "created_at",
           "updated_at"
         )
@@ -58,6 +62,7 @@ class ProjectRepoImpl extends ProjectRepo {
         organization_id = ${project.organizationId},
         description = ${project.description},
         icon = ${project.icon},
+        work_days = ${project.workDays},
         created_at = ${project.createdAt},
         updated_at = $updatedAt
       """).update
@@ -67,6 +72,7 @@ class ProjectRepoImpl extends ProjectRepo {
           "name",
           "description",
           "icon",
+          "work_days",
           "created_at",
           "updated_at"
         )
@@ -111,4 +117,10 @@ class ProjectRepoImpl extends ProjectRepo {
 object ProjectRepoImpl {
   val PROJECT_TABLE: String = "project"
   val PROJECT_TABLE_FRAG: Fragment = Fragment.const(PROJECT_TABLE)
+
+  def encodeWorkDays(days: Set[DayOfWeek]): Int =
+    days.foldLeft(0)((acc, day) => acc | (1 << (day.getValue - 1)))
+
+  def decodeWorkDays(bitmask: Int): Set[DayOfWeek] =
+    DayOfWeek.values().toSet.filter(day => (bitmask & (1 << (day.getValue - 1))) != 0)
 }

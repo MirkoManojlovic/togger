@@ -20,4 +20,8 @@ object ProjectError {
   case object AccountTypeMissing extends ProjectError {
     override def message: String = "Cannot auto-create dump account: no 'developer' account type exists"
   }
+
+  case object EmptyWorkDays extends ProjectError {
+    override def message: String = "A project must have at least one work day selected"
+  }
 }

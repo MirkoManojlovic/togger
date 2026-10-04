@@ -170,6 +170,12 @@ databaseChangeLog:
                     nullable: false
                     unique: false
               - column:
+                  name: work_days
+                  type: smallint
+                  defaultValueNumeric: 31
+                  constraints:
+                    nullable: false
+              - column:
                   name: created_at
                   type: timestamp with time zone
                   defaultValueComputed: now()

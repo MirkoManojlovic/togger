@@ -7,6 +7,7 @@ import com.togger.organization.TgOrganization
 import doobie.implicits._
 import doobie.postgres.implicits._
 
+import java.time.DayOfWeek
 import java.util.UUID
 
 class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganization with TimeHelpers {
@@ -42,6 +43,29 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
         cp(updatedProject shouldBe foundProject2)
         cp.reportAll()
         foundProject3.isLeft shouldBe true
+      }
+
+      res.transact(transactor)
+    }
+
+    "round-trip a non-default work days set through insert, update, and findById" in { transactor =>
+      val weekendWorkDays: Set[DayOfWeek] = Set(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+
+      val res = for {
+        savedOrganization <- createOrganization
+        savedProject <- projectRepo.insert(
+          project.copy(organizationId = savedOrganization.id, workDays = weekendWorkDays)
+        )
+        foundAfterInsert <- projectRepo.findById(savedProject.id)
+        newWorkDays: Set[DayOfWeek] = Set(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
+        updatedProject <- projectRepo.update(savedProject.copy(workDays = newWorkDays), nowAsInstant)
+        foundAfterUpdate <- projectRepo.findById(savedProject.id)
+      } yield {
+        val cp = new Checkpoint
+        cp(foundAfterInsert.workDays shouldBe weekendWorkDays)
+        cp(updatedProject.workDays shouldBe newWorkDays)
+        cp(foundAfterUpdate.workDays shouldBe newWorkDays)
+        cp.reportAll()
       }
 
       res.transact(transactor)
