@@ -7,14 +7,19 @@ import java.time.{DayOfWeek, LocalDate}
 
 class DateRangeValidation {
 
-  def isWeekend(date: LocalDate): Boolean =
-    date.getDayOfWeek == DayOfWeek.SATURDAY || date.getDayOfWeek == DayOfWeek.SUNDAY
+  def isWeekend(date: LocalDate, workDays: Set[DayOfWeek]): Boolean =
+    !workDays.contains(date.getDayOfWeek)
 
-  def validateWorkDay(fieldName: String, date: LocalDate): ValidatedNec[TgError, LocalDate] =
-    if (isWeekend(date)) DateRangeValidation.WeekendDateNotAllowed(fieldName, date).invalidNec else date.validNec
+  def validateWorkDay(fieldName: String, date: LocalDate, workDays: Set[DayOfWeek]): ValidatedNec[TgError, LocalDate] =
+    if (isWeekend(date, workDays)) DateRangeValidation.WeekendDateNotAllowed(fieldName, date).invalidNec
+    else date.validNec
 
-  private def validateWorkDay(fieldName: String, date: Option[LocalDate]): ValidatedNec[TgError, Option[LocalDate]] =
-    date.traverse(validateWorkDay(fieldName, _))
+  private def validateWorkDay(
+    fieldName: String,
+    date: Option[LocalDate],
+    workDays: Set[DayOfWeek]
+  ): ValidatedNec[TgError, Option[LocalDate]] =
+    date.traverse(validateWorkDay(fieldName, _, workDays))
 
   def validateOnOrAfterStart(
     fieldName: String,
@@ -37,12 +42,13 @@ class DateRangeValidation {
   def validate(
     startDate: Option[LocalDate],
     dueDate: Option[LocalDate],
-    endDate: Option[LocalDate]
+    endDate: Option[LocalDate],
+    workDays: Set[DayOfWeek]
   ): EitherNec[TgError, Unit] =
     (
-      validateWorkDay("Start date", startDate),
-      validateWorkDay("Due date", dueDate),
-      validateWorkDay("End date", endDate),
+      validateWorkDay("Start date", startDate, workDays),
+      validateWorkDay("Due date", dueDate, workDays),
+      validateWorkDay("End date", endDate, workDays),
       validateOnOrAfterStart("Due date", dueDate, startDate),
       validateOnOrAfterStart("End date", endDate, startDate)
     ).mapN((_, _, _, _, _) => ()).toEither
@@ -54,7 +60,8 @@ object DateRangeValidation {
   sealed trait DateRangeError extends TgError
 
   case class WeekendDateNotAllowed(fieldName: String, date: LocalDate) extends DateRangeError {
-    override def message: String = s"$fieldName must be a work day, not a Saturday or Sunday (was $date)"
+    override def message: String =
+      s"$fieldName must be one of this project's configured work days (was $date, a ${date.getDayOfWeek})"
   }
 
   case class DateBeforeStartDate(fieldName: String, date: LocalDate, startDate: LocalDate) extends DateRangeError {

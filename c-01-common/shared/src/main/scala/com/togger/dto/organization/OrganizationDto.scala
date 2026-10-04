@@ -25,7 +25,8 @@ case class OrganizationProjectResp(
   id: UUID,
   name: String,
   description: String,
-  icon: String
+  icon: String,
+  workDays: Set[Int] // ISO day-of-week values, Monday=1..Sunday=7
 )
 
 case class UpdateOrganizationReq(
