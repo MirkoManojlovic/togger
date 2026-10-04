@@ -189,7 +189,8 @@ class OrganizationController(
                   id = project.id,
                   name = project.name,
                   description = project.description,
-                  icon = project.icon
+                  icon = project.icon,
+                  workDays = project.workDays.map(_.getValue)
                 )
               )
             )
