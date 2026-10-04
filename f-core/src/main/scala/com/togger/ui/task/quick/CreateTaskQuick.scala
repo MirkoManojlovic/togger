@@ -150,6 +150,8 @@ class CreateTaskQuick(
   private val tgDateFormater = new TgDateFormater
   private val dateRangeValidation = new DateRangeValidation
 
+  private def projectLabel(project: OrganizationProjectResp): String = s"${project.icon} ${project.name}".trim
+
   private def matches(query: String, texts: String*): Boolean =
     texts.exists(_.toLowerCase.contains(query.toLowerCase))
 
@@ -173,7 +175,12 @@ class CreateTaskQuick(
           .filter(project => matches(token.query, project.name))
           .sortBy(_.name)
           .map(project =>
-            QuickOption(project.id.toString, project.name, project.description, current.projectId.contains(project.id))
+            QuickOption(
+              project.id.toString,
+              projectLabel(project),
+              project.description,
+              current.projectId.contains(project.id)
+            )
           )
       case LabelsDropdown =>
         current.labels
@@ -462,7 +469,8 @@ class CreateTaskQuick(
 
   private def primaryBadges: Signal[Seq[HtmlElement]] =
     state.signal.map { current =>
-      val project = current.projects.find(p => current.projectId.contains(p.id)).map(_.name).getOrElse("No project")
+      val project =
+        current.projects.find(p => current.projectId.contains(p.id)).fold("No project")(projectLabel)
       val priorityClear = current.priority.map(_ => () => state.update(_.copy(priority = None)))
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
       Seq(
