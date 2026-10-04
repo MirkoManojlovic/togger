@@ -5,49 +5,60 @@ import com.togger.dto.LogEntryDto
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.task.TgDateFormater
 
-import java.time.{LocalDate, ZoneOffset}
+import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 
-/** A Mon-Fri grid of a task's log entries, one cell per weekday, each showing that day's status emoji(s). Clicking a
-  * cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail view elsewhere.
+/** A grid of a task's log entries, one column per the project's configured work day, each showing that day's status
+  * emoji(s). Clicking a cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail
+  * view elsewhere.
   */
 class LogEntryCalendarComponent(
   logEntries: Seq[LogEntryDto],
   tgDateFormater: TgDateFormater,
+  workDays: Set[DayOfWeek],
   selectedDayVar: Var[Option[LocalDate]] = Var(None)
 ) {
-  import LogEntryCalendarComponent.isWeekend
+  import LogEntryCalendarComponent.isWorkDay
+
+  private val sortedWorkDays: Seq[DayOfWeek] = workDays.toSeq.sortBy(_.getValue)
 
   val element: HtmlDiv = {
-    val weekdayEntries =
-      logEntries.filterNot(entry => isWeekend(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate))
+    val workDayEntries =
+      logEntries.filter(entry => isWorkDay(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate, workDays))
 
-    if (weekdayEntries.isEmpty) div()
+    if (workDayEntries.isEmpty || sortedWorkDays.isEmpty) div()
     else {
       val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
-        weekdayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+        workDayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
 
       val minDate = entriesByDate.keys.min
       val maxDate = entriesByDate.keys.max
 
-      val calendarStart = minDate.minusDays(minDate.getDayOfWeek.getValue - 1L)
-      val calendarEnd = maxDate.plusDays(5L - maxDate.getDayOfWeek.getValue)
+      // Rounded out to the first/last work day of their respective weeks, so the grid always starts and ends on
+      // a full week -- otherwise the first/last row's cells wouldn't line up under the right column headers.
+      val calendarStart = Iterator.iterate(minDate)(_.minusDays(1)).find(_.getDayOfWeek == sortedWorkDays.head).get
+      val calendarEnd = Iterator.iterate(maxDate)(_.plusDays(1)).find(_.getDayOfWeek == sortedWorkDays.last).get
 
       val allDays =
         Iterator
           .iterate(calendarStart)(_.plusDays(1))
           .takeWhile(!_.isAfter(calendarEnd))
-          .filterNot(isWeekend)
+          .filter(day => workDays.contains(day.getDayOfWeek))
           .toSeq
 
       div(
         marginBottom.rem(1),
-        cls("grid grid-cols-5 gap-1"),
-        Seq("Mon", "Tue", "Wed", "Thu", "Fri")
-          .map(label => div(cls("text-xs font-semibold text-center text-gray-500"), label)),
+        // Tailwind only generates CSS for class names it can find as literal text in the source, so a dynamic
+        // column count (1..7, driven by the project's configured work days) can't be a `grid-cols-N` utility
+        // class -- it has to be an inline style instead, same as MilestoneHistoryComponent's dynamic-width grid.
+        styleAttr := s"display: grid; grid-template-columns: repeat(${sortedWorkDays.size}, minmax(0, 1fr)); gap: 0.25rem;",
+        sortedWorkDays
+          .map(day => div(cls("text-xs font-semibold text-center text-gray-500"), dayAbbrev(day))),
         allDays.map(day => calendarDayCell(day, entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)))
       )
     }
   }
+
+  private def dayAbbrev(day: DayOfWeek): String = day.name().toLowerCase.capitalize.take(3)
 
   private def calendarDayCell(day: LocalDate, entries: Seq[LogEntryDto]) = {
     val tooltip =
@@ -71,15 +82,12 @@ class LogEntryCalendarComponent(
 
 object LogEntryCalendarComponent {
 
-  def isWeekend(day: LocalDate): Boolean = {
-    val dow = day.getDayOfWeek.getValue
-    dow == 6 || dow == 7
-  }
+  def isWorkDay(day: LocalDate, workDays: Set[DayOfWeek]): Boolean = workDays.contains(day.getDayOfWeek)
 
-  def lastCalendarDay(logEntries: Seq[LogEntryDto]): Option[LocalDate] =
+  def lastCalendarDay(logEntries: Seq[LogEntryDto], workDays: Set[DayOfWeek]): Option[LocalDate] =
     logEntries
       .map(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-      .filterNot(isWeekend)
+      .filter(isWorkDay(_, workDays))
       .maxOption
 
 }

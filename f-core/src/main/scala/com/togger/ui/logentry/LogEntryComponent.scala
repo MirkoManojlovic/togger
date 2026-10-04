@@ -23,7 +23,7 @@ import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 import scala.util.Try
 
@@ -84,7 +84,10 @@ object ActivePopup {
   * @param takenDates
   *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's
   *   own date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in
-  *   that status's badge color so it's visibly distinct from a plain disabled (weekend) day.
+  *   that status's badge color so it's visibly distinct from a plain disabled (non-work-day) day.
+  * @param workDays
+  *   the owning project's configured work days — non-work days are disabled in the date picker, same as a taken
+  *   date.
   */
 class LogEntryComponent(
   logEntryForm: LogEntryForm,
@@ -96,7 +99,8 @@ class LogEntryComponent(
   val toast: Toast,
   tgMarkdown: TgMarkdown,
   taskCreatedAt: LocalDate,
-  takenDates: Map[LocalDate, LogEntryStatus]
+  takenDates: Map[LocalDate, LogEntryStatus],
+  workDays: Set[DayOfWeek]
 )(implicit
   IORuntime: IORuntime
 ) extends ToastMessages {
@@ -295,7 +299,7 @@ class LogEntryComponent(
                 tgDateFormater = tgDateFormater,
                 selected = Some(currentDate),
                 minDate = Some(taskCreatedAt),
-                isDisabled = day => LogEntryCalendarComponent.isWeekend(day) || takenDates.contains(day),
+                isDisabled = day => !LogEntryCalendarComponent.isWorkDay(day, workDays) || takenDates.contains(day),
                 dayMarkerEmoji = day => takenDates.get(day).map(_.emoji),
                 onPick = day => {
                   formState.update(_.copy(date = day.toString))

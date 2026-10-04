@@ -87,48 +87,73 @@ class EditTaskComponent(
 
   spinnerService
     .runWithSpinner {
-      val statusesAndTaskCall: IO[Unit] =
-        taskStatusFeService
-          .findByProjectId(projectId)
-          .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
-          .flatMap(_ =>
-            taskService
-              .findTaskById(taskId)
-              .map(
-                _.fold(
-                  error => dom.window.alert("Oops an error: " + error),
-                  success => {
-                    val dto = success.body.get
-                    formState.set(
-                      EditTaskForm(
-                        taskId = dto.task.id,
-                        projectId = dto.task.projectId,
-                        name = dto.task.name,
-                        description = dto.task.description,
-                        createBy = dto.task.createdBy,
-                        assignedToSelected = dto.task.assignedTo.map(_.toString).getOrElse(""),
-                        taskStatusSelected = dto.task.taskStatusId.toString,
-                        prioritySelected = dto.task.priority.value.toString,
-                        startDate = dto.task.startDate.toString,
-                        dueDate = dto.task.dueDate.toString,
-                        endDate = dto.task.endDate.map(_.toString).getOrElse("")
-                      )
-                    )
-                    currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
-                    linksVar
-                      .set(dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto)))))
+      // fetched first, not in parallel with the rest -- `logEntryComponents`/`calendarComponent` below are
+      // constructed from a plain `Set[DayOfWeek]` snapshot of `workDaysVar`, not a reactive signal, so they need
+      // it to already be resolved by the time they're built.
+      projectService
+        .findById(projectId)
+        .map(_.fold(e => println(e), success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of))))
+        .flatMap { _ =>
+          val statusesAndTaskCall: IO[Unit] =
+            taskStatusFeService
+              .findByProjectId(projectId)
+              .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
+              .flatMap(_ =>
+                taskService
+                  .findTaskById(taskId)
+                  .map(
+                    _.fold(
+                      error => dom.window.alert("Oops an error: " + error),
+                      success => {
+                        val dto = success.body.get
+                        formState.set(
+                          EditTaskForm(
+                            taskId = dto.task.id,
+                            projectId = dto.task.projectId,
+                            name = dto.task.name,
+                            description = dto.task.description,
+                            createBy = dto.task.createdBy,
+                            assignedToSelected = dto.task.assignedTo.map(_.toString).getOrElse(""),
+                            taskStatusSelected = dto.task.taskStatusId.toString,
+                            prioritySelected = dto.task.priority.value.toString,
+                            startDate = dto.task.startDate.toString,
+                            dueDate = dto.task.dueDate.toString,
+                            endDate = dto.task.endDate.map(_.toString).getOrElse("")
+                          )
+                        )
+                        currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
+                        linksVar.set(
+                          dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto))))
+                        )
 
-                    val taskCreatedAt = dto.task.createdAt.toLocalDate()
-                    def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
-                    val allLogEntryDates = dto.logEntries.map(logEntry => dateOf(logEntry) -> logEntry.status).toMap
+                        val taskCreatedAt = dto.task.createdAt.toLocalDate()
+                        def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
+                        val allLogEntryDates =
+                          dto.logEntries.map(logEntry => dateOf(logEntry) -> logEntry.status).toMap
 
-                    val logEntryComponents =
-                      dto.logEntries
-                        .sortBy(_.createdAt)
-                        .reverse
-                        .map(logEntry =>
+                        val logEntryComponents =
+                          dto.logEntries
+                            .sortBy(_.createdAt)
+                            .reverse
+                            .map(logEntry =>
+                              new LogEntryComponent(
+                                LogEntryForm.fromDto(logEntry),
+                                taskService,
+                                spinnerService,
+                                accountService,
+                                tgClock,
+                                router,
+                                toast,
+                                tgMarkdown,
+                                taskCreatedAt,
+                                (allLogEntryDates - dateOf(logEntry)),
+                                workDaysVar.now()
+                              )
+                            )
+
+                        val newEntryComponent =
                           new LogEntryComponent(
-                            LogEntryForm.fromDto(logEntry),
+                            LogEntryForm.default(dto.task.id, tgClock),
                             taskService,
                             spinnerService,
                             accountService,
@@ -137,56 +162,39 @@ class EditTaskComponent(
                             toast,
                             tgMarkdown,
                             taskCreatedAt,
-                            (allLogEntryDates - dateOf(logEntry))
+                            allLogEntryDates,
+                            workDaysVar.now()
+                          )
+
+                        val calendarComponent = new LogEntryCalendarComponent(
+                          dto.logEntries,
+                          tgDateFormater,
+                          workDaysVar.now(),
+                          Var(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries, workDaysVar.now()))
+                        )
+                        logEntryPanelVar.set(
+                          LogEntryPanelState(
+                            newEntryComponent = Some(newEntryComponent),
+                            logEntryComponents = logEntryComponents,
+                            calendarComponent = Some(calendarComponent)
                           )
                         )
-
-                    val newEntryComponent =
-                      new LogEntryComponent(
-                        LogEntryForm.default(dto.task.id, tgClock),
-                        taskService,
-                        spinnerService,
-                        accountService,
-                        tgClock,
-                        router,
-                        toast,
-                        tgMarkdown,
-                        taskCreatedAt,
-                        allLogEntryDates
-                      )
-
-                    val calendarComponent = new LogEntryCalendarComponent(
-                      dto.logEntries,
-                      tgDateFormater,
-                      Var(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries))
+                      }
                     )
-                    logEntryPanelVar.set(
-                      LogEntryPanelState(
-                        newEntryComponent = Some(newEntryComponent),
-                        logEntryComponents = logEntryComponents,
-                        calendarComponent = Some(calendarComponent)
-                      )
-                    )
-                  }
-                )
+                  )
               )
-          )
 
-      val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
-        projectService.findAllMembers(projectId)
+          val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
+            projectService.findAllMembers(projectId)
 
-      val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
-        taskLabelFeService.findByProjectId(projectId)
+          val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
+            taskLabelFeService.findByProjectId(projectId)
 
-      val projectCall: IO[Either[TgJsonFailure, TgJsonSuccess[FindProjectResp]]] =
-        projectService.findById(projectId)
-
-      (statusesAndTaskCall, membersCall, labelsCall, projectCall).parMapN {
-        (_, membersEither, labelsEither, projectEither) =>
-          membersEither.map(success => membersVar.set(success.body.get))
-          labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
-          projectEither.map(success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of)))
-      }
+          (statusesAndTaskCall, membersCall, labelsCall).parMapN { (_, membersEither, labelsEither) =>
+            membersEither.map(success => membersVar.set(success.body.get))
+            labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+          }
+        }
     }
     .unsafeRunAndForget()
 

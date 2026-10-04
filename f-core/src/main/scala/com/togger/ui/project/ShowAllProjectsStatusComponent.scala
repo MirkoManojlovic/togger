@@ -21,7 +21,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.{TaskFeService, TaskProgressComponent, TgDateFormater}
 
-import java.time.{LocalDate, ZoneOffset}
+import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 import java.util.UUID
 
 case class ShowAllProjectsState(
@@ -212,6 +212,7 @@ class ShowAllProjectsStatusComponent(
       accountTypeId = TgIds.UNASSIGNED_UUID
     )
     val groupedTasksByAssignee = dto.tasks.groupBy(_.assignedTo.getOrElse(unassignedDto))
+    val workDays = dto.project.workDays.map(DayOfWeek.of)
 
     val elements = groupedTasksByAssignee.map { case (accountDto, tasks) =>
       div(
@@ -224,7 +225,8 @@ class ShowAllProjectsStatusComponent(
           tasks
             .sortBy(_.taskStatus.id)
             .map { task =>
-              val selectedDayVar: Var[Option[LocalDate]] = Var(LogEntryCalendarComponent.lastCalendarDay(task.logEntries))
+              val selectedDayVar: Var[Option[LocalDate]] =
+                Var(LogEntryCalendarComponent.lastCalendarDay(task.logEntries, workDays))
               val taskCard = TgCard
                 .headerNoFooter(
                   header = TgCard.CardHeader
@@ -261,7 +263,7 @@ class ShowAllProjectsStatusComponent(
                       div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
                       div(
                         cls("w-fit"),
-                        new LogEntryCalendarComponent(task.logEntries, tgDateFormater, selectedDayVar).element
+                        new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
                       )
                     )
                   )
