@@ -250,7 +250,17 @@ class ShowAllTasksComponent(
                 )
               )
             ),
-            body = TgCard.HtmlCardContent(div(projectResp.description))
+            body = TgCard.HtmlCardContent(
+              div(
+                div(projectResp.description),
+                Option.when(projectResp.techStacks.nonEmpty)(
+                  div(
+                    cls("flex flex-wrap gap-1 mt-2"),
+                    projectResp.techStacks.map(ts => TgBadge(text = ts.name, color = TgBadgeColor.Indigo, bordered = true).element)
+                  )
+                )
+              )
+            )
           )
           .element
           .amend(cls("mb-4"))
