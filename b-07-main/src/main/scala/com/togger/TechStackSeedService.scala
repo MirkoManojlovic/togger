@@ -7,24 +7,45 @@ import com.togger.techstack.{
   DefaultInfrastructure,
   DefaultProgrammingFramework,
   DefaultProgrammingLanguage,
+  DefaultTechStackCategory,
   TechStack,
   TechStackCategory,
+  TechStackCategoryRepoImpl,
   TechStackRepoImpl
 }
 import doobie.Transactor
 import doobie.implicits._
+import java.util.UUID
 
 class TechStackSeedService(transactor: Transactor[IO]) {
   private val techStackRepo = new TechStackRepoImpl
+  private val techStackCategoryRepo = new TechStackCategoryRepoImpl
   private val tgClock = new TgClockImpl
 
   def run: IO[Unit] =
     for {
-      existing <- techStackRepo.findAll.transact(transactor)
-      _ <- if (existing.isEmpty) seed else IO.unit
+      categoryIdsByName <- ensureDefaultCategories
+      existingTechStacks <- techStackRepo.findAll.transact(transactor)
+      _ <- if (existingTechStacks.isEmpty) seedTechStacks(categoryIdsByName) else IO.unit
     } yield ()
 
-  private def seed: IO[Unit] = {
+  private def ensureDefaultCategories: IO[Map[String, UUID]] = {
+    val now = tgClock.currentInstant
+    for {
+      existing <- techStackCategoryRepo.findAll.transact(transactor)
+      existingByName = existing.map(c => c.name -> c.id).toMap
+      missing = DefaultTechStackCategory.values.filterNot(c => existingByName.contains(c.categoryName))
+      inserted <- missing.toList
+        .traverse(c =>
+          techStackCategoryRepo.insert(
+            TechStackCategory(id = TgIds.UNASSIGNED_UUID, name = c.categoryName, createdAt = now, updatedAt = now)
+          )
+        )
+        .transact(transactor)
+    } yield existingByName ++ inserted.map(c => c.name -> c.id).toMap
+  }
+
+  private def seedTechStacks(categoryIdsByName: Map[String, UUID]): IO[Unit] = {
     val now = tgClock.currentInstant
 
     val languageRows = DefaultProgrammingLanguage.values.map(l =>
@@ -32,7 +53,7 @@ class TechStackSeedService(transactor: Transactor[IO]) {
         id = TgIds.UNASSIGNED_UUID,
         name = l.languageName,
         description = l.description,
-        category = TechStackCategory.Language,
+        categoryId = categoryIdsByName(DefaultTechStackCategory.Language.categoryName),
         createdAt = now,
         updatedAt = now
       )
@@ -43,7 +64,7 @@ class TechStackSeedService(transactor: Transactor[IO]) {
         id = TgIds.UNASSIGNED_UUID,
         name = f.frameworkName,
         description = f.description,
-        category = TechStackCategory.Framework,
+        categoryId = categoryIdsByName(DefaultTechStackCategory.Framework.categoryName),
         createdAt = now,
         updatedAt = now
       )
@@ -54,7 +75,7 @@ class TechStackSeedService(transactor: Transactor[IO]) {
         id = TgIds.UNASSIGNED_UUID,
         name = i.infrastructureName,
         description = i.description,
-        category = TechStackCategory.Infrastructure,
+        categoryId = categoryIdsByName(DefaultTechStackCategory.Infrastructure.categoryName),
         createdAt = now,
         updatedAt = now
       )

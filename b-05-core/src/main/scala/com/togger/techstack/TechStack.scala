@@ -7,7 +7,7 @@ case class TechStack(
   id: UUID,
   name: String,
   description: String,
-  category: TechStackCategory,
+  categoryId: UUID,
   createdAt: Instant,
   updatedAt: Instant
 )

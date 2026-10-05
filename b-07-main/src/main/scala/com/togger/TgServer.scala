@@ -18,7 +18,7 @@ import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
-import com.togger.controllers.techstack.TechStackController
+import com.togger.controllers.techstack.{TechStackCategoryController, TechStackController}
 import com.togger.common.DateRangeValidation
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
@@ -33,7 +33,14 @@ import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import com.togger.taskloadconfig.{TaskLoadConfigEndpoints, TaskLoadConfigRepoImpl, TaskLoadConfigService}
-import com.togger.techstack.{TechStackEndpoints, TechStackRepoImpl, TechStackService}
+import com.togger.techstack.{
+  TechStackCategoryEndpoints,
+  TechStackCategoryRepoImpl,
+  TechStackCategoryService,
+  TechStackEndpoints,
+  TechStackRepoImpl,
+  TechStackService
+}
 import doobie.Transactor
 import org.http4s.server.Server
 
@@ -153,7 +160,12 @@ object TgServer {
         techStackController.findById,
         techStackController.save,
         techStackController.update,
-        techStackController.delete
+        techStackController.delete,
+        techStackCategoryController.findAll,
+        techStackCategoryController.findById,
+        techStackCategoryController.save,
+        techStackCategoryController.update,
+        techStackCategoryController.delete
       )
       )
     )
@@ -251,6 +263,12 @@ class DependenciesModule(
   lazy val techStackService = new TechStackService(techStackRepo, tgClock, transactor)
   lazy val techStackEndpoints = new TechStackEndpoints(securedEndpoint)
   lazy val techStackController = new TechStackController(techStackService, techStackEndpoints, tgClock)
+
+  lazy val techStackCategoryRepo = new TechStackCategoryRepoImpl
+  lazy val techStackCategoryService = new TechStackCategoryService(techStackCategoryRepo, tgClock, transactor)
+  lazy val techStackCategoryEndpoints = new TechStackCategoryEndpoints(securedEndpoint)
+  lazy val techStackCategoryController =
+    new TechStackCategoryController(techStackCategoryService, techStackCategoryEndpoints, tgClock)
 
   lazy val taskLabelRepo = new TaskLabelRepoImpl
   lazy val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl

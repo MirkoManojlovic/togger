@@ -4,7 +4,7 @@ import com.togger.db.Util._
 import com.togger.logging.TgLogging
 import com.togger.techstack.TechStackRepoImpl.TECH_STACK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Meta}
+import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
@@ -13,16 +13,15 @@ import java.time._
 import java.util.UUID
 
 class TechStackRepoImpl extends TechStackRepo with TgLogging {
-  import TechStackRepoImpl.techStackCategoryCodec
 
   override def insert(techStack: TechStack): ConnectionIO[TechStack] = {
     import techStack._
     logAroundInfoQuery(
       insertStatement(TECH_STACK_TABLE_FRAG)(fr"""
-        (name, description, category, created_at, updated_at)
-        values ($name, $description, $category, $createdAt, $updatedAt)
+        (name, description, category_id, created_at, updated_at)
+        values ($name, $description, $categoryId, $createdAt, $updatedAt)
       """).update
-        .withUniqueGeneratedKeys[TechStack]("id", "name", "description", "category", "created_at", "updated_at")
+        .withUniqueGeneratedKeys[TechStack]("id", "name", "description", "category_id", "created_at", "updated_at")
     )(
       s"Inserting ${sp(techStack)}",
       techStack => s"TechStack inserted ${sp(techStack)}"
@@ -46,10 +45,10 @@ class TechStackRepoImpl extends TechStackRepo with TgLogging {
       updateStatementUUID(TECH_STACK_TABLE_FRAG)(techStack.id)(fr"""
            name = ${techStack.name},
            description = ${techStack.description},
-           category = ${techStack.category},
+           category_id = ${techStack.categoryId},
            updated_at = $updatedAt
          """).update
-        .withUniqueGeneratedKeys[TechStack]("id", "name", "description", "category", "created_at", "updated_at")
+        .withUniqueGeneratedKeys[TechStack]("id", "name", "description", "category_id", "created_at", "updated_at")
     )(
       s"Updating ${sp(techStack)}",
       techStack => s"${sp(techStack)} updated"
@@ -65,6 +64,4 @@ class TechStackRepoImpl extends TechStackRepo with TgLogging {
 object TechStackRepoImpl {
   val TECH_STACK_TABLE: String = "tech_stack"
   val TECH_STACK_TABLE_FRAG: Fragment = Fragment.const(TECH_STACK_TABLE)
-
-  implicit val techStackCategoryCodec: Meta[TechStackCategory] = Meta[Int].imap(TechStackCategory.withValue)(_.value)
 }

@@ -993,6 +993,34 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
+            tableName: tech_stack_category
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
             tableName: tech_stack
             columns:
               - column:
@@ -1015,10 +1043,12 @@ databaseChangeLog:
                     nullable: false
                     unique: false
               - column:
-                  name: category
-                  type: smallint
+                  name: category_id
+                  type: uuid
                   constraints:
                     nullable: false
+                    foreignKeyName: fk_tech_stack_category
+                    references: tech_stack_category(id)
               - column:
                   name: created_at
                   type: timestamp with time zone

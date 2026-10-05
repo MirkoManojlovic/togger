@@ -24,7 +24,7 @@ class TechStackController(
               id = techStack.id,
               name = techStack.name,
               description = techStack.description,
-              category = techStack.category
+              categoryId = techStack.categoryId
             )
           )
         }
@@ -41,7 +41,7 @@ class TechStackController(
                   id = techStack.id,
                   name = techStack.name,
                   description = techStack.description,
-                  category = techStack.category
+                  categoryId = techStack.categoryId
                 )
               )
           )
@@ -55,7 +55,7 @@ class TechStackController(
       id = UUID.randomUUID(),
       name = dto.name,
       description = dto.description,
-      category = dto.category,
+      categoryId = dto.categoryId,
       createdAt = now,
       updatedAt = now
     )
@@ -65,7 +65,7 @@ class TechStackController(
         id = techStack.id,
         name = techStack.name,
         description = techStack.description,
-        category = techStack.category
+        categoryId = techStack.categoryId
       )
       TgJsonSuccess.justBodyRight(respDto)
     }
@@ -78,7 +78,7 @@ class TechStackController(
       id = dto.id,
       name = dto.name,
       description = dto.description,
-      category = dto.category,
+      categoryId = dto.categoryId,
       createdAt = now,
       updatedAt = now
     )
@@ -89,7 +89,7 @@ class TechStackController(
           id = techStack.id,
           name = techStack.name,
           description = techStack.description,
-          category = techStack.category
+          categoryId = techStack.categoryId
         )
       )
     }
