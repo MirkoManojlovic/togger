@@ -7,6 +7,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.organization.TgIcons
+import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
 
@@ -33,7 +34,14 @@ case class MenuLink(
 
 }
 
-class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPage], loginRepo: LoginRepo) {
+class NavbarComponent(
+  router: TgRouter[FrontendPage],
+  logout: Logout[FrontendPage],
+  loginRepo: LoginRepo,
+  themeStore: ThemeStore
+) {
+
+  private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
   private val userMenuOpen: Var[Boolean] = Var(false)
 
@@ -146,7 +154,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
                   )
                 )
               ),
-              div(cls("flex items-center ms-3"), userMenu)
+              div(cls("flex items-center ms-3 gap-2"), themeToggleButton.element, userMenu)
             )
           )
         )

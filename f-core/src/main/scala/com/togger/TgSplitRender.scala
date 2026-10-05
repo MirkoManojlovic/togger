@@ -28,6 +28,7 @@ import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskloadconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
 import com.togger.ui.projectlabel._
+import com.togger.ui.theme.ThemeStore
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -69,7 +70,11 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val localStorage = new LocalStorageBrowser
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
+  lazy val themeStore = new ThemeStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
+
+  themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
+  themeStore.listenToSystemPreference()
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
   lazy val loginService = new LoginService(baseEndpoint, securedEndpoint, loginRepo)
@@ -84,6 +89,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       taskLoadConfigService,
       spinnerService,
       sidebarCollapseStore,
+      themeStore,
       () => quickCreateHost.open(),
       toast
     )
@@ -500,6 +506,7 @@ case class NavigationSelection(
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
+  themeStore: ThemeStore,
   onQuickCreate: () => Unit,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
@@ -509,7 +516,7 @@ case class NavigationSelection(
       returnedAuthAccount
         .map(_ =>
           div(
-            new NavbarComponent(router, Logout(loginRepo, router), loginRepo).element,
+            new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore).element,
             new Sidebar(
               router,
               organizationServiceFe,
