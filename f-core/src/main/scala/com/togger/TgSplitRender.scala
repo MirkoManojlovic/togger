@@ -302,6 +302,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new CreateProjectComponent(
                   findAccountServiceImpl,
                   projectService,
+                  techStackService,
                   organizationService,
                   accountService,
                   spinnerService,
@@ -414,6 +415,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new EditProjectComponent(
                   findAccountServiceImpl,
                   projectService,
+                  techStackService,
                   organizationService,
                   accountService,
                   router,

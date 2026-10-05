@@ -11,12 +11,13 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
+import com.togger.ui.components.{DropdownMeta, MultiSelectItem, TableFilterComponent, TgSelectDropdownOption}
 import com.togger.ui.components.TgSelectDropdownMultSelect.TgSelectDropdownMultSelectSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.techstack.TechStackFeService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -37,6 +38,7 @@ case class EditProjectForm(
 class EditProjectComponent(
   findAccountService: FindAccountService,
   projectService: ProjectService,
+  techStackService: TechStackFeService,
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   router: TgRouter[FrontendPage],
@@ -50,6 +52,8 @@ class EditProjectComponent(
   val formState = Var(EditProjectForm())
   val organizationsVar = Var(Seq.empty[FindOrganizationResp])
   val existingMembers: Var[Seq[SearchAccountDto]] = Var(Seq.empty)
+  val techStacksVar = Var(Seq.empty[FindTechStackResp])
+  val currentTechStackIdsVar = Var(Set.empty[String])
 
   val findAccountsComponent = new FindAccountsComponent(
     findAccountService = findAccountService,
@@ -57,6 +61,14 @@ class EditProjectComponent(
     existingAccountsVar = existingMembers,
     excludeUserAccount = true
   )
+
+  private val techStackItemsSignal: Signal[Seq[MultiSelectItem]] =
+    techStacksVar.signal.combineWith(currentTechStackIdsVar.signal).map { case (techStacks, currentIds) =>
+      techStacks.sortBy(_.name).map(ts =>
+        MultiSelectItem(id = ts.id.toString, name = ts.name, isSelected = currentIds.contains(ts.id.toString))
+      )
+    }
+  private val techStackPicker = new TableFilterComponent(techStackItemsSignal, label = "Select tech stacks")
 
   spinnerService
     .runWithSpinner {
@@ -78,6 +90,10 @@ class EditProjectComponent(
           )
         )
 
+      val techStackCall = techStackService
+        .findAll()
+        .map(_.map(success => techStacksVar.set(success.body.get)))
+
       val projectOrg = projectService
         .findById(projectId)
         .map(
@@ -95,15 +111,16 @@ class EditProjectComponent(
                   workDays = dto.workDays.map(i => DayOfWeek.of(i).name())
                 )
               )
+              currentTechStackIdsVar.set(dto.techStacks.map(_.id.toString).toSet)
             }
           )
         )
 
-      membersCall.flatMap(_ => orgCall.flatMap(_ => projectOrg))
+      membersCall.flatMap(_ => orgCall.flatMap(_ => techStackCall.flatMap(_ => projectOrg)))
     }
     .unsafeRunAndForget()
 
-  lazy val updateSubmitter = Observer[EditProjectForm] { state =>
+  lazy val updateSubmitter = Observer[(EditProjectForm, Set[String])] { case (state, selectedTechStackIds) =>
     if (state.workDays.isEmpty) {
       toast.error("Select at least one work day")
     } else {
@@ -115,7 +132,8 @@ class EditProjectComponent(
         icon = state.icon,
         workDays = state.workDays.map(name => DayOfWeek.valueOf(name).getValue),
         membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
-        membersToRemove = findAccountsComponent.membersToRemove.map(_.id)
+        membersToRemove = findAccountsComponent.membersToRemove.map(_.id),
+        techStackIds = selectedTechStackIds.map(UUID.fromString).toSeq
       )
 
       spinnerService
@@ -171,11 +189,14 @@ class EditProjectComponent(
         body = TgCard.HtmlCardContent(
           div(
             form(
-              onSubmit.preventDefault.mapTo(formState.now()) --> updateSubmitter,
+              onSubmit.preventDefault
+                .mapTo(formState.now())
+                .compose(_.withCurrentValueOf(techStackPicker.selectedIds)) --> updateSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               workDaysSelect.htmlElement.amend(cls("mb-4")),
+              techStackPicker.element.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))
             )

@@ -8,6 +8,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -112,6 +113,7 @@ class ShowAllProjectsTableComponent(
                         createTh("id"),
                         createTh("name"),
                         createTh("description"),
+                        createTh("Tech stacks"),
                         createTh("Action")
                       )
                     ),
@@ -132,6 +134,12 @@ class ShowAllProjectsTableComponent(
                             createTd(dto.id.toString),
                             createTd(s"${dto.icon} ${dto.name}"),
                             createTd(dto.description),
+                            createTd(
+                              div(
+                                cls("flex flex-wrap gap-1"),
+                                dto.techStacks.map(ts => TgBadge(text = ts.name, color = TgBadgeColor.Indigo, bordered = true).element)
+                              )
+                            ),
                             createTd(
                               div(
                                 iconButton(

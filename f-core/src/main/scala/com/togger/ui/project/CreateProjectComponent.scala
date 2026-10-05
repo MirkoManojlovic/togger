@@ -13,10 +13,12 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
+import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.techstack.TechStackFeService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -68,6 +70,7 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
 class CreateProjectComponent(
   findAccountService: FindAccountService,
   projectService: ProjectService,
+  techStackService: TechStackFeService,
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   spinnerService: SpinnerService,
@@ -79,15 +82,21 @@ class CreateProjectComponent(
 
   val formState = Var(CreateProjectForm(organizationId = organizationId))
   val organizationsVar = Var(Seq.empty[FindOrganizationResp])
+  val techStacksVar = Var(Seq.empty[FindTechStackResp])
   val findAccountsComponent = new FindAccountsComponent(
     findAccountService = findAccountService,
     accountService = accountService,
     excludeUserAccount = true
   )
 
+  private val techStackPicker = new TableFilterComponent(
+    techStacksVar.signal.map(_.sortBy(_.name).map(ts => MultiSelectItem(id = ts.id.toString, name = ts.name, isSelected = false))),
+    label = "Select tech stacks"
+  )
+
   spinnerService
-    .runWithSpinner(
-      organizationServiceFe
+    .runWithSpinner {
+      val orgCall = organizationServiceFe
         .findByAccountId(accountService.get.get.id)
         .map(
           _.fold(
@@ -97,16 +106,23 @@ class CreateProjectComponent(
             }
           )
         )
-    )
+
+      val techStackCall = techStackService
+        .findAll()
+        .map(_.map(success => techStacksVar.set(success.body.get)))
+
+      orgCall.flatMap(_ => techStackCall)
+    }
     .unsafeRunAndForget()
 
-  lazy val createSubmitter = Observer[CreateProjectForm] { state =>
+  lazy val createSubmitter = Observer[(CreateProjectForm, Set[String])] { case (state, selectedTechStackIds) =>
     val request = CreateProjectReq(
       organizationId = state.organizationId,
       name = state.name,
       description = state.description,
       icon = state.icon,
-      membersToAdd = findAccountsComponent.membersToAdd.map(_.id)
+      membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
+      techStackIds = selectedTechStackIds.map(UUID.fromString).toSeq
     )
 
     spinnerService
@@ -143,10 +159,13 @@ class CreateProjectComponent(
         body = TgCard.HtmlCardContent(
           div(
             form(
-              onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
+              onSubmit.preventDefault
+                .mapTo(formState.now())
+                .compose(_.withCurrentValueOf(techStackPicker.selectedIds)) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
+              techStackPicker.element.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.create(EventStream.fromValue(false))
             )
