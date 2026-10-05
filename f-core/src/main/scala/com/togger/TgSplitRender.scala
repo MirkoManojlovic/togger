@@ -94,6 +94,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
   lazy val techStackService = new TechStackFeService(securedEndpoint, protectedBackendClient)
+  lazy val techStackCategoryService = new TechStackCategoryFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
@@ -361,6 +362,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case CreateTechStackPage =>
                 new CreateTechStackComponent(
                   techStackService,
+                  techStackCategoryService,
                   spinnerService,
                   tgClock,
                   accountService,
@@ -369,6 +371,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case ShowAllTechStacksPage =>
                 new ShowAllTechStacksComponent(
                   techStackService,
+                  techStackCategoryService,
                   router,
                   spinnerService,
                   accountService
@@ -376,10 +379,35 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case EditTechStackPage(techStackId) =>
                 new EditTechStackComponent(
                   techStackService,
+                  techStackCategoryService,
                   spinnerService,
                   tgClock,
                   accountService,
                   techStackId,
+                  toast
+                ).element
+              case CreateTechStackCategoryPage =>
+                new CreateTechStackCategoryComponent(
+                  techStackCategoryService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  toast
+                ).element
+              case ShowAllTechStackCategoriesPage =>
+                new ShowAllTechStackCategoriesComponent(
+                  techStackCategoryService,
+                  router,
+                  spinnerService,
+                  accountService
+                ).element
+              case EditTechStackCategoryPage(techStackCategoryId) =>
+                new EditTechStackCategoryComponent(
+                  techStackCategoryService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  techStackCategoryId,
                   toast
                 ).element
               case EditProjectPage(projectId) =>

@@ -1,10 +1,13 @@
 package com.togger.ui.techstack
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.routes.Pages.{CreateTechStackPage, EditTechStackPage}
+import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.dto._
+import com.togger.routes.Pages.{CreateTechStackPage, EditTechStackPage, ShowAllTechStackCategoriesPage}
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.techstack.TechStackCategory
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.organization.TgIcons
@@ -17,11 +20,13 @@ case class TechStackFormState(
   id: UUID,
   name: String,
   description: String,
-  category: TechStackCategory
+  categoryId: UUID,
+  categoryName: String
 )
 
 class ShowAllTechStacksComponent(
   techStackService: TechStackFeService,
+  techStackCategoryService: TechStackCategoryFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService
@@ -32,25 +37,31 @@ class ShowAllTechStacksComponent(
   val stateFormVar = Var(Seq.empty[TechStackFormState])
 
   spinnerService
-    .runWithSpinner(
-      techStackService
-        .findAll()
-        .map(response =>
-          response.map { success =>
-            val dtos = success.body.get
-            stateFormVar.set(
-              dtos.map(dto =>
-                TechStackFormState(
-                  id = dto.id,
-                  name = dto.name,
-                  description = dto.description,
-                  category = dto.category
-                )
+    .runWithSpinner {
+      val call1: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTechStackResp]]]] = techStackService.findAll()
+      val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTechStackCategoryResp]]]] =
+        techStackCategoryService.findAll()
+
+      (call1, call2).parMapN { (techStacksEither, categoriesEither) =>
+        for {
+          techStacksSuccess <- techStacksEither
+          categoriesSuccess <- categoriesEither
+        } yield {
+          val categoryNameById = categoriesSuccess.body.get.map(c => c.id -> c.name).toMap
+          stateFormVar.set(
+            techStacksSuccess.body.get.map(dto =>
+              TechStackFormState(
+                id = dto.id,
+                name = dto.name,
+                description = dto.description,
+                categoryId = dto.categoryId,
+                categoryName = categoryNameById.getOrElse(dto.categoryId, "Unknown")
               )
             )
-          }
-        )
-    )
+          )
+        }
+      }
+    }
     .unsafeRunAndForget()
 
   val element = {
@@ -61,12 +72,22 @@ class ShowAllTechStacksComponent(
             div(
               cls("flex justify-between"),
               div("Tech stacks"),
-              iconButton(
-                "Create Tech Stack",
-                TgIcons.plusIcon(className = "w-4 h-4"),
-                headerIconButtonCls,
-                "mr-2",
-                router.navigateTo(CreateTechStackPage)
+              div(
+                cls("flex"),
+                iconButton(
+                  "Tech stack categories",
+                  TgIcons.listIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowAllTechStackCategoriesPage)
+                ),
+                iconButton(
+                  "Create Tech Stack",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(CreateTechStackPage)
+                )
               )
             ),
             TgCard.CardHeaderSize.H3
@@ -103,7 +124,7 @@ class ShowAllTechStacksComponent(
                             createTd(dto.id.toString),
                             createTd(dto.name),
                             createTd(dto.description),
-                            createTd(dto.category.categoryName),
+                            createTd(dto.categoryName),
                             createTd(
                               div(
                                 iconButton(

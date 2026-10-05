@@ -9,7 +9,7 @@ import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.techstack.{TechStackCategory, TechStackEndpoints}
+import com.togger.techstack.TechStackEndpoints
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -20,15 +20,17 @@ import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
+import scala.collection.immutable.ListMap
 
 case class CreateTechStackForm(
   name: String = "",
   description: String = "",
-  categorySelected: String = TechStackCategory.Language.value.toString
+  categorySelected: String = ""
 )
 
 class CreateTechStackComponent(
   techStackService: TechStackFeService,
+  techStackCategoryService: TechStackCategoryFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -37,12 +39,21 @@ class CreateTechStackComponent(
     extends ToastMessages {
 
   val formState = Var(CreateTechStackForm())
+  val categoriesVar = Var(Seq.empty[FindTechStackCategoryResp])
+
+  spinnerService
+    .runWithSpinner(
+      techStackCategoryService
+        .findAll()
+        .map(response => response.map(success => categoriesVar.set(success.body.get)))
+    )
+    .unsafeRunAndForget()
 
   lazy val submitter = Observer[CreateTechStackForm] { form =>
     val dto = CreateTechStackReq(
       name = form.name,
       description = form.description,
-      category = TechStackCategory.withValue(form.categorySelected.toInt)
+      categoryId = UUID.fromString(form.categorySelected)
     )
     spinnerService
       .runWithSpinner(techStackService.createTechStack(dto))
@@ -64,31 +75,37 @@ class CreateTechStackComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val categorySelect = formState.tgSelectManualError(
-    inputAndUpdater = selectorAndUpdaterMacro(_.categorySelected),
-    labelValue = "Category",
-    valuesAndDisplays = TechStackCategory.namesToValuesMapString
-  )
+  def renderElement(categories: Seq[FindTechStackCategoryResp]) = {
+    val categorySelect = formState.tgSelectManualError(
+      inputAndUpdater = selectorAndUpdaterMacro(_.categorySelected),
+      labelValue = "Category",
+      valuesAndDisplays = ListMap.from(categories.sortBy(_.name).map(c => c.id.toString -> c.name))
+    )
 
-  val element = div(
-    justifyCenterFlex,
-    TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Create a tech stack", TgCard.CardHeaderSize.H3),
-        body = TgCard.HtmlCardContent(
-          div(
-            form(
-              onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
-              descriptionInput.htmlElement.amend(cls("mb-4")),
-              categorySelect.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.create(EventStream.fromValue(false))
+    div(
+      justifyCenterFlex,
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.plainText("Create a tech stack", TgCard.CardHeaderSize.H3),
+          body = TgCard.HtmlCardContent(
+            div(
+              form(
+                onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+                nameInput.htmlElement.amend(cls("mb-4")),
+                descriptionInput.htmlElement.amend(cls("mb-4")),
+                categorySelect.htmlElement.amend(cls("mb-4")),
+                TgHtmlButton.create(EventStream.fromValue(false))
+              )
             )
           )
         )
-      )
-      .element
-      .amend(heightAndWidthFitContent)
+        .element
+        .amend(heightAndWidthFitContent)
+    )
+  }
+
+  val element = div(
+    child <-- categoriesVar.signal.map(categories => renderElement(categories))
   )
 
 }
