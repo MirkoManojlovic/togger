@@ -50,6 +50,8 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
 
+  private val searchProjectsMenuLink = MenuLink("Search Projects", router.navigateTo(SearchProjectsByLabelPage))
+
   private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllProjectLabelsPage))
 
   private val passwordMenuLink =
@@ -71,6 +73,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   case class NavbarItems(
     organization: ReactiveHtmlElement[HTMLLIElement],
+    searchProjects: ReactiveHtmlElement[HTMLLIElement],
     settings: ReactiveHtmlElement[HTMLLIElement],
     changePassword: ReactiveHtmlElement[HTMLLIElement],
     logout: ReactiveHtmlElement[HTMLLIElement]
@@ -81,6 +84,8 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
         case ChangePasswordPage => NavbarItems.changePasswordSelected
         case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
           NavbarItems.organizationSelected
+        case SearchProjectsByLabelPage =>
+          NavbarItems.searchProjectsSelected
         case CreateProjectLabelPage | ShowAllProjectLabelsPage | EditProjectLabelPage(_) =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
@@ -92,6 +97,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
     lazy val allDeselected: NavbarItems =
       NavbarItems(
         organization = organizationMenuLink.deselected,
+        searchProjects = searchProjectsMenuLink.deselected,
         settings = settingsMenuLink.deselected,
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
@@ -102,6 +108,9 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
     lazy val organizationSelected: NavbarItems =
       NavbarItems.allDeselected.copy(organization = organizationMenuLink.selected)
+
+    lazy val searchProjectsSelected: NavbarItems =
+      NavbarItems.allDeselected.copy(searchProjects = searchProjectsMenuLink.selected)
 
     lazy val settingsSelected: NavbarItems =
       NavbarItems.allDeselected.copy(settings = settingsMenuLink.selected)
@@ -132,6 +141,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
                 children <-- router.currentPageSignal.map(page =>
                   Seq(
                     NavbarItems.allDeselected.selectItem(page).organization,
+                    NavbarItems.allDeselected.selectItem(page).searchProjects,
                     NavbarItems.allDeselected.selectItem(page).settings
                   )
                 )

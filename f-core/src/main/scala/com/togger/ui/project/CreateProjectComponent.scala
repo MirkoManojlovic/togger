@@ -46,6 +46,8 @@ trait ProjectService {
 
   def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]]
 
+  def searchByLabels(projectLabelIds: Seq[UUID]): TgRespIO[Seq[FindProjectResp]]
+
 }
 
 class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -66,6 +68,11 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
 
   override def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)(projectId)
+
+  override def searchByLabels(projectLabelIds: Seq[UUID]): TgRespIO[Seq[FindProjectResp]] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.searchByLabelsEndpoint)(
+      SearchProjectsByLabelsReq(projectLabelIds)
+    )
 
 }
 
@@ -149,9 +156,15 @@ class CreateProjectComponent(
   )
 
   private def projectLabelSelectElement(projectLabels: Seq[FindProjectLabelResp]): HtmlElement = {
-    val options = projectLabels.sortBy(_.name).map(ts =>
-      TgSelectDropdownOption(value = ts.id.toString, meta = DropdownMeta(label = ts.name, description = ""), render = () => span(ts.name))
-    )
+    val options = projectLabels
+      .sortBy(_.name)
+      .map(ts =>
+        TgSelectDropdownOption(
+          value = ts.id.toString,
+          meta = DropdownMeta(label = ts.name, description = ""),
+          render = () => span(ts.name)
+        )
+      )
     formState
       .tgSelectDropdownMultSelectManualError(
         inputAndUpdater = selectorAndUpdaterMacro(_.projectLabelSelected),

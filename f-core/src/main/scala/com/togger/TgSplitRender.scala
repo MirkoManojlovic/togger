@@ -424,6 +424,13 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
+              case SearchProjectsByLabelPage =>
+                new SearchProjectsByLabelComponent(
+                  projectService,
+                  projectLabelService,
+                  spinnerService,
+                  router
+                ).element
               case CreateProjectMappingPage(projectId: UUID) =>
                 new CreateProjectMappingComponent(
                   projectMappingService,

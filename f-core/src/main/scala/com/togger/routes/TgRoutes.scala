@@ -107,6 +107,10 @@ class TgRoutes {
         pattern = root / "project" / "status" / "organization" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
+      Route.static(
+        SearchProjectsByLabelPage,
+        root / "project" / "search" / endOfSegments
+      ),
       Route(
         encode = (page: EditProjectPage) => page.id.toString,
         decode = (id: String) => EditProjectPage(UUID.fromString(id)),
