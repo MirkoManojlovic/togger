@@ -8,7 +8,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import org.scalajs.dom.HTMLButtonElement
 
-case class TgSelectDropdownMultSelect(
+case class TgSelectDropdownMultiSelect(
   inputSignal: Signal[Set[String]],
   inputStateUpdater: Observer[Set[String]],
   labelValue: String,
@@ -80,15 +80,15 @@ case class TgSelectDropdownMultSelect(
     )
 }
 
-object TgSelectDropdownMultSelect {
-  implicit class TgSelectDropdownMultSelectSyntax[A](formState: Var[A]) {
+object TgSelectDropdownMultiSelect {
+  implicit class TgSelectDropdownMultiSelectSyntax[A](formState: Var[A]) {
     def tgSelectDropdownMultSelectManualError(
       inputAndUpdater: SelectAndUpdate[A, Set[String]],
       labelValue: String,
       options: Seq[TgSelectDropdownOption],
       placeholder: String = "Select options"
-    ): TgSelectDropdownMultSelect =
-      TgSelectDropdownMultSelect(
+    ): TgSelectDropdownMultiSelect =
+      TgSelectDropdownMultiSelect(
         inputSignal = formState.signal.map(inputAndUpdater.selector),
         inputStateUpdater = formState.updater(inputAndUpdater.updater),
         labelValue = labelValue,

@@ -23,7 +23,7 @@ import com.togger.ui.components.{
   DropdownMeta,
   LogEntryCalendarComponent,
   TgBadge,
-  TgSelectDropdownMultSelect,
+  TgSelectDropdownMultiSelect,
   TgSelectDropdownOption
 }
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
@@ -369,7 +369,7 @@ class EditTaskComponent(
       )
     }
 
-    val labelPicker = TgSelectDropdownMultSelect(
+    val labelPicker = TgSelectDropdownMultiSelect(
       inputSignal = currentLabelIdsVar.signal,
       inputStateUpdater = currentLabelIdsVar.writer,
       labelValue = "Labels",

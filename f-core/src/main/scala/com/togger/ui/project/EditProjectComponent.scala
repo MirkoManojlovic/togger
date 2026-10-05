@@ -12,7 +12,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
-import com.togger.ui.components.TgSelectDropdownMultSelect.TgSelectDropdownMultSelectSyntax
+import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
