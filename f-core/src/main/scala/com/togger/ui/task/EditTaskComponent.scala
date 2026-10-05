@@ -126,7 +126,8 @@ class EditTaskComponent(
                           dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto))))
                         )
 
-                        val taskCreatedAt = dto.task.createdAt.toLocalDate()
+                        val taskStartDate = dto.task.startDate
+                        val taskEndDate = dto.task.endDate
                         def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
                         val allLogEntryDates =
                           dto.logEntries.map(logEntry => dateOf(logEntry) -> logEntry.status).toMap
@@ -145,7 +146,8 @@ class EditTaskComponent(
                                 router,
                                 toast,
                                 tgMarkdown,
-                                taskCreatedAt,
+                                taskStartDate,
+                                taskEndDate,
                                 (allLogEntryDates - dateOf(logEntry)),
                                 workDaysVar.now()
                               )
@@ -161,7 +163,8 @@ class EditTaskComponent(
                             router,
                             toast,
                             tgMarkdown,
-                            taskCreatedAt,
+                            taskStartDate,
+                            taskEndDate,
                             allLogEntryDates,
                             workDaysVar.now()
                           )
