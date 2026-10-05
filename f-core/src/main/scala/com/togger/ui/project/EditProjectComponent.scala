@@ -11,7 +11,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
-import com.togger.ui.components.{DropdownMeta, MultiSelectItem, TableFilterComponent, TgSelectDropdownOption}
+import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.components.TgSelectDropdownMultSelect.TgSelectDropdownMultSelectSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
@@ -32,7 +32,8 @@ case class EditProjectForm(
   description: String = "",
   icon: String = "",
   organizationId: UUID = UUID.randomUUID(),
-  workDays: Set[String] = Set.empty
+  workDays: Set[String] = Set.empty,
+  techStackSelected: Set[String] = Set.empty
 )
 
 class EditProjectComponent(
@@ -53,7 +54,6 @@ class EditProjectComponent(
   val organizationsVar = Var(Seq.empty[FindOrganizationResp])
   val existingMembers: Var[Seq[SearchAccountDto]] = Var(Seq.empty)
   val techStacksVar = Var(Seq.empty[FindTechStackResp])
-  val currentTechStackIdsVar = Var(Set.empty[String])
 
   val findAccountsComponent = new FindAccountsComponent(
     findAccountService = findAccountService,
@@ -61,14 +61,6 @@ class EditProjectComponent(
     existingAccountsVar = existingMembers,
     excludeUserAccount = true
   )
-
-  private val techStackItemsSignal: Signal[Seq[MultiSelectItem]] =
-    techStacksVar.signal.combineWith(currentTechStackIdsVar.signal).map { case (techStacks, currentIds) =>
-      techStacks.sortBy(_.name).map(ts =>
-        MultiSelectItem(id = ts.id.toString, name = ts.name, isSelected = currentIds.contains(ts.id.toString))
-      )
-    }
-  private val techStackPicker = new TableFilterComponent(techStackItemsSignal, label = "Select tech stacks")
 
   spinnerService
     .runWithSpinner {
@@ -108,10 +100,10 @@ class EditProjectComponent(
                   description = dto.description,
                   icon = dto.icon,
                   organizationId = dto.organizationId,
-                  workDays = dto.workDays.map(i => DayOfWeek.of(i).name())
+                  workDays = dto.workDays.map(i => DayOfWeek.of(i).name()),
+                  techStackSelected = dto.techStacks.map(_.id.toString).toSet
                 )
               )
-              currentTechStackIdsVar.set(dto.techStacks.map(_.id.toString).toSet)
             }
           )
         )
@@ -120,7 +112,7 @@ class EditProjectComponent(
     }
     .unsafeRunAndForget()
 
-  lazy val updateSubmitter = Observer[(EditProjectForm, Set[String])] { case (state, selectedTechStackIds) =>
+  lazy val updateSubmitter = Observer[EditProjectForm] { state =>
     if (state.workDays.isEmpty) {
       toast.error("Select at least one work day")
     } else {
@@ -133,7 +125,7 @@ class EditProjectComponent(
         workDays = state.workDays.map(name => DayOfWeek.valueOf(name).getValue),
         membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
         membersToRemove = findAccountsComponent.membersToRemove.map(_.id),
-        techStackIds = selectedTechStackIds.map(UUID.fromString).toSeq
+        techStackIds = state.techStackSelected.map(UUID.fromString).toSeq
       )
 
       spinnerService
@@ -181,6 +173,19 @@ class EditProjectComponent(
     options = workDaysOptions
   )
 
+  private def techStackSelectElement(techStacks: Seq[FindTechStackResp]): HtmlElement = {
+    val options = techStacks.sortBy(_.name).map(ts =>
+      TgSelectDropdownOption(value = ts.id.toString, meta = DropdownMeta(label = ts.name, description = ""), render = () => span(ts.name))
+    )
+    formState
+      .tgSelectDropdownMultSelectManualError(
+        inputAndUpdater = selectorAndUpdaterMacro(_.techStackSelected),
+        labelValue = "Select tech stacks",
+        options = options
+      )
+      .htmlElement
+  }
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -189,14 +194,12 @@ class EditProjectComponent(
         body = TgCard.HtmlCardContent(
           div(
             form(
-              onSubmit.preventDefault
-                .mapTo(formState.now())
-                .compose(_.withCurrentValueOf(techStackPicker.selectedIds)) --> updateSubmitter,
+              onSubmit.preventDefault.mapTo(formState.now()) --> updateSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               workDaysSelect.htmlElement.amend(cls("mb-4")),
-              techStackPicker.element.amend(cls("mb-4")),
+              child <-- techStacksVar.signal.map(techStackSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))
             )

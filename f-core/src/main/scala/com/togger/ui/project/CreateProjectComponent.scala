@@ -13,7 +13,8 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.ui.components.TgSelectDropdownMultSelect.TgSelectDropdownMultSelectSyntax
+import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
@@ -30,7 +31,8 @@ case class CreateProjectForm(
   name: String = "",
   description: String = "",
   icon: String = "",
-  members: Seq[UUID] = Seq.empty
+  members: Seq[UUID] = Seq.empty,
+  techStackSelected: Set[String] = Set.empty
 )
 
 trait ProjectService {
@@ -89,11 +91,6 @@ class CreateProjectComponent(
     excludeUserAccount = true
   )
 
-  private val techStackPicker = new TableFilterComponent(
-    techStacksVar.signal.map(_.sortBy(_.name).map(ts => MultiSelectItem(id = ts.id.toString, name = ts.name, isSelected = false))),
-    label = "Select tech stacks"
-  )
-
   spinnerService
     .runWithSpinner {
       val orgCall = organizationServiceFe
@@ -115,14 +112,14 @@ class CreateProjectComponent(
     }
     .unsafeRunAndForget()
 
-  lazy val createSubmitter = Observer[(CreateProjectForm, Set[String])] { case (state, selectedTechStackIds) =>
+  lazy val createSubmitter = Observer[CreateProjectForm] { state =>
     val request = CreateProjectReq(
       organizationId = state.organizationId,
       name = state.name,
       description = state.description,
       icon = state.icon,
       membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
-      techStackIds = selectedTechStackIds.map(UUID.fromString).toSeq
+      techStackIds = state.techStackSelected.map(UUID.fromString).toSeq
     )
 
     spinnerService
@@ -151,6 +148,19 @@ class CreateProjectComponent(
     localStorage = localStorage
   )
 
+  private def techStackSelectElement(techStacks: Seq[FindTechStackResp]): HtmlElement = {
+    val options = techStacks.sortBy(_.name).map(ts =>
+      TgSelectDropdownOption(value = ts.id.toString, meta = DropdownMeta(label = ts.name, description = ""), render = () => span(ts.name))
+    )
+    formState
+      .tgSelectDropdownMultSelectManualError(
+        inputAndUpdater = selectorAndUpdaterMacro(_.techStackSelected),
+        labelValue = "Select tech stacks",
+        options = options
+      )
+      .htmlElement
+  }
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -159,13 +169,11 @@ class CreateProjectComponent(
         body = TgCard.HtmlCardContent(
           div(
             form(
-              onSubmit.preventDefault
-                .mapTo(formState.now())
-                .compose(_.withCurrentValueOf(techStackPicker.selectedIds)) --> createSubmitter,
+              onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
-              techStackPicker.element.amend(cls("mb-4")),
+              child <-- techStacksVar.signal.map(techStackSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.create(EventStream.fromValue(false))
             )
