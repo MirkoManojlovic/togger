@@ -53,7 +53,7 @@ class ProjectLabelSeedService(transactor: Transactor[IO]) {
         id = TgIds.UNASSIGNED_UUID,
         name = l.languageName,
         description = l.description,
-        categoryId = categoryIdsByName(DefaultProjectLabelCategory.Language.categoryName),
+        categoryId = categoryIdsByName(DefaultProjectLabelCategory.ProgrammingLanguage.categoryName),
         createdAt = now,
         updatedAt = now
       )

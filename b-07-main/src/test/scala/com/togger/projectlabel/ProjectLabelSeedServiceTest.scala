@@ -27,7 +27,7 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
           allProjectLabels.size shouldBe
             DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size + DefaultInfrastructure.values.size
           allProjectLabels.count(
-            _.categoryId == categoryIdByName(DefaultProjectLabelCategory.Language.categoryName)
+            _.categoryId == categoryIdByName(DefaultProjectLabelCategory.ProgrammingLanguage.categoryName)
           ) shouldBe DefaultProgrammingLanguage.values.size
           allProjectLabels.count(
             _.categoryId == categoryIdByName(DefaultProjectLabelCategory.Framework.categoryName)
