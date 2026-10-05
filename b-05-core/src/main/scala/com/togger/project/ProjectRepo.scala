@@ -21,6 +21,8 @@ trait ProjectRepo {
 
   def findAllProjectsByAccountId(accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]]
 
+  def findByAccountIdAndAllLabelIds(accountId: UUID, labelIds: Seq[UUID]): ConnectionIO[Seq[Project]]
+
 //  def addProjectMember(projectId: Long, accountId: Long): Unit
 //  def removeProjectMember(projectId: Long, accountId: Long): Unit
 

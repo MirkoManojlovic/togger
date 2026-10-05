@@ -1,5 +1,7 @@
 package com.togger.project
 
+import cats.data.NonEmptyList
+import cats.implicits._
 import com.togger.account.AccountRepoImpl.passwordCodec
 import com.togger.account.{Account, AccountRepoImpl}
 import com.togger.db.Util._
@@ -8,6 +10,7 @@ import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
+import doobie.util.fragments
 
 import java.util.UUID
 
@@ -84,6 +87,23 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
       membersFound => s"${sp(membersFound)} members found"
     )
   }
+
+  override def findAllMembersByProjectIds(projectIds: Seq[UUID]): ConnectionIO[Map[UUID, Seq[Account]]] =
+    NonEmptyList.fromList(projectIds.toList) match {
+      case None => Map.empty[UUID, Seq[Account]].pure[ConnectionIO]
+      case Some(nonEmptyProjectIds) =>
+        logAroundInfoQuery(
+          (selectAllStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
+            innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"project_account.account_id = account.id") ++
+            fr"where" ++ fragments.in(fr"project_account.project_id", nonEmptyProjectIds))
+            .query[(ProjectAccount, Account)]
+            .to[List]
+            .map(_.groupMap(_._1.projectId)(_._2): Map[UUID, Seq[Account]])
+        )(
+          s"Finding all members for ${sp(projectIds)}",
+          membersByProjectId => s"${sp(membersByProjectId)} found"
+        )
+    }
 }
 
 object ProjectAccountRepoImpl {

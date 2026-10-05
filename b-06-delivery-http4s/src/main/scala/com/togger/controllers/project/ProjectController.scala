@@ -3,6 +3,7 @@ package com.togger.controllers.project
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.account.Account
 import com.togger.dto.{FindProjectResp, FindProjectLabelResp, SearchAccountDto}
 import com.togger.project._
 import com.togger.projectlabel.ProjectLabel
@@ -22,30 +23,35 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       categoryId = projectLabel.categoryId
     )
 
+  private def toFindProjectResp(
+    project: Project,
+    members: Seq[Account],
+    projectLabels: Seq[ProjectLabel]
+  ): FindProjectResp =
+    FindProjectResp(
+      id = project.id,
+      organizationId = project.organizationId,
+      name = project.name,
+      description = project.description,
+      icon = project.icon,
+      workDays = project.workDays.map(_.getValue),
+      members = members.map(account =>
+        SearchAccountDto(
+          id = account.id,
+          firstName = account.firstName,
+          lastName = account.lastName,
+          email = account.email,
+          accountTypeId = account.accountTypeId
+        )
+      ),
+      projectLabels = projectLabels.map(toProjectLabelDto)
+    )
+
   val findByid = findByIdEndpoint.serverLogic { auth => id =>
     projectService
       .findById(id)
       .map { case (foundProject, members, projectLabels) =>
-        TgJsonSuccess.justBodyRight(
-          FindProjectResp(
-            foundProject.id,
-            foundProject.organizationId,
-            foundProject.name,
-            foundProject.description,
-            foundProject.icon,
-            workDays = foundProject.workDays.map(_.getValue),
-            members = members.map(account =>
-              SearchAccountDto(
-                id = account.id,
-                firstName = account.firstName,
-                lastName = account.lastName,
-                email = account.email,
-                accountTypeId = account.accountTypeId
-              )
-            ),
-            projectLabels = projectLabels.map(toProjectLabelDto)
-          )
-        )
+        TgJsonSuccess.justBodyRight(toFindProjectResp(foundProject, members, projectLabels))
       }
   }
 
@@ -66,25 +72,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     projectService
       .saveProject(project, auth.body.get.id, dto.membersToAdd, dto.projectLabelIds)
       .map { case (savedProject, members) =>
-        TgJsonSuccess.justBodyRight(
-          FindProjectResp(
-            id = savedProject.id,
-            organizationId = savedProject.organizationId,
-            name = savedProject.name,
-            description = savedProject.description,
-            icon = savedProject.icon,
-            workDays = savedProject.workDays.map(_.getValue),
-            members = members.map(account =>
-              SearchAccountDto(
-                id = account.id,
-                firstName = account.firstName,
-                lastName = account.lastName,
-                email = account.email,
-                accountTypeId = account.accountTypeId
-              )
-            )
-          )
-        )
+        TgJsonSuccess.justBodyRight(toFindProjectResp(savedProject, members, Seq.empty))
       }
   }
 
@@ -115,26 +103,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
           projectLabelIds = dto.projectLabelIds
         )
         .map { case (project, members, projectLabels) =>
-          TgJsonSuccess.justBodyRight(
-            FindProjectResp(
-              id = project.id,
-              organizationId = project.organizationId,
-              name = project.name,
-              description = project.description,
-              icon = project.icon,
-              workDays = project.workDays.map(_.getValue),
-              members = members.map(account =>
-                SearchAccountDto(
-                  id = account.id,
-                  firstName = account.firstName,
-                  lastName = account.lastName,
-                  email = account.email,
-                  accountTypeId = account.accountTypeId
-                )
-              ),
-              projectLabels = projectLabels.map(toProjectLabelDto)
-            )
-          )
+          TgJsonSuccess.justBodyRight(toFindProjectResp(project, members, projectLabels))
         }
     }
   }
@@ -180,6 +149,16 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
           )
         )
       )
+  }
+
+  val searchByLabels = searchByLabelsEndpoint.serverLogic { auth => dto =>
+    projectService
+      .searchByLabels(auth.body.get.id, dto.projectLabelIds)
+      .map { results =>
+        TgJsonSuccess.justBodyRight(results.map { case (project, members, projectLabels) =>
+          toFindProjectResp(project, members, projectLabels)
+        })
+      }
   }
 
 }

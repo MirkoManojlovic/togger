@@ -16,4 +16,6 @@ trait ProjectAccountRepo {
 
   def findAllMembers(projectId: UUID): ConnectionIO[Seq[Account]]
 
+  def findAllMembersByProjectIds(projectIds: Seq[UUID]): ConnectionIO[Map[UUID, Seq[Account]]]
+
 }

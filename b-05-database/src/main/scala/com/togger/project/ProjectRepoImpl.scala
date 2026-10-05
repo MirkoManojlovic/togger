@@ -1,5 +1,6 @@
 package com.togger.project
-import com.togger.account.AccountRepoImpl
+import cats.data.NonEmptyList
+import cats.implicits._
 import com.togger.db.Util._
 import com.togger.project.ProjectRepoImpl.PROJECT_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -8,13 +9,15 @@ import doobie.Meta
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
+import doobie.util.fragments
 
 import java.time.{DayOfWeek, Instant}
 import java.util.UUID
 
 class ProjectRepoImpl extends ProjectRepo {
 
-  implicit val workDaysCodec: Meta[Set[DayOfWeek]] = Meta[Int].imap(ProjectRepoImpl.decodeWorkDays)(ProjectRepoImpl.encodeWorkDays)
+  implicit val workDaysCodec: Meta[Set[DayOfWeek]] =
+    Meta[Int].imap(ProjectRepoImpl.decodeWorkDays)(ProjectRepoImpl.encodeWorkDays)
 
   override def findById(id: UUID): ConnectionIO[Project] =
     logAroundInfoQuery(
@@ -112,6 +115,27 @@ class ProjectRepoImpl extends ProjectRepo {
       projectsAndAccounts => s"${sp(projectsAndAccounts)} found"
     )
   }
+
+  override def findByAccountIdAndAllLabelIds(accountId: UUID, labelIds: Seq[UUID]): ConnectionIO[Seq[Project]] =
+    NonEmptyList.fromList(labelIds.distinct.toList) match {
+      case None => Seq.empty[Project].pure[ConnectionIO]
+      case Some(nonEmptyLabelIds) =>
+        logAroundInfoQuery(
+          (fr"select project.* from" ++ PROJECT_TABLE_FRAG ++
+            innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(fr"project.id = project_account.project_id") ++
+            innerJoin(ProjectLabelAssignmentRepoImpl.PROJECT_LABEL_ASSIGNMENT_TABLE_FRAG)(
+              fr"project.id = project_label_assignment.project_id"
+            ) ++
+            fr"where project_account.account_id = $accountId and" ++
+            fragments.in(fr"project_label_assignment.project_label_id", nonEmptyLabelIds) ++
+            fr"group by project.id having count(distinct project_label_assignment.project_label_id) = ${nonEmptyLabelIds.size}")
+            .query[Project]
+            .to[Seq]
+        )(
+          s"Finding projects for ${sp(accountId)} with all of ${sp(labelIds)}",
+          projects => s"${sp(projects)} found"
+        )
+    }
 }
 
 object ProjectRepoImpl {

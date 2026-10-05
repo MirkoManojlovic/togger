@@ -4,7 +4,14 @@ import cats.implicits.toTraverseOps
 import com.togger.account.Account
 import com.togger.common.TgClock
 import com.togger.logging.TgLogging
-import com.togger.project.{Project, ProjectAccount, ProjectAccountRepo, ProjectRepo, ProjectLabelAssignment, ProjectLabelAssignmentRepo}
+import com.togger.project.{
+  Project,
+  ProjectAccount,
+  ProjectAccountRepo,
+  ProjectRepo,
+  ProjectLabelAssignment,
+  ProjectLabelAssignmentRepo
+}
 import com.togger.task.{TaskLabelRepo, TaskStatusRepo}
 import com.togger.projectlabel.ProjectLabel
 import com.togger.util.SplunkMacro.sp
@@ -79,9 +86,18 @@ class ProjectService(
       .sequence
   }
 
-  private def addProjectLabels(project: Project, projectLabelIds: Seq[UUID]): ConnectionIO[List[ProjectLabelAssignment]] = {
+  private def addProjectLabels(
+    project: Project,
+    projectLabelIds: Seq[UUID]
+  ): ConnectionIO[List[ProjectLabelAssignment]] = {
     projectLabelIds
-      .map(projectLabelId => ProjectLabelAssignment(projectId = project.id, projectLabelId = projectLabelId, createdAt = tgClock.currentInstant))
+      .map(projectLabelId =>
+        ProjectLabelAssignment(
+          projectId = project.id,
+          projectLabelId = projectLabelId,
+          createdAt = tgClock.currentInstant
+        )
+      )
       .map(projectLabelAssignmentRepo.insert)
       .toList
       .sequence
@@ -134,4 +150,23 @@ class ProjectService(
 
   def findProjectLabelsByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, List[ProjectLabel]]] =
     projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds).transact(transactor)
+
+  def searchByLabels(accountId: UUID, labelIds: Seq[UUID]): IO[Seq[(Project, Seq[Account], Seq[ProjectLabel])]] = {
+    if (labelIds.isEmpty) {
+      IO.pure(Seq.empty)
+    } else {
+      (for {
+        projects <- projectRepo.findByAccountIdAndAllLabelIds(accountId, labelIds)
+        projectIds = projects.map(_.id)
+        membersByProjectId <- projectAccountRepo.findAllMembersByProjectIds(projectIds)
+        labelsByProjectId <- projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds)
+      } yield projects.map(project =>
+        (
+          project,
+          membersByProjectId.getOrElse(project.id, Seq.empty),
+          labelsByProjectId.getOrElse(project.id, List.empty)
+        )
+      )).transact(transactor)
+    }
+  }
 }
