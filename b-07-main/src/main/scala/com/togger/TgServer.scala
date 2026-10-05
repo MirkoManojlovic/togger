@@ -18,6 +18,7 @@ import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
+import com.togger.controllers.techstack.TechStackController
 import com.togger.common.DateRangeValidation
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
@@ -32,6 +33,7 @@ import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import com.togger.taskloadconfig.{TaskLoadConfigEndpoints, TaskLoadConfigRepoImpl, TaskLoadConfigService}
+import com.togger.techstack.{TechStackEndpoints, TechStackRepoImpl, TechStackService}
 import doobie.Transactor
 import org.http4s.server.Server
 
@@ -58,8 +60,9 @@ object TgServer {
     import dependenciesModule._
 
     lazy val httpModule = new HttpModule()
-    httpModule.createServer(
-      List(
+    Resource.eval(new TechStackSeedService(transactorModule.transactor).run).flatMap(_ =>
+      httpModule.createServer(
+        List(
         loginController.login,
         loginController.expireOldSessions,
         loginController.logoutEveryone,
@@ -145,7 +148,13 @@ object TgServer {
         accountMappingController.save,
         accountMappingController.findByAccountIdDb,
         accountMappingController.findByAccountIdDump,
-        accountMappingController.delete
+        accountMappingController.delete,
+        techStackController.findAll,
+        techStackController.findById,
+        techStackController.save,
+        techStackController.update,
+        techStackController.delete
+      )
       )
     )
   }
@@ -237,6 +246,11 @@ class DependenciesModule(
   lazy val taskStatusService = new TaskStatusService(taskStatusRepo, tgClock, transactor)
   lazy val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
   lazy val taskStatusController = new TaskStatusController(taskStatusService, taskStatusEndpoints, tgClock)
+
+  lazy val techStackRepo = new TechStackRepoImpl
+  lazy val techStackService = new TechStackService(techStackRepo, tgClock, transactor)
+  lazy val techStackEndpoints = new TechStackEndpoints(securedEndpoint)
+  lazy val techStackController = new TechStackController(techStackService, techStackEndpoints, tgClock)
 
   lazy val taskLabelRepo = new TaskLabelRepoImpl
   lazy val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
