@@ -25,7 +25,8 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
 
           val categoryIdByName = allCategories.map(c => c.name -> c.id).toMap
           allProjectLabels.size shouldBe
-            DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size + DefaultInfrastructure.values.size
+            DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size +
+              DefaultInfrastructure.values.size + DefaultDomain.values.size
           allProjectLabels.count(
             _.categoryId == categoryIdByName(DefaultProjectLabelCategory.ProgrammingLanguage.categoryName)
           ) shouldBe DefaultProgrammingLanguage.values.size
@@ -35,6 +36,9 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
           allProjectLabels.count(
             _.categoryId == categoryIdByName(DefaultProjectLabelCategory.Infrastructure.categoryName)
           ) shouldBe DefaultInfrastructure.values.size
+          allProjectLabels.count(
+            _.categoryId == categoryIdByName(DefaultProjectLabelCategory.Domain.categoryName)
+          ) shouldBe DefaultDomain.values.size
         }
     }
 
@@ -49,7 +53,8 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
       } yield {
         allCategories.size shouldBe DefaultProjectLabelCategory.values.size
         allProjectLabels.size shouldBe
-          DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size + DefaultInfrastructure.values.size
+          DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size +
+            DefaultInfrastructure.values.size + DefaultDomain.values.size
       }
     }
   }

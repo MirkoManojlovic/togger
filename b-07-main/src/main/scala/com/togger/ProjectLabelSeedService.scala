@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{TgClockImpl, TgIds}
 import com.togger.projectlabel.{
+  DefaultDomain,
   DefaultInfrastructure,
   DefaultProgrammingFramework,
   DefaultProgrammingLanguage,
@@ -81,6 +82,20 @@ class ProjectLabelSeedService(transactor: Transactor[IO]) {
       )
     )
 
-    (languageRows ++ frameworkRows ++ infrastructureRows).toList.traverse(projectLabelRepo.insert).transact(transactor).void
+    val domainRows = DefaultDomain.values.map(d =>
+      ProjectLabel(
+        id = TgIds.UNASSIGNED_UUID,
+        name = d.domainName,
+        description = d.description,
+        categoryId = categoryIdsByName(DefaultProjectLabelCategory.Domain.categoryName),
+        createdAt = now,
+        updatedAt = now
+      )
+    )
+
+    (languageRows ++ frameworkRows ++ infrastructureRows ++ domainRows).toList
+      .traverse(projectLabelRepo.insert)
+      .transact(transactor)
+      .void
   }
 }
