@@ -6,7 +6,7 @@ import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.dto.FindMilestoneDateResp
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
-import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 
@@ -54,12 +54,11 @@ class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate:
     isRequired = false
   )
 
-  private val descriptionTextArea = formState.tgTextAreaManualErrorSig(
+  private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
-    errors = EventStream.empty,
     labelValue = "Description",
-    isRequired = false,
-    numberOfRows = 2
+    minHeightRem = 8,
+    minWidthRem = 0
   )
 
   private val dateInput = formState.tgInputManualErrorLPSig(
@@ -74,7 +73,7 @@ class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate:
     div(
       cls("mb-4"),
       nameInput.htmlElement.amend(cls("mb-4")),
-      descriptionTextArea.htmlElement.amend(cls("mb-4")),
+      descriptionEditor.htmlElement.amend(cls("mb-4")),
       dateInput.htmlElement
     )
 

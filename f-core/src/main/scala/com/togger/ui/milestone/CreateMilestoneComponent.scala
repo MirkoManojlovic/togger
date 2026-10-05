@@ -14,7 +14,7 @@ import com.togger.milestone.MilestoneEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -112,10 +112,10 @@ class CreateMilestoneComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val descriptionTextArea = formState.tgTextAreaManualErrorSig(
+  private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
-    errors = EventStream.empty,
-    labelValue = "Milestone description"
+    labelValue = "Milestone description",
+    minWidthRem = 0
   )
 
   private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
@@ -163,7 +163,7 @@ class CreateMilestoneComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
-              descriptionTextArea.htmlElement.amend(cls("mb-4")),
+              descriptionEditor.htmlElement.amend(cls("mb-4")),
               startDateInput.htmlElement.amend(cls("mb-4")),
               dueDateInput.htmlElement.amend(cls("mb-4")),
               h5(cls("mb-2"), "Additional Milestone dates"),
