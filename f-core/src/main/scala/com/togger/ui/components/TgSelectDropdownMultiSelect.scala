@@ -37,7 +37,7 @@ case class TgSelectDropdownMultiSelect(
       button(
         `type`("button"),
         cls(
-          "w-full text-left p-2 text-sm font-medium hover:bg-neutral-tertiary-medium hover:text-heading rounded cursor-pointer"
+          "w-full text-left p-2 text-sm font-medium text-heading hover:bg-neutral-tertiary-medium rounded cursor-pointer"
         ),
         onClickMod,
         actionLabel
