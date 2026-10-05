@@ -13,6 +13,7 @@ import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
+import com.togger.ui.components.TgSelectDropdownMultiSelectFilter.TgSelectDropdownMultiSelectFilterSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
@@ -178,7 +179,7 @@ class EditProjectComponent(
       TgSelectDropdownOption(value = ts.id.toString, meta = DropdownMeta(label = ts.name, description = ""), render = () => span(ts.name))
     )
     formState
-      .tgSelectDropdownMultSelectManualError(
+      .tgSelectDropdownMultiSelectFilterManualError(
         inputAndUpdater = selectorAndUpdaterMacro(_.techStackSelected),
         labelValue = "Select tech stacks",
         options = options
