@@ -11,16 +11,18 @@ class TechStackSeedServiceTest extends BusinessTgDbSpec {
 
   testNameFromClassName should {
 
-    "seed one row per default language/framework when the table is empty" in { transactor =>
+    "seed one row per default language/framework/infrastructure when the table is empty" in { transactor =>
       val seedService = new TechStackSeedService(transactor)
 
       for {
         _ <- seedService.run
         allTechStacks <- techStackRepo.findAll.transact(transactor)
       } yield {
-        allTechStacks.size shouldBe DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size
+        allTechStacks.size shouldBe
+          DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size + DefaultInfrastructure.values.size
         allTechStacks.count(_.category == TechStackCategory.Language) shouldBe DefaultProgrammingLanguage.values.size
         allTechStacks.count(_.category == TechStackCategory.Framework) shouldBe DefaultProgrammingFramework.values.size
+        allTechStacks.count(_.category == TechStackCategory.Infrastructure) shouldBe DefaultInfrastructure.values.size
       }
     }
 
@@ -31,7 +33,8 @@ class TechStackSeedServiceTest extends BusinessTgDbSpec {
         _ <- seedService.run
         _ <- seedService.run
         allTechStacks <- techStackRepo.findAll.transact(transactor)
-      } yield allTechStacks.size shouldBe DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size
+      } yield allTechStacks.size shouldBe
+        DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size + DefaultInfrastructure.values.size
     }
   }
 
