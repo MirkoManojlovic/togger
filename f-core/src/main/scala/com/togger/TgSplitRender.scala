@@ -13,6 +13,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages._
 import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
+import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
 import com.togger.ui.modal.ModalFactory
@@ -136,6 +137,12 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val tgMarkdown = new TgMarkdown()
 
+  private def breadcrumbsFor(page: FrontendPage): HtmlElement = {
+    val trail = TgBreadcrumbTrail.forPage(page)
+    if (trail.isEmpty) div()
+    else div(cls("mb-4"), new TgBreadcrumbs(trail, router).element)
+  }
+
   lazy val splitRender: SplitRender[FrontendPage, HtmlElement] =
     SplitRender[FrontendPage, HtmlElement](router.currentPageSignal).collectSignal((signal: Signal[FrontendPage]) =>
       div(
@@ -152,6 +159,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 if (collapsed) TgSplitRender.sidebarPaddingCollapsed else TgSplitRender.sidebarPadding
               } else ""
           },
+          child <-- signal.map(breadcrumbsFor),
           child <-- signal
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
