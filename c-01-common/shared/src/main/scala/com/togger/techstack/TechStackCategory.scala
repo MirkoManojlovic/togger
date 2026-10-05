@@ -7,6 +7,7 @@ sealed abstract class TechStackCategory(val value: Int, val categoryName: String
 object TechStackCategory extends IntEnum[TechStackCategory] {
   case object Language extends TechStackCategory(1, "Language")
   case object Framework extends TechStackCategory(2, "Framework")
+  case object Infrastructure extends TechStackCategory(3, "Infrastructure")
 
   def namesToValuesMapString: Map[String, String] = this.values.map(c => c.value.toString -> c.categoryName).toMap
 
