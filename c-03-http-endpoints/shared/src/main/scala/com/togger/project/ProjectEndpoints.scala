@@ -3,7 +3,7 @@ package com.togger.project
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.TgSecuredEndpoint
 import com.togger.common.TgJsonSuccess
-import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, UpdateProjectReq}
+import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, SearchProjectsByLabelsReq, UpdateProjectReq}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -49,5 +49,11 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
     securedEndpoint.endpoint.get
       .in(basePath / "members" / path[UUID]("project-id"))
       .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
+
+  val searchByLabelsEndpoint: TgSecuredEndpoint[SearchProjectsByLabelsReq, Seq[FindProjectResp]] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "search")
+      .in(jsonBody[SearchProjectsByLabelsReq])
+      .out(jsonBody[TgJsonSuccess[Seq[FindProjectResp]]])
 
 }

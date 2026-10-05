@@ -33,3 +33,5 @@ case class UpdateProjectReq(
   membersToRemove: Seq[UUID],
   projectLabelIds: Seq[UUID] = Seq.empty
 )
+
+case class SearchProjectsByLabelsReq(projectLabelIds: Seq[UUID])
