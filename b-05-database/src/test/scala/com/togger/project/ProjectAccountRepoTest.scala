@@ -87,6 +87,45 @@ class ProjectAccountRepoTest
     res.transact(transactor)
   }
 
+  "find all members for multiple project ids in one batch" in { transactor =>
+    val res = for {
+      accountTypes <- createAccountTypes
+      memberOfProject1 <- accountRepo.insert(
+        createAccount("John", "Smith", "shark@email.com").copy(accountTypeId = accountTypes.head.id)
+      )
+      memberOfProject2 <- accountRepo.insert(
+        createAccount("Jack", "Curry", "bird@email.com").copy(accountTypeId = accountTypes.head.id)
+      )
+      savedOrganization <- createOrganization
+      project1 <- projectRepo.insert(project.copy(organizationId = savedOrganization.id, name = "Project 1"))
+      project2 <- projectRepo.insert(project.copy(organizationId = savedOrganization.id, name = "Project 2"))
+      projectWithNoMembers <- projectRepo.insert(
+        project.copy(organizationId = savedOrganization.id, name = "Project 3")
+      )
+      _ <- projectAccountRepo.insert(ProjectAccount(project1.id, memberOfProject1.id, nowAsInstant))
+      _ <- projectAccountRepo.insert(ProjectAccount(project2.id, memberOfProject2.id, nowAsInstant))
+      foundMembersByProjectId <- projectAccountRepo.findAllMembersByProjectIds(
+        Seq(project1.id, project2.id, projectWithNoMembers.id)
+      )
+    } yield {
+      val cp = new Checkpoint
+      cp(foundMembersByProjectId.getOrElse(project1.id, Seq.empty) shouldBe Seq(memberOfProject1))
+      cp(foundMembersByProjectId.getOrElse(project2.id, Seq.empty) shouldBe Seq(memberOfProject2))
+      cp(foundMembersByProjectId.get(projectWithNoMembers.id) shouldBe None)
+      cp.reportAll()
+    }
+
+    res.transact(transactor)
+  }
+
+  "return an empty map when finding members for no project ids" in { transactor =>
+    val res = for {
+      foundMembersByProjectId <- projectAccountRepo.findAllMembersByProjectIds(Seq.empty)
+    } yield foundMembersByProjectId shouldBe empty
+
+    res.transact(transactor)
+  }
+
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(
       id = TgIds.UNASSIGNED_UUID,

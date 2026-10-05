@@ -1,9 +1,10 @@
 package com.togger.project
 
-import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits._
 import com.togger.account.TgAccount
 import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
 import com.togger.organization.TgOrganization
+import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
@@ -14,6 +15,18 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
 
   val projectRepo = new ProjectRepoImpl
   val projectAccountRepo = new ProjectAccountRepoImpl
+  val projectLabelCategoryRepo = new ProjectLabelCategoryRepoImpl
+  val projectLabelRepo = new ProjectLabelRepoImpl
+  val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
+
+  def projectLabel(name: String, categoryId: UUID): ProjectLabel = ProjectLabel(
+    id = UUID.randomUUID(),
+    name = name,
+    description = s"$name description",
+    categoryId = categoryId,
+    createdAt = nowAsInstant,
+    updatedAt = nowAsInstant
+  )
 
   val project = Project(
     id = UUID.randomUUID(),
@@ -92,6 +105,61 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
         )
       } yield {
         foundProjects shouldBe Seq(savedProject1 -> savedProjectAccount)
+      }
+
+      res.transact(transactor)
+    }
+
+    "find projects by account id that have ALL of the given labels assigned" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        savedOrganization <- createOrganization
+        category <- projectLabelCategoryRepo.insert(
+          ProjectLabelCategory(
+            id = UUID.randomUUID(),
+            name = "Language",
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
+        )
+        scalaLabel <- projectLabelRepo.insert(projectLabel("Scala", category.id))
+        kotlinLabel <- projectLabelRepo.insert(projectLabel("Kotlin", category.id))
+        javaLabel <- projectLabelRepo.insert(projectLabel("Java", category.id))
+
+        // matches: member, has both selected labels
+        matchingProject <- projectRepo.insert(
+          project.copy(organizationId = savedOrganization.id, name = "Matching project")
+        )
+        _ <- projectAccountRepo.insert(ProjectAccount(matchingProject.id, savedAccount.id, nowAsInstant))
+        _ <- projectLabelAssignmentRepo.insert(ProjectLabelAssignment(matchingProject.id, scalaLabel.id, nowAsInstant))
+        _ <- projectLabelAssignmentRepo.insert(ProjectLabelAssignment(matchingProject.id, kotlinLabel.id, nowAsInstant))
+        _ <- projectLabelAssignmentRepo.insert(ProjectLabelAssignment(matchingProject.id, javaLabel.id, nowAsInstant))
+
+        // non-match: member, but only has a subset of the selected labels
+        partiallyLabeledProject <- projectRepo.insert(
+          project.copy(organizationId = savedOrganization.id, name = "Partially labeled project")
+        )
+        _ <- projectAccountRepo.insert(ProjectAccount(partiallyLabeledProject.id, savedAccount.id, nowAsInstant))
+        _ <- projectLabelAssignmentRepo.insert(
+          ProjectLabelAssignment(partiallyLabeledProject.id, scalaLabel.id, nowAsInstant)
+        )
+
+        // non-match: has both selected labels, but the account is not a member
+        notMemberProject <- projectRepo.insert(
+          project.copy(organizationId = savedOrganization.id, name = "Not a member project")
+        )
+        _ <- projectLabelAssignmentRepo.insert(ProjectLabelAssignment(notMemberProject.id, scalaLabel.id, nowAsInstant))
+        _ <- projectLabelAssignmentRepo.insert(
+          ProjectLabelAssignment(notMemberProject.id, kotlinLabel.id, nowAsInstant)
+        )
+
+        foundProjects <- projectRepo.findByAccountIdAndAllLabelIds(savedAccount.id, Seq(scalaLabel.id, kotlinLabel.id))
+        foundProjectsForEmptyLabels <- projectRepo.findByAccountIdAndAllLabelIds(savedAccount.id, Seq.empty)
+      } yield {
+        val cp = new Checkpoint
+        cp(foundProjects shouldBe Seq(matchingProject))
+        cp(foundProjectsForEmptyLabels shouldBe empty)
+        cp.reportAll()
       }
 
       res.transact(transactor)
