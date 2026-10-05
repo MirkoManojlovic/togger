@@ -8,7 +8,7 @@ case class CreateProjectReq(
   description: String,
   icon: String,
   membersToAdd: Seq[UUID],
-  techStackIds: Seq[UUID] = Seq.empty
+  projectLabelIds: Seq[UUID] = Seq.empty
 )
 
 case class FindProjectResp(
@@ -19,7 +19,7 @@ case class FindProjectResp(
   icon: String,
   workDays: Set[Int], // ISO day-of-week values, Monday=1..Sunday=7
   members: Seq[SearchAccountDto],
-  techStacks: Seq[FindTechStackResp] = Seq.empty
+  projectLabels: Seq[FindProjectLabelResp] = Seq.empty
 )
 
 case class UpdateProjectReq(
@@ -31,5 +31,5 @@ case class UpdateProjectReq(
   workDays: Set[Int], // ISO day-of-week values, Monday=1..Sunday=7
   membersToAdd: Seq[UUID],
   membersToRemove: Seq[UUID],
-  techStackIds: Seq[UUID] = Seq.empty
+  projectLabelIds: Seq[UUID] = Seq.empty
 )

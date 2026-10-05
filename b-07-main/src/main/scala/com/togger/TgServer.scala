@@ -18,7 +18,7 @@ import com.togger.controllers.projectmapping.ProjectMappingController
 import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
-import com.togger.controllers.techstack.{TechStackCategoryController, TechStackController}
+import com.togger.controllers.projectlabel.{ProjectLabelCategoryController, ProjectLabelController}
 import com.togger.common.DateRangeValidation
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
@@ -26,20 +26,20 @@ import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.milestone._
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl, ProjectTechStackRepoImpl}
+import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
 import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import com.togger.taskloadconfig.{TaskLoadConfigEndpoints, TaskLoadConfigRepoImpl, TaskLoadConfigService}
-import com.togger.techstack.{
-  TechStackCategoryEndpoints,
-  TechStackCategoryRepoImpl,
-  TechStackCategoryService,
-  TechStackEndpoints,
-  TechStackRepoImpl,
-  TechStackService
+import com.togger.projectlabel.{
+  ProjectLabelCategoryEndpoints,
+  ProjectLabelCategoryRepoImpl,
+  ProjectLabelCategoryService,
+  ProjectLabelEndpoints,
+  ProjectLabelRepoImpl,
+  ProjectLabelService
 }
 import doobie.Transactor
 import org.http4s.server.Server
@@ -67,7 +67,7 @@ object TgServer {
     import dependenciesModule._
 
     lazy val httpModule = new HttpModule()
-    Resource.eval(new TechStackSeedService(transactorModule.transactor).run).flatMap(_ =>
+    Resource.eval(new ProjectLabelSeedService(transactorModule.transactor).run).flatMap(_ =>
       httpModule.createServer(
         List(
         loginController.login,
@@ -156,16 +156,16 @@ object TgServer {
         accountMappingController.findByAccountIdDb,
         accountMappingController.findByAccountIdDump,
         accountMappingController.delete,
-        techStackController.findAll,
-        techStackController.findById,
-        techStackController.save,
-        techStackController.update,
-        techStackController.delete,
-        techStackCategoryController.findAll,
-        techStackCategoryController.findById,
-        techStackCategoryController.save,
-        techStackCategoryController.update,
-        techStackCategoryController.delete
+        projectLabelController.findAll,
+        projectLabelController.findById,
+        projectLabelController.save,
+        projectLabelController.update,
+        projectLabelController.delete,
+        projectLabelCategoryController.findAll,
+        projectLabelCategoryController.findById,
+        projectLabelCategoryController.save,
+        projectLabelCategoryController.update,
+        projectLabelCategoryController.delete
       )
       )
     )
@@ -226,7 +226,7 @@ class DependenciesModule(
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl
   lazy val projectAccountRepo = new ProjectAccountRepoImpl
-  lazy val projectTechStackRepo = new ProjectTechStackRepoImpl
+  lazy val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
   lazy val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
   lazy val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
   lazy val projectService =
@@ -235,7 +235,7 @@ class DependenciesModule(
       projectAccountRepo,
       taskStatusRepo,
       taskLabelRepo,
-      projectTechStackRepo,
+      projectLabelAssignmentRepo,
       tgClock,
       defaultTaskStatusService,
       defaultTaskLabelService,
@@ -261,16 +261,16 @@ class DependenciesModule(
   lazy val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
   lazy val taskStatusController = new TaskStatusController(taskStatusService, taskStatusEndpoints, tgClock)
 
-  lazy val techStackRepo = new TechStackRepoImpl
-  lazy val techStackService = new TechStackService(techStackRepo, tgClock, transactor)
-  lazy val techStackEndpoints = new TechStackEndpoints(securedEndpoint)
-  lazy val techStackController = new TechStackController(techStackService, techStackEndpoints, tgClock)
+  lazy val projectLabelRepo = new ProjectLabelRepoImpl
+  lazy val projectLabelService = new ProjectLabelService(projectLabelRepo, tgClock, transactor)
+  lazy val projectLabelEndpoints = new ProjectLabelEndpoints(securedEndpoint)
+  lazy val projectLabelController = new ProjectLabelController(projectLabelService, projectLabelEndpoints, tgClock)
 
-  lazy val techStackCategoryRepo = new TechStackCategoryRepoImpl
-  lazy val techStackCategoryService = new TechStackCategoryService(techStackCategoryRepo, tgClock, transactor)
-  lazy val techStackCategoryEndpoints = new TechStackCategoryEndpoints(securedEndpoint)
-  lazy val techStackCategoryController =
-    new TechStackCategoryController(techStackCategoryService, techStackCategoryEndpoints, tgClock)
+  lazy val projectLabelCategoryRepo = new ProjectLabelCategoryRepoImpl
+  lazy val projectLabelCategoryService = new ProjectLabelCategoryService(projectLabelCategoryRepo, tgClock, transactor)
+  lazy val projectLabelCategoryEndpoints = new ProjectLabelCategoryEndpoints(securedEndpoint)
+  lazy val projectLabelCategoryController =
+    new ProjectLabelCategoryController(projectLabelCategoryService, projectLabelCategoryEndpoints, tgClock)
 
   lazy val taskLabelRepo = new TaskLabelRepoImpl
   lazy val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl

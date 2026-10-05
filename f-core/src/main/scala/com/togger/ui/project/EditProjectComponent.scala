@@ -18,7 +18,7 @@ import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.techstack.TechStackFeService
+import com.togger.ui.projectlabel.ProjectLabelFeService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -34,13 +34,13 @@ case class EditProjectForm(
   icon: String = "",
   organizationId: UUID = UUID.randomUUID(),
   workDays: Set[String] = Set.empty,
-  techStackSelected: Set[String] = Set.empty
+  projectLabelSelected: Set[String] = Set.empty
 )
 
 class EditProjectComponent(
   findAccountService: FindAccountService,
   projectService: ProjectService,
-  techStackService: TechStackFeService,
+  projectLabelService: ProjectLabelFeService,
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService,
   router: TgRouter[FrontendPage],
@@ -54,7 +54,7 @@ class EditProjectComponent(
   val formState = Var(EditProjectForm())
   val organizationsVar = Var(Seq.empty[FindOrganizationResp])
   val existingMembers: Var[Seq[SearchAccountDto]] = Var(Seq.empty)
-  val techStacksVar = Var(Seq.empty[FindTechStackResp])
+  val projectLabelsVar = Var(Seq.empty[FindProjectLabelResp])
 
   val findAccountsComponent = new FindAccountsComponent(
     findAccountService = findAccountService,
@@ -83,9 +83,9 @@ class EditProjectComponent(
           )
         )
 
-      val techStackCall = techStackService
+      val projectLabelCall = projectLabelService
         .findAll()
-        .map(_.map(success => techStacksVar.set(success.body.get)))
+        .map(_.map(success => projectLabelsVar.set(success.body.get)))
 
       val projectOrg = projectService
         .findById(projectId)
@@ -102,14 +102,14 @@ class EditProjectComponent(
                   icon = dto.icon,
                   organizationId = dto.organizationId,
                   workDays = dto.workDays.map(i => DayOfWeek.of(i).name()),
-                  techStackSelected = dto.techStacks.map(_.id.toString).toSet
+                  projectLabelSelected = dto.projectLabels.map(_.id.toString).toSet
                 )
               )
             }
           )
         )
 
-      membersCall.flatMap(_ => orgCall.flatMap(_ => techStackCall.flatMap(_ => projectOrg)))
+      membersCall.flatMap(_ => orgCall.flatMap(_ => projectLabelCall.flatMap(_ => projectOrg)))
     }
     .unsafeRunAndForget()
 
@@ -126,7 +126,7 @@ class EditProjectComponent(
         workDays = state.workDays.map(name => DayOfWeek.valueOf(name).getValue),
         membersToAdd = findAccountsComponent.membersToAdd.map(_.id),
         membersToRemove = findAccountsComponent.membersToRemove.map(_.id),
-        techStackIds = state.techStackSelected.map(UUID.fromString).toSeq
+        projectLabelIds = state.projectLabelSelected.map(UUID.fromString).toSeq
       )
 
       spinnerService
@@ -174,14 +174,14 @@ class EditProjectComponent(
     options = workDaysOptions
   )
 
-  private def techStackSelectElement(techStacks: Seq[FindTechStackResp]): HtmlElement = {
-    val options = techStacks.sortBy(_.name).map(ts =>
+  private def projectLabelSelectElement(projectLabels: Seq[FindProjectLabelResp]): HtmlElement = {
+    val options = projectLabels.sortBy(_.name).map(ts =>
       TgSelectDropdownOption(value = ts.id.toString, meta = DropdownMeta(label = ts.name, description = ""), render = () => span(ts.name))
     )
     formState
       .tgSelectDropdownMultiSelectFilterManualError(
-        inputAndUpdater = selectorAndUpdaterMacro(_.techStackSelected),
-        labelValue = "Select tech stacks",
+        inputAndUpdater = selectorAndUpdaterMacro(_.projectLabelSelected),
+        labelValue = "Select project labels",
         options = options
       )
       .htmlElement
@@ -200,7 +200,7 @@ class EditProjectComponent(
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionTextArea.htmlElement.amend(cls("mb-4")),
               workDaysSelect.htmlElement.amend(cls("mb-4")),
-              child <-- techStacksVar.signal.map(techStackSelectElement).map(_.amend(cls("mb-4"))),
+              child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.update(EventStream.fromValue(false))
             )

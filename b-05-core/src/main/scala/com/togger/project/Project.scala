@@ -24,8 +24,8 @@ case class ProjectAccount(
   createdAt: Instant
 )
 
-case class ProjectTechStack(
+case class ProjectLabelAssignment(
   projectId: UUID,
-  techStackId: UUID,
+  projectLabelId: UUID,
   createdAt: Instant
 )

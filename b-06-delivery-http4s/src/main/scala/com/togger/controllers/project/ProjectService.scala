@@ -4,9 +4,9 @@ import cats.implicits.toTraverseOps
 import com.togger.account.Account
 import com.togger.common.TgClock
 import com.togger.logging.TgLogging
-import com.togger.project.{Project, ProjectAccount, ProjectAccountRepo, ProjectRepo, ProjectTechStack, ProjectTechStackRepo}
+import com.togger.project.{Project, ProjectAccount, ProjectAccountRepo, ProjectRepo, ProjectLabelAssignment, ProjectLabelAssignmentRepo}
 import com.togger.task.{TaskLabelRepo, TaskStatusRepo}
-import com.togger.techstack.TechStack
+import com.togger.projectlabel.ProjectLabel
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -18,7 +18,7 @@ class ProjectService(
   projectAccountRepo: ProjectAccountRepo,
   taskStatusRepo: TaskStatusRepo,
   taskLabelRepo: TaskLabelRepo,
-  projectTechStackRepo: ProjectTechStackRepo,
+  projectLabelAssignmentRepo: ProjectLabelAssignmentRepo,
   tgClock: TgClock,
   defaultTaskStatusService: DefaultTaskStatusService,
   defaultTaskLabelService: DefaultTaskLabelService,
@@ -29,7 +29,7 @@ class ProjectService(
     project: Project,
     accountId: UUID,
     membersToAdd: Seq[UUID],
-    techStackIds: Seq[UUID] = Seq.empty
+    projectLabelIds: Seq[UUID] = Seq.empty
   ): IO[(Project, Seq[Account])] = {
     (for {
       savedProject <- projectRepo.insert(project)
@@ -42,7 +42,7 @@ class ProjectService(
       )
       _ <- addMembers(savedProject, membersToAdd)
       members <- findMembersLocal(savedProject.id)
-      _ <- addTechStacks(savedProject, techStackIds)
+      _ <- addProjectLabels(savedProject, projectLabelIds)
       _ <- defaultTaskStatusService.createDefaultTaskStatuses(savedProject.id).map(taskStatusRepo.insert).sequence
       _ <- defaultTaskLabelService.createDefaultTaskLabels(savedProject.id).map(taskLabelRepo.insert).sequence
     } yield savedProject -> members).transact(transactor)
@@ -79,10 +79,10 @@ class ProjectService(
       .sequence
   }
 
-  private def addTechStacks(project: Project, techStackIds: Seq[UUID]): ConnectionIO[List[ProjectTechStack]] = {
-    techStackIds
-      .map(techStackId => ProjectTechStack(projectId = project.id, techStackId = techStackId, createdAt = tgClock.currentInstant))
-      .map(projectTechStackRepo.insert)
+  private def addProjectLabels(project: Project, projectLabelIds: Seq[UUID]): ConnectionIO[List[ProjectLabelAssignment]] = {
+    projectLabelIds
+      .map(projectLabelId => ProjectLabelAssignment(projectId = project.id, projectLabelId = projectLabelId, createdAt = tgClock.currentInstant))
+      .map(projectLabelAssignmentRepo.insert)
       .toList
       .sequence
   }
@@ -95,8 +95,8 @@ class ProjectService(
     project: Project,
     membersToAdd: Seq[UUID],
     membersToRemove: Seq[UUID],
-    techStackIds: Seq[UUID] = Seq.empty
-  ): IO[(Project, Seq[Account], Seq[TechStack])] = {
+    projectLabelIds: Seq[UUID] = Seq.empty
+  ): IO[(Project, Seq[Account], Seq[ProjectLabel])] = {
     logger.info(s"Updating a ${sp(project)}")
     val now = tgClock.currentInstant
     (for {
@@ -104,12 +104,12 @@ class ProjectService(
       _ <- addMembers(updatedProject, membersToAdd)
       _ <- removeMembers(updatedProject, membersToRemove)
       members <- projectAccountRepo.findAllMembers(updatedProject.id)
-      _ <- projectTechStackRepo.deleteAllByProjectId(updatedProject.id)
-      _ <- addTechStacks(updatedProject, techStackIds)
-      techStacks <- projectTechStackRepo.findTechStacksByProjectId(updatedProject.id)
+      _ <- projectLabelAssignmentRepo.deleteAllByProjectId(updatedProject.id)
+      _ <- addProjectLabels(updatedProject, projectLabelIds)
+      projectLabels <- projectLabelAssignmentRepo.findProjectLabelsByProjectId(updatedProject.id)
     } yield {
       logger.info(s"Organization updated successfully ${sp(updatedProject)}")
-      (updatedProject, members, techStacks)
+      (updatedProject, members, projectLabels)
     }).transact(transactor)
   }
 
@@ -120,18 +120,18 @@ class ProjectService(
       .map(_.map(_._1))
   }
 
-  def findById(id: UUID): IO[(Project, Seq[Account], Seq[TechStack])] = {
+  def findById(id: UUID): IO[(Project, Seq[Account], Seq[ProjectLabel])] = {
     (for {
       project <- projectRepo.findById(id)
       members <- projectAccountRepo.findAllMembers(id)
-      techStacks <- projectTechStackRepo.findTechStacksByProjectId(id)
-    } yield (project, members, techStacks)).transact(transactor)
+      projectLabels <- projectLabelAssignmentRepo.findProjectLabelsByProjectId(id)
+    } yield (project, members, projectLabels)).transact(transactor)
 
   }
 
   def findAllMembers(projectId: UUID): IO[Seq[Account]] =
     projectAccountRepo.findAllMembers(projectId).transact(transactor)
 
-  def findTechStacksByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, List[TechStack]]] =
-    projectTechStackRepo.findTechStacksByProjectIds(projectIds).transact(transactor)
+  def findProjectLabelsByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, List[ProjectLabel]]] =
+    projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds).transact(transactor)
 }

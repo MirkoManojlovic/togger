@@ -993,7 +993,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
-            tableName: tech_stack_category
+            tableName: project_label_category
             columns:
               - column:
                   name: id
@@ -1021,7 +1021,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
-            tableName: tech_stack
+            tableName: project_label
             columns:
               - column:
                   name: id
@@ -1047,8 +1047,8 @@ databaseChangeLog:
                   type: uuid
                   constraints:
                     nullable: false
-                    foreignKeyName: fk_tech_stack_category
-                    references: tech_stack_category(id)
+                    foreignKeyName: fk_project_label_category
+                    references: project_label_category(id)
               - column:
                   name: created_at
                   type: timestamp with time zone
@@ -1091,7 +1091,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
         - createTable:
-            tableName: project_tech_stack
+            tableName: project_label_assignment
             columns:
               - column:
                   name: project_id
@@ -1099,17 +1099,17 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     primaryKey: true
-                    foreignKeyName: fk_project_tech_stack_project
+                    foreignKeyName: fk_project_label_assignment_project
                     references: project(id)
                     deleteCascade: true
               - column:
-                  name: tech_stack_id
+                  name: project_label_id
                   type: uuid
                   constraints:
                     nullable: false
                     primaryKey: true
-                    foreignKeyName: fk_project_tech_stack_tech_stack
-                    references: tech_stack(id)
+                    foreignKeyName: fk_project_label_assignment_project_label
+                    references: project_label(id)
                     deleteCascade: true
               - column:
                   name: created_at

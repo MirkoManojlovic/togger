@@ -130,30 +130,30 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route.static(
-        CreateTechStackPage,
-        root / "settings" / "tech-stack" / "create"
+        CreateProjectLabelPage,
+        root / "settings" / "project-label" / "create"
       ),
       Route.static(
-        ShowAllTechStacksPage,
-        root / "settings" / "tech-stack" / endOfSegments
+        ShowAllProjectLabelsPage,
+        root / "settings" / "project-label" / endOfSegments
       ),
       Route(
-        encode = (page: EditTechStackPage) => page.id.toString,
-        decode = (id: String) => EditTechStackPage(UUID.fromString(id)),
-        pattern = root / "settings" / "tech-stack" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditProjectLabelPage) => page.id.toString,
+        decode = (id: String) => EditProjectLabelPage(UUID.fromString(id)),
+        pattern = root / "settings" / "project-label" / "edit" / segment[String] / endOfSegments
       ),
       Route.static(
-        CreateTechStackCategoryPage,
-        root / "settings" / "tech-stack-category" / "create"
+        CreateProjectLabelCategoryPage,
+        root / "settings" / "project-label-category" / "create"
       ),
       Route.static(
-        ShowAllTechStackCategoriesPage,
-        root / "settings" / "tech-stack-category" / endOfSegments
+        ShowAllProjectLabelCategoriesPage,
+        root / "settings" / "project-label-category" / endOfSegments
       ),
       Route(
-        encode = (page: EditTechStackCategoryPage) => page.id.toString,
-        decode = (id: String) => EditTechStackCategoryPage(UUID.fromString(id)),
-        pattern = root / "settings" / "tech-stack-category" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditProjectLabelCategoryPage) => page.id.toString,
+        decode = (id: String) => EditProjectLabelCategoryPage(UUID.fromString(id)),
+        pattern = root / "settings" / "project-label-category" / "edit" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: ShowAllTaskConfigsPage) => page.projectId.toString,

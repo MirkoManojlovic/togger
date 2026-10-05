@@ -50,7 +50,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
 
-  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllTechStacksPage))
+  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllProjectLabelsPage))
 
   private val passwordMenuLink =
     MenuLink(
@@ -81,7 +81,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
         case ChangePasswordPage => NavbarItems.changePasswordSelected
         case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
           NavbarItems.organizationSelected
-        case CreateTechStackPage | ShowAllTechStacksPage | EditTechStackPage(_) =>
+        case CreateProjectLabelPage | ShowAllProjectLabelsPage | EditProjectLabelPage(_) =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }

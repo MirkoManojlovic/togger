@@ -6,7 +6,7 @@ import com.togger.accountmapping.AccountMappingRepoImpl
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
 import com.togger.milestone.{MilestoneDateRepoImpl, MilestoneDateVersionRepoImpl, MilestoneRepoImpl, MilestoneVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectTechStackRepoImpl}
+import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.projectmapping.ProjectMappingRepoImpl
 import com.togger.task.{
   LinkRepoImpl,
@@ -19,7 +19,7 @@ import com.togger.task.{
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl
-import com.togger.techstack.{TechStackCategoryRepoImpl, TechStackRepoImpl}
+import com.togger.projectlabel.{ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.ConnectionIO
 
 trait BusinessTgDbSpec extends TgDbSpec {
@@ -43,9 +43,9 @@ trait BusinessTgDbSpec extends TgDbSpec {
         TaskRepoImpl.TASK_TABLE,
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
         TaskLabelRepoImpl.TASK_LABEL_TABLE,
-        ProjectTechStackRepoImpl.PROJECT_TECH_STACK_TABLE,
-        TechStackRepoImpl.TECH_STACK_TABLE,
-        TechStackCategoryRepoImpl.TECH_STACK_CATEGORY_TABLE,
+        ProjectLabelAssignmentRepoImpl.PROJECT_LABEL_ASSIGNMENT_TABLE,
+        ProjectLabelRepoImpl.PROJECT_LABEL_TABLE,
+        ProjectLabelCategoryRepoImpl.PROJECT_LABEL_CATEGORY_TABLE,
         AccountSessionRepo.ACCOUNT_SESSION_TABLE,
         OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE,
         ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE,

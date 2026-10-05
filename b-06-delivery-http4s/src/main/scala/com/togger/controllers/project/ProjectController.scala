@@ -3,9 +3,9 @@ package com.togger.controllers.project
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
-import com.togger.dto.{FindProjectResp, FindTechStackResp, SearchAccountDto}
+import com.togger.dto.{FindProjectResp, FindProjectLabelResp, SearchAccountDto}
 import com.togger.project._
-import com.togger.techstack.TechStack
+import com.togger.projectlabel.ProjectLabel
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -14,18 +14,18 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
 
   import projectEndpoints._
 
-  private def toTechStackDto(techStack: TechStack): FindTechStackResp =
-    FindTechStackResp(
-      id = techStack.id,
-      name = techStack.name,
-      description = techStack.description,
-      categoryId = techStack.categoryId
+  private def toProjectLabelDto(projectLabel: ProjectLabel): FindProjectLabelResp =
+    FindProjectLabelResp(
+      id = projectLabel.id,
+      name = projectLabel.name,
+      description = projectLabel.description,
+      categoryId = projectLabel.categoryId
     )
 
   val findByid = findByIdEndpoint.serverLogic { auth => id =>
     projectService
       .findById(id)
-      .map { case (foundProject, members, techStacks) =>
+      .map { case (foundProject, members, projectLabels) =>
         TgJsonSuccess.justBodyRight(
           FindProjectResp(
             foundProject.id,
@@ -43,7 +43,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                 accountTypeId = account.accountTypeId
               )
             ),
-            techStacks = techStacks.map(toTechStackDto)
+            projectLabels = projectLabels.map(toProjectLabelDto)
           )
         )
       }
@@ -64,7 +64,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     )
 
     projectService
-      .saveProject(project, auth.body.get.id, dto.membersToAdd, dto.techStackIds)
+      .saveProject(project, auth.body.get.id, dto.membersToAdd, dto.projectLabelIds)
       .map { case (savedProject, members) =>
         TgJsonSuccess.justBodyRight(
           FindProjectResp(
@@ -112,9 +112,9 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
           project = projectToUpdate,
           membersToAdd = dto.membersToAdd,
           membersToRemove = dto.membersToRemove,
-          techStackIds = dto.techStackIds
+          projectLabelIds = dto.projectLabelIds
         )
-        .map { case (project, members, techStacks) =>
+        .map { case (project, members, projectLabels) =>
           TgJsonSuccess.justBodyRight(
             FindProjectResp(
               id = project.id,
@@ -132,7 +132,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                   accountTypeId = account.accountTypeId
                 )
               ),
-              techStacks = techStacks.map(toTechStackDto)
+              projectLabels = projectLabels.map(toProjectLabelDto)
             )
           )
         }
@@ -144,7 +144,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       projectService
         .findAllByOrganizationIdAndAccountId(organizationId, auth.body.get.id)
         .flatMap { projects =>
-          projectService.findTechStacksByProjectIds(projects.map(_.id)).map { techStacksByProjectId =>
+          projectService.findProjectLabelsByProjectIds(projects.map(_.id)).map { projectLabelsByProjectId =>
             TgJsonSuccess.justBodyRight(
               projects
                 .map(project =>
@@ -156,7 +156,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                     icon = project.icon,
                     workDays = project.workDays.map(_.getValue),
                     members = Seq.empty,
-                    techStacks = techStacksByProjectId.getOrElse(project.id, List.empty).map(toTechStackDto)
+                    projectLabels = projectLabelsByProjectId.getOrElse(project.id, List.empty).map(toProjectLabelDto)
                   )
                 )
             )

@@ -113,7 +113,7 @@ class ShowAllProjectsTableComponent(
                         createTh("id"),
                         createTh("name"),
                         createTh("description"),
-                        createTh("Tech stacks"),
+                        createTh("Project labels"),
                         createTh("Action")
                       )
                     ),
@@ -137,7 +137,7 @@ class ShowAllProjectsTableComponent(
                             createTd(
                               div(
                                 cls("flex flex-wrap gap-1"),
-                                dto.techStacks.map(ts => TgBadge(text = ts.name, color = TgBadgeColor.Indigo, bordered = true).element)
+                                dto.projectLabels.map(ts => TgBadge(text = ts.name, color = TgBadgeColor.Indigo, bordered = true).element)
                               )
                             ),
                             createTd(

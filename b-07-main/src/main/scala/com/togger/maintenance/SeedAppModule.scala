@@ -10,7 +10,7 @@ import com.togger.logentry.{LogEntryRepoImpl, LogEntryService, LogEntryVersionRe
 import com.togger.login.SessionTokenFactoryImpl
 import com.togger.milestone.{MilestoneRepoImpl, MilestoneService, MilestoneVersionRepoImpl}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectTechStackRepoImpl}
+import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.Transactor
@@ -51,7 +51,7 @@ trait SeedAppModule {
   protected val organizationAccountRepo = new OrganizationAccountRepoImpl
   protected val projectRepo = new ProjectRepoImpl
   protected val projectAccountRepo = new ProjectAccountRepoImpl
-  protected val projectTechStackRepo = new ProjectTechStackRepoImpl
+  protected val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
   protected val taskStatusRepo = new TaskStatusRepoImpl
   protected val taskLabelRepo = new TaskLabelRepoImpl
   protected val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
@@ -81,7 +81,7 @@ trait SeedAppModule {
       projectAccountRepo = projectAccountRepo,
       taskStatusRepo = taskStatusRepo,
       taskLabelRepo = taskLabelRepo,
-      projectTechStackRepo = projectTechStackRepo,
+      projectLabelAssignmentRepo = projectLabelAssignmentRepo,
       tgClock = tgClock,
       defaultTaskStatusService = defaultTaskStatusService,
       defaultTaskLabelService = defaultTaskLabelService,
