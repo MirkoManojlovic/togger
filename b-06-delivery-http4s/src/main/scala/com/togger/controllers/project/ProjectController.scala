@@ -3,8 +3,9 @@ package com.togger.controllers.project
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
-import com.togger.dto.{FindProjectResp, SearchAccountDto}
+import com.togger.dto.{FindProjectResp, FindTechStackResp, SearchAccountDto}
 import com.togger.project._
+import com.togger.techstack.TechStack
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -13,10 +14,18 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
 
   import projectEndpoints._
 
+  private def toTechStackDto(techStack: TechStack): FindTechStackResp =
+    FindTechStackResp(
+      id = techStack.id,
+      name = techStack.name,
+      description = techStack.description,
+      categoryId = techStack.categoryId
+    )
+
   val findByid = findByIdEndpoint.serverLogic { auth => id =>
     projectService
       .findById(id)
-      .map { case (foundProject, members) =>
+      .map { case (foundProject, members, techStacks) =>
         TgJsonSuccess.justBodyRight(
           FindProjectResp(
             foundProject.id,
@@ -33,7 +42,8 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                 email = account.email,
                 accountTypeId = account.accountTypeId
               )
-            )
+            ),
+            techStacks = techStacks.map(toTechStackDto)
           )
         )
       }
@@ -54,7 +64,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     )
 
     projectService
-      .saveProject(project, auth.body.get.id, dto.membersToAdd)
+      .saveProject(project, auth.body.get.id, dto.membersToAdd, dto.techStackIds)
       .map { case (savedProject, members) =>
         TgJsonSuccess.justBodyRight(
           FindProjectResp(
@@ -101,9 +111,10 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
         .updateProject(
           project = projectToUpdate,
           membersToAdd = dto.membersToAdd,
-          membersToRemove = dto.membersToRemove
+          membersToRemove = dto.membersToRemove,
+          techStackIds = dto.techStackIds
         )
-        .map { case (project, members) =>
+        .map { case (project, members, techStacks) =>
           TgJsonSuccess.justBodyRight(
             FindProjectResp(
               id = project.id,
@@ -120,7 +131,8 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
                   email = account.email,
                   accountTypeId = account.accountTypeId
                 )
-              )
+              ),
+              techStacks = techStacks.map(toTechStackDto)
             )
           )
         }
@@ -131,22 +143,25 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     auth => organizationId =>
       projectService
         .findAllByOrganizationIdAndAccountId(organizationId, auth.body.get.id)
-        .map(projects =>
-          TgJsonSuccess.justBodyRight(
-            projects
-              .map(project =>
-                FindProjectResp(
-                  id = project.id,
-                  organizationId = project.organizationId,
-                  name = project.name,
-                  description = project.description,
-                  icon = project.icon,
-                  workDays = project.workDays.map(_.getValue),
-                  members = Seq.empty
+        .flatMap { projects =>
+          projectService.findTechStacksByProjectIds(projects.map(_.id)).map { techStacksByProjectId =>
+            TgJsonSuccess.justBodyRight(
+              projects
+                .map(project =>
+                  FindProjectResp(
+                    id = project.id,
+                    organizationId = project.organizationId,
+                    name = project.name,
+                    description = project.description,
+                    icon = project.icon,
+                    workDays = project.workDays.map(_.getValue),
+                    members = Seq.empty,
+                    techStacks = techStacksByProjectId.getOrElse(project.id, List.empty).map(toTechStackDto)
+                  )
                 )
-              )
-          )
-        )
+            )
+          }
+        }
   }
 
   val findAllMembers = findAllMembersEndpoint.serverLogic { auth => projectId =>

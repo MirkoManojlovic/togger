@@ -18,7 +18,7 @@ class MilestoneController(
 ) {
 
   val save = milestoneEndpoints.saveEndpoint.serverLogic { auth => dto =>
-    projectService.findById(dto.projectId).flatMap { case (project, _) =>
+    projectService.findById(dto.projectId).flatMap { case (project, _, _) =>
       dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), None, project.workDays) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
         case Right(_) =>
@@ -73,7 +73,7 @@ class MilestoneController(
         val effectiveDueDate = dto.dueDate.getOrElse(current.version.dueDate)
         val effectiveEndDate = dto.endDate.orElse(current.version.endDate)
 
-        projectService.findById(current.milestone.projectId).flatMap { case (project, _) =>
+        projectService.findById(current.milestone.projectId).flatMap { case (project, _, _) =>
           dateRangeValidation.validate(
             Some(effectiveStartDate),
             Some(effectiveDueDate),
@@ -121,7 +121,7 @@ class MilestoneController(
 
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
     milestoneService.findProjectIdByVersion(dto.version).flatMap { projectId =>
-      projectService.findById(projectId).flatMap { case (project, _) =>
+      projectService.findById(projectId).flatMap { case (project, _, _) =>
         dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays) match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneVersionDto])
           case Right(_) =>

@@ -23,3 +23,9 @@ case class ProjectAccount(
   accountId: UUID,
   createdAt: Instant
 )
+
+case class ProjectTechStack(
+  projectId: UUID,
+  techStackId: UUID,
+  createdAt: Instant
+)

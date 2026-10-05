@@ -93,7 +93,7 @@ class TaskController(
     val taskDto = dto.task
     val linksDto = dto.links
 
-    projectService.findById(taskDto.projectId).flatMap { case (project, _) =>
+    projectService.findById(taskDto.projectId).flatMap { case (project, _, _) =>
       dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None, project.workDays) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
         case Right(_) =>
@@ -157,7 +157,7 @@ class TaskController(
     val linksToCreate = dto.linksToCreate
 
     taskService.findProjectId(taskDto.id).flatMap { projectId =>
-      projectService.findById(projectId).flatMap { case (project, _) =>
+      projectService.findById(projectId).flatMap { case (project, _, _) =>
         taskVersionService.listVersions(taskDto.id).flatMap { versions =>
           val currentVersion = versions.head
           val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
@@ -252,7 +252,7 @@ class TaskController(
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
     taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
-      projectService.findById(projectId).flatMap { case (project, _) =>
+      projectService.findById(projectId).flatMap { case (project, _, _) =>
         dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays) match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
           case Right(_) =>

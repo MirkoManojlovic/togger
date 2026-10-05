@@ -26,7 +26,7 @@ import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.milestone._
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl}
+import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl, ProjectTechStackRepoImpl}
 import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
 import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
 import com.togger.task._
@@ -226,6 +226,7 @@ class DependenciesModule(
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl
   lazy val projectAccountRepo = new ProjectAccountRepoImpl
+  lazy val projectTechStackRepo = new ProjectTechStackRepoImpl
   lazy val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
   lazy val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
   lazy val projectService =
@@ -234,6 +235,7 @@ class DependenciesModule(
       projectAccountRepo,
       taskStatusRepo,
       taskLabelRepo,
+      projectTechStackRepo,
       tgClock,
       defaultTaskStatusService,
       defaultTaskLabelService,

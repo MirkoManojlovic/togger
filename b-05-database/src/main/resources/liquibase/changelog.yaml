@@ -1090,3 +1090,30 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+        - createTable:
+            tableName: project_tech_stack
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_project_tech_stack_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: tech_stack_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_project_tech_stack_tech_stack
+                    references: tech_stack(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
