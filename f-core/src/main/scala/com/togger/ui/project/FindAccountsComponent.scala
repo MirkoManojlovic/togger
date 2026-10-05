@@ -124,10 +124,10 @@ class FindAccountsComponent(
         TgHtmlButton.primary("Search").amend(cls("mb-4"))
       ),
       div(
-        cls("border-1 rounded-md border-gray-200 mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4"),
         h3(
-          cls("flex items-center bg-gray-50 border-b-1 border-gray-200"),
-          div(TgIcons.userIcon("w-5 h-5 text-gray-600 mr-1")),
+          cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
+          div(TgIcons.userIcon("w-5 h-5 text-body mr-1")),
           cls("font-semibold text-heading"),
           "Members"
         ),
@@ -138,9 +138,9 @@ class FindAccountsComponent(
       ),
       localRootSpinnerDiv.amend(foundMembersElement).amend(cls("mt-4 mb-4")),
       div(
-        cls("border-1 rounded-md border-gray-200 mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4"),
         h3(
-          cls("flex items-center bg-gray-50 border-b-1 border-gray-200"),
+          cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
           div(TgIcons.checkIcon("w-5 h-5 text-green-600 mr-1")),
           cls("font-semibold text-heading"),
           "Members to add"
@@ -151,9 +151,9 @@ class FindAccountsComponent(
         )
       ),
       div(
-        cls("border-1 rounded-md border-gray-200 mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4"),
         h3(
-          cls("flex items-center bg-gray-50 border-b-1 border-gray-200"),
+          cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
           div(TgIcons.minusCircleIcon("w-5 h-5 text-red-600 mr-1")),
           cls("font-semibold text-heading"),
           "Members to remove"
@@ -172,10 +172,10 @@ class FindAccountsComponent(
         dtos =>
           div(
             div(
-              cls("border-1 rounded-md border-gray-200"),
+              cls("border rounded-md border-default-medium"),
               h3(
-                cls("flex items-center bg-gray-50 border-b-1 border-gray-200"),
-                div(TgIcons.searchIcon("w-5 h-5 text-gray-600 mr-1")),
+                cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
+                div(TgIcons.searchIcon("w-5 h-5 text-body mr-1")),
                 cls("font-semibold text-heading"),
                 "Found members"
               ),

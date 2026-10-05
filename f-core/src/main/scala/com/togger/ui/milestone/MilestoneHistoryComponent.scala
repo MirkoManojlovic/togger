@@ -172,7 +172,7 @@ class MilestoneHistoryComponent(
     dom.document.body.style.setProperty("user-select", "")
   }
 
-  private val weekBackgrounds: Seq[String] = Seq("bg-stone-200", "bg-white-100")
+  private val weekBackgrounds: Seq[String] = Seq("bg-neutral-tertiary-medium", "bg-neutral-primary")
 
   private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int, color: String)
 
@@ -447,7 +447,7 @@ class MilestoneHistoryComponent(
     )
 
   private def milestoneDateMarkerElement(marker: MilestoneDateMarker) = {
-    val trigger = div(cls("w-full h-full border-2 border-black rounded-sm hover:bg-black/10"))
+    val trigger = div(cls("w-full h-full border-2 border-default-strong rounded-sm hover:bg-neutral-quaternary-medium"))
     TgTooltip(trigger = trigger, text = marker.tooltipText).element.amend(
       styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
     )
@@ -456,7 +456,7 @@ class MilestoneHistoryComponent(
   private def milestoneNameCell(box: MilestoneBox) =
     div(
       cls(
-        "flex items-center justify-center text-[10px] font-semibold text-gray-800 whitespace-nowrap overflow-hidden [writing-mode:vertical-rl]"
+        "flex items-center justify-center text-[10px] font-semibold text-body whitespace-nowrap overflow-hidden [writing-mode:vertical-rl]"
       ),
       styleAttr := gridPlacement(2, 3, box.rowStart, box.rowEnd),
       box.name
@@ -464,8 +464,8 @@ class MilestoneHistoryComponent(
 
   private def monthHeaderCell(month: MonthHeader) = {
     val colorCls =
-      if (month.monthNumber % 2 == 1) " border-black-600 border-x-8 border-y-2 text-black"
-      else " border-black-600 border-y-2 border-x-8 text-black"
+      if (month.monthNumber % 2 == 1) " border-default-strong border-x-8 border-y-2 text-heading"
+      else " border-default-strong border-y-2 border-x-8 text-heading"
     div(
       cls("flex items-center justify-center text-xs font-semibold rounded-md"),
       cls(colorCls),
@@ -498,7 +498,7 @@ class MilestoneHistoryComponent(
             styleAttr := s"background-color: ${e.status.color};"
           )
         case None =>
-          div(cls("w-5.5 h-5.5 rounded-md bg-gray-200"))
+          div(cls("w-5.5 h-5.5 rounded-md bg-neutral-quaternary-medium"))
       }
     )
   }
@@ -555,7 +555,7 @@ class MilestoneHistoryComponent(
       cls("pointer-events-none flex items-center justify-end"),
       styleAttr := s"grid-column: 1 / 2; grid-row: $rowStart / $rowEnd;",
       div(
-        cls("w-2 h-20 bg-gray-300 hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
+        cls("w-2 h-20 bg-neutral-quaternary-medium hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
         cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
         onMouseDown --> (ev => startDrag(ev))
       )

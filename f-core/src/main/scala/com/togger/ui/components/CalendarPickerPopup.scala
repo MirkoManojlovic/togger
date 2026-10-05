@@ -232,7 +232,7 @@ case class CalendarPickerPopup(
     div(
       cls("grid grid-cols-7 gap-1 mb-1"),
       Seq("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
-        .map(label => div(cls("text-xs font-semibold text-center text-gray-500"), label))
+        .map(label => div(cls("text-xs font-semibold text-center text-body-subtle"), label))
     )
 
   private def daysOf(month: LocalDate, pending: Option[LocalDate]): Seq[HtmlElement] = {
@@ -251,8 +251,8 @@ case class CalendarPickerPopup(
     button(
       `type`("button"),
       cls("flex flex-col items-center justify-center gap-1 rounded-base p-1"),
-      cls(if (outOfRange) "cursor-not-allowed text-gray-300" else "cursor-pointer hover:bg-neutral-tertiary-medium"),
-      cls(if (inCurrentMonth && !outOfRange) "text-heading" else if (!outOfRange) "text-gray-400" else ""),
+      cls(if (outOfRange) "cursor-not-allowed text-fg-disabled" else "cursor-pointer hover:bg-neutral-tertiary-medium"),
+      cls(if (inCurrentMonth && !outOfRange) "text-heading" else if (!outOfRange) "text-fg-disabled" else ""),
       cls(if (day == today) "font-bold ring-1 ring-brand-subtle" else ""),
       cls(if (pending.contains(day)) "bg-neutral-tertiary-medium" else ""),
       disabled(outOfRange),

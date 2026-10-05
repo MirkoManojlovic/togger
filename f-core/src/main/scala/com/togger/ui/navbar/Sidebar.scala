@@ -259,7 +259,7 @@ class Sidebar(
                       )
                       val orgRow =
                         if (isOrganizationSelected(organization, page)) orgLink.selectedOrg else orgLink.deselectedOrg
-                      orgRow.amend(cls("border-b-1 border-gray-200")) +:
+                      orgRow.amend(cls("border-b border-default-medium")) +:
                         organization.projects
                           .sortBy(_.name)
                           .map { project =>

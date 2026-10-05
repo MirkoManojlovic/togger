@@ -52,7 +52,7 @@ class LogEntryCalendarComponent(
         // class -- it has to be an inline style instead, same as MilestoneHistoryComponent's dynamic-width grid.
         styleAttr := s"display: grid; grid-template-columns: repeat(${sortedWorkDays.size}, minmax(0, 1fr)); gap: 0.25rem;",
         sortedWorkDays
-          .map(day => div(cls("text-xs font-semibold text-center text-gray-500"), dayAbbrev(day))),
+          .map(day => div(cls("text-xs font-semibold text-center text-body-subtle"), dayAbbrev(day))),
         allDays.map(day => calendarDayCell(day, entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)))
       )
     }
@@ -66,14 +66,14 @@ class LogEntryCalendarComponent(
       else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
 
     div(
-      cls("border-1 border-gray-200 rounded-md cursor-pointer"),
-      cls(if (entries.isEmpty) "bg-white" else "bg-gray-50"),
+      cls("border border-default-medium rounded-md cursor-pointer"),
+      cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
       cls("p-1"),
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
       textAlign.center,
       title(tooltip),
       onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
-      div(cls("text-xs text-gray-500"), tgDateFormater.dayAndMonth(day)),
+      div(cls("text-xs text-body-subtle"), tgDateFormater.dayAndMonth(day)),
       div(cls("flex flex-wrap justify-center gap-0.5"), entries.map(entry => span(entry.status.emoji)))
     )
   }

@@ -393,7 +393,7 @@ class LogEntryComponent(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge),
               textExternalEditor.htmlElement.amend(cls("mb-1")),
-              p(cls("mt-1 mb-4 text-xs text-gray-500"), "@ date  $ status"),
+              p(cls("mt-1 mb-4 text-xs text-body-subtle"), "@ date  $ status"),
               div(TgHtmlButton.primary(buttonLabel))
             )
           )
