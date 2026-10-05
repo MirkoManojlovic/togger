@@ -50,6 +50,8 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
 
+  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllTechStacksPage))
+
   private val passwordMenuLink =
     MenuLink(
       "Change Password",
@@ -69,6 +71,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
   case class NavbarItems(
     organization: ReactiveHtmlElement[HTMLLIElement],
+    settings: ReactiveHtmlElement[HTMLLIElement],
     changePassword: ReactiveHtmlElement[HTMLLIElement],
     logout: ReactiveHtmlElement[HTMLLIElement]
   ) {
@@ -78,6 +81,8 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
         case ChangePasswordPage => NavbarItems.changePasswordSelected
         case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
           NavbarItems.organizationSelected
+        case CreateTechStackPage | ShowAllTechStacksPage | EditTechStackPage(_) =>
+          NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }
     }
@@ -87,6 +92,7 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
     lazy val allDeselected: NavbarItems =
       NavbarItems(
         organization = organizationMenuLink.deselected,
+        settings = settingsMenuLink.deselected,
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
       )
@@ -96,6 +102,9 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
 
     lazy val organizationSelected: NavbarItems =
       NavbarItems.allDeselected.copy(organization = organizationMenuLink.selected)
+
+    lazy val settingsSelected: NavbarItems =
+      NavbarItems.allDeselected.copy(settings = settingsMenuLink.selected)
   }
 
   val element =
@@ -121,7 +130,10 @@ class NavbarComponent(router: TgRouter[FrontendPage], logout: Logout[FrontendPag
               ul(
                 cls("flex items-center font-medium"),
                 children <-- router.currentPageSignal.map(page =>
-                  Seq(NavbarItems.allDeselected.selectItem(page).organization)
+                  Seq(
+                    NavbarItems.allDeselected.selectItem(page).organization,
+                    NavbarItems.allDeselected.selectItem(page).settings
+                  )
                 )
               ),
               div(cls("flex items-center ms-3"), userMenu)

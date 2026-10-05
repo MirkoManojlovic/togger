@@ -129,6 +129,19 @@ class TgRoutes {
         pattern = root / "organization" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
+      Route.static(
+        CreateTechStackPage,
+        root / "settings" / "tech-stack" / "create"
+      ),
+      Route.static(
+        ShowAllTechStacksPage,
+        root / "settings" / "tech-stack" / endOfSegments
+      ),
+      Route(
+        encode = (page: EditTechStackPage) => page.id.toString,
+        decode = (id: String) => EditTechStackPage(UUID.fromString(id)),
+        pattern = root / "settings" / "tech-stack" / "edit" / segment[String] / endOfSegments
+      ),
       Route(
         encode = (page: ShowAllTaskConfigsPage) => page.projectId.toString,
         decode = (projectId: String) => ShowAllTaskConfigsPage(UUID.fromString(projectId)),

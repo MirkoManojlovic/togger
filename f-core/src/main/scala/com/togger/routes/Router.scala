@@ -66,6 +66,12 @@ object Pages {
 
   case class EditOrganizationPage(id: UUID) extends PrivatePage
 
+  case object CreateTechStackPage extends PrivatePage
+
+  case object ShowAllTechStacksPage extends PrivatePage
+
+  case class EditTechStackPage(id: UUID) extends PrivatePage
+
   case class CreateProjectPage(organizationId: UUID) extends PrivatePage
 
   case class ShowProjectsForOrganizationIdTable(id: UUID) extends PrivatePage

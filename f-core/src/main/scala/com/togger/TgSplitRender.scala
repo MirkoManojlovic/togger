@@ -27,6 +27,7 @@ import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskloadconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
+import com.togger.ui.techstack._
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -92,6 +93,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
+  lazy val techStackService = new TechStackFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
@@ -354,6 +356,30 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   localStorage,
+                  toast
+                ).element
+              case CreateTechStackPage =>
+                new CreateTechStackComponent(
+                  techStackService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  toast
+                ).element
+              case ShowAllTechStacksPage =>
+                new ShowAllTechStacksComponent(
+                  techStackService,
+                  router,
+                  spinnerService,
+                  accountService
+                ).element
+              case EditTechStackPage(techStackId) =>
+                new EditTechStackComponent(
+                  techStackService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  techStackId,
                   toast
                 ).element
               case EditProjectPage(projectId) =>
