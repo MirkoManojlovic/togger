@@ -19,7 +19,7 @@ import com.togger.task.{
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl
-import com.togger.techstack.TechStackRepoImpl
+import com.togger.techstack.{TechStackCategoryRepoImpl, TechStackRepoImpl}
 import doobie.ConnectionIO
 
 trait BusinessTgDbSpec extends TgDbSpec {
@@ -44,6 +44,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
         TaskLabelRepoImpl.TASK_LABEL_TABLE,
         TechStackRepoImpl.TECH_STACK_TABLE,
+        TechStackCategoryRepoImpl.TECH_STACK_CATEGORY_TABLE,
         AccountSessionRepo.ACCOUNT_SESSION_TABLE,
         OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE,
         ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE,
