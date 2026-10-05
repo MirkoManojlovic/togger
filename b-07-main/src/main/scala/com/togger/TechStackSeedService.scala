@@ -3,7 +3,14 @@ package com.togger
 import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{TgClockImpl, TgIds}
-import com.togger.techstack.{DefaultProgrammingFramework, DefaultProgrammingLanguage, TechStack, TechStackCategory, TechStackRepoImpl}
+import com.togger.techstack.{
+  DefaultInfrastructure,
+  DefaultProgrammingFramework,
+  DefaultProgrammingLanguage,
+  TechStack,
+  TechStackCategory,
+  TechStackRepoImpl
+}
 import doobie.Transactor
 import doobie.implicits._
 
@@ -42,6 +49,17 @@ class TechStackSeedService(transactor: Transactor[IO]) {
       )
     )
 
-    (languageRows ++ frameworkRows).toList.traverse(techStackRepo.insert).transact(transactor).void
+    val infrastructureRows = DefaultInfrastructure.values.map(i =>
+      TechStack(
+        id = TgIds.UNASSIGNED_UUID,
+        name = i.infrastructureName,
+        description = i.description,
+        category = TechStackCategory.Infrastructure,
+        createdAt = now,
+        updatedAt = now
+      )
+    )
+
+    (languageRows ++ frameworkRows ++ infrastructureRows).toList.traverse(techStackRepo.insert).transact(transactor).void
   }
 }
