@@ -11,7 +11,7 @@ import com.togger.project.ProjectEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgTextArea.TgTextAreaSyntax
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
@@ -142,10 +142,10 @@ class CreateProjectComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val descriptionTextArea = formState.tgTextAreaManualErrorSig(
+  private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
-    errors = EventStream.empty,
-    labelValue = "Project description"
+    labelValue = "Project description",
+    minWidthRem = 0
   )
 
   private val iconInput = formState.tgEmojiPicker(
@@ -185,7 +185,7 @@ class CreateProjectComponent(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
-              descriptionTextArea.htmlElement.amend(cls("mb-4")),
+              descriptionEditor.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
               TgHtmlButton.create(EventStream.fromValue(false))
