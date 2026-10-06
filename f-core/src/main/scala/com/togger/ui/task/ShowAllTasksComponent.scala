@@ -1,7 +1,7 @@
 package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgIds
+import com.togger.common.{TgClock, TgIds, WorkDayCalendar}
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -19,16 +19,14 @@ import com.togger.ui.components.{
   TableSearchComponent,
   TgBadge,
   TgBadgeColor,
-  TgBadgeSize,
-  TgBadgeStyles,
-  TgHtmlTable,
-  TgTooltip
+  TgHtmlTable
 }
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskBadges}
 import com.togger.ui.task.TaskConfigTableSupport.{
   headerIconButtonCls,
   iconButton,
@@ -41,6 +39,7 @@ import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.HTMLTableCellElement
 
+import java.time.DayOfWeek
 import java.util.UUID
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
@@ -53,6 +52,7 @@ class ShowAllTasksComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
   projectId: UUID,
   val toast: Toast,
   modalFactory: ModalFactory
@@ -173,6 +173,49 @@ class ShowAllTasksComponent(
       members = Seq.empty
     )
   )
+
+  private object taskBadges {
+
+    def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+      if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray))
+      else
+        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor))
+
+    def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+      Seq(
+        dto.milestone
+          .flatMap(id => milestonesVar.now().find(_.id == id))
+          .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
+          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray)),
+        BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor),
+        BadgeSpec(dto.taskStatus.name, dto.taskStatus.badgeColor),
+        dto.assignedTo
+          .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray))
+          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray))
+      )
+
+    def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+      Seq(
+        BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray),
+        BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray),
+        daysLeft(dto)
+      ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asEuropeanDate(date)}", TgBadgeColor.Gray))
+  }
+
+  private def daysLeft(dto: FindTaskRespFull): BadgeSpec = {
+    val today = tgClock.currentDate()
+    if (dto.dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
+    else {
+      val left = WorkDayCalendar.countWorkDays(today, dto.dueDate, projectVar.now().workDays.map(DayOfWeek.of))
+      BadgeSpec(s"$left days left", TgBadgeColor.Gray)
+    }
+  }
+
+  private def badgeRow(specs: Seq[BadgeSpec]) =
+    div(
+      cls("flex flex-wrap items-center gap-1.5"),
+      specs.map(spec => TgBadge(text = spec.text, color = spec.color).element)
+    )
 
   spinnerService
     .runWithSpinner {
@@ -365,68 +408,16 @@ class ShowAllTasksComponent(
                             div(
                               cls("flex flex-col gap-1"),
                               div(
-                                cls("flex items-center gap-3"),
-                                TgTooltip(
-                                  trigger = span(
-                                    cls(
-                                      TgBadgeStyles.square(
-                                        dto.priority.badgeColor,
-                                        TgBadgeSize.Default,
-                                        bordered = true,
-                                        extraCls = ""
-                                      )
-                                    ),
-                                    dto.priority.shortCode
-                                  ),
-                                  text = dto.priority.priorityName
-                                ).element,
+                                cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
                                 a(
                                   cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
                                   dto.name,
                                   router.navigateTo(EditTaskPage(dto.projectId, dto.id))
                                 ),
-                                TgBadge(
-                                  text = dto.taskStatus.name,
-                                  color = dto.taskStatus.badgeColor,
-                                  bordered = true
-                                ).element
+                                badgeRow(taskBadges.labelRow(dto))
                               ),
-                              div(
-                                cls("flex items-center gap-1"),
-                                dto.taskLabels.map(label =>
-                                  TgBadge(text = label.name, color = label.badgeColor, bordered = true).element
-                                )
-                              ),
-                              div(
-                                cls("flex items-center gap-1"),
-                                TgBadge(
-                                  text = dto.assignedTo.getOrElse(unassignedDto).fullName,
-                                  color = TgBadgeColor.Gray,
-                                  bordered = true
-                                ).element
-                              ),
-                              div(
-                                cls("flex items-center gap-1"),
-                                TgBadge(
-                                  text = dto.milestone
-                                    .flatMap(id => milestonesVar.now().find(_.id == id).map(_.name))
-                                    .getOrElse("No milestone"),
-                                  color = TgBadgeColor.Gray,
-                                  bordered = true
-                                ).element
-                              ),
-                              div(
-                                cls("flex items-center gap-1"),
-                                TgBadge(
-                                  text = Seq(
-                                    Some(s"Start: ${tgDateFormater.asEuropeanDate(dto.startDate)}"),
-                                    Some(s"Due: ${tgDateFormater.asEuropeanDate(dto.dueDate)}"),
-                                    dto.endDate.map(date => s"End: ${tgDateFormater.asEuropeanDate(date)}")
-                                  ).flatten.mkString(" · "),
-                                  color = TgBadgeColor.Gray,
-                                  bordered = true
-                                ).element
-                              )
+                              badgeRow(taskBadges.primaryRow(dto)),
+                              badgeRow(taskBadges.dateRow(dto))
                             )
                           ),
                           createTd(emptyMod),
