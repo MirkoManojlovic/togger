@@ -332,10 +332,11 @@ class ShowAllTasksComponent(
       onClick --> (event => onSelectClick(id, event.shiftKey))
     )
 
-  /** A click on the row selects it, like its checkbox; checkboxes, badges, buttons and links keep their own click. */
+  /** A click on the row selects it, like its checkbox, and every cell of a selected row is highlighted; checkboxes, badges, buttons and links keep their own click. */
   private def selectOnClick(id: UUID): Seq[Modifier[HtmlElement]] =
     Seq(
       cls("cursor-pointer"),
+      cls("bg-neutral-tertiary-medium") <-- selectedVar.signal.map(_.contains(id)),
       onClick.filter(event => !isInteractive(event.target)) --> (event => onSelectClick(id, event.shiftKey))
     )
 
@@ -558,7 +559,6 @@ class ShowAllTasksComponent(
                           createTd(
                             div(
                               cls("flex items-start gap-2 rounded-base"),
-                              cls("bg-neutral-tertiary-medium") <-- selectedVar.signal.map(_.contains(dto.id)),
                               cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)),
                               selectCheckbox(dto.id),
                               div(
