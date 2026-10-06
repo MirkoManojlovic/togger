@@ -118,6 +118,19 @@ class BulkAddTasks(
       onClick --> (event => onSelectClick(key, event.shiftKey))
     )
 
+  /** A click on the card selects it, like its checkbox; the checkbox and the reorder buttons keep their own click. */
+  private def selectOnClick(key: UUID): Seq[Modifier[HtmlElement]] =
+    Seq(
+      cls("cursor-pointer"),
+      onClick.filter(event => !isInteractive(event.target)) --> (event => onSelectClick(key, event.shiftKey))
+    )
+
+  private def isInteractive(target: dom.EventTarget): Boolean =
+    target match {
+      case element: dom.Element => element.closest("button, input, a") != null
+      case _                    => false
+    }
+
   private val selectAllCheckbox: HtmlElement =
     input(
       `type`("checkbox"),
@@ -361,7 +374,7 @@ class BulkAddTasks(
               state.signal.map(_.lookups).distinct,
               selectCheckbox(key),
               controls(key),
-              dragModifiers(key)
+              dragModifiers(key) ++ selectOnClick(key)
             )
           }
         )
