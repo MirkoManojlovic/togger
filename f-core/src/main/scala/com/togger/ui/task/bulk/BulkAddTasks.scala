@@ -3,46 +3,21 @@ package com.togger.ui.task.bulk
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.auth.AccountService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader}
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
-
-case class BulkState(
-  today: LocalDate,
-  projectId: Option[UUID] = None,
-  projects: Seq[OrganizationProjectResp] = Seq.empty,
-  projectData: TaskProjectData = TaskProjectData(),
-  rawInput: String = "",
-  tasks: Seq[BulkTask] = Seq.empty
-) {
-
-  def workDays: Set[DayOfWeek] =
-    projectId
-      .flatMap(id => projects.find(_.id == id))
-      .map(_.workDays.map(DayOfWeek.of))
-      .getOrElse(WorkDayCalendar.DefaultWorkDays)
-
-  def projectName: Option[String] =
-    projectId.flatMap(id => projects.find(_.id == id)).map(project => s"${project.icon} ${project.name}".trim)
-
-  def defaults: BulkTaskDefaults = BulkTaskDefaults.of(today, workDays, projectData.statuses)
-
-  def lookups: BulkLookups =
-    BulkLookups(projectData.statuses, projectData.labels, projectData.members, projectData.milestones, workDays)
-}
 
 /** Two panels: plain text on the left, the tasks it parses to on the right. */
 class BulkAddTasks(
@@ -52,20 +27,61 @@ class BulkAddTasks(
   accountService: AccountService,
   tgClock: TgClock,
   currentProjectId: Option[UUID],
+  localStorage: LocalStorage,
   toast: Toast,
   onClose: () => Unit
 )(implicit ioRuntime: IORuntime) {
 
   private val ParseDebounce = 150.millis
+  private val DraftSaveDebounce = 300.millis
 
-  private val state = Var(BulkState(today = tgClock.currentDate(), projectId = currentProjectId))
+  /** The unfinished bulk add of this account, saved as it changes so it survives a refresh or closing the modal. */
+  private val draftStore = accountService.get.map(account => new BulkDraftStore(localStorage, account.id))
+
+  private val restoredDraft = draftStore.flatMap(_.load())
+
+  private val state = Var(
+    restoredDraft.fold(BulkState(today = tgClock.currentDate(), projectId = currentProjectId)) { draft =>
+      BulkState(
+        today = tgClock.currentDate(),
+        projectId = draft.projectId.orElse(currentProjectId),
+        rawInput = draft.rawInput,
+        tasks = draft.tasks,
+        awaitingRestoredData = true
+      )
+    }
+  )
+
+  /** Off once the draft is discarded or the tasks are created, so a save still waiting can't bring the draft back. */
+  private val persisting = Var(true)
+
+  private def saveDraft(): Unit =
+    if (persisting.now()) draftStore.foreach(_.save(state.now().draft))
+
+  private def closeKeepingDraft(): Unit = {
+    saveDraft()
+    onClose()
+  }
+
+  private def closeDiscardingDraft(): Unit = {
+    persisting.set(false)
+    draftStore.foreach(_.clear())
+    onClose()
+  }
 
   /** Parsed after a short pause in typing, so a long list isn't re-parsed and re-rendered on every keystroke. */
   private val parsedSignal: Signal[ParsedBulkInput] =
     state.signal.map(_.rawInput).composeChanges(_.debounce(ParseDebounce.toMillis.toInt)).map(TaskBulkInputParser.parse)
 
-  /** Asked before the modal closes with text in it, so a stray Escape or click outside doesn't lose a long list. */
-  private val confirmingClose = Var(false)
+  private sealed trait FooterMode
+  private case object Normal extends FooterMode
+  private case object ConfirmClose extends FooterMode
+  private case object ConfirmClear extends FooterMode
+
+  /** Asked before the modal closes with text in it, or before everything is cleared, so a stray click can't lose a long
+    * list.
+    */
+  private val footerMode = Var[FooterMode](Normal)
 
   private val selected = Var(Set.empty[UUID])
 
@@ -160,7 +176,16 @@ class BulkAddTasks(
     )
 
   private def requestClose(): Unit =
-    if (state.now().rawInput.trim.isEmpty) onClose() else confirmingClose.set(true)
+    if (state.now().draft.isEmpty) closeDiscardingDraft() else footerMode.set(ConfirmClose)
+
+  /** Removes the text and all the tasks made from it, and the saved draft with them. */
+  private def clearAll(): Unit = {
+    state.update(_.copy(rawInput = "", tasks = Seq.empty))
+    selected.set(Set.empty)
+    selectionAnchor.set(None)
+    draftStore.foreach(_.clear())
+    footerMode.set(Normal)
+  }
 
   private val submitBlocker: Signal[Option[String]] =
     state.signal.combineWith(parsedSignal.map(_.hasIssues)).map { case (current, hasIssues) =>
@@ -181,7 +206,8 @@ class BulkAddTasks(
           .flatMap(
             _.fold(
               error => IO(toast.error(error)),
-              created => IO(toast.success(s"${created.body.fold(0)(_.size)} tasks created")) >> IO(onClose())
+              created =>
+                IO(toast.success(s"${created.body.fold(0)(_.size)} tasks created")) >> IO(closeDiscardingDraft())
             )
           )
           .unsafeRunAndForget()
@@ -195,6 +221,13 @@ class BulkAddTasks(
   private val footerButtons: HtmlElement =
     div(
       cls("flex justify-end gap-2"),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        cls("hidden") <-- state.signal.map(_.draft.isEmpty).distinct,
+        "Clear all",
+        onClick.mapToUnit --> (_ => footerMode.set(ConfirmClear))
+      ),
       button(`type`("button"), cls(secondaryButtonCls), "Cancel", onClick.mapToUnit --> (_ => requestClose())),
       button(
         `type`("button"),
@@ -209,21 +242,52 @@ class BulkAddTasks(
       )
     )
 
-  private val discardConfirmation: HtmlElement =
+  private val closeConfirmation: HtmlElement =
     div(
       cls("flex items-center justify-end gap-2"),
-      span(cls("text-sm text-body"), "Discard the tasks you typed?"),
+      span(cls("text-sm text-body"), "Your tasks are saved as a draft."),
       button(
         `type`("button"),
         cls(secondaryButtonCls),
         "Keep editing",
-        onClick.mapToUnit --> (_ => confirmingClose.set(false))
+        onClick.mapToUnit --> (_ => footerMode.set(Normal))
+      ),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        "Discard",
+        onClick.mapToUnit --> (_ => closeDiscardingDraft())
       ),
       button(
         `type`("button"),
         cls(TgHtmlButton.tailwindStandardButton),
-        "Discard",
-        onClick.mapToUnit --> (_ => onClose())
+        "Close, keep draft",
+        onClick.mapToUnit --> (_ => closeKeepingDraft())
+      )
+    )
+
+  private val clearConfirmation: HtmlElement =
+    div(
+      cls("flex items-center justify-end gap-2"),
+      span(
+        cls("text-sm text-body"),
+        child.text <-- state.signal.map(_.tasks.size).distinct.map {
+          case 0     => "Clear the text?"
+          case 1     => "Clear the task and the text?"
+          case count => s"Clear all $count tasks and the text?"
+        }
+      ),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        "Keep",
+        onClick.mapToUnit --> (_ => footerMode.set(Normal))
+      ),
+      button(
+        `type`("button"),
+        cls(TgHtmlButton.tailwindStandardButton),
+        "Clear all",
+        onClick.mapToUnit --> (_ => clearAll())
       )
     )
 
@@ -231,7 +295,11 @@ class BulkAddTasks(
     div(
       cls("mt-4 flex items-center justify-between gap-3"),
       p(cls("text-xs text-body-subtle"), child.text <-- submitBlocker.map(_.getOrElse(""))),
-      child <-- confirmingClose.signal.map(confirming => if (confirming) discardConfirmation else footerButtons)
+      child <-- footerMode.signal.map {
+        case Normal       => footerButtons
+        case ConfirmClose => closeConfirmation
+        case ConfirmClear => clearConfirmation
+      }
     )
 
   private def indexOf(key: UUID): Int = state.now().tasks.indexWhere(_.key == key)
@@ -326,7 +394,7 @@ class BulkAddTasks(
     state.signal.map(_.projects).distinct.map { projects =>
       TgSelectDropdown(
         inputSignal = state.signal.map(_.projectId.map(_.toString).getOrElse("")),
-        inputStateUpdater = Observer[String](id => state.update(_.copy(projectId = Some(UUID.fromString(id))))),
+        inputStateUpdater = Observer[String](id => state.update(_.withProject(UUID.fromString(id)))),
         labelValue = "Project",
         options = projects.map { project =>
           val label = s"${project.icon} ${project.name}".trim
@@ -402,19 +470,23 @@ class BulkAddTasks(
     div(
       cls("fixed inset-0 z-[100] flex items-start justify-center pt-16 px-4 bg-white/90 dark:bg-neutral-primary/90"),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
-      onMountCallback(_ => loadProjects()),
+      onMountCallback { _ =>
+        loadProjects()
+        if (restoredDraft.isDefined) toast.success("Restored your unfinished bulk add")
+      },
+      state.signal.map(_.draft).distinct.changes.debounce(DraftSaveDebounce.toMillis.toInt) --> (_ => saveDraft()),
+      // the last change may still be waiting for its save when the page goes away
+      windowEvents(_.onBeforeUnload) --> (_ => saveDraft()),
       // on the document, not the wrapper, so Escape closes even when focus has dropped to the page body;
       // a popup of the bulk edit (toolbar or badge) closes on Escape first (this listener runs before the popup's
       // own), and Escape on the discard question means keep editing
       documentEvents(_.onKeyDown).filter(_.key == "Escape").filterNot(_ => popups.isPopupOpen).mapToUnit -->
-        (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
+        (_ => if (footerMode.now() != Normal) footerMode.set(Normal) else requestClose()),
       state.signal.map(_.tasks.map(_.key)).distinct --> (keys => selected.update(BulkSelection.prune(_, keys))),
       state.signal.map(_.projectId).distinct --> (projectId => loadProjectData(projectId)),
       parsedSignal --> (parsed => state.update(current => current.copy(tasks = reconciled(current, parsed)))),
       // statuses and work days arrive after the modal opens, and change with the project
-      state.signal.map(_.defaults).distinct.changes --> (_ =>
-        state.update(current => current.copy(tasks = BulkTaskList.reapplyDefaults(current.tasks, current.defaults)))
-      ),
+      state.signal.map(_.defaults).distinct.changes --> (_ => state.update(_.afterDefaultsChange)),
       div(
         cls(ModalStyles.contentBoxCls),
         cls("w-full max-w-6xl"),

@@ -84,6 +84,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         accountService,
         tgClock,
         Sidebar.projectIdForPage(router.currentPageSignal.now()),
+        localStorage,
         toast,
         onClose
       ).element
