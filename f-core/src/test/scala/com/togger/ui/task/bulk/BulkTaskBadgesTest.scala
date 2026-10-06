@@ -43,17 +43,17 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
   "BulkTaskBadges.of" should {
     "show the empty-state emoji for a milestone, labels and assignee that have no default" in {
       val rows = BulkTaskBadges.of(task, lookups)
-      (rows.milestoneRow.head, rows.labelRow, rows.assigneeRow) shouldBe
+      (rows.primaryRow.head, rows.labelRow, rows.primaryRow(3)) shouldBe
         (
           BadgeSpec("🏁", TgBadgeColor.Gray),
           Seq(BadgeSpec("🏷️", TgBadgeColor.Gray)),
-          Seq(BadgeSpec("👤", TgBadgeColor.Gray))
+          BadgeSpec("👤", TgBadgeColor.Gray)
         )
     }
 
     "show priority as its short code and status as its emoji" in {
       val rows = BulkTaskBadges.of(task, lookups)
-      (rows.milestoneRow(1).text, rows.milestoneRow(2)) shouldBe ("p3", BadgeSpec("📚", TgBadgeColor.Gray))
+      (rows.primaryRow(1).text, rows.primaryRow(2)) shouldBe ("p3", BadgeSpec("📚", TgBadgeColor.Gray))
     }
 
     "show dates in full and the work days as a bare number" in {
@@ -68,12 +68,13 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
         assigneeId = Some(member.id)
       )
       val rows = BulkTaskBadges.of(full, lookups)
-      (rows.milestoneRow.head.text, rows.labelRow.map(_.text), rows.assigneeRow.map(_.text)) shouldBe
-        ("Release 1", Seq("🆕", "🐞"), Seq("Ada Lovelace"))
+      (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(3).text) shouldBe
+        ("Release 1", Seq("🆕", "🐞"), "Ada Lovelace")
     }
 
-    "keep the rows in the requested order" in {
-      BulkTaskBadges.of(task, lookups).rows.map(_.size) shouldBe Seq(3, 3, 1, 1)
+    "put the assignee after the status in the first of two rows, and the labels apart from them" in {
+      val rows = BulkTaskBadges.of(task, lookups)
+      (rows.rows.map(_.size), rows.primaryRow.map(_.text)) shouldBe (Seq(4, 3), Seq("🏁", "p3", "📚", "👤"))
     }
   }
 

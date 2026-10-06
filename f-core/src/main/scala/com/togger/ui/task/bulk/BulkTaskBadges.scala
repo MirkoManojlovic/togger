@@ -12,14 +12,13 @@ import java.time.DayOfWeek
 
 case class BadgeSpec(text: String, color: TgBadgeColor)
 
-/** The four rows of a task's badges, in display order. */
+/** A task's badges: the labels go right after the task name, the rest in two rows below it. */
 case class BulkTaskBadgeRows(
-  milestoneRow: Seq[BadgeSpec],
-  dateRow: Seq[BadgeSpec],
   labelRow: Seq[BadgeSpec],
-  assigneeRow: Seq[BadgeSpec]
+  primaryRow: Seq[BadgeSpec],
+  dateRow: Seq[BadgeSpec]
 ) {
-  def rows: Seq[Seq[BadgeSpec]] = Seq(milestoneRow, dateRow, labelRow, assigneeRow)
+  def rows: Seq[Seq[BadgeSpec]] = Seq(primaryRow, dateRow)
 }
 
 /** What a task's ids resolve against: the loaded project data and the project's work days. */
@@ -54,7 +53,8 @@ object BulkTaskBadges {
 
   def of(task: BulkTask, lookups: BulkLookups): BulkTaskBadgeRows =
     BulkTaskBadgeRows(
-      milestoneRow = Seq(milestone(task, lookups), priority(task), status(task, lookups)),
+      labelRow = labels(task, lookups),
+      primaryRow = Seq(milestone(task, lookups), priority(task), status(task, lookups), assignee(task, lookups)),
       dateRow = Seq(
         BadgeSpec(dateFormater.asAmericanDateWithDayAbrv(task.startDate), TgBadgeColor.Gray),
         BadgeSpec(dateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray),
@@ -62,9 +62,7 @@ object BulkTaskBadges {
           WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, lookups.workDays).toString,
           TgBadgeColor.Gray
         )
-      ),
-      labelRow = labels(task, lookups),
-      assigneeRow = Seq(assignee(task, lookups))
+      )
     )
 
   private def milestone(task: BulkTask, lookups: BulkLookups): BadgeSpec =

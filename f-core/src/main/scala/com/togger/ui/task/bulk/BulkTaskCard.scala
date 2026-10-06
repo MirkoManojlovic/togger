@@ -18,26 +18,29 @@ object BulkTaskCard {
     leading: HtmlElement,
     controls: HtmlElement,
     rootModifiers: Modifier[HtmlElement]*
-  ): HtmlElement =
+  ): HtmlElement = {
+    val badges = task.combineWith(lookups).map { case (current, currentLookups) =>
+      BulkTaskBadges.of(current, currentLookups)
+    }
     div(
       cls("rounded-base border border-default-medium bg-neutral-primary p-2.5"),
       rootModifiers,
       div(
         cls("mb-1.5 flex items-start gap-2"),
         leading,
-        p(cls("grow text-sm font-medium text-heading break-words"), child.text <-- task.map(_.name)),
+        div(
+          cls("grow flex flex-wrap items-center gap-x-2 gap-y-1"),
+          p(cls("text-sm font-medium text-heading break-words"), child.text <-- task.map(_.name)),
+          div(cls("flex flex-wrap items-center gap-1.5"), children <-- badges.map(_.labelRow.map(badge)))
+        ),
         controls
       ),
       div(
         cls("flex flex-col gap-1"),
-        children <-- task.combineWith(lookups).map { case (current, currentLookups) =>
-          BulkTaskBadges
-            .of(current, currentLookups)
-            .rows
-            .map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(badge)))
-        }
+        children <-- badges.map(_.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(badge))))
       )
     )
+  }
 
   private def badge(spec: BadgeSpec): HtmlElement = TgBadge(text = spec.text, color = spec.color).element
 }
