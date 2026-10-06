@@ -219,10 +219,7 @@ lazy val backendDatabase = (project in file("b-05-database"))
   .settings(
     name := "backend-database",
     Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
-    Test / executeTests := Def.uncached {
-      (backendAuth / Test / executeTests).value
-      (Test / executeTests).value
-    }, // run backendAuth tests first, never concurrently, same shared postgres
+    Test / executeTests := Def.uncached((Test / executeTests).dependsOn(backendAuth / Test / executeTests).value), // run backendAuth tests first, never concurrently, same shared postgres
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Postgres
