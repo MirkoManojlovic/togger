@@ -338,7 +338,8 @@ class BulkAddTasks(
       label(cls("block mb-2.5 text-sm font-medium text-heading"), "Tasks"),
       textArea(
         cls(tgInputStyle),
-        cls("font-mono min-h-[24rem] resize-y"),
+        // grows with the column, which the grid stretches to the height of the parsed tasks beside it
+        cls("grow font-mono min-h-[24rem] resize-y"),
         placeholder("- Task name 01\n- Task name 02"),
         spellCheck(false),
         autoFocus(true),
