@@ -1,11 +1,13 @@
 package com.togger.ui.task.bulk
 
 import com.togger.common.WorkDayCalendar
+import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskStatusResp, SearchAccountDto}
+import com.togger.milestone.MilestoneStatus
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 class BulkTaskListTest extends AnyWordSpec with Matchers {
@@ -92,6 +94,61 @@ class BulkTaskListTest extends AnyWordSpec with Matchers {
     "reset attributes but keep keys and names" in {
       val edited = ta.copy(priority = TaskPriority.High)
       BulkTaskList.reapplyDefaults(Seq(edited), defaults) shouldBe Seq(ta)
+    }
+  }
+
+  "BulkTaskList.sanitize" should {
+    val projectId = UUID.randomUUID()
+    val status = FindTaskStatusResp(UUID.randomUUID(), projectId, "📚 Backlog", "")
+    val label = FindTaskLabelResp(UUID.randomUUID(), projectId, "🐞 bug", "")
+    val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
+    val milestone = FindMilestoneResp(
+      UUID.randomUUID(),
+      projectId,
+      Instant.EPOCH,
+      UUID.randomUUID(),
+      "Release 1",
+      "",
+      MilestoneStatus.InProgress,
+      LocalDate.of(2026, 10, 12),
+      LocalDate.of(2026, 11, 12),
+      None,
+      Instant.EPOCH
+    )
+    val lookups = BulkLookups(Seq(status), Seq(label), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays)
+    val withStatus = defaults.copy(statusId = Some(status.id))
+
+    "keep what the project still has" in {
+      val kept = ta.copy(
+        statusId = Some(status.id),
+        labelIds = Set(label.id),
+        milestoneId = Some(milestone.id),
+        assigneeId = Some(member.id)
+      )
+      BulkTaskList.sanitize(Seq(kept), lookups, withStatus) shouldBe Seq(kept)
+    }
+
+    "drop labels, a milestone and an assignee the project no longer has" in {
+      val stale = ta.copy(
+        statusId = Some(status.id),
+        labelIds = Set(label.id, UUID.randomUUID()),
+        milestoneId = Some(UUID.randomUUID()),
+        assigneeId = Some(UUID.randomUUID())
+      )
+      val cleaned = BulkTaskList.sanitize(Seq(stale), lookups, withStatus).head
+      (cleaned.labelIds, cleaned.milestoneId, cleaned.assigneeId) shouldBe (Set(label.id), None, None)
+    }
+
+    "give a task whose status is gone the default status" in {
+      val stale = ta.copy(statusId = Some(UUID.randomUUID()))
+      BulkTaskList.sanitize(Seq(stale), lookups, withStatus).head.statusId shouldBe Some(status.id)
+    }
+
+    "leave the other attributes alone" in {
+      val edited = ta.copy(priority = TaskPriority.High, dueDateManual = true)
+      val cleaned = BulkTaskList.sanitize(Seq(edited), lookups, withStatus).head
+      (cleaned.priority, cleaned.dueDateManual, cleaned.startDate) shouldBe
+        (TaskPriority.High, true, edited.startDate)
     }
   }
 }
