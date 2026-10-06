@@ -465,6 +465,8 @@ class CreateTaskQuick(
         current.projects.find(p => current.projectId.contains(p.id)).fold("No project")(projectLabel)
       val priorityClear = current.priority.map(_ => () => state.update(_.copy(priority = None)))
       val statusDto = current.sortedStatuses.find(s => current.effectiveStatusId.contains(s.id))
+      val assigneeClear = current.assigneeId.map(_ => () => state.update(_.copy(assigneeId = None)))
+      val assignee = current.members.find(member => current.effectiveAssigneeId.contains(member.id))
       Seq(
         Some(badge(ProjectDropdown, project, current.projectId.map(_ => () => state.update(_.copy(projectId = None))))),
         Some(
@@ -489,17 +491,9 @@ class CreateTaskQuick(
             current.statusId.map(_ => () => state.update(_.copy(statusId = None))),
             Some(dto.badgeColor)
           )
-        )
+        ),
+        assignee.map(member => badge(AssignedToDropdown, member.fullName, assigneeClear))
       ).flatten
-    }
-
-  private def assigneeBadges: Signal[Seq[HtmlElement]] =
-    state.signal.map { current =>
-      val assigneeClear = current.assigneeId.map(_ => () => state.update(_.copy(assigneeId = None)))
-      current.members
-        .find(member => current.effectiveAssigneeId.contains(member.id))
-        .map(member => badge(AssignedToDropdown, member.fullName, assigneeClear))
-        .toSeq
     }
 
   private def labelRowBadges: Signal[Seq[HtmlElement]] = state.signal.map(labelBadges)
@@ -692,10 +686,12 @@ class CreateTaskQuick(
         ),
         div(
           cls("flex flex-col gap-1.5 mb-4"),
-          badgeRow(primaryBadges, Set(ProjectDropdown, MilestoneDropdown, PriorityDropdown, TaskStatusDropdown)),
-          badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false)),
           badgeRow(labelRowBadges, Set(LabelsDropdown)),
-          badgeRow(assigneeBadges, Set(AssignedToDropdown))
+          badgeRow(
+            primaryBadges,
+            Set(ProjectDropdown, MilestoneDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
+          ),
+          badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false))
         ),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
         div(
