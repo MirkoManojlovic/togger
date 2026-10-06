@@ -28,6 +28,7 @@ import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskloadconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
+import com.togger.ui.task.bulk.BulkAddTasks
 import com.togger.ui.projectlabel._
 import com.togger.ui.theme.ThemeStore
 import com.togger.ui.toast.{Toast, ToastMessagesService}
@@ -64,6 +65,29 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         onClose
       ).element
   )
+  val elementForBulkCreate = div()
+  lazy val taskProjectDataLoader = new TaskProjectDataLoader(
+    taskStatusService,
+    taskLabelService,
+    projectService,
+    milestoneService,
+    organizationService,
+    accountService
+  )
+  lazy val bulkCreateHost = new QuickCreateHost(
+    elementForBulkCreate,
+    onClose =>
+      new BulkAddTasks(
+        taskService,
+        taskProjectDataLoader,
+        spinnerService,
+        accountService,
+        tgClock,
+        Sidebar.projectIdForPage(router.currentPageSignal.now()),
+        toast,
+        onClose
+      ).element
+  )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
@@ -92,6 +116,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       sidebarCollapseStore,
       themeStore,
       () => quickCreateHost.open(),
+      () => bulkCreateHost.open(),
       toast
     )
 
@@ -152,6 +177,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         toastHolder,
         elementForModal,
         elementForQuickCreate,
+        elementForBulkCreate,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -516,6 +542,7 @@ case class NavigationSelection(
   sidebarCollapseStore: SidebarCollapseStore,
   themeStore: ThemeStore,
   onQuickCreate: () => Unit,
+  onBulkCreate: () => Unit,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
 
@@ -534,6 +561,7 @@ case class NavigationSelection(
               spinnerService,
               sidebarCollapseStore,
               onQuickCreate,
+              onBulkCreate,
               toast
             ).element
           )

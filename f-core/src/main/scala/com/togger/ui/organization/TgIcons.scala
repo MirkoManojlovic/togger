@@ -479,6 +479,10 @@ object TgIcons {
   def taskListIcon(className: String) =
     strokeIcon(className, "M11 7h9m-9 10h9M3 7.5 4.5 9 7.5 6M3 16.5 4.5 18l3-3")
 
+  /** A list with a plus: several things added at once. */
+  def bulkAddIcon(className: String) =
+    strokeIcon(className, "M9 8h10M9 12h10M9 16h5M4.99 8H5m-.02 4h.01m0 4H5m12-.5v5m-2.5-2.5h5")
+
   def copyIcon(className: String) =
     strokeIcon(
       className,
