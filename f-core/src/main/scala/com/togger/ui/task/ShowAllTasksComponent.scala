@@ -419,6 +419,10 @@ class ShowAllTasksComponent(
       close()
     }
 
+  /** One tall row spanning every column, so the table keeps its size when no task matches. */
+  private def noTasksRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
+    Seq(td(colSpan(3), cls("px-6 py-32 text-center text-lg text-body"), "No tasks found"))
+
   val element = {
     div(
       visibleRowsSignal.map(_.map(_.id)) --> visibleIdsVar.writer,
@@ -552,7 +556,7 @@ class ShowAllTasksComponent(
                   striped = false
                 )(
                   visibleRowsSignal.map(
-                    _.map { dto =>
+                    rows => if (rows.isEmpty) Seq(noTasksRow) else rows.map { dto =>
                         Seq(
                           createTd(
                             div(
