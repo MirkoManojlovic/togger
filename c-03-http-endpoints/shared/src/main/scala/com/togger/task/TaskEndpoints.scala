@@ -4,7 +4,14 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
 import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{CreateTaskAndLinksReq, FindTaskResp, FindTaskRespFull, TaskVersionDto, UpdateTaskReq}
+import com.togger.dto.{
+  CreateTaskAndLinksReq,
+  CreateTasksBulkReq,
+  FindTaskResp,
+  FindTaskRespFull,
+  TaskVersionDto,
+  UpdateTaskReq
+}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -21,6 +28,12 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath)
       .in(jsonBody[CreateTaskAndLinksReq])
       .out(jsonBody[TgJsonSuccess[FindTaskResp]])
+
+  val saveBulkEndpoint: TgSecuredEndpoint[CreateTasksBulkReq, Seq[FindTaskResp]] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "bulk")
+      .in(jsonBody[CreateTasksBulkReq])
+      .out(jsonBody[TgJsonSuccess[Seq[FindTaskResp]]])
 
   val findByIdEndpoint: TgSecuredEndpoint[UUID, FindTaskResp] =
     securedEndpoint.endpoint.get
