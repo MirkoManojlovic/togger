@@ -11,6 +11,7 @@ import com.togger.controllers.project.ProjectService
 import com.togger.dto._
 import com.togger.task._
 
+import java.time.Instant
 import java.util.UUID
 
 class TaskController(
@@ -89,65 +90,97 @@ class TaskController(
       accountTypeId = account.accountTypeId
     )
 
+  private def newTaskOf(taskDto: CreateTaskReq, createdBy: UUID, createdAt: Instant): (Task, TaskVersion) = {
+    val task = Task(id = UUID.randomUUID(), projectId = taskDto.projectId, createdBy = createdBy, createdAt = createdAt)
+    val firstVersion = TaskVersion(
+      version = UUID.randomUUID(),
+      taskId = task.id,
+      name = taskDto.name,
+      description = taskDto.description,
+      assignedTo = taskDto.assignedTo,
+      closedBy = None,
+      taskStatusId = taskDto.taskStatusId,
+      priority = taskDto.priority,
+      milestone = taskDto.milestone,
+      startDate = taskDto.startDate,
+      dueDate = taskDto.dueDate,
+      endDate = None,
+      createdAt = createdAt,
+      updatedAt = createdAt
+    )
+    (task, firstVersion)
+  }
+
+  private def newLinksOf(linksDto: Seq[CreateLinkReq], now: Instant): Seq[LinkWithOneVersion] =
+    linksDto.map { linkDto =>
+      val linkId = UUID.randomUUID()
+      LinkWithOneVersion(
+        link = Link(id = linkId, taskId = UUID.randomUUID(), createdAt = now),
+        version = LinkVersion(
+          version = UUID.randomUUID(),
+          linkId = linkId,
+          name = linkDto.name,
+          url = linkDto.url,
+          createdAt = now,
+          updatedAt = now
+        )
+      )
+    }
+
+  private def savedDtoOf(
+    saved: (TaskWithOneVersion, List[LinkWithOneVersion]),
+    labelIds: Seq[UUID]
+  ): FindTaskResp = {
+    val (savedTask, savedLinks) = saved
+    FindTaskResp(
+      task = toTaskDto(savedTask.task, savedTask.version, labelIds),
+      links = savedLinks.map(link => toLinkDto(link.link, link.version)),
+      logEntries = Seq.empty
+    )
+  }
+
   val save = saveEndpoint.serverLogic { auth => dto =>
     val taskDto = dto.task
-    val linksDto = dto.links
 
     projectService.findById(taskDto.projectId).flatMap { case (project, _, _) =>
       dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None, project.workDays) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
         case Right(_) =>
-          val task = Task(
-            id = UUID.randomUUID(),
-            projectId = taskDto.projectId,
-            createdBy = auth.body.get.id,
-            createdAt = taskDto.createdAt
-          )
+          val (task, firstVersion) = newTaskOf(taskDto, auth.body.get.id, taskDto.createdAt)
+          val newLinks = newLinksOf(dto.links, tgClock.currentInstant)
 
-          val firstVersion = TaskVersion(
-            version = UUID.randomUUID(),
-            taskId = task.id,
-            name = taskDto.name,
-            description = taskDto.description,
-            assignedTo = taskDto.assignedTo,
-            closedBy = None,
-            taskStatusId = taskDto.taskStatusId,
-            priority = taskDto.priority,
-            milestone = taskDto.milestone,
-            startDate = taskDto.startDate,
-            dueDate = taskDto.dueDate,
-            endDate = None,
-            createdAt = taskDto.createdAt,
-            updatedAt = taskDto.createdAt
-          )
-
-          val now = tgClock.currentInstant
-          val newLinks =
-            linksDto.map { linkDto =>
-              val linkId = UUID.randomUUID()
-              LinkWithOneVersion(
-                link = Link(id = linkId, taskId = UUID.randomUUID(), createdAt = now),
-                version = LinkVersion(
-                  version = UUID.randomUUID(),
-                  linkId = linkId,
-                  name = linkDto.name,
-                  url = linkDto.url,
-                  createdAt = now,
-                  updatedAt = now
-                )
-              )
-            }
-
-          taskService.createTask(task, firstVersion, newLinks, taskDto.taskLabelIds).map {
-            case (savedTask, savedLinks) =>
-              val savedDto = FindTaskResp(
-                task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
-                links = savedLinks.map(link => toLinkDto(link.link, link.version)),
-                logEntries = Seq.empty
-              )
-              TgJsonSuccess.justBodyRight(savedDto)
-          }
+          taskService
+            .createTask(task, firstVersion, newLinks, taskDto.taskLabelIds)
+            .map(saved => TgJsonSuccess.justBodyRight(savedDtoOf(saved, taskDto.taskLabelIds)))
       }
+    }
+  }
+
+  /** Creates the tasks in one transaction, in list order. Each gets a creation time a millisecond after the one before,
+    * so the order of the list is the order in which the tasks were created.
+    */
+  val saveBulk = saveBulkEndpoint.serverLogic { auth => dto =>
+    BulkTaskValidation.validate(dto) match {
+      case Left(errors) => IO.pure(errors.toBadRequestLeft[Seq[FindTaskResp]])
+      case Right(_) =>
+        projectService.findById(dto.tasks.head.task.projectId).flatMap { case (project, _, _) =>
+          BulkTaskValidation.validateDates(dto, project.workDays, dateRangeValidation) match {
+            case Left(errors) => IO.pure(errors.toBadRequestLeft[Seq[FindTaskResp]])
+            case Right(_) =>
+              val now = tgClock.currentInstant
+              val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
+                val (task, firstVersion) =
+                  newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
+                NewTask(task, firstVersion, newLinksOf(taskAndLinks.links, now), taskAndLinks.task.taskLabelIds)
+              }
+
+              taskService.createTasks(newTasks).map { saved =>
+                TgJsonSuccess.justBodyRight(saved.zip(dto.tasks).map { case (savedTask, taskAndLinks) =>
+                  savedDtoOf(savedTask, taskAndLinks.task.taskLabelIds)
+                })
+              }
+          }
+        }
     }
   }
 

@@ -80,6 +80,7 @@ object TgServer {
             taskController.findById,
             taskController.findByProjectId,
             taskController.save,
+            taskController.saveBulk,
             taskController.update,
             taskController.delete,
             taskController.listVersions,

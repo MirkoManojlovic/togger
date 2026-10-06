@@ -11,6 +11,14 @@ import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
 
+/** Everything one new task is made of, before it is saved. */
+case class NewTask(
+  task: Task,
+  firstVersion: TaskVersion,
+  newLinks: Seq[LinkWithOneVersion],
+  labelIds: Seq[UUID] = Seq.empty
+)
+
 class TaskService(
   taskRepo: TaskRepo,
   taskVersionRepo: TaskVersionRepo,
@@ -27,9 +35,19 @@ class TaskService(
     firstVersion: TaskVersion,
     newLinks: Seq[LinkWithOneVersion],
     labelIds: Seq[UUID] = Seq.empty
-  ): IO[(TaskWithOneVersion, List[LinkWithOneVersion])] = {
+  ): IO[(TaskWithOneVersion, List[LinkWithOneVersion])] =
+    insertTask(NewTask(task, firstVersion, newLinks, labelIds)).transact(transactor)
+
+  /** Creates the tasks in list order in one transaction: if any of them fails, none is created. */
+  def createTasks(newTasks: Seq[NewTask]): IO[List[(TaskWithOneVersion, List[LinkWithOneVersion])]] = {
+    logger.info(s"Creating ${newTasks.size} tasks in one transaction")
+    newTasks.toList.traverse(insertTask).transact(transactor)
+  }
+
+  private def insertTask(newTask: NewTask): ConnectionIO[(TaskWithOneVersion, List[LinkWithOneVersion])] = {
+    val NewTask(task, firstVersion, newLinks, labelIds) = newTask
     logger.info(s"Creating a ${sp(task)}, with ${sp(firstVersion)} and ${sp(newLinks)}")
-    (for {
+    for {
       savedTask <- taskRepo.insert(task)
       savedVersion <- taskVersionRepo.insert(firstVersion.copy(taskId = savedTask.id))
       savedLinks <- insertLinksWithVersions(savedTask.id, newLinks)
@@ -39,7 +57,7 @@ class TaskService(
     } yield {
       logger.info(s"Task created successfully ${sp(savedTask)} with links ${sp(savedLinks)}")
       TaskWithOneVersion(savedTask, savedVersion) -> savedLinks
-    }).transact(transactor)
+    }
   }
 
   private def insertLinksWithVersions(
