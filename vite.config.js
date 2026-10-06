@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import { spawnSync } from "child_process";
-import { resolve } from 'path';
+import { existsSync } from "fs";
+import { isAbsolute, resolve } from 'path';
 import tailwindcss from '@tailwindcss/vite';
 
 const host = process.env.TAURI_DEV_HOST;
@@ -11,7 +12,9 @@ function isDev() {
 }
 
 function printSbtTask(task) {
-  const args = ["--error", "--batch", `print ${task}`];
+  // sbt 2 runs through a thin client that prints status lines (and nothing at all against a warm server), so
+  // the client is disabled and the output directory is picked out of whatever sbt prints
+  const args = ["-Dsbt.client=false", "--error", "--batch", `print ${task}`];
   const options = {
     stdio: [
       "pipe", // StdIn.
@@ -33,7 +36,14 @@ function printSbtTask(task) {
   if (result.status !== 0)
     throw new Error(`sbt process failed with exit code ${result.status}`);
 
-  return result.stdout.toString("utf8").trim();
+  const outputDir = result.stdout
+    .toString("utf8")
+    .split("\n")
+    .map((line) => line.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").trim())
+    .find((line) => isAbsolute(line) && existsSync(line));
+  if (!outputDir) throw new Error(`sbt did not print an existing directory for ${task}`);
+
+  return outputDir;
 }
 
 const linkOutputDir = printSbtTask(
