@@ -362,7 +362,14 @@ class ShowAllTasksComponent(
         cls("flex items-center gap-2 text-sm text-body"),
         span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected"))
       ),
-      editToolbar.element
+      editToolbar.element,
+      button(
+        `type`("button"),
+        cls("px-2.5 py-1 text-xs font-medium rounded-base border border-red-600 text-red-600"),
+        cls("hover:bg-red-600 hover:text-white cursor-pointer"),
+        "Delete",
+        onClick.mapToUnit --> (_ => deleteSelected())
+      )
     ).amend(cls("hidden") <-- selectedVar.signal.map(_.isEmpty))
 
   spinnerService
@@ -417,6 +424,37 @@ class ShowAllTasksComponent(
         }
         .unsafeRunAndForget()
       close()
+    }
+
+  /** Deletes the selected tasks one by one; at the first failure it stops, what was deleted is gone from the table. */
+  private def deleteSelected(): Unit = {
+    val doomed = stateFormVar.now().filter(dto => selectedVar.now().contains(dto.id)).toList
+    if (doomed.isEmpty) return
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete ${doomed.size} tasks and all their log entries and links?"),
+      title = "Delete tasks",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete them",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService.runWithSpinner(deleteAll(doomed, doomed.size, 0)).unsafeRunAndForget()
+      close()
+    }
+  }
+
+  private def deleteAll(pending: List[FindTaskRespFull], total: Int, deleted: Int): IO[Unit] =
+    pending match {
+      case Nil => IO(toast.success(s"$deleted tasks deleted"))
+      case dto :: rest =>
+        taskService.deleteTask(dto.id).flatMap {
+          case Left(error) =>
+            IO {
+              toast.error(error)
+              if (deleted > 0) toast.success(s"$deleted of $total tasks deleted")
+            }
+          case Right(_) =>
+            IO(stateFormVar.update(_.filterNot(_.id == dto.id))) >> deleteAll(rest, total, deleted + 1)
+        }
     }
 
   /** One tall row spanning every column, so the table keeps its size when no task matches. */
