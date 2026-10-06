@@ -24,6 +24,13 @@ known tables before and after each test, so specs in `b-auth-app-core` run with 
 
 ## Common commands
 
+The build runs on sbt 2.x (Scala 3 build definition, project code still Scala 2.13). Things that differ from sbt 1:
+`%%` already carries the platform suffix (no `%%%`; JVM-only libraries in a cross project go in `.jvmSettings`),
+`test` only re-runs changed/failed tests (use `testFull`), outputs live under `target/out/`, and the thin client can
+hide output, so use `sbt -Dsbt.client=false -batch "<command>"` for scripted runs (delete a stale
+`project/target/active.json` if the client reports "server connection closed"). Frontend tests need `node` on PATH
+(devenv shell).
+
 There is no root/aggregate sbt project or command aliases in `build.sbt` — target individual projects by their
 `lazy val` name (not the `name :=` string), e.g.:
 
