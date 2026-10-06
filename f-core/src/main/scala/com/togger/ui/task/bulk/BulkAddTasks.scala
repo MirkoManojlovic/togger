@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.components.button.TgHtmlButton
 import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
 import com.togger.ui.modal.ModalStyles
@@ -214,13 +213,20 @@ class BulkAddTasks(
     }
   }
 
+  // the shared standard button is full width, which squeezes its neighbours until their text wraps, so the footer
+  // has small content-sized buttons of its own
   private val secondaryButtonCls =
     "text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium " +
-      "font-medium rounded-base text-sm px-4 py-2.5 cursor-pointer"
+      "font-medium leading-5 rounded-base text-xs px-3 py-1.5 whitespace-nowrap cursor-pointer"
+
+  private val primaryButtonCls =
+    "text-white bg-brand border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium " +
+      "shadow-xs font-medium leading-5 rounded-base text-xs px-3 py-1.5 whitespace-nowrap cursor-pointer " +
+      "focus:outline-none"
 
   private val footerButtons: HtmlElement =
     div(
-      cls("flex justify-end gap-2"),
+      cls("flex shrink-0 justify-end gap-2"),
       button(
         `type`("button"),
         cls(secondaryButtonCls),
@@ -231,7 +237,7 @@ class BulkAddTasks(
       button(`type`("button"), cls(secondaryButtonCls), "Cancel", onClick.mapToUnit --> (_ => requestClose())),
       button(
         `type`("button"),
-        cls(TgHtmlButton.tailwindStandardButton),
+        cls(primaryButtonCls),
         cls("opacity-50 cursor-not-allowed") <-- submitBlocker.map(_.isDefined),
         disabled <-- submitBlocker.map(_.isDefined),
         child.text <-- state.signal.map(_.tasks.size).distinct.map {
@@ -244,7 +250,7 @@ class BulkAddTasks(
 
   private val closeConfirmation: HtmlElement =
     div(
-      cls("flex items-center justify-end gap-2"),
+      cls("flex flex-wrap items-center justify-end gap-2"),
       span(cls("text-sm text-body"), "Your tasks are saved as a draft."),
       button(
         `type`("button"),
@@ -260,7 +266,7 @@ class BulkAddTasks(
       ),
       button(
         `type`("button"),
-        cls(TgHtmlButton.tailwindStandardButton),
+        cls(primaryButtonCls),
         "Close, keep draft",
         onClick.mapToUnit --> (_ => closeKeepingDraft())
       )
@@ -268,7 +274,7 @@ class BulkAddTasks(
 
   private val clearConfirmation: HtmlElement =
     div(
-      cls("flex items-center justify-end gap-2"),
+      cls("flex flex-wrap items-center justify-end gap-2"),
       span(
         cls("text-sm text-body"),
         child.text <-- state.signal.map(_.tasks.size).distinct.map {
@@ -285,7 +291,7 @@ class BulkAddTasks(
       ),
       button(
         `type`("button"),
-        cls(TgHtmlButton.tailwindStandardButton),
+        cls(primaryButtonCls),
         "Clear all",
         onClick.mapToUnit --> (_ => clearAll())
       )
@@ -293,8 +299,8 @@ class BulkAddTasks(
 
   private val footer: HtmlElement =
     div(
-      cls("mt-4 flex items-center justify-between gap-3"),
-      p(cls("text-xs text-body-subtle"), child.text <-- submitBlocker.map(_.getOrElse(""))),
+      cls("mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2"),
+      p(cls("grow min-w-0 text-xs text-body-subtle"), child.text <-- submitBlocker.map(_.getOrElse(""))),
       child <-- footerMode.signal.map {
         case Normal       => footerButtons
         case ConfirmClose => closeConfirmation
