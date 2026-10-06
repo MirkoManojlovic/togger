@@ -332,10 +332,16 @@ class BulkAddTasks(
       ).htmlElement
     }
 
+  // One grid for both panels, so the row under the "Parsed tasks" label (select all and the bulk edit toolbar, which
+  // only that panel has) makes the text area start where the parsed tasks start, whatever height that row has. On a
+  // narrow screen the cells just stack in this order.
+  private val labelCls = "block mb-2.5 text-sm font-medium text-heading"
+
+  private val tasksLabel = label(cls(labelCls), cls("md:col-start-1 md:row-start-1"), "Tasks")
+
   private val editor =
     div(
-      cls("flex flex-col"),
-      label(cls("block mb-2.5 text-sm font-medium text-heading"), "Tasks"),
+      cls("mb-4 md:mb-0 flex flex-col md:col-start-1 md:row-start-3"),
       textArea(
         cls(tgInputStyle),
         // grows with the column, which the grid stretches to the height of the parsed tasks beside it
@@ -354,31 +360,35 @@ class BulkAddTasks(
       )
     )
 
+  private val parsedLabel = label(cls(labelCls), cls("md:col-start-2 md:row-start-1"), "Parsed tasks")
+
+  private val selectionRow =
+    div(
+      cls("md:col-start-2 md:row-start-2"),
+      child.maybe <-- state.signal.map(_.tasks.nonEmpty).distinct.map(Option.when(_)(selectionBar))
+    )
+
   private val preview =
     div(
-      cls("flex flex-col"),
-      label(cls("block mb-2.5 text-sm font-medium text-heading"), "Parsed tasks"),
-      child.maybe <-- state.signal.map(_.tasks.nonEmpty).distinct.map(Option.when(_)(selectionBar)),
+      cls("md:col-start-2 md:row-start-3"),
+      cls("min-h-[24rem] max-h-[32rem] overflow-y-auto rounded-base border border-default-medium p-3"),
+      child.maybe <-- state.signal
+        .map(_.tasks.isEmpty)
+        .distinct
+        .map(isEmpty =>
+          Option.when(isEmpty)(p(cls("text-sm text-body-subtle"), "Tasks you type on the left show up here"))
+        ),
       div(
-        cls("min-h-[24rem] max-h-[32rem] overflow-y-auto rounded-base border border-default-medium p-3"),
-        child.maybe <-- state.signal
-          .map(_.tasks.isEmpty)
-          .distinct
-          .map(isEmpty =>
-            Option.when(isEmpty)(p(cls("text-sm text-body-subtle"), "Tasks you type on the left show up here"))
-          ),
-        div(
-          cls("flex flex-col gap-2"),
-          children <-- state.signal.map(_.tasks).split(_.key) { (key, _, task) =>
-            BulkTaskCard.element(
-              task,
-              state.signal.map(_.lookups).distinct,
-              selectCheckbox(key),
-              controls(key),
-              dragModifiers(key) ++ selectOnClick(key)
-            )
-          }
-        )
+        cls("flex flex-col gap-2"),
+        children <-- state.signal.map(_.tasks).split(_.key) { (key, _, task) =>
+          BulkTaskCard.element(
+            task,
+            state.signal.map(_.lookups).distinct,
+            selectCheckbox(key),
+            controls(key),
+            dragModifiers(key) ++ selectOnClick(key)
+          )
+        }
       )
     )
 
@@ -414,7 +424,14 @@ class BulkAddTasks(
           )
         ),
         div(cls("mb-4 max-w-sm"), child <-- projectPicker),
-        div(cls("grid grid-cols-1 md:grid-cols-2 gap-4"), editor, preview),
+        div(
+          cls("grid grid-cols-1 md:grid-cols-2 md:gap-x-4"),
+          tasksLabel,
+          editor,
+          parsedLabel,
+          selectionRow,
+          preview
+        ),
         BulkSummaryBar.element(
           summary = state.signal.map(current => BulkSummary.of(current.tasks, current.workDays)).distinct,
           lookups = state.signal.map(_.lookups).distinct,
