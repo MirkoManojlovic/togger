@@ -52,7 +52,7 @@ object BulkTaskCard {
   }
 
   /** A badge that has an attribute is a button that edits that attribute of this task only. */
-  private def row(key: UUID, specs: Seq[BadgeSpec], popups: BulkEditPopups): Seq[HtmlElement] =
+  def row(key: UUID, specs: Seq[BadgeSpec], popups: BulkEditPopups): Seq[HtmlElement] =
     BulkTaskBadges.grouped(specs).map { group =>
       group.head.kind match {
         case Some(kind) =>

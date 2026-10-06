@@ -26,7 +26,19 @@ import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessa
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskBadges}
+import com.togger.ui.task.bulk.{
+  BadgeSpec,
+  BulkEdit,
+  BulkEditContext,
+  BulkEditKind,
+  BulkEditPopups,
+  BulkEditToolbar,
+  BulkLookups,
+  BulkSelection,
+  BulkTaskBadges,
+  BulkTaskCard,
+  BulkTaskEditor
+}
 import com.togger.ui.task.TaskConfigTableSupport.{
   headerIconButtonCls,
   iconButton,
@@ -37,7 +49,9 @@ import com.togger.ui.task.TaskConfigTableSupport.{
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
+import cats.effect.IO
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -121,7 +135,7 @@ class ShowAllTasksComponent(
     debounceMs = 0
   )
 
-  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
+  private val filteredRowsSignal: Signal[Seq[FindTaskRespFull]] =
     stateFormVar.signal
       .combineWith(
         statusFilterSelectedIdsVar.signal,
@@ -162,6 +176,11 @@ class ShowAllTasksComponent(
             dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
           )
       }
+  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
+    filteredRowsSignal.combineWith(statusesVar.signal).map { case (rows, statuses) =>
+      rows.sortBy(dto => statuses.idToOrder(dto.taskStatus.id))
+    }
+
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
       id = UUID.randomUUID(),
@@ -177,27 +196,35 @@ class ShowAllTasksComponent(
   private object taskBadges {
 
     def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
-      if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray))
+      if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
       else
-        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor))
+        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor, Some(BulkEditKind.Labels)))
 
     def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(
         dto.milestone
           .flatMap(id => milestonesVar.now().find(_.id == id))
-          .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
-          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray)),
-        BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor),
-        BadgeSpec(dto.taskStatus.name, dto.taskStatus.badgeColor),
+          .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone))),
+        BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor, Some(BulkEditKind.Priority)),
+        BadgeSpec(dto.taskStatus.name, dto.taskStatus.badgeColor, Some(BulkEditKind.Status)),
         dto.assignedTo
-          .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray))
-          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray))
+          .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
+          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
       )
 
     def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(
-        BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray),
-        BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray),
+        BadgeSpec(
+          tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+          TgBadgeColor.Gray,
+          Some(BulkEditKind.StartDate)
+        ),
+        BadgeSpec(
+          tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate),
+          TgBadgeColor.Gray,
+          Some(BulkEditKind.DueDate)
+        ),
         daysLeft(dto)
       ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asEuropeanDate(date)}", TgBadgeColor.Gray))
   }
@@ -211,11 +238,132 @@ class ShowAllTasksComponent(
     }
   }
 
-  private def badgeRow(specs: Seq[BadgeSpec]) =
+  private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec]) =
     div(
       cls("flex flex-wrap items-center gap-1.5"),
-      specs.map(spec => TgBadge(text = spec.text, color = spec.color).element)
+      BulkTaskCard.row(taskId, specs, popups)
     )
+
+  private def lookupsNow(): BulkLookups =
+    BulkLookups(
+      statuses = statusesVar.now().taskStatuses,
+      labels = taskLabelsVar.now().taskLabels,
+      members = projectVar.now().members,
+      milestones = milestonesVar.now(),
+      workDays = projectVar.now().workDays.map(DayOfWeek.of)
+    )
+
+  private val selectedVar = Var(Set.empty[UUID])
+  private val selectionAnchor = Var(Option.empty[UUID])
+  private val visibleIdsVar = Var(Seq.empty[UUID])
+
+  /** Tasks whose update is in flight; they can't be edited again until it is done, so a second edit never sends the
+    * labels or dates the first one has not saved yet.
+    */
+  private val savingVar = Var(Set.empty[UUID])
+
+  private val popups: BulkEditPopups = new BulkEditPopups(
+    context = scope => {
+      val edited = scope.fold(selectedVar.now())(Set(_))
+      BulkEditContext(
+        lookupsNow(),
+        stateFormVar.now().filter(dto => edited.contains(dto.id)).map(ShowAllTasksBulkMapping.toBulkTask),
+        tgClock.currentDate()
+      )
+    },
+    onEdit = saveEdit
+  )
+
+  private val editToolbar = new BulkEditToolbar(popups)
+
+  /** Saves the edit for the task, or for the selected tasks, one request each. A task the edit would not change (a date
+    * that is not a work day, the value it already has) is left alone with no request.
+    */
+  private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
+    val lookups = lookupsNow()
+    val edited = scope.fold(selectedVar.now())(Set(_)) -- savingVar.now()
+    val changed = stateFormVar.now().filter(dto => edited.contains(dto.id)).flatMap { dto =>
+      val before = ShowAllTasksBulkMapping.toBulkTask(dto)
+      val after = BulkTaskEditor(Seq(before), Set(dto.id), edit, lookups.workDays).head
+      Option.when(after != before)(ShowAllTasksBulkMapping.applyTo(dto, after, lookups))
+    }
+    if (changed.isEmpty) return
+    savingVar.update(_ ++ changed.map(_.id))
+    spinnerService
+      .runWithSpinner(saveAll(changed.toList, changed.size, 0))
+      .guarantee(IO(savingVar.update(_ -- changed.map(_.id))))
+      .unsafeRunAndForget()
+  }
+
+  /** Stops at the first failure: what was saved stays in the table, the rest stays as it was. */
+  private def saveAll(pending: List[FindTaskRespFull], total: Int, saved: Int): IO[Unit] =
+    pending match {
+      case Nil =>
+        IO(if (total > 1) toast.success(s"$saved tasks updated"))
+      case updated :: rest =>
+        taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(updated, tgClock.currentInstant)).flatMap {
+          case Left(error) =>
+            IO {
+              toast.error(error)
+              if (saved > 0) toast.success(s"$saved of $total tasks updated")
+            }
+          case Right(_) =>
+            IO(stateFormVar.update(_.map(row => if (row.id == updated.id) updated else row))) >>
+              saveAll(rest, total, saved + 1)
+        }
+    }
+
+  private def onSelectClick(id: UUID, shift: Boolean): Unit = {
+    val (updated, anchor) =
+      BulkSelection.click(selectedVar.now(), visibleIdsVar.now(), selectionAnchor.now(), id, shift)
+    selectedVar.set(updated)
+    selectionAnchor.set(anchor)
+  }
+
+  private val checkboxCls = "w-4 h-4 border border-default-strong rounded-xs bg-neutral-secondary-strong cursor-pointer"
+
+  private def selectCheckbox(id: UUID): HtmlElement =
+    input(
+      `type`("checkbox"),
+      cls(checkboxCls),
+      cls("mt-1 shrink-0"),
+      aria.label("Select task"),
+      checked <-- selectedVar.signal.map(_.contains(id)),
+      onClick --> (event => onSelectClick(id, event.shiftKey))
+    )
+
+  /** A click on the row selects it, like its checkbox; checkboxes, badges, buttons and links keep their own click. */
+  private def selectOnClick(id: UUID): Seq[Modifier[HtmlElement]] =
+    Seq(
+      onClick.filter(event => !isInteractive(event.target)) --> (event => onSelectClick(id, event.shiftKey))
+    )
+
+  private def isInteractive(target: dom.EventTarget): Boolean =
+    target match {
+      case element: dom.Element => element.closest("button, input, a") != null
+      case _                    => false
+    }
+
+  private val selectAllCheckbox: HtmlElement =
+    input(
+      `type`("checkbox"),
+      cls(checkboxCls),
+      aria.label("Select all tasks"),
+      checked <-- selectedVar.signal.combineWith(visibleIdsVar.signal).map { case (chosen, ids) =>
+        ids.nonEmpty && ids.forall(chosen.contains)
+      },
+      onClick.mapToUnit --> (_ => selectedVar.update(BulkSelection.toggleAll(_, visibleIdsVar.now())))
+    )
+
+  private val selectionBar: HtmlElement =
+    div(
+      cls("mb-4 flex flex-wrap items-center gap-3"),
+      div(
+        cls("flex items-center gap-2 text-sm text-body"),
+        span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected"))
+      ),
+      editToolbar.element
+    ).amend(cls("hidden") <-- selectedVar.signal.map(_.isEmpty))
 
   spinnerService
     .runWithSpinner {
@@ -273,6 +421,8 @@ class ShowAllTasksComponent(
 
   val element = {
     div(
+      visibleRowsSignal.map(_.map(_.id)) --> visibleIdsVar.writer,
+      visibleIdsVar.signal --> (ids => selectedVar.update(BulkSelection.prune(_, ids))),
       child <-- projectVar.signal.map(projectResp =>
         TgCard
           .headerNoFooter(
@@ -359,9 +509,10 @@ class ShowAllTasksComponent(
             .HtmlCardContent(
               div(
                 div(cls("mb-4"), searchBox.element),
+                selectionBar,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                    "Name",
+                    div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
                     Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
                       cls("!px-2 w-0 whitespace-nowrap"),
                       div(
@@ -401,28 +552,34 @@ class ShowAllTasksComponent(
                   striped = false
                 )(
                   visibleRowsSignal.map(
-                    _.sortBy(dto => statusesVar.now().idToOrder(dto.taskStatus.id))
-                      .map { dto =>
+                    _.map { dto =>
                         Seq(
                           createTd(
                             div(
-                              cls("flex flex-col gap-1"),
+                              cls("flex items-start gap-2 rounded-base"),
+                              cls("bg-neutral-tertiary-medium") <-- selectedVar.signal.map(_.contains(dto.id)),
+                              cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)),
+                              selectCheckbox(dto.id),
                               div(
-                                cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
-                                a(
-                                  cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
-                                  dto.name,
-                                  router.navigateTo(EditTaskPage(dto.projectId, dto.id))
+                                cls("flex flex-col gap-1"),
+                                div(
+                                  cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
+                                  a(
+                                    cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
+                                    dto.name,
+                                    router.navigateTo(EditTaskPage(dto.projectId, dto.id))
+                                  ),
+                                  badgeRow(dto.id, taskBadges.labelRow(dto))
                                 ),
-                                badgeRow(taskBadges.labelRow(dto))
-                              ),
-                              badgeRow(taskBadges.primaryRow(dto)),
-                              badgeRow(taskBadges.dateRow(dto))
+                                badgeRow(dto.id, taskBadges.primaryRow(dto)),
+                                badgeRow(dto.id, taskBadges.dateRow(dto))
+                              )
                             )
-                          ),
-                          createTd(emptyMod),
+                          ).amend(selectOnClick(dto.id)),
+                          createTd(emptyMod).amend(selectOnClick(dto.id)),
                           td(
                             cls("!px-2 w-0 whitespace-nowrap"),
+                            selectOnClick(dto.id),
                             div(
                               iconButton(
                                 "Edit",
