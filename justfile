@@ -14,7 +14,7 @@ build-tauri-backend:
     rm -rf src-tauri/java/*
     cp -r "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT/"* src-tauri/java
     mkdir src-tauri/java/liquibase
-    cp b-05-database/src/main/resources/changelog.yaml src-tauri/java/liquibase/
+    cp b-05-database/src/main/resources/liquibase/changelog.yaml src-tauri/java/liquibase/
 
 build-tauri-app:
     open src-tauri/target/release/bundle/macos
