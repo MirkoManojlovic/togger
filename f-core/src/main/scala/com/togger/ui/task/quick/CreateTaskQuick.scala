@@ -4,11 +4,10 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.{DateRangeValidation, TgClock, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{DateRangeValidation, TgClock, WorkDayCalendar}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.OrganizationProjectResp
-import com.togger.milestone.MilestoneStatus
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
@@ -82,17 +81,10 @@ case class QuickState(
       .getOrElse(QuickState.DefaultWorkDays)
 
   /** Today, or the next work day when today isn't one, since the backend rejects non-work-day dates. */
-  def effectiveStartDate: LocalDate = startDate.getOrElse(firstWorkDayFrom(today))
+  def effectiveStartDate: LocalDate = startDate.getOrElse(WorkDayCalendar.firstWorkDayFrom(today, effectiveWorkDays))
 
   /** Work days from the start date to the due date, counting both ends. */
-  def workDays: Int =
-    Iterator
-      .iterate(effectiveStartDate)(_.plusDays(1))
-      .takeWhile(!_.isAfter(effectiveDueDate))
-      .count(day => effectiveWorkDays.contains(day.getDayOfWeek))
-
-  private def firstWorkDayFrom(day: LocalDate): LocalDate =
-    Iterator.iterate(day)(_.plusDays(1)).find(d => effectiveWorkDays.contains(d.getDayOfWeek)).get
+  def workDays: Int = WorkDayCalendar.countWorkDays(effectiveStartDate, effectiveDueDate, effectiveWorkDays)
 
   /** One week after the start date unless picked; a pick that falls before a later-chosen start date is dropped for the
     * same default, rather than left to fail validation.
@@ -124,8 +116,7 @@ case class QuickState(
 }
 
 object QuickState {
-  val DefaultWorkDays: Set[DayOfWeek] =
-    Set(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
+  val DefaultWorkDays: Set[DayOfWeek] = WorkDayCalendar.DefaultWorkDays
 }
 
 case class QuickPopup(token: QuickToken, options: Seq[QuickOption], highlighted: Int, left: Option[Double] = None)
@@ -154,8 +145,14 @@ class CreateTaskQuick(
     )
   )
 
-  /** Milestones still being worked on: a finished or abandoned one is no place for a new task. */
-  private val OpenMilestoneStatuses: Set[MilestoneStatus] = Set(MilestoneStatus.InProgress, MilestoneStatus.Paused)
+  private val projectDataLoader = new TaskProjectDataLoader(
+    taskStatusFeService,
+    taskLabelFeService,
+    projectService,
+    milestoneFeService,
+    organizationServiceFe,
+    accountService
+  )
 
   private val tgDateFormater = new TgDateFormater
   private val dateRangeValidation = new DateRangeValidation
@@ -309,10 +306,7 @@ class CreateTaskQuick(
     }
 
   private def loadProjects(): Unit =
-    organizationServiceFe
-      .findOrgAndProjectsByAccountId(accountService.get.get.id)
-      .map(_.foreach(success => state.update(_.copy(projects = success.body.get.flatMap(_.projects)))))
-      .unsafeRunAndForget()
+    projectDataLoader.loadProjects().map(projects => state.update(_.copy(projects = projects))).unsafeRunAndForget()
 
   private def loadProjectData(projectId: Option[UUID]): Unit = {
     state.update(
@@ -327,25 +321,13 @@ class CreateTaskQuick(
       )
     )
     projectId.foreach { id =>
-      val statusesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
-        taskStatusFeService.findByProjectId(id)
-      val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
-        taskLabelFeService.findByProjectId(id)
-      val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
-        projectService.findAllMembers(id)
-      val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
-        milestoneFeService.findByProjectId(id)
-      (statusesCall, labelsCall, membersCall, milestonesCall)
-        .parMapN { (statusesResp, labelsResp, membersResp, milestonesResp) =>
+      projectDataLoader
+        .loadProjectData(id)
+        .map { data =>
           if (state.now().projectId.contains(id)) {
-            val statuses = statusesResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
-            val labels = labelsResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
-            val members = membersResp.toOption.flatMap(_.body).getOrElse(Seq.empty)
-            val milestones = milestonesResp.toOption
-              .flatMap(_.body)
-              .getOrElse(Seq.empty)
-              .filter(milestone => OpenMilestoneStatuses.contains(milestone.status))
-            state.update(_.copy(statuses = statuses, labels = labels, members = members, milestones = milestones))
+            state.update(
+              _.copy(statuses = data.statuses, labels = data.labels, members = data.members, milestones = data.milestones)
+            )
           }
         }
         .unsafeRunAndForget()
