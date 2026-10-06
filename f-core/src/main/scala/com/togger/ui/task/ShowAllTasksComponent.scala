@@ -152,14 +152,12 @@ class ShowAllTasksComponent(
         val byPriority =
           if (selectedPriorityIds.isEmpty) byStatus
           else byStatus.filter(dto => selectedPriorityIds.contains(dto.priority.value.toString))
-        // Unlabeled tasks always pass: with every label selected by default, the "any-of-selected" test below
-        // would otherwise hide them, since an empty label set can never match a selected label id.
+        // With every label selected (the default) nothing is filtered, so unlabeled tasks stay; once any label is
+        // unselected, only the tasks with at least one of the selected labels are shown.
+        val allLabelIds = taskLabelsVar.now().taskLabels.map(_.id.toString).toSet
         val byLabel =
-          if (selectedLabelIds.isEmpty) byPriority
-          else
-            byPriority.filter(dto =>
-              dto.taskLabels.isEmpty || dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString))
-            )
+          if (selectedLabelIds.isEmpty || allLabelIds.subsetOf(selectedLabelIds)) byPriority
+          else byPriority.filter(dto => dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString)))
         val byAssignee =
           if (selectedAssigneeIds.isEmpty) byLabel
           else byLabel.filter(dto => selectedAssigneeIds.contains(dto.assignedTo.getOrElse(unassignedDto).id.toString))
