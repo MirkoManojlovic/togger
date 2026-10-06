@@ -395,6 +395,22 @@ object TgIcons {
       )
     )
 
+  def chevronDoubleRightIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("m7 16 4-4-4-4m6 8 4-4-4-4")
+      )
+    )
+
   def homeIcon(className: String) =
     strokeIcon(
       className,
