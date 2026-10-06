@@ -335,6 +335,7 @@ class ShowAllTasksComponent(
   /** A click on the row selects it, like its checkbox; checkboxes, badges, buttons and links keep their own click. */
   private def selectOnClick(id: UUID): Seq[Modifier[HtmlElement]] =
     Seq(
+      cls("cursor-pointer"),
       onClick.filter(event => !isInteractive(event.target)) --> (event => onSelectClick(id, event.shiftKey))
     )
 
