@@ -18,8 +18,8 @@ build-tauri-backend:
     cp b-05-database/src/main/resources/liquibase/changelog.yaml src-tauri/java/liquibase/
 
 build-tauri-app:
+    CI=true PATH="$PATH:/Library/Developer/CommandLineTools/usr/bin" npm run tauri build -- --verbose
     open src-tauri/target/release/bundle/macos
-    npm run tauri build -- --verbose
 
 clean:
     sbt clean
