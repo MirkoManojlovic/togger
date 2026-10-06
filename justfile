@@ -1,14 +1,18 @@
 update-emoji-data:
     node tools/emoji/build-emoji-data.mjs
 
+# sbt 2 writes build output under target/out/<platform>/<scala version>/<project>/
 build-tauri-backend:
+    #!/usr/bin/env bash
+    set -euo pipefail
     sbt "backendMain/Universal/packageZipTarball"
-    rm -rf b-07-main/target/universal/deploy
-    mkdir -p b-07-main/target/universal/deploy
-    cp b-07-main/target/universal/backend-main-0.1.0-SNAPSHOT.tgz b-07-main/target/universal/deploy
-    tar xfvz b-07-main/target/universal/deploy/backend-main-0.1.0-SNAPSHOT.tgz -C b-07-main/target/universal/deploy
+    universal_dir=$(echo target/out/jvm/*/backend-main/universal)
+    rm -rf "$universal_dir/deploy"
+    mkdir -p "$universal_dir/deploy"
+    cp "$universal_dir/backend-main-0.1.0-SNAPSHOT.tgz" "$universal_dir/deploy"
+    tar xfvz "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT.tgz" -C "$universal_dir/deploy"
     rm -rf src-tauri/java/*
-    cp -r b-07-main/target/universal/deploy/backend-main-0.1.0-SNAPSHOT/* src-tauri/java
+    cp -r "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT/"* src-tauri/java
     mkdir src-tauri/java/liquibase
     cp b-05-database/src/main/resources/changelog.yaml src-tauri/java/liquibase/
 
