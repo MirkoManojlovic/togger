@@ -581,13 +581,6 @@ class ShowAllTasksComponent(
                             selectOnClick(dto.id),
                             div(
                               iconButton(
-                                "Edit",
-                                TgIcons.editIcon(className = "w-4 h-4"),
-                                rowIconButtonCls,
-                                rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => router.route(EditTaskPage(dto.projectId, dto.id)))
-                              ),
-                              iconButton(
                                 "Delete",
                                 TgIcons.trashIcon(className = "w-4 h-4"),
                                 rowIconButtonDangerCls,
