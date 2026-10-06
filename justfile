@@ -11,6 +11,7 @@ build-tauri-backend:
     mkdir -p "$universal_dir/deploy"
     cp "$universal_dir/backend-main-0.1.0-SNAPSHOT.tgz" "$universal_dir/deploy"
     tar xfvz "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT.tgz" -C "$universal_dir/deploy"
+    mkdir -p src-tauri/java
     rm -rf src-tauri/java/*
     cp -r "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT/"* src-tauri/java
     mkdir src-tauri/java/liquibase
