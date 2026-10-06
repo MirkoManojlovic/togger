@@ -279,6 +279,9 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def createTask(dto: CreateTaskAndLinksReq): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.saveEndpoint)(dto)
 
+  def createTasks(dto: CreateTasksBulkReq): TgRespIO[Seq[FindTaskResp]] =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.saveBulkEndpoint)(dto)
+
   def updateTask(dto: UpdateTaskReq): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.updateEndpoint)(dto)
 
