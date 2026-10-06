@@ -90,6 +90,21 @@ class BulkEditTest extends AnyWordSpec with Matchers {
       edit(Seq(t1), BulkEdit.SetDueDate(t1.startDate.minusDays(3))) shouldBe all
     }
 
+    "end the task after the given number of work days, over a weekend, and keep it when the start moves" in {
+      val longer = edit(Seq(t1), BulkEdit.SetWorkDays(10)).head
+      val moved = BulkTaskEditor(Seq(longer), Set(longer.key), BulkEdit.SetStartDate(monday.plusDays(1)), workDays).head
+      (longer.dueDate, longer.dueDateManual, moved.dueDate) shouldBe (monday.plusDays(11), true, monday.plusDays(11))
+    }
+
+    "keep the number of work days between 1 and the maximum" in {
+      (
+        edit(Seq(t1), BulkEdit.SetWorkDays(0)).head.dueDate,
+        edit(Seq(t1), BulkEdit.SetWorkDays(1)).head.dueDate,
+        edit(Seq(t1), BulkEdit.SetWorkDays(100000)).head.dueDate ==
+          edit(Seq(t1), BulkEdit.SetWorkDays(BulkEdit.MaxWorkDays)).head.dueDate
+      ) shouldBe (t1.startDate, t1.startDate, true)
+    }
+
     "leave tasks alone when nothing is selected" in {
       edit(Seq.empty, BulkEdit.SetPriority(TaskPriority.Low)) shouldBe all
     }

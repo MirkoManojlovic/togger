@@ -18,6 +18,11 @@ object BulkEdit {
   case class SetLabels(labelIds: Set[UUID]) extends BulkEdit
   case class SetStartDate(date: LocalDate) extends BulkEdit
   case class SetDueDate(date: LocalDate) extends BulkEdit
+
+  /** The due date that ends this many work days after the start, the start day counting as the first. */
+  case class SetWorkDays(count: Int) extends BulkEdit
+
+  val MaxWorkDays = 250
 }
 
 object BulkTaskEditor {
@@ -39,6 +44,7 @@ object BulkTaskEditor {
       case BulkEdit.SetLabels(labelIds)     => task.copy(labelIds = labelIds)
       case BulkEdit.SetStartDate(date)      => withStartDate(task, date, workDays)
       case BulkEdit.SetDueDate(date)        => withDueDate(task, date, workDays)
+      case BulkEdit.SetWorkDays(count)      => withWorkDays(task, count, workDays)
     }
 
   /** The due date follows the start date, keeping the task's length in work days, unless it was picked by hand and is
@@ -53,6 +59,14 @@ object BulkTaskEditor {
       dueDate = if (keepDueDate) task.dueDate else WorkDayCalendar.lastDayOfWorkDays(date, length, workDays)
     )
   }
+
+  private def withWorkDays(task: BulkTask, count: Int, workDays: Set[DayOfWeek]): BulkTask =
+    if (workDays.isEmpty) task
+    else
+      task.copy(
+        dueDate = WorkDayCalendar.lastDayOfWorkDays(task.startDate, count.max(1).min(BulkEdit.MaxWorkDays), workDays),
+        dueDateManual = true
+      )
 
   private def withDueDate(task: BulkTask, date: LocalDate, workDays: Set[DayOfWeek]): BulkTask =
     if (!workDays.contains(date.getDayOfWeek) || date.isBefore(task.startDate)) task

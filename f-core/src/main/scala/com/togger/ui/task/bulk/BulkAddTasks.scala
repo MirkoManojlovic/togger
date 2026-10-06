@@ -88,16 +88,20 @@ class BulkAddTasks(
       current.copy(tasks = moved, rawInput = TaskBulkInputParser.applyOrder(current.rawInput, moved.map(_.name)))
     }
 
-  private val editToolbar = new BulkEditToolbar(
-    context = () => {
+  private val popups = new BulkEditPopups(
+    context = scope => {
       val current = state.now()
-      BulkEditContext(current.lookups, current.tasks.filter(task => selected.now().contains(task.key)), current.today)
+      val edited = scope.fold(selected.now())(Set(_))
+      BulkEditContext(current.lookups, current.tasks.filter(task => edited.contains(task.key)), current.today)
     },
-    onEdit = edit =>
-      state.update(current =>
-        current.copy(tasks = BulkTaskEditor(current.tasks, selected.now(), edit, current.workDays))
-      )
+    onEdit = (scope, edit) =>
+      state.update { current =>
+        val edited = scope.fold(selected.now())(Set(_))
+        current.copy(tasks = BulkTaskEditor(current.tasks, edited, edit, current.workDays))
+      }
   )
+
+  private val editToolbar = new BulkEditToolbar(popups)
 
   private def onSelectClick(key: UUID, shift: Boolean): Unit = {
     val (updated, anchor) =
@@ -382,8 +386,10 @@ class BulkAddTasks(
         cls("flex flex-col gap-2"),
         children <-- state.signal.map(_.tasks).split(_.key) { (key, _, task) =>
           BulkTaskCard.element(
+            key,
             task,
             state.signal.map(_.lookups).distinct,
+            popups,
             selectCheckbox(key),
             controls(key),
             dragModifiers(key) ++ selectOnClick(key)
@@ -398,9 +404,9 @@ class BulkAddTasks(
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
       onMountCallback(_ => loadProjects()),
       // on the document, not the wrapper, so Escape closes even when focus has dropped to the page body;
-      // a popup of the bulk edit toolbar closes on Escape first (this listener runs before the popup's own), and
-      // Escape on the discard question means keep editing
-      documentEvents(_.onKeyDown).filter(_.key == "Escape").filterNot(_ => editToolbar.isPopupOpen).mapToUnit -->
+      // a popup of the bulk edit (toolbar or badge) closes on Escape first (this listener runs before the popup's
+      // own), and Escape on the discard question means keep editing
+      documentEvents(_.onKeyDown).filter(_.key == "Escape").filterNot(_ => popups.isPopupOpen).mapToUnit -->
         (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
       state.signal.map(_.tasks.map(_.key)).distinct --> (keys => selected.update(BulkSelection.prune(_, keys))),
       state.signal.map(_.projectId).distinct --> (projectId => loadProjectData(projectId)),
