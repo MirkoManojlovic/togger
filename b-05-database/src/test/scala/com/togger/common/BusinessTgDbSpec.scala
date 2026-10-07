@@ -16,6 +16,7 @@ import com.togger.task.{
   TaskRepoImpl,
   TaskVersionRepoImpl
 }
+import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl
@@ -30,6 +31,9 @@ trait BusinessTgDbSpec extends TgDbSpec {
         ProjectMappingRepoImpl.PROJECT_MAPPING_TABLE,
         TaskDumpConfigRepoImpl.TASK_DUMP_CONFIG_TABLE,
         TaskLoadConfigRepoImpl.TASK_LOAD_CONFIG_TABLE,
+        TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE,
+        TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE,
+        TimeboxRepoImpl.TIMEBOX_TABLE,
         LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE,
         LogEntryRepoImpl.LOG_ENTRY_TABLE,
         MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE,

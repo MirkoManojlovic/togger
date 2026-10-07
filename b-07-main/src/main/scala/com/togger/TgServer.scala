@@ -5,6 +5,7 @@ import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController}
+import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
   DefaultTaskLabelService,
@@ -25,6 +26,7 @@ import com.togger.dump._
 import com.togger.http.HttpModule
 import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.milestone._
+import com.togger.timebox._
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
@@ -103,6 +105,12 @@ object TgServer {
             logEntryController.listVersions,
             logEntryController.updateVersion,
             logEntryController.deleteVersion,
+            timeboxController.findById,
+            timeboxController.findByProjectId,
+            timeboxController.save,
+            timeboxController.saveNewVersion,
+            timeboxController.listVersions,
+            timeboxController.delete,
             milestoneController.findById,
             milestoneController.findByProjectId,
             milestoneController.save,
@@ -226,6 +234,12 @@ class DependenciesModule(
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
   lazy val taskController =
     new TaskController(taskService, taskVersionService, taskEndpoints, tgClock, dateRangeValidation, projectService)
+
+  lazy val timeboxRepo = new TimeboxRepoImpl
+  lazy val timeboxVersionRepo = new TimeboxVersionRepoImpl
+  lazy val timeboxService = new TimeboxService(timeboxRepo, timeboxVersionRepo, taskRepo, taskVersionRepo, transactor)
+  lazy val timeboxEndpoints = new TimeboxEndpoints(securedEndpoint)
+  lazy val timeboxController = new TimeboxController(timeboxEndpoints, timeboxService, dateRangeValidation, tgClock)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl

@@ -575,6 +575,98 @@ databaseChangeLog:
                   name: version
                   descending: true
         - createTable:
+            tableName: timebox
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_timebox_project
+                    references: project(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: timebox_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: timebox_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_timebox_version_timebox
+                    references: timebox(id)
+                    deleteCascade: true
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_timebox_version_timebox_id_version
+            tableName: timebox_version
+            columns:
+              - column:
+                  name: timebox_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: timebox_version_task
+            columns:
+              - column:
+                  name: timebox_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_timebox_version_task_timebox_version
+                    references: timebox_version(version)
+                    deleteCascade: true
+              - column:
+                  name: task_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_timebox_version_task_task_version
+                    references: task_version(version)
+                    deleteCascade: true
+        - createTable:
             tableName: task_label_assignment
             columns:
               - column:
