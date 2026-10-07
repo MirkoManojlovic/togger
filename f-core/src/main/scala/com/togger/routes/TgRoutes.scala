@@ -213,6 +213,27 @@ class TgRoutes {
         encode = (page: ShowMilestoneHistoryPage) => page.projectId.toString,
         decode = (projectId: String) => ShowMilestoneHistoryPage(UUID.fromString(projectId)),
         pattern = root / "milestone-history" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: ShowTimeboxesPage) => page.projectId.toString,
+        decode = (projectId: String) => ShowTimeboxesPage(UUID.fromString(projectId)),
+        pattern = root / "show-timeboxes" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: CreateTimeboxPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTimeboxPage(UUID.fromString(projectId)),
+        pattern = root / "create-timebox" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditTimeboxPage) => page.projectId.toString -> page.timeboxId.toString,
+        decode = { (ids: (String, String)) => EditTimeboxPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern = root / "edit-timebox" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: TimeboxHistoryPage) => page.projectId.toString -> page.timeboxId.toString,
+        decode = { (ids: (String, String)) => TimeboxHistoryPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern =
+          root / "timebox-history" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
       )
     )
 

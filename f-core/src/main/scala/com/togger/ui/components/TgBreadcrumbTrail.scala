@@ -44,6 +44,9 @@ object TgBreadcrumbTrail {
   private def underMilestones(projectId: UUID, label: String) =
     underTasks(projectId, link("Milestones", ShowMilestonesPage(projectId)), current(label))
 
+  private def underTimeboxes(projectId: UUID, label: String) =
+    underTasks(projectId, link("Timeboxes", ShowTimeboxesPage(projectId)), current(label))
+
   def forPage(page: FrontendPage): Seq[TgBreadcrumb] = page match {
     case HomePage | LoginPage | NotFoundPage(_) => Seq.empty
 
@@ -86,6 +89,10 @@ object TgBreadcrumbTrail {
     case EditTaskDumpConfigPage(_)           => underOrganizations(current("Edit dump config"))
     case EditTaskLoadConfigPage(_)           => underOrganizations(current("Edit load config"))
 
+    case ShowTimeboxesPage(projectId)        => underTasks(projectId, current("Timeboxes"))
+    case CreateTimeboxPage(projectId)        => underTimeboxes(projectId, "Create timebox")
+    case EditTimeboxPage(projectId, _)       => underTimeboxes(projectId, "Save new timebox version")
+    case TimeboxHistoryPage(projectId, _)    => underTimeboxes(projectId, "Timebox history")
     case ShowMilestonesPage(projectId)       => underTasks(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId) => underMilestones(projectId, "Milestone history")
     case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")

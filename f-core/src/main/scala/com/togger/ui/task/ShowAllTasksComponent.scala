@@ -542,6 +542,13 @@ class ShowAllTasksComponent(
                   headerIconButtonCls,
                   "mr-2",
                   router.navigateTo(ShowMilestonesPage(projectId))
+                ),
+                iconButton(
+                  "Timeboxes",
+                  TgIcons.listIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowTimeboxesPage(projectId))
                 )
               )
             ),

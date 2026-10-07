@@ -16,6 +16,7 @@ import com.togger.ui.auth._
 import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
+import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore}
 import com.togger.ui.organization._
@@ -131,6 +132,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
+  lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
   lazy val dateRangeValidation = new DateRangeValidation
 
@@ -520,6 +522,46 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   tgDateFormater,
                   projectId
+                ).element
+              case ShowTimeboxesPage(projectId: UUID) =>
+                new ShowTimeboxesComponent(
+                  timeboxService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  projectId,
+                  toast,
+                  modalFactory
+                ).element
+              case CreateTimeboxPage(projectId: UUID) =>
+                new TimeboxFormComponent(
+                  TimeboxFormTarget.Create(projectId),
+                  timeboxService,
+                  taskService,
+                  router,
+                  spinnerService,
+                  tgClock,
+                  toast
+                ).element
+              case EditTimeboxPage(projectId: UUID, timeboxId: UUID) =>
+                new TimeboxFormComponent(
+                  TimeboxFormTarget.NewVersion(projectId, timeboxId),
+                  timeboxService,
+                  taskService,
+                  router,
+                  spinnerService,
+                  tgClock,
+                  toast
+                ).element
+              case TimeboxHistoryPage(projectId: UUID, timeboxId: UUID) =>
+                new TimeboxHistoryComponent(
+                  timeboxService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  projectId,
+                  timeboxId
                 ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
             }

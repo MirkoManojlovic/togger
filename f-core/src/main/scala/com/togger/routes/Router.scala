@@ -110,5 +110,13 @@ object Pages {
 
   case class ShowMilestoneHistoryPage(projectId: UUID) extends PrivatePage
 
+  case class ShowTimeboxesPage(projectId: UUID) extends PrivatePage
+
+  case class CreateTimeboxPage(projectId: UUID) extends PrivatePage
+
+  case class EditTimeboxPage(projectId: UUID, timeboxId: UUID) extends PrivatePage
+
+  case class TimeboxHistoryPage(projectId: UUID, timeboxId: UUID) extends PrivatePage
+
   case object HomePage extends PrivatePage
 }
