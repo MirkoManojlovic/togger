@@ -4,14 +4,10 @@ import cats.effect.unsafe.IORuntime
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
-import com.togger.dto.organization.{
-  CreateOrganizationReq,
-  FindOrganizationResp,
-  FindOrganizationsAndProjects,
-  UpdateOrganizationReq
-}
+import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, UpdateOrganizationReq}
 import com.togger.organization.OrganizationEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -19,6 +15,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
 import com.togger.ui.spinner.SpinnerService
@@ -38,17 +35,24 @@ case class CreateOrganizationForm(
 trait OrganizationServiceFe {
   def createOrganization(organization: CreateOrganizationReq): TgRespIO[FindOrganizationResp]
 
-  def findAll(): TgRespIO[Seq[FindOrganizationResp]]
+  /** Admin only: the organizations of every tenant. */
+  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]]
 
   def findById(id: UUID): TgRespIO[FindOrganizationResp]
 
   def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp]
 
-  def findByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]]
+  def findByAccountId(accountId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]]
 
-  def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]]
+  /** Every organization of the account, for pickers and the sidebar; see [[PaginatedLoader]] for the bound. */
+  def findAllByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]] =
+    PaginatedLoader.loadAll(findByAccountId(accountId, _))
 
-  def findAllMembers(organizationId: UUID): TgRespIO[Seq[SearchAccountDto]]
+  def findMembers(organizationId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]]
+
+  /** Every member of the organization, for the member editor; see [[PaginatedLoader]] for the bound. */
+  def findAllMembers(organizationId: UUID): TgRespIO[Seq[SearchAccountDto]] =
+    PaginatedLoader.loadAll(findMembers(organizationId, _))
 
 }
 
@@ -59,11 +63,14 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
   override def createOrganization(req: CreateOrganizationReq): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.saveEndpoint)(req)
 
-  override def findAll(): TgRespIO[Seq[FindOrganizationResp]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)()
+  override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
+    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page)
 
-  override def findByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationResp]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)(accountId)
+  override def findByAccountId(
+    accountId: UUID,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
+    protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)((accountId, page))
 
   override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
@@ -71,11 +78,11 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
   override def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.updateEndpoint)(dto)
 
-  override def findAllMembers(organizationId: UUID): TgRespIO[Seq[SearchAccountDto]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)(organizationId)
-
-  override def findOrgAndProjectsByAccountId(accountId: UUID): TgRespIO[Seq[FindOrganizationsAndProjects]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findOrgAndProjectsByAccountIdEndpoint)(accountId)
+  override def findMembers(
+    organizationId: UUID,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[SearchAccountDto]] =
+    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)((organizationId, page))
 }
 
 class CreateOrganizationComponent(

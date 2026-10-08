@@ -65,6 +65,7 @@ class EditProjectComponent(
 
   spinnerService
     .runWithSpinner {
+      // The member editor lists every member, read page by page (bounded by PaginatedLoader).
       val membersCall = projectService.findAllMembers(projectId).map { membersResp =>
         membersResp.fold(
           error => println(error),
@@ -74,8 +75,9 @@ class EditProjectComponent(
           }
         )
       }
+      // The organization picker offers every organization of the account, read page by page.
       val orgCall = organizationServiceFe
-        .findByAccountId(accountService.get.get.id)
+        .findAllByAccountId(accountService.get.get.id)
         .map(
           _.fold(
             e => println(e),

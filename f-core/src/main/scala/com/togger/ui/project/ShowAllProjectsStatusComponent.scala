@@ -98,8 +98,9 @@ class ShowAllProjectsStatusComponent(
             )
           )
 
+      // The status board shows every project of the organization, so all pages are read (bounded by PaginatedLoader).
       val projectCall = projectService
-        .findByOrganizationId(organizationId)
+        .findAllByOrganizationId(organizationId)
 //        .map(response => response.map(success => stateFormVar.set(success.body.get))¬)
         .flatMap { projectResponse =>
           projectResponse.fold(

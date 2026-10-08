@@ -5,12 +5,12 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.dto.TaskLoadResp
-import com.togger.dto.organization.{FindOrganizationsAndProjects, OrganizationProjectResp}
+import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
-import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
+import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskDumpFeService
 import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
@@ -140,7 +140,7 @@ case class SidebarLink(
 
 class Sidebar(
   router: TgRouter[FrontendPage],
-  organizationServiceFe: OrganizationServiceFe,
+  organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
   taskDumpService: TaskDumpFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
@@ -187,24 +187,25 @@ class Sidebar(
   }
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
-    case CreateProjectPage(organizationId)       => Some(organizationId)
-    case ShowProjectsForOrganizationIdTable(id)  => Some(id)
-    case ShowProjectsForOrganizationIdStatus(id) => Some(id)
-    case EditOrganizationPage(id)                => Some(id)
-    case _                                       => None
+    case CreateProjectPage(organizationId)         => Some(organizationId)
+    case ShowProjectsForOrganizationIdTable(id, _) => Some(id)
+    case ShowProjectsForOrganizationIdStatus(id)   => Some(id)
+    case EditOrganizationPage(id)                  => Some(id)
+    case _                                         => None
   }
 
   private def isProjectSelected(project: OrganizationProjectResp, page: FrontendPage): Boolean =
     Sidebar.projectIdForPage(page).contains(project.id)
 
-  private def isOrganizationSelected(organization: FindOrganizationsAndProjects, page: FrontendPage): Boolean =
+  private def isOrganizationSelected(organization: OrganizationWithProjects, page: FrontendPage): Boolean =
     organizationIdForPage(page).contains(organization.id) ||
       Sidebar.projectIdForPage(page).exists(projectId => organization.projects.exists(_.id == projectId))
 
-  private val organizationState: Var[Seq[FindOrganizationsAndProjects]] = Var(Seq.empty)
+  private val organizationState: Var[Seq[OrganizationWithProjects]] = Var(Seq.empty)
 
-  organizationServiceFe
-    .findOrgAndProjectsByAccountId(accountService.get.get.id)
+  // The sidebar lists every organization with all of its projects, read page by page.
+  organizationProjectsLoader
+    .loadForAccount(accountService.get.get.id)
     .map(
       _.fold(
         error => println(error),
@@ -322,7 +323,7 @@ object Sidebar {
     case CreateMilestonePage(projectId)      => Some(projectId)
     case ShowMilestonesPage(projectId)       => Some(projectId)
     case ShowMilestoneHistoryPage(projectId) => Some(projectId)
-    case ShowTimeboxesPage(projectId)        => Some(projectId)
+    case ShowTimeboxesPage(projectId, _)     => Some(projectId)
     case CreateTimeboxPage(projectId)        => Some(projectId)
     case EditTimeboxPage(projectId, _)       => Some(projectId)
     case TimeboxHistoryPage(projectId, _)    => Some(projectId)

@@ -4,6 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.FindOrganizationResp
@@ -14,6 +15,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
@@ -40,13 +42,25 @@ trait ProjectService {
 
   def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp]
 
-  def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]]
+  def findByOrganizationId(organizationId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindProjectResp]]
+
+  /** Every project of the organization the account is a member of, for the status board; see [[PaginatedLoader]] for
+    * the bound.
+    */
+  def findAllByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]] =
+    PaginatedLoader.loadAll(findByOrganizationId(organizationId, _))
 
   def findById(id: UUID): TgRespIO[FindProjectResp]
 
-  def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]]
+  def findMembers(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]]
 
-  def searchByLabels(projectLabelIds: Seq[UUID]): TgRespIO[Seq[FindProjectResp]]
+  /** Every member of the project, for the assignee pickers and the member editor; see [[PaginatedLoader]] for the
+    * bound.
+    */
+  def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]] =
+    PaginatedLoader.loadAll(findMembers(projectId, _))
+
+  def searchByLabels(projectLabelIds: Seq[UUID], page: PageRequest): TgRespIO[PaginatedResponse[FindProjectResp]]
 
 }
 
@@ -57,8 +71,13 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
   override def createProject(dto: CreateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.saveEndpoint)(dto)
 
-  override def findByOrganizationId(organizationId: UUID): TgRespIO[Seq[FindProjectResp]] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(organizationId)
+  override def findByOrganizationId(
+    organizationId: UUID,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[FindProjectResp]] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(
+      (organizationId, page)
+    )
 
   override def findById(id: UUID): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findByIdEndpoint)(id)
@@ -66,12 +85,15 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
   override def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.updateEndpoint)(dto)
 
-  override def findAllMembers(projectId: UUID): TgRespIO[Seq[SearchAccountDto]] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)(projectId)
+  override def findMembers(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)((projectId, page))
 
-  override def searchByLabels(projectLabelIds: Seq[UUID]): TgRespIO[Seq[FindProjectResp]] =
+  override def searchByLabels(
+    projectLabelIds: Seq[UUID],
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[FindProjectResp]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.searchByLabelsEndpoint)(
-      SearchProjectsByLabelsReq(projectLabelIds)
+      (SearchProjectsByLabelsReq(projectLabelIds), page)
     )
 
 }
@@ -100,8 +122,9 @@ class CreateProjectComponent(
 
   spinnerService
     .runWithSpinner {
+      // The organization picker offers every organization of the account, read page by page.
       val orgCall = organizationServiceFe
-        .findByAccountId(accountService.get.get.id)
+        .findAllByAccountId(accountService.get.get.id)
         .map(
           _.fold(
             e => println(e),

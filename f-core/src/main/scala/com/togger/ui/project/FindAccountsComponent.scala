@@ -5,12 +5,15 @@ import com.togger.account.AccountEndpoints
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.{AccountSearchTerm, PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{SearchAccountDto, SearchAccountResp}
+import com.togger.dto.SearchAccountDto
 import com.togger.organization.OrganizationEndpoints
 import com.togger.ui.auth.TgCheckbox.TgCheckboxSyntax
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgInputType}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.raquo.laminar.api.L._
@@ -39,7 +42,7 @@ import java.util.UUID
 //}
 
 trait FindAccountService {
-  def findByFirstNameLastNameOrEmail(input: String): TgRespIO[SearchAccountResp]
+  def findByFirstNameLastNameOrEmail(input: String, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]]
 }
 
 class FindAccountServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -47,8 +50,11 @@ class FindAccountServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendC
   val accountEndpoints = new AccountEndpoints(securedEndpoint)
   val organizationEndpoints = new OrganizationEndpoints(securedEndpoint)
 
-  override def findByFirstNameLastNameOrEmail(searchTerm: String): TgRespIO[SearchAccountResp] =
-    protectedBackendClient.protectedHttpCall(accountEndpoints.searchByFirstNameLastNameEmail)(searchTerm)
+  override def findByFirstNameLastNameOrEmail(
+    searchTerm: String,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[SearchAccountDto]] =
+    protectedBackendClient.protectedHttpCall(accountEndpoints.searchByFirstNameLastNameEmail)((searchTerm, page))
 }
 
 class FindAccountsComponent(
@@ -96,24 +102,46 @@ class FindAccountsComponent(
     isRequired = false
   )
 
-  private val submitter: Observer[String] = Observer[String] { input =>
-    localSpinner
-      .runWithSpinner(
-        findAccountService
-          .findByFirstNameLastNameOrEmail(input)
-          .map(
-            _.fold(
-              failure => formState.update(_.copy(foundMembers = Left(failure.toString))),
-              success => {
-                val foundAccounts = success.body.get.accounts
-                val existingAccounts = existingAccountsVar.now()
-                val newFoundAccounts = foundAccounts.diff(existingAccounts)
-                formState.update(_.copy(foundMembers = Right(removeUserAccount(newFoundAccounts))))
-              }
-            )
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  // The term the shown page was searched with, so another page of the same search can be read.
+  private var searchedTerm = ""
+
+  private def searchPage(term: String, page: PageRequest): Unit =
+    AccountSearchTerm.validate(term) match {
+      case Left(_) =>
+        paginationVar.set(None)
+        formState.update(
+          _.copy(foundMembers = Left(s"Enter at least ${AccountSearchTerm.MinLength} characters to search"))
+        )
+      case Right(validTerm) =>
+        localSpinner
+          .runWithSpinner(
+            findAccountService
+              .findByFirstNameLastNameOrEmail(validTerm, page)
+              .map(
+                _.fold(
+                  _ => {
+                    paginationVar.set(None)
+                    formState.update(_.copy(foundMembers = Left("No members found")))
+                  },
+                  success => {
+                    val response = success.body.get
+                    val existingAccounts = existingAccountsVar.now()
+                    val newFoundAccounts = response.items.diff(existingAccounts)
+                    searchedTerm = validTerm
+                    paginationVar.set(Some(PaginationState.fromResponse(response)))
+                    formState.update(_.copy(foundMembers = Right(removeUserAccount(newFoundAccounts))))
+                  }
+                )
+              )
           )
-      )
-      .unsafeRunAndForget()
+          .unsafeRunAndForget()
+    }
+
+  private val submitter: Observer[String] = Observer[String] { input =>
+    val size = paginationVar.now().map(_.size).getOrElse(PageRequest.DefaultSize)
+    searchPage(input, PageRequest(PageRequest.DefaultPage, size))
   }
 
   val element: ReactiveHtmlElement[HTMLDivElement] =
@@ -168,7 +196,7 @@ class FindAccountsComponent(
   private lazy val foundMembersElement = div(
     child <-- formState.signal.map(state =>
       state.foundMembers.fold(
-        failure => div(s"No members found"),
+        message => div(message),
         dtos =>
           div(
             div(
@@ -193,6 +221,10 @@ class FindAccountsComponent(
                       .htmlElement
                   )
                 }
+              ),
+              TgPaginationComponent(
+                paginationVar.signal,
+                (newPage, newSize) => searchPage(searchedTerm, PageRequest(newPage, newSize))
               )
             )
           )

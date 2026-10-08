@@ -103,6 +103,7 @@ class CreateTaskComponent(
       val call1: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
         taskStatusFeService.findByProjectId(projectId)
 
+      // The assignee picker offers every member, read page by page (bounded by PaginatedLoader).
       val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
         projectService.findAllMembers(projectId)
 

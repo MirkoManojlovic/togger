@@ -187,6 +187,7 @@ class EditTaskComponent(
                   )
               )
 
+          // The assignee picker offers every member, read page by page (bounded by PaginatedLoader).
           val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
             projectService.findAllMembers(projectId)
 

@@ -1,14 +1,16 @@
 package com.togger.ui.project
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindProjectResp
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -21,7 +23,8 @@ class ShowAllProjectsTableComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService,
-  organizationId: UUID
+  organizationId: UUID,
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -37,6 +40,25 @@ class ShowAllProjectsTableComponent(
     )
   )
 
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  private def showList(newParams: ListParams): Unit =
+    router.route(ShowProjectsForOrganizationIdTable(organizationId, newParams))
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    projectService.findByOrganizationId(organizationId, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
+          stateFormVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
   spinnerService
     .runWithSpinner {
       val organizationCall =
@@ -49,11 +71,7 @@ class ShowAllProjectsTableComponent(
             )
           )
 
-      val projectCall = projectService
-        .findByOrganizationId(organizationId)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
-
-      organizationCall.flatMap(_ => projectCall)
+      organizationCall.flatMap(_ => loadPage())
     }
     .unsafeRunAndForget()
 
@@ -118,9 +136,7 @@ class ShowAllProjectsTableComponent(
                       )
                     ),
                     tbody(
-                      dtos
-                        .sortBy(_.id)
-                        .zipWithIndex
+                      dtos.zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
                             "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
@@ -170,6 +186,10 @@ class ShowAllProjectsTableComponent(
                     )
                   )
                 )
+              ),
+              TgPaginationComponent(
+                paginationVar.signal,
+                (newPage, newSize) => showList(params.atPage(newPage, newSize))
               )
             )
           )

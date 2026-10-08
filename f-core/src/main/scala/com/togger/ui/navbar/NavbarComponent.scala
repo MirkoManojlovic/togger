@@ -56,7 +56,7 @@ class NavbarComponent(
       Option.when(letters.nonEmpty)(letters.map(_.toUpper).mkString)
     })
 
-  private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage))
+  private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage()))
 
   private val searchProjectsMenuLink = MenuLink("Search Projects", router.navigateTo(SearchProjectsByLabelPage))
 
@@ -90,7 +90,7 @@ class NavbarComponent(
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
         case ChangePasswordPage => NavbarItems.changePasswordSelected
-        case CreateOrganizationPage | ShowAllOrganizationsPage | EditOrganizationPage(_) =>
+        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) =>
           NavbarItems.organizationSelected
         case SearchProjectsByLabelPage =>
           NavbarItems.searchProjectsSelected

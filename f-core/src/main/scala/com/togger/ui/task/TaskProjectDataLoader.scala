@@ -8,7 +8,7 @@ import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.milestone.MilestoneStatus
 import com.togger.ui.auth.AccountService
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.organization.OrganizationServiceFe
+import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationServiceFe}
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID
@@ -35,9 +35,11 @@ class TaskProjectDataLoader(
   /** Milestones still being worked on: a finished or abandoned one is no place for a new task. */
   private val OpenMilestoneStatuses: Set[MilestoneStatus] = Set(MilestoneStatus.InProgress, MilestoneStatus.Paused)
 
+  private val organizationProjectsLoader = new OrganizationProjectsLoader(organizationServiceFe, projectService)
+
   def loadProjects(): IO[Seq[OrganizationProjectResp]] =
-    organizationServiceFe
-      .findOrgAndProjectsByAccountId(accountService.get.get.id)
+    organizationProjectsLoader
+      .loadForAccount(accountService.get.get.id)
       .map(_.toOption.flatMap(_.body).getOrElse(Seq.empty).flatMap(_.projects))
 
   def loadProjectData(projectId: UUID): IO[TaskProjectData] = {
@@ -45,6 +47,7 @@ class TaskProjectDataLoader(
       taskStatusFeService.findByProjectId(projectId)
     val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
       taskLabelFeService.findByProjectId(projectId)
+    // The assignee picker offers every member, read page by page (bounded by PaginatedLoader).
     val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
       projectService.findAllMembers(projectId)
     val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =

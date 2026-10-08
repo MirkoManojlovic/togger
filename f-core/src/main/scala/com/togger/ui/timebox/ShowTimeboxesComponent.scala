@@ -1,13 +1,15 @@
 package com.togger.ui.timebox
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindTimeboxResp
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable
+import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.components.{TgHtmlTable, TgPaginationComponent}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
@@ -32,6 +34,7 @@ class ShowTimeboxesComponent(
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
   projectId: UUID,
+  params: ListParams,
   val toast: Toast,
   modalFactory: ModalFactory
 )(implicit
@@ -40,16 +43,34 @@ class ShowTimeboxesComponent(
 
   private val timeboxesVar = Var(Seq.empty[FindTimeboxResp])
   private val projectNameVar = Var("")
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  private def showList(newParams: ListParams): Unit =
+    router.route(ShowTimeboxesPage(projectId, newParams))
+
+  /** Reads the page the URL asks for. A page past the end (its timeboxes were deleted) steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    timeboxService.findByProjectId(projectId, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
+          timeboxesVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
+  private def reloadPage(): Unit =
+    spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
   spinnerService
     .runWithSpinner {
       val projectCall = projectService
         .findById(projectId)
         .map(_.fold(e => println(e), success => projectNameVar.set(success.body.get.name)))
-      val timeboxCall = timeboxService
-        .findByProjectId(projectId)
-        .map(_.map(success => timeboxesVar.set(success.body.get)))
-      projectCall.flatMap(_ => timeboxCall)
+      projectCall.flatMap(_ => loadPage())
     }
     .unsafeRunAndForget()
 
@@ -67,7 +88,7 @@ class ShowTimeboxesComponent(
       spinnerService
         .runWithSpinner(timeboxService.deleteTimebox(dto.id))
         .toastBackendMessageCodeBlock {
-          timeboxesVar.update(_.filterNot(_.id == dto.id))
+          reloadPage()
         }
         .unsafeRunAndForget()
       close()
@@ -94,12 +115,10 @@ class ShowTimeboxesComponent(
           TgCard.CardHeaderSize.H3
         ),
         body = TgCard.HtmlCardContent(
-          div(child <-- timeboxesVar.signal.map { timeboxes =>
-            TgHtmlTable.tableElement(Seq("Start date", "End date", "Description", "Tasks", "Last saved", "Action"))(
-              timeboxes
-                .sortBy(_.latestVersion.startDate.toString)
-                .reverse
-                .map { dto =>
+          div(
+            child <-- timeboxesVar.signal.map { timeboxes =>
+              TgHtmlTable.tableElement(Seq("Start date", "End date", "Description", "Tasks", "Last saved", "Action"))(
+                timeboxes.map { dto =>
                   val version = dto.latestVersion
                   Seq(
                     createTd(tgDateFormater.asEuropeanDate(version.startDate)),
@@ -134,8 +153,13 @@ class ShowTimeboxesComponent(
                     )
                   )
                 }
+              )
+            },
+            TgPaginationComponent(
+              paginationVar.signal,
+              (newPage, newSize) => showList(params.atPage(newPage, newSize))
             )
-          })
+          )
         )
       )
       .element

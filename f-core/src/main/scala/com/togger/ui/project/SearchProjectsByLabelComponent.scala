@@ -2,15 +2,18 @@ package com.togger.ui.project
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.common.PageRequest
 import com.togger.dto.{FindProjectLabelResp, FindProjectResp}
 import com.togger.routes.Pages.EditProjectPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{
   DropdownMeta,
   TgBadge,
   TgBadgeColor,
+  TgPaginationComponent,
   TgSelectDropdownMultiSelectFilter,
   TgSelectDropdownOption
 }
@@ -34,6 +37,11 @@ class SearchProjectsByLabelComponent(
   private val selectedLabelIds = Var(Set.empty[String])
   private val resultsVar = Var(Seq.empty[FindProjectResp])
   private val hasSearchedVar = Var(false)
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  // The labels the shown page was searched with, so another page of the same search can be read. The labels are not
+  // in the URL, so neither is the page.
+  private var searchedLabelIds = Seq.empty[UUID]
 
   spinnerService
     .runWithSpinner {
@@ -43,18 +51,33 @@ class SearchProjectsByLabelComponent(
     }
     .unsafeRunAndForget()
 
-  private def runSearch(): Unit = {
-    val labelIds = selectedLabelIds.now().map(UUID.fromString).toSeq
+  private def searchPage(labelIds: Seq[UUID], page: PageRequest): Unit = {
     hasSearchedVar.set(true)
 
     if (labelIds.isEmpty) {
       resultsVar.set(Seq.empty)
+      paginationVar.set(None)
     } else {
       spinnerService
-        .runWithSpinner(projectService.searchByLabels(labelIds))
-        .map(_.fold(e => println(e), success => resultsVar.set(success.body.get)))
+        .runWithSpinner(projectService.searchByLabels(labelIds, page))
+        .map(
+          _.fold(
+            e => println(e),
+            success => {
+              val response = success.body.get
+              searchedLabelIds = labelIds
+              resultsVar.set(response.items)
+              paginationVar.set(Some(PaginationState.fromResponse(response)))
+            }
+          )
+        )
         .unsafeRunAndForget()
     }
+  }
+
+  private def runSearch(): Unit = {
+    val size = paginationVar.now().map(_.size).getOrElse(PageRequest.DefaultSize)
+    searchPage(selectedLabelIds.now().map(UUID.fromString).toSeq, PageRequest(PageRequest.DefaultPage, size))
   }
 
   private val searchSubmitter = Observer[Unit](_ => runSearch())
@@ -133,7 +156,7 @@ class SearchProjectsByLabelComponent(
               createTh("Action")
             )
           ),
-          tbody(results.sortBy(_.name).map(resultRow))
+          tbody(results.map(resultRow))
         )
       )
     }
@@ -162,7 +185,11 @@ class SearchProjectsByLabelComponent(
           div(
             child <-- hasSearchedVar.signal.combineWith(resultsVar.signal).map { case (hasSearched, results) =>
               resultsElement(hasSearched, results)
-            }
+            },
+            TgPaginationComponent(
+              paginationVar.signal,
+              (newPage, newSize) => searchPage(searchedLabelIds, PageRequest(newPage, newSize))
+            )
           )
         )
       )

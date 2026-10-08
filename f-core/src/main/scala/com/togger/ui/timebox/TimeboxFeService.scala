@@ -3,6 +3,7 @@ package com.togger.ui.timebox
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.{CreateTimeboxReq, FindTimeboxResp, SaveTimeboxVersionReq, TimeboxVersionDto}
 import com.togger.timebox.TimeboxEndpoints
@@ -21,8 +22,8 @@ class TimeboxFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient:
   def findById(id: UUID): TgRespIO[FindTimeboxResp] =
     protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByIdEndpoint)(id)
 
-  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTimeboxResp]] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByProjectIdEndpoint)(projectId)
+  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTimeboxResp]] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByProjectIdEndpoint)((projectId, page))
 
   def listVersions(id: UUID): TgRespIO[List[TimeboxVersionDto]] =
     protectedBackendClient.protectedHttpCall(timeboxEndpoints.listVersionsEndpoint)(id)

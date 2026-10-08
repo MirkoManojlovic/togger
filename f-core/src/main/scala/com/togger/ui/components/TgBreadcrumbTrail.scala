@@ -14,7 +14,7 @@ import java.util.UUID
 object TgBreadcrumbTrail {
 
   private val organizations =
-    TgBreadcrumb("Organizations", Some(ShowAllOrganizationsPage), icon = Some(TgIcons.homeIcon))
+    TgBreadcrumb("Organizations", Some(ShowAllOrganizationsPage()), icon = Some(TgIcons.homeIcon))
 
   private def link(label: String, page: FrontendPage) = TgBreadcrumb(label, Some(page))
 
@@ -50,10 +50,10 @@ object TgBreadcrumbTrail {
   def forPage(page: FrontendPage): Seq[TgBreadcrumb] = page match {
     case HomePage | LoginPage | NotFoundPage(_) => Seq.empty
 
-    case ShowAllOrganizationsPage => Seq(organizations.copy(page = None))
-    case CreateOrganizationPage   => underOrganizations(current("Create organization"))
-    case EditOrganizationPage(_)  => underOrganizations(current("Edit organization"))
-    case ShowProjectsForOrganizationIdTable(_) | ShowProjectsForOrganizationIdStatus(_) =>
+    case ShowAllOrganizationsPage(_) => Seq(organizations.copy(page = None))
+    case CreateOrganizationPage      => underOrganizations(current("Create organization"))
+    case EditOrganizationPage(_)     => underOrganizations(current("Edit organization"))
+    case ShowProjectsForOrganizationIdTable(_, _) | ShowProjectsForOrganizationIdStatus(_) =>
       underOrganizations(current("Projects"))
     case CreateProjectPage(organizationId) =>
       val projects = link("Projects", ShowProjectsForOrganizationIdStatus(organizationId))
@@ -89,7 +89,7 @@ object TgBreadcrumbTrail {
     case EditTaskDumpConfigPage(_)           => underOrganizations(current("Edit dump config"))
     case EditTaskLoadConfigPage(_)           => underOrganizations(current("Edit load config"))
 
-    case ShowTimeboxesPage(projectId)        => underTasks(projectId, current("Timeboxes"))
+    case ShowTimeboxesPage(projectId, _)     => underTasks(projectId, current("Timeboxes"))
     case CreateTimeboxPage(projectId)        => underTimeboxes(projectId, "Create timebox")
     case EditTimeboxPage(projectId, _)       => underTimeboxes(projectId, "Save new timebox version")
     case TimeboxHistoryPage(projectId, _)    => underTimeboxes(projectId, "Timebox history")

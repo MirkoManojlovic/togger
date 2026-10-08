@@ -105,11 +105,11 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
   lazy val loginService = new LoginService(baseEndpoint, securedEndpoint, loginRepo)
-  lazy val authenticationRouteGuard = new AuthenticationRouteGuard(loginRepo, LoginPage, ShowAllOrganizationsPage)
+  lazy val authenticationRouteGuard = new AuthenticationRouteGuard(loginRepo, LoginPage, ShowAllOrganizationsPage())
   lazy val navigationSelection =
     NavigationSelection(
       loginRepo,
-      organizationService,
+      organizationProjectsLoader,
       accountService,
       router,
       taskDumpService,
@@ -159,6 +159,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val projectService = new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
+  lazy val organizationProjectsLoader = new OrganizationProjectsLoader(organizationService, projectService)
   lazy val taskDumpConfigService = new TaskDumpConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val taskLoadConfigService = new TaskLoadConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val projectMappingService = new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
@@ -192,7 +193,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
           child <-- signal
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
-              case HomePage  => router.route(ShowAllOrganizationsPage); div()
+              case HomePage  => router.route(ShowAllOrganizationsPage()); div()
               case LoginPage => new LoginComponent(router, loginService, spinnerService).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
@@ -355,14 +356,15 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   organizationId,
                   toast
                 ).element
-              case ShowProjectsForOrganizationIdTable(organizationId) =>
+              case ShowProjectsForOrganizationIdTable(organizationId, listParams) =>
                 new ShowAllProjectsTableComponent(
                   projectService,
                   organizationService,
                   router,
                   spinnerService,
                   accountService,
-                  organizationId
+                  organizationId,
+                  listParams
                 ).element
 
               case ShowProjectsForOrganizationIdStatus(organizationId) =>
@@ -387,12 +389,13 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   localStorage,
                   toast
                 ).element
-              case ShowAllOrganizationsPage =>
+              case ShowAllOrganizationsPage(listParams) =>
                 new ShowAllOrganizationsComponent(
                   organizationService,
                   router,
                   spinnerService,
-                  accountService
+                  accountService,
+                  listParams
                 ).element
               case EditOrganizationPage(organizationId) =>
                 new EditOrganizationComponent(
@@ -524,7 +527,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgDateFormater,
                   projectId
                 ).element
-              case ShowTimeboxesPage(projectId: UUID) =>
+              case ShowTimeboxesPage(projectId: UUID, listParams) =>
                 new ShowTimeboxesComponent(
                   timeboxService,
                   projectService,
@@ -532,6 +535,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   tgDateFormater,
                   projectId,
+                  listParams,
                   toast,
                   modalFactory
                 ).element
@@ -578,7 +582,7 @@ object TgSplitRender {
 
 case class NavigationSelection(
   loginRepo: LoginRepo,
-  organizationServiceFe: OrganizationServiceFe,
+  organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
   router: TgRouter[FrontendPage],
   taskDumpService: TaskDumpFeService,
@@ -599,7 +603,7 @@ case class NavigationSelection(
             new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore).element,
             new Sidebar(
               router,
-              organizationServiceFe,
+              organizationProjectsLoader,
               accountService,
               taskDumpService,
               taskLoadConfigService,

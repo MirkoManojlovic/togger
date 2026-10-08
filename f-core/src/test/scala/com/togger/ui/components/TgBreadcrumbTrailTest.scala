@@ -17,7 +17,7 @@ class TgBreadcrumbTrailTest extends AsyncJsWordSpec {
 
     "link a project-scoped page back to the project's tasks" in { _ =>
       TgBreadcrumbTrail.forPage(CreateTaskPage(projectId)).map(_.page) shouldBe
-        Seq(Some(ShowAllOrganizationsPage), Some(ShowAllTasksPage(projectId)), None)
+        Seq(Some(ShowAllOrganizationsPage()), Some(ShowAllTasksPage(projectId)), None)
     }
 
     "label the last crumb after the page" in { _ =>

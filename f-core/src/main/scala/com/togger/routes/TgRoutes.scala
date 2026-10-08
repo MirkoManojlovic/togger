@@ -7,6 +7,16 @@ import java.util.UUID
 
 class TgRoutes {
 
+  private type ListQuery = (Option[String], Option[String])
+
+  private val listQueryParams = param[String]("page").? & param[String]("size").?
+
+  private def listToQuery(list: ListParams): ListQuery =
+    (ListParams.pageToQuery(list), ListParams.sizeToQuery(list))
+
+  private def listFromQuery(params: ListQuery): ListParams =
+    ListParams.fromQuery(params._1, params._2)
+
   private type TaskListQuery =
     (Option[String], Option[String], List[String], List[String], List[String], List[String], List[String], Option[String])
 
@@ -125,11 +135,12 @@ class TgRoutes {
         pattern = root / "create-project" / segment[String] / endOfSegments
         //        basePath = basePath
       ),
-      Route(
-        encode = (page: ShowProjectsForOrganizationIdTable) => page.id.toString,
-        decode = (id: String) => ShowProjectsForOrganizationIdTable(UUID.fromString(id)),
-        pattern = root / "project" / "table" / "organization" / segment[String] / endOfSegments
-        //        basePath = basePath
+      Route.withQuery[ShowProjectsForOrganizationIdTable, String, ListQuery](
+        encode = (page: ShowProjectsForOrganizationIdTable) =>
+          PatternArgs(path = page.id.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowProjectsForOrganizationIdTable(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "project" / "table" / "organization" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: ShowProjectsForOrganizationIdStatus) => page.id.toString,
@@ -152,10 +163,10 @@ class TgRoutes {
         root / "organization" / "create"
         //        basePath = basePath
       ),
-      Route.static(
-        ShowAllOrganizationsPage,
-        root / "organization" / endOfSegments
-        //        basePath = basePath
+      Route.withQuery[ShowAllOrganizationsPage, Unit, ListQuery](
+        encode = (page: ShowAllOrganizationsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllOrganizationsPage(listFromQuery(args.params)),
+        pattern = (root / "organization" / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: EditOrganizationPage) => page.id.toString,
@@ -244,10 +255,12 @@ class TgRoutes {
         decode = (projectId: String) => ShowMilestoneHistoryPage(UUID.fromString(projectId)),
         pattern = root / "milestone-history" / segment[String] / endOfSegments
       ),
-      Route(
-        encode = (page: ShowTimeboxesPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowTimeboxesPage(UUID.fromString(projectId)),
-        pattern = root / "show-timeboxes" / segment[String] / endOfSegments
+      Route.withQuery[ShowTimeboxesPage, String, ListQuery](
+        encode = (page: ShowTimeboxesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowTimeboxesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "show-timeboxes" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: CreateTimeboxPage) => page.projectId.toString,

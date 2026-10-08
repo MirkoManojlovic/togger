@@ -62,7 +62,7 @@ object Pages {
 
   case object CreateOrganizationPage extends PrivatePage
 
-  case object ShowAllOrganizationsPage extends PrivatePage
+  case class ShowAllOrganizationsPage(list: ListParams = ListParams.default) extends PrivatePage
 
   case class EditOrganizationPage(id: UUID) extends PrivatePage
 
@@ -80,7 +80,7 @@ object Pages {
 
   case class CreateProjectPage(organizationId: UUID) extends PrivatePage
 
-  case class ShowProjectsForOrganizationIdTable(id: UUID) extends PrivatePage
+  case class ShowProjectsForOrganizationIdTable(id: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
   case class ShowProjectsForOrganizationIdStatus(id: UUID) extends PrivatePage
 
@@ -110,7 +110,7 @@ object Pages {
 
   case class ShowMilestoneHistoryPage(projectId: UUID) extends PrivatePage
 
-  case class ShowTimeboxesPage(projectId: UUID) extends PrivatePage
+  case class ShowTimeboxesPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
   case class CreateTimeboxPage(projectId: UUID) extends PrivatePage
 

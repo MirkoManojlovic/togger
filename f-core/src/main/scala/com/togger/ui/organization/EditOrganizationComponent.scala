@@ -53,6 +53,7 @@ class EditOrganizationComponent(
 
   spinnerService
     .runWithSpinner(
+      // The member editor lists every member, read page by page (bounded by PaginatedLoader).
       organizationService
         .findAllMembers(organizationId)
         .map { membersResp =>

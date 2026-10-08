@@ -1,12 +1,20 @@
 package com.togger.ui.organization
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.{CreateOrganizationPage, EditOrganizationPage, ShowProjectsForOrganizationIdTable}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.Pages.{
+  CreateOrganizationPage,
+  EditOrganizationPage,
+  ShowAllOrganizationsPage,
+  ShowProjectsForOrganizationIdTable
+}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 
@@ -14,20 +22,34 @@ class ShowAllOrganizationsComponent(
   organizationService: OrganizationServiceFe,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService
+  accountService: AccountService,
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
 
   val stateFormVar = Var(Seq.empty[FindOrganizationResp])
 
-  spinnerService
-    .runWithSpinner(
-      organizationService
-        .findByAccountId(accountService.get.get.id)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
-    )
-    .unsafeRunAndForget()
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  private def showList(newParams: ListParams): Unit =
+    router.route(ShowAllOrganizationsPage(newParams))
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    organizationService.findByAccountId(accountService.get.get.id, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
+          stateFormVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
+  spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
   val element = {
     div(
@@ -64,9 +86,7 @@ class ShowAllOrganizationsComponent(
                       )
                     ),
                     tbody(
-                      dtos
-                        .sortBy(_.id.toString)
-                        .zipWithIndex
+                      dtos.zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
                             "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
@@ -102,6 +122,10 @@ class ShowAllOrganizationsComponent(
                     )
                   )
                 )
+              ),
+              TgPaginationComponent(
+                paginationVar.signal,
+                (newPage, newSize) => showList(params.atPage(newPage, newSize))
               )
             )
           )
