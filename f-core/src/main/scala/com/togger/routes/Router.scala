@@ -88,7 +88,8 @@ object Pages {
 
   case object SearchProjectsByLabelPage extends PrivatePage
 
-  case class ShowAllTaskConfigsPage(projectId: UUID) extends PrivatePage
+  case class ShowAllTaskConfigsPage(projectId: UUID, list: TaskConfigListParams = TaskConfigListParams.default)
+      extends PrivatePage
 
   case class CreateTaskDumpConfigPage(projectId: UUID) extends PrivatePage
 

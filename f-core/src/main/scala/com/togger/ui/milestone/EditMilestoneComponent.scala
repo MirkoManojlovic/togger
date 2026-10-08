@@ -91,7 +91,7 @@ class EditMilestoneComponent(
     .unsafeRunAndForget()
 
   spinnerService
-    .runWithSpinner(milestoneDateService.findByMilestoneId(milestoneId))
+    .runWithSpinner(milestoneDateService.findAllByMilestoneId(milestoneId))
     .map(
       _.fold(
         error => println(error),

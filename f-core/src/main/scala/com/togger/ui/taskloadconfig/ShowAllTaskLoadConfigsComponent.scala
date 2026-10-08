@@ -6,11 +6,13 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
 import com.togger.dto.{TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
-import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage, ShowAllTaskConfigsPage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -26,7 +28,9 @@ class ShowAllTaskLoadConfigsComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   val toast: Toast,
-  projectId: UUID
+  projectId: UUID,
+  params: ListParams,
+  showPage: (Int, Int) => Unit
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -36,13 +40,26 @@ class ShowAllTaskLoadConfigsComponent(
   private val stateFormVar = Var(Seq.empty[TaskLoadConfigResp])
   private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
 
-  spinnerService
-    .runWithSpinner(
-      taskLoadConfigService
-        .findByProjectId(projectId)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
-    )
-    .unsafeRunAndForget()
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    taskLoadConfigService.findByProjectId(projectId, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showPage(response.totalNumberOfPages.toInt, params.size)
+        else {
+          stateFormVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
+  private def reload(): Unit =
+    spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
+
+  reload()
 
   private def summaryMessage(dto: TaskLoadResp): String = {
     val counts = dto.results.groupBy(_.status).view.mapValues(_.size).toMap
@@ -64,10 +81,15 @@ class ShowAllTaskLoadConfigsComponent(
       .toastJustErrors(())(handleLoadResponse)
       .unsafeRunAndForget()
 
+  /** "Load all" loads from every config of the project, not only the ones on the page on screen. */
   private def loadAll(): Unit = {
-    val paths = stateFormVar.now().map(_.dumpPath).distinct.toList
     val program: IO[List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]] =
-      paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+      taskLoadConfigService.findAllByProjectId(projectId).flatMap {
+        case Left(failure) => IO.pure(List(failure.asLeft[TaskLoadResp]))
+        case Right(success) =>
+          val paths = success.body.get.map(_.dumpPath).distinct.toList
+          paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+      }
 
     spinnerService
       .runWithSpinner(program)
@@ -107,7 +129,7 @@ class ShowAllTaskLoadConfigsComponent(
               spinnerService
                 .runWithSpinner(taskLoadConfigService.deleteById(dto.id))
                 .toastBackendMessageCodeBlock {
-                  router.route(ShowAllTaskConfigsPage(projectId))
+                  reload()
                 }
                 .unsafeRunAndForget()
             )
@@ -161,10 +183,11 @@ class ShowAllTaskLoadConfigsComponent(
                       cls(theadCls),
                       tr(Seq("name", "dump path", "loaded at", "Action").map(createTh))
                     ),
-                    tbody(dtos.sortBy(_.id).map(configRow))
+                    tbody(dtos.map(configRow))
                   )
                 )
-              )
+              ),
+              TgPaginationComponent(paginationVar.signal, showPage)
             )
           )
         )

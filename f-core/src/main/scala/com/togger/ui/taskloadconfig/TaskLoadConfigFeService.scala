@@ -4,8 +4,10 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto.taskloadconfig.{CreateTaskLoadConfigReq, TaskLoadConfigResp, UpdateTaskLoadConfigReq}
 import com.togger.taskloadconfig.TaskLoadConfigEndpoints
+import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
@@ -18,7 +20,10 @@ trait TaskLoadConfigFeService {
 
   def deleteById(id: UUID): TgRespIO[TgEmptyBody]
 
-  def findByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]]
+  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TaskLoadConfigResp]]
+
+  /** Every config of the project, for the runs over all of them; see [[PaginatedLoader]] for the bound. */
+  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]]
 }
 
 class TaskLoadConfigFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -38,6 +43,12 @@ class TaskLoadConfigFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBac
   override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(taskLoadConfigEndpoints.deleteByIdEndpoint)(id)
 
-  override def findByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]] =
-    protectedBackendClient.protectedHttpCall(taskLoadConfigEndpoints.findByProjectIdEndpoint)(projectId)
+  override def findByProjectId(
+    projectId: UUID,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[TaskLoadConfigResp]] =
+    protectedBackendClient.protectedHttpCall(taskLoadConfigEndpoints.findByProjectIdEndpoint)((projectId, page))
+
+  override def findAllByProjectId(projectId: UUID): TgRespIO[Seq[TaskLoadConfigResp]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, _))
 }

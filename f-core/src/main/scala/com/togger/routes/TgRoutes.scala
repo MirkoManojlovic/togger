@@ -17,6 +17,8 @@ class TgRoutes {
   private def listFromQuery(params: ListQuery): ListParams =
     ListParams.fromQuery(params._1, params._2)
 
+  private type TaskConfigListQuery = (Option[String], Option[String], Option[String], Option[String])
+
   private type MilestoneListQuery = (Option[String], Option[String], List[String], Option[String])
 
   private type TaskListQuery =
@@ -207,10 +209,30 @@ class TgRoutes {
         decode = (id: String) => EditProjectLabelCategoryPage(UUID.fromString(id)),
         pattern = root / "settings" / "project-label-category" / "edit" / segment[String] / endOfSegments
       ),
-      Route(
-        encode = (page: ShowAllTaskConfigsPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowAllTaskConfigsPage(UUID.fromString(projectId)),
-        pattern = root / "task-config" / "project" / segment[String] / endOfSegments
+      Route.withQuery[ShowAllTaskConfigsPage, String, TaskConfigListQuery](
+        encode = (page: ShowAllTaskConfigsPage) =>
+          PatternArgs(
+            path = page.projectId.toString,
+            params = (
+              ListParams.pageToQuery(page.list.dump),
+              ListParams.sizeToQuery(page.list.dump),
+              ListParams.pageToQuery(page.list.load),
+              ListParams.sizeToQuery(page.list.load)
+            )
+          ),
+        decode = { (args: PatternArgs[String, TaskConfigListQuery]) =>
+          val (dumpPage, dumpSize, loadPage, loadSize) = args.params
+          ShowAllTaskConfigsPage(
+            UUID.fromString(args.path),
+            TaskConfigListParams.fromQuery(dumpPage, dumpSize, loadPage, loadSize)
+          )
+        },
+        pattern = (root / "task-config" / "project" / segment[String] / endOfSegments) ? (
+          param[String]("dumpPage").? &
+            param[String]("dumpSize").? &
+            param[String]("loadPage").? &
+            param[String]("loadSize").?
+        )
       ),
       Route(
         encode = (page: CreateTaskDumpConfigPage) => page.projectId.toString,

@@ -328,8 +328,8 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def updateLogEntry(dto: LogEntryDto) =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.updateEndpoint)(dto)
 
-  def listLogEntryVersions(logEntryId: UUID) =
-    protectedBackendClient.protectedHttpCall(logEntryEndpoints.listVersionsEndpoint)(logEntryId)
+  def listLogEntryVersions(logEntryId: UUID, page: PageRequest) =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.listVersionsEndpoint)((logEntryId, page))
 
   def updateLogEntryVersion(dto: LogEntryVersionDto) =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.updateVersionEndpoint)(dto)
@@ -346,8 +346,8 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def deleteLinkVersion(version: UUID) =
     protectedBackendClient.protectedHttpCall(linkEndpoints.deleteVersionEndpoint)(version)
 
-  def listTaskVersions(taskId: UUID) =
-    protectedBackendClient.protectedHttpCall(taskEndpoints.listVersionsEndpoint)(taskId)
+  def listTaskVersions(taskId: UUID, page: PageRequest) =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.listVersionsEndpoint)((taskId, page))
 
   def updateTaskVersion(dto: TaskVersionDto) =
     protectedBackendClient.protectedHttpCall(taskEndpoints.updateVersionEndpoint)(dto)

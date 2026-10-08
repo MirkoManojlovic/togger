@@ -31,7 +31,7 @@ class TimeboxHistoryComponent(
 
   spinnerService
     .runWithSpinner(
-      timeboxService.listVersions(timeboxId).map(_.map(success => versionsVar.set(success.body.get)))
+      timeboxService.listAllVersions(timeboxId).map(_.map(success => versionsVar.set(success.body.get.toList)))
     )
     .unsafeRunAndForget()
 

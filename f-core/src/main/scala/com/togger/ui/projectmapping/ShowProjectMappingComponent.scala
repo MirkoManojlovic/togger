@@ -29,7 +29,7 @@ class ShowProjectMappingComponent(
   spinnerService
     .runWithSpinner(
       projectMappingService
-        .findByProjectIdDb(projectId)
+        .findAllByProjectIdDb(projectId)
         .map(response => response.map(success => stateVar.set(success.body.get.toList)))
     )
     .unsafeRunAndForget()

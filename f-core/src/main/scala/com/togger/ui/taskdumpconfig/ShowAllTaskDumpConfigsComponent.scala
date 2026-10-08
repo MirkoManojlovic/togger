@@ -5,11 +5,13 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto._
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
-import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage, ShowAllTaskConfigsPage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}
@@ -24,7 +26,9 @@ class ShowAllTaskDumpConfigsComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   val toast: Toast,
-  projectId: UUID
+  projectId: UUID,
+  params: ListParams,
+  showPage: (Int, Int) => Unit
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -34,13 +38,26 @@ class ShowAllTaskDumpConfigsComponent(
   private val stateFormVar = Var(Seq.empty[TaskDumpConfigResp])
   private val statusResultVar = Var(Seq.empty[TaskDumpPathStatusResp])
 
-  spinnerService
-    .runWithSpinner(
-      taskDumpConfigService
-        .findByProjectId(projectId)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
-    )
-    .unsafeRunAndForget()
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    taskDumpConfigService.findByProjectId(projectId, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showPage(response.totalNumberOfPages.toInt, params.size)
+        else {
+          stateFormVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
+  private def reload(): Unit =
+    spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
+
+  reload()
 
   private def runAction[A](io: IO[A])(handle: IO[A] => IO[Unit]): Unit =
     handle(spinnerService.runWithSpinner(io)).unsafeRunAndForget()
@@ -63,7 +80,7 @@ class ShowAllTaskDumpConfigsComponent(
   private def deleteConfig(dto: TaskDumpConfigResp): Unit =
     runAction(taskDumpConfigService.deleteById(dto.id)) {
       _.toastBackendMessageCodeBlock {
-        router.route(ShowAllTaskConfigsPage(projectId))
+        reload()
       }
     }
 
@@ -167,10 +184,11 @@ class ShowAllTaskDumpConfigsComponent(
                       cls(theadCls),
                       tr(Seq("name", "dump path", "dumped at", "Action").map(createTh))
                     ),
-                    tbody(dtos.sortBy(_.id).map(configRow))
+                    tbody(dtos.map(configRow))
                   )
                 )
-              )
+              ),
+              TgPaginationComponent(paginationVar.signal, showPage)
             )
           )
         )

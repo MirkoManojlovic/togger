@@ -81,7 +81,7 @@ object TgBreadcrumbTrail {
     case CreateTaskLabelPage(projectId)   => underTaskLabels(projectId, "Create label")
     case EditTaskLabelPage(projectId, _)  => underTaskLabels(projectId, "Edit label")
 
-    case ShowAllTaskConfigsPage(projectId)   => underTasks(projectId, current("Task configs"))
+    case ShowAllTaskConfigsPage(projectId, _) => underTasks(projectId, current("Task configs"))
     case TaskDumpStatusPage(projectId)       => underTasks(projectId, current("Task dump status"))
     case CreateTaskDumpConfigPage(projectId) => underConfigs(projectId, "Create dump config")
     case CreateTaskLoadConfigPage(projectId) => underConfigs(projectId, "Create load config")

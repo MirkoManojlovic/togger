@@ -67,7 +67,7 @@ class MilestoneHistoryComponent(
           .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get)))
       val milestoneDatesCall =
         milestoneDateService
-          .findByProjectId(projectId)
+          .findAllByProjectId(projectId)
           .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
 
       for {

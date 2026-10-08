@@ -7,6 +7,7 @@ import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.{CreateTimeboxReq, FindTimeboxResp, SaveTimeboxVersionReq, TimeboxVersionDto}
 import com.togger.timebox.TimeboxEndpoints
+import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
@@ -25,8 +26,14 @@ class TimeboxFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient:
   def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTimeboxResp]] =
     protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByProjectIdEndpoint)((projectId, page))
 
-  def listVersions(id: UUID): TgRespIO[List[TimeboxVersionDto]] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.listVersionsEndpoint)(id)
+  def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TimeboxVersionDto]] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.listVersionsEndpoint)((id, page))
+
+  /** The whole history of the timebox, newest version first, for the history screen; see [[PaginatedLoader]] for the
+    * bound.
+    */
+  def listAllVersions(id: UUID): TgRespIO[Seq[TimeboxVersionDto]] =
+    PaginatedLoader.loadAll(listVersions(id, _))
 
   def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(timeboxEndpoints.deleteByIdEndpoint)(id)

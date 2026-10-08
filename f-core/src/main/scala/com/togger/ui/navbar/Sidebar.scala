@@ -163,7 +163,7 @@ class Sidebar(
       .unsafeRunAndForget()
 
   private def loadAllForProject(projectId: UUID): Unit = {
-    val program: IO[Unit] = taskLoadConfigService.findByProjectId(projectId).flatMap {
+    val program: IO[Unit] = taskLoadConfigService.findAllByProjectId(projectId).flatMap {
       _.fold(
         error => IO(toast.error(error)),
         success => {
@@ -315,7 +315,7 @@ object Sidebar {
     case ShowAllTasksPage(projectId, _)      => Some(projectId)
     case ShowAllTaskStatusesPage(projectId, _) => Some(projectId)
     case EditTaskPage(projectId, _)          => Some(projectId)
-    case ShowAllTaskConfigsPage(projectId)   => Some(projectId)
+    case ShowAllTaskConfigsPage(projectId, _) => Some(projectId)
     case CreateTaskDumpConfigPage(projectId) => Some(projectId)
     case TaskDumpStatusPage(projectId)       => Some(projectId)
     case CreateTaskLoadConfigPage(projectId) => Some(projectId)

@@ -266,7 +266,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskLabelId,
                   toast
                 ).element
-              case ShowAllTaskConfigsPage(projectId: UUID) =>
+              case ShowAllTaskConfigsPage(projectId: UUID, listParams) =>
                 new ShowAllTaskConfigsComponent(
                   taskDumpConfigService,
                   taskDumpService,
@@ -275,7 +275,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   toast,
-                  projectId
+                  projectId,
+                  listParams
                 ).element
               case TaskDumpStatusPage(projectId: UUID) =>
                 new TaskDumpStatusComponent(
