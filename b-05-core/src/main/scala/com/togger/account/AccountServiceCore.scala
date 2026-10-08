@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import cats.effect.IO
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.Transactor
 import doobie.implicits._
 
@@ -19,24 +20,20 @@ case class AccountNoCreds(
 
 class AccountServiceCore(accountRepo: AccountRepo, transactor: Transactor[IO]) {
 
-  def searchByFirstNameLastNameEmail(term: String): IO[Seq[AccountNoCreds]] = {
+  def searchPaginated(term: String, page: DbPageRequest): IO[PaginatedResponse[AccountNoCreds]] =
     accountRepo
-      .findByFirstNameLastNameOrEmail(term)
-      .map(accounts =>
-        accounts.map(account =>
-          AccountNoCreds(
-            id = account.id,
-            firstName = account.firstName,
-            lastName = account.lastName,
-            email = account.email,
-            accountTypeId = account.accountTypeId,
-            createdAt = account.createdAt,
-            updatedAt = account.updatedAt
-          )
+      .searchPaginated(term, page)
+      .map(_.mapItem(account =>
+        AccountNoCreds(
+          id = account.id,
+          firstName = account.firstName,
+          lastName = account.lastName,
+          email = account.email,
+          accountTypeId = account.accountTypeId,
+          createdAt = account.createdAt,
+          updatedAt = account.updatedAt
         )
-      )
+      ))
       .transact(transactor)
-
-  }
 
 }

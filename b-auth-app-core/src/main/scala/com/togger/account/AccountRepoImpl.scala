@@ -1,7 +1,9 @@
 package com.togger.account
 
 import com.togger.account.AccountRepoImpl.ACCOUNT_TABLE_FRAG
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
@@ -90,22 +92,25 @@ class AccountRepoImpl extends AccountRepo with TgLogging {
     )
   }
 
-  override def findByFirstNameLastNameOrEmail(term: String): ConnectionIO[List[Account]] = {
-    val termQuery = "%" + term.toLowerCase() + "%"
-
+  override def searchPaginated(term: String, page: DbPageRequest): ConnectionIO[PaginatedResponse[Account]] =
     logAroundInfoQuery(
-      (
-        selectAllStatement(ACCOUNT_TABLE_FRAG) ++
-          fr"""
-            where lower(first_name) like $termQuery or
-            lower(last_name) like $termQuery or
-            lower(email) like $termQuery
-            """
-      ).query[Account].to[List]
+      TgFindPaginatedQuery[Account](
+        pageQuery = request =>
+          (selectAllStatement(ACCOUNT_TABLE_FRAG) ++ matchingTerm(term) ++
+            PaginationSql.orderBy(fr"last_name", fr"first_name", fr"id") ++
+            PaginationSql.limitOffset(request)).query[Account].to[List],
+        countQuery = (fr"select count(*) from" ++ ACCOUNT_TABLE_FRAG ++ matchingTerm(term)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding accounts with ${sp(term)}",
+      s"Finding accounts with ${sp(term)} and ${sp(page)}",
       accounts => s"Account found for ${sp(term)} ${sp(accounts)}"
     )
+
+  // Shared by the page and the count query. Postgres treats backslash as the LIKE escape by default, so the user's own
+  // %, _ and \ are escaped with it.
+  private def matchingTerm(term: String): Fragment = {
+    val pattern = "%" + term.trim.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    fr"where first_name ilike $pattern or last_name ilike $pattern or email ilike $pattern"
   }
 }
 

@@ -30,14 +30,14 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
   private val now = tgClock.currentInstant
   private val hashedPassword =
     HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
-  private val accountTypes = Seq("developer", "manager", "qa")
+  private val accountTypes = Seq("developer", "manager", "qa", AdminCheck.AdminAccountTypeName)
 
   def run: IO[Unit] = {
     for {
       accountTypes <- createAccountTypes.transact(transactor)
-      managerAccountType = accountTypes.find(_.name == "manager").get
+      adminAccountType = accountTypes.find(_.name == AdminCheck.AdminAccountTypeName).get
       _ <- Seq(
-        createAccount("John", "Doe", "admin@email.com", managerAccountType.id)
+        createAccount("John", "Doe", "admin@email.com", adminAccountType.id)
       ).map(account => accountService.createAccount(account)).sequence
     } yield ()
   }

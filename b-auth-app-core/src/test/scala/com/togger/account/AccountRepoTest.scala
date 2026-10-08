@@ -1,7 +1,7 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{TgIds, TimeHelpers}
+import com.togger.common.{DbPageRequest, PageRequest, TgIds, TimeHelpers}
 import com.togger.dto.login.{DeviceInfo, LoginDto}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -59,7 +59,7 @@ class AccountRepoTest extends AccountTgDbSpec with TimeHelpers with TgAccount {
       res.transact(transactor)
     }
 
-    "find all accounts that match either by first name, last name or email" in { transactor =>
+    "search accounts by first name, last name or email, ignoring case" in { transactor =>
       val accounts = Seq(
         createAccount("John", "Smith", "shark@email.com"),
         createAccount("Jack", "Curry", "bird@email.com"),
@@ -72,23 +72,90 @@ class AccountRepoTest extends AccountTgDbSpec with TimeHelpers with TgAccount {
         savedAccounts <- accounts
           .map(account => accountRepo.insert(account.copy(accountTypeId = accountTypes.head.id)))
           .sequence
-        birdResult <- accountRepo.findByFirstNameLastNameOrEmail("bird")
-        steveResult <- accountRepo.findByFirstNameLastNameOrEmail("sTeVe")
-        urryResult <- accountRepo.findByFirstNameLastNameOrEmail("urry")
+        birdResult <- accountRepo.searchPaginated("bird", pageOf(1, 20))
+        steveResult <- accountRepo.searchPaginated("sTeVe", pageOf(1, 20))
+        urryResult <- accountRepo.searchPaginated("urry", pageOf(1, 20))
+        noResult <- accountRepo.searchPaginated("nobody", pageOf(1, 20))
       } yield {
         val cp = new Checkpoint
-        cp(birdResult should have size 2)
-        cp(steveResult should have size 1)
-        cp(birdResult should have size 3)
-        cp(birdResult shouldBe savedAccounts.filter(_.email.contains("bird")))
-        cp(steveResult shouldBe savedAccounts.filter(_.firstName.contains("Steve")))
-        birdResult shouldBe savedAccounts.filter(_.lastName.contains("urry"))
+        cp(birdResult.items shouldBe savedAccounts.filter(_.email.contains("bird")).sortBy(_.lastName))
+        cp(steveResult.items shouldBe savedAccounts.filter(_.firstName == "Steve"))
+        cp(urryResult.items shouldBe savedAccounts.filter(_.lastName.contains("urry")).sortBy(_.lastName))
+        cp(urryResult.totalNumberOfItems shouldBe 2L)
+        cp(noResult.items shouldBe empty)
+        cp(noResult.totalNumberOfItems shouldBe 0L)
+        cp.reportAll()
+        succeed
       }
 
       res.transact(transactor)
+    }
 
+    "treat percent, underscore and backslash in the search term literally" in { transactor =>
+      val res = for {
+        accountTypes <- createAccountTypes
+        _ <- accountRepo.insert(
+          createAccount("Percent", "100%", "percent@email.com").copy(accountTypeId = accountTypes.head.id)
+        )
+        _ <- accountRepo.insert(
+          createAccount("Under", "Score", "under_score@email.com").copy(accountTypeId = accountTypes.head.id)
+        )
+        _ <- accountRepo.insert(
+          createAccount("Plain", "Name", "underXscore@email.com").copy(accountTypeId = accountTypes.head.id)
+        )
+        percent <- accountRepo.searchPaginated("%", pageOf(1, 20))
+        underscore <- accountRepo.searchPaginated("under_score", pageOf(1, 20))
+        backslash <- accountRepo.searchPaginated("\\", pageOf(1, 20))
+      } yield {
+        val cp = new Checkpoint
+        cp(percent.items.map(_.lastName) shouldBe List("100%"))
+        cp(underscore.items.map(_.lastName) shouldBe List("Score"))
+        cp(backslash.items shouldBe empty)
+        cp.reportAll()
+        succeed
+      }
+
+      res.transact(transactor)
+    }
+
+    "split 11 matching accounts over 3 pages of 5, by last name, first name, without a duplicate" in { transactor =>
+      val res = for {
+        accountTypes <- createAccountTypes
+        // two accounts share a last name, so the first name decides; inserted in reverse, so not in insertion order
+        savedAccounts <- (0 to 10).toList.reverse
+          .map(index =>
+            createAccount(
+              f"First $index%02d",
+              if (index < 2) "Same" else f"Last $index%02d",
+              s"match$index@email.com"
+            )
+          )
+          .map(account => accountRepo.insert(account.copy(accountTypeId = accountTypes.head.id)))
+          .sequence
+        _ <- accountRepo.insert(
+          createAccount("Other", "Person", "other@email.com").copy(accountTypeId = accountTypes.head.id)
+        )
+        pages <- (1 to 3).toList.traverse(number => accountRepo.searchPaginated("match", pageOf(number, 5)))
+        past <- accountRepo.searchPaginated("match", pageOf(4, 5))
+      } yield {
+        val cp = new Checkpoint
+        cp(pages.map(_.items.size) shouldBe List(5, 5, 1))
+        cp(pages.map(_.totalNumberOfItems).distinct shouldBe List(11L))
+        cp(pages.map(_.totalNumberOfPages).distinct shouldBe List(3L))
+        cp(pages.map(_.page) shouldBe List(1, 2, 3))
+        cp(pages.flatMap(_.items) shouldBe savedAccounts.sortBy(account => (account.lastName, account.firstName)))
+        cp(past.items shouldBe empty)
+        cp(past.totalNumberOfItems shouldBe 11L)
+        cp.reportAll()
+        succeed
+      }
+
+      res.transact(transactor)
     }
   }
+
+  private def pageOf(pageNumber: Int, size: Int) =
+    DbPageRequest.fromPageRequest(PageRequest(pageNumber, size)).toOption.get
 
   def createAccount(firstName: String, lastName: String, email: String) =
     Account(

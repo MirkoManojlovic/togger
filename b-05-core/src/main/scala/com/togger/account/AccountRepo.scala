@@ -3,7 +3,7 @@ package com.togger.account
 import java.time.Instant
 import java.util.UUID
 
-import com.togger.common.Password
+import com.togger.common.{DbPageRequest, PaginatedResponse, Password}
 import doobie.ConnectionIO
 
 trait HashedPassword {
@@ -36,5 +36,9 @@ trait AccountRepo {
   def findByEmail(email: String): ConnectionIO[Account]
   def deleteById(id: UUID): ConnectionIO[Int]
   def update(account: Account, updateAt: Instant): ConnectionIO[Account]
-  def findByFirstNameLastNameOrEmail(term: String): ConnectionIO[List[Account]]
+
+  /** One page of the accounts whose first name, last name or email contains the term (ignoring case, `%` and `_` are
+    * taken literally), by last name, first name.
+    */
+  def searchPaginated(term: String, page: DbPageRequest): ConnectionIO[PaginatedResponse[Account]]
 }
