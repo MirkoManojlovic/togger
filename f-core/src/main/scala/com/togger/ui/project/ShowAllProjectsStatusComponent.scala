@@ -108,8 +108,9 @@ class ShowAllProjectsStatusComponent(
               val projectDtos = success.body.get
               projectDtos
                 .map { projectDto =>
+                  // Progress is computed over every task of the project, so all pages are read.
                   taskFeService
-                    .findByProjectId(projectDto.id)
+                    .findAllByProjectId(projectDto.id)
                     .map(
                       _.fold(
                         e => {

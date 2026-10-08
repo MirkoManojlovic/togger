@@ -7,6 +7,9 @@ import java.util.UUID
 
 class TgRoutes {
 
+  private type TaskListQuery =
+    (Option[String], Option[String], List[String], List[String], List[String], List[String], List[String], Option[String])
+
   def routes(basePath: String): Seq[Route[_ <: FrontendPage, _ <: Any]] =
     Seq(
       Route.static(
@@ -55,11 +58,38 @@ class TgRoutes {
         pattern = root / "edit-task" / "project-id" / segment[String] / "task-id" / segment[String] / endOfSegments
 //        basePath = basePath
       ),
-      Route(
-        encode = (page: ShowAllTasksPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowAllTasksPage(UUID.fromString(projectId)),
-        pattern = root / "show-tasks" / segment[String] / endOfSegments
-        //        basePath = basePath
+      Route.withQuery[ShowAllTasksPage, String, TaskListQuery](
+        encode = (page: ShowAllTasksPage) =>
+          PatternArgs(
+            path = page.projectId.toString,
+            params = (
+              TaskListParams.pageToQuery(page.list),
+              TaskListParams.sizeToQuery(page.list),
+              TaskListParams.selectionToQuery(page.list.statuses),
+              TaskListParams.selectionToQuery(page.list.priorities),
+              TaskListParams.selectionToQuery(page.list.labels),
+              TaskListParams.selectionToQuery(page.list.assignees),
+              TaskListParams.selectionToQuery(page.list.milestones),
+              TaskListParams.searchToQuery(page.list)
+            )
+          ),
+        decode = { (args: PatternArgs[String, TaskListQuery]) =>
+          val (page, size, statuses, priorities, labels, assignees, milestones, search) = args.params
+          ShowAllTasksPage(
+            UUID.fromString(args.path),
+            TaskListParams.fromQuery(page, size, statuses, priorities, labels, assignees, milestones, search)
+          )
+        },
+        pattern = (root / "show-tasks" / segment[String] / endOfSegments) ? (
+          param[String]("page").? &
+            param[String]("size").? &
+            listParam[String]("status") &
+            listParam[String]("priority") &
+            listParam[String]("label") &
+            listParam[String]("assignee") &
+            listParam[String]("milestone") &
+            param[String]("search").?
+        )
       ),
       Route(
         encode = (page: ShowAllTaskStatusesPage) => page.projectId.toString,

@@ -311,7 +311,7 @@ object Sidebar {
     case CreateTaskPage(projectId)           => Some(projectId)
     case CreateTaskStatusPage(projectId)     => Some(projectId)
     case EditTaskStatusPage(projectId, _)    => Some(projectId)
-    case ShowAllTasksPage(projectId)         => Some(projectId)
+    case ShowAllTasksPage(projectId, _)      => Some(projectId)
     case ShowAllTaskStatusesPage(projectId)  => Some(projectId)
     case EditTaskPage(projectId, _)          => Some(projectId)
     case ShowAllTaskConfigsPage(projectId)   => Some(projectId)

@@ -53,11 +53,12 @@ class MilestoneHistoryComponent(
     .runWithSpinner {
       val projectCall =
         projectService.findById(projectId).map(_.fold(e => println(e), success => projectVar.set(success.body.get)))
+      // The history charts every task and log entry of the project, so all pages are read (bounded by PaginatedLoader).
       val tasksCall =
-        taskService.findByProjectId(projectId).map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
+        taskService.findAllByProjectId(projectId).map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
       val logEntriesCall =
         taskService
-          .findLogEntriesByProjectId(projectId)
+          .findAllLogEntriesByProjectId(projectId)
           .map(_.fold(e => println(e), success => logEntriesVar.set(success.body.get)))
       val milestonesCall =
         milestoneService

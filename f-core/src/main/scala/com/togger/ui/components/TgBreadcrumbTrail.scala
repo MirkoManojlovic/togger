@@ -69,7 +69,7 @@ object TgBreadcrumbTrail {
     case CreateProjectLabelCategoryPage    => underCategories("Create category")
     case EditProjectLabelCategoryPage(_)   => underCategories("Edit category")
 
-    case ShowAllTasksPage(_)        => underOrganizations(current("Tasks"))
+    case ShowAllTasksPage(_, _)     => underOrganizations(current("Tasks"))
     case CreateTaskPage(projectId)  => underTasks(projectId, current("Create task"))
     case EditTaskPage(projectId, _) => underTasks(projectId, current("Edit task"))
 

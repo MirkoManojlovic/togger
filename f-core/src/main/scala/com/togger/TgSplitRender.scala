@@ -311,7 +311,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   toast
                 ).element
-              case ShowAllTasksPage(projectId: UUID) =>
+              case ShowAllTasksPage(projectId: UUID, listParams) =>
                 new ShowAllTasksComponent(
                   taskService,
                   taskStatusService,
@@ -323,6 +323,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgDateFormater,
                   tgClock,
                   projectId,
+                  listParams,
                   toast,
                   modalFactory
                 ).element

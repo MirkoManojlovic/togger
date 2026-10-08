@@ -8,7 +8,7 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{DateRangeValidation, TgClock, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse, TgClock, TgJsonFailure, TgJsonSuccess}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
@@ -19,6 +19,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -288,11 +289,32 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def deleteTask(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.deleteEndpoint)(id)
 
-  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
-    protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)(projectId)
+  def findByProjectId(
+    projectId: UUID,
+    filter: TaskFilter,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[FindTaskRespFull]] =
+    protectedBackendClient.protectedHttpCall(taskEndpoints.findByProjectIdEndpoint)((projectId, filter, page))
 
-  def findLogEntriesByProjectId(projectId: UUID): TgRespIO[Seq[LogEntryDto]] =
-    protectedBackendClient.protectedHttpCall(logEntryEndpoints.findByProjectIdEndpoint)(projectId)
+  /** Every task of the project, for aggregates over the whole project; see [[PaginatedLoader]] for the bound. */
+  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, TaskFilter.empty, _))
+
+  def findLogEntriesByProjectId(
+    projectId: UUID,
+    filter: LogEntryFilter,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[LogEntryDto]] =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.findByProjectIdEndpoint)((projectId, filter, page))
+
+  /** Every log entry of the project in the date range, for calendars and charts over a window; see [[PaginatedLoader]]
+    * for the bound.
+    */
+  def findAllLogEntriesByProjectId(
+    projectId: UUID,
+    filter: LogEntryFilter = LogEntryFilter.empty
+  ): TgRespIO[Seq[LogEntryDto]] =
+    PaginatedLoader.loadAll(findLogEntriesByProjectId(projectId, filter, _))
 
   def findTaskById(id: UUID): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByIdEndpoint)(id)

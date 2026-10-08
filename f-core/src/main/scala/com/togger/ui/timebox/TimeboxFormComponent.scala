@@ -69,8 +69,10 @@ class TimeboxFormComponent(
 
   spinnerService
     .runWithSpinner {
+      // The picker offers every task of the project, so all pages are read (bounded by PaginatedLoader). TODO: replace
+      // with a paged search-as-you-type picker if projects grow beyond that bound.
       val tasksCall = taskService
-        .findByProjectId(target.projectId)
+        .findAllByProjectId(target.projectId)
         .map(_.map(success => tasksVar.set(success.body.get)))
       target match {
         case TimeboxFormTarget.Create(_) =>

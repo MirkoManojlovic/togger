@@ -54,7 +54,7 @@ object Pages {
 
   case class ShowAllTaskLabelsPage(projectId: UUID) extends PrivatePage
 
-  case class ShowAllTasksPage(projectId: UUID) extends PrivatePage
+  case class ShowAllTasksPage(projectId: UUID, list: TaskListParams = TaskListParams.default) extends PrivatePage
 
   case class ShowAllTaskStatusesPage(projectId: UUID) extends PrivatePage
 

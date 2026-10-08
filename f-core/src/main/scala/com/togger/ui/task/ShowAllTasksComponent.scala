@@ -2,9 +2,9 @@ package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, TgIds, WorkDayCalendar}
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto}
+import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
@@ -13,13 +13,15 @@ import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
   TableSearchComponent,
   TgBadge,
   TgBadgeColor,
-  TgHtmlTable
+  TgHtmlTable,
+  TgPaginationComponent
 }
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
@@ -68,6 +70,7 @@ class ShowAllTasksComponent(
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
   projectId: UUID,
+  params: TaskListParams,
   val toast: Toast,
   modalFactory: ModalFactory
 )(implicit
@@ -79,28 +82,8 @@ class ShowAllTasksComponent(
   val taskLabelsVar = Var(TaskLabelsState())
   val milestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
-  private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
-    statusesVar.signal.map(
-      _.taskStatusesSorted
-        .map { s =>
-          val isSelected = !defaultDeselectedStatusNames.contains(s.name)
-          MultiSelectItem(id = s.id.toString, name = s.name, isSelected = isSelected)
-        }
-    )
-  private val statusFilterSelectedIdsVar = Var(Set.empty[String])
 
-  private val priorityFilterItemsSignal: Signal[Seq[MultiSelectItem]] = Val(
-    TaskPriority.values
-      .sortBy(_.value)
-      .map(p => MultiSelectItem(id = p.value.toString, name = p.priorityName, isSelected = true))
-  )
-  private val priorityFilterSelectedIdsVar = Var(Set.empty[String])
-
-  private val labelFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
-    taskLabelsVar.signal.map(
-      _.taskLabels.sortBy(_.name).map(l => MultiSelectItem(id = l.id.toString, name = l.name, isSelected = true))
-    )
-  private val labelFilterSelectedIdsVar = Var(Set.empty[String])
+  private val paginationVar = Var(Option.empty[PaginationState])
 
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
@@ -109,75 +92,6 @@ class ShowAllTasksComponent(
     email = "notassigned@email.com",
     accountTypeId = TgIds.UNASSIGNED_UUID
   )
-
-  private val assigneeFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
-    stateFormVar.signal.map(
-      _.map(_.assignedTo.getOrElse(unassignedDto))
-        .distinctBy(_.id)
-        .sortBy(_.fullName.toLowerCase)
-        .map(a => MultiSelectItem(id = a.id.toString, name = a.fullName, isSelected = true))
-    )
-  private val assigneeFilterSelectedIdsVar = Var(Set.empty[String])
-
-  private val noMilestoneId = "none"
-  private val milestoneFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
-    milestonesVar.signal.map(milestones =>
-      milestones.sortBy(_.name.toLowerCase).map(m => MultiSelectItem(id = m.id.toString, name = m.name, isSelected = true)) :+
-        MultiSelectItem(id = noMilestoneId, name = "No milestone", isSelected = true)
-    )
-  private val milestoneFilterSelectedIdsVar = Var(Set.empty[String])
-
-  val searchTermVar = Var("")
-  private val searchBox =TableSearchComponent(
-    inputSignal = searchTermVar.signal,
-    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description",
-    debounceMs = 0
-  )
-
-  private val filteredRowsSignal: Signal[Seq[FindTaskRespFull]] =
-    stateFormVar.signal
-      .combineWith(
-        statusFilterSelectedIdsVar.signal,
-        priorityFilterSelectedIdsVar.signal,
-        labelFilterSelectedIdsVar.signal,
-        assigneeFilterSelectedIdsVar.signal,
-        milestoneFilterSelectedIdsVar.signal,
-        searchBox.inputSignal
-      )
-      .map {
-        case (dtos, selectedIds, selectedPriorityIds, selectedLabelIds, selectedAssigneeIds, selectedMilestoneIds, term) =>
-        val byStatus =
-          if (selectedIds.isEmpty) dtos else dtos.filter(dto => selectedIds.contains(dto.taskStatus.id.toString))
-        val byPriority =
-          if (selectedPriorityIds.isEmpty) byStatus
-          else byStatus.filter(dto => selectedPriorityIds.contains(dto.priority.value.toString))
-        // With every label selected (the default) nothing is filtered, so unlabeled tasks stay; once any label is
-        // unselected, only the tasks with at least one of the selected labels are shown.
-        val allLabelIds = taskLabelsVar.now().taskLabels.map(_.id.toString).toSet
-        val byLabel =
-          if (selectedLabelIds.isEmpty || allLabelIds.subsetOf(selectedLabelIds)) byPriority
-          else byPriority.filter(dto => dto.taskLabels.exists(l => selectedLabelIds.contains(l.id.toString)))
-        val byAssignee =
-          if (selectedAssigneeIds.isEmpty) byLabel
-          else byLabel.filter(dto => selectedAssigneeIds.contains(dto.assignedTo.getOrElse(unassignedDto).id.toString))
-        val byMilestone =
-          if (selectedMilestoneIds.isEmpty) byAssignee
-          else
-            byAssignee.filter(dto =>
-              selectedMilestoneIds.contains(dto.milestone.map(_.toString).getOrElse(noMilestoneId))
-            )
-        val needle = term.trim.toLowerCase
-        if (needle.isEmpty) byMilestone
-        else
-          byMilestone.filter(dto =>
-            dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
-          )
-      }
-  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
-    filteredRowsSignal.combineWith(statusesVar.signal).map { case (rows, statuses) =>
-      rows.sortBy(dto => statuses.idToOrder(dto.taskStatus.id))
-    }
 
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
@@ -190,6 +104,134 @@ class ShowAllTasksComponent(
       members = Seq.empty
     )
   )
+
+  private def showList(newParams: TaskListParams): Unit =
+    router.route(ShowAllTasksPage(projectId, newParams))
+
+  private type Options = Seq[(String, String)]
+
+  /** One filter widget. What is ticked comes from the URL (or the widget's default); ticking something navigates to the
+    * first page of the new filter, and the page is then read from the backend with that filter.
+    */
+  private class FilterSpec[S](
+    source: Var[S],
+    optionsOf: S => Options,
+    defaultSelectedOf: Options => Set[String],
+    chosenIn: TaskListParams => Option[Set[String]],
+    withChosen: (TaskListParams, Option[Set[String]]) => TaskListParams
+  ) {
+    val selectedIdsVar: Var[Set[String]] = Var(Set.empty)
+
+    private def options: Options = optionsOf(source.now())
+    private def defaultSelected: Set[String] = defaultSelectedOf(options)
+
+    val itemsSignal: Signal[Seq[MultiSelectItem]] =
+      source.signal.map { state =>
+        val offered = optionsOf(state)
+        val ticked = TaskListFilterMapping.selectedFromParams(chosenIn(params), defaultSelectedOf(offered))
+        offered.map { case (id, name) => MultiSelectItem(id = id, name = name, isSelected = ticked.contains(id)) }
+      }
+
+    def selection: FilterSelection =
+      FilterSelection(
+        allIds = options.map(_._1).toSet,
+        selectedIds = TaskListFilterMapping.selectedFromParams(chosenIn(params), defaultSelected)
+      )
+
+    // The ticks the URL itself implies (the widget seeds them when its options arrive) are not a change.
+    val navigateOnChange: Modifier[HtmlElement] =
+      selectedIdsVar.signal.changes --> Observer[Set[String]] { picked =>
+        val current = selection
+        if (current.allIds.nonEmpty && picked != current.selectedIds.intersect(current.allIds))
+          showList(withChosen(params, TaskListFilterMapping.toParamSelection(picked, defaultSelected)).firstPage)
+      }
+  }
+
+  private def allOptions(options: Options): Set[String] = options.map(_._1).toSet
+
+  private val statusFilter = new FilterSpec[TaskStatusesState](
+    source = statusesVar,
+    optionsOf = _.taskStatusesSorted.map(status => status.id.toString -> status.name),
+    defaultSelectedOf = _.collect { case (id, name) if !defaultDeselectedStatusNames.contains(name) => id }.toSet,
+    chosenIn = _.statuses,
+    withChosen = (listParams, chosen) => listParams.copy(statuses = chosen)
+  )
+
+  private val priorityFilter = new FilterSpec[Unit](
+    source = Var(()),
+    optionsOf = _ => TaskPriority.values.sortBy(_.value).map(priority => priority.value.toString -> priority.priorityName),
+    defaultSelectedOf = allOptions,
+    chosenIn = _.priorities,
+    withChosen = (listParams, chosen) => listParams.copy(priorities = chosen)
+  )
+
+  private val labelFilter = new FilterSpec[TaskLabelsState](
+    source = taskLabelsVar,
+    optionsOf = _.taskLabels.sortBy(_.name).map(label => label.id.toString -> label.name),
+    defaultSelectedOf = allOptions,
+    chosenIn = _.labels,
+    withChosen = (listParams, chosen) => listParams.copy(labels = chosen)
+  )
+
+  private val assigneeFilter = new FilterSpec[FindProjectResp](
+    source = projectVar,
+    optionsOf = project =>
+      (unassignedDto +: project.members).sortBy(_.fullName.toLowerCase).map(member => member.id.toString -> member.fullName),
+    defaultSelectedOf = allOptions,
+    chosenIn = _.assignees,
+    withChosen = (listParams, chosen) => listParams.copy(assignees = chosen)
+  )
+
+  private val milestoneFilter = new FilterSpec[Seq[FindMilestoneResp]](
+    source = milestonesVar,
+    optionsOf = milestones =>
+      milestones.sortBy(_.name.toLowerCase).map(milestone => milestone.id.toString -> milestone.name) :+
+        (TaskListFilterMapping.NoMilestoneId -> "No milestone"),
+    defaultSelectedOf = allOptions,
+    chosenIn = _.milestones,
+    withChosen = (listParams, chosen) => listParams.copy(milestones = chosen)
+  )
+
+  val searchTermVar = Var(params.search)
+  private val searchBox = TableSearchComponent(
+    inputSignal = searchTermVar.signal,
+    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
+    placeholderValue = "Search by name, description"
+  )
+
+  private val navigateOnSearch: Modifier[HtmlElement] =
+    searchTermVar.signal.changes --> Observer[String] { term =>
+      if (term.trim != params.search) showList(TaskListFilterMapping.withSearch(params, term))
+    }
+
+  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] = stateFormVar.signal
+
+  private def currentFilter(): TaskFilter =
+    TaskListFilterMapping.toTaskFilter(
+      statuses = statusFilter.selection,
+      priorities = priorityFilter.selection,
+      labels = labelFilter.selection,
+      assignees = assigneeFilter.selection,
+      milestones = milestoneFilter.selection,
+      search = params.search
+    )
+
+  /** Reads the page the URL asks for. A page past the end (its tasks were deleted) steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    taskService.findByProjectId(projectId, currentFilter(), params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
+          stateFormVar.set(response.items)
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
+
+  private def reloadPage(): Unit =
+    spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
   private object taskBadges {
 
@@ -293,21 +335,20 @@ class ShowAllTasksComponent(
       .unsafeRunAndForget()
   }
 
-  /** Stops at the first failure: what was saved stays in the table, the rest stays as it was. */
+  /** Stops at the first failure; either way the current page is read again, so the table shows what the backend has. */
   private def saveAll(pending: List[FindTaskRespFull], total: Int, saved: Int): IO[Unit] =
     pending match {
       case Nil =>
-        IO(if (total > 1) toast.success(s"$saved tasks updated"))
+        IO(if (total > 1) toast.success(s"$saved tasks updated")) >> loadPage()
       case updated :: rest =>
         taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(updated, tgClock.currentInstant)).flatMap {
           case Left(error) =>
             IO {
               toast.error(error)
               if (saved > 0) toast.success(s"$saved of $total tasks updated")
-            }
+            } >> loadPage()
           case Right(_) =>
-            IO(stateFormVar.update(_.map(row => if (row.id == updated.id) updated else row))) >>
-              saveAll(rest, total, saved + 1)
+            saveAll(rest, total, saved + 1)
         }
     }
 
@@ -360,7 +401,7 @@ class ShowAllTasksComponent(
       cls("mb-4 flex flex-wrap items-center gap-3"),
       div(
         cls("flex items-center gap-2 text-sm text-body"),
-        span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected"))
+        span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected on this page"))
       ),
       editToolbar.element,
       button(
@@ -397,9 +438,7 @@ class ShowAllTasksComponent(
         .findByProjectId(projectId)
         .map(response => response.map(success => milestonesVar.set(success.body.get)))
 
-      val taskCall = taskService
-        .findByProjectId(projectId)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
+      val taskCall = loadPage()
 
       projectCall
         .flatMap(_ => taskStatusCall)
@@ -420,7 +459,7 @@ class ShowAllTasksComponent(
       spinnerService
         .runWithSpinner(taskService.deleteTask(dto.id))
         .toastBackendMessageCodeBlock {
-          stateFormVar.update(_.filterNot(_.id == dto.id))
+          reloadPage()
         }
         .unsafeRunAndForget()
       close()
@@ -444,14 +483,14 @@ class ShowAllTasksComponent(
 
   private def deleteAll(pending: List[FindTaskRespFull], total: Int, deleted: Int): IO[Unit] =
     pending match {
-      case Nil => IO(toast.success(s"$deleted tasks deleted"))
+      case Nil => IO(toast.success(s"$deleted tasks deleted")) >> loadPage()
       case dto :: rest =>
         taskService.deleteTask(dto.id).flatMap {
           case Left(error) =>
             IO {
               toast.error(error)
               if (deleted > 0) toast.success(s"$deleted of $total tasks deleted")
-            }
+            } >> loadPage()
           case Right(_) =>
             IO(stateFormVar.update(_.filterNot(_.id == dto.id))) >> deleteAll(rest, total, deleted + 1)
         }
@@ -463,6 +502,12 @@ class ShowAllTasksComponent(
 
   val element = {
     div(
+      statusFilter.navigateOnChange,
+      priorityFilter.navigateOnChange,
+      labelFilter.navigateOnChange,
+      assigneeFilter.navigateOnChange,
+      milestoneFilter.navigateOnChange,
+      navigateOnSearch,
       visibleRowsSignal.map(_.map(_.id)) --> visibleIdsVar.writer,
       visibleIdsVar.signal --> (ids => selectedVar.update(BulkSelection.prune(_, ids))),
       child <-- projectVar.signal.map(projectResp =>
@@ -567,29 +612,29 @@ class ShowAllTasksComponent(
                       div(
                         cls("flex items-center gap-2"),
                         new TableFilterComponent(
-                          statusFilterItemsSignal,
+                          statusFilter.itemsSignal,
                           label = "Status",
-                          statusFilterSelectedIdsVar
+                          statusFilter.selectedIdsVar
                         ).element,
                         new TableFilterComponent(
-                          priorityFilterItemsSignal,
+                          priorityFilter.itemsSignal,
                           label = "Priority",
-                          priorityFilterSelectedIdsVar
+                          priorityFilter.selectedIdsVar
                         ).element,
                         new TableFilterComponent(
-                          labelFilterItemsSignal,
+                          labelFilter.itemsSignal,
                           label = "Labels",
-                          labelFilterSelectedIdsVar
+                          labelFilter.selectedIdsVar
                         ).element,
                         new TableFilterComponent(
-                          assigneeFilterItemsSignal,
+                          assigneeFilter.itemsSignal,
                           label = "Assigned to",
-                          assigneeFilterSelectedIdsVar
+                          assigneeFilter.selectedIdsVar
                         ).element,
                         new TableFilterComponent(
-                          milestoneFilterItemsSignal,
+                          milestoneFilter.itemsSignal,
                           label = "Milestone",
-                          milestoneFilterSelectedIdsVar
+                          milestoneFilter.selectedIdsVar
                         ).element
                       )
                     ),
@@ -641,6 +686,10 @@ class ShowAllTasksComponent(
                         )
                       }
                   )
+                ),
+                TgPaginationComponent(
+                  paginationVar.signal,
+                  (newPage, newSize) => showList(params.atPage(newPage, newSize))
                 )
               )
             )
