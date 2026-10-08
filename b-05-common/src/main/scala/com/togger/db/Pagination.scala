@@ -31,6 +31,12 @@ object PaginationSql {
   def orderBy(columns: Fragment*): Fragment =
     fr"order by" ++ columns.reduce((a, b) => a ++ fr"," ++ b)
 
+  /** The `ilike` pattern for "contains `term`": Postgres treats backslash as the LIKE escape by default, so the user's
+    * own %, _ and \ are escaped with it.
+    */
+  def containsPattern(term: String): String =
+    "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
   def countOf(select: Fragment): Fragment =
     fr"select count(*) from (" ++ select ++ fr") as paged_count"
 }
