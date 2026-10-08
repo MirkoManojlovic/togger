@@ -1,7 +1,7 @@
 package com.togger.ui.task.bulk
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.components.TgBadge
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 
 import java.util.UUID
 
@@ -69,5 +69,11 @@ object BulkTaskCard {
       }
     }
 
-  private def badge(spec: BadgeSpec): HtmlElement = TgBadge(text = spec.text, color = spec.color).element
+  /** The gray and alternative badges are white in dark mode, which is too bright next to the task name, so their text
+    * goes gray there; the colored badges keep their own text color.
+    */
+  private def badge(spec: BadgeSpec): HtmlElement = {
+    val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
+    TgBadge(text = spec.text, color = spec.color, extraCls = if (neutral) "dark:text-body" else "").element
+  }
 }

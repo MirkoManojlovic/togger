@@ -613,7 +613,7 @@ class ShowAllTasksComponent(
                                 div(
                                   cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
                                   a(
-                                    cls("text-base font-semibold text-body hover:text-fg-brand hover:underline"),
+                                    cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
                                     dto.name,
                                     router.navigateTo(EditTaskPage(dto.projectId, dto.id))
                                   ),
