@@ -1,7 +1,7 @@
 package com.togger.db
 
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.{DbPageRequest, PageRequest, PaginatedResponse}
 import doobie.implicits._
 import doobie.{ConnectionIO, Fragment}
 
@@ -33,4 +33,24 @@ object PaginationSql {
 
   def countOf(select: Fragment): Fragment =
     fr"select count(*) from (" ++ select ++ fr") as paged_count"
+}
+
+object TgPages {
+
+  /** Reads page after page until the last one. Only for maintenance jobs that must see every row; an endpoint never
+    * does this.
+    */
+  def readAll[A](read: DbPageRequest => ConnectionIO[PaginatedResponse[A]]): ConnectionIO[List[A]] = {
+    def loop(page: Int, collected: Vector[A]): ConnectionIO[List[A]] =
+      DbPageRequest.fromPageRequest(PageRequest(page, PageRequest.MaxSize)) match {
+        case Left(errors) => new IllegalStateException(errors.toString).raiseError[ConnectionIO, List[A]]
+        case Right(request) =>
+          read(request).flatMap { response =>
+            val all = collected ++ response.items
+            if (page >= response.totalNumberOfPages) all.toList.pure[ConnectionIO] else loop(page + 1, all)
+          }
+      }
+
+    loop(PageRequest.DefaultPage, Vector.empty)
+  }
 }

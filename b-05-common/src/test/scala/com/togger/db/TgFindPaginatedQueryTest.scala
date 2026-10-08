@@ -1,7 +1,7 @@
 package com.togger.db
 
 import cats.effect.unsafe.implicits.global
-import com.togger.common.{DbPageRequest, PageRequest}
+import com.togger.common.{DbPageRequest, PageRequest, PaginatedResponse}
 import doobie.free.connection.ConnectionIO
 import cats.implicits._
 import doobie.implicits._
@@ -41,6 +41,27 @@ class TgFindPaginatedQueryTest extends AnyWordSpec with Matchers {
       r.items shouldBe empty
       r.totalNumberOfItems shouldBe 11L
       called shouldBe false
+    }
+  }
+
+  "TgPages.readAll" should {
+    "read every page of a list longer than one page" in {
+      val items = (1 to 250).toList
+      val read = (request: DbPageRequest) =>
+        PaginatedResponse
+          .of(
+            request.page.pageValue,
+            request.limit,
+            items.slice(request.rowOffset.toInt, request.rowOffset.toInt + request.limit),
+            items.size.toLong
+          )
+          .pure[ConnectionIO]
+      TgPages.readAll(read).transact(transactor).unsafeRunSync() shouldBe items
+    }
+    "return an empty list for an empty result" in {
+      val read = (request: DbPageRequest) =>
+        PaginatedResponse.empty[Int](request.page.pageValue, request.limit).pure[ConnectionIO]
+      TgPages.readAll(read).transact(transactor).unsafeRunSync() shouldBe List.empty[Int]
     }
   }
 }
