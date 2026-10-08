@@ -3,8 +3,9 @@ package com.togger.milestone
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.TimeHelpers
+import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
 import com.togger.db.MockedTransactor
+import com.togger.dto.MilestoneFilter
 import com.togger.milestone.MilestoneError.{CannotDeleteLastVersion, CannotEditLatestVersion}
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -83,7 +84,9 @@ class MilestoneServiceTest
       (milestoneVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
       (milestoneRepo.findById _).expects(milestone.id).returns(milestone.pure[ConnectionIO])
       (milestoneVersionRepo.insert _).expects(secondVersion).returns(secondVersion.pure[ConnectionIO])
-      (milestoneRepo.findByProjectId _).expects(projectId).returns(List(milestone).pure[ConnectionIO])
+      (milestoneRepo.findPaginatedByProjectId _)
+        .expects(projectId, MilestoneFilter.empty, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(milestone), 1L).pure[ConnectionIO])
       (milestoneVersionRepo.findLatestByMilestoneId _).expects(milestone.id).returns(secondVersion.pure[ConnectionIO])
       (milestoneVersionRepo.findByMilestoneId _)
         .expects(milestone.id)
@@ -94,14 +97,14 @@ class MilestoneServiceTest
         savedMilestone = created.milestone
         secondResult <- service.saveNewVersion(savedMilestone.id, secondVersion)
         savedSecondVersion = secondResult.toOption.get.version
-        current <- service.findByProjectId(projectId)
+        current <- service.findPaginatedByProjectId(projectId, MilestoneFilter.empty, DbPageRequest.default)
         allVersions <- service.listVersions(savedMilestone.id)
       } yield {
         val cp = new Checkpoint
         cp(allVersions.map(_.version) shouldBe List(savedSecondVersion.version, firstVersion.version))
-        cp(current.map(_.versions.head.version) shouldBe List(savedSecondVersion.version))
+        cp(current.items.map(_.versions.head.version) shouldBe List(savedSecondVersion.version))
         cp.reportAll()
-        current.map(_.milestone.id) shouldBe List(savedMilestone.id)
+        current.items.map(_.milestone.id) shouldBe List(savedMilestone.id)
       }).unsafeToFuture()
     }
 

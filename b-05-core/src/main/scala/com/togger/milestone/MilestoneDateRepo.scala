@@ -12,6 +12,7 @@ trait MilestoneDateRepo {
 
   def deleteById(id: UUID): ConnectionIO[Int]
 
+  /** Bounded by caller: the dates of one milestone, read when that single milestone is opened. */
   def findByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneDate]]
 
   def findByProjectId(projectId: UUID): ConnectionIO[List[MilestoneDate]]

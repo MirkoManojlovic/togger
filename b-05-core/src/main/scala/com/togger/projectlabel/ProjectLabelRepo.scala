@@ -1,5 +1,6 @@
 package com.togger.projectlabel
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.time.Instant
@@ -10,5 +11,6 @@ trait ProjectLabelRepo {
   def insert(projectLabel: ProjectLabel): ConnectionIO[ProjectLabel]
   def deleteById(id: UUID): ConnectionIO[Int]
   def update(projectLabel: ProjectLabel, updatedAt: Instant): ConnectionIO[ProjectLabel]
-  def findAll: ConnectionIO[List[ProjectLabel]]
+  /** One page of all labels, by name. */
+  def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[ProjectLabel]]
 }

@@ -2,6 +2,8 @@ package com.togger.milestone
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.dto.MilestoneFilter
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneError.{
   CannotDeleteLastVersion,
@@ -69,15 +71,19 @@ class MilestoneService(
         IO.pure(Left(MilestoneNotFound))
       }
 
-  def findByProjectId(projectId: UUID): IO[List[MilestoneWithVersions]] =
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: MilestoneFilter,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[MilestoneWithVersions]] =
     (for {
-      milestones <- milestoneRepo.findByProjectId(projectId)
-      combined <- milestones.traverse(milestone =>
+      milestonesPage <- milestoneRepo.findPaginatedByProjectId(projectId, filter, page)
+      combined <- milestonesPage.items.traverse(milestone =>
         milestoneVersionRepo
           .findLatestByMilestoneId(milestone.id)
           .map(version => MilestoneWithVersions(milestone, Seq(version)))
       )
-    } yield combined).transact(transactor)
+    } yield milestonesPage.copy(items = combined)).transact(transactor)
 
   def listVersions(milestoneId: UUID): IO[List[MilestoneVersion]] =
     milestoneVersionRepo.findByMilestoneId(milestoneId).transact(transactor)

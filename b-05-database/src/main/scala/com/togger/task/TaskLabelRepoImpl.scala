@@ -1,6 +1,8 @@
 package com.togger.task
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelRepoImpl.TASK_LABEL_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -69,12 +71,23 @@ class TaskLabelRepoImpl extends TaskLabelRepo with TgLogging {
     )
   }
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLabel]] =
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskLabel]] =
     logAroundInfoQuery(
-      (selectAllStatement(TASK_LABEL_TABLE_FRAG) ++ fr" where project_id= $projectId").query[TaskLabel].to[List]
+      TgFindPaginatedQuery[TaskLabel](
+        pageQuery = request =>
+          (selectAllStatement(TASK_LABEL_TABLE_FRAG) ++ fr"where project_id = $projectId" ++
+            PaginationSql.orderBy(fr"name", fr"id") ++
+            PaginationSql.limitOffset(request)).query[TaskLabel].to[List],
+        countQuery = (fr"select count(*) from" ++ TASK_LABEL_TABLE_FRAG ++ fr"where project_id = $projectId")
+          .query[Long]
+          .unique
+      ).run(page)
     )(
-      s"Finding all task labels by ${sp(projectId)}",
-      labels => s"Task labels found ${sp(labels)}"
+      s"Finding task labels of ${sp(projectId)} with ${sp(page)}",
+      labels => s"Task labels found ${sp(labels)} for ${sp(projectId)}"
     )
 }
 

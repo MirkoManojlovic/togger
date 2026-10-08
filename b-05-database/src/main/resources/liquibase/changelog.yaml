@@ -1272,3 +1272,39 @@ databaseChangeLog:
                   name: organization_id
               - column:
                   name: id
+  - changeSet:
+      id: 4
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Task status and task label lists filter by project and order by name, milestone lists filter by project; none
+        of the three tables has an index on project_id
+      changes:
+        - createIndex:
+            indexName: idx_task_status_project_id_name_id
+            tableName: task_status
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: name
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_task_label_project_id_name_id
+            tableName: task_label
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: name
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_milestone_project_id_id
+            tableName: milestone
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id

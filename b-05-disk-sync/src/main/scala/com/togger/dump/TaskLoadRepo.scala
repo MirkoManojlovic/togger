@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.db.TgPages
 import cats.implicits._
 import com.togger.account.{Account, AccountRepo, AccountTypeRepo, HashedPasswordImpl}
 import com.togger.accountmapping.{AccountMapping, AccountMappingRepo}
@@ -101,7 +102,8 @@ class TaskLoadRepo(
 
   private def reconcileTaskStatuses(projectIdDb: UUID, diskStatuses: List[TaskStatus]): ConnectionIO[Map[UUID, UUID]] =
     for {
-      dbStatuses <- taskStatusRepo.findByProjectId(projectIdDb)
+      // reconciles every status of the project, so all pages are read
+      dbStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(projectIdDb, _))
       now = tgClock.currentInstant
       initialByKey = dbStatuses.map(s => (s.name, s.description) -> s.id).toMap
       folded <- diskStatuses.foldLeftM((initialByKey, Map.empty[UUID, UUID])) { case ((byKey, idMap), diskStatus) =>

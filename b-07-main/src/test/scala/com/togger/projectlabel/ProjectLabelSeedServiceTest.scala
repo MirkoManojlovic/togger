@@ -2,6 +2,7 @@ package com.togger.projectlabel
 
 import com.togger.ProjectLabelSeedService
 import com.togger.common.BusinessTgDbSpec
+import com.togger.db.TgPages
 import doobie.implicits._
 import doobie.postgres.implicits._
 
@@ -18,8 +19,8 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
 
         for {
           _ <- seedService.run
-          allCategories <- projectLabelCategoryRepo.findAll.transact(transactor)
-          allProjectLabels <- projectLabelRepo.findAll.transact(transactor)
+          allCategories <- TgPages.readAll(projectLabelCategoryRepo.findPaginated).transact(transactor)
+          allProjectLabels <- TgPages.readAll(projectLabelRepo.findPaginated).transact(transactor)
         } yield {
           allCategories.map(_.name).toSet shouldBe DefaultProjectLabelCategory.values.map(_.categoryName).toSet
 
@@ -48,8 +49,8 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
       for {
         _ <- seedService.run
         _ <- seedService.run
-        allCategories <- projectLabelCategoryRepo.findAll.transact(transactor)
-        allProjectLabels <- projectLabelRepo.findAll.transact(transactor)
+        allCategories <- TgPages.readAll(projectLabelCategoryRepo.findPaginated).transact(transactor)
+        allProjectLabels <- TgPages.readAll(projectLabelRepo.findPaginated).transact(transactor)
       } yield {
         allCategories.size shouldBe DefaultProjectLabelCategory.values.size
         allProjectLabels.size shouldBe

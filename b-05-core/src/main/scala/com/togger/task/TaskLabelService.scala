@@ -1,7 +1,7 @@
 package com.togger.task
 
 import cats.effect.IO
-import com.togger.common.TgClock
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
@@ -25,9 +25,8 @@ class TaskLabelService(
     }).transact(transactor)
   }
 
-  def findByProjectId(projectId: UUID): IO[List[TaskLabel]] = {
-    taskLabelRepo.findByProjectId(projectId).transact(transactor)
-  }
+  def findPaginatedByProjectId(projectId: UUID, page: DbPageRequest): IO[PaginatedResponse[TaskLabel]] =
+    taskLabelRepo.findPaginatedByProjectId(projectId, page).transact(transactor)
 
   def findById(id: UUID) =
     (for {

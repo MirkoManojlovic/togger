@@ -1,6 +1,8 @@
 package com.togger.taskStatus
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.task.{TaskStatus, TaskStatusRepo}
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
@@ -70,12 +72,23 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
     )
   }
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskStatus]] =
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskStatus]] =
     logAroundInfoQuery(
-      (selectAllStatement(TASK_STATUS_TABLE_FRAG) ++ fr" where project_id= $projectId").query[TaskStatus].to[List]
+      TgFindPaginatedQuery[TaskStatus](
+        pageQuery = request =>
+          (selectAllStatement(TASK_STATUS_TABLE_FRAG) ++ fr"where project_id = $projectId" ++
+            PaginationSql.orderBy(fr"name", fr"id") ++
+            PaginationSql.limitOffset(request)).query[TaskStatus].to[List],
+        countQuery = (fr"select count(*) from" ++ TASK_STATUS_TABLE_FRAG ++ fr"where project_id = $projectId")
+          .query[Long]
+          .unique
+      ).run(page)
     )(
-      s"Finding all tasks by ${sp(projectId)} statuses",
-      tasks => s"Task statuses found ${sp(tasks)} for "
+      s"Finding task statuses of ${sp(projectId)} with ${sp(page)}",
+      statuses => s"Task statuses found ${sp(statuses)} for ${sp(projectId)}"
     )
 }
 

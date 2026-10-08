@@ -63,7 +63,8 @@ trait TaskStatusRepo {
 
   def update(task: TaskStatus, updatedAt: Instant): ConnectionIO[TaskStatus]
 
-  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskStatus]]
+  /** One page of the project's statuses, by name. */
+  def findPaginatedByProjectId(projectId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TaskStatus]]
 
 }
 
@@ -77,7 +78,8 @@ trait TaskLabelRepo {
 
   def update(taskLabel: TaskLabel, updatedAt: Instant): ConnectionIO[TaskLabel]
 
-  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLabel]]
+  /** One page of the project's labels, by name. */
+  def findPaginatedByProjectId(projectId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TaskLabel]]
 
 }
 

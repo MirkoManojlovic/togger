@@ -19,6 +19,7 @@ import com.togger.task.{
   TaskVersionRepoImpl
 }
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
+import com.togger.db.TgPages
 import com.togger.dump.DayOfWeekCodec._
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -604,9 +605,9 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         persistedBlockedTask <- taskRepo.findById(blockedTaskId).transact(transactor)
         persistedDoneVersion <- taskVersionRepo.findByTaskId(doneTaskId).transact(transactor).map(_.head)
         persistedBlockedVersion <- taskVersionRepo.findByTaskId(blockedTaskId).transact(transactor).map(_.head)
-        targetStatuses <- taskStatusRepo.findByProjectId(targetProject.id).transact(transactor)
+        targetStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
         reloadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
-        targetStatusesAfterReload <- taskStatusRepo.findByProjectId(targetProject.id).transact(transactor)
+        targetStatusesAfterReload <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
       } yield {
         loadResult.isRight shouldBe true
         // both tasks and their statuses are remapped into the target project, not left pointing at the dump project

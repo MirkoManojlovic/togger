@@ -1,6 +1,6 @@
 package com.togger.milestone
 
-import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
+import cats.implicits.catsSyntaxApplicativeError
 import com.togger.account.TgAccount
 import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
 import com.togger.organization.TgProject
@@ -35,18 +35,6 @@ class MilestoneRepoTest extends BusinessTgDbSpec with TgAccount with TgProject w
         cp.reportAll()
         foundMilestone2.isLeft shouldBe true
       }
-
-      res.transact(transactor)
-    }
-
-    "find by project id" in { transactor =>
-      val res = for {
-        orgAndProject <- createOrgAndProject
-        savedProject = orgAndProject._2
-        milestonesToInsert = (0 to 10).map(_ => milestone(savedProject.id))
-        savedMilestones <- milestonesToInsert.map(milestoneRepo.insert).toList.sequence
-        foundMilestones <- milestoneRepo.findByProjectId(savedProject.id)
-      } yield foundMilestones shouldBe savedMilestones
 
       res.transact(transactor)
     }

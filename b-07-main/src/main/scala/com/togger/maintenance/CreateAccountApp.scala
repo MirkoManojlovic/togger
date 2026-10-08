@@ -1,5 +1,6 @@
 package com.togger.maintenance
 
+import com.togger.db.TgPages
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import com.togger.account._
@@ -210,11 +211,11 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       savedAlpha = savedAlphaResult._1
 
-      alphaTaskStatuses <- taskStatusRepo.findByProjectId(savedAlpha.id).transact(xa)
+      alphaTaskStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(savedAlpha.id, _)).transact(xa)
       alphaInProgressStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
       alphaDoneStatus = alphaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
 
-      alphaTaskLabels <- taskLabelRepo.findByProjectId(savedAlpha.id).transact(xa)
+      alphaTaskLabels <- TgPages.readAll(taskLabelRepo.findPaginatedByProjectId(savedAlpha.id, _)).transact(xa)
       alphaFeatureLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Feature.labelName).get
       alphaBugLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Bug.labelName).get
       alphaTestLabel = alphaTaskLabels.find(_.name == DefaultTaskLabel.Test.labelName).get
@@ -330,12 +331,12 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       savedBeta = savedBetaResult._1
 
-      betaTaskStatuses <- taskStatusRepo.findByProjectId(savedBeta.id).transact(xa)
+      betaTaskStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(savedBeta.id, _)).transact(xa)
       betaInProgressStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.InProgress.statusName).get
       betaDoneStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Done.statusName).get
       betaWaitingStatus = betaTaskStatuses.find(_.name == DefaultTaskStatus.Waiting.statusName).get
 
-      betaTaskLabels <- taskLabelRepo.findByProjectId(savedBeta.id).transact(xa)
+      betaTaskLabels <- TgPages.readAll(taskLabelRepo.findPaginatedByProjectId(savedBeta.id, _)).transact(xa)
       betaFeatureLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Feature.labelName).get
       betaDocsLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Docs.labelName).get
       betaChoreLabel = betaTaskLabels.find(_.name == DefaultTaskLabel.Chore.labelName).get

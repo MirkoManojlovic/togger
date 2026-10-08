@@ -1,6 +1,8 @@
 package com.togger.projectlabel
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.projectlabel.ProjectLabelCategoryRepoImpl.PROJECT_LABEL_CATEGORY_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -52,10 +54,17 @@ class ProjectLabelCategoryRepoImpl extends ProjectLabelCategoryRepo with TgLoggi
       projectLabelCategory => s"${sp(projectLabelCategory)} updated"
     )
 
-  override def findAll: ConnectionIO[List[ProjectLabelCategory]] =
-    logAroundInfoQuery(selectAllStatement(PROJECT_LABEL_CATEGORY_TABLE_FRAG).query[ProjectLabelCategory].to[List])(
-      "Finding all project label categories",
-      projectLabelCategories => s"Project label categories found ${sp(projectLabelCategories)}"
+  override def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[ProjectLabelCategory]] =
+    logAroundInfoQuery(
+      TgFindPaginatedQuery[ProjectLabelCategory](
+        pageQuery = request =>
+          (selectAllStatement(PROJECT_LABEL_CATEGORY_TABLE_FRAG) ++ PaginationSql.orderBy(fr"name", fr"id") ++
+            PaginationSql.limitOffset(request)).query[ProjectLabelCategory].to[List],
+        countQuery = (fr"select count(*) from" ++ PROJECT_LABEL_CATEGORY_TABLE_FRAG).query[Long].unique
+      ).run(page)
+    )(
+      s"Finding project label categories with ${sp(page)}",
+      items => s"Project label categories found ${sp(items)}"
     )
 }
 

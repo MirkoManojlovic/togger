@@ -3,6 +3,7 @@ package com.togger.controllers.milestone
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneDtoMapper.{toDto, toVersionDto}
 import com.togger.controllers.project.ProjectService
 import com.togger.dto.{FindMilestoneResp, MilestoneVersionDto}
@@ -57,12 +58,15 @@ class MilestoneController(
       }
   }
 
-  val findByProjectId = milestoneEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
-    milestoneService
-      .findByProjectId(projectId)
-      .map(milestonesWithLatestVersion =>
-        TgJsonSuccess.justBodyRight(milestonesWithLatestVersion.map(m => toDto(m.milestone, m.versions.head)))
-      )
+  val findByProjectId = milestoneEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+    val (projectId, filter, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      milestoneService
+        .findPaginatedByProjectId(projectId, filter, page)
+        .map(milestonesPage =>
+          TgJsonSuccess.justBodyRight(milestonesPage.mapItem(m => toDto(m.milestone, m.versions.head)))
+        )
+    }
   }
 
   val update = milestoneEndpoints.updateEndpoint.serverLogic { auth => dto =>

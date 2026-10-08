@@ -1,6 +1,7 @@
 package com.togger.controllers.projectlabel
 
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.projectlabel._
 
@@ -31,12 +32,13 @@ class ProjectLabelController(
     }
 
   val findAll =
-    findAllEndpoint.serverLogic { auth => _ =>
-      projectLabelService.findAll
-        .map(projectLabels =>
-          TgJsonSuccess.justBodyRight(
-            projectLabels
-              .map(projectLabel =>
+    findAllEndpoint.serverLogic { auth => pageRequest =>
+      PageRequestValidation.withPage(pageRequest) { page =>
+        projectLabelService
+          .findPaginated(page)
+          .map(projectLabelsPage =>
+            TgJsonSuccess.justBodyRight(
+              projectLabelsPage.mapItem(projectLabel =>
                 FindProjectLabelResp(
                   id = projectLabel.id,
                   name = projectLabel.name,
@@ -44,8 +46,9 @@ class ProjectLabelController(
                   categoryId = projectLabel.categoryId
                 )
               )
+            )
           )
-        )
+      }
     }
 
   val save = saveEndpoint.serverLogic { auth => dto =>

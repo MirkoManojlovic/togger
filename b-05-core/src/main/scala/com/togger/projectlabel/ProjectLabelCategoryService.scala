@@ -1,7 +1,7 @@
 package com.togger.projectlabel
 
 import cats.effect.IO
-import com.togger.common.TgClock
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
@@ -25,8 +25,8 @@ class ProjectLabelCategoryService(
     }).transact(transactor)
   }
 
-  def findAll: IO[List[ProjectLabelCategory]] =
-    projectLabelCategoryRepo.findAll.transact(transactor)
+  def findPaginated(page: DbPageRequest): IO[PaginatedResponse[ProjectLabelCategory]] =
+    projectLabelCategoryRepo.findPaginated(page).transact(transactor)
 
   def findById(id: UUID): IO[ProjectLabelCategory] =
     (for {

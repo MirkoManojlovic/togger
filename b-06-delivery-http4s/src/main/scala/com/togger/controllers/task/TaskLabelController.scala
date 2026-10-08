@@ -1,6 +1,7 @@
 package com.togger.controllers.task
 
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.task._
 
@@ -31,13 +32,14 @@ class TaskLabelController(
     }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => projectId =>
-      taskLabelService
-        .findByProjectId(projectId)
-        .map(taskLabels =>
-          TgJsonSuccess.justBodyRight(
-            taskLabels
-              .map(taskLabel =>
+    findByProjectIdEndpoint.serverLogic { auth => request =>
+      val (projectId, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        taskLabelService
+          .findPaginatedByProjectId(projectId, page)
+          .map(labelsPage =>
+            TgJsonSuccess.justBodyRight(
+              labelsPage.mapItem(taskLabel =>
                 FindTaskLabelResp(
                   id = taskLabel.id,
                   projectId = taskLabel.projectId,
@@ -45,8 +47,9 @@ class TaskLabelController(
                   description = taskLabel.description
                 )
               )
+            )
           )
-        )
+      }
     }
 
   val save = saveEndpoint.serverLogic { auth => dto =>

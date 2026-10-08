@@ -1,6 +1,8 @@
 package com.togger.projectlabel
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.projectlabel.ProjectLabelRepoImpl.PROJECT_LABEL_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -54,10 +56,17 @@ class ProjectLabelRepoImpl extends ProjectLabelRepo with TgLogging {
       projectLabel => s"${sp(projectLabel)} updated"
     )
 
-  override def findAll: ConnectionIO[List[ProjectLabel]] =
-    logAroundInfoQuery(selectAllStatement(PROJECT_LABEL_TABLE_FRAG).query[ProjectLabel].to[List])(
-      "Finding all project labels",
-      projectLabels => s"Project labels found ${sp(projectLabels)}"
+  override def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[ProjectLabel]] =
+    logAroundInfoQuery(
+      TgFindPaginatedQuery[ProjectLabel](
+        pageQuery = request =>
+          (selectAllStatement(PROJECT_LABEL_TABLE_FRAG) ++ PaginationSql.orderBy(fr"name", fr"id") ++
+            PaginationSql.limitOffset(request)).query[ProjectLabel].to[List],
+        countQuery = (fr"select count(*) from" ++ PROJECT_LABEL_TABLE_FRAG).query[Long].unique
+      ).run(page)
+    )(
+      s"Finding project labels with ${sp(page)}",
+      items => s"Project labels found ${sp(items)}"
     )
 }
 

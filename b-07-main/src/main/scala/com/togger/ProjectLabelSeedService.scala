@@ -3,6 +3,7 @@ package com.togger
 import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{TgClockImpl, TgIds}
+import com.togger.db.TgPages
 import com.togger.projectlabel.{
   DefaultDomain,
   DefaultInfrastructure,
@@ -26,14 +27,14 @@ class ProjectLabelSeedService(transactor: Transactor[IO]) {
   def run: IO[Unit] =
     for {
       categoryIdsByName <- ensureDefaultCategories
-      existingProjectLabels <- projectLabelRepo.findAll.transact(transactor)
+      existingProjectLabels <- TgPages.readAll(projectLabelRepo.findPaginated).transact(transactor)
       _ <- if (existingProjectLabels.isEmpty) seedProjectLabels(categoryIdsByName) else IO.unit
     } yield ()
 
   private def ensureDefaultCategories: IO[Map[String, UUID]] = {
     val now = tgClock.currentInstant
     for {
-      existing <- projectLabelCategoryRepo.findAll.transact(transactor)
+      existing <- TgPages.readAll(projectLabelCategoryRepo.findPaginated).transact(transactor)
       existingByName = existing.map(c => c.name -> c.id).toMap
       missing = DefaultProjectLabelCategory.values.filterNot(c => existingByName.contains(c.categoryName))
       inserted <- missing.toList

@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.db.TgPages
 import cats.implicits._
 import com.togger.account.{Account, AccountRepo}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo}
@@ -31,7 +32,8 @@ class TaskDumpRepo(
   def getProjectAndTaskStatuses(projectId: UUID): ConnectionIO[(Project, List[TaskStatus])] =
     for {
       project <- projectRepo.findById(projectId)
-      taskStatuses <- taskStatusRepo.findByProjectId(projectId)
+      // whole-project dump, intentionally unbounded
+      taskStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(projectId, _))
     } yield project -> taskStatuses
 
   def getAllTasksForProject(projectId: UUID): ConnectionIO[List[TaskDumpData]] =
