@@ -43,4 +43,11 @@ object DbPageRequest {
   /** Page 1 with the default size; for callers/tests that need a request without validation. */
   val default: DbPageRequest =
     fromPageRequest(PageRequest.default).fold(errors => throw new IllegalStateException(errors.toString), identity)
+
+  /** Page 1 at the maximum size: for lists embedded in another response or offered whole by a picker, which are cut
+    * off at `PageRequest.MaxSize` items.
+    */
+  val firstMaxSized: DbPageRequest =
+    fromPageRequest(PageRequest(PageRequest.DefaultPage, PageRequest.MaxSize))
+      .fold(errors => throw new IllegalStateException(errors.toString), identity)
 }

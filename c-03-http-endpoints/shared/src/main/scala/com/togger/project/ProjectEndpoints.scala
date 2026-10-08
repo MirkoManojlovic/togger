@@ -2,7 +2,8 @@ package com.togger.project
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.TgSecuredEndpoint
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, SearchProjectsByLabelsReq, UpdateProjectReq}
 import io.circe.generic.auto._
 import sttp.tapir._
@@ -36,24 +37,30 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateProjectReq])
       .out(jsonBody[TgJsonSuccess[FindProjectResp]])
 
-  val findByOrganizationIdAndAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindProjectResp]] =
+  val findByOrganizationIdAndAccountIdEndpoint
+    : TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindProjectResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "organization" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindProjectResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindProjectResp]]])
   //      .tag(topic)
   //      .name(createName(findById))
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val findAllMembersEndpoint: TgSecuredEndpoint[UUID, Seq[SearchAccountDto]] =
+  val findAllMembersEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[SearchAccountDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / "members" / path[UUID]("project-id"))
-      .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[SearchAccountDto]]])
 
-  val searchByLabelsEndpoint: TgSecuredEndpoint[SearchProjectsByLabelsReq, Seq[FindProjectResp]] =
+  // The labels stay in the body; only the page travels in the query string.
+  val searchByLabelsEndpoint
+    : TgSecuredEndpoint[(SearchProjectsByLabelsReq, PageRequest), PaginatedResponse[FindProjectResp]] =
     securedEndpoint.endpoint.post
       .in(basePath / "search")
       .in(jsonBody[SearchProjectsByLabelsReq])
-      .out(jsonBody[TgJsonSuccess[Seq[FindProjectResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindProjectResp]]])
 
 }

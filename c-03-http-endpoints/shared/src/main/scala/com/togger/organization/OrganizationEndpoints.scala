@@ -1,16 +1,12 @@
 package com.togger.organization
 
 import com.togger.auth.SecuredEndpoint
+import com.togger.common.PaginationInputs.pageQuery
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.SearchAccountDto
-import com.togger.dto.organization.{
-  CreateOrganizationReq,
-  FindOrganizationResp,
-  FindOrganizationsAndProjects,
-  UpdateOrganizationReq
-}
+import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, UpdateOrganizationReq}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -52,27 +48,25 @@ class OrganizationEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val findAllEndpoint: TgSecuredEndpointNoInput[Seq[FindOrganizationResp]] =
+  val findAllEndpoint: TgSecuredEndpoint[PageRequest, PaginatedResponse[FindOrganizationResp]] =
     securedEndpoint.endpoint.get
       .in(basePath)
-      .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindOrganizationResp]]])
 
-  val findByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindOrganizationResp]] =
+  val findByAccountIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindOrganizationResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "account" / path[UUID]("account-id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindOrganizationResp]]])
   //      .tag(topic)
   //      .name(createName(findById))
   //      .summary(createSummary(findById))
   //      .description(s"Find $topic using id")
 
-  val findAllMembersEndpoint: TgSecuredEndpoint[UUID, Seq[SearchAccountDto]] =
+  val findAllMembersEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[SearchAccountDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / "members" / path[UUID]("organization-id"))
-      .out(jsonBody[TgJsonSuccess[Seq[SearchAccountDto]]])
-
-  val findOrgAndProjectsByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindOrganizationsAndProjects]] =
-    securedEndpoint.endpoint.get
-      .in(basePath / "org-projects" / "account" / path[UUID]("account-id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindOrganizationsAndProjects]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[SearchAccountDto]]])
 }

@@ -13,14 +13,6 @@ case class FindOrganizationResp(
   members: Seq[SearchAccountDto]
 )
 
-case class FindOrganizationsAndProjects(
-  id: UUID,
-  name: String,
-  description: String,
-  icon: String,
-  projects: Seq[OrganizationProjectResp]
-)
-
 case class OrganizationProjectResp(
   id: UUID,
   name: String,

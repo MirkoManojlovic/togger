@@ -39,6 +39,10 @@ class PaginationTest extends AnyWordSpec with Matchers with EitherValues with Ta
       request.limit shouldBe 20
       request.rowOffset shouldBe 40L
     }
+    "offer the first page of the maximum size" in {
+      DbPageRequest.firstMaxSized.page.pageValue shouldBe 1
+      DbPageRequest.firstMaxSized.limit shouldBe PageRequest.MaxSize
+    }
     "accumulate page and size errors" in {
       DbPageRequest.fromPageRequest(PageRequest(0, 101)).left.value.length shouldBe 2L
     }

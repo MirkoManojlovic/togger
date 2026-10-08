@@ -14,11 +14,6 @@ case class SearchAccountDto(
   lazy val fullName: String = s"$firstName $lastName"
 }
 
-case class SearchAccountResp(
-  term: String,
-  accounts: Seq[SearchAccountDto]
-)
-
 case class AccountNoCreds(
   id: UUID,
   firstName: String,

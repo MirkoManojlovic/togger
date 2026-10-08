@@ -2,7 +2,8 @@ package com.togger.timebox
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.{CreateTimeboxReq, FindTimeboxResp, SaveTimeboxVersionReq, TimeboxVersionDto}
 import io.circe.generic.auto._
@@ -34,10 +35,11 @@ class TimeboxEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[FindTimeboxResp]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTimeboxResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindTimeboxResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindTimeboxResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindTimeboxResp]]])
 
   val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[TimeboxVersionDto]] =
     securedEndpoint.endpoint.get
