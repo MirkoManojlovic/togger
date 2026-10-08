@@ -65,8 +65,13 @@ class TimeboxController(
     }
   }
 
-  val listVersions = timeboxEndpoints.listVersionsEndpoint.serverLogic { auth => timeboxId =>
-    timeboxService.listVersions(timeboxId).map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  val listVersions = timeboxEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+    val (timeboxId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      timeboxService
+        .listVersions(timeboxId, page)
+        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+    }
   }
 
   val delete = timeboxEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>

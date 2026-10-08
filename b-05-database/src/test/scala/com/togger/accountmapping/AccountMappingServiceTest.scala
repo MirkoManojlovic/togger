@@ -3,7 +3,7 @@ package com.togger.accountmapping
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.TimeHelpers
+import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -52,21 +52,27 @@ class AccountMappingServiceTest
     "find account mappings by db account id" in {
       val mapping = newAccountMapping()
 
-      (accountMappingRepo.findByAccountIdDb _)
-        .expects(accountIdDb)
-        .returns(List(mapping).pure[ConnectionIO])
+      (accountMappingRepo.findPaginatedByAccountIdDb _)
+        .expects(accountIdDb, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(mapping), 1L).pure[ConnectionIO])
 
-      service.findByAccountIdDb(accountIdDb).map(_ shouldBe List(mapping)).unsafeToFuture()
+      service
+        .findPaginatedByAccountIdDb(accountIdDb, DbPageRequest.default)
+        .map(_.items shouldBe List(mapping))
+        .unsafeToFuture()
     }
 
     "find account mappings by dump account id" in {
       val mapping = newAccountMapping()
 
-      (accountMappingRepo.findByAccountIdDump _)
-        .expects(accountIdDump)
-        .returns(List(mapping).pure[ConnectionIO])
+      (accountMappingRepo.findPaginatedByAccountIdDump _)
+        .expects(accountIdDump, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(mapping), 1L).pure[ConnectionIO])
 
-      service.findByAccountIdDump(accountIdDump).map(_ shouldBe List(mapping)).unsafeToFuture()
+      service
+        .findPaginatedByAccountIdDump(accountIdDump, DbPageRequest.default)
+        .map(_.items shouldBe List(mapping))
+        .unsafeToFuture()
     }
 
     "delete an account mapping by its composite key" in {

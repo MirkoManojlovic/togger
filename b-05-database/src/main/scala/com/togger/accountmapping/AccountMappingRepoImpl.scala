@@ -1,6 +1,8 @@
 package com.togger.accountmapping
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.accountmapping.AccountMappingRepoImpl.ACCOUNT_MAPPING_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
@@ -26,24 +28,40 @@ class AccountMappingRepoImpl extends AccountMappingRepo {
     )
   }
 
-  override def findByAccountIdDb(accountIdDb: UUID): ConnectionIO[List[AccountMapping]] =
+  override def findPaginatedByAccountIdDb(
+    accountIdDb: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[AccountMapping]] =
     logAroundInfoQuery(
-      (selectAllStatement(ACCOUNT_MAPPING_TABLE_FRAG) ++ fr"where account_id_db = $accountIdDb")
-        .query[AccountMapping]
-        .to[List]
+      TgFindPaginatedQuery[AccountMapping](
+        pageQuery = request =>
+          (selectAllStatement(ACCOUNT_MAPPING_TABLE_FRAG) ++ fr"where account_id_db = $accountIdDb" ++
+            PaginationSql.orderBy(fr"account_id_dump") ++
+            PaginationSql.limitOffset(request)).query[AccountMapping].to[List],
+        countQuery = (fr"select count(*) from" ++ ACCOUNT_MAPPING_TABLE_FRAG ++
+          fr"where account_id_db = $accountIdDb").query[Long].unique
+      ).run(page)
     )(
-      s"Finding account mappings for ${sp(accountIdDb)}",
-      mappings => s"${sp(mappings)} found"
+      s"Finding account mappings of ${sp(accountIdDb)} with ${sp(page)}",
+      mappings => s"Account mappings found ${sp(mappings)} for ${sp(accountIdDb)}"
     )
 
-  override def findByAccountIdDump(accountIdDump: UUID): ConnectionIO[List[AccountMapping]] =
+  override def findPaginatedByAccountIdDump(
+    accountIdDump: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[AccountMapping]] =
     logAroundInfoQuery(
-      (selectAllStatement(ACCOUNT_MAPPING_TABLE_FRAG) ++ fr"where account_id_dump = $accountIdDump")
-        .query[AccountMapping]
-        .to[List]
+      TgFindPaginatedQuery[AccountMapping](
+        pageQuery = request =>
+          (selectAllStatement(ACCOUNT_MAPPING_TABLE_FRAG) ++ fr"where account_id_dump = $accountIdDump" ++
+            PaginationSql.orderBy(fr"account_id_db") ++
+            PaginationSql.limitOffset(request)).query[AccountMapping].to[List],
+        countQuery = (fr"select count(*) from" ++ ACCOUNT_MAPPING_TABLE_FRAG ++
+          fr"where account_id_dump = $accountIdDump").query[Long].unique
+      ).run(page)
     )(
-      s"Finding account mappings for ${sp(accountIdDump)}",
-      mappings => s"${sp(mappings)} found"
+      s"Finding account mappings of ${sp(accountIdDump)} with ${sp(page)}",
+      mappings => s"Account mappings found ${sp(mappings)} for ${sp(accountIdDump)}"
     )
 
   override def deleteByIds(accountIdDb: UUID, accountIdDump: UUID): ConnectionIO[Int] =

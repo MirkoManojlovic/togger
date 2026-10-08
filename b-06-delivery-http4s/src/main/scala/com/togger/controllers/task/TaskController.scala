@@ -194,8 +194,7 @@ class TaskController(
 
     taskService.findProjectId(taskDto.id).flatMap { projectId =>
       projectService.findById(projectId).flatMap { case (project, _, _) =>
-        taskVersionService.listVersions(taskDto.id).flatMap { versions =>
-          val currentVersion = versions.head
+        taskVersionService.findLatest(taskDto.id).flatMap { currentVersion =>
           val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
           val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
           val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
@@ -280,10 +279,13 @@ class TaskController(
       }
   }
 
-  val listVersions = listVersionsEndpoint.serverLogic { auth => taskId =>
-    taskVersionService
-      .listVersions(taskId)
-      .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  val listVersions = listVersionsEndpoint.serverLogic { auth => request =>
+    val (taskId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      taskVersionService
+        .listVersions(taskId, page)
+        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+    }
   }
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>

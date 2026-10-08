@@ -2,7 +2,7 @@ package com.togger.taskloadconfig
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgIds, TimeHelpers}
 import com.togger.organization.TgProject
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -88,7 +88,7 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
         )
         _ <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
-        found <- taskLoadConfigRepo.findByProjectId(savedProject1.id)
+        found <- taskLoadConfigRepo.findPaginatedByProjectId(savedProject1.id, DbPageRequest.default).map(_.items)
       } yield {
         found.toSet shouldBe Set(config1, config2)
       }

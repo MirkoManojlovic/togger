@@ -2,7 +2,7 @@ package com.togger.milestone
 
 import cats.implicits.catsSyntaxApplicativeError
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.organization.TgProject
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -69,7 +69,9 @@ class MilestoneDateVersionRepoTest extends BusinessTgDbSpec with TgAccount with 
         milestoneDateVersion1 <- milestoneDateVersionRepo.insert(milestoneDateVersion(savedMilestoneDate.id, v1))
         milestoneDateVersion2 <- milestoneDateVersionRepo.insert(milestoneDateVersion(savedMilestoneDate.id, v2))
         milestoneDateVersion3 <- milestoneDateVersionRepo.insert(milestoneDateVersion(savedMilestoneDate.id, "v3"))
-        foundVersions <- milestoneDateVersionRepo.findByMilestoneDateId(savedMilestoneDate.id)
+        foundVersions <- milestoneDateVersionRepo
+          .findPaginatedByMilestoneDateId(savedMilestoneDate.id, DbPageRequest.default)
+          .map(_.items)
         latest <- milestoneDateVersionRepo.findLatestByMilestoneDateId(savedMilestoneDate.id)
       } yield {
         val cp = new Checkpoint
@@ -104,7 +106,9 @@ class MilestoneDateVersionRepoTest extends BusinessTgDbSpec with TgAccount with 
         _ <- milestoneDateVersionRepo.insert(milestoneDateVersion(savedMilestoneDate.id, v1))
         _ <- milestoneDateVersionRepo.insert(milestoneDateVersion(savedMilestoneDate.id, v2))
         _ <- milestoneDateRepo.deleteById(savedMilestoneDate.id)
-        remainingVersions <- milestoneDateVersionRepo.findByMilestoneDateId(savedMilestoneDate.id)
+        remainingVersions <- milestoneDateVersionRepo
+          .findPaginatedByMilestoneDateId(savedMilestoneDate.id, DbPageRequest.default)
+          .map(_.items)
       } yield remainingVersions shouldBe empty
 
       res.transact(transactor)

@@ -12,6 +12,7 @@ trait LinkVersionRepo {
 
   def findByVersion(version: UUID): ConnectionIO[LinkVersion]
 
+  /** Bounded by caller: the history of one link, loaded with its task. Decided to stay unpaginated. */
   def findByLinkId(linkId: UUID): ConnectionIO[List[LinkVersion]]
 
   def findLatestByLinkId(linkId: UUID): ConnectionIO[LinkVersion]

@@ -1,7 +1,7 @@
 package com.togger.projectmapping
 
 import cats.implicits._
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.organization.TgProject
 import com.togger.project.Project
 import doobie.implicits._
@@ -34,10 +34,14 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
         dbProject <- createSecondProject(savedOrganization.id)
         mapping = newProjectMapping(dumpProject.id, dbProject.id)
         savedMapping <- projectMappingRepo.insert(mapping)
-        foundByDb <- projectMappingRepo.findByProjectIdDb(dbProject.id)
-        foundByDump <- projectMappingRepo.findByProjectIdDump(mapping.projectIdDump)
+        foundByDb <- projectMappingRepo.findPaginatedByProjectIdDb(dbProject.id, DbPageRequest.default).map(_.items)
+        foundByDump <- projectMappingRepo
+          .findPaginatedByProjectIdDump(mapping.projectIdDump, DbPageRequest.default)
+          .map(_.items)
         _ <- projectMappingRepo.deleteByIds(dbProject.id, mapping.projectIdDump)
-        foundAfterDelete <- projectMappingRepo.findByProjectIdDb(dbProject.id)
+        foundAfterDelete <- projectMappingRepo
+          .findPaginatedByProjectIdDb(dbProject.id, DbPageRequest.default)
+          .map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(savedMapping.projectIdDb shouldBe dbProject.id)
@@ -61,7 +65,7 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
         dbProject2 <- createSecondProject(savedOrganization.id)
         mapping1 <- projectMappingRepo.insert(newProjectMapping(dumpProject1.id, dbProject1.id))
         _ <- projectMappingRepo.insert(newProjectMapping(dumpProject2.id, dbProject2.id))
-        found <- projectMappingRepo.findByProjectIdDb(dbProject1.id)
+        found <- projectMappingRepo.findPaginatedByProjectIdDb(dbProject1.id, DbPageRequest.default).map(_.items)
       } yield {
         found shouldBe List(mapping1)
       }
@@ -78,7 +82,7 @@ class ProjectMappingRepoTest extends BusinessTgDbSpec with TgProject with TimeHe
         dbProject <- createSecondProject(savedOrganization.id)
         mapping1 <- projectMappingRepo.insert(newProjectMapping(dumpProject1.id, dbProject.id))
         mapping2 <- projectMappingRepo.insert(newProjectMapping(dumpProject2.id, dbProject.id))
-        found <- projectMappingRepo.findByProjectIdDb(dbProject.id)
+        found <- projectMappingRepo.findPaginatedByProjectIdDb(dbProject.id, DbPageRequest.default).map(_.items)
       } yield {
         found.toSet shouldBe Set(mapping1, mapping2)
       }

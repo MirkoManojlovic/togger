@@ -1,6 +1,7 @@
 package com.togger.accountmapping
 
 import cats.effect.IO
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
@@ -20,11 +21,17 @@ class AccountMappingService(
       .transact(transactor)
   }
 
-  def findByAccountIdDb(accountIdDb: UUID): IO[List[AccountMapping]] =
-    accountMappingRepo.findByAccountIdDb(accountIdDb).transact(transactor)
+  def findPaginatedByAccountIdDb(
+    accountIdDb: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[AccountMapping]] =
+    accountMappingRepo.findPaginatedByAccountIdDb(accountIdDb, page).transact(transactor)
 
-  def findByAccountIdDump(accountIdDump: UUID): IO[List[AccountMapping]] =
-    accountMappingRepo.findByAccountIdDump(accountIdDump).transact(transactor)
+  def findPaginatedByAccountIdDump(
+    accountIdDump: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[AccountMapping]] =
+    accountMappingRepo.findPaginatedByAccountIdDump(accountIdDump, page).transact(transactor)
 
   def deleteByIds(accountIdDb: UUID, accountIdDump: UUID): IO[Int] =
     accountMappingRepo.deleteByIds(accountIdDb, accountIdDump).transact(transactor)

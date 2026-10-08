@@ -2,6 +2,7 @@ package com.togger.task
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.task.TaskError.{CannotDeleteLastVersion, CannotEditLatestVersion, TaskError, VersionNotFound}
 import doobie.Transactor
@@ -16,8 +17,11 @@ class TaskVersionService(
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  def listVersions(taskId: UUID): IO[List[TaskVersion]] =
-    taskVersionRepo.findByTaskId(taskId).transact(transactor)
+  def listVersions(taskId: UUID, page: DbPageRequest): IO[PaginatedResponse[TaskVersion]] =
+    taskVersionRepo.findPaginatedByTaskId(taskId, page).transact(transactor)
+
+  def findLatest(taskId: UUID): IO[TaskVersion] =
+    taskVersionRepo.findLatestByTaskId(taskId).transact(transactor)
 
   def updateVersionContent(
     version: UUID,

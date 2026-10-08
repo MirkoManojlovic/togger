@@ -1,6 +1,7 @@
 package com.togger.controllers.projectmapping
 
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.projectmapping.{ProjectMapping, ProjectMappingEndpoints, ProjectMappingService}
 
@@ -36,17 +37,23 @@ class ProjectMappingController(
   }
 
   val findByProjectIdDb =
-    findByProjectIdDbEndpoint.serverLogic { _ => projectIdDb =>
-      projectMappingService
-        .findByProjectIdDb(projectIdDb)
-        .map(mappings => TgJsonSuccess.justBodyRight(mappings.map(toResp)))
+    findByProjectIdDbEndpoint.serverLogic { _ => request =>
+      val (projectIdDb, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        projectMappingService
+          .findPaginatedByProjectIdDb(projectIdDb, page)
+          .map(mappingsPage => TgJsonSuccess.justBodyRight(mappingsPage.mapItem(toResp)))
+      }
     }
 
   val findByProjectIdDump =
-    findByProjectIdDumpEndpoint.serverLogic { _ => projectIdDump =>
-      projectMappingService
-        .findByProjectIdDump(projectIdDump)
-        .map(mappings => TgJsonSuccess.justBodyRight(mappings.map(toResp)))
+    findByProjectIdDumpEndpoint.serverLogic { _ => request =>
+      val (projectIdDump, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        projectMappingService
+          .findPaginatedByProjectIdDump(projectIdDump, page)
+          .map(mappingsPage => TgJsonSuccess.justBodyRight(mappingsPage.mapItem(toResp)))
+      }
     }
 
   val delete = deleteEndpoint.serverLogic { _ =>

@@ -1,7 +1,7 @@
 package com.togger.taskdumpconfig
 
 import cats.effect.IO
-import com.togger.common.TgClock
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
@@ -25,8 +25,8 @@ class TaskDumpConfigService(
   def findById(id: UUID): IO[TaskDumpConfig] =
     taskDumpConfigRepo.findById(id).transact(transactor)
 
-  def findByProjectId(projectId: UUID): IO[List[TaskDumpConfig]] =
-    taskDumpConfigRepo.findByProjectId(projectId).transact(transactor)
+  def findPaginatedByProjectId(projectId: UUID, page: DbPageRequest): IO[PaginatedResponse[TaskDumpConfig]] =
+    taskDumpConfigRepo.findPaginatedByProjectId(projectId, page).transact(transactor)
 
   def update(taskDumpConfig: TaskDumpConfig): IO[TaskDumpConfig] = {
     logger.info(s"Updating ${sp(taskDumpConfig)}")

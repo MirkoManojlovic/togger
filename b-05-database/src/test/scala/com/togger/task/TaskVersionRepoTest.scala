@@ -196,39 +196,6 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
       res.transact(transactor)
     }
 
-    "find all task ids for the latest version's assignee" in { transactor =>
-      val accountRepo = new AccountRepoImpl
-      val res = for {
-        fixtures <- createTaskAndFixtures()
-        (savedAccount, _, taskStatusSaved, savedTask) = fixtures
-        otherAccount <- accountRepo.insert(
-          Account(
-            id = TgIds.UNASSIGNED_UUID,
-            firstName = "Jane",
-            lastName = "Doe",
-            email = "jane@email.com",
-            password = passwordHashed,
-            verified = false,
-            enabled = true,
-            accountTypeId = savedAccount.accountTypeId,
-            createdAt = nowAsInstant,
-            updatedAt = nowAsInstant
-          )
-        )
-        _ <- taskVersionRepo.insert(taskVersion(savedTask.id, taskStatusSaved.id, Some(savedAccount.id), v1))
-        _ <- taskVersionRepo.insert(taskVersion(savedTask.id, taskStatusSaved.id, Some(otherAccount.id), v2))
-        foundForOriginalAssignee <- taskVersionRepo.findAllTaskIdsByAssigneeId(savedAccount.id)
-        foundForLatestAssignee <- taskVersionRepo.findAllTaskIdsByAssigneeId(otherAccount.id)
-      } yield {
-        val cp = new Checkpoint
-        cp(foundForOriginalAssignee shouldBe empty)
-        cp.reportAll()
-        foundForLatestAssignee shouldBe List(savedTask.id)
-      }
-
-      res.transact(transactor)
-    }
-
   }
 
 }

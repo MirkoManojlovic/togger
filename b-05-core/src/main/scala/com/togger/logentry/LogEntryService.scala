@@ -44,15 +44,15 @@ class LogEntryService(
         IO.pure(Left(LogEntryNotFound))
       }
 
-  def findByTaskId(taskId: UUID): IO[List[LogEntryWithVersions]] =
+  def findPaginatedByTaskId(taskId: UUID, page: DbPageRequest): IO[PaginatedResponse[LogEntryWithVersions]] =
     (for {
-      entries <- logEntryRepo.findByTaskId(taskId)
-      combined <- entries.traverse(logEntry =>
+      entriesPage <- logEntryRepo.findPaginatedByTaskId(taskId, page)
+      combined <- entriesPage.items.traverse(logEntry =>
         logEntryVersionRepo
           .findLatestByLogEntryId(logEntry.id)
           .map(logEntryVersion => LogEntryWithVersions(logEntry, Seq(logEntryVersion)))
       )
-    } yield combined).transact(transactor)
+    } yield entriesPage.copy(items = combined)).transact(transactor)
 
   def findPaginatedByProjectId(
     projectId: UUID,
@@ -68,8 +68,8 @@ class LogEntryService(
       )
     } yield entriesPage.copy(items = combined)).transact(transactor)
 
-  def listVersions(logEntryId: UUID): IO[List[LogEntryVersion]] =
-    logEntryVersionRepo.findByLogEntryId(logEntryId).transact(transactor)
+  def listVersions(logEntryId: UUID, page: DbPageRequest): IO[PaginatedResponse[LogEntryVersion]] =
+    logEntryVersionRepo.findPaginatedByLogEntryId(logEntryId, page).transact(transactor)
 
   def updateVersionContent(
     version: UUID,

@@ -32,7 +32,7 @@ class TaskLoadRepo(
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
 
   def resolveAccountMapping(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
-    accountMappingRepo.findByAccountIdDump(accountDumpData.id).map(_.headOption).flatMap {
+    findMappingOfDumpAccount(accountDumpData.id).flatMap {
       case Some(mapping) =>
         mapping.accountIdDb.asRight[ProjectError].pure[ConnectionIO]
       case None =>
@@ -45,6 +45,10 @@ class TaskLoadRepo(
               .map(_ => accountIdDb.asRight[ProjectError])
         }
     }
+
+  /** A dump account maps to a handful of database accounts at most, so reading every page stays a single query. */
+  private def findMappingOfDumpAccount(accountIdDump: UUID): ConnectionIO[Option[AccountMapping]] =
+    TgPages.readAll(accountMappingRepo.findPaginatedByAccountIdDump(accountIdDump, _)).map(_.headOption)
 
   def resolveAccountMappings(accounts: List[AccountDumpData]): ConnectionIO[Either[ProjectError, Map[UUID, UUID]]] =
     accounts
@@ -88,7 +92,8 @@ class TaskLoadRepo(
   }
 
   def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[Map[UUID, UUID]] =
-    projectMappingRepo.findByProjectIdDb(projectIdDb).flatMap { mappings =>
+    // the project has one mapping per dump it was loaded from, a handful at most
+    TgPages.readAll(projectMappingRepo.findPaginatedByProjectIdDb(projectIdDb, _)).flatMap { mappings =>
       val ensureMapping: ConnectionIO[Unit] =
         if (mappings.exists(_.projectIdDump == manifest.project.id)) ().pure[ConnectionIO]
         else {

@@ -85,8 +85,8 @@ class MilestoneService(
       )
     } yield milestonesPage.copy(items = combined)).transact(transactor)
 
-  def listVersions(milestoneId: UUID): IO[List[MilestoneVersion]] =
-    milestoneVersionRepo.findByMilestoneId(milestoneId).transact(transactor)
+  def listVersions(milestoneId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneVersion]] =
+    milestoneVersionRepo.findPaginatedByMilestoneId(milestoneId, page).transact(transactor)
 
   def updateVersionContent(
     version: UUID,

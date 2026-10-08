@@ -2,6 +2,7 @@ package com.togger.milestone
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneDateError.{
   CannotDeleteLastVersion,
@@ -11,7 +12,7 @@ import com.togger.milestone.MilestoneDateError.{
   VersionNotFound
 }
 import com.togger.util.SplunkMacro.sp
-import doobie.Transactor
+import doobie.{ConnectionIO, Transactor}
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
@@ -51,15 +52,14 @@ class MilestoneDateService(
         IO.pure(Left(MilestoneDateNotFound))
       }
 
-  def findByProjectId(projectId: UUID): IO[List[MilestoneDateWithVersions]] =
-    (for {
-      dates <- milestoneDateRepo.findByProjectId(projectId)
-      combined <- dates.traverse(date =>
-        milestoneDateVersionRepo
-          .findLatestByMilestoneDateId(date.id)
-          .map(version => MilestoneDateWithVersions(date, Seq(version)))
-      )
-    } yield combined).transact(transactor)
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[MilestoneDateWithVersions]] =
+    milestoneDateRepo
+      .findPaginatedByProjectId(projectId, page)
+      .flatMap(withLatestVersions)
+      .transact(transactor)
 
   def getCurrent(milestoneDateId: UUID): IO[Either[MilestoneDateError, MilestoneDateWithOneVersion]] =
     (for {
@@ -72,18 +72,28 @@ class MilestoneDateService(
         IO.pure(Left(MilestoneDateNotFound))
       }
 
-  def findByMilestoneId(milestoneId: UUID): IO[List[MilestoneDateWithVersions]] =
-    (for {
-      milestoneDates <- milestoneDateRepo.findByMilestoneId(milestoneId)
-      combined <- milestoneDates.traverse(milestoneDate =>
-        milestoneDateVersionRepo
-          .findLatestByMilestoneDateId(milestoneDate.id)
-          .map(version => MilestoneDateWithVersions(milestoneDate, Seq(version)))
-      )
-    } yield combined).transact(transactor)
+  def findPaginatedByMilestoneId(
+    milestoneId: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[MilestoneDateWithVersions]] =
+    milestoneDateRepo
+      .findPaginatedByMilestoneId(milestoneId, page)
+      .flatMap(withLatestVersions)
+      .transact(transactor)
 
-  def listVersions(milestoneDateId: UUID): IO[List[MilestoneDateVersion]] =
-    milestoneDateVersionRepo.findByMilestoneDateId(milestoneDateId).transact(transactor)
+  private def withLatestVersions(
+    datesPage: PaginatedResponse[MilestoneDate]
+  ): ConnectionIO[PaginatedResponse[MilestoneDateWithVersions]] =
+    datesPage.items
+      .traverse(date =>
+        milestoneDateVersionRepo
+          .findLatestByMilestoneDateId(date.id)
+          .map(version => MilestoneDateWithVersions(date, Seq(version)))
+      )
+      .map(combined => datesPage.copy(items = combined))
+
+  def listVersions(milestoneDateId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneDateVersion]] =
+    milestoneDateVersionRepo.findPaginatedByMilestoneDateId(milestoneDateId, page).transact(transactor)
 
   def updateVersionContent(
     version: UUID,

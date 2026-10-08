@@ -76,7 +76,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
             nowAsInstant
           )
         )
-        versions <- service.listVersions(created.timebox.id)
+        versions <- service.listVersions(created.timebox.id, DbPageRequest.default).map(_.items)
         current <- right(service.getCurrent(created.timebox.id))
       } yield {
         versions.map(_.version.version) shouldBe List(second.version.version.version, created.version.version.version)
@@ -124,7 +124,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         created <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
         _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, Seq.empty, nowAsInstant))
         _ <- service.deleteTimebox(created.timebox.id)
-        versions <- service.listVersions(created.timebox.id)
+        versions <- service.listVersions(created.timebox.id, DbPageRequest.default).map(_.items)
         found <- service.findPaginatedByProjectId(project.id, DbPageRequest.default)
       } yield {
         versions shouldBe empty

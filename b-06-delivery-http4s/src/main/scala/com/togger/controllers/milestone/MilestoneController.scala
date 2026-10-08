@@ -117,10 +117,13 @@ class MilestoneController(
       .map(_ => TgJsonSuccess.justMessageRight("Milestone deleted successfully"))
   }
 
-  val listVersions = milestoneEndpoints.listVersionsEndpoint.serverLogic { auth => milestoneId =>
-    milestoneService
-      .listVersions(milestoneId)
-      .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  val listVersions = milestoneEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+    val (milestoneId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      milestoneService
+        .listVersions(milestoneId, page)
+        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+    }
   }
 
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>

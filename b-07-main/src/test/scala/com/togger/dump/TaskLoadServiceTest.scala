@@ -2,7 +2,7 @@ package com.togger.dump
 
 import com.togger.account.{Account, AccountRepoImpl, AccountType, TgAccount}
 import com.togger.accountmapping.{AccountMapping, AccountMappingRepoImpl}
-import com.togger.common.{BusinessTgDbSpec, TgClock, TgClockImpl, TgIds, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgClock, TgClockImpl, TgIds, TimeHelpers}
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{Project, ProjectAccount, ProjectAccountRepoImpl, ProjectError}
@@ -463,7 +463,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
         projectRoot = rootFolder / os.up
         loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
-        mappings <- projectMappingRepo.findByProjectIdDb(targetProject.id).transact(transactor)
+        mappings <- projectMappingRepo
+          .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
+          .map(_.items)
+          .transact(transactor)
       } yield {
         loadResult.isRight shouldBe true
         mappings.map(_.projectIdDump) shouldBe List(dumpProject.id)
@@ -499,7 +502,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
           projectRoot = rootFolder / os.up
           loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
-          mappings <- projectMappingRepo.findByProjectIdDb(targetProject.id).transact(transactor)
+          mappings <- projectMappingRepo
+            .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
         } yield {
           loadResult.isRight shouldBe true
           mappings.map(_.projectIdDump).toSet shouldBe Set(unrelatedDumpProject.id, dumpProject.id)
@@ -657,7 +663,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
         loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
         createdAccount <- accountRepo.findByEmail(newAccountEmail).transact(transactor)
-        createdMappings <- accountMappingRepo.findByAccountIdDump(manifestWithMissingAccount.dumpedBy.id).transact(transactor)
+        createdMappings <- accountMappingRepo
+          .findPaginatedByAccountIdDump(manifestWithMissingAccount.dumpedBy.id, DbPageRequest.default)
+          .map(_.items)
+          .transact(transactor)
       } yield {
         loadResult.isRight shouldBe true
         createdAccount.firstName shouldBe "New"
@@ -747,7 +756,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
-          createdMappings <- accountMappingRepo.findByAccountIdDump(dumpSideAccountId).transact(transactor)
+          createdMappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
         } yield {
           loadResult.isRight shouldBe true
           persistedTask.createdBy shouldBe savedAccount.id
@@ -793,7 +805,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ = os.write.over(rootFolder / "project.json", manifestWithMappedAccount.asJson.spaces2)
         loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
         bogusAccountLookup <- accountRepo.findByEmail(bogusEmail).transact(transactor).attempt
-        mappingsForDumpId <- accountMappingRepo.findByAccountIdDump(dumpSideAccountId).transact(transactor)
+        mappingsForDumpId <- accountMappingRepo
+          .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
+          .map(_.items)
+          .transact(transactor)
       } yield {
         loadResult.isRight shouldBe true
         bogusAccountLookup.isLeft shouldBe true
@@ -1030,10 +1045,22 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
-          creatorMappings <- accountMappingRepo.findByAccountIdDump(creatorDumpId).transact(transactor)
-          assigneeMappings <- accountMappingRepo.findByAccountIdDump(assigneeDumpId).transact(transactor)
-          closerMappings <- accountMappingRepo.findByAccountIdDump(closerDumpId).transact(transactor)
-          logAuthorMappings <- accountMappingRepo.findByAccountIdDump(logAuthorDumpId).transact(transactor)
+          creatorMappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(creatorDumpId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
+          assigneeMappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(assigneeDumpId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
+          closerMappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(closerDumpId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
+          logAuthorMappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(logAuthorDumpId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
         } yield {
           loadResult.isRight shouldBe true
           persistedTask.createdBy shouldBe creatorAccount.id
@@ -1136,7 +1163,10 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           )
           _ = os.write.over(rootFolder / "project.json", manifestWithDuplicateReference.asJson.spaces2)
           loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
-          mappings <- accountMappingRepo.findByAccountIdDump(dumpSideAccountId).transact(transactor)
+          mappings <- accountMappingRepo
+            .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
+            .map(_.items)
+            .transact(transactor)
         } yield {
           loadResult.isRight shouldBe true
           mappings.map(_.accountIdDb) shouldBe List(savedAccount.id)

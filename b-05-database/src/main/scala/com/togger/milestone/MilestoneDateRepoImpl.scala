@@ -1,6 +1,8 @@
 package com.togger.milestone
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.milestone.MilestoneDateRepoImpl.MILESTONE_DATE_TABLE_FRAG
 import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -35,23 +37,46 @@ class MilestoneDateRepoImpl extends MilestoneDateRepo {
       numDeleted => s"Milestone date deleted ${sp(numDeleted)}"
     )
 
-  override def findByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneDate]] =
+  override def findPaginatedByMilestoneId(
+    milestoneId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneDate]] =
     logAroundInfoQuery(
-      (selectAllStatement(MILESTONE_DATE_TABLE_FRAG) ++ fr"where milestone_id = $milestoneId").query[MilestoneDate].to[List]
+      TgFindPaginatedQuery[MilestoneDate](
+        pageQuery = request =>
+          (selectAllStatement(MILESTONE_DATE_TABLE_FRAG) ++ fr"where milestone_id = $milestoneId" ++
+            PaginationSql.orderBy(fr"id") ++
+            PaginationSql.limitOffset(request)).query[MilestoneDate].to[List],
+        countQuery = (fr"select count(*) from" ++ MILESTONE_DATE_TABLE_FRAG ++
+          fr"where milestone_id = $milestoneId").query[Long].unique
+      ).run(page)
     )(
-      s"Finding milestone dates for ${sp(milestoneId)}",
-      milestoneDates => s"Milestone dates found ${sp(milestoneDates)} for ${sp(milestoneId)}"
+      s"Finding milestone dates of ${sp(milestoneId)} with ${sp(page)}",
+      found => s"Milestone dates found ${sp(found)} for ${sp(milestoneId)}"
     )
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[MilestoneDate]] =
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneDate]] =
     logAroundInfoQuery(
-      (fr"select milestone_date.* from" ++ MILESTONE_DATE_TABLE_FRAG ++
-        innerJoin(MILESTONE_TABLE_FRAG)(fr"milestone_date.milestone_id = milestone.id") ++
-        fr"where milestone.project_id = $projectId").query[MilestoneDate].to[List]
+      TgFindPaginatedQuery[MilestoneDate](
+        pageQuery = request =>
+          (fr"select milestone_date.*" ++ projectDates(projectId) ++
+            PaginationSql.orderBy(fr"milestone_date.id") ++
+            PaginationSql.limitOffset(request)).query[MilestoneDate].to[List],
+        countQuery = (fr"select count(*)" ++ projectDates(projectId)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding milestone dates for ${sp(projectId)}",
-      milestoneDates => s"Milestone dates found ${sp(milestoneDates)} for ${sp(projectId)}"
+      s"Finding milestone dates of ${sp(projectId)} with ${sp(page)}",
+      found => s"Milestone dates found ${sp(found)} for ${sp(projectId)}"
     )
+
+  // Shared by the page and the count query.
+  private def projectDates(projectId: UUID): Fragment =
+    fr"from" ++ MILESTONE_DATE_TABLE_FRAG ++
+      innerJoin(MILESTONE_TABLE_FRAG)(fr"milestone_date.milestone_id = milestone.id") ++
+      fr"where milestone.project_id = $projectId"
 
 }
 

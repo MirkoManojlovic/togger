@@ -1,5 +1,6 @@
 package com.togger.timebox
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.task.TaskVersion
 import doobie.ConnectionIO
 
@@ -14,10 +15,11 @@ trait TimeboxVersionRepo {
 
   def findByVersion(version: UUID): ConnectionIO[TimeboxVersion]
 
-  def findByTimeboxId(timeboxId: UUID): ConnectionIO[List[TimeboxVersion]]
+  def findPaginatedByTimeboxId(timeboxId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TimeboxVersion]]
 
   def findLatestByTimeboxId(timeboxId: UUID): ConnectionIO[TimeboxVersion]
 
+  /** Bounded by caller: the tasks planned in one timebox version, embedded in that version's payload. */
   def findPlannedTasks(timeboxVersion: UUID): ConnectionIO[List[TaskVersion]]
 
 }

@@ -1,6 +1,7 @@
 package com.togger.projectmapping
 
 import cats.effect.IO
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
@@ -20,11 +21,17 @@ class ProjectMappingService(
       .transact(transactor)
   }
 
-  def findByProjectIdDb(projectIdDb: UUID): IO[List[ProjectMapping]] =
-    projectMappingRepo.findByProjectIdDb(projectIdDb).transact(transactor)
+  def findPaginatedByProjectIdDb(
+    projectIdDb: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[ProjectMapping]] =
+    projectMappingRepo.findPaginatedByProjectIdDb(projectIdDb, page).transact(transactor)
 
-  def findByProjectIdDump(projectIdDump: UUID): IO[List[ProjectMapping]] =
-    projectMappingRepo.findByProjectIdDump(projectIdDump).transact(transactor)
+  def findPaginatedByProjectIdDump(
+    projectIdDump: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[ProjectMapping]] =
+    projectMappingRepo.findPaginatedByProjectIdDump(projectIdDump, page).transact(transactor)
 
   def deleteByIds(projectIdDb: UUID, projectIdDump: UUID): IO[Int] =
     projectMappingRepo.deleteByIds(projectIdDb, projectIdDump).transact(transactor)

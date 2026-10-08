@@ -2,7 +2,7 @@ package com.togger.milestone
 
 import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.organization.TgProject
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -53,7 +53,9 @@ class MilestoneDateRepoTest extends BusinessTgDbSpec with TgAccount with TgProje
         savedMilestone <- createMilestone()
         milestoneDatesToInsert = (0 to 10).map(_ => milestoneDate(savedMilestone.id))
         savedMilestoneDates <- milestoneDatesToInsert.map(milestoneDateRepo.insert).toList.sequence
-        foundMilestoneDates <- milestoneDateRepo.findByMilestoneId(savedMilestone.id)
+        foundMilestoneDates <- milestoneDateRepo
+          .findPaginatedByMilestoneId(savedMilestone.id, DbPageRequest.default)
+          .map(_.items)
       } yield foundMilestoneDates shouldBe savedMilestoneDates
 
       res.transact(transactor)
@@ -71,7 +73,9 @@ class MilestoneDateRepoTest extends BusinessTgDbSpec with TgAccount with TgProje
         milestoneDatesForMilestone2 = (0 to 5).map(_ => milestoneDate(savedMilestone2.id))
         savedMilestoneDates1 <- milestoneDatesForMilestone1.map(milestoneDateRepo.insert).toList.sequence
         _ <- milestoneDatesForMilestone2.map(milestoneDateRepo.insert).toList.sequence
-        foundMilestoneDates <- milestoneDateRepo.findByProjectId(savedMilestone1.projectId)
+        foundMilestoneDates <- milestoneDateRepo
+          .findPaginatedByProjectId(savedMilestone1.projectId, DbPageRequest.default)
+          .map(_.items)
       } yield foundMilestoneDates.toSet shouldBe savedMilestoneDates1.toSet
 
       res.transact(transactor)

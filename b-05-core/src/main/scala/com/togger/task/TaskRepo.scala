@@ -27,7 +27,12 @@ trait TaskVersionRepo {
 
   def findByVersion(version: UUID): ConnectionIO[TaskVersion]
 
+  /** Bounded by caller: the history of one task, written out as a unit by the disk dump. The endpoint lists it with
+    * [[findPaginatedByTaskId]], newest version first.
+    */
   def findByTaskId(taskId: UUID): ConnectionIO[List[TaskVersion]]
+
+  def findPaginatedByTaskId(taskId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TaskVersion]]
 
   def findLatestByTaskId(taskId: UUID): ConnectionIO[TaskVersion]
 
@@ -48,8 +53,6 @@ trait TaskVersionRepo {
     filter: TaskFilter,
     page: DbPageRequest
   ): ConnectionIO[PaginatedResponse[TaskFull]]
-
-  def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]]
 
 }
 
@@ -89,8 +92,10 @@ trait TaskLabelAssignmentRepo {
 
   def deleteAllByTaskId(taskId: UUID): ConnectionIO[Int]
 
+  /** Bounded by caller: the labels assigned to one task, embedded in that task's payload. */
   def findLabelsByTaskId(taskId: UUID): ConnectionIO[List[TaskLabel]]
 
+  /** Bounded by caller (the ids come from a page of tasks): the labels assigned to each of them. */
   def findLabelsByTaskIds(taskIds: Seq[UUID]): ConnectionIO[Map[UUID, List[TaskLabel]]]
 
 }

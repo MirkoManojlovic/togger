@@ -2,7 +2,7 @@ package com.togger.accountmapping
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import doobie.implicits._
 
 import java.util.UUID
@@ -25,10 +25,14 @@ class AccountMappingRepoTest extends BusinessTgDbSpec with TgAccount with TimeHe
         savedAccount <- createAccount
         mapping = newAccountMapping(savedAccount.id, UUID.randomUUID())
         savedMapping <- accountMappingRepo.insert(mapping)
-        foundByDb <- accountMappingRepo.findByAccountIdDb(savedAccount.id)
-        foundByDump <- accountMappingRepo.findByAccountIdDump(mapping.accountIdDump)
+        foundByDb <- accountMappingRepo.findPaginatedByAccountIdDb(savedAccount.id, DbPageRequest.default).map(_.items)
+        foundByDump <- accountMappingRepo
+          .findPaginatedByAccountIdDump(mapping.accountIdDump, DbPageRequest.default)
+          .map(_.items)
         _ <- accountMappingRepo.deleteByIds(savedAccount.id, mapping.accountIdDump)
-        foundAfterDelete <- accountMappingRepo.findByAccountIdDb(savedAccount.id)
+        foundAfterDelete <- accountMappingRepo
+          .findPaginatedByAccountIdDb(savedAccount.id, DbPageRequest.default)
+          .map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(savedMapping.accountIdDb shouldBe savedAccount.id)
@@ -47,7 +51,7 @@ class AccountMappingRepoTest extends BusinessTgDbSpec with TgAccount with TimeHe
         savedAccount <- createAccount
         mapping1 <- accountMappingRepo.insert(newAccountMapping(savedAccount.id, UUID.randomUUID()))
         mapping2 <- accountMappingRepo.insert(newAccountMapping(savedAccount.id, UUID.randomUUID()))
-        found <- accountMappingRepo.findByAccountIdDb(savedAccount.id)
+        found <- accountMappingRepo.findPaginatedByAccountIdDb(savedAccount.id, DbPageRequest.default).map(_.items)
       } yield {
         found.toSet shouldBe Set(mapping1, mapping2)
       }

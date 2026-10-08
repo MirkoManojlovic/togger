@@ -3,7 +3,7 @@ package com.togger.taskdumpconfig
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{TgClock, TimeHelpers}
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -64,9 +64,14 @@ class TaskDumpConfigServiceTest
     "find task dump configs by project id" in {
       val config = newTaskDumpConfig()
 
-      (taskDumpConfigRepo.findByProjectId _).expects(projectId).returns(List(config).pure[ConnectionIO])
+      (taskDumpConfigRepo.findPaginatedByProjectId _)
+        .expects(projectId, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(config), 1L).pure[ConnectionIO])
 
-      service.findByProjectId(projectId).map(_ shouldBe List(config)).unsafeToFuture()
+      service
+        .findPaginatedByProjectId(projectId, DbPageRequest.default)
+        .map(_.items shouldBe List(config))
+        .unsafeToFuture()
     }
 
     "update a task dump config, stamping the current time from the clock" in {

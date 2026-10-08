@@ -1308,3 +1308,52 @@ databaseChangeLog:
                   name: project_id
               - column:
                   name: id
+  - changeSet:
+      id: 5
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Task load and dump config lists and milestone date lists filter by one parent and order by id, none of the
+        three tables has an index on its parent; the mapping lookups by the dump side id (run for every account of a
+        task load) cannot use the primary keys, which lead with the database side id
+      changes:
+        - createIndex:
+            indexName: idx_task_load_config_project_id_id
+            tableName: task_load_config
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_task_dump_config_project_id_id
+            tableName: task_dump_config
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_milestone_date_milestone_id_id
+            tableName: milestone_date
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_account_mapping_account_id_dump_account_id_db
+            tableName: account_mapping
+            columns:
+              - column:
+                  name: account_id_dump
+              - column:
+                  name: account_id_db
+        - createIndex:
+            indexName: idx_project_mapping_project_id_dump_project_id_db
+            tableName: project_mapping
+            columns:
+              - column:
+                  name: project_id_dump
+              - column:
+                  name: project_id_db

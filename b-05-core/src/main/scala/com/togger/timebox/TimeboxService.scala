@@ -75,8 +75,11 @@ class TimeboxService(
       )
     } yield timeboxesPage.copy(items = combined)).transact(transactor)
 
-  def listVersions(timeboxId: UUID): IO[List[TimeboxVersionWithTasks]] =
-    timeboxVersionRepo.findByTimeboxId(timeboxId).flatMap(_.traverse(withTasks)).transact(transactor)
+  def listVersions(timeboxId: UUID, page: DbPageRequest): IO[PaginatedResponse[TimeboxVersionWithTasks]] =
+    (for {
+      versionsPage <- timeboxVersionRepo.findPaginatedByTimeboxId(timeboxId, page)
+      combined <- versionsPage.items.traverse(withTasks)
+    } yield versionsPage.copy(items = combined)).transact(transactor)
 
   def deleteTimebox(id: UUID): IO[Int] =
     timeboxRepo.deleteById(id).transact(transactor)

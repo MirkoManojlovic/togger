@@ -16,6 +16,7 @@ trait LinkRepo {
 
   def insertMany(links: Seq[Link]): ConnectionIO[List[Link]]
 
+  /** Bounded by caller: the links of one task, loaded with that task. Decided to stay unpaginated. */
   def findByTaskId(taskId: UUID): ConnectionIO[List[Link]]
 
   def deleteByTaskId(taskId: UUID): ConnectionIO[Int]

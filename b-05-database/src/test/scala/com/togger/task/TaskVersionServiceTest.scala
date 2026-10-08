@@ -3,7 +3,7 @@ package com.togger.task
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.TimeHelpers
+import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import com.togger.task.TaskError.{CannotDeleteLastVersion, CannotEditLatestVersion}
@@ -55,11 +55,13 @@ class TaskVersionServiceTest
     "list versions for a task" in {
       val version = newVersion("v1")
 
-      (taskVersionRepo.findByTaskId _).expects(taskId).returns(List(version).pure[ConnectionIO])
+      (taskVersionRepo.findPaginatedByTaskId _)
+        .expects(taskId, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(version), 1L).pure[ConnectionIO])
 
       service
-        .listVersions(taskId)
-        .map(versions => versions shouldBe List(version))
+        .listVersions(taskId, DbPageRequest.default)
+        .map(_.items shouldBe List(version))
         .unsafeToFuture()
     }
 

@@ -1,5 +1,6 @@
 package com.togger.taskdumpconfig
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.time.Instant
@@ -15,6 +16,6 @@ trait TaskDumpConfigRepo {
 
   def update(taskDumpConfig: TaskDumpConfig, updatedAt: Instant): ConnectionIO[TaskDumpConfig]
 
-  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskDumpConfig]]
+  def findPaginatedByProjectId(projectId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TaskDumpConfig]]
 
 }

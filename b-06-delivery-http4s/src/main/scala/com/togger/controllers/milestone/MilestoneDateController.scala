@@ -3,6 +3,7 @@ package com.togger.controllers.milestone
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneDateDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{FindMilestoneDateResp, MilestoneDateVersionDto}
 import com.togger.milestone.{
@@ -65,20 +66,22 @@ class MilestoneDateController(
       }
   }
 
-  val findByMilestoneId = milestoneDateEndpoints.findByMilestoneIdEndpoint.serverLogic { auth => milestoneId =>
-    milestoneDateService
-      .findByMilestoneId(milestoneId)
-      .map(milestoneDatesWithLatestVersion =>
-        TgJsonSuccess.justBodyRight(milestoneDatesWithLatestVersion.map(m => toDto(m.milestoneDate, m.versions.head)))
-      )
+  val findByMilestoneId = milestoneDateEndpoints.findByMilestoneIdEndpoint.serverLogic { auth => request =>
+    val (milestoneId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      milestoneDateService
+        .findPaginatedByMilestoneId(milestoneId, page)
+        .map(datesPage => TgJsonSuccess.justBodyRight(datesPage.mapItem(m => toDto(m.milestoneDate, m.versions.head))))
+    }
   }
 
-  val findByProjectId = milestoneDateEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
-    milestoneDateService
-      .findByProjectId(projectId)
-      .map(datesWithLatestVersion =>
-        TgJsonSuccess.justBodyRight(datesWithLatestVersion.map(m => toDto(m.milestoneDate, m.versions.head)))
-      )
+  val findByProjectId = milestoneDateEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+    val (projectId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      milestoneDateService
+        .findPaginatedByProjectId(projectId, page)
+        .map(datesPage => TgJsonSuccess.justBodyRight(datesPage.mapItem(m => toDto(m.milestoneDate, m.versions.head))))
+    }
   }
 
   val update = milestoneDateEndpoints.updateEndpoint.serverLogic { auth => dto =>
@@ -122,10 +125,13 @@ class MilestoneDateController(
       .map(_ => TgJsonSuccess.justMessageRight("Milestone date deleted successfully"))
   }
 
-  val listVersions = milestoneDateEndpoints.listVersionsEndpoint.serverLogic { auth => milestoneDateId =>
-    milestoneDateService
-      .listVersions(milestoneDateId)
-      .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  val listVersions = milestoneDateEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+    val (milestoneDateId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      milestoneDateService
+        .listVersions(milestoneDateId, page)
+        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+    }
   }
 
   val updateVersion = milestoneDateEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>

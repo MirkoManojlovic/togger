@@ -2,6 +2,7 @@ package com.togger.controllers.accountmapping
 
 import com.togger.accountmapping.{AccountMapping, AccountMappingEndpoints, AccountMappingService}
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.accountmapping.AccountMappingResp
 
 class AccountMappingController(
@@ -36,17 +37,23 @@ class AccountMappingController(
   }
 
   val findByAccountIdDb =
-    findByAccountIdDbEndpoint.serverLogic { _ => accountIdDb =>
-      accountMappingService
-        .findByAccountIdDb(accountIdDb)
-        .map(mappings => TgJsonSuccess.justBodyRight(mappings.map(toResp)))
+    findByAccountIdDbEndpoint.serverLogic { _ => request =>
+      val (accountIdDb, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        accountMappingService
+          .findPaginatedByAccountIdDb(accountIdDb, page)
+          .map(mappingsPage => TgJsonSuccess.justBodyRight(mappingsPage.mapItem(toResp)))
+      }
     }
 
   val findByAccountIdDump =
-    findByAccountIdDumpEndpoint.serverLogic { _ => accountIdDump =>
-      accountMappingService
-        .findByAccountIdDump(accountIdDump)
-        .map(mappings => TgJsonSuccess.justBodyRight(mappings.map(toResp)))
+    findByAccountIdDumpEndpoint.serverLogic { _ => request =>
+      val (accountIdDump, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        accountMappingService
+          .findPaginatedByAccountIdDump(accountIdDump, page)
+          .map(mappingsPage => TgJsonSuccess.justBodyRight(mappingsPage.mapItem(toResp)))
+      }
     }
 
   val delete = deleteEndpoint.serverLogic { _ =>

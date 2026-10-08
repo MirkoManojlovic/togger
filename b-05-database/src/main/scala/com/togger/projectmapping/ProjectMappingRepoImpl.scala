@@ -1,6 +1,8 @@
 package com.togger.projectmapping
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.projectmapping.ProjectMappingRepoImpl.PROJECT_MAPPING_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
@@ -26,24 +28,40 @@ class ProjectMappingRepoImpl extends ProjectMappingRepo {
     )
   }
 
-  override def findByProjectIdDb(projectIdDb: UUID): ConnectionIO[List[ProjectMapping]] =
+  override def findPaginatedByProjectIdDb(
+    projectIdDb: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[ProjectMapping]] =
     logAroundInfoQuery(
-      (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_db = $projectIdDb")
-        .query[ProjectMapping]
-        .to[List]
+      TgFindPaginatedQuery[ProjectMapping](
+        pageQuery = request =>
+          (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_db = $projectIdDb" ++
+            PaginationSql.orderBy(fr"project_id_dump") ++
+            PaginationSql.limitOffset(request)).query[ProjectMapping].to[List],
+        countQuery = (fr"select count(*) from" ++ PROJECT_MAPPING_TABLE_FRAG ++
+          fr"where project_id_db = $projectIdDb").query[Long].unique
+      ).run(page)
     )(
-      s"Finding project mappings for ${sp(projectIdDb)}",
-      projectMappings => s"${sp(projectMappings)} found"
+      s"Finding project mappings of ${sp(projectIdDb)} with ${sp(page)}",
+      mappings => s"Project mappings found ${sp(mappings)} for ${sp(projectIdDb)}"
     )
 
-  override def findByProjectIdDump(projectIdDump: UUID): ConnectionIO[List[ProjectMapping]] =
+  override def findPaginatedByProjectIdDump(
+    projectIdDump: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[ProjectMapping]] =
     logAroundInfoQuery(
-      (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_dump = $projectIdDump")
-        .query[ProjectMapping]
-        .to[List]
+      TgFindPaginatedQuery[ProjectMapping](
+        pageQuery = request =>
+          (selectAllStatement(PROJECT_MAPPING_TABLE_FRAG) ++ fr"where project_id_dump = $projectIdDump" ++
+            PaginationSql.orderBy(fr"project_id_db") ++
+            PaginationSql.limitOffset(request)).query[ProjectMapping].to[List],
+        countQuery = (fr"select count(*) from" ++ PROJECT_MAPPING_TABLE_FRAG ++
+          fr"where project_id_dump = $projectIdDump").query[Long].unique
+      ).run(page)
     )(
-      s"Finding project mappings for ${sp(projectIdDump)}",
-      projectMappings => s"${sp(projectMappings)} found"
+      s"Finding project mappings of ${sp(projectIdDump)} with ${sp(page)}",
+      mappings => s"Project mappings found ${sp(mappings)} for ${sp(projectIdDump)}"
     )
 
   override def deleteByIds(projectIdDb: UUID, projectIdDump: UUID): ConnectionIO[Int] =

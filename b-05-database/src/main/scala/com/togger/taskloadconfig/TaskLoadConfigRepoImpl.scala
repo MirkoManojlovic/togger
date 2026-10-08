@@ -1,6 +1,8 @@
 package com.togger.taskloadconfig
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl.TASK_LOAD_CONFIG_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
@@ -68,14 +70,23 @@ class TaskLoadConfigRepoImpl extends TaskLoadConfigRepo {
       taskLoadConfig => s"${sp(taskLoadConfig)} updated"
     )
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLoadConfig]] =
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskLoadConfig]] =
     logAroundInfoQuery(
-      (selectAllStatement(TASK_LOAD_CONFIG_TABLE_FRAG) ++ fr"where project_id = $projectId")
-        .query[TaskLoadConfig]
-        .to[List]
+      TgFindPaginatedQuery[TaskLoadConfig](
+        pageQuery = request =>
+          (selectAllStatement(TASK_LOAD_CONFIG_TABLE_FRAG) ++ fr"where project_id = $projectId" ++
+            PaginationSql.orderBy(fr"id") ++
+            PaginationSql.limitOffset(request)).query[TaskLoadConfig].to[List],
+        countQuery = (fr"select count(*) from" ++ TASK_LOAD_CONFIG_TABLE_FRAG ++ fr"where project_id = $projectId")
+          .query[Long]
+          .unique
+      ).run(page)
     )(
-      s"Finding task load configs for ${sp(projectId)}",
-      taskLoadConfigs => s"${sp(taskLoadConfigs)} found"
+      s"Finding task load configs of ${sp(projectId)} with ${sp(page)}",
+      taskConfigs => s"Task load configs found ${sp(taskConfigs)} for ${sp(projectId)}"
     )
 
 }

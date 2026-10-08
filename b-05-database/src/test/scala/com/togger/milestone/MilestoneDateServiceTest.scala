@@ -3,7 +3,7 @@ package com.togger.milestone
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.TimeHelpers
+import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.milestone.MilestoneDateError.{CannotDeleteLastVersion, CannotEditLatestVersion}
 import com.togger.suites.TestNameHelper
@@ -57,15 +57,15 @@ class MilestoneDateServiceTest
 
       (milestoneDateRepo.insert _).expects(milestoneDate).returns(milestoneDate.pure[ConnectionIO])
       (milestoneDateVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
-      (milestoneDateVersionRepo.findByMilestoneDateId _)
-        .expects(milestoneDate.id)
-        .returns(List(version).pure[ConnectionIO])
+      (milestoneDateVersionRepo.findPaginatedByMilestoneDateId _)
+        .expects(milestoneDate.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(version), 1L).pure[ConnectionIO])
 
       (for {
         result <- service.createMilestoneDate(milestoneDate, version)
         savedMilestoneDate = result.milestoneDate
         savedVersion = result.version
-        versions <- service.listVersions(savedMilestoneDate.id)
+        versions <- service.listVersions(savedMilestoneDate.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(versions shouldBe List(savedVersion))
@@ -83,21 +83,23 @@ class MilestoneDateServiceTest
       (milestoneDateVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
       (milestoneDateRepo.findById _).expects(milestoneDate.id).returns(milestoneDate.pure[ConnectionIO])
       (milestoneDateVersionRepo.insert _).expects(secondVersion).returns(secondVersion.pure[ConnectionIO])
-      (milestoneDateRepo.findByMilestoneId _).expects(milestoneId).returns(List(milestoneDate).pure[ConnectionIO])
+      (milestoneDateRepo.findPaginatedByMilestoneId _)
+        .expects(milestoneId, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(milestoneDate), 1L).pure[ConnectionIO])
       (milestoneDateVersionRepo.findLatestByMilestoneDateId _)
         .expects(milestoneDate.id)
         .returns(secondVersion.pure[ConnectionIO])
-      (milestoneDateVersionRepo.findByMilestoneDateId _)
-        .expects(milestoneDate.id)
-        .returns(List(secondVersion, firstVersion).pure[ConnectionIO])
+      (milestoneDateVersionRepo.findPaginatedByMilestoneDateId _)
+        .expects(milestoneDate.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(secondVersion, firstVersion), 2L).pure[ConnectionIO])
 
       (for {
         created <- service.createMilestoneDate(milestoneDate, firstVersion)
         savedMilestoneDate = created.milestoneDate
         secondResult <- service.saveNewVersion(savedMilestoneDate.id, secondVersion)
         savedSecondVersion = secondResult.toOption.get.version
-        current <- service.findByMilestoneId(milestoneId)
-        allVersions <- service.listVersions(savedMilestoneDate.id)
+        current <- service.findPaginatedByMilestoneId(milestoneId, DbPageRequest.default).map(_.items)
+        allVersions <- service.listVersions(savedMilestoneDate.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(allVersions.map(_.version) shouldBe List(savedSecondVersion.version, firstVersion.version))

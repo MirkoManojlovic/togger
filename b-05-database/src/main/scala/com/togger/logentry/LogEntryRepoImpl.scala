@@ -61,6 +61,24 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )
   }
 
+  override def findPaginatedByTaskId(
+    taskId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[LogEntry]] =
+    logAroundInfoQuery(
+      TgFindPaginatedQuery[LogEntry](
+        pageQuery = request =>
+          (selectAllStatement(LOG_ENTRY_TABLE_FRAG) ++ fr"where task_id = $taskId" ++
+            PaginationSql.orderBy(fr"created_at desc", fr"id") ++
+            PaginationSql.limitOffset(request)).query[LogEntry].to[List],
+        countQuery = (fr"select count(*) from" ++ LOG_ENTRY_TABLE_FRAG ++
+          fr"where task_id = $taskId").query[Long].unique
+      ).run(page)
+    )(
+      s"Finding log entries of ${sp(taskId)} with ${sp(page)}",
+      found => s"Log entries found ${sp(found)} for ${sp(taskId)}"
+    )
+
   override def findPaginatedByProjectId(
     projectId: UUID,
     filter: LogEntryFilter,

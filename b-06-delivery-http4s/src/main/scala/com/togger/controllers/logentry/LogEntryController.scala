@@ -37,12 +37,15 @@ class LogEntryController(
       .map(result => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version)))
   }
 
-  val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { auth => taskId =>
-    logEntryService
-      .findByTaskId(taskId)
-      .map(entriesWithLatestVersion =>
-        TgJsonSuccess.justBodyRight(entriesWithLatestVersion.map(entry => toDto(entry.logEntry, entry.versions.head)))
-      )
+  val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { auth => request =>
+    val (taskId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      logEntryService
+        .findPaginatedByTaskId(taskId, page)
+        .map(entriesPage =>
+          TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.versions.head)))
+        )
+    }
   }
 
   val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
@@ -76,10 +79,13 @@ class LogEntryController(
       }
   }
 
-  val listVersions = logEntryEndpoints.listVersionsEndpoint.serverLogic { auth => logEntryId =>
-    logEntryService
-      .listVersions(logEntryId)
-      .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
+  val listVersions = logEntryEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+    val (logEntryId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      logEntryService
+        .listVersions(logEntryId, page)
+        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+    }
   }
 
   val updateVersion = logEntryEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>

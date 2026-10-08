@@ -1,6 +1,7 @@
 package com.togger.controllers.taskloadconfig
 
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
 import com.togger.dump.TaskDumpLoadConfigVerification
 import com.togger.taskloadconfig.{TaskLoadConfig, TaskLoadConfigEndpoints, TaskLoadConfigService}
@@ -93,10 +94,13 @@ class TaskLoadConfigController(
   }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => projectId =>
-      taskLoadConfigService
-        .findByProjectId(projectId)
-        .map(configs => TgJsonSuccess.justBodyRight(configs.map(toResp)))
+    findByProjectIdEndpoint.serverLogic { auth => request =>
+      val (projectId, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        taskLoadConfigService
+          .findPaginatedByProjectId(projectId, page)
+          .map(configsPage => TgJsonSuccess.justBodyRight(configsPage.mapItem(toResp)))
+      }
     }
 
 }

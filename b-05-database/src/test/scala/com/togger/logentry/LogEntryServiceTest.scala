@@ -3,7 +3,7 @@ package com.togger.logentry
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{TgIds, TimeHelpers}
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion}
 import com.togger.suites.TestNameHelper
@@ -60,13 +60,15 @@ class LogEntryServiceTest
 
       (logEntryRepo.insert _).expects(logEntry).returns(logEntry.pure[ConnectionIO])
       (logEntryVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
-      (logEntryVersionRepo.findByLogEntryId _).expects(logEntry.id).returns(List(version).pure[ConnectionIO])
+      (logEntryVersionRepo.findPaginatedByLogEntryId _)
+        .expects(logEntry.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(version), 1L).pure[ConnectionIO])
 
       (for {
         result <- service.createLogEntry(logEntry, version)
         savedEntry = result.logEntry
         savedVersion = result.version
-        versions <- service.listVersions(savedEntry.id)
+        versions <- service.listVersions(savedEntry.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(versions shouldBe List(savedVersion))
@@ -84,19 +86,21 @@ class LogEntryServiceTest
       (logEntryVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
       (logEntryRepo.findById _).expects(logEntry.id).returns(logEntry.pure[ConnectionIO])
       (logEntryVersionRepo.insert _).expects(secondVersion).returns(secondVersion.pure[ConnectionIO])
-      (logEntryRepo.findByTaskId _).expects(taskId).returns(List(logEntry).pure[ConnectionIO])
+      (logEntryRepo.findPaginatedByTaskId _)
+        .expects(taskId, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(logEntry), 1L).pure[ConnectionIO])
       (logEntryVersionRepo.findLatestByLogEntryId _).expects(logEntry.id).returns(secondVersion.pure[ConnectionIO])
-      (logEntryVersionRepo.findByLogEntryId _)
-        .expects(logEntry.id)
-        .returns(List(secondVersion, firstVersion).pure[ConnectionIO])
+      (logEntryVersionRepo.findPaginatedByLogEntryId _)
+        .expects(logEntry.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(secondVersion, firstVersion), 2L).pure[ConnectionIO])
 
       (for {
         created <- service.createLogEntry(logEntry, firstVersion)
         savedEntry = created.logEntry
         secondResult <- service.saveNewVersion(savedEntry.id, secondVersion)
         savedSecondVersion = secondResult.toOption.get.version
-        current <- service.findByTaskId(taskId)
-        allVersions <- service.listVersions(savedEntry.id)
+        current <- service.findPaginatedByTaskId(taskId, DbPageRequest.default).map(_.items)
+        allVersions <- service.listVersions(savedEntry.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(allVersions.map(_.version) shouldBe List(savedSecondVersion.version, firstVersion.version))

@@ -60,13 +60,15 @@ class MilestoneServiceTest
 
       (milestoneRepo.insert _).expects(milestone).returns(milestone.pure[ConnectionIO])
       (milestoneVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
-      (milestoneVersionRepo.findByMilestoneId _).expects(milestone.id).returns(List(version).pure[ConnectionIO])
+      (milestoneVersionRepo.findPaginatedByMilestoneId _)
+        .expects(milestone.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(version), 1L).pure[ConnectionIO])
 
       (for {
         result <- service.createMilestone(milestone, version)
         savedMilestone = result.milestone
         savedVersion = result.version
-        versions <- service.listVersions(savedMilestone.id)
+        versions <- service.listVersions(savedMilestone.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(versions shouldBe List(savedVersion))
@@ -88,9 +90,9 @@ class MilestoneServiceTest
         .expects(projectId, MilestoneFilter.empty, DbPageRequest.default)
         .returns(PaginatedResponse.of(1, 20, List(milestone), 1L).pure[ConnectionIO])
       (milestoneVersionRepo.findLatestByMilestoneId _).expects(milestone.id).returns(secondVersion.pure[ConnectionIO])
-      (milestoneVersionRepo.findByMilestoneId _)
-        .expects(milestone.id)
-        .returns(List(secondVersion, firstVersion).pure[ConnectionIO])
+      (milestoneVersionRepo.findPaginatedByMilestoneId _)
+        .expects(milestone.id, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(secondVersion, firstVersion), 2L).pure[ConnectionIO])
 
       (for {
         created <- service.createMilestone(milestone, firstVersion)
@@ -98,7 +100,7 @@ class MilestoneServiceTest
         secondResult <- service.saveNewVersion(savedMilestone.id, secondVersion)
         savedSecondVersion = secondResult.toOption.get.version
         current <- service.findPaginatedByProjectId(projectId, MilestoneFilter.empty, DbPageRequest.default)
-        allVersions <- service.listVersions(savedMilestone.id)
+        allVersions <- service.listVersions(savedMilestone.id, DbPageRequest.default).map(_.items)
       } yield {
         val cp = new Checkpoint
         cp(allVersions.map(_.version) shouldBe List(savedSecondVersion.version, firstVersion.version))

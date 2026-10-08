@@ -1,6 +1,8 @@
 package com.togger.taskdumpconfig
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl.TASK_DUMP_CONFIG_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
@@ -68,14 +70,23 @@ class TaskDumpConfigRepoImpl extends TaskDumpConfigRepo {
       taskDumpConfig => s"${sp(taskDumpConfig)} updated"
     )
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskDumpConfig]] =
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskDumpConfig]] =
     logAroundInfoQuery(
-      (selectAllStatement(TASK_DUMP_CONFIG_TABLE_FRAG) ++ fr"where project_id = $projectId")
-        .query[TaskDumpConfig]
-        .to[List]
+      TgFindPaginatedQuery[TaskDumpConfig](
+        pageQuery = request =>
+          (selectAllStatement(TASK_DUMP_CONFIG_TABLE_FRAG) ++ fr"where project_id = $projectId" ++
+            PaginationSql.orderBy(fr"id") ++
+            PaginationSql.limitOffset(request)).query[TaskDumpConfig].to[List],
+        countQuery = (fr"select count(*) from" ++ TASK_DUMP_CONFIG_TABLE_FRAG ++ fr"where project_id = $projectId")
+          .query[Long]
+          .unique
+      ).run(page)
     )(
-      s"Finding task dump configs for ${sp(projectId)}",
-      taskDumpConfigs => s"${sp(taskDumpConfigs)} found"
+      s"Finding task dump configs of ${sp(projectId)} with ${sp(page)}",
+      taskConfigs => s"Task dump configs found ${sp(taskConfigs)} for ${sp(projectId)}"
     )
 
 }

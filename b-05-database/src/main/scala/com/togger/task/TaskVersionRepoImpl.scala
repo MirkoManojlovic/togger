@@ -1,6 +1,7 @@
 package com.togger.task
 
 import cats.data.NonEmptyList
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.account.Account
 import com.togger.account.AccountRepoImpl.passwordCodec
 import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds}
@@ -109,6 +110,24 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     )(
       s"Finding task versions for ${sp(taskId)}",
       taskVersions => s"Task versions found ${sp(taskVersions)} for ${sp(taskId)}"
+    )
+
+  override def findPaginatedByTaskId(
+    taskId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskVersion]] =
+    logAroundInfoQuery(
+      TgFindPaginatedQuery[TaskVersion](
+        pageQuery = request =>
+          (selectAllStatement(TASK_VERSION_TABLE_FRAG) ++ fr"where task_id = $taskId" ++
+            PaginationSql.orderBy(fr"version desc") ++
+            PaginationSql.limitOffset(request)).query[TaskVersion].to[List],
+        countQuery = (fr"select count(*) from" ++ TASK_VERSION_TABLE_FRAG ++
+          fr"where task_id = $taskId").query[Long].unique
+      ).run(page)
+    )(
+      s"Finding task versions of ${sp(taskId)} with ${sp(page)}",
+      found => s"Task versions found ${sp(found)} for ${sp(taskId)}"
     )
 
   override def findLatestByTaskId(taskId: UUID): ConnectionIO[TaskVersion] =
@@ -255,16 +274,6 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     val pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
     fr"(tv.name ilike $pattern or tv.description ilike $pattern)"
   }
-
-  override def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]] =
-    logAroundInfoQuery(
-      (fr"select task.id from" ++ TASK_TABLE_FRAG ++
-        latestVersionLateral ++
-        fr"where tv.assigned_to = $accountId").query[UUID].to[List]
-    )(
-      s"Finding task ids for ${sp(accountId)}",
-      taskIds => s"Task ids found ${sp(taskIds)}"
-    )
 
 }
 

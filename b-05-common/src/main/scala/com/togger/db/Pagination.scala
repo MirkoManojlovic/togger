@@ -1,5 +1,6 @@
 package com.togger.db
 
+import cats.MonadThrow
 import cats.implicits._
 import com.togger.common.{DbPageRequest, PageRequest, PaginatedResponse}
 import doobie.implicits._
@@ -43,17 +44,17 @@ object PaginationSql {
 
 object TgPages {
 
-  /** Reads page after page until the last one. Only for maintenance jobs that must see every row; an endpoint never
-    * does this.
+  /** Reads page after page until the last one. Only for maintenance jobs and internal runs that must see every row;
+    * an endpoint never does this.
     */
-  def readAll[A](read: DbPageRequest => ConnectionIO[PaginatedResponse[A]]): ConnectionIO[List[A]] = {
-    def loop(page: Int, collected: Vector[A]): ConnectionIO[List[A]] =
+  def readAll[F[_]: MonadThrow, A](read: DbPageRequest => F[PaginatedResponse[A]]): F[List[A]] = {
+    def loop(page: Int, collected: Vector[A]): F[List[A]] =
       DbPageRequest.fromPageRequest(PageRequest(page, PageRequest.MaxSize)) match {
-        case Left(errors) => new IllegalStateException(errors.toString).raiseError[ConnectionIO, List[A]]
+        case Left(errors) => new IllegalStateException(errors.toString).raiseError[F, List[A]]
         case Right(request) =>
           read(request).flatMap { response =>
             val all = collected ++ response.items
-            if (page >= response.totalNumberOfPages) all.toList.pure[ConnectionIO] else loop(page + 1, all)
+            if (page >= response.totalNumberOfPages) all.toList.pure[F] else loop(page + 1, all)
           }
       }
 

@@ -1,6 +1,8 @@
 package com.togger.timebox
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.task.TaskVersion
 import com.togger.task.TaskVersionRepoImpl.{taskPriorityCodec, TASK_VERSION_TABLE_FRAG}
 import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
@@ -44,12 +46,21 @@ class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
       found => s"Timebox version found ${sp(found)}"
     )
 
-  override def findByTimeboxId(timeboxId: UUID): ConnectionIO[List[TimeboxVersion]] =
+  override def findPaginatedByTimeboxId(
+    timeboxId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TimeboxVersion]] =
     logAroundInfoQuery(
-      (selectAllStatement(TIMEBOX_VERSION_TABLE_FRAG) ++
-        fr"where timebox_id = $timeboxId order by version desc").query[TimeboxVersion].to[List]
+      TgFindPaginatedQuery[TimeboxVersion](
+        pageQuery = request =>
+          (selectAllStatement(TIMEBOX_VERSION_TABLE_FRAG) ++ fr"where timebox_id = $timeboxId" ++
+            PaginationSql.orderBy(fr"version desc") ++
+            PaginationSql.limitOffset(request)).query[TimeboxVersion].to[List],
+        countQuery = (fr"select count(*) from" ++ TIMEBOX_VERSION_TABLE_FRAG ++
+          fr"where timebox_id = $timeboxId").query[Long].unique
+      ).run(page)
     )(
-      s"Finding timebox versions for ${sp(timeboxId)}",
+      s"Finding timebox versions of ${sp(timeboxId)} with ${sp(page)}",
       found => s"Timebox versions found ${sp(found)} for ${sp(timeboxId)}"
     )
 

@@ -1,5 +1,6 @@
 package com.togger.milestone
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.util.UUID
@@ -13,8 +14,14 @@ trait MilestoneDateRepo {
   def deleteById(id: UUID): ConnectionIO[Int]
 
   /** Bounded by caller: the dates of one milestone, read when that single milestone is opened. */
-  def findByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneDate]]
+  def findPaginatedByMilestoneId(
+    milestoneId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneDate]]
 
-  def findByProjectId(projectId: UUID): ConnectionIO[List[MilestoneDate]]
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneDate]]
 
 }

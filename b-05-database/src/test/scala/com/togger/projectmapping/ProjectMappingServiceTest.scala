@@ -3,7 +3,7 @@ package com.togger.projectmapping
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.TimeHelpers
+import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -52,21 +52,27 @@ class ProjectMappingServiceTest
     "find project mappings by db project id" in {
       val mapping = newProjectMapping()
 
-      (projectMappingRepo.findByProjectIdDb _)
-        .expects(projectIdDb)
-        .returns(List(mapping).pure[ConnectionIO])
+      (projectMappingRepo.findPaginatedByProjectIdDb _)
+        .expects(projectIdDb, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(mapping), 1L).pure[ConnectionIO])
 
-      service.findByProjectIdDb(projectIdDb).map(_ shouldBe List(mapping)).unsafeToFuture()
+      service
+        .findPaginatedByProjectIdDb(projectIdDb, DbPageRequest.default)
+        .map(_.items shouldBe List(mapping))
+        .unsafeToFuture()
     }
 
     "find project mappings by dump project id" in {
       val mapping = newProjectMapping()
 
-      (projectMappingRepo.findByProjectIdDump _)
-        .expects(projectIdDump)
-        .returns(List(mapping).pure[ConnectionIO])
+      (projectMappingRepo.findPaginatedByProjectIdDump _)
+        .expects(projectIdDump, DbPageRequest.default)
+        .returns(PaginatedResponse.of(1, 20, List(mapping), 1L).pure[ConnectionIO])
 
-      service.findByProjectIdDump(projectIdDump).map(_ shouldBe List(mapping)).unsafeToFuture()
+      service
+        .findPaginatedByProjectIdDump(projectIdDump, DbPageRequest.default)
+        .map(_.items shouldBe List(mapping))
+        .unsafeToFuture()
     }
 
     "delete a project mapping by its composite key" in {

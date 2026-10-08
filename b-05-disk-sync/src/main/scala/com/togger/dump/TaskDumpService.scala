@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.account.Account
 import com.togger.common.TgClock
+import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.project.ProjectError.{NoDumpPathConfigured, NotAssignedToProject, ProjectError}
@@ -43,8 +44,12 @@ class TaskDumpService(
 
   private type DumpData = (Project, List[TaskStatus], Account, List[TaskDumpData], List[AccountDumpData])
 
+  /** A project dump or status check visits every dump config of the project, so all pages are read. */
+  private def findAllConfigs(projectId: UUID): IO[List[TaskDumpConfig]] =
+    TgPages.readAll[IO, TaskDumpConfig](taskDumpConfigService.findPaginatedByProjectId(projectId, _))
+
   def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] =
-    dumpWithConfigs(projectId, accountId, taskDumpConfigService.findByProjectId(projectId))
+    dumpWithConfigs(projectId, accountId, findAllConfigs(projectId))
 
   def dumpConfig(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpResult]] =
     taskDumpConfigService.findById(dumpConfigId).flatMap { config =>
@@ -52,7 +57,7 @@ class TaskDumpService(
     }
 
   def checkStatus(projectId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] =
-    checkStatusWithConfigs(projectId, accountId, taskDumpConfigService.findByProjectId(projectId))
+    checkStatusWithConfigs(projectId, accountId, findAllConfigs(projectId))
 
   def checkConfigStatus(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, TaskDumpStatusResult]] =
     taskDumpConfigService.findById(dumpConfigId).flatMap { config =>

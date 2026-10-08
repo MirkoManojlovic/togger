@@ -1,6 +1,7 @@
 package com.togger.controllers.taskdumpconfig
 
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
 import com.togger.dump.TaskDumpLoadConfigVerification
 import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigEndpoints, TaskDumpConfigService}
@@ -93,10 +94,13 @@ class TaskDumpConfigController(
   }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => projectId =>
-      taskDumpConfigService
-        .findByProjectId(projectId)
-        .map(configs => TgJsonSuccess.justBodyRight(configs.map(toResp)))
+    findByProjectIdEndpoint.serverLogic { auth => request =>
+      val (projectId, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        taskDumpConfigService
+          .findPaginatedByProjectId(projectId, page)
+          .map(configsPage => TgJsonSuccess.justBodyRight(configsPage.mapItem(toResp)))
+      }
     }
 
 }

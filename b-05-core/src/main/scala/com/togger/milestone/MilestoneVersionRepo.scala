@@ -1,5 +1,6 @@
 package com.togger.milestone
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.util.UUID
@@ -10,7 +11,10 @@ trait MilestoneVersionRepo {
 
   def findByVersion(version: UUID): ConnectionIO[MilestoneVersion]
 
-  def findByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneVersion]]
+  def findPaginatedByMilestoneId(
+    milestoneId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneVersion]]
 
   def findLatestByMilestoneId(milestoneId: UUID): ConnectionIO[MilestoneVersion]
 

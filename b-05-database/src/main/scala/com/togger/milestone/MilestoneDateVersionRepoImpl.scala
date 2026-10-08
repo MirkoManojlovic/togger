@@ -1,6 +1,8 @@
 package com.togger.milestone
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.milestone.MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
@@ -45,13 +47,22 @@ class MilestoneDateVersionRepoImpl extends MilestoneDateVersionRepo {
       milestoneDateVersion => s"Milestone date version found ${sp(milestoneDateVersion)}"
     )
 
-  override def findByMilestoneDateId(milestoneDateId: UUID): ConnectionIO[List[MilestoneDateVersion]] =
+  override def findPaginatedByMilestoneDateId(
+    milestoneDateId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[MilestoneDateVersion]] =
     logAroundInfoQuery(
-      (selectAllStatement(MILESTONE_DATE_VERSION_TABLE_FRAG) ++
-        fr"where milestone_date_id = $milestoneDateId order by version desc").query[MilestoneDateVersion].to[List]
+      TgFindPaginatedQuery[MilestoneDateVersion](
+        pageQuery = request =>
+          (selectAllStatement(MILESTONE_DATE_VERSION_TABLE_FRAG) ++ fr"where milestone_date_id = $milestoneDateId" ++
+            PaginationSql.orderBy(fr"version desc") ++
+            PaginationSql.limitOffset(request)).query[MilestoneDateVersion].to[List],
+        countQuery = (fr"select count(*) from" ++ MILESTONE_DATE_VERSION_TABLE_FRAG ++
+          fr"where milestone_date_id = $milestoneDateId").query[Long].unique
+      ).run(page)
     )(
-      s"Finding milestone date versions for ${sp(milestoneDateId)}",
-      milestoneDateVersions => s"Milestone date versions found ${sp(milestoneDateVersions)} for ${sp(milestoneDateId)}"
+      s"Finding milestone date versions of ${sp(milestoneDateId)} with ${sp(page)}",
+      found => s"Milestone date versions found ${sp(found)} for ${sp(milestoneDateId)}"
     )
 
   override def findLatestByMilestoneDateId(milestoneDateId: UUID): ConnectionIO[MilestoneDateVersion] =
