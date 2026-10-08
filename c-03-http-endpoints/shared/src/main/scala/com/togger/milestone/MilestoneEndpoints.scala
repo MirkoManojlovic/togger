@@ -2,9 +2,10 @@ package com.togger.milestone
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{CreateMilestoneReq, FindMilestoneResp, MilestoneVersionDto, UpdateMilestoneReq}
+import com.togger.dto.{CreateMilestoneReq, FindMilestoneResp, MilestoneFilter, MilestoneVersionDto, UpdateMilestoneReq}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -33,10 +34,13 @@ class MilestoneEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateMilestoneReq])
       .out(jsonBody[TgJsonSuccess[FindMilestoneResp]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindMilestoneResp]] =
+  val findByProjectIdEndpoint
+    : TgSecuredEndpoint[(UUID, MilestoneFilter, PageRequest), PaginatedResponse[FindMilestoneResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindMilestoneResp]]])
+      .in(MilestoneFilterInputs.milestoneFilterQuery)
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindMilestoneResp]]])
 
   val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete

@@ -2,7 +2,8 @@ package com.togger.task
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto._
 import io.circe.generic.auto._
@@ -33,10 +34,11 @@ class TaskLabelEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateTaskLabelResp])
       .out(jsonBody[TgJsonSuccess[FindTaskLabelResp]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTaskLabelResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindTaskLabelResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindTaskLabelResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindTaskLabelResp]]])
 
   val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete

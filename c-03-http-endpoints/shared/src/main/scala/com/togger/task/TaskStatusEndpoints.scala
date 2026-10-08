@@ -2,7 +2,8 @@ package com.togger.task
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto._
 import io.circe.generic.auto._
@@ -37,10 +38,11 @@ class TaskStatusEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateTaskStatusResp])
       .out(jsonBody[TgJsonSuccess[FindTaskStatusResp]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTaskStatusResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindTaskStatusResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindTaskStatusResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindTaskStatusResp]]])
   //      .tag(topic)
   //      .name(createName(findById))
   //      .summary(createSummary(findById))
