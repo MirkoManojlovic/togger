@@ -62,10 +62,11 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateTaskReq])
       .out(jsonBody[TgJsonSuccess[FindTaskResp]])
 
-  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[TaskVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[TaskVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
-      .out(jsonBody[TgJsonSuccess[List[TaskVersionDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[TaskVersionDto]]])
 
   val updateVersionEndpoint: TgSecuredEndpoint[TaskVersionDto, TaskVersionDto] =
     securedEndpoint.endpoint.put

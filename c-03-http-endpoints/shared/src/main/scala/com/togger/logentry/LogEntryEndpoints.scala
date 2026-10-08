@@ -24,10 +24,11 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[LogEntryDto])
       .out(jsonBody[TgJsonSuccess[LogEntryDto]])
 
-  val findByTaskId: TgSecuredEndpoint[UUID, List[LogEntryDto]] =
+  val findByTaskId: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[LogEntryDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("task-id"))
-      .out(jsonBody[TgJsonSuccess[List[LogEntryDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[LogEntryDto]]])
   //      .tag(topic)
   //      .name(createName(findById))
   //      .summary(createSummary(findById))
@@ -54,10 +55,11 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[LogEntryDto])
       .out(jsonBody[TgJsonSuccess[LogEntryDto]])
 
-  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[LogEntryVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[LogEntryVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
-      .out(jsonBody[TgJsonSuccess[List[LogEntryVersionDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[LogEntryVersionDto]]])
 
   val updateVersionEndpoint: TgSecuredEndpoint[LogEntryVersionDto, LogEntryVersionDto] =
     securedEndpoint.endpoint.put

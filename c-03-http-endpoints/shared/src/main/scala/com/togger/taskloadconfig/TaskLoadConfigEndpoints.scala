@@ -2,7 +2,8 @@ package com.togger.taskloadconfig
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.taskloadconfig.{CreateTaskLoadConfigReq, TaskLoadConfigResp, UpdateTaskLoadConfigReq}
 import io.circe.generic.auto._
@@ -38,14 +39,10 @@ class TaskLoadConfigEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[TaskLoadConfigResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[TaskLoadConfigResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[TaskLoadConfigResp]]])
-
-  val findByAccountIdEndpoint: TgSecuredEndpoint[UUID, Seq[TaskLoadConfigResp]] =
-    securedEndpoint.endpoint.get
-      .in(basePath / "account" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[TaskLoadConfigResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[TaskLoadConfigResp]]])
 
 }

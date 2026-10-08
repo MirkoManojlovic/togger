@@ -2,7 +2,8 @@ package com.togger.milestone
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.{CreateMilestoneDateReq, FindMilestoneDateResp, MilestoneDateVersionDto, UpdateMilestoneDateReq}
 import io.circe.generic.auto._
@@ -33,25 +34,28 @@ class MilestoneDateEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateMilestoneDateReq])
       .out(jsonBody[TgJsonSuccess[FindMilestoneDateResp]])
 
-  val findByMilestoneIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindMilestoneDateResp]] =
+  val findByMilestoneIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindMilestoneDateResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "milestone" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindMilestoneDateResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindMilestoneDateResp]]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindMilestoneDateResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindMilestoneDateResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindMilestoneDateResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindMilestoneDateResp]]])
 
   val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
-  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[MilestoneDateVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[MilestoneDateVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
-      .out(jsonBody[TgJsonSuccess[List[MilestoneDateVersionDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[MilestoneDateVersionDto]]])
 
   val updateVersionEndpoint: TgSecuredEndpoint[MilestoneDateVersionDto, MilestoneDateVersionDto] =
     securedEndpoint.endpoint.put

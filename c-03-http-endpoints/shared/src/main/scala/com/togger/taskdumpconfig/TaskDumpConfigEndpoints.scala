@@ -2,7 +2,8 @@ package com.togger.taskdumpconfig
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.taskdumpconfig.{CreateTaskDumpConfigReq, TaskDumpConfigResp, UpdateTaskDumpConfigReq}
 import io.circe.generic.auto._
@@ -38,9 +39,10 @@ class TaskDumpConfigEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[TaskDumpConfigResp]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[TaskDumpConfigResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "project" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[TaskDumpConfigResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[TaskDumpConfigResp]]])
 
 }

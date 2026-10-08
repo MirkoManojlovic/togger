@@ -2,7 +2,8 @@ package com.togger.accountmapping
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.accountmapping.{AccountMappingResp, CreateAccountMappingReq}
 import io.circe.generic.auto._
@@ -22,15 +23,17 @@ class AccountMappingEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[CreateAccountMappingReq])
       .out(jsonBody[TgJsonSuccess[AccountMappingResp]])
 
-  val findByAccountIdDbEndpoint: TgSecuredEndpoint[UUID, Seq[AccountMappingResp]] =
+  val findByAccountIdDbEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[AccountMappingResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "account-db" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[AccountMappingResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[AccountMappingResp]]])
 
-  val findByAccountIdDumpEndpoint: TgSecuredEndpoint[UUID, Seq[AccountMappingResp]] =
+  val findByAccountIdDumpEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[AccountMappingResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "account-dump" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[AccountMappingResp]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[AccountMappingResp]]])
 
   val deleteEndpoint: TgSecuredEndpointEmptyBody[(UUID, UUID)] =
     securedEndpoint.endpoint.delete

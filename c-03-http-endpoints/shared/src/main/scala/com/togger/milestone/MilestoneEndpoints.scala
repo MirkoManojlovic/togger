@@ -47,10 +47,11 @@ class MilestoneEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
-  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[MilestoneVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[MilestoneVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
-      .out(jsonBody[TgJsonSuccess[List[MilestoneVersionDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[MilestoneVersionDto]]])
 
   val updateVersionEndpoint: TgSecuredEndpoint[MilestoneVersionDto, MilestoneVersionDto] =
     securedEndpoint.endpoint.put

@@ -41,10 +41,11 @@ class TimeboxEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(pageQuery)
       .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindTimeboxResp]]])
 
-  val listVersionsEndpoint: TgSecuredEndpoint[UUID, List[TimeboxVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[TimeboxVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
-      .out(jsonBody[TgJsonSuccess[List[TimeboxVersionDto]]])
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[TimeboxVersionDto]]])
 
   val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
