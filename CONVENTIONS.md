@@ -53,3 +53,15 @@ Follow these rules when you write code:
     1. Pure Functions
     2. Immutability
     3. Function Composition
+
+### Lists and pagination
+
+- An endpoint that returns a list of something that grows is paginated: take `PaginationInputs.pageQuery`
+  (`?page=&size=`, page 1 and size 20 by default, size at most 100), answer `PaginatedResponse[Dto]` and run the
+  controller body inside `PageRequestValidation.withPage`.
+- The repo method is `findPaginated...(filters, page: DbPageRequest): ConnectionIO[PaginatedResponse[A]]`, built with
+  `TgFindPaginatedQuery`; the order is total (end with a unique tie-breaker such as `id`) and the count query uses the
+  same filters as the page query.
+- A repo method that returns an unbounded `List` is only for a caller that is bounded already (the ids come from a page,
+  the rows are embedded in one entity's payload); say so in its scaladoc with "bounded by caller". Jobs that must see
+  every row use `TgPages.readAll`, screens that need every row use `PaginatedLoader.loadAll`.
