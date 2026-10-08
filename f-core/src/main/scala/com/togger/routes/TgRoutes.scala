@@ -17,6 +17,8 @@ class TgRoutes {
   private def listFromQuery(params: ListQuery): ListParams =
     ListParams.fromQuery(params._1, params._2)
 
+  private type MilestoneListQuery = (Option[String], Option[String], List[String], Option[String])
+
   private type TaskListQuery =
     (Option[String], Option[String], List[String], List[String], List[String], List[String], List[String], Option[String])
 
@@ -101,11 +103,12 @@ class TgRoutes {
             param[String]("search").?
         )
       ),
-      Route(
-        encode = (page: ShowAllTaskStatusesPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowAllTaskStatusesPage(UUID.fromString(projectId)),
-        pattern = root / "task-status" / segment[String] / endOfSegments
-        //        basePath = basePath
+      Route.withQuery[ShowAllTaskStatusesPage, String, ListQuery](
+        encode = (page: ShowAllTaskStatusesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllTaskStatusesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "task-status" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: CreateTaskLabelPage) => page.projectId.toString,
@@ -124,10 +127,12 @@ class TgRoutes {
           String
         ] / endOfSegments
       ),
-      Route(
-        encode = (page: ShowAllTaskLabelsPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowAllTaskLabelsPage(UUID.fromString(projectId)),
-        pattern = root / "task-label" / segment[String] / endOfSegments
+      Route.withQuery[ShowAllTaskLabelsPage, String, ListQuery](
+        encode = (page: ShowAllTaskLabelsPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllTaskLabelsPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "task-label" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: CreateProjectPage) => page.organizationId.toString,
@@ -178,9 +183,10 @@ class TgRoutes {
         CreateProjectLabelPage,
         root / "settings" / "project-label" / "create"
       ),
-      Route.static(
-        ShowAllProjectLabelsPage,
-        root / "settings" / "project-label" / endOfSegments
+      Route.withQuery[ShowAllProjectLabelsPage, Unit, ListQuery](
+        encode = (page: ShowAllProjectLabelsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllProjectLabelsPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "project-label" / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: EditProjectLabelPage) => page.id.toString,
@@ -191,9 +197,10 @@ class TgRoutes {
         CreateProjectLabelCategoryPage,
         root / "settings" / "project-label-category" / "create"
       ),
-      Route.static(
-        ShowAllProjectLabelCategoriesPage,
-        root / "settings" / "project-label-category" / endOfSegments
+      Route.withQuery[ShowAllProjectLabelCategoriesPage, Unit, ListQuery](
+        encode = (page: ShowAllProjectLabelCategoriesPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllProjectLabelCategoriesPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "project-label-category" / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: EditProjectLabelCategoryPage) => page.id.toString,
@@ -245,10 +252,27 @@ class TgRoutes {
         decode = (id: String) => EditMilestonePage(UUID.fromString(id)),
         pattern = root / "edit-milestone" / segment[String] / endOfSegments
       ),
-      Route(
-        encode = (page: ShowMilestonesPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowMilestonesPage(UUID.fromString(projectId)),
-        pattern = root / "show-milestones" / segment[String] / endOfSegments
+      Route.withQuery[ShowMilestonesPage, String, MilestoneListQuery](
+        encode = (page: ShowMilestonesPage) =>
+          PatternArgs(
+            path = page.projectId.toString,
+            params = (
+              MilestoneListParams.pageToQuery(page.list),
+              MilestoneListParams.sizeToQuery(page.list),
+              TaskListParams.selectionToQuery(page.list.statuses),
+              MilestoneListParams.searchToQuery(page.list)
+            )
+          ),
+        decode = { (args: PatternArgs[String, MilestoneListQuery]) =>
+          val (page, size, statuses, search) = args.params
+          ShowMilestonesPage(UUID.fromString(args.path), MilestoneListParams.fromQuery(page, size, statuses, search))
+        },
+        pattern = (root / "show-milestones" / segment[String] / endOfSegments) ? (
+          param[String]("page").? &
+            param[String]("size").? &
+            listParam[String]("status") &
+            param[String]("search").?
+        )
       ),
       Route(
         encode = (page: ShowMilestoneHistoryPage) => page.projectId.toString,

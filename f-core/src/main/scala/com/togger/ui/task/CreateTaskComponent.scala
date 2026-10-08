@@ -100,15 +100,17 @@ class CreateTaskComponent(
 
   spinnerService
     .runWithSpinner {
+      // The status picker offers every status, read page by page (bounded by PaginatedLoader).
       val call1: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
-        taskStatusFeService.findByProjectId(projectId)
+        taskStatusFeService.findAllByProjectId(projectId)
 
       // The assignee picker offers every member, read page by page (bounded by PaginatedLoader).
       val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
         projectService.findAllMembers(projectId)
 
+      // The label picker offers every label, read page by page (bounded by PaginatedLoader).
       val call3: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
-        taskLabelFeService.findByProjectId(projectId)
+        taskLabelFeService.findAllByProjectId(projectId)
 
       val call4: IO[Either[TgJsonFailure, TgJsonSuccess[FindProjectResp]]] =
         projectService.findById(projectId)

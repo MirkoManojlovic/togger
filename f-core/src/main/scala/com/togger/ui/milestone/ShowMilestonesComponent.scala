@@ -1,14 +1,23 @@
 package com.togger.ui.milestone
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
 import com.togger.dto.{FindMilestoneResp, FindProjectResp}
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.{FrontendPage, MilestoneListParams, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgHtmlTable}
+import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.components.{
+  MultiSelectItem,
+  TableFilterComponent,
+  TableSearchComponent,
+  TgHtmlTable,
+  TgPaginationComponent
+}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -23,42 +32,67 @@ class ShowMilestonesComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
-  projectId: UUID
+  projectId: UUID,
+  params: MilestoneListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
 
   val stateFormVar = Var(Seq.empty[FindMilestoneResp])
 
-  val searchTermVar = Var("")
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  private def showList(newParams: MilestoneListParams): Unit =
+    router.route(ShowMilestonesPage(projectId, newParams))
+
+  val searchTermVar = Var(params.search)
   private val searchBox = TableSearchComponent(
     inputSignal = searchTermVar.signal,
     inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description",
-    debounceMs = 0
+    placeholderValue = "Search by name, description"
   )
 
-  private val statusFilterItemsVar = Var(
+  private val navigateOnSearch: Modifier[HtmlElement] =
+    searchTermVar.signal.changes --> Observer[String] { term =>
+      if (term.trim != params.search) showList(params.copy(search = term.trim).firstPage)
+    }
+
+  private val statusFilterItems =
     MilestoneStatus.values.map(status =>
       MultiSelectItem(
         id = status.value.toString,
         name = status.statusName,
-        isSelected = status == MilestoneStatus.InProgress
+        isSelected = params.selectedStatuses.contains(status.value.toString)
       )
     )
-  )
-  private val statusFilter = new TableFilterComponent(statusFilterItemsVar.signal, label = "Filter by status")
+  private val statusSelectionVar = Var(Set.empty[String])
+  private val statusFilter =
+    new TableFilterComponent(Val(statusFilterItems), label = "Filter by status", selectedIdsVar = statusSelectionVar)
 
-  private val filteredMilestonesSignal: Signal[Seq[FindMilestoneResp]] =
-    stateFormVar.signal.combineWith(statusFilter.selectedIds, searchBox.inputSignal).map {
-      case (milestones, selectedIds, term) =>
-        val byStatus =
-          if (selectedIds.isEmpty) milestones
-          else milestones.filter(dto => selectedIds.contains(dto.status.value.toString))
-        val needle = term.trim.toLowerCase
-        if (needle.isEmpty) byStatus
-        else byStatus.filter(dto => dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle))
+  // The ticks the URL itself implies (the widget seeds them when it is built) are not a change.
+  private val navigateOnStatusChange: Modifier[HtmlElement] =
+    statusSelectionVar.signal.changes --> Observer[Set[String]] { picked =>
+      if (picked != params.selectedStatuses)
+        showList(params.copy(statuses = MilestoneListFilterMapping.toParamSelection(picked)).firstPage)
     }
+
+  /** Reads the page the URL asks for. A page past the end (its milestones were filtered away) steps back to the last
+    * page.
+    */
+  private def loadPage(): IO[Unit] =
+    milestoneService
+      .findByProjectId(projectId, MilestoneListFilterMapping.toMilestoneFilter(params), params.pageRequest)
+      .map {
+        case Left(failure) => println(failure)
+        case Right(success) =>
+          val response = success.body.get
+          if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+            showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+          else {
+            stateFormVar.set(response.items)
+            paginationVar.set(Some(PaginationState.fromResponse(response)))
+          }
+      }
 
   private val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
@@ -85,11 +119,7 @@ class ShowMilestonesComponent(
             )
           )
 
-      val milestoneCall = milestoneService
-        .findByProjectId(projectId)
-        .map(response => response.map(success => stateFormVar.set(success.body.get)))
-
-      projectCall.flatMap(_ => milestoneCall)
+      projectCall.flatMap(_ => loadPage())
     }
     .unsafeRunAndForget()
 
@@ -150,12 +180,13 @@ class ShowMilestonesComponent(
             .HtmlCardContent(
               div(
                 div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
-                child <-- filteredMilestonesSignal.map { milestones =>
+                navigateOnSearch,
+                navigateOnStatusChange,
+                child <-- stateFormVar.signal.map { milestones =>
                   TgHtmlTable.tableElement(
                     Seq("Id", "Name", "Description", "Status", "Start date", "Due date", "End date", "Action")
                   )(
                     milestones
-                      .sortBy(_.name)
                       .map { dto =>
                         Seq(
                           createTd(dto.id.toString),
@@ -179,7 +210,11 @@ class ShowMilestonesComponent(
                         )
                       }
                   )
-                }
+                },
+                TgPaginationComponent(
+                  paginationVar.signal,
+                  (newPage, newSize) => showList(params.atPage(newPage, newSize))
+                )
               )
             )
         )

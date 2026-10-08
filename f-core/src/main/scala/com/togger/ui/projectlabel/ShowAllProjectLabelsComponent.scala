@@ -4,12 +4,19 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.common.{PaginatedResponse, TgJsonFailure, TgJsonSuccess}
 import com.togger.dto._
-import com.togger.routes.Pages.{CreateProjectLabelPage, EditProjectLabelPage, ShowAllProjectLabelCategoriesPage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.Pages.{
+  CreateProjectLabelPage,
+  EditProjectLabelPage,
+  ShowAllProjectLabelCategoriesPage,
+  ShowAllProjectLabelsPage
+}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -29,27 +36,39 @@ class ShowAllProjectLabelsComponent(
   projectLabelCategoryService: ProjectLabelCategoryFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService
+  accountService: AccountService,
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
 
   val stateFormVar = Var(Seq.empty[ProjectLabelFormState])
 
-  spinnerService
-    .runWithSpinner {
-      val call1: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindProjectLabelResp]]]] = projectLabelService.findAll()
-      val call2: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindProjectLabelCategoryResp]]]] =
-        projectLabelCategoryService.findAll()
+  private val paginationVar = Var(Option.empty[PaginationState])
 
-      (call1, call2).parMapN { (projectLabelsEither, categoriesEither) =>
-        for {
-          projectLabelsSuccess <- projectLabelsEither
-          categoriesSuccess <- categoriesEither
-        } yield {
+  private def showList(newParams: ListParams): Unit =
+    router.route(ShowAllProjectLabelsPage(newParams))
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] = {
+    val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[PaginatedResponse[FindProjectLabelResp]]]] =
+      projectLabelService.findAll(params.pageRequest)
+    // Only the names of the categories are needed, so every category is read (bounded by PaginatedLoader).
+    val categoriesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindProjectLabelCategoryResp]]]] =
+      projectLabelCategoryService.findEvery()
+
+    (labelsCall, categoriesCall).parMapN { (projectLabelsEither, categoriesEither) =>
+      for {
+        projectLabelsSuccess <- projectLabelsEither
+        categoriesSuccess <- categoriesEither
+      } yield {
+        val response = projectLabelsSuccess.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
           val categoryNameById = categoriesSuccess.body.get.map(c => c.id -> c.name).toMap
           stateFormVar.set(
-            projectLabelsSuccess.body.get.map(dto =>
+            response.items.map(dto =>
               ProjectLabelFormState(
                 id = dto.id,
                 name = dto.name,
@@ -59,10 +78,13 @@ class ShowAllProjectLabelsComponent(
               )
             )
           )
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
         }
       }
-    }
-    .unsafeRunAndForget()
+    }.void
+  }
+
+  spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
   val element = {
     div(
@@ -79,7 +101,7 @@ class ShowAllProjectLabelsComponent(
                   TgIcons.listIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   "mr-2",
-                  router.navigateTo(ShowAllProjectLabelCategoriesPage)
+                  router.navigateTo(ShowAllProjectLabelCategoriesPage())
                 ),
                 iconButton(
                   "Create Project Label",
@@ -111,7 +133,6 @@ class ShowAllProjectLabelsComponent(
                     ),
                     tbody(
                       dtos
-                        .sortBy(_.id)
                         .zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
@@ -141,6 +162,10 @@ class ShowAllProjectLabelsComponent(
                     )
                   )
                 )
+              ),
+              TgPaginationComponent(
+                paginationVar.signal,
+                (newPage, newSize) => showList(params.atPage(newPage, newSize))
               )
             )
           )

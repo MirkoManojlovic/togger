@@ -45,8 +45,9 @@ class SearchProjectsByLabelComponent(
 
   spinnerService
     .runWithSpinner {
+      // The label picker offers every project label, read page by page (bounded by PaginatedLoader).
       projectLabelService
-        .findAll()
+        .findEvery()
         .map(_.fold(e => println(e), success => projectLabelsVar.set(success.body.get)))
     }
     .unsafeRunAndForget()

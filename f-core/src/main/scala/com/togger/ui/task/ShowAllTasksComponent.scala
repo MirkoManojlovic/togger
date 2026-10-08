@@ -426,16 +426,19 @@ class ShowAllTasksComponent(
             )
           )
 
+      // The status filter offers every status, read page by page (bounded by PaginatedLoader).
       val taskStatusCall = taskStatusFeService
-        .findByProjectId(projectId)
+        .findAllByProjectId(projectId)
         .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
 
+      // The label filter offers every label, read page by page (bounded by PaginatedLoader).
       val taskLabelCall = taskLabelFeService
-        .findByProjectId(projectId)
+        .findAllByProjectId(projectId)
         .map(response => response.map(success => taskLabelsVar.set(TaskLabelsState(success.body.get))))
 
+      // The milestone filter offers every milestone, read page by page (bounded by PaginatedLoader).
       val milestoneCall = milestoneService
-        .findByProjectId(projectId)
+        .findAllByProjectId(projectId)
         .map(response => response.map(success => milestonesVar.set(success.body.get)))
 
       val taskCall = loadPage()

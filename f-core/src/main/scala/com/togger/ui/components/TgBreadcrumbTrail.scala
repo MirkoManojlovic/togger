@@ -27,10 +27,10 @@ object TgBreadcrumbTrail {
   private def underTasks(projectId: UUID, crumbs: TgBreadcrumb*) = underOrganizations(tasks(projectId) +: crumbs: _*)
 
   private def underProjectLabels(label: String) =
-    underOrganizations(link("Project labels", ShowAllProjectLabelsPage), current(label))
+    underOrganizations(link("Project labels", ShowAllProjectLabelsPage()), current(label))
 
   private def underCategories(label: String) =
-    underOrganizations(link("Project label categories", ShowAllProjectLabelCategoriesPage), current(label))
+    underOrganizations(link("Project label categories", ShowAllProjectLabelCategoriesPage()), current(label))
 
   private def underStatuses(projectId: UUID, label: String) =
     underTasks(projectId, link("Task statuses", ShowAllTaskStatusesPage(projectId)), current(label))
@@ -62,10 +62,10 @@ object TgBreadcrumbTrail {
     case SearchProjectsByLabelPage => underOrganizations(current("Search projects"))
     case ChangePasswordPage        => underOrganizations(current("Change password"))
 
-    case ShowAllProjectLabelsPage          => underOrganizations(current("Project labels"))
+    case ShowAllProjectLabelsPage(_)       => underOrganizations(current("Project labels"))
     case CreateProjectLabelPage            => underProjectLabels("Create project label")
     case EditProjectLabelPage(_)           => underProjectLabels("Edit project label")
-    case ShowAllProjectLabelCategoriesPage => underOrganizations(current("Project label categories"))
+    case ShowAllProjectLabelCategoriesPage(_) => underOrganizations(current("Project label categories"))
     case CreateProjectLabelCategoryPage    => underCategories("Create category")
     case EditProjectLabelCategoryPage(_)   => underCategories("Edit category")
 
@@ -73,11 +73,11 @@ object TgBreadcrumbTrail {
     case CreateTaskPage(projectId)  => underTasks(projectId, current("Create task"))
     case EditTaskPage(projectId, _) => underTasks(projectId, current("Edit task"))
 
-    case ShowAllTaskStatusesPage(projectId) => underTasks(projectId, current("Task statuses"))
+    case ShowAllTaskStatusesPage(projectId, _) => underTasks(projectId, current("Task statuses"))
     case CreateTaskStatusPage(projectId)    => underStatuses(projectId, "Create status")
     case EditTaskStatusPage(projectId, _)   => underStatuses(projectId, "Edit status")
 
-    case ShowAllTaskLabelsPage(projectId) => underTasks(projectId, current("Task labels"))
+    case ShowAllTaskLabelsPage(projectId, _) => underTasks(projectId, current("Task labels"))
     case CreateTaskLabelPage(projectId)   => underTaskLabels(projectId, "Create label")
     case EditTaskLabelPage(projectId, _)  => underTaskLabels(projectId, "Edit label")
 
@@ -93,7 +93,7 @@ object TgBreadcrumbTrail {
     case CreateTimeboxPage(projectId)        => underTimeboxes(projectId, "Create timebox")
     case EditTimeboxPage(projectId, _)       => underTimeboxes(projectId, "Save new timebox version")
     case TimeboxHistoryPage(projectId, _)    => underTimeboxes(projectId, "Timebox history")
-    case ShowMilestonesPage(projectId)       => underTasks(projectId, current("Milestones"))
+    case ShowMilestonesPage(projectId, _)    => underTasks(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId) => underMilestones(projectId, "Milestone history")
     case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")
     case EditMilestonePage(_)                => underOrganizations(current("Edit milestone"))

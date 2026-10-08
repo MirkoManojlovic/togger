@@ -1,7 +1,15 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{ShowAllOrganizationsPage, ShowProjectsForOrganizationIdTable, ShowTimeboxesPage}
+import com.togger.routes.Pages.{
+  ShowAllOrganizationsPage,
+  ShowAllProjectLabelCategoriesPage,
+  ShowAllProjectLabelsPage,
+  ShowAllTaskLabelsPage,
+  ShowAllTaskStatusesPage,
+  ShowProjectsForOrganizationIdTable,
+  ShowTimeboxesPage
+}
 
 import java.util.UUID
 
@@ -20,7 +28,11 @@ class ListRouteTest extends AsyncJsWordSpec {
   private val listPages: Seq[(String, String, ListParams => FrontendPage)] = Seq(
     ("timeboxes", s"/show-timeboxes/$id", ShowTimeboxesPage(id, _)),
     ("projects table", s"/project/table/organization/$id", ShowProjectsForOrganizationIdTable(id, _)),
-    ("organizations", "/organization", ShowAllOrganizationsPage(_))
+    ("organizations", "/organization", ShowAllOrganizationsPage(_)),
+    ("task statuses", s"/task-status/$id", ShowAllTaskStatusesPage(id, _)),
+    ("task labels", s"/task-label/$id", ShowAllTaskLabelsPage(id, _)),
+    ("project labels", "/settings/project-label", ShowAllProjectLabelsPage(_)),
+    ("project label categories", "/settings/project-label-category", ShowAllProjectLabelCategoriesPage(_))
   )
 
   testNameFromClassName should {

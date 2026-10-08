@@ -60,7 +60,7 @@ class NavbarComponent(
 
   private val searchProjectsMenuLink = MenuLink("Search Projects", router.navigateTo(SearchProjectsByLabelPage))
 
-  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllProjectLabelsPage))
+  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllProjectLabelsPage()))
 
   private val passwordMenuLink =
     MenuLink(
@@ -94,7 +94,7 @@ class NavbarComponent(
           NavbarItems.organizationSelected
         case SearchProjectsByLabelPage =>
           NavbarItems.searchProjectsSelected
-        case CreateProjectLabelPage | ShowAllProjectLabelsPage | EditProjectLabelPage(_) =>
+        case CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }

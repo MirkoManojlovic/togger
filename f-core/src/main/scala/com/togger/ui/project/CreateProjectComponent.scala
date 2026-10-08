@@ -134,8 +134,9 @@ class CreateProjectComponent(
           )
         )
 
+      // The label picker offers every project label, read page by page (bounded by PaginatedLoader).
       val projectLabelCall = projectLabelService
-        .findAll()
+        .findEvery()
         .map(_.map(success => projectLabelsVar.set(success.body.get)))
 
       orgCall.flatMap(_ => projectLabelCall)

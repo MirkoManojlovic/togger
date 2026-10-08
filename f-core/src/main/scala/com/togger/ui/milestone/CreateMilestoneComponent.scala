@@ -6,16 +6,23 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.DateRangeValidation
+import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse}
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateMilestoneDateReq, CreateMilestoneReq, FindMilestoneResp, UpdateMilestoneReq}
+import com.togger.dto.{
+  CreateMilestoneDateReq,
+  CreateMilestoneReq,
+  FindMilestoneResp,
+  MilestoneFilter,
+  UpdateMilestoneReq
+}
 import com.togger.milestone.MilestoneEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -198,6 +205,16 @@ class MilestoneFeService(securedEndpoint: SecuredEndpoint, protectedBackendClien
   def updateMilestone(dto: UpdateMilestoneReq): TgRespIO[FindMilestoneResp] =
     protectedBackendClient.protectedHttpCall(milestoneEndpoints.updateEndpoint)(dto)
 
-  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneResp]] =
-    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByProjectIdEndpoint)(projectId)
+  def findByProjectId(
+    projectId: UUID,
+    filter: MilestoneFilter,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[FindMilestoneResp]] =
+    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByProjectIdEndpoint)((projectId, filter, page))
+
+  /** Every milestone of the project, for the pickers, filters and charts offering all of them; see [[PaginatedLoader]]
+    * for the bound.
+    */
+  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneResp]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, MilestoneFilter.empty, _))
 }

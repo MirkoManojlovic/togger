@@ -4,6 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgClock
+import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
@@ -13,6 +14,7 @@ import com.togger.task.TaskStatusEndpoints
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
@@ -95,8 +97,14 @@ class TaskStatusFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
   def updateTaskStatus(dto: UpdateTaskStatusResp): TgRespIO[FindTaskStatusResp] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.updateEndpoint)(dto)
 
-  def findByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskStatusResp]] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)(projectId)
+  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTaskStatusResp]] =
+    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)((projectId, page))
+
+  /** Every status of the project, for the pickers and filters offering all of them; see [[PaginatedLoader]] for the
+    * bound.
+    */
+  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskStatusResp]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, _))
 
   def findTaskStatusById(id: UUID): TgRespIO[FindTaskStatusResp] =
     protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByIdEndpoint)(id)

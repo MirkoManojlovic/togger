@@ -43,15 +43,16 @@ class TaskProjectDataLoader(
       .map(_.toOption.flatMap(_.body).getOrElse(Seq.empty).flatMap(_.projects))
 
   def loadProjectData(projectId: UUID): IO[TaskProjectData] = {
+    // The pickers offer every status, label and milestone, read page by page (bounded by PaginatedLoader).
     val statusesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskStatusResp]]]] =
-      taskStatusFeService.findByProjectId(projectId)
+      taskStatusFeService.findAllByProjectId(projectId)
     val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
-      taskLabelFeService.findByProjectId(projectId)
+      taskLabelFeService.findAllByProjectId(projectId)
     // The assignee picker offers every member, read page by page (bounded by PaginatedLoader).
     val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
       projectService.findAllMembers(projectId)
     val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
-      milestoneFeService.findByProjectId(projectId)
+      milestoneFeService.findAllByProjectId(projectId)
     (statusesCall, labelsCall, membersCall, milestonesCall).parMapN {
       (statusesResp, labelsResp, membersResp, milestonesResp) =>
         TaskProjectData(

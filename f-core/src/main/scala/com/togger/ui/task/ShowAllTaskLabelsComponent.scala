@@ -1,11 +1,14 @@
 package com.togger.ui.task
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.routes.Pages.{CreateTaskLabelPage, EditTaskLabelPage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.Pages.{CreateTaskLabelPage, EditTaskLabelPage, ShowAllTaskLabelsPage}
+import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -24,35 +27,43 @@ class ShowAllTaskLabelsComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService,
-  projectId: UUID
+  projectId: UUID,
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
 
   val stateFormVar = Var(Seq.empty[TaskLabelFormState])
 
-  spinnerService
-    .runWithSpinner(
-      taskLabelService
-        .findByProjectId(projectId)
-        .map(response =>
-          response.map { success =>
-            val dtos = success.body.get
-            stateFormVar.set(
-              dtos.map(dto =>
-                TaskLabelFormState(
-                  id = dto.id,
-                  projectId = dto.projectId,
-                  name = dto.name,
-                  description = dto.description
-                )
+  private val paginationVar = Var(Option.empty[PaginationState])
+
+  private def showList(newParams: ListParams): Unit =
+    router.route(ShowAllTaskLabelsPage(projectId, newParams))
+
+  /** Reads the page the URL asks for. A page past the end steps back to the last page. */
+  private def loadPage(): IO[Unit] =
+    taskLabelService.findByProjectId(projectId, params.pageRequest).map {
+      case Left(failure) => println(failure)
+      case Right(success) =>
+        val response = success.body.get
+        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
+          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
+        else {
+          stateFormVar.set(
+            response.items.map(dto =>
+              TaskLabelFormState(
+                id = dto.id,
+                projectId = dto.projectId,
+                name = dto.name,
+                description = dto.description
               )
             )
+          )
+          paginationVar.set(Some(PaginationState.fromResponse(response)))
+        }
+    }
 
-          }
-        )
-    )
-    .unsafeRunAndForget()
+  spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
   val element = {
     div(
@@ -90,7 +101,6 @@ class ShowAllTaskLabelsComponent(
                     ),
                     tbody(
                       dtos
-                        .sortBy(_.id)
                         .zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
@@ -119,6 +129,10 @@ class ShowAllTaskLabelsComponent(
                     )
                   )
                 )
+              ),
+              TgPaginationComponent(
+                paginationVar.signal,
+                (newPage, newSize) => showList(params.atPage(newPage, newSize))
               )
             )
           )

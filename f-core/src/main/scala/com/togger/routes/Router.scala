@@ -52,11 +52,11 @@ object Pages {
 
   case class EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) extends PrivatePage
 
-  case class ShowAllTaskLabelsPage(projectId: UUID) extends PrivatePage
+  case class ShowAllTaskLabelsPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
   case class ShowAllTasksPage(projectId: UUID, list: TaskListParams = TaskListParams.default) extends PrivatePage
 
-  case class ShowAllTaskStatusesPage(projectId: UUID) extends PrivatePage
+  case class ShowAllTaskStatusesPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
   case class EditTaskPage(projectId: UUID, taskId: UUID) extends PrivatePage
 
@@ -68,13 +68,13 @@ object Pages {
 
   case object CreateProjectLabelPage extends PrivatePage
 
-  case object ShowAllProjectLabelsPage extends PrivatePage
+  case class ShowAllProjectLabelsPage(list: ListParams = ListParams.default) extends PrivatePage
 
   case class EditProjectLabelPage(id: UUID) extends PrivatePage
 
   case object CreateProjectLabelCategoryPage extends PrivatePage
 
-  case object ShowAllProjectLabelCategoriesPage extends PrivatePage
+  case class ShowAllProjectLabelCategoriesPage(list: ListParams = ListParams.default) extends PrivatePage
 
   case class EditProjectLabelCategoryPage(id: UUID) extends PrivatePage
 
@@ -106,7 +106,8 @@ object Pages {
 
   case class EditMilestonePage(id: UUID) extends PrivatePage
 
-  case class ShowMilestonesPage(projectId: UUID) extends PrivatePage
+  case class ShowMilestonesPage(projectId: UUID, list: MilestoneListParams = MilestoneListParams.default)
+      extends PrivatePage
 
   case class ShowMilestoneHistoryPage(projectId: UUID) extends PrivatePage
 

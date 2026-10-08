@@ -39,7 +39,8 @@ class EditProjectLabelComponent(
   val categoriesVar = Var(Seq.empty[FindProjectLabelCategoryResp])
 
   spinnerService
-    .runWithSpinner(projectLabelCategoryService.findAll())
+    // The category picker offers every category, read page by page (bounded by PaginatedLoader).
+    .runWithSpinner(projectLabelCategoryService.findEvery())
     .map(_.map(success => categoriesVar.set(success.body.get)))
     .unsafeRunAndForget()
 

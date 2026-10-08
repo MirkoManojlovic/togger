@@ -219,13 +219,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case ShowAllTaskStatusesPage(projectId) =>
+              case ShowAllTaskStatusesPage(projectId, listParams) =>
                 new ShowAllTaskStatusesComponent(
                   taskStatusService,
                   router,
                   spinnerService,
                   accountService,
-                  projectId
+                  projectId,
+                  listParams
                 ).element
               case EditTaskStatusPage(projectId: UUID, taskStatusId: UUID) =>
                 new EditTaskStatusComponent(
@@ -246,13 +247,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case ShowAllTaskLabelsPage(projectId) =>
+              case ShowAllTaskLabelsPage(projectId, listParams) =>
                 new ShowAllTaskLabelsComponent(
                   taskLabelService,
                   router,
                   spinnerService,
                   accountService,
-                  projectId
+                  projectId,
+                  listParams
                 ).element
               case EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) =>
                 new EditTaskLabelComponent(
@@ -417,13 +419,14 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   toast
                 ).element
-              case ShowAllProjectLabelsPage =>
+              case ShowAllProjectLabelsPage(listParams) =>
                 new ShowAllProjectLabelsComponent(
                   projectLabelService,
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService
+                  accountService,
+                  listParams
                 ).element
               case EditProjectLabelPage(projectLabelId) =>
                 new EditProjectLabelComponent(
@@ -443,12 +446,13 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   toast
                 ).element
-              case ShowAllProjectLabelCategoriesPage =>
+              case ShowAllProjectLabelCategoriesPage(listParams) =>
                 new ShowAllProjectLabelCategoriesComponent(
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService
+                  accountService,
+                  listParams
                 ).element
               case EditProjectLabelCategoryPage(projectLabelCategoryId) =>
                 new EditProjectLabelCategoryComponent(
@@ -507,14 +511,15 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   id,
                   toast
                 ).element
-              case ShowMilestonesPage(projectId: UUID) =>
+              case ShowMilestonesPage(projectId: UUID, listParams) =>
                 new ShowMilestonesComponent(
                   milestoneService,
                   projectService,
                   router,
                   spinnerService,
                   tgDateFormater,
-                  projectId
+                  projectId,
+                  listParams
                 ).element
               case ShowMilestoneHistoryPage(projectId: UUID) =>
                 new MilestoneHistoryComponent(

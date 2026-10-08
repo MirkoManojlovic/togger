@@ -3,7 +3,7 @@ package com.togger.ui.projectlabel
 import cats.effect.unsafe.IORuntime
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.TgClock
+import com.togger.common.{PageRequest, PaginatedResponse, TgClock}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
@@ -14,6 +14,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
@@ -43,8 +44,9 @@ class CreateProjectLabelComponent(
 
   spinnerService
     .runWithSpinner(
+      // The category picker offers every category, read page by page (bounded by PaginatedLoader).
       projectLabelCategoryService
-        .findAll()
+        .findEvery()
         .map(response => response.map(success => categoriesVar.set(success.body.get)))
     )
     .unsafeRunAndForget()
@@ -119,8 +121,12 @@ class ProjectLabelFeService(securedEndpoint: SecuredEndpoint, protectedBackendCl
   def updateProjectLabel(dto: UpdateProjectLabelResp): TgRespIO[FindProjectLabelResp] =
     protectedBackendClient.protectedHttpCall(projectLabelEndpoints.updateEndpoint)(dto)
 
-  def findAll(): TgRespIO[Seq[FindProjectLabelResp]] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.findAllEndpoint)()
+  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindProjectLabelResp]] =
+    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.findAllEndpoint)(page)
+
+  /** Every project label, for the pickers offering all of them; see [[PaginatedLoader]] for the bound. */
+  def findEvery(): TgRespIO[Seq[FindProjectLabelResp]] =
+    PaginatedLoader.loadAll(findAll)
 
   def findProjectLabelById(id: UUID): TgRespIO[FindProjectLabelResp] =
     protectedBackendClient.protectedHttpCall(projectLabelEndpoints.findByIdEndpoint)(id)

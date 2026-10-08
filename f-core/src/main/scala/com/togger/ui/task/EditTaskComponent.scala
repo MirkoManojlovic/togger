@@ -95,8 +95,9 @@ class EditTaskComponent(
         .map(_.fold(e => println(e), success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of))))
         .flatMap { _ =>
           val statusesAndTaskCall: IO[Unit] =
+            // The status picker offers every status, read page by page (bounded by PaginatedLoader).
             taskStatusFeService
-              .findByProjectId(projectId)
+              .findAllByProjectId(projectId)
               .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
               .flatMap(_ =>
                 taskService
@@ -191,8 +192,9 @@ class EditTaskComponent(
           val membersCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[SearchAccountDto]]]] =
             projectService.findAllMembers(projectId)
 
+          // The label picker offers every label, read page by page (bounded by PaginatedLoader).
           val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
-            taskLabelFeService.findByProjectId(projectId)
+            taskLabelFeService.findAllByProjectId(projectId)
 
           (statusesAndTaskCall, membersCall, labelsCall).parMapN { (_, membersEither, labelsEither) =>
             membersEither.map(success => membersVar.set(success.body.get))
