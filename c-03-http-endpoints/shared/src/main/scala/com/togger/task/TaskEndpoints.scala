@@ -1,14 +1,16 @@
 package com.togger.task
 
 import com.togger.auth.SecuredEndpoint
+import com.togger.common.PaginationInputs.pageQuery
 import com.togger.common.TgEndpoints._
-import com.togger.common.TgJsonSuccess
+import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.{
   CreateTaskAndLinksReq,
   CreateTasksBulkReq,
   FindTaskResp,
   FindTaskRespFull,
+  TaskFilter,
   TaskVersionDto,
   UpdateTaskReq
 }
@@ -44,14 +46,15 @@ class TaskEndpoints(securedEndpoint: SecuredEndpoint) {
 //      .summary(createSummary(findById))
 //      .description(s"Find $topic using id")
 
-  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, Seq[FindTaskRespFull]] =
+  val findByProjectIdEndpoint: TgSecuredEndpoint[
+    (UUID, TaskFilter, PageRequest),
+    PaginatedResponse[FindTaskRespFull]
+  ] =
     securedEndpoint.endpoint.get
       .in(basePath / "project-id" / path[UUID]("id"))
-      .out(jsonBody[TgJsonSuccess[Seq[FindTaskRespFull]]])
-  //      .tag(topic)
-  //      .name(createName(findById))
-  //      .summary(createSummary(findById))
-  //      .description(s"Find $topic using id")
+      .in(TaskFilterInputs.taskFilterQuery)
+      .in(pageQuery)
+      .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindTaskRespFull]]])
 
   val updateEndpoint: TgSecuredEndpoint[UpdateTaskReq, FindTaskResp] =
     securedEndpoint.endpoint.put
