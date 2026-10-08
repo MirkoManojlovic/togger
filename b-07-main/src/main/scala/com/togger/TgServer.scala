@@ -134,7 +134,6 @@ object TgServer {
             organizationController.update,
             organizationController.findById,
             organizationController.findAllMembers,
-            organizationController.findOrgAndProjectsByAccountId,
             taskStatusController.findByProjectId,
             taskStatusController.findById,
             taskStatusController.save,
@@ -270,9 +269,10 @@ class DependenciesModule(
   lazy val organizationRepo = new OrganizationRepoImpl
   lazy val organizationAccountRepo = new OrganizationAccountRepoImpl
   lazy val organizationService =
-    new OrganizationService(organizationRepo, organizationAccountRepo, projectRepo, tgClock, transactor)
+    new OrganizationService(organizationRepo, organizationAccountRepo, tgClock, transactor)
   lazy val organizationEndpoints = new OrganizationEndpoints(securedEndpoint)
-  lazy val organizationController = new OrganizationController(organizationEndpoints, organizationService, tgClock)
+  lazy val organizationController =
+    new OrganizationController(organizationEndpoints, organizationService, adminCheck, tgClock)
 
   lazy val taskStatusRepo = new TaskStatusRepoImpl
   lazy val taskStatusService = new TaskStatusService(taskStatusRepo, tgClock, transactor)

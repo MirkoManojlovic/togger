@@ -2,7 +2,7 @@ package com.togger.controllers.project
 import cats.effect.IO
 import cats.implicits.toTraverseOps
 import com.togger.account.Account
-import com.togger.common.TgClock
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.project.{
   Project,
@@ -31,6 +31,8 @@ class ProjectService(
   defaultTaskLabelService: DefaultTaskLabelService,
   transactor: Transactor[IO]
 ) extends TgLogging {
+
+  private type ProjectDetails = (Project, Seq[Account], Seq[ProjectLabel])
 
   def saveProject(
     project: Project,
@@ -103,9 +105,10 @@ class ProjectService(
       .sequence
   }
 
-  private def findMembersLocal(projectId: UUID): ConnectionIO[Seq[Account]] = {
-    projectAccountRepo.findAllMembers(projectId)
-  }
+  // The members embedded in a project response are the first page of the maximum size; a project with more members
+  // shows only those (the paginated members endpoint reads them all).
+  private def findMembersLocal(projectId: UUID): ConnectionIO[Seq[Account]] =
+    projectAccountRepo.findPaginatedMembers(projectId, DbPageRequest.firstMaxSized).map(_.items)
 
   def updateProject(
     project: Project,
@@ -119,7 +122,7 @@ class ProjectService(
       updatedProject <- projectRepo.update(project, now)
       _ <- addMembers(updatedProject, membersToAdd)
       _ <- removeMembers(updatedProject, membersToRemove)
-      members <- projectAccountRepo.findAllMembers(updatedProject.id)
+      members <- findMembersLocal(updatedProject.id)
       _ <- projectLabelAssignmentRepo.deleteAllByProjectId(updatedProject.id)
       _ <- addProjectLabels(updatedProject, projectLabelIds)
       projectLabels <- projectLabelAssignmentRepo.findProjectLabelsByProjectId(updatedProject.id)
@@ -129,38 +132,42 @@ class ProjectService(
     }).transact(transactor)
   }
 
-  def findAllByOrganizationIdAndAccountId(organizationId: UUID, accountId: UUID): IO[Seq[Project]] = {
-    projectRepo
-      .findByOrganizationIdAndAccountId(organizationId, accountId)
-      .transact(transactor)
-      .map(_.map(_._1))
-  }
+  def findPaginatedByOrganizationIdAndAccountId(
+    organizationId: UUID,
+    accountId: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[Project]] =
+    projectRepo.findPaginatedByOrganizationIdAndAccountId(organizationId, accountId, page).transact(transactor)
 
   def findById(id: UUID): IO[(Project, Seq[Account], Seq[ProjectLabel])] = {
     (for {
       project <- projectRepo.findById(id)
-      members <- projectAccountRepo.findAllMembers(id)
+      members <- findMembersLocal(id)
       projectLabels <- projectLabelAssignmentRepo.findProjectLabelsByProjectId(id)
     } yield (project, members, projectLabels)).transact(transactor)
 
   }
 
-  def findAllMembers(projectId: UUID): IO[Seq[Account]] =
-    projectAccountRepo.findAllMembers(projectId).transact(transactor)
+  def findPaginatedMembers(projectId: UUID, page: DbPageRequest): IO[PaginatedResponse[Account]] =
+    projectAccountRepo.findPaginatedMembers(projectId, page).transact(transactor)
 
   def findProjectLabelsByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, List[ProjectLabel]]] =
     projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds).transact(transactor)
 
-  def searchByLabels(accountId: UUID, labelIds: Seq[UUID]): IO[Seq[(Project, Seq[Account], Seq[ProjectLabel])]] = {
+  def searchByLabels(
+    accountId: UUID,
+    labelIds: Seq[UUID],
+    page: DbPageRequest
+  ): IO[PaginatedResponse[ProjectDetails]] =
     if (labelIds.isEmpty) {
-      IO.pure(Seq.empty)
+      IO.pure(PaginatedResponse.empty[ProjectDetails](page.page.pageValue, page.limit))
     } else {
       (for {
-        projects <- projectRepo.findByAccountIdAndAllLabelIds(accountId, labelIds)
-        projectIds = projects.map(_.id)
+        projectsPage <- projectRepo.findPaginatedByAccountId(accountId, labelIds, page)
+        projectIds = projectsPage.items.map(_.id)
         membersByProjectId <- projectAccountRepo.findAllMembersByProjectIds(projectIds)
         labelsByProjectId <- projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds)
-      } yield projects.map(project =>
+      } yield projectsPage.mapItem[ProjectDetails](project =>
         (
           project,
           membersByProjectId.getOrElse(project.id, Seq.empty),
@@ -168,5 +175,4 @@ class ProjectService(
         )
       )).transact(transactor)
     }
-  }
 }

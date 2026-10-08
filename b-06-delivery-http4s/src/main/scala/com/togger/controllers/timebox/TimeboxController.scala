@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.data.{NonEmptyChain, ValidatedNec}
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgClock, TgError, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.timebox.TimeboxDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.FindTimeboxResp
 import com.togger.timebox.{TimeboxEndpoints, TimeboxService}
@@ -55,8 +56,13 @@ class TimeboxController(
     }
   }
 
-  val findByProjectId = timeboxEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
-    timeboxService.findByProjectId(projectId).map(timeboxes => TgJsonSuccess.justBodyRight(timeboxes.map(toDto)))
+  val findByProjectId = timeboxEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+    val (projectId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      timeboxService
+        .findPaginatedByProjectId(projectId, page)
+        .map(timeboxesPage => TgJsonSuccess.justBodyRight(timeboxesPage.mapItem(toDto)))
+    }
   }
 
   val listVersions = timeboxEndpoints.listVersionsEndpoint.serverLogic { auth => timeboxId =>

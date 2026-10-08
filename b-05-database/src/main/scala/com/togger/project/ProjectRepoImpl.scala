@@ -1,15 +1,14 @@
 package com.togger.project
 import cats.data.NonEmptyList
-import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.project.ProjectRepoImpl.PROJECT_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.ConnectionIO
-import doobie.Meta
+import doobie.{ConnectionIO, Fragments, Meta}
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
-import doobie.util.fragments
 
 import java.time.{DayOfWeek, Instant}
 import java.util.UUID
@@ -85,57 +84,54 @@ class ProjectRepoImpl extends ProjectRepo {
     )
   }
 
-  override def findAllProjectsByAccountId(accountId: UUID): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
-    logAroundInfoQuery(
-      (selectAllStatement(PROJECT_TABLE_FRAG) ++
-        innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(
-          fr"project.id = project_account.project_id"
-        ))
-//        fr"where project_account.project_id = $accountId")
-        .query[(Project, ProjectAccount)]
-        .to[Seq]
-    )(
-      s"Finding all projects for ${sp(accountId)}",
-      projectsAndAccounts => s"${sp(projectsAndAccounts)} found"
-    )
-  }
-
-  override def findByOrganizationIdAndAccountId(
+  override def findPaginatedByOrganizationIdAndAccountId(
     organizationId: UUID,
-    accountId: UUID
-  ): ConnectionIO[Seq[(Project, ProjectAccount)]] = {
+    accountId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Project]] =
     logAroundInfoQuery(
-      (selectAllStatement(PROJECT_TABLE_FRAG) ++
-        innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(fr"project.id = project_account.project_id") ++
-        fr"where project_account.account_id = $accountId and project.organization_id = $organizationId")
-        .query[(Project, ProjectAccount)]
-        .to[Seq]
+      memberProjectsPage(accountId, List(fr"project.organization_id = $organizationId"), page)
     )(
-      s"Finding all projects for ${sp(accountId)} and ${sp(organizationId)}",
-      projectsAndAccounts => s"${sp(projectsAndAccounts)} found"
+      s"Finding projects of ${sp(organizationId)} for ${sp(accountId)} with ${sp(page)}",
+      projects => s"Projects found ${sp(projects)} for ${sp(accountId)} and ${sp(organizationId)}"
     )
-  }
 
-  override def findByAccountIdAndAllLabelIds(accountId: UUID, labelIds: Seq[UUID]): ConnectionIO[Seq[Project]] =
-    NonEmptyList.fromList(labelIds.distinct.toList) match {
-      case None => Seq.empty[Project].pure[ConnectionIO]
-      case Some(nonEmptyLabelIds) =>
-        logAroundInfoQuery(
-          (fr"select project.* from" ++ PROJECT_TABLE_FRAG ++
-            innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(fr"project.id = project_account.project_id") ++
-            innerJoin(ProjectLabelAssignmentRepoImpl.PROJECT_LABEL_ASSIGNMENT_TABLE_FRAG)(
-              fr"project.id = project_label_assignment.project_id"
-            ) ++
-            fr"where project_account.account_id = $accountId and" ++
-            fragments.in(fr"project_label_assignment.project_label_id", nonEmptyLabelIds) ++
-            fr"group by project.id having count(distinct project_label_assignment.project_label_id) = ${nonEmptyLabelIds.size}")
-            .query[Project]
-            .to[Seq]
-        )(
-          s"Finding projects for ${sp(accountId)} with all of ${sp(labelIds)}",
-          projects => s"${sp(projects)} found"
-        )
-    }
+  override def findPaginatedByAccountId(
+    accountId: UUID,
+    labelIds: Seq[UUID],
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Project]] =
+    logAroundInfoQuery(
+      memberProjectsPage(accountId, NonEmptyList.fromList(labelIds.distinct.toList).map(hasAllLabels).toList, page)
+    )(
+      s"Finding projects for ${sp(accountId)} with all of ${sp(labelIds)} and ${sp(page)}",
+      projects => s"Projects found ${sp(projects)} for ${sp(accountId)}"
+    )
+
+  private def memberProjectsPage(
+    accountId: UUID,
+    conditions: List[Fragment],
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Project]] =
+    TgFindPaginatedQuery[Project](
+      pageQuery = request =>
+        (fr"select project.*" ++ memberProjects(accountId, conditions) ++
+          PaginationSql.orderBy(fr"project.name", fr"project.id") ++
+          PaginationSql.limitOffset(request)).query[Project].to[List],
+      countQuery = (fr"select count(*)" ++ memberProjects(accountId, conditions)).query[Long].unique
+    ).run(page)
+
+  // Shared by the page and the count query. A project has one row per member, so one account's membership is one row.
+  private def memberProjects(accountId: UUID, conditions: List[Fragment]): Fragment =
+    fr"from" ++ PROJECT_TABLE_FRAG ++
+      innerJoin(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG)(fr"project.id = project_account.project_id") ++
+      Fragments.whereAnd(fr"project_account.account_id = $accountId", conditions: _*)
+
+  // A project with several of the labels stays one row: the labels are counted in a subquery, not joined.
+  private def hasAllLabels(labelIds: NonEmptyList[UUID]): Fragment =
+    fr"project.id in (select project_id from" ++ ProjectLabelAssignmentRepoImpl.PROJECT_LABEL_ASSIGNMENT_TABLE_FRAG ++
+      fr"where" ++ Fragments.in(fr"project_label_id", labelIds) ++
+      fr"group by project_id having count(distinct project_label_id) = ${labelIds.size})"
 }
 
 object ProjectRepoImpl {

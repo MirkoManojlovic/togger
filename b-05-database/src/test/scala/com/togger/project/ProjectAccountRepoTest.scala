@@ -2,7 +2,7 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TgIds, TimeHelpers}
 import com.togger.organization.{TgOrganization, TgProject}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -79,9 +79,54 @@ class ProjectAccountRepoTest
         )
       )
       _ <- projectAccountsForSaving.map(projectAccountRepo.insert).sequence
-      foundAccounts <- projectAccountRepo.findAllMembers(savedProject.id)
+      foundAccounts <- projectAccountRepo.findPaginatedMembers(savedProject.id, DbPageRequest.default)
     } yield {
-      savedAccounts shouldBe foundAccounts
+      // by last name: Curry, Murry, Smith, Washington
+      foundAccounts.items shouldBe savedAccounts.sortBy(_.lastName)
+      foundAccounts.totalNumberOfItems shouldBe 4L
+    }
+
+    res.transact(transactor)
+  }
+
+  "split 11 members over 3 pages of 5, by last name, first name, without a duplicate" in { transactor =>
+    val res = for {
+      accountTypes <- createAccountTypes
+      // two members share a last name, so first name decides; inserted in reverse so the order is not insertion order
+      savedAccounts <- (0 to 10).toList.reverse
+        .map(index =>
+          createAccount(f"First $index%02d", if (index < 2) "Same" else f"Last $index%02d", s"member$index@email.com")
+        )
+        .map(account => accountRepo.insert(account.copy(accountTypeId = accountTypes.head.id)))
+        .sequence
+      savedOrgAndProject <- createOrgAndProject
+      (_, savedProject) = savedOrgAndProject
+      otherProject <- projectRepo.insert(project.copy(organizationId = savedProject.organizationId, name = "Other"))
+      _ <- savedAccounts.traverse(account =>
+        projectAccountRepo.insert(ProjectAccount(savedProject.id, account.id, nowAsInstant))
+      )
+      _ <- projectAccountRepo.insert(ProjectAccount(otherProject.id, savedAccounts.head.id, nowAsInstant))
+      pages <- (1 to 3).toList.traverse(number =>
+        projectAccountRepo.findPaginatedMembers(
+          savedProject.id,
+          DbPageRequest.fromPageRequest(PageRequest(number, 5)).toOption.get
+        )
+      )
+      past <- projectAccountRepo.findPaginatedMembers(
+        savedProject.id,
+        DbPageRequest.fromPageRequest(PageRequest(4, 5)).toOption.get
+      )
+    } yield {
+      val expected = savedAccounts.sortBy(account => (account.lastName, account.firstName))
+      val cp = new Checkpoint
+      cp(pages.map(_.items.size) shouldBe List(5, 5, 1))
+      cp(pages.map(_.totalNumberOfItems).distinct shouldBe List(11L))
+      cp(pages.map(_.totalNumberOfPages).distinct shouldBe List(3L))
+      cp(pages.flatMap(_.items) shouldBe expected)
+      cp(past.items shouldBe empty)
+      cp(past.totalNumberOfItems shouldBe 11L)
+      cp.reportAll()
+      succeed
     }
 
     res.transact(transactor)

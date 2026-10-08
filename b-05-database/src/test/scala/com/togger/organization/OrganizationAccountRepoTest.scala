@@ -2,7 +2,7 @@ package com.togger.organization
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TgIds, TimeHelpers}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
@@ -71,9 +71,55 @@ class OrganizationAccountRepoTest extends BusinessTgDbSpec with TgAccount with T
         )
       )
       _ <- orgAccountsForSaving.map(organizationAccountRepo.insert).sequence
-      foundAccounts <- organizationAccountRepo.findAllMembers(savedOrganization.id)
+      foundAccounts <- organizationAccountRepo.findPaginatedMembers(savedOrganization.id, DbPageRequest.default)
     } yield {
-      savedAccounts shouldBe foundAccounts
+      // by last name: Curry, Murry, Smith, Washington
+      foundAccounts.items shouldBe savedAccounts.sortBy(_.lastName)
+      foundAccounts.totalNumberOfItems shouldBe 4L
+    }
+
+    res.transact(transactor)
+  }
+
+  "split 11 members over 3 pages of 5, by last name, first name, without a duplicate" in { transactor =>
+    val res = for {
+      accountTypes <- createAccountTypes
+      // two members share a last name, so first name decides; inserted in reverse so the order is not insertion order
+      savedAccounts <- (0 to 10).toList.reverse
+        .map(index =>
+          createAccount(f"First $index%02d", if (index < 2) "Same" else f"Last $index%02d", s"member$index@email.com")
+        )
+        .map(account => accountRepo.insert(account.copy(accountTypeId = accountTypes.head.id)))
+        .sequence
+      savedOrganization <- createOrganization
+      otherOrganization <- organizationRepo.insert(organization.copy(name = "Other organization"))
+      _ <- savedAccounts.traverse(account =>
+        organizationAccountRepo.insert(OrganizationAccount(savedOrganization.id, account.id, nowAsInstant))
+      )
+      _ <- organizationAccountRepo.insert(
+        OrganizationAccount(otherOrganization.id, savedAccounts.head.id, nowAsInstant)
+      )
+      pages <- (1 to 3).toList.traverse(number =>
+        organizationAccountRepo.findPaginatedMembers(
+          savedOrganization.id,
+          DbPageRequest.fromPageRequest(PageRequest(number, 5)).toOption.get
+        )
+      )
+      past <- organizationAccountRepo.findPaginatedMembers(
+        savedOrganization.id,
+        DbPageRequest.fromPageRequest(PageRequest(4, 5)).toOption.get
+      )
+    } yield {
+      val expected = savedAccounts.sortBy(account => (account.lastName, account.firstName))
+      val cp = new Checkpoint
+      cp(pages.map(_.items.size) shouldBe List(5, 5, 1))
+      cp(pages.map(_.totalNumberOfItems).distinct shouldBe List(11L))
+      cp(pages.map(_.totalNumberOfPages).distinct shouldBe List(3L))
+      cp(pages.flatMap(_.items) shouldBe expected)
+      cp(past.items shouldBe empty)
+      cp(past.totalNumberOfItems shouldBe 11L)
+      cp.reportAll()
+      succeed
     }
 
     res.transact(transactor)

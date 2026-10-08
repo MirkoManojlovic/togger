@@ -1231,3 +1231,44 @@ databaseChangeLog:
                   name: task_id
               - column:
                   name: id
+  - changeSet:
+      id: 3
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Timebox lists filter by project; project and organization lists look up the memberships of one account, which
+        the (project_id, account_id) and (organization_id, account_id) primary keys cannot serve; project lists of one
+        organization filter by organization
+      changes:
+        - createIndex:
+            indexName: idx_timebox_project_id_id
+            tableName: timebox
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_project_account_account_id_project_id
+            tableName: project_account
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_organization_account_account_id_organization_id
+            tableName: organization_account
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: organization_id
+        - createIndex:
+            indexName: idx_project_organization_id_id
+            tableName: project
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: id

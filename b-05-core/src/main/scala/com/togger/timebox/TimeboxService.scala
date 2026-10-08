@@ -3,6 +3,7 @@ package com.togger.timebox
 import cats.data.EitherT
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.task.{TaskRepo, TaskVersion, TaskVersionRepo}
 import com.togger.timebox.TimeboxError.{TaskNotFound, TaskNotInProject, TimeboxError, TimeboxNotFound}
@@ -60,16 +61,19 @@ class TimeboxService(
       latest <- lift(timeboxVersionRepo.findLatestByTimeboxId(timeboxId).flatMap(withTasks))
     } yield TimeboxWithOneVersion(timebox, latest)).value.transact(transactor)
 
-  def findByProjectId(projectId: UUID): IO[List[TimeboxWithOneVersion]] =
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[TimeboxWithOneVersion]] =
     (for {
-      timeboxes <- timeboxRepo.findByProjectId(projectId)
-      combined <- timeboxes.traverse(timebox =>
+      timeboxesPage <- timeboxRepo.findPaginatedByProjectId(projectId, page)
+      combined <- timeboxesPage.items.traverse(timebox =>
         timeboxVersionRepo
           .findLatestByTimeboxId(timebox.id)
           .flatMap(withTasks)
           .map(TimeboxWithOneVersion(timebox, _))
       )
-    } yield combined).transact(transactor)
+    } yield timeboxesPage.copy(items = combined)).transact(transactor)
 
   def listVersions(timeboxId: UUID): IO[List[TimeboxVersionWithTasks]] =
     timeboxVersionRepo.findByTimeboxId(timeboxId).flatMap(_.traverse(withTasks)).transact(transactor)

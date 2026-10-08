@@ -2,7 +2,7 @@ package com.togger.organization
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TimeHelpers}
 import com.togger.project.{Project, ProjectRepoImpl}
 import com.togger.task.TaskStatus
 import com.togger.taskStatus.TaskStatusRepoImpl
@@ -145,10 +145,66 @@ class OrganizationRepoTest extends BusinessTgDbSpec with TgAccount with TimeHelp
             createdAt = nowAsInstant
           )
         )
-        savedOrganizationAccounts <- orgAccountsForSaving.map(organizationAccountRepo.insert).sequence
-        foundOrganizationAccounts <- organizationRepo.findAllOrgByAccountId(savedAccount.id)
+        _ <- orgAccountsForSaving.map(organizationAccountRepo.insert).sequence
+        foundOrganizations <- organizationRepo.findPaginatedByAccountId(savedAccount.id, DbPageRequest.default)
       } yield {
-        chosenOrg.zip(savedOrganizationAccounts) shouldBe foundOrganizationAccounts
+        foundOrganizations.items shouldBe chosenOrg.sortBy(_.name)
+        foundOrganizations.totalNumberOfItems shouldBe 3L
+      }
+
+      res.transact(transactor)
+    }
+
+    // eleven organizations "Organization 00".."Organization 10", inserted in reverse so the order is by name
+    def seedOrganizations: ConnectionIO[List[Organization]] =
+      (0 to 10).toList.reverse
+        .traverse(index => organizationRepo.insert(organization.copy(name = f"Organization $index%02d")))
+        .map(_.sortBy(_.name))
+
+    def pageOf(pageNumber: Int, size: Int) =
+      DbPageRequest.fromPageRequest(PageRequest(pageNumber, size)).toOption.get
+
+    "split all 11 organizations over 3 pages of 5, by name, without a duplicate" in { transactor =>
+      val res = for {
+        seeded <- seedOrganizations
+        pages <- (1 to 3).toList.traverse(number => organizationRepo.findPaginated(pageOf(number, 5)))
+        past <- organizationRepo.findPaginated(pageOf(4, 5))
+      } yield {
+        val cp = new Checkpoint
+        cp(pages.map(_.items.size) shouldBe List(5, 5, 1))
+        cp(pages.map(_.totalNumberOfItems).distinct shouldBe List(11L))
+        cp(pages.map(_.totalNumberOfPages).distinct shouldBe List(3L))
+        cp(pages.flatMap(_.items) shouldBe seeded)
+        cp(past.items shouldBe empty)
+        cp(past.totalNumberOfItems shouldBe 11L)
+        cp.reportAll()
+        succeed
+      }
+
+      res.transact(transactor)
+    }
+
+    "split the organizations of an account over pages, leaving out the ones it is not a member of" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        seeded <- seedOrganizations
+        memberOf = seeded.filter(org => org.name.takeRight(2).toInt % 2 == 0)
+        _ <- memberOf.traverse(org =>
+          organizationAccountRepo.insert(OrganizationAccount(org.id, savedAccount.id, nowAsInstant))
+        )
+        pages <- (1 to 2).toList.traverse(number =>
+          organizationRepo.findPaginatedByAccountId(savedAccount.id, pageOf(number, 4))
+        )
+        otherAccount <- organizationRepo.findPaginatedByAccountId(UUID.randomUUID(), pageOf(1, 4))
+      } yield {
+        val cp = new Checkpoint
+        cp(pages.map(_.items.size) shouldBe List(4, 2))
+        cp(pages.map(_.totalNumberOfItems).distinct shouldBe List(6L))
+        cp(pages.flatMap(_.items) shouldBe memberOf)
+        cp(otherAccount.items shouldBe empty)
+        cp(otherAccount.totalNumberOfItems shouldBe 0L)
+        cp.reportAll()
+        succeed
       }
 
       res.transact(transactor)

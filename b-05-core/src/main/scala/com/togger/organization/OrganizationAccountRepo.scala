@@ -1,6 +1,7 @@
 package com.togger.organization
 
 import com.togger.account.Account
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.util.UUID
@@ -14,6 +15,7 @@ trait OrganizationAccountRepo {
 
 //  def update(organizationAccount: OrganizationAccount, updatedAt: Instant): ConnectionIO[OrganizationAccount]
 
-  def findAllMembers(organizationId: UUID): ConnectionIO[Seq[Account]]
+  /** One page of the organization's members by last name, first name. */
+  def findPaginatedMembers(organizationId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[Account]]
 
 }

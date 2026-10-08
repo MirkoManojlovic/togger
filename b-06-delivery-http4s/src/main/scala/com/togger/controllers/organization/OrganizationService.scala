@@ -3,10 +3,9 @@ package com.togger.controllers.organization
 import cats.effect.IO
 import cats.implicits.toTraverseOps
 import com.togger.account.Account
-import com.togger.common.TgClock
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.organization.{Organization, OrganizationAccount, OrganizationAccountRepo, OrganizationRepo}
-import com.togger.project.{Project, ProjectRepo}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -16,7 +15,6 @@ import java.util.UUID
 class OrganizationService(
   organizationRepo: OrganizationRepo,
   organizationAccountRepo: OrganizationAccountRepo,
-  projectRepo: ProjectRepo,
   tgClock: TgClock,
   transactor: Transactor[IO]
 ) extends TgLogging {
@@ -73,14 +71,15 @@ class OrganizationService(
       .sequence
   }
 
-  private def findMembersLocal(organizationId: UUID): ConnectionIO[Seq[Account]] = {
-    organizationAccountRepo.findAllMembers(organizationId)
-  }
+  // The members embedded in an organization response are the first page of the maximum size; an organization with more
+  // members shows only those (the paginated members endpoint reads them all).
+  private def findMembersLocal(organizationId: UUID): ConnectionIO[Seq[Account]] =
+    organizationAccountRepo.findPaginatedMembers(organizationId, DbPageRequest.firstMaxSized).map(_.items)
 
   def findBy(id: UUID): IO[(Organization, Seq[Account])] = {
     (for {
       organization <- organizationRepo.findById(id)
-      members <- organizationAccountRepo.findAllMembers(id)
+      members <- findMembersLocal(id)
     } yield organization -> members).transact(transactor)
   }
 
@@ -95,7 +94,7 @@ class OrganizationService(
       updatedOrganization <- organizationRepo.update(organization, now)
       _ <- addMembers(updatedOrganization, membersToAdd)
       _ <- removeMembers(updatedOrganization, membersToRemove)
-      members <- organizationAccountRepo.findAllMembers(updatedOrganization.id)
+      members <- findMembersLocal(updatedOrganization.id)
     } yield {
       logger.info(s"Organization updated successfully ${sp(updatedOrganization)}")
       updatedOrganization -> members
@@ -106,28 +105,13 @@ class OrganizationService(
     organizationRepo.deleteById(id).transact(transactor)
   }
 
-  def findAll(): IO[Seq[Organization]] = {
-    organizationRepo.findAll().transact(transactor)
-  }
+  /** Every organization of every tenant: only for admins. */
+  def findPaginated(page: DbPageRequest): IO[PaginatedResponse[Organization]] =
+    organizationRepo.findPaginated(page).transact(transactor)
 
-  def findAllOrgByAccountId(accountId: UUID): IO[Seq[Organization]] =
-    organizationRepo.findAllOrgByAccountId(accountId).map(_.map(_._1)).transact(transactor)
+  def findPaginatedByAccountId(accountId: UUID, page: DbPageRequest): IO[PaginatedResponse[Organization]] =
+    organizationRepo.findPaginatedByAccountId(accountId, page).transact(transactor)
 
-  def findAllMembers(organizationId: UUID): IO[Seq[Account]] =
-    organizationAccountRepo.findAllMembers(organizationId).transact(transactor)
-
-  def findOrganizationsAndProjectsByAccountId(accountId: UUID): IO[List[(Organization, Seq[Project])]] = {
-    (for {
-      organizations <- organizationRepo.findAllOrgByAccountId(accountId).map(_.map(_._1))
-      orgsAndProjects <- organizations
-        .map { organization =>
-          projectRepo
-            .findByOrganizationIdAndAccountId(organization.id, accountId)
-            .map(_.map(_._1))
-            .map(projects => organization -> projects)
-        }
-        .toList
-        .sequence
-    } yield (orgsAndProjects)).transact(transactor)
-  }
+  def findPaginatedMembers(organizationId: UUID, page: DbPageRequest): IO[PaginatedResponse[Account]] =
+    organizationAccountRepo.findPaginatedMembers(organizationId, page).transact(transactor)
 }

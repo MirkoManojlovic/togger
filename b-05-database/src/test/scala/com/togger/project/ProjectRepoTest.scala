@@ -2,7 +2,7 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.organization.TgOrganization
 import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.implicits._
@@ -92,19 +92,20 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
         _ <- projectRepo.insert(
           project.copy(organizationId = savedOrganization.id, name = "Project name 2")
         )
-        savedProjectAccount <- projectAccountRepo.insert(
+        _ <- projectAccountRepo.insert(
           ProjectAccount(
             projectId = savedProject1.id,
             accountId = savedAccount.id,
             createdAt = nowAsInstant
           )
         )
-        foundProjects <- projectRepo.findByOrganizationIdAndAccountId(
+        foundProjects <- projectRepo.findPaginatedByOrganizationIdAndAccountId(
           organizationId = savedOrganization.id,
-          accountId = savedAccount.id
+          accountId = savedAccount.id,
+          page = DbPageRequest.default
         )
       } yield {
-        foundProjects shouldBe Seq(savedProject1 -> savedProjectAccount)
+        foundProjects.items shouldBe List(savedProject1)
       }
 
       res.transact(transactor)
@@ -153,12 +154,23 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
           ProjectLabelAssignment(notMemberProject.id, kotlinLabel.id, nowAsInstant)
         )
 
-        foundProjects <- projectRepo.findByAccountIdAndAllLabelIds(savedAccount.id, Seq(scalaLabel.id, kotlinLabel.id))
-        foundProjectsForEmptyLabels <- projectRepo.findByAccountIdAndAllLabelIds(savedAccount.id, Seq.empty)
+        foundProjects <- projectRepo.findPaginatedByAccountId(
+          savedAccount.id,
+          Seq(scalaLabel.id, kotlinLabel.id),
+          DbPageRequest.default
+        )
+        foundProjectsForEmptyLabels <- projectRepo.findPaginatedByAccountId(
+          savedAccount.id,
+          Seq.empty,
+          DbPageRequest.default
+        )
       } yield {
         val cp = new Checkpoint
-        cp(foundProjects shouldBe Seq(matchingProject))
-        cp(foundProjectsForEmptyLabels shouldBe empty)
+        cp(foundProjects.items shouldBe List(matchingProject))
+        // no label filter: every project of the account, labelled or not
+        cp(
+          foundProjectsForEmptyLabels.items.map(_.id).toSet shouldBe Set(matchingProject.id, partiallyLabeledProject.id)
+        )
         cp.reportAll()
       }
 

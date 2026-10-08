@@ -3,7 +3,8 @@ package com.togger.maintenance
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import com.togger.account.{Account, AccountType}
-import com.togger.common.TgIds
+import com.togger.common.{DbPageRequest, TgIds}
+import com.togger.db.TgPages
 import com.togger.organization.Organization
 import com.togger.project.Project
 import doobie.ConnectionIO
@@ -41,17 +42,17 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
 
   private def findExistingOrganizationOwner(organization: Organization): IO[(Organization, Account)] =
     organizationAccountRepo
-      .findAllMembers(organization.id)
+      .findPaginatedMembers(organization.id, DbPageRequest.default)
       .transact(xa)
-      .map { members =>
-        val owner = members.headOption
+      .map { membersPage =>
+        val owner = membersPage.items.headOption
           .getOrElse(throw new RuntimeException(s"""Organization "$ORGANIZATION_NAME" (${organization.id}) has no members"""))
         (organization, owner)
       }
 
   override def run(args: List[String]): IO[ExitCode] =
     for {
-      organizations <- organizationRepo.findAll().transact(xa)
+      organizations <- TgPages.readAll(organizationRepo.findPaginated).transact(xa)
       existingOrganization = organizations.find(_.name == ORGANIZATION_NAME)
 
       organizationAndOwner <- existingOrganization match {

@@ -2,7 +2,9 @@ package com.togger.organization
 
 import com.togger.account.AccountRepoImpl.passwordCodec
 import com.togger.account.{Account, AccountRepoImpl}
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -71,19 +73,28 @@ class OrganizationAccountRepoImpl extends OrganizationAccountRepo {
 //      organization => s"${sp(organization)} updated"
 //    )
 
-  override def findAllMembers(organizationId: UUID): ConnectionIO[Seq[Account]] = {
+  override def findPaginatedMembers(
+    organizationId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Account]] =
     logAroundInfoQuery(
-      (selectAllStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
-        innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"organization_account.account_id = account.id") ++
-        fr"where organization_account.organization_id = ${organizationId}")
-        .query[(OrganizationAccount, Account)]
-        .map(_._2)
-        .to[Seq]
+      TgFindPaginatedQuery[Account](
+        pageQuery = request =>
+          (fr"select account.*" ++ organizationMembers(organizationId) ++
+            PaginationSql.orderBy(fr"account.last_name", fr"account.first_name", fr"account.id") ++
+            PaginationSql.limitOffset(request)).query[Account].to[List],
+        countQuery = (fr"select count(*)" ++ organizationMembers(organizationId)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding all members of organization ${sp(organizationId)}",
+      s"Finding members of organization ${sp(organizationId)} with ${sp(page)}",
       membersFound => s"${sp(membersFound)} members found"
     )
-  }
+
+  // Shared by the page and the count query.
+  private def organizationMembers(organizationId: UUID): Fragment =
+    fr"from" ++ OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG ++
+      innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"organization_account.account_id = account.id") ++
+      fr"where organization_account.organization_id = $organizationId"
 }
 
 object OrganizationAccountRepoImpl {

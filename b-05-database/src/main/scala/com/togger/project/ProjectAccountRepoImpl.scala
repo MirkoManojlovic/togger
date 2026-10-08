@@ -4,7 +4,9 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.togger.account.AccountRepoImpl.passwordCodec
 import com.togger.account.{Account, AccountRepoImpl}
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -74,19 +76,28 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
 //      project => s"${sp(project)} updated"
 //    )
 
-  override def findAllMembers(projectId: UUID): ConnectionIO[Seq[Account]] = {
+  override def findPaginatedMembers(
+    projectId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Account]] =
     logAroundInfoQuery(
-      (selectAllStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++
-        innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"project_account.account_id = account.id") ++
-        fr"where project_account.project_id = $projectId")
-        .query[(ProjectAccount, Account)]
-        .map(_._2)
-        .to[Seq]
+      TgFindPaginatedQuery[Account](
+        pageQuery = request =>
+          (fr"select account.*" ++ projectMembers(projectId) ++
+            PaginationSql.orderBy(fr"account.last_name", fr"account.first_name", fr"account.id") ++
+            PaginationSql.limitOffset(request)).query[Account].to[List],
+        countQuery = (fr"select count(*)" ++ projectMembers(projectId)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding all members of project ${sp(projectId)}",
+      s"Finding members of project ${sp(projectId)} with ${sp(page)}",
       membersFound => s"${sp(membersFound)} members found"
     )
-  }
+
+  // Shared by the page and the count query.
+  private def projectMembers(projectId: UUID): Fragment =
+    fr"from" ++ ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG ++
+      innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"project_account.account_id = account.id") ++
+      fr"where project_account.project_id = $projectId"
 
   override def findAllMembersByProjectIds(projectIds: Seq[UUID]): ConnectionIO[Map[UUID, Seq[Account]]] =
     NonEmptyList.fromList(projectIds.toList) match {

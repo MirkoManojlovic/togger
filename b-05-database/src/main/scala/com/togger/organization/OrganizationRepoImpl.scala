@@ -1,7 +1,8 @@
 package com.togger.organization
 
-import com.togger.account.Account
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.organization.OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
@@ -74,29 +75,44 @@ class OrganizationRepoImpl extends OrganizationRepo {
     )
   }
 
-  override def findAll(): ConnectionIO[Seq[Organization]] = {
+  override def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[Organization]] =
     logAroundInfoQuery(
-      selectAllStatement(OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG).query[Organization].to[Seq]
+      TgFindPaginatedQuery[Organization](
+        pageQuery = request =>
+          (fr"select organization.* from" ++ ORGANIZATION_TABLE_FRAG ++
+            PaginationSql.orderBy(fr"organization.name", fr"organization.id") ++
+            PaginationSql.limitOffset(request)).query[Organization].to[List],
+        countQuery = (fr"select count(*) from" ++ ORGANIZATION_TABLE_FRAG).query[Long].unique
+      ).run(page)
     )(
-      "Finding all organizations",
+      s"Finding organizations with ${sp(page)}",
       organizations => s"${sp(organizations)} found"
     )
-  }
 
-  override def findAllOrgByAccountId(accountId: UUID): ConnectionIO[Seq[(Organization, OrganizationAccount)]] = {
+  override def findPaginatedByAccountId(
+    accountId: UUID,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[Organization]] =
     logAroundInfoQuery(
-      (selectAllStatement(ORGANIZATION_TABLE_FRAG) ++
-        innerJoin(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG)(
-          fr"organization.id = organization_account.organization_id"
-        ) ++
-        fr"where organization_account.account_id = $accountId")
-        .query[(Organization, OrganizationAccount)]
-        .to[Seq]
+      TgFindPaginatedQuery[Organization](
+        pageQuery = request =>
+          (fr"select organization.*" ++ memberOrganizations(accountId) ++
+            PaginationSql.orderBy(fr"organization.name", fr"organization.id") ++
+            PaginationSql.limitOffset(request)).query[Organization].to[List],
+        countQuery = (fr"select count(*)" ++ memberOrganizations(accountId)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding all organizations for ${sp(accountId)}",
-      organizationsAndAccounts => s"${sp(organizationsAndAccounts)} found"
+      s"Finding organizations for ${sp(accountId)} with ${sp(page)}",
+      organizations => s"${sp(organizations)} found for ${sp(accountId)}"
     )
-  }
+
+  // Shared by the page and the count query.
+  private def memberOrganizations(accountId: UUID): Fragment =
+    fr"from" ++ ORGANIZATION_TABLE_FRAG ++
+      innerJoin(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG)(
+        fr"organization.id = organization_account.organization_id"
+      ) ++
+      fr"where organization_account.account_id = $accountId"
 
 }
 

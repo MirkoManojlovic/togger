@@ -1,8 +1,11 @@
 package com.togger.controllers.organization
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import cats.effect.IO
+import com.togger.account.AdminCheck
+import com.togger.common.{Forbidden, TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.SearchAccountDto
-import com.togger.dto.organization.{FindOrganizationResp, FindOrganizationsAndProjects, OrganizationProjectResp}
+import com.togger.dto.organization.FindOrganizationResp
 import com.togger.organization._
 
 import java.util.UUID
@@ -10,6 +13,7 @@ import java.util.UUID
 class OrganizationController(
   organizationEndpoints: OrganizationEndpoints,
   organizationService: OrganizationService,
+  adminCheck: AdminCheck,
   tgClock: TgClock
 ) {
 
@@ -119,84 +123,57 @@ class OrganizationController(
       .map(_ => TgJsonSuccess.justMessageRight("Task status deleted successfully"))
   }
 
-  val findAll = findAllEndpoint.serverLogic { auth => _ =>
-    organizationService
-      .findAll()
-      .map(organizations =>
-        TgJsonSuccess.justBodyRight(
-          organizations.map(organization =>
-            FindOrganizationResp(
-              id = organization.id,
-              name = organization.name,
-              description = organization.description,
-              icon = organization.icon,
-              members = Seq.empty
-            )
-          )
-        )
-      )
+  // Reads the organizations of every tenant, so only admins may call it.
+  val findAll = findAllEndpoint.serverLogic { auth => pageRequest =>
+    adminCheck.isAdmin(auth.body.get.id).flatMap {
+      case false => IO.pure(Left(Forbidden))
+      case true =>
+        PageRequestValidation.withPage(pageRequest) { page =>
+          organizationService
+            .findPaginated(page)
+            .map(organizationsPage => TgJsonSuccess.justBodyRight(organizationsPage.mapItem(toListDto)))
+        }
+    }
   }
 
-  val findByAccountId = findByAccountIdEndpoint.serverLogic { auth => accountId =>
-    organizationService
-      .findAllOrgByAccountId(accountId)
-      .map(organizations =>
-        TgJsonSuccess.justBodyRight(
-          organizations.map(organization =>
-            FindOrganizationResp(
-              id = organization.id,
-              name = organization.name,
-              description = organization.description,
-              icon = organization.icon,
-              members = Seq.empty
-            )
-          )
-        )
-      )
+  val findByAccountId = findByAccountIdEndpoint.serverLogic { auth => request =>
+    val (accountId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      organizationService
+        .findPaginatedByAccountId(accountId, page)
+        .map(organizationsPage => TgJsonSuccess.justBodyRight(organizationsPage.mapItem(toListDto)))
+    }
   }
 
-  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => organizationId =>
-    organizationService
-      .findAllMembers(organizationId)
-      .map(accounts =>
-        TgJsonSuccess.justBodyRight(
-          accounts.map(account =>
-            SearchAccountDto(
-              id = account.id,
-              firstName = account.firstName,
-              lastName = account.lastName,
-              email = account.email,
-              accountTypeId = account.accountTypeId
-            )
-          )
-        )
-      )
-  }
-
-  val findOrgAndProjectsByAccountId = findOrgAndProjectsByAccountIdEndpoint.serverLogic { auth => organizationId =>
-    organizationService
-      .findOrganizationsAndProjectsByAccountId(organizationId)
-      .map(orgsAndProjects =>
-        TgJsonSuccess.justBodyRight(
-          orgsAndProjects.map { case (organization, projects) =>
-            FindOrganizationsAndProjects(
-              id = organization.id,
-              name = organization.name,
-              description = organization.description,
-              icon = organization.icon,
-              projects = projects.map(project =>
-                OrganizationProjectResp(
-                  id = project.id,
-                  name = project.name,
-                  description = project.description,
-                  icon = project.icon,
-                  workDays = project.workDays.map(_.getValue)
-                )
+  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => request =>
+    val (organizationId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      organizationService
+        .findPaginatedMembers(organizationId, page)
+        .map(accountsPage =>
+          TgJsonSuccess.justBodyRight(
+            accountsPage.mapItem(account =>
+              SearchAccountDto(
+                id = account.id,
+                firstName = account.firstName,
+                lastName = account.lastName,
+                email = account.email,
+                accountTypeId = account.accountTypeId
               )
             )
-          }
+          )
         )
-      )
+    }
   }
+
+  // Organization list rows carry no members; the members endpoint pages them.
+  private def toListDto(organization: Organization): FindOrganizationResp =
+    FindOrganizationResp(
+      id = organization.id,
+      name = organization.name,
+      description = organization.description,
+      icon = organization.icon,
+      members = Seq.empty
+    )
 
 }

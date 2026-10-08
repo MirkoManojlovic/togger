@@ -3,6 +3,7 @@ package com.togger.controllers.project
 import cats.effect.IO
 import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.account.Account
 import com.togger.dto.{FindProjectResp, FindProjectLabelResp, SearchAccountDto}
 import com.togger.project._
@@ -108,57 +109,64 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     }
   }
 
-  val findByOrganizationIdAndAccountId = findByOrganizationIdAndAccountIdEndpoint.serverLogic {
-    auth => organizationId =>
+  val findByOrganizationIdAndAccountId = findByOrganizationIdAndAccountIdEndpoint.serverLogic { auth => request =>
+    val (organizationId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
       projectService
-        .findAllByOrganizationIdAndAccountId(organizationId, auth.body.get.id)
-        .flatMap { projects =>
-          projectService.findProjectLabelsByProjectIds(projects.map(_.id)).map { projectLabelsByProjectId =>
+        .findPaginatedByOrganizationIdAndAccountId(organizationId, auth.body.get.id, page)
+        .flatMap { projectsPage =>
+          projectService.findProjectLabelsByProjectIds(projectsPage.items.map(_.id)).map { projectLabelsByProjectId =>
             TgJsonSuccess.justBodyRight(
-              projects
-                .map(project =>
-                  FindProjectResp(
-                    id = project.id,
-                    organizationId = project.organizationId,
-                    name = project.name,
-                    description = project.description,
-                    icon = project.icon,
-                    workDays = project.workDays.map(_.getValue),
-                    members = Seq.empty,
-                    projectLabels = projectLabelsByProjectId.getOrElse(project.id, List.empty).map(toProjectLabelDto)
-                  )
+              projectsPage.mapItem(project =>
+                FindProjectResp(
+                  id = project.id,
+                  organizationId = project.organizationId,
+                  name = project.name,
+                  description = project.description,
+                  icon = project.icon,
+                  workDays = project.workDays.map(_.getValue),
+                  members = Seq.empty,
+                  projectLabels = projectLabelsByProjectId.getOrElse(project.id, List.empty).map(toProjectLabelDto)
                 )
+              )
             )
           }
         }
+    }
   }
 
-  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => projectId =>
-    projectService
-      .findAllMembers(projectId)
-      .map(accounts =>
-        TgJsonSuccess.justBodyRight(
-          accounts.map(account =>
-            SearchAccountDto(
-              id = account.id,
-              firstName = account.firstName,
-              lastName = account.lastName,
-              email = account.email,
-              accountTypeId = account.accountTypeId
+  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => request =>
+    val (projectId, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      projectService
+        .findPaginatedMembers(projectId, page)
+        .map(accountsPage =>
+          TgJsonSuccess.justBodyRight(
+            accountsPage.mapItem(account =>
+              SearchAccountDto(
+                id = account.id,
+                firstName = account.firstName,
+                lastName = account.lastName,
+                email = account.email,
+                accountTypeId = account.accountTypeId
+              )
             )
           )
         )
-      )
+    }
   }
 
-  val searchByLabels = searchByLabelsEndpoint.serverLogic { auth => dto =>
-    projectService
-      .searchByLabels(auth.body.get.id, dto.projectLabelIds)
-      .map { results =>
-        TgJsonSuccess.justBodyRight(results.map { case (project, members, projectLabels) =>
-          toFindProjectResp(project, members, projectLabels)
-        })
-      }
+  val searchByLabels = searchByLabelsEndpoint.serverLogic { auth => request =>
+    val (dto, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      projectService
+        .searchByLabels(auth.body.get.id, dto.projectLabelIds, page)
+        .map { resultsPage =>
+          TgJsonSuccess.justBodyRight(resultsPage.mapItem { case (project, members, projectLabels) =>
+            toFindProjectResp(project, members, projectLabels)
+          })
+        }
+    }
   }
 
 }

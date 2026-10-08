@@ -1,5 +1,6 @@
 package com.togger.organization
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import doobie.ConnectionIO
 
 import java.time.Instant
@@ -14,8 +15,10 @@ trait OrganizationRepo {
 
   def update(organization: Organization, updatedAt: Instant): ConnectionIO[Organization]
 
-  def findAll(): ConnectionIO[Seq[Organization]]
+  /** One page of every organization, by name. Cross-tenant: callers must be admin-only. */
+  def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[Organization]]
 
-  def findAllOrgByAccountId(accountId: UUID): ConnectionIO[Seq[(Organization, OrganizationAccount)]]
+  /** One page of the organizations the account is a member of, by name. */
+  def findPaginatedByAccountId(accountId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[Organization]]
 
 }

@@ -70,7 +70,6 @@ trait SeedAppModule {
     new OrganizationService(
       organizationRepo = organizationRepo,
       organizationAccountRepo = organizationAccountRepo,
-      projectRepo = projectRepo,
       tgClock = tgClock,
       transactor = xa
     )

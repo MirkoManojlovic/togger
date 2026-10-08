@@ -2,7 +2,7 @@ package com.togger.timebox
 
 import cats.effect.IO
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.task._
 import com.togger.timebox.TimeboxError.{TaskNotFound, TimeboxError, TimeboxNotFound}
@@ -125,10 +125,10 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, Seq.empty, nowAsInstant))
         _ <- service.deleteTimebox(created.timebox.id)
         versions <- service.listVersions(created.timebox.id)
-        found <- service.findByProjectId(project.id)
+        found <- service.findPaginatedByProjectId(project.id, DbPageRequest.default)
       } yield {
         versions shouldBe empty
-        found shouldBe empty
+        found.items shouldBe empty
       }
     }
   }
