@@ -2,7 +2,8 @@ package com.togger.task
 
 import cats.implicits.catsSyntaxApplicativeError
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgIds, TimeHelpers}
+import com.togger.dto.TaskFilter
 import com.togger.organization.{TgProject, TgTaskStatus}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -176,7 +177,7 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
       res.transact(transactor)
     }
 
-    "find all tasks for a project with latest content resolved" in { transactor =>
+    "find a page of tasks for a project with latest content resolved" in { transactor =>
       val res = for {
         fixtures <- createTaskAndFixtures()
         (savedAccount, savedProject, taskStatusSaved, savedTask) = fixtures
@@ -184,12 +185,12 @@ class TaskVersionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject
         latestVersion <- taskVersionRepo.insert(
           taskVersion(savedTask.id, taskStatusSaved.id, Some(savedAccount.id), v2)
         )
-        foundTasks <- taskVersionRepo.findByProjectIdWithLatest(savedProject.id)
+        foundPage <- taskVersionRepo.findPaginatedByProjectId(savedProject.id, TaskFilter.empty, DbPageRequest.default)
       } yield {
         val cp = new Checkpoint
-        cp(foundTasks.map(_.id) shouldBe Seq(savedTask.id))
+        cp(foundPage.items.map(_.id) shouldBe Seq(savedTask.id))
         cp.reportAll()
-        foundTasks.head.latestVersion shouldBe latestVersion.version
+        foundPage.items.head.latestVersion shouldBe latestVersion.version
       }
 
       res.transact(transactor)

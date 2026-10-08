@@ -2,7 +2,8 @@ package com.togger.task
 
 import cats.effect.IO
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.dto.TaskFilter
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
 import doobie.Transactor
@@ -67,7 +68,10 @@ class TaskServiceBulkTest extends BusinessTgDbSpec with TgAccount with TgProject
             newTask(name, projectId, accountId, statusId, index)
           }
         )
-        stored <- taskVersionRepo.findByProjectIdWithLatest(projectId).transact(transactor)
+        stored <- taskVersionRepo
+          .findPaginatedByProjectId(projectId, TaskFilter.empty, DbPageRequest.default)
+          .map(_.items)
+          .transact(transactor)
       } yield {
         created.map(_._2.map(_.link)) shouldBe List(Nil, Nil, Nil)
         created.map(_._1.version.name) shouldBe List("A", "B", "C")
@@ -91,7 +95,10 @@ class TaskServiceBulkTest extends BusinessTgDbSpec with TgAccount with TgProject
             )
           )
           .attempt
-        stored <- taskVersionRepo.findByProjectIdWithLatest(projectId).transact(transactor)
+        stored <- taskVersionRepo
+          .findPaginatedByProjectId(projectId, TaskFilter.empty, DbPageRequest.default)
+          .map(_.items)
+          .transact(transactor)
       } yield {
         result.isLeft shouldBe true
         stored shouldBe empty

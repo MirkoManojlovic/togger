@@ -1,5 +1,7 @@
 package com.togger.logentry
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.dto.LogEntryFilter
 import doobie.ConnectionIO
 
 import java.util.UUID
@@ -16,7 +18,12 @@ trait LogEntryRepo {
 
   def findByTaskId(taskId: UUID): ConnectionIO[List[LogEntry]]
 
-  def findByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]]
+  /** One page of the project's log entries, newest first. */
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: LogEntryFilter,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[LogEntry]]
 
   def deleteByTaskId(taskId: UUID): ConnectionIO[Int]
 

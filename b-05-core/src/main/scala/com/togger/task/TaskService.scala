@@ -2,6 +2,8 @@ package com.togger.task
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.dto.TaskFilter
 import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo, LogEntryWithVersions}
 import com.togger.logging.TgLogging
 import com.togger.task.TaskError.{TaskError, TaskNotFound}
@@ -71,23 +73,21 @@ class TaskService(
       } yield LinkWithOneVersion(savedLink, savedVersion)
     }
 
-  def findByProjectId(projectId: UUID): IO[List[(TaskFull, List[LinkWithVersions], List[LogEntryWithVersions])]] =
-    taskVersionRepo
-      .findByProjectIdWithLatest(projectId)
-      .flatMap { tasks =>
-        taskLabelAssignmentRepo.findLabelsByTaskIds(tasks.map(_.id)).flatMap { labelsByTaskId =>
-          tasks
-            .map(task =>
-              for {
-                links <- findLinksWithLatestVersion(task.id)
-                logEntries <- findLogEntriesWithLatestVersion(task.id)
-              } yield (task.copy(taskLabels = labelsByTaskId.getOrElse(task.id, List.empty)), links, logEntries)
-            )
-            .toList
-            .sequence
-        }
-      }
-      .transact(transactor)
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: TaskFilter,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[(TaskFull, List[LinkWithVersions], List[LogEntryWithVersions])]] =
+    (for {
+      tasksPage <- taskVersionRepo.findPaginatedByProjectId(projectId, filter, page)
+      labelsByTaskId <- taskLabelAssignmentRepo.findLabelsByTaskIds(tasksPage.items.map(_.id))
+      items <- tasksPage.items.traverse(task =>
+        for {
+          links <- findLinksWithLatestVersion(task.id)
+          logEntries <- findLogEntriesWithLatestVersion(task.id)
+        } yield (task.copy(taskLabels = labelsByTaskId.getOrElse(task.id, List.empty)), links, logEntries)
+      )
+    } yield tasksPage.copy(items = items)).transact(transactor)
 
   private def findLinksWithLatestVersion(taskId: UUID): ConnectionIO[List[LinkWithVersions]] =
     for {

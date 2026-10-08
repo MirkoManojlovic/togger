@@ -4,11 +4,13 @@ import cats.effect.IO
 import com.togger.account.Account
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgClock, TgJsonSuccess}
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
 import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
 import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto, toVersionDto}
 import com.togger.controllers.project.ProjectService
 import com.togger.dto._
+import com.togger.logentry.LogEntryWithVersions
 import com.togger.task._
 
 import java.time.Instant
@@ -41,45 +43,46 @@ class TaskController(
     }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => projectId =>
-      taskService
-        .findByProjectId(projectId)
-        .map(tasksLogsAndLinks =>
-          TgJsonSuccess.justBodyRight(
-            tasksLogsAndLinks
-              .map { case (taskFull, links, logEntries) =>
-                FindTaskRespFull(
-                  id = taskFull.id,
-                  projectId = taskFull.projectId,
-                  name = taskFull.name,
-                  description = taskFull.description,
-                  assignedTo = taskFull.assignedTo.map(fromAccount),
-                  createdBy = fromAccount(taskFull.createdBy),
-                  closedBy = taskFull.closedBy.map(fromAccount),
-                  taskStatus = FindTaskStatusResp(
-                    id = taskFull.taskStatus.id,
-                    projectId = taskFull.projectId,
-                    name = taskFull.taskStatus.name,
-                    description = taskFull.taskStatus.description
-                  ),
-                  priority = taskFull.priority,
-                  createdAt = taskFull.createdAt,
-                  updatedAt = taskFull.updatedAt,
-                  latestVersion = taskFull.latestVersion,
-                  logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
-                  links = links.map(link => toLinkDto(link.link, link.latestVersion)),
-                  milestone = taskFull.milestone,
-                  startDate = taskFull.startDate,
-                  dueDate = taskFull.dueDate,
-                  endDate = taskFull.endDate,
-                  taskLabels = taskFull.taskLabels.map(l =>
-                    FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
-                  )
-                )
-              }
-          )
-        )
+    findByProjectIdEndpoint.serverLogic { auth => request =>
+      val (projectId, filter, pageRequest) = request
+      PageRequestValidation.withPage(pageRequest) { page =>
+        taskService
+          .findPaginatedByProjectId(projectId, filter, page)
+          .map(tasksPage => TgJsonSuccess.justBodyRight(tasksPage.mapItem(toFullDto)))
+      }
     }
+
+  private def toFullDto(item: (TaskFull, List[LinkWithVersions], List[LogEntryWithVersions])): FindTaskRespFull = {
+    val (taskFull, links, logEntries) = item
+    FindTaskRespFull(
+      id = taskFull.id,
+      projectId = taskFull.projectId,
+      name = taskFull.name,
+      description = taskFull.description,
+      assignedTo = taskFull.assignedTo.map(fromAccount),
+      createdBy = fromAccount(taskFull.createdBy),
+      closedBy = taskFull.closedBy.map(fromAccount),
+      taskStatus = FindTaskStatusResp(
+        id = taskFull.taskStatus.id,
+        projectId = taskFull.projectId,
+        name = taskFull.taskStatus.name,
+        description = taskFull.taskStatus.description
+      ),
+      priority = taskFull.priority,
+      createdAt = taskFull.createdAt,
+      updatedAt = taskFull.updatedAt,
+      latestVersion = taskFull.latestVersion,
+      logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
+      links = links.map(link => toLinkDto(link.link, link.latestVersion)),
+      milestone = taskFull.milestone,
+      startDate = taskFull.startDate,
+      dueDate = taskFull.dueDate,
+      endDate = taskFull.endDate,
+      taskLabels = taskFull.taskLabels.map(l =>
+        FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
+      )
+    )
+  }
 
   def fromAccount(account: Account): SearchAccountDto =
     SearchAccountDto(

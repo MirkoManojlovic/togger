@@ -1,12 +1,15 @@
 package com.togger.logentry
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
+import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment}
+import doobie.{ConnectionIO, Fragment, Fragments}
 
 import java.util.UUID
 
@@ -58,16 +61,32 @@ class LogEntryRepoImpl extends LogEntryRepo {
     )
   }
 
-  override def findByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]] = {
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: LogEntryFilter,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[LogEntry]] =
     logAroundInfoQuery(
-      (fr"select log_entry.* from" ++ LOG_ENTRY_TABLE_FRAG ++
-        innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
-        fr"where task.project_id = $projectId").query[LogEntry].to[List]
+      TgFindPaginatedQuery[LogEntry](
+        pageQuery = request =>
+          (fr"select log_entry.*" ++ filteredEntries(projectId, filter) ++
+            PaginationSql.orderBy(fr"log_entry.created_at desc", fr"log_entry.id") ++
+            PaginationSql.limitOffset(request)).query[LogEntry].to[List],
+        countQuery = (fr"select count(*)" ++ filteredEntries(projectId, filter)).query[Long].unique
+      ).run(page)
     )(
-      s"Finding log entries for ${sp(projectId)}",
-      logEntries => s"Log entries found ${sp(logEntries)} for ${sp(projectId)}"
+      s"Finding log entries of ${sp(projectId)} with ${sp(filter)} and ${sp(page)}",
+      entries => s"Log entries found ${sp(entries)} for ${sp(projectId)}"
     )
-  }
+
+  // Shared by the page and the count query.
+  private def filteredEntries(projectId: UUID, filter: LogEntryFilter): Fragment =
+    fr"from" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
+      Fragments.whereAndOpt(
+        Some(fr"task.project_id = $projectId"),
+        filter.from.map(from => fr"log_entry.created_at >= $from"),
+        filter.to.map(to => fr"log_entry.created_at < $to")
+      )
 
   override def deleteByTaskId(taskId: UUID): ConnectionIO[Int] = {
     logAroundInfoQuery(

@@ -1,14 +1,19 @@
 package com.togger.task
 
+import cats.data.NonEmptyList
 import com.togger.account.Account
 import com.togger.account.AccountRepoImpl.passwordCodec
+import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds}
 import com.togger.db.Util._
+import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
+import com.togger.dto.TaskFilter
 import com.togger.logging.TgLogging
+import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Meta}
+import doobie.{ConnectionIO, Fragments, Meta}
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
@@ -166,7 +171,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       taskFull => s"Task ${sp(taskFull)}"
     )
 
-  override def findByProjectIdWithLatest(projectId: UUID): ConnectionIO[Seq[TaskFull]] =
+  override def findAllByProjectIdWithLatest(projectId: UUID): ConnectionIO[List[TaskFull]] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_TABLE_FRAG) ++
         latestVersionLateral ++
@@ -174,14 +179,82 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         innerJoin(fr"account as a1")(fr"task.created_by = a1.id") ++
         leftJoin(fr"account as a2")(fr"tv.assigned_to = a2.id") ++
         leftJoin(fr"account as a3")(fr"tv.closed_by = a3.id") ++
-        fr"where task.project_id = $projectId")
+        fr"where task.project_id = $projectId" ++ PaginationSql.orderBy(fr"tv.updated_at desc", fr"task.id"))
         .query[(Task, TaskVersion, TaskStatus, Account, Option[Account], Option[Account])]
         .map(toTaskFull)
-        .to[Seq]
+        .to[List]
     )(
       s"Finding all tasks with latest version by ${sp(projectId)}",
       tasks => s"Tasks found ${sp(tasks)} for ${sp(projectId)}"
     )
+
+  override def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: TaskFilter,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskFull]] =
+    logAroundInfoQuery(
+      TgFindPaginatedQuery[TaskFull](
+        pageQuery = findPageWithLatest(projectId, filter, _),
+        countQuery = (fr"select count(*)" ++ filteredTasks(projectId, filter)).query[Long].unique
+      ).run(page)
+    )(
+      s"Finding tasks of ${sp(projectId)} with ${sp(filter)} and ${sp(page)}",
+      tasks => s"Tasks found ${sp(tasks)} for ${sp(projectId)}"
+    )
+
+  // The limit applies to task ids, so the joins below can't multiply or cut the rows of a page. Order is total: the
+  // latest version's update time, then the task id.
+  private def findPageWithLatest(
+    projectId: UUID,
+    filter: TaskFilter,
+    page: DbPageRequest
+  ): ConnectionIO[List[TaskFull]] =
+    (fr"with page_ids as (select task.id as id, tv.updated_at as sort_key" ++ filteredTasks(projectId, filter) ++
+      PaginationSql.orderBy(fr"tv.updated_at desc", fr"task.id") ++ PaginationSql.limitOffset(page) ++ fr")" ++
+      fr"select task.*, tv.*, task_status.*, a1.*, a2.*, a3.* from page_ids" ++
+      innerJoin(TASK_TABLE_FRAG)(fr"task.id = page_ids.id") ++
+      latestVersionLateral ++
+      innerJoin(TASK_STATUS_TABLE_FRAG)(fr"tv.task_status_id = task_status.id") ++
+      innerJoin(fr"account as a1")(fr"task.created_by = a1.id") ++
+      leftJoin(fr"account as a2")(fr"tv.assigned_to = a2.id") ++
+      leftJoin(fr"account as a3")(fr"tv.closed_by = a3.id") ++
+      PaginationSql.orderBy(fr"page_ids.sort_key desc", fr"task.id"))
+      .query[(Task, TaskVersion, TaskStatus, Account, Option[Account], Option[Account])]
+      .map(toTaskFull)
+      .to[List]
+
+  // Shared by the page and the count query. Label filtering uses exists, so a task with several labels stays one row.
+  private def filteredTasks(projectId: UUID, filter: TaskFilter): Fragment =
+    fr"from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
+      Fragments.whereAndOpt(
+        Some(fr"task.project_id = $projectId"),
+        NonEmptyList.fromList(filter.statusIds).map(Fragments.in(fr"tv.task_status_id", _)),
+        NonEmptyList.fromList(filter.priorities).map(Fragments.in(fr"tv.priority", _)),
+        NonEmptyList.fromList(filter.labelIds).map(hasAnyLabel),
+        NonEmptyList.fromList(filter.assigneeIds).map(inOrNull(fr"tv.assigned_to", _, TgIds.UNASSIGNED_UUID)),
+        NonEmptyList.fromList(filter.milestoneIds).map(inOrNull(fr"tv.milestone_id", _, TgIds.NO_MILESTONE_UUID)),
+        filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText)
+      )
+
+  private def hasAnyLabel(labelIds: NonEmptyList[UUID]): Fragment =
+    fr"exists (select 1 from" ++ TASK_LABEL_ASSIGNMENT_TABLE_FRAG ++
+      fr"where task_label_assignment.task_id = task.id and" ++
+      Fragments.in(fr"task_label_assignment.task_label_id", labelIds) ++ fr")"
+
+  private def inOrNull(column: Fragment, ids: NonEmptyList[UUID], nullMarker: UUID): Fragment =
+    NonEmptyList.fromList(ids.filterNot(_ == nullMarker)) match {
+      case Some(realIds) if ids.exists(_ == nullMarker) =>
+        fr"(" ++ Fragments.in(column, realIds) ++ fr"or" ++ column ++ fr"is null)"
+      case Some(realIds) => Fragments.in(column, realIds)
+      case None          => column ++ fr"is null"
+    }
+
+  // Postgres treats backslash as the LIKE escape by default, so the user's own %, _ and \ are escaped with it.
+  private def matchesText(term: String): Fragment = {
+    val pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    fr"(tv.name ilike $pattern or tv.description ilike $pattern)"
+  }
 
   override def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]] =
     logAroundInfoQuery(

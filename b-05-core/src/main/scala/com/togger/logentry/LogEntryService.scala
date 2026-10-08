@@ -2,6 +2,8 @@ package com.togger.logentry
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryError, LogEntryNotFound, VersionNotFound}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
@@ -52,15 +54,19 @@ class LogEntryService(
       )
     } yield combined).transact(transactor)
 
-  def findByProjectId(projectId: UUID): IO[List[LogEntryWithVersions]] =
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: LogEntryFilter,
+    page: DbPageRequest
+  ): IO[PaginatedResponse[LogEntryWithVersions]] =
     (for {
-      entries <- logEntryRepo.findByProjectId(projectId)
-      combined <- entries.traverse(logEntry =>
+      entriesPage <- logEntryRepo.findPaginatedByProjectId(projectId, filter, page)
+      combined <- entriesPage.items.traverse(logEntry =>
         logEntryVersionRepo
           .findLatestByLogEntryId(logEntry.id)
           .map(logEntryVersion => LogEntryWithVersions(logEntry, Seq(logEntryVersion)))
       )
-    } yield combined).transact(transactor)
+    } yield entriesPage.copy(items = combined)).transact(transactor)
 
   def listVersions(logEntryId: UUID): IO[List[LogEntryVersion]] =
     logEntryVersionRepo.findByLogEntryId(logEntryId).transact(transactor)

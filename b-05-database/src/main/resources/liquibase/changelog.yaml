@@ -1209,3 +1209,25 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+  - changeSet:
+      id: 2
+      author: mirko
+      labels: pagination-indexes
+      comment: Task list queries filter by project; log entry list queries join log entries to their task
+      changes:
+        - createIndex:
+            indexName: idx_task_project_id_id
+            tableName: task
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_log_entry_task_id_id
+            tableName: log_entry
+            columns:
+              - column:
+                  name: task_id
+              - column:
+                  name: id

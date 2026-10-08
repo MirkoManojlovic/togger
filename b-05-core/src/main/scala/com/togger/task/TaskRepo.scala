@@ -1,5 +1,7 @@
 package com.togger.task
 
+import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.dto.TaskFilter
 import doobie.ConnectionIO
 
 import java.time._
@@ -37,7 +39,15 @@ trait TaskVersionRepo {
 
   def findByIdWithLatest(taskId: UUID): ConnectionIO[TaskFull]
 
-  def findByProjectIdWithLatest(projectId: UUID): ConnectionIO[Seq[TaskFull]]
+  /** Every task of the project, unbounded: only for whole-project jobs such as the disk dump, never for an endpoint. */
+  def findAllByProjectIdWithLatest(projectId: UUID): ConnectionIO[List[TaskFull]]
+
+  /** One page of the project's tasks with their latest version, newest update first. */
+  def findPaginatedByProjectId(
+    projectId: UUID,
+    filter: TaskFilter,
+    page: DbPageRequest
+  ): ConnectionIO[PaginatedResponse[TaskFull]]
 
   def findAllTaskIdsByAssigneeId(accountId: UUID): ConnectionIO[List[UUID]]
 

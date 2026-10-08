@@ -2,6 +2,7 @@ package com.togger.controllers.logentry
 
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
+import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.logentry.LogEntryDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{LogEntryDto, LogEntryVersionDto}
 import com.togger.logentry.{LogEntry, LogEntryEndpoints, LogEntryService, LogEntryVersion}
@@ -44,12 +45,15 @@ class LogEntryController(
       )
   }
 
-  val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
-    logEntryService
-      .findByProjectId(projectId)
-      .map(entriesWithLatestVersion =>
-        TgJsonSuccess.justBodyRight(entriesWithLatestVersion.map(entry => toDto(entry.logEntry, entry.versions.head)))
-      )
+  val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+    val (projectId, filter, pageRequest) = request
+    PageRequestValidation.withPage(pageRequest) { page =>
+      logEntryService
+        .findPaginatedByProjectId(projectId, filter, page)
+        .map(entriesPage =>
+          TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.latestVersion)))
+        )
+    }
   }
 
   val updateLogEntry = logEntryEndpoints.updateEndpoint.serverLogic { auth => dto =>
