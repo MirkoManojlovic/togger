@@ -18,6 +18,7 @@ import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
   TableSearchComponent,
+  TableServerSearchComponent,
   TgBadge,
   TgBadgeColor,
   TgHtmlTable,
@@ -192,19 +193,29 @@ class ShowAllTasksComponent(
     withChosen = (listParams, chosen) => listParams.copy(milestones = chosen)
   )
 
-  val searchTermVar = Var(params.search)
-  private val searchBox = TableSearchComponent(
-    inputSignal = searchTermVar.signal,
-    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description"
+  private val searchBox = TableServerSearchComponent(
+    initialTerm = params.search,
+    placeholderValue = "Search all tasks by name, description",
+    onSearch = term => if (term.trim != params.search) showList(TaskListFilterMapping.withSearch(params, term))
   )
 
-  private val navigateOnSearch: Modifier[HtmlElement] =
-    searchTermVar.signal.changes --> Observer[String] { term =>
-      if (term.trim != params.search) showList(TaskListFilterMapping.withSearch(params, term))
-    }
+  /** Narrows the tasks already shown on this page; no request is made. */
+  private val localFilterVar = Var("")
+  private val localFilterBox = TableSearchComponent(
+    inputSignal = localFilterVar.signal,
+    inputStateUpdater = localFilterVar.writer,
+    placeholderValue = "Filter shown tasks"
+  )
 
-  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] = stateFormVar.signal
+  private def matchesLocalFilter(dto: FindTaskRespFull, term: String): Boolean = {
+    val needle = term.trim.toLowerCase
+    needle.isEmpty || dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
+  }
+
+  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
+    stateFormVar.signal.combineWith(localFilterVar.signal).map { case (rows, term) =>
+      rows.filter(matchesLocalFilter(_, term))
+    }
 
   private def currentFilter(): TaskFilter =
     TaskListFilterMapping.toTaskFilter(
@@ -511,7 +522,6 @@ class ShowAllTasksComponent(
       labelFilter.navigateOnChange,
       assigneeFilter.navigateOnChange,
       milestoneFilter.navigateOnChange,
-      navigateOnSearch,
       visibleRowsSignal.map(_.map(_.id)) --> visibleIdsVar.writer,
       visibleIdsVar.signal --> (ids => selectedVar.update(BulkSelection.prune(_, ids))),
       child <-- projectVar.signal.map(projectResp =>
@@ -606,7 +616,11 @@ class ShowAllTasksComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("mb-4"), searchBox.element),
+                div(
+                  cls("mb-4 flex flex-wrap items-center justify-between gap-3"),
+                  searchBox.element,
+                  localFilterBox.element
+                ),
                 selectionBar,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
