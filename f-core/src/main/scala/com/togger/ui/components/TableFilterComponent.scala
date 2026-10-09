@@ -78,23 +78,46 @@ class TableFilterComponent(
       TgIcons.chevronDownIcon(className = "w-4 h-4 ms-1.5 inline")
     )
 
-  /** The panel is fixed to the viewport next to its button rather than absolute inside it, since the table it sits in
-    * scrolls and would otherwise cut the panel off or make the table scroll. It opens below the button, or above it
-    * when there is more room there.
-    */
-  private def panel: HtmlElement = {
+  private case class PanelPosition(leftPx: Double, anchor: Either[Double, Double], maxHeightPx: Double)
+
+  /** Where the panel goes: below the button, or above it when there is more room there. */
+  private def measurePosition(): PanelPosition = {
     val rect = trigger.ref.getBoundingClientRect()
     val spaceBelow = dom.window.innerHeight - rect.bottom - viewportMarginPx
     val spaceAbove = rect.top - viewportMarginPx
     val opensBelow = spaceBelow >= panelMaxHeightPx || spaceBelow >= spaceAbove
-    val leftPx = rect.left.min(dom.window.innerWidth - panelWidthPx - viewportMarginPx).max(viewportMarginPx)
+    PanelPosition(
+      leftPx = rect.left.min(dom.window.innerWidth - panelWidthPx - viewportMarginPx).max(viewportMarginPx),
+      anchor = if (opensBelow) Left(rect.bottom + 4) else Right(dom.window.innerHeight - rect.top + 4),
+      maxHeightPx = (if (opensBelow) spaceBelow else spaceAbove).min(panelMaxHeightPx)
+    )
+  }
+
+  /** The panel is fixed to the viewport next to its button rather than absolute inside it, since the table it sits in
+    * scrolls and would otherwise cut the panel off or make the table scroll. Because it is fixed, it is placed again
+    * whenever anything scrolls (the table sideways, the page) or the window is resized, so it stays under its button.
+    */
+  private def panel: HtmlElement = {
+    val positionVar = Var(measurePosition())
+    val reposition: dom.Event => Unit = _ => positionVar.set(measurePosition())
     div(
       cls("fixed z-20 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-56"),
-      left(s"${leftPx}px"),
-      if (opensBelow) top(s"${rect.bottom + 4}px") else bottom(s"${dom.window.innerHeight - rect.top + 4}px"),
+      left <-- positionVar.signal.map(position => s"${position.leftPx}px"),
+      top <-- positionVar.signal.map(_.anchor.fold(px => s"${px}px", _ => "auto")),
+      bottom <-- positionVar.signal.map(_.anchor.fold(_ => "auto", px => s"${px}px")),
+      onMountUnmountCallback(
+        _ => {
+          dom.window.addEventListener("scroll", reposition, true)
+          dom.window.addEventListener("resize", reposition)
+        },
+        _ => {
+          dom.window.removeEventListener("scroll", reposition, true)
+          dom.window.removeEventListener("resize", reposition)
+        }
+      ),
       ul(
         cls("p-2 text-sm font-medium overflow-y-auto"),
-        maxHeight.px((if (opensBelow) spaceBelow else spaceAbove).min(panelMaxHeightPx)),
+        maxHeight <-- positionVar.signal.map(position => s"${position.maxHeightPx}px"),
         actionRow(
           "Select all",
           onClick.compose(_.sample(itemsSignal)) --> (items => selectedIdsVar.set(items.map(_.id).toSet))
