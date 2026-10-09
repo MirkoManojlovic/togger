@@ -218,7 +218,8 @@ class ShowAllTasksComponent(
 
   /** Reads the page the URL asks for. A page past the end (its tasks were deleted) steps back to the last page. */
   private def loadPage(): IO[Unit] =
-    taskService.findByProjectId(projectId, currentFilter(), params.pageRequest).map {
+    // Deferred: the filter depends on the options of the widgets, which may not have arrived when the IO is built.
+    IO.defer(taskService.findByProjectId(projectId, currentFilter(), params.pageRequest)).map {
       case Left(failure) => println(failure)
       case Right(success) =>
         val response = success.body.get
