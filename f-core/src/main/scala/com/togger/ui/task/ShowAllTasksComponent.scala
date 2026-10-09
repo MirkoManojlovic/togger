@@ -410,7 +410,7 @@ class ShowAllTasksComponent(
 
   private val selectionBar: HtmlElement =
     div(
-      cls("mb-4 flex flex-wrap items-center gap-3"),
+      cls("flex flex-wrap items-center gap-3"),
       div(
         cls("flex items-center gap-2 text-sm text-body"),
         span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected on this page"))
@@ -424,6 +424,14 @@ class ShowAllTasksComponent(
         onClick.mapToUnit --> (_ => deleteSelected())
       )
     ).amend(cls("hidden") <-- selectedVar.signal.map(_.isEmpty))
+
+  private val noSelectionHint: HtmlElement =
+    div(cls("text-sm text-body"), "No tasks selected")
+      .amend(cls("hidden") <-- selectedVar.signal.map(_.nonEmpty))
+
+  /** Both states share one box of a fixed height, so the table does not move when the selection starts or ends. */
+  private val selectionArea: HtmlElement =
+    div(cls("mb-4 flex min-h-8 items-center"), selectionBar, noSelectionHint)
 
   spinnerService
     .runWithSpinner {
@@ -621,7 +629,7 @@ class ShowAllTasksComponent(
                   searchBox.element,
                   localFilterBox.element
                 ),
-                selectionBar,
+                selectionArea,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
                     div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
