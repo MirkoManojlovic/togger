@@ -521,7 +521,7 @@ class ShowAllTasksComponent(
 
   /** One tall row spanning every column, so the table keeps its size when no task matches. */
   private def noTasksRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
-    Seq(td(colSpan(3), cls("px-6 py-32 text-center text-lg text-body"), "No tasks found"))
+    Seq(td(colSpan(2), cls("px-6 py-32 text-center text-lg text-body"), "No tasks found"))
 
   val element = {
     div(
@@ -632,11 +632,11 @@ class ShowAllTasksComponent(
                 selectionArea,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                    div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
-                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                      cls("!px-2 w-0 whitespace-nowrap"),
+                    div(
+                      cls("flex items-center justify-between gap-4"),
+                      div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
                       div(
-                        cls("flex items-center gap-2"),
+                        cls("flex items-center justify-end gap-2"),
                         new TableFilterComponent(
                           statusFilter.itemsSignal,
                           label = "Status",
@@ -695,7 +695,6 @@ class ShowAllTasksComponent(
                               )
                             )
                           ).amend(selectOnClick(dto.id)),
-                          createTd(emptyMod).amend(selectOnClick(dto.id)),
                           td(
                             cls("!px-2 w-0 whitespace-nowrap"),
                             selectOnClick(dto.id),
