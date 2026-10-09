@@ -654,7 +654,7 @@ class ShowAllTasksComponent(
                         ).element,
                         new TableFilterComponent(
                           assigneeFilter.itemsSignal,
-                          label = "Assigned to",
+                          label = "Assignee",
                           assigneeFilter.selectedIdsVar
                         ).element,
                         new TableFilterComponent(
