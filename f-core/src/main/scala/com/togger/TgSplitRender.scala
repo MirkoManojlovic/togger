@@ -98,6 +98,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val localStorage = new LocalStorageBrowser
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val themeStore = new ThemeStore(localStorage)
+  lazy val timeboxStagingStore = new TimeboxStagingStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
 
   themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
@@ -550,6 +551,12 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   TimeboxFormTarget.Create(projectId),
                   timeboxService,
                   taskService,
+                  taskStatusService,
+                  taskLabelService,
+                  milestoneService,
+                  projectService,
+                  tgDateFormater,
+                  timeboxStagingStore,
                   router,
                   spinnerService,
                   tgClock,
@@ -560,6 +567,12 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   TimeboxFormTarget.NewVersion(projectId, timeboxId),
                   timeboxService,
                   taskService,
+                  taskStatusService,
+                  taskLabelService,
+                  milestoneService,
+                  projectService,
+                  tgDateFormater,
+                  timeboxStagingStore,
                   router,
                   spinnerService,
                   tgClock,
