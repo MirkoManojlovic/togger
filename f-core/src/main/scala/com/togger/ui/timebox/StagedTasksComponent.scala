@@ -2,6 +2,7 @@ package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindTaskRespFull
+import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
@@ -11,8 +12,8 @@ import com.togger.ui.task.TgDateFormater
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
-/** The tasks staged for the timebox, below the task table: what they add up to and the tasks themselves. A click on a
-  * staged task unstages it.
+/** The tasks staged for the timebox, in a card of their own below the task table: the tasks themselves, then what they
+  * add up to. A click on a staged task unstages it.
   */
 class StagedTasksComponent(
   stagingStore: TimeboxStagingStore,
@@ -45,7 +46,7 @@ class StagedTasksComponent(
 
   private val summaryBar: HtmlElement =
     div(
-      cls("mb-3 grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4"),
+      cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4"),
       stat("Tasks staged", summarySignal.map(_.taskCount.toString)),
       stat("Days of work", summarySignal.map(_.workDays.toString)),
       stat("Earliest start", summarySignal.map(current => date(current.earliestStart))),
@@ -97,19 +98,24 @@ class StagedTasksComponent(
       onClick.mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
     )
 
-  val element: HtmlElement =
+  private val stagedList: HtmlElement =
     div(
-      cls("mb-4"),
-      h5(cls("mb-2"), "Staged tasks"),
-      summaryBar,
+      cls("flex flex-col gap-2"),
+      children <-- stagingStore.staged(projectId).map(_.map(stagedRow)),
       div(
-        cls("flex flex-col gap-2"),
-        children <-- stagingStore.staged(projectId).map(_.map(stagedRow)),
-        div(
-          cls("text-sm text-body"),
-          "No tasks staged. Click a task above to stage it.",
-          cls("hidden") <-- stagingStore.staged(projectId).map(_.nonEmpty)
-        )
+        cls("text-sm text-body"),
+        "No tasks staged. Click a task above to stage it.",
+        cls("hidden") <-- stagingStore.staged(projectId).map(_.nonEmpty)
       )
     )
+
+  val element: HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Staged tasks", TgCard.CardHeaderSize.H5),
+        body = TgCard.HtmlCardContent(
+          div(stagedList, summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")))
+        )
+      )
+      .element
 }
