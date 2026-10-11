@@ -1,29 +1,17 @@
 package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, TgIds, WorkDayCalendar}
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
+import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.dto.FindTaskRespFull
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.toast.ToastMessages
-import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
-import com.togger.task.TaskPriority
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
-import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{
-  MultiSelectItem,
-  TableFilterComponent,
-  TableSearchComponent,
-  TableServerSearchComponent,
-  TgBadge,
-  TgBadgeColor,
-  TgHtmlTable,
-  TgPaginationComponent
-}
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgHtmlTable}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
@@ -78,169 +66,26 @@ class ShowAllTasksComponent(
   ioRuntime: IORuntime
 ) extends ToastMessages {
 
-  val stateFormVar = Var(Seq.empty[FindTaskRespFull])
-  val statusesVar = Var(TaskStatusesState())
-  val taskLabelsVar = Var(TaskLabelsState())
-  val milestonesVar = Var(Seq.empty[FindMilestoneResp])
-  private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
-
-  private val paginationVar = Var(Option.empty[PaginationState])
-
-  private val unassignedDto = SearchAccountDto(
-    id = TgIds.UNASSIGNED_UUID,
-    firstName = "Not",
-    lastName = "assigned",
-    email = "notassigned@email.com",
-    accountTypeId = TgIds.UNASSIGNED_UUID
+  private val lookups = new TaskListLookups(
+    projectId,
+    projectService,
+    taskStatusFeService,
+    taskLabelFeService,
+    milestoneService
   )
+  import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
 
-  private val projectVar: Var[FindProjectResp] = Var(
-    FindProjectResp(
-      id = UUID.randomUUID(),
-      organizationId = UUID.randomUUID(),
-      name = "",
-      description = "",
-      icon = "",
-      workDays = Set.empty,
-      members = Seq.empty
-    )
-  )
+  private val paramsVar = Var(params)
 
   private def showList(newParams: TaskListParams): Unit =
     router.route(ShowAllTasksPage(projectId, newParams))
 
-  private type Options = Seq[(String, String)]
+  private val browser = new TaskListBrowser(taskService, lookups, projectId, paramsVar, showList)
 
-  /** One filter widget. What is ticked comes from the URL (or the widget's default); ticking something navigates to the
-    * first page of the new filter, and the page is then read from the backend with that filter.
-    */
-  private class FilterSpec[S](
-    source: Var[S],
-    optionsOf: S => Options,
-    defaultSelectedOf: Options => Set[String],
-    chosenIn: TaskListParams => Option[Set[String]],
-    withChosen: (TaskListParams, Option[Set[String]]) => TaskListParams
-  ) {
-    val selectedIdsVar: Var[Set[String]] = Var(Set.empty)
+  val stateFormVar = browser.rowsVar
+  private val visibleRowsSignal = browser.visibleRowsSignal
 
-    private def options: Options = optionsOf(source.now())
-    private def defaultSelected: Set[String] = defaultSelectedOf(options)
-
-    val itemsSignal: Signal[Seq[MultiSelectItem]] =
-      source.signal.map { state =>
-        val offered = optionsOf(state)
-        val ticked = TaskListFilterMapping.selectedFromParams(chosenIn(params), defaultSelectedOf(offered))
-        offered.map { case (id, name) => MultiSelectItem(id = id, name = name, isSelected = ticked.contains(id)) }
-      }
-
-    def selection: FilterSelection =
-      FilterSelection(
-        allIds = options.map(_._1).toSet,
-        selectedIds = TaskListFilterMapping.selectedFromParams(chosenIn(params), defaultSelected)
-      )
-
-    // The ticks the URL itself implies (the widget seeds them when its options arrive) are not a change.
-    val navigateOnChange: Modifier[HtmlElement] =
-      selectedIdsVar.signal.changes --> Observer[Set[String]] { picked =>
-        val current = selection
-        if (current.allIds.nonEmpty && picked != current.selectedIds.intersect(current.allIds))
-          showList(withChosen(params, TaskListFilterMapping.toParamSelection(picked, defaultSelected)).firstPage)
-      }
-  }
-
-  private def allOptions(options: Options): Set[String] = options.map(_._1).toSet
-
-  private val statusFilter = new FilterSpec[TaskStatusesState](
-    source = statusesVar,
-    optionsOf = _.taskStatusesSorted.map(status => status.id.toString -> status.name),
-    defaultSelectedOf = _.collect { case (id, name) if !defaultDeselectedStatusNames.contains(name) => id }.toSet,
-    chosenIn = _.statuses,
-    withChosen = (listParams, chosen) => listParams.copy(statuses = chosen)
-  )
-
-  private val priorityFilter = new FilterSpec[Unit](
-    source = Var(()),
-    optionsOf = _ => TaskPriority.values.sortBy(_.value).map(priority => priority.value.toString -> priority.priorityName),
-    defaultSelectedOf = allOptions,
-    chosenIn = _.priorities,
-    withChosen = (listParams, chosen) => listParams.copy(priorities = chosen)
-  )
-
-  private val labelFilter = new FilterSpec[TaskLabelsState](
-    source = taskLabelsVar,
-    optionsOf = _.taskLabels.sortBy(_.name).map(label => label.id.toString -> label.name),
-    defaultSelectedOf = allOptions,
-    chosenIn = _.labels,
-    withChosen = (listParams, chosen) => listParams.copy(labels = chosen)
-  )
-
-  private val assigneeFilter = new FilterSpec[FindProjectResp](
-    source = projectVar,
-    optionsOf = project =>
-      (unassignedDto +: project.members).sortBy(_.fullName.toLowerCase).map(member => member.id.toString -> member.fullName),
-    defaultSelectedOf = allOptions,
-    chosenIn = _.assignees,
-    withChosen = (listParams, chosen) => listParams.copy(assignees = chosen)
-  )
-
-  private val milestoneFilter = new FilterSpec[Seq[FindMilestoneResp]](
-    source = milestonesVar,
-    optionsOf = milestones =>
-      milestones.sortBy(_.name.toLowerCase).map(milestone => milestone.id.toString -> milestone.name) :+
-        (TaskListFilterMapping.NoMilestoneId -> "No milestone"),
-    defaultSelectedOf = allOptions,
-    chosenIn = _.milestones,
-    withChosen = (listParams, chosen) => listParams.copy(milestones = chosen)
-  )
-
-  private val searchBox = TableServerSearchComponent(
-    initialTerm = params.search,
-    placeholderValue = "Search all tasks by name, description",
-    onSearch = term => if (term.trim != params.search) showList(TaskListFilterMapping.withSearch(params, term))
-  )
-
-  /** Narrows the tasks already shown on this page; no request is made. */
-  private val localFilterVar = Var("")
-  private val localFilterBox = TableSearchComponent(
-    inputSignal = localFilterVar.signal,
-    inputStateUpdater = localFilterVar.writer,
-    placeholderValue = "Filter shown tasks"
-  )
-
-  private def matchesLocalFilter(dto: FindTaskRespFull, term: String): Boolean = {
-    val needle = term.trim.toLowerCase
-    needle.isEmpty || dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
-  }
-
-  private val visibleRowsSignal: Signal[Seq[FindTaskRespFull]] =
-    stateFormVar.signal.combineWith(localFilterVar.signal).map { case (rows, term) =>
-      rows.filter(matchesLocalFilter(_, term))
-    }
-
-  private def currentFilter(): TaskFilter =
-    TaskListFilterMapping.toTaskFilter(
-      statuses = statusFilter.selection,
-      priorities = priorityFilter.selection,
-      labels = labelFilter.selection,
-      assignees = assigneeFilter.selection,
-      milestones = milestoneFilter.selection,
-      search = params.search
-    )
-
-  /** Reads the page the URL asks for. A page past the end (its tasks were deleted) steps back to the last page. */
-  private def loadPage(): IO[Unit] =
-    // Deferred: the filter depends on the options of the widgets, which may not have arrived when the IO is built.
-    IO.defer(taskService.findByProjectId(projectId, currentFilter(), params.pageRequest)).map {
-      case Left(failure) => println(failure)
-      case Right(success) =>
-        val response = success.body.get
-        if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)
-          showList(params.atPage(response.totalNumberOfPages.toInt, params.size))
-        else {
-          stateFormVar.set(response.items)
-          paginationVar.set(Some(PaginationState.fromResponse(response)))
-        }
-    }
+  private def loadPage(): IO[Unit] = browser.loadPage()
 
   private def reloadPage(): Unit =
     spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
@@ -434,41 +279,7 @@ class ShowAllTasksComponent(
     div(cls("mb-4 flex min-h-8 items-center"), selectionBar, noSelectionHint)
 
   spinnerService
-    .runWithSpinner {
-
-      val projectCall =
-        projectService
-          .findById(projectId)
-          .map(
-            _.fold(
-              e => println(e),
-              success => projectVar.set(success.body.get)
-            )
-          )
-
-      // The status filter offers every status, read page by page (bounded by PaginatedLoader).
-      val taskStatusCall = taskStatusFeService
-        .findAllByProjectId(projectId)
-        .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
-
-      // The label filter offers every label, read page by page (bounded by PaginatedLoader).
-      val taskLabelCall = taskLabelFeService
-        .findAllByProjectId(projectId)
-        .map(response => response.map(success => taskLabelsVar.set(TaskLabelsState(success.body.get))))
-
-      // The milestone filter offers every milestone, read page by page (bounded by PaginatedLoader).
-      val milestoneCall = milestoneService
-        .findAllByProjectId(projectId)
-        .map(response => response.map(success => milestonesVar.set(success.body.get)))
-
-      val taskCall = loadPage()
-
-      projectCall
-        .flatMap(_ => taskStatusCall)
-        .flatMap(_ => taskLabelCall)
-        .flatMap(_ => milestoneCall)
-        .flatMap(_ => taskCall)
-    }
+    .runWithSpinner(lookups.load().flatMap(_ => loadPage()))
     .unsafeRunAndForget()
 
   private def deleteTask(dto: FindTaskRespFull): Unit =
@@ -525,11 +336,7 @@ class ShowAllTasksComponent(
 
   val element = {
     div(
-      statusFilter.navigateOnChange,
-      priorityFilter.navigateOnChange,
-      labelFilter.navigateOnChange,
-      assigneeFilter.navigateOnChange,
-      milestoneFilter.navigateOnChange,
+      browser.filterBindings,
       visibleRowsSignal.map(_.map(_.id)) --> visibleIdsVar.writer,
       visibleIdsVar.signal --> (ids => selectedVar.update(BulkSelection.prune(_, ids))),
       child <-- projectVar.signal.map(projectResp =>
@@ -624,45 +431,14 @@ class ShowAllTasksComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(
-                  cls("mb-4 flex flex-wrap items-center justify-between gap-3"),
-                  searchBox.element,
-                  localFilterBox.element
-                ),
+                browser.searchBar,
                 selectionArea,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
                     div(
                       cls("flex items-center justify-between gap-4"),
                       div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
-                      div(
-                        cls("flex items-center justify-end gap-2"),
-                        new TableFilterComponent(
-                          statusFilter.itemsSignal,
-                          label = "Status",
-                          statusFilter.selectedIdsVar
-                        ).element,
-                        new TableFilterComponent(
-                          priorityFilter.itemsSignal,
-                          label = "Priority",
-                          priorityFilter.selectedIdsVar
-                        ).element,
-                        new TableFilterComponent(
-                          labelFilter.itemsSignal,
-                          label = "Labels",
-                          labelFilter.selectedIdsVar
-                        ).element,
-                        new TableFilterComponent(
-                          assigneeFilter.itemsSignal,
-                          label = "Assignee",
-                          assigneeFilter.selectedIdsVar
-                        ).element,
-                        new TableFilterComponent(
-                          milestoneFilter.itemsSignal,
-                          label = "Milestone",
-                          milestoneFilter.selectedIdsVar
-                        ).element
-                      )
+                      browser.filterButtons
                     ),
                     Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
                       cls("!px-2 w-0 whitespace-nowrap text-center"),
@@ -712,10 +488,7 @@ class ShowAllTasksComponent(
                       }
                   )
                 ),
-                TgPaginationComponent(
-                  paginationVar.signal,
-                  (newPage, newSize) => showList(params.atPage(newPage, newSize))
-                )
+                browser.pagination
               )
             )
         )
