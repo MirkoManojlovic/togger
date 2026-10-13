@@ -1,6 +1,7 @@
 package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
+import com.togger.components.button.TgHtmlButton
 import com.togger.dto.FindTaskRespFull
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -98,6 +99,15 @@ class StagedTasksComponent(
       onClick.mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
     )
 
+  private val clearAllButton: HtmlElement =
+    div(
+      cls("mb-2 flex justify-end"),
+      cls("hidden") <-- stagingStore.staged(projectId).map(_.isEmpty),
+      TgHtmlButton
+        .extraSmall("Clear all")
+        .amend(typ("button"), onClick.mapToUnit --> (_ => stagingStore.clear(projectId)))
+    )
+
   private val stagedList: HtmlElement =
     div(
       cls("flex flex-col gap-2"),
@@ -114,7 +124,7 @@ class StagedTasksComponent(
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Staged tasks", TgCard.CardHeaderSize.H5),
         body = TgCard.HtmlCardContent(
-          div(stagedList, summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")))
+          div(clearAllButton, stagedList, summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")))
         )
       )
       .element
