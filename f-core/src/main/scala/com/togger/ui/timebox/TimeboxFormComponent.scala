@@ -23,7 +23,19 @@ import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgH
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.{
+  BadgeSpec,
+  BulkEdit,
+  BulkEditContext,
+  BulkEditKind,
+  BulkEditPopups,
+  BulkLookups,
+  BulkTaskBadges,
+  BulkTaskCard,
+  BulkTaskEditor
+}
 import com.togger.ui.task.{
+  ShowAllTasksBulkMapping,
   TaskFeService,
   TaskLabelFeService,
   TaskListBrowser,
@@ -31,12 +43,12 @@ import com.togger.ui.task.{
   TaskStatusFeService,
   TgDateFormater
 }
-import com.togger.ui.task.bulk.BulkTaskBadges
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.time.{DayOfWeek, LocalDate}
@@ -277,35 +289,109 @@ class TimeboxFormComponent(
     if (days == 1) "1 day" else s"$days days"
   }
 
+  private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+    if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
+    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor, Some(BulkEditKind.Labels)))
+
+  private def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+    Seq(
+      dto.milestone
+        .flatMap(id => lookups.milestonesVar.now().find(_.id == id))
+        .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+        .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone))),
+      BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor, Some(BulkEditKind.Priority)),
+      BadgeSpec(dto.taskStatus.name, dto.taskStatus.badgeColor, Some(BulkEditKind.Status)),
+      dto.assignedTo
+        .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
+        .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
+    )
+
+  private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
+    Seq(
+      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray, Some(BulkEditKind.StartDate)),
+      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
+      BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
+    )
+
+  private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec]) =
+    div(cls("flex flex-wrap items-center gap-1.5"), BulkTaskCard.row(taskId, specs, popups))
+
+  private def lookupsNow(): BulkLookups =
+    BulkLookups(
+      statuses = lookups.statusesVar.now().taskStatuses,
+      labels = lookups.taskLabelsVar.now().taskLabels,
+      members = lookups.projectVar.now().members,
+      milestones = lookups.milestonesVar.now(),
+      workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
+    )
+
+  /** Tasks whose update is in flight; they can't be edited again until it is done. */
+  private val savingVar = Var(Set.empty[UUID])
+
+  private val popups: BulkEditPopups = new BulkEditPopups(
+    context = scope =>
+      BulkEditContext(
+        lookupsNow(),
+        browser.rowsVar.now().filter(dto => scope.contains(dto.id)).map(ShowAllTasksBulkMapping.toBulkTask),
+        tgClock.currentDate()
+      ),
+    onEdit = saveEdit
+  )
+
+  /** Saves the edit for the task, which a task the edit would not change (the value it already has) never reaches. The
+    * page and the staged copies are read again afterwards, so both show what the backend has.
+    */
+  private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
+    val current = lookupsNow()
+    val changed = browser.rowsVar
+      .now()
+      .filter(dto => scope.contains(dto.id) && !savingVar.now().contains(dto.id))
+      .flatMap { dto =>
+        val before = ShowAllTasksBulkMapping.toBulkTask(dto)
+        val after = BulkTaskEditor(Seq(before), Set(dto.id), edit, current.workDays).head
+        Option.when(after != before)(ShowAllTasksBulkMapping.applyTo(dto, after, current))
+      }
+    changed.foreach { updated =>
+      savingVar.update(_ + updated.id)
+      val save = taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(updated, tgClock.currentInstant)).flatMap {
+        case Left(error) => IO(toast.error(error))
+        case Right(_)    => IO.unit
+      }
+      spinnerService
+        .runWithSpinner(save >> browser.loadPage() >> refreshStaged())
+        .guarantee(IO(savingVar.update(_ - updated.id)))
+        .unsafeRunAndForget()
+    }
+  }
+
+  private def refreshStaged(): IO[Unit] =
+    taskService
+      .findAllByProjectId(projectId)
+      .flatMap(projectTasks => IO(projectTasks.foreach(success => stagingStore.refresh(projectId, success.body.get))))
+
+  private def isInteractive(target: dom.EventTarget): Boolean =
+    target match {
+      case element: dom.Element => element.closest("button, input, a") != null
+      case _                    => false
+    }
+
   private def taskCell(dto: FindTaskRespFull) =
     createTd(
       div(
         cls("flex flex-col gap-1"),
+        cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)),
         div(
           cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
           span(cls("text-base font-semibold text-heading"), dto.name),
-          if (dto.taskLabels.isEmpty) Seq(TgBadge(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray).element)
-          else dto.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element)
+          badgeRow(dto.id, labelRow(dto))
         ),
-        div(
-          cls("flex flex-wrap items-center gap-1.5"),
-          dto.milestone
-            .flatMap(id => lookups.milestonesVar.now().find(_.id == id))
-            .fold(TgBadge(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray).element)(milestone =>
-              TgBadge(milestone.name, TgBadgeColor.Alternative).element
-            ),
-          TgBadge(dto.priority.shortCode, dto.priority.badgeColor).element,
-          TgBadge(dto.taskStatus.name, dto.taskStatus.badgeColor).element,
-          TgBadge(dto.assignedTo.fold("Not assigned")(_.fullName), TgBadgeColor.Gray).element,
-          TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray).element,
-          TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray).element,
-          TgBadge(durationLabel(dto), TgBadgeColor.Gray).element
-        )
+        badgeRow(dto.id, primaryRow(dto)),
+        badgeRow(dto.id, dateRow(dto))
       )
     ).amend(
       cls("cursor-pointer"),
       cls("bg-neutral-tertiary-medium") <-- stagingStore.stagedIds(projectId).map(_.contains(dto.id)),
-      onClick.mapToUnit --> (_ => stagingStore.toggle(projectId, dto))
+      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ => stagingStore.toggle(projectId, dto))
     )
 
   private val noTasksRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
