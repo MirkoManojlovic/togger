@@ -306,7 +306,7 @@ class TimeboxFormComponent(
     browser.filterBindings,
     // Enter in a search box searches; it must not submit the timebox form around the picker.
     onKeyDown.filter(_.key == "Enter").preventDefault --> Observer.empty,
-    h5(cls("mb-2"), "Planned tasks"),
+    h5(cls("mb-2 text-heading"), "Planned tasks"),
     browser.searchBar,
     taskTable,
     browser.pagination,

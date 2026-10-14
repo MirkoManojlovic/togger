@@ -42,7 +42,7 @@ class TimeboxCapacityComponent(capacity: Signal[Option[TimeboxCapacity]]) {
 
   val element: HtmlElement =
     div(
-      h6(cls("mb-2"), "Capacity"),
+      h6(cls("mb-2 text-heading"), "Capacity"),
       child <-- capacity.map {
         case Some(current) => content(current)
         case None          => div(cls("text-sm text-body"), "Set the start and end dates to see the capacity.")
