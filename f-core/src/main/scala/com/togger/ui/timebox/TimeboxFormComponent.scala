@@ -30,6 +30,7 @@ import com.togger.ui.task.{
   TaskStatusFeService,
   TgDateFormater
 }
+import com.togger.ui.task.bulk.BulkTaskBadges
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -210,6 +211,11 @@ class TimeboxFormComponent(
         ),
         div(
           cls("flex flex-wrap items-center gap-1.5"),
+          dto.milestone
+            .flatMap(id => lookups.milestonesVar.now().find(_.id == id))
+            .fold(TgBadge(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray).element)(milestone =>
+              TgBadge(milestone.name, TgBadgeColor.Alternative).element
+            ),
           TgBadge(dto.priority.shortCode, dto.priority.badgeColor).element,
           TgBadge(dto.taskStatus.name, dto.taskStatus.badgeColor).element,
           TgBadge(dto.assignedTo.fold("Not assigned")(_.fullName), TgBadgeColor.Gray).element,
