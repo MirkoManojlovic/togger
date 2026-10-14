@@ -333,13 +333,16 @@ class TimeboxFormComponent(
           form(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-            if (isCreate) div(cls("mb-4 flex justify-end"), clearAllButton) else emptyNode,
             presetButtons,
             startDateInput.htmlElement.amend(cls("mb-4")),
             endDateInput.htmlElement.amend(cls("mb-4")),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             taskPicker,
-            TgHtmlButton.create(EventStream.merge(EventStream.fromValue(false), overCapacitySignal.changes))
+            div(
+              cls("flex items-center justify-end gap-2"),
+              if (isCreate) clearAllButton else emptyNode,
+              TgHtmlButton.createSmall(EventStream.merge(EventStream.fromValue(false), overCapacitySignal.changes))
+            )
           )
         )
       )
