@@ -68,6 +68,7 @@ class TimeboxFormComponent(
   projectService: ProjectService,
   tgDateFormater: TgDateFormater,
   stagingStore: TimeboxStagingStore,
+  draftStore: TimeboxFormDraftStore,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -76,7 +77,15 @@ class TimeboxFormComponent(
   ioRuntime: IORuntime
 ) extends ToastMessages {
 
-  private val formState = Var(TimeboxForm())
+  // Only a new timebox is remembered; a new version starts from the timebox's latest version instead.
+  private val isCreate = target match {
+    case TimeboxFormTarget.Create(_)     => true
+    case TimeboxFormTarget.NewVersion(_, _) => false
+  }
+
+  private val formState = Var(if (isCreate) draftStore.load(target.projectId).getOrElse(TimeboxForm()) else TimeboxForm())
+
+  private val draftSaver = Observer[TimeboxForm](form => if (isCreate) draftStore.save(target.projectId, form))
 
   private val lookups = new TaskListLookups(
     target.projectId,
@@ -153,6 +162,7 @@ class TimeboxFormComponent(
       .runWithSpinner(call)
       .toastMessageCodeBlock("Timebox saved successfully") {
         stagingStore.clear(projectId)
+        draftStore.clear(projectId)
         backToList()
       }
       .unsafeRunAndForget()
@@ -184,6 +194,20 @@ class TimeboxFormComponent(
     labelValue = "Description (optional)",
     minWidthRem = 0
   )
+
+  private def clearAll(): Unit = {
+    formState.set(TimeboxForm())
+    stagingStore.clear(projectId)
+    draftStore.clear(projectId)
+  }
+
+  private val clearAllButton = TgHtmlButton
+    .extraSmall("Clear all")
+    .amend(
+      typ("button"),
+      title("Clear the dates, description and staged tasks"),
+      onClick.mapToUnit --> (_ => clearAll())
+    )
 
   private val presetButtons = div(
     cls("mb-4 flex flex-wrap gap-2"),
@@ -302,7 +326,9 @@ class TimeboxFormComponent(
         ),
         body = TgCard.HtmlCardContent(
           form(
+            formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+            if (isCreate) div(cls("mb-4 flex justify-end"), clearAllButton) else emptyNode,
             presetButtons,
             startDateInput.htmlElement.amend(cls("mb-4")),
             endDateInput.htmlElement.amend(cls("mb-4")),
