@@ -237,7 +237,8 @@ class TimeboxFormComponent(
         div(
           cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
           span(cls("text-base font-semibold text-heading"), dto.name),
-          dto.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element)
+          if (dto.taskLabels.isEmpty) Seq(TgBadge(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray).element)
+          else dto.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element)
         ),
         div(
           cls("flex flex-wrap items-center gap-1.5"),
