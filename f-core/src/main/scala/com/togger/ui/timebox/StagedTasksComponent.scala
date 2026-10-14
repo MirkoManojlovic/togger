@@ -21,7 +21,8 @@ class StagedTasksComponent(
   projectId: UUID,
   workDays: Signal[Set[DayOfWeek]],
   timebox: Signal[Option[(LocalDate, LocalDate)]],
-  tgDateFormater: TgDateFormater
+  tgDateFormater: TgDateFormater,
+  capacity: Signal[Option[TimeboxCapacity]]
 ) {
 
   private val Empty = "—"
@@ -124,7 +125,12 @@ class StagedTasksComponent(
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Staged tasks", TgCard.CardHeaderSize.H5),
         body = TgCard.HtmlCardContent(
-          div(clearAllButton, stagedList, summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")))
+          div(
+            clearAllButton,
+            stagedList,
+            summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")),
+            new TimeboxCapacityComponent(capacity).element.amend(cls("mt-4 border-t border-default-medium pt-3"))
+          )
         )
       )
       .element

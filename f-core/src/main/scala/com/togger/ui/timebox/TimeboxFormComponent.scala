@@ -244,12 +244,24 @@ class TimeboxFormComponent(
       } yield (start, end)
     }.distinct
 
+  private val capacitySignal: Signal[Option[TimeboxCapacity]] =
+    stagingStore
+      .staged(projectId)
+      .combineWith(lookups.projectVar.signal, formDatesSignal)
+      .map { case (tasks, project, dates) =>
+        dates.map(TimeboxCapacity.of(tasks, project.members, project.workDays.map(DayOfWeek.of), _))
+      }
+      .distinct
+
+  private val overCapacitySignal: Signal[Boolean] = capacitySignal.map(_.exists(_.isOverCapacity)).distinct
+
   private val stagedTasks = new StagedTasksComponent(
     stagingStore,
     projectId,
     lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
     formDatesSignal,
-    tgDateFormater
+    tgDateFormater,
+    capacitySignal
   )
 
   private val taskPicker = div(
@@ -283,7 +295,7 @@ class TimeboxFormComponent(
             endDateInput.htmlElement.amend(cls("mb-4")),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             taskPicker,
-            TgHtmlButton.create(EventStream.fromValue(false))
+            TgHtmlButton.create(EventStream.merge(EventStream.fromValue(false), overCapacitySignal.changes))
           )
         )
       )
