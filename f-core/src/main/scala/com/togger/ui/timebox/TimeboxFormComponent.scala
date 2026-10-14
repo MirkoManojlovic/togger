@@ -12,13 +12,14 @@ import com.togger.toast.ToastMessages
 import com.togger.components.button.TgHtmlButton
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgHtmlTable}
+import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -168,26 +169,72 @@ class TimeboxFormComponent(
       .unsafeRunAndForget()
   }
 
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = EventStream.empty,
-    labelValue = "Start date",
-    tgInputType = TgInputType.Date
+  private def parsedDate(raw: String): Option[LocalDate] = Try(LocalDate.parse(raw)).toOption
+
+  /** A date shown as a button that opens the app's calendar picker, in place of the browser's own date input. */
+  private def dateField(
+    labelValue: String,
+    selector: TimeboxForm => String,
+    updater: (TimeboxForm, String) => TimeboxForm,
+    minDate: => Option[LocalDate]
+  ): HtmlElement = {
+    val isOpen = Var(false)
+    val today = tgClock.currentDate()
+    div(
+      cls("relative"),
+      label(cls("block mb-2.5 text-sm font-medium text-heading"), labelValue),
+      button(
+        typ("button"),
+        cls(tgInputStyle),
+        cls("cursor-pointer text-left"),
+        child.text <-- formState.signal
+          .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
+          .distinct,
+        // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
+        // listening synchronously within this same click when the picker opens
+        onClick.stopPropagation.mapToUnit --> (_ => isOpen.update(!_))
+      ),
+      child.maybe <-- isOpen.signal.map { open =>
+        Option.when(open) {
+          val current = parsedDate(selector(formState.now()))
+          CalendarPickerPopup(
+            initialMonth = current.getOrElse(today),
+            today = today,
+            tgDateFormater = tgDateFormater,
+            selected = current,
+            minDate = minDate,
+            onPick = day => formState.update(updater(_, day.toString)),
+            onClose = () => isOpen.set(false)
+          ).element
+        }
+      }
+    )
+  }
+
+  private val startDateInput = dateField("Start date", _.startDate, (form, value) => form.copy(startDate = value), None)
+
+  private val endDateInput = dateField(
+    "End date",
+    _.endDate,
+    (form, value) => form.copy(endDate = value),
+    parsedDate(formState.now().startDate)
   )
 
-  private val endDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
-    errors = formState.signal.changes.map { form =>
-      if (
-        form.startDate.nonEmpty && form.endDate.nonEmpty &&
-        LocalDate.parse(form.endDate).isBefore(LocalDate.parse(form.startDate))
-      )
-        Seq("End date must be on or after start date")
-      else Seq.empty
-    },
-    labelValue = "End date",
-    tgInputType = TgInputType.Date
-  )
+  private val endBeforeStartError: Signal[Option[String]] = formState.signal.map { form =>
+    val ends = for {
+      start <- parsedDate(form.startDate)
+      end <- parsedDate(form.endDate)
+    } yield end.isBefore(start)
+    Option.when(ends.contains(true))("End date must be on or after start date")
+  }
+
+  /** Dates are required, and the end can't come before the start. */
+  private val datesInvalidSignal: Signal[Boolean] = formState.signal.map { form =>
+    (for {
+      start <- parsedDate(form.startDate)
+      end <- parsedDate(form.endDate)
+    } yield end.isBefore(start)).getOrElse(true)
+  }.distinct
 
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
@@ -293,6 +340,11 @@ class TimeboxFormComponent(
 
   private val overCapacitySignal: Signal[Boolean] = capacitySignal.map(_.exists(_.isOverCapacity)).distinct
 
+  private val cannotSaveSignal: Signal[Boolean] =
+    overCapacitySignal.combineWith(datesInvalidSignal).map { case (overCapacity, datesInvalid) =>
+      overCapacity || datesInvalid
+    }
+
   private val stagedTasks = new StagedTasksComponent(
     stagingStore,
     projectId,
@@ -335,14 +387,17 @@ class TimeboxFormComponent(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
             presetButtons,
-            startDateInput.htmlElement.amend(cls("mb-4")),
-            endDateInput.htmlElement.amend(cls("mb-4")),
+            startDateInput.amend(cls("mb-4")),
+            endDateInput.amend(cls("mb-4")),
+            child.maybe <-- endBeforeStartError.map(_.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             taskPicker,
             div(
               cls("flex items-center justify-end gap-2"),
               if (isCreate) clearAllButton else emptyNode,
-              TgHtmlButton.createSmall(EventStream.merge(EventStream.fromValue(false), overCapacitySignal.changes))
+              TgHtmlButton.createSmall(
+                EventStream.merge(EventStream.fromValue(()).sample(cannotSaveSignal), cannotSaveSignal.changes)
+              )
             )
           )
         )
