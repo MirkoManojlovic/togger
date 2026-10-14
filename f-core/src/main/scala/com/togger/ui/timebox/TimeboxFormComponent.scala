@@ -308,12 +308,12 @@ class TimeboxFormComponent(
     onKeyDown.filter(_.key == "Enter").preventDefault --> Observer.empty,
     div(
       cls("grid grid-cols-1 items-start gap-4 lg:grid-cols-2"),
-      div(
-        h5(cls("mb-2 text-heading"), "Planned tasks"),
-        browser.searchBar,
-        taskTable,
-        browser.pagination
-      ),
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.plainText("Planned tasks", TgCard.CardHeaderSize.H5),
+          body = TgCard.HtmlCardContent(div(browser.searchBar, taskTable, browser.pagination))
+        )
+        .element,
       stagedTasks.element
     )
   )
