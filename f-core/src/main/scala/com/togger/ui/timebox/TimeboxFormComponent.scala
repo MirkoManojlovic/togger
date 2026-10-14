@@ -3,7 +3,7 @@ package com.togger.ui.timebox
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.{CreateTimeboxReq, FindTaskRespFull, FindTimeboxResp, SaveTimeboxVersionReq}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
@@ -200,6 +200,12 @@ class TimeboxFormComponent(
     }
   )
 
+  private def durationLabel(dto: FindTaskRespFull): String = {
+    val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
+    val days = WorkDayCalendar.countWorkDays(dto.startDate, dto.dueDate, workDays)
+    if (days == 1) "1 day" else s"$days days"
+  }
+
   private def taskCell(dto: FindTaskRespFull) =
     createTd(
       div(
@@ -220,7 +226,8 @@ class TimeboxFormComponent(
           TgBadge(dto.taskStatus.name, dto.taskStatus.badgeColor).element,
           TgBadge(dto.assignedTo.fold("Not assigned")(_.fullName), TgBadgeColor.Gray).element,
           TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray).element,
-          TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray).element
+          TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray).element,
+          TgBadge(durationLabel(dto), TgBadgeColor.Gray).element
         )
       )
     ).amend(
