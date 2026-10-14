@@ -102,10 +102,10 @@ class StagedTasksComponent(
 
   private val clearAllButton: HtmlElement =
     div(
-      cls("mb-2 flex justify-end"),
+      cls("mt-2 flex justify-end"),
       cls("hidden") <-- stagingStore.staged(projectId).map(_.isEmpty),
       TgHtmlButton
-        .extraSmall("Clear all")
+        .extraSmall("Clear Stage")
         .amend(typ("button"), onClick.mapToUnit --> (_ => stagingStore.clear(projectId)))
     )
 
@@ -127,8 +127,8 @@ class StagedTasksComponent(
         body = TgCard.HtmlCardContent(
           div(
             new TimeboxCapacityComponent(capacity).element.amend(cls("mb-4 border-b border-default-medium pb-3")),
-            clearAllButton,
             stagedList,
+            clearAllButton,
             summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3"))
           )
         )
