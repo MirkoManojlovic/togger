@@ -306,11 +306,16 @@ class TimeboxFormComponent(
     browser.filterBindings,
     // Enter in a search box searches; it must not submit the timebox form around the picker.
     onKeyDown.filter(_.key == "Enter").preventDefault --> Observer.empty,
-    h5(cls("mb-2 text-heading"), "Planned tasks"),
-    browser.searchBar,
-    taskTable,
-    browser.pagination,
-    stagedTasks.element.amend(cls("mt-4"))
+    div(
+      cls("grid grid-cols-1 items-start gap-4 lg:grid-cols-2"),
+      div(
+        h5(cls("mb-2 text-heading"), "Planned tasks"),
+        browser.searchBar,
+        taskTable,
+        browser.pagination
+      ),
+      stagedTasks.element
+    )
   )
 
   val element = div(

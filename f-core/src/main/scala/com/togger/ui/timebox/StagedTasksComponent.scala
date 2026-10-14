@@ -13,8 +13,8 @@ import com.togger.ui.task.TgDateFormater
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
-/** The tasks staged for the timebox, in a card of their own below the task table: the tasks themselves, then what they
-  * add up to. A click on a staged task unstages it.
+/** The tasks staged for the timebox, in a card of their own beside the task table: the capacity bars on top, then the
+  * tasks themselves, then what they add up to. A click on a staged task unstages it.
   */
 class StagedTasksComponent(
   stagingStore: TimeboxStagingStore,
@@ -126,10 +126,10 @@ class StagedTasksComponent(
         header = TgCard.CardHeader.plainText("Staged tasks", TgCard.CardHeaderSize.H5),
         body = TgCard.HtmlCardContent(
           div(
+            new TimeboxCapacityComponent(capacity).element.amend(cls("mb-4 border-b border-default-medium pb-3")),
             clearAllButton,
             stagedList,
-            summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3")),
-            new TimeboxCapacityComponent(capacity).element.amend(cls("mt-4 border-t border-default-medium pt-3"))
+            summaryBar.amend(cls("mt-4 border-t border-default-medium pt-3"))
           )
         )
       )
