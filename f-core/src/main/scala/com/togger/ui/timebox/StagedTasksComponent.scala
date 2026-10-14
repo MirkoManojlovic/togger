@@ -44,7 +44,7 @@ class StagedTasksComponent(
 
   private def badges(items: Seq[HtmlElement]): HtmlElement =
     if (items.isEmpty) span(cls("text-sm font-medium text-heading"), Empty)
-    else div(cls("flex flex-wrap gap-1"), items)
+    else div(cls("flex flex-col items-start gap-1"), items)
 
   private val summaryBar: HtmlElement =
     div(
