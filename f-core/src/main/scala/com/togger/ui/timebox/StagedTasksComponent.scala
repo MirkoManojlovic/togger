@@ -112,18 +112,24 @@ class StagedTasksComponent(
 
   private def stagedRow(task: FindTaskRespFull, all: Seq[FindMilestoneResp], days: Set[DayOfWeek]): HtmlElement =
     div(
-      cls("flex cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 rounded-base px-3 py-2"),
+      cls("flex cursor-pointer flex-col gap-1 rounded-base px-3 py-2"),
       cls("border border-default hover:bg-neutral-tertiary-medium"),
       title("Click to unstage"),
-      span(cls("text-sm font-semibold text-heading"), task.name),
-      milestoneBadge(task, all),
-      TgBadge(task.priority.shortCode, task.priority.badgeColor).element,
-      TgBadge(task.taskStatus.name, task.taskStatus.badgeColor).element,
-      assigneeBadge(task),
-      TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.startDate), TgBadgeColor.Gray).element,
-      TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray).element,
-      durationBadge(task, days),
-      task.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element),
+      div(
+        cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
+        span(cls("text-sm font-semibold text-heading"), task.name),
+        task.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element)
+      ),
+      div(
+        cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
+        milestoneBadge(task, all),
+        TgBadge(task.priority.shortCode, task.priority.badgeColor).element,
+        TgBadge(task.taskStatus.name, task.taskStatus.badgeColor).element,
+        assigneeBadge(task),
+        TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.startDate), TgBadgeColor.Gray).element,
+        TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray).element,
+        durationBadge(task, days)
+      ),
       onClick.mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
     )
 
