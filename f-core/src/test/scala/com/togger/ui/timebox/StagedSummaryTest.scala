@@ -68,13 +68,14 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
       summary.byStatus.toMap shouldBe Map(backlog -> 2, done -> 1)
     }
 
-    "count tasks without an assignee and the labels in use" in {
+    "count tasks without an assignee and by label" in {
       val tasks = Seq(
         task().copy(assignedTo = Some(member), taskLabels = Seq(bug, feature)),
         task().copy(taskLabels = Seq(bug))
       )
       val summary = StagedSummary.of(tasks, workDays, None)
-      (summary.unassigned, summary.labelsUsed) shouldBe (1, 2)
+      summary.unassigned shouldBe 1
+      summary.byLabel shouldBe Seq(bug -> 2, feature -> 1)
     }
 
     "count the tasks that stick out of the timebox" in {

@@ -1,7 +1,7 @@
 package com.togger.ui.timebox
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
 
 import java.time.temporal.ChronoUnit
@@ -26,7 +26,7 @@ case class StagedSummary(
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
   unassigned: Int,
-  labelsUsed: Int,
+  byLabel: Seq[(FindTaskLabelResp, Int)],
   outsideTimebox: Int
 )
 
@@ -52,7 +52,7 @@ object StagedSummary {
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.taskStatus)).sortBy(-_._2),
       unassigned = tasks.count(_.assignedTo.isEmpty),
-      labelsUsed = tasks.flatMap(_.taskLabels.map(_.id)).distinct.size,
+      byLabel = counts(tasks.flatMap(_.taskLabels)).sortBy { case (label, count) => (-count, label.name) },
       outsideTimebox = timebox.fold(0) { case (from, to) =>
         tasks.count(task => task.startDate.isBefore(from) || task.dueDate.isAfter(to))
       }

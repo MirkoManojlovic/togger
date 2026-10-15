@@ -55,7 +55,6 @@ class StagedTasksComponent(
       stat("Last due date", summarySignal.map(current => date(current.lastDueDate))),
       stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days"))),
       stat("Without assignee", summarySignal.map(_.unassigned.toString)),
-      stat("Labels used", summarySignal.map(_.labelsUsed.toString)),
       statElement(
         "Outside timebox dates",
         span(
@@ -71,6 +70,14 @@ class StagedTasksComponent(
         child <-- summarySignal.map(current =>
           badges(current.byPriority.map { case (priority, count) =>
             TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
+          })
+        )
+      ),
+      statElement(
+        "By label",
+        child <-- summarySignal.map(current =>
+          badges(current.byLabel.map { case (label, count) =>
+            TgBadge(s"${label.name} × $count", label.badgeColor).element
           })
         )
       ),
