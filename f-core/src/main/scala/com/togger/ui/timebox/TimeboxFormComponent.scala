@@ -437,7 +437,8 @@ class TimeboxFormComponent(
     lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
     formDatesSignal,
     tgDateFormater,
-    capacitySignal
+    capacitySignal,
+    lookups.milestonesVar.signal
   )
 
   private val taskPicker = div(
