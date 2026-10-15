@@ -1,12 +1,23 @@
 package com.togger.ui.timebox
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
 import com.togger.task.TaskPriority
 
 import java.time.temporal.ChronoUnit
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
+
+/** What the tasks of one assignee add up to; `assignee` is empty for the tasks nobody works on. */
+case class AssigneeSummary(
+  assignee: Option[SearchAccountDto],
+  taskCount: Int,
+  workDays: Int,
+  byPriority: Seq[(TaskPriority, Int)],
+  byLabel: Seq[(FindTaskLabelResp, Int)],
+  byStatus: Seq[(FindTaskStatusResp, Int)],
+  byMilestone: Seq[(FindMilestoneResp, Int)]
+)
 
 /** What the tasks staged for a timebox add up to.
   *
@@ -25,6 +36,8 @@ case class StagedSummary(
   calendarSpanDays: Option[Int],
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
+  byMilestone: Seq[(FindMilestoneResp, Int)],
+  byAssignee: Seq[AssigneeSummary],
   unassigned: Int,
   byLabel: Seq[(FindTaskLabelResp, Int)],
   outsideTimebox: Int
@@ -35,10 +48,40 @@ object StagedSummary {
   private def counts[A](values: Seq[A]): Seq[(A, Int)] =
     values.groupBy(identity).toSeq.map { case (value, group) => value -> group.size }
 
+  private def byLabel(tasks: Seq[FindTaskRespFull]): Seq[(FindTaskLabelResp, Int)] =
+    counts(tasks.flatMap(_.taskLabels)).sortBy { case (label, count) => (-count, label.name) }
+
+  private def byMilestone(tasks: Seq[FindTaskRespFull], milestones: Seq[FindMilestoneResp]) =
+    counts(tasks.flatMap(_.milestone).flatMap(id => milestones.find(_.id == id))).sortBy { case (milestone, count) =>
+      (-count, milestone.name)
+    }
+
+  private def byAssignee(
+    tasks: Seq[FindTaskRespFull],
+    workDays: Set[DayOfWeek],
+    milestones: Seq[FindMilestoneResp]
+  ): Seq[AssigneeSummary] =
+    tasks
+      .groupBy(_.assignedTo)
+      .toSeq
+      .sortBy { case (assignee, _) => (assignee.isEmpty, assignee.map(_.fullName)) }
+      .map { case (assignee, group) =>
+        AssigneeSummary(
+          assignee = assignee,
+          taskCount = group.size,
+          workDays = group.map(task => WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, workDays)).sum,
+          byPriority = counts(group.map(_.priority)).sortBy(_._1.value),
+          byLabel = byLabel(group),
+          byStatus = counts(group.map(_.taskStatus)).sortBy(-_._2),
+          byMilestone = byMilestone(group, milestones)
+        )
+      }
+
   def of(
     tasks: Seq[FindTaskRespFull],
     workDays: Set[DayOfWeek],
-    timebox: Option[(LocalDate, LocalDate)]
+    timebox: Option[(LocalDate, LocalDate)],
+    milestones: Seq[FindMilestoneResp]
   ): StagedSummary = {
     val earliestStart = tasks.map(_.startDate).minOption
     val lastDueDate = tasks.map(_.dueDate).maxOption
@@ -51,8 +94,10 @@ object StagedSummary {
         earliestStart.zip(lastDueDate).map { case (from, to) => ChronoUnit.DAYS.between(from, to).toInt + 1 },
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.taskStatus)).sortBy(-_._2),
+      byMilestone = byMilestone(tasks, milestones),
+      byAssignee = byAssignee(tasks, workDays, milestones),
       unassigned = tasks.count(_.assignedTo.isEmpty),
-      byLabel = counts(tasks.flatMap(_.taskLabels)).sortBy { case (label, count) => (-count, label.name) },
+      byLabel = byLabel(tasks),
       outsideTimebox = timebox.fold(0) { case (from, to) =>
         tasks.count(task => task.startDate.isBefore(from) || task.dueDate.isAfter(to))
       }

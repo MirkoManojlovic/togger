@@ -3,7 +3,8 @@ package com.togger.ui.timebox
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.task.TaskPriority
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
@@ -33,8 +34,8 @@ class StagedTasksComponent(
   private val summarySignal: Signal[StagedSummary] =
     stagingStore
       .staged(projectId)
-      .combineWith(workDays, timebox)
-      .map { case (tasks, days, range) => StagedSummary.of(tasks, days, range) }
+      .combineWith(workDays, timebox, milestones)
+      .map { case (tasks, days, range, all) => StagedSummary.of(tasks, days, range, all) }
       .distinct
 
   private def date(day: Option[LocalDate]): String = day.fold(Empty)(tgDateFormater.asAmericanDateWithDayAbrv)
@@ -49,48 +50,56 @@ class StagedTasksComponent(
     if (items.isEmpty) span(cls("text-sm font-medium text-heading"), Empty)
     else div(cls("flex flex-col items-start gap-1"), items)
 
+  private def badgeColumn[A](counts: Signal[Seq[(A, Int)]])(badge: (A, Int) => HtmlElement): Modifier[HtmlElement] =
+    child <-- counts.map(items => badges(items.map { case (item, count) => badge(item, count) }))
+
+  private def priorityBadge(priority: TaskPriority, count: Int): HtmlElement =
+    TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
+
+  private def labelBadge(label: FindTaskLabelResp, count: Int): HtmlElement =
+    TgBadge(s"${label.name} × $count", label.badgeColor).element
+
+  private def statusBadge(status: FindTaskStatusResp, count: Int): HtmlElement =
+    TgBadge(s"${status.name} × $count", status.badgeColor).element
+
+  private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
+    TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
+
+  private def assigneeBlock(summary: AssigneeSummary): HtmlElement =
+    div(
+      cls("flex flex-col gap-2 rounded-base border border-default px-3 py-2"),
+      span(cls("text-sm font-semibold text-heading"), summary.assignee.fold("Unassigned")(_.fullName)),
+      div(
+        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 lg:grid-cols-6"),
+        stat("Tasks", Val(summary.taskCount.toString)),
+        stat("Work days", Val(summary.workDays.toString)),
+        statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled))),
+        statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled))),
+        statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled))),
+        statElement("Milestones", badges(summary.byMilestone.map((milestoneCountBadge _).tupled)))
+      )
+    )
+
   private val summaryBar: HtmlElement =
     div(
-      cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4"),
-      stat("Tasks staged", summarySignal.map(_.taskCount.toString)),
-      stat("Days of work", summarySignal.map(_.workDays.toString)),
-      stat("Earliest start", summarySignal.map(current => date(current.earliestStart))),
-      stat("Last due date", summarySignal.map(current => date(current.lastDueDate))),
-      stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days"))),
-      stat("Without assignee", summarySignal.map(_.unassigned.toString)),
-      statElement(
-        "Outside timebox dates",
-        span(
-          cls("text-sm font-medium"),
-          cls <-- summarySignal.map(current =>
-            if (current.outsideTimebox > 0) "text-fg-danger-strong" else "text-heading"
-          ),
-          child.text <-- summarySignal.map(_.outsideTimebox.toString)
-        )
+      cls("flex flex-col gap-4"),
+      div(
+        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3"),
+        stat("Tasks staged", summarySignal.map(_.taskCount.toString)),
+        stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days"))),
+        stat("Days of work", summarySignal.map(_.workDays.toString))
       ),
-      statElement(
-        "By priority",
-        child <-- summarySignal.map(current =>
-          badges(current.byPriority.map { case (priority, count) =>
-            TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
-          })
-        )
+      div(
+        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4"),
+        statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge)),
+        statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge)),
+        statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge)),
+        statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))
       ),
-      statElement(
-        "By label",
-        child <-- summarySignal.map(current =>
-          badges(current.byLabel.map { case (label, count) =>
-            TgBadge(s"${label.name} × $count", label.badgeColor).element
-          })
-        )
-      ),
-      statElement(
-        "By status",
-        child <-- summarySignal.map(current =>
-          badges(current.byStatus.map { case (status, count) =>
-            TgBadge(s"${status.name} × $count", status.badgeColor).element
-          })
-        )
+      div(
+        cls("flex flex-col gap-2"),
+        span(cls("text-xs text-body-subtle"), "Per assignee"),
+        children <-- summarySignal.map(_.byAssignee.map(assigneeBlock))
       )
     )
 
