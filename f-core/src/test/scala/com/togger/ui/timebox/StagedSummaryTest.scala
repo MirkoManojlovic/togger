@@ -96,7 +96,7 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
       StagedSummary.of(tasks, workDays, None, Seq(first, second)).byMilestone shouldBe Seq(second -> 2, first -> 1)
     }
 
-    "break the tasks down per assignee, unassigned last" in {
+    "summarise each group of the grouping" in {
       val other = member.copy(id = UUID.randomUUID(), firstName = "Zed")
       val tasks = Seq(
         task().copy(assignedTo = Some(other)),
@@ -104,8 +104,8 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
         task().copy(assignedTo = Some(member), milestone = Some(first.id), taskStatus = done),
         task()
       )
-      val breakdown = StagedSummary.of(tasks, workDays, None, Seq(first)).byAssignee
-      breakdown.map(_.assignee) shouldBe Seq(Some(member), Some(other), None)
+      val breakdown = StagedSummary.grouped(StagedGrouping.ByAssignee, tasks, workDays, Seq(first))
+      breakdown.map(_.title) shouldBe Seq(member.fullName, other.fullName, StagedGrouping.NoAssignee)
       val ada = breakdown.head
       (ada.taskCount, ada.workDays) shouldBe (2, 10)
       (ada.byPriority.toMap, ada.byLabel, ada.byStatus.toMap, ada.byMilestone) shouldBe

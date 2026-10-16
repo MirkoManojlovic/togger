@@ -1,16 +1,16 @@
 package com.togger.ui.timebox
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
 
 import java.time.temporal.ChronoUnit
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
-/** What the tasks of one assignee add up to; `assignee` is empty for the tasks nobody works on. */
-case class AssigneeSummary(
-  assignee: Option[SearchAccountDto],
+/** What the tasks of one group add up to; `title` is empty when the tasks are not grouped. */
+case class GroupSummary(
+  title: String,
   taskCount: Int,
   workDays: Int,
   byPriority: Seq[(TaskPriority, Int)],
@@ -37,7 +37,6 @@ case class StagedSummary(
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
   byMilestone: Seq[(FindMilestoneResp, Int)],
-  byAssignee: Seq[AssigneeSummary],
   unassigned: Int,
   byLabel: Seq[(FindTaskLabelResp, Int)],
   outsideTimebox: Int
@@ -56,26 +55,24 @@ object StagedSummary {
       (-count, milestone.name)
     }
 
-  private def byAssignee(
+  private def summaryOf(group: StagedGroup, workDays: Set[DayOfWeek], milestones: Seq[FindMilestoneResp]) =
+    GroupSummary(
+      title = group.title,
+      taskCount = group.tasks.size,
+      workDays = group.tasks.map(task => WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, workDays)).sum,
+      byPriority = counts(group.tasks.map(_.priority)).sortBy(_._1.value),
+      byLabel = byLabel(group.tasks),
+      byStatus = counts(group.tasks.map(_.taskStatus)).sortBy(-_._2),
+      byMilestone = byMilestone(group.tasks, milestones)
+    )
+
+  def grouped(
+    grouping: StagedGrouping,
     tasks: Seq[FindTaskRespFull],
     workDays: Set[DayOfWeek],
     milestones: Seq[FindMilestoneResp]
-  ): Seq[AssigneeSummary] =
-    tasks
-      .groupBy(_.assignedTo)
-      .toSeq
-      .sortBy { case (assignee, _) => (assignee.isEmpty, assignee.map(_.fullName)) }
-      .map { case (assignee, group) =>
-        AssigneeSummary(
-          assignee = assignee,
-          taskCount = group.size,
-          workDays = group.map(task => WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, workDays)).sum,
-          byPriority = counts(group.map(_.priority)).sortBy(_._1.value),
-          byLabel = byLabel(group),
-          byStatus = counts(group.map(_.taskStatus)).sortBy(-_._2),
-          byMilestone = byMilestone(group, milestones)
-        )
-      }
+  ): Seq[GroupSummary] =
+    grouping.group(tasks, milestones).map(summaryOf(_, workDays, milestones))
 
   def of(
     tasks: Seq[FindTaskRespFull],
@@ -95,7 +92,6 @@ object StagedSummary {
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.taskStatus)).sortBy(-_._2),
       byMilestone = byMilestone(tasks, milestones),
-      byAssignee = byAssignee(tasks, workDays, milestones),
       unassigned = tasks.count(_.assignedTo.isEmpty),
       byLabel = byLabel(tasks),
       outsideTimebox = timebox.fold(0) { case (from, to) =>

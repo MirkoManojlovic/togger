@@ -65,22 +65,34 @@ class StagedTasksComponent(
   private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
     TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
 
-  private def assigneeBlock(summary: AssigneeSummary): HtmlElement =
+  /** Columns share the row evenly, so a left out column leaves its space to the others. */
+  private def column(element: HtmlElement): HtmlElement = element.amend(cls("min-w-32 flex-1"))
+
+  /** The column a grouping is by is left out: every row in it would say the same. */
+  private def groupBlock(grouping: StagedGrouping, summary: GroupSummary): HtmlElement =
     div(
       cls("flex flex-col gap-2 rounded-base border border-default px-3 py-2"),
-      span(cls("text-sm font-semibold text-heading"), summary.assignee.fold("Unassigned")(_.fullName)),
+      span(cls("text-sm font-semibold text-heading"), summary.title),
       div(
-        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 lg:grid-cols-6"),
-        stat("Tasks", Val(summary.taskCount.toString)),
-        stat("Work days", Val(summary.workDays.toString)),
-        statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled))),
-        statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled))),
-        statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled))),
-        statElement("Milestones", badges(summary.byMilestone.map((milestoneCountBadge _).tupled)))
+        cls("flex flex-wrap gap-x-4 gap-y-3"),
+        column(stat("Tasks", Val(summary.taskCount.toString))),
+        column(stat("Work days", Val(summary.workDays.toString))),
+        Option.when(grouping != StagedGrouping.ByPriority)(
+          column(statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled))))
+        ),
+        Option.when(grouping != StagedGrouping.ByLabel)(
+          column(statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled))))
+        ),
+        Option.when(grouping != StagedGrouping.ByStatus)(
+          column(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled))))
+        ),
+        Option.when(grouping != StagedGrouping.ByMilestone)(
+          column(statElement("Milestones", badges(summary.byMilestone.map((milestoneCountBadge _).tupled))))
+        )
       )
     )
 
-  private val summaryBar: HtmlElement =
+  private val totalsStats: HtmlElement =
     div(
       cls("flex flex-col gap-4"),
       div(
@@ -95,13 +107,31 @@ class StagedTasksComponent(
         statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge)),
         statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge)),
         statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))
-      ),
-      div(
-        cls("flex flex-col gap-2"),
-        span(cls("text-xs text-body-subtle"), "Per assignee"),
-        children <-- summarySignal.map(_.byAssignee.map(assigneeBlock))
       )
     )
+
+  private def groupedStats(grouping: StagedGrouping): HtmlElement =
+    div(
+      cls("flex flex-col gap-2"),
+      children <-- stagingStore
+        .staged(projectId)
+        .combineWith(workDays, milestones)
+        .map { case (tasks, days, all) => StagedSummary.grouped(grouping, tasks, days, all).map(groupBlock(grouping, _)) }
+    )
+
+  private val selectedStatsGroupingVar = Var(StagedGrouping.NotGrouped.id)
+
+  private val summaryBar: HtmlElement =
+    new TgTabs(
+      StagedGrouping.all.map(grouping =>
+        TgTab(
+          grouping.id,
+          grouping.label,
+          if (grouping == StagedGrouping.NotGrouped) totalsStats else groupedStats(grouping)
+        )
+      ),
+      selectedStatsGroupingVar
+    ).element
 
   private def milestoneBadge(task: FindTaskRespFull, all: Seq[FindMilestoneResp]): HtmlElement =
     task.milestone
