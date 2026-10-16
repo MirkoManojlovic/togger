@@ -39,6 +39,20 @@ class GanttResizeTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "GanttResize.resize of the body" should {
+    "move both ends and keep the width" in {
+      GanttResize.resize(bar, GanttEdge.Body, 2, axis) shouldBe bar.copy(startCol = 4, endCol = 7)
+    }
+
+    "stop at the start of the axis" in {
+      GanttResize.resize(bar, GanttEdge.Body, -9, axis) shouldBe bar.copy(startCol = 0, endCol = 3)
+    }
+
+    "stop at the end of the axis" in {
+      GanttResize.resize(bar, GanttEdge.Body, 9, axis) shouldBe bar.copy(startCol = 6, endCol = 9)
+    }
+  }
+
   "GanttResize.newDates" should {
     val start = monday.plusDays(2)
     val due = monday.plusDays(7)
@@ -63,6 +77,12 @@ class GanttResizeTest extends AnyWordSpec with Matchers {
     "change nothing when the result would end before it starts" in {
       val resized = GanttResize.resize(bar, GanttEdge.End, -1, axis)
       GanttResize.newDates(start, monday.plusDays(1), GanttEdge.End, resized, axis) shouldBe None
+    }
+
+    "give both ends the dates of their new columns when the body moves" in {
+      val moved = GanttResize.resize(bar, GanttEdge.Body, 3, axis)
+      GanttResize.newDates(start, due, GanttEdge.Body, moved, axis) shouldBe
+        Some((monday.plusDays(7), monday.plusDays(10)))
     }
   }
 }

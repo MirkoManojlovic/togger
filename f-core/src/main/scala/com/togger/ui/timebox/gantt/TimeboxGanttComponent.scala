@@ -89,20 +89,36 @@ class TimeboxGanttComponent(
   /** Where a drag of one edge began: the pointer, the width of a column and the bar as it was. */
   private case class Drag(startX: Double, columnWidth: Double, bar: GanttBar.Placed)
 
-  /** A strip on one end of the bar to grab. While dragging only the bar's element is changed, so the grab is not lost
-    * to a redraw; the new dates are saved once the pointer is let go.
-    */
+  /** A strip on one end of the bar to grab, to resize it. */
   private def resizeHandle(
     task: FindTaskRespFull,
     placed: GanttBar.Placed,
     axis: GanttAxis,
     edge: GanttEdge
   ): HtmlElement = {
-    val drag = Var(Option.empty[Drag])
     val side = if (edge == GanttEdge.Start) "left-0" else "right-0"
+    div(
+      cls(s"absolute top-0 $side h-full w-2 cursor-ew-resize bg-blue-700/60 hover:bg-blue-800"),
+      dragModifiers(task, placed, axis, edge)
+    )
+  }
 
-    def barOf(event: dom.PointerEvent): dom.html.Element =
-      event.currentTarget.asInstanceOf[dom.html.Element].parentElement.asInstanceOf[dom.html.Element]
+  /** What to put on an element to drag the bar by it, on its end to resize or on the whole of it to move. While
+    * dragging only the bar's element is changed, so the grab is not lost to a redraw; the new dates are saved once the
+    * pointer is let go.
+    */
+  private def dragModifiers(
+    task: FindTaskRespFull,
+    placed: GanttBar.Placed,
+    axis: GanttAxis,
+    edge: GanttEdge
+  ): Seq[Modifier[HtmlElement]] = {
+    val drag = Var(Option.empty[Drag])
+
+    def barOf(event: dom.PointerEvent): dom.html.Element = {
+      val grabbed = event.currentTarget.asInstanceOf[dom.html.Element]
+      if (edge == GanttEdge.Body) grabbed else grabbed.parentElement.asInstanceOf[dom.html.Element]
+    }
 
     // The row is draggable for reordering, and the browser would start that drag from a press on the handle. The
     // drag starts from the press itself, so the row must stop being draggable before it, and is again once let go.
@@ -122,8 +138,7 @@ class TimeboxGanttComponent(
     def datesFor(shown: GanttBar.Placed): (LocalDate, LocalDate) =
       GanttResize.newDates(task.startDate, task.dueDate, edge, shown, axis).getOrElse((task.startDate, task.dueDate))
 
-    div(
-      cls(s"absolute top-0 $side h-full w-2 cursor-ew-resize bg-blue-700/60 hover:bg-blue-800"),
+    Seq(
       styleAttr := "touch-action: none",
       onPointerDown --> { event =>
         event.stopPropagation()
@@ -166,6 +181,9 @@ class TimeboxGanttComponent(
     div(
       cls(s"relative z-10 my-1.5 flex h-6 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
       title := barTitle(task, task.startDate, task.dueDate),
+      // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
+      if (placed.clippedLeft || placed.clippedRight) emptyMod
+      else Seq[Modifier[HtmlElement]](cls("cursor-grab select-none")) ++ dragModifiers(task, placed, axis, GanttEdge.Body),
       // A clipped end has its real date out of sight, so it can't be dragged from here.
       if (placed.clippedLeft) emptyNode else resizeHandle(task, placed, axis, GanttEdge.Start),
       span(if (placed.clippedLeft) "◂" else ""),
