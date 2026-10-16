@@ -9,7 +9,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgStatColumn, TgTab, TgTabs}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkTaskBadges
 
@@ -70,10 +70,6 @@ class StagedTasksComponent(
   private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
     TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
 
-  /** Columns are centered, boxed and share the row evenly, so a left out column leaves its space to the others. */
-  private def column(element: HtmlElement): HtmlElement =
-    element.amend(cls("min-w-32 flex-1 items-center rounded-base border border-default px-3 py-2 text-center"))
-
   /** The column a grouping is by is left out: every row in it would say the same. */
   private def groupBlock(grouping: StagedGrouping, summary: GroupSummary): HtmlElement =
     div(
@@ -81,22 +77,24 @@ class StagedTasksComponent(
       span(cls("text-sm font-semibold text-heading"), summary.title),
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
-        column(stat("Tasks", Val(summary.taskCount.toString))),
-        column(stat("Work days", Val(summary.workDays.toString)))
+        TgStatColumn(stat("Tasks", Val(summary.taskCount.toString))),
+        TgStatColumn(stat("Work days", Val(summary.workDays.toString)))
       ),
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
         Option.when(grouping != StagedGrouping.ByPriority)(
-          column(statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled), "items-center")))
+          TgStatColumn(
+            statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled), "items-center"))
+          )
         ),
         Option.when(grouping != StagedGrouping.ByLabel)(
-          column(statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled), "items-center")))
+          TgStatColumn(statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled), "items-center")))
         ),
         Option.when(grouping != StagedGrouping.ByStatus)(
-          column(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled), "items-center")))
+          TgStatColumn(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled), "items-center")))
         ),
         Option.when(grouping != StagedGrouping.ByMilestone)(
-          column(
+          TgStatColumn(
             statElement(
               "Milestones",
               badges(summary.byMilestone.map((milestoneCountBadge _).tupled), "items-center")
@@ -104,7 +102,7 @@ class StagedTasksComponent(
           )
         ),
         Option.when(grouping != StagedGrouping.ByAssignee)(
-          column(
+          TgStatColumn(
             statElement("Assignees", badges(summary.byAssignee.map((assigneeCountBadge _).tupled), "items-center"))
           )
         )
@@ -116,16 +114,16 @@ class StagedTasksComponent(
       cls("flex flex-col gap-4"),
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
-        column(stat("Tasks staged", summarySignal.map(_.taskCount.toString))),
-        column(stat("Days of work", summarySignal.map(_.workDays.toString)))
+        TgStatColumn(stat("Tasks staged", summarySignal.map(_.taskCount.toString))),
+        TgStatColumn(stat("Days of work", summarySignal.map(_.workDays.toString)))
       ),
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
-        column(statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge))),
-        column(statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge))),
-        column(statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge))),
-        column(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))),
-        column(statElement("By assignee", badgeColumn(summarySignal.map(_.byAssignee))(assigneeCountBadge)))
+        TgStatColumn(statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge))),
+        TgStatColumn(statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge))),
+        TgStatColumn(statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge))),
+        TgStatColumn(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))),
+        TgStatColumn(statElement("By assignee", badgeColumn(summarySignal.map(_.byAssignee))(assigneeCountBadge)))
       )
     )
 

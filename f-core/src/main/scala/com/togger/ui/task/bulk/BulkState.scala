@@ -28,9 +28,6 @@ case class BulkState(
       .map(_.workDays.map(DayOfWeek.of))
       .getOrElse(WorkDayCalendar.DefaultWorkDays)
 
-  def projectName: Option[String] =
-    projectId.flatMap(id => projects.find(_.id == id)).map(project => s"${project.icon} ${project.name}".trim)
-
   def defaults: BulkTaskDefaults = BulkTaskDefaults.of(today, workDays, projectData.statuses)
 
   def lookups: BulkLookups =

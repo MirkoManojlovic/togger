@@ -519,8 +519,7 @@ class BulkAddTasks(
         BulkSummaryBar.element(
           summary = state.signal.map(current => BulkSummary.of(current.tasks, current.workDays)).distinct,
           lookups = state.signal.map(_.lookups).distinct,
-          warnings = parsedSignal.map(_.issues.size),
-          projectName = state.signal.map(_.projectName).distinct
+          warnings = parsedSignal.map(_.issues.size)
         ),
         footer
       )

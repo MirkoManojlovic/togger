@@ -21,6 +21,8 @@ case class BulkSummary(
   calendarSpanDays: Option[Int],
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(Option[UUID], Int)],
+  byLabel: Seq[(UUID, Int)],
+  byMilestone: Seq[(UUID, Int)],
   unassigned: Int,
   labelsUsed: Int
 )
@@ -43,6 +45,8 @@ object BulkSummary {
         earliestStart.zip(lastDueDate).map { case (from, to) => ChronoUnit.DAYS.between(from, to).toInt + 1 },
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.statusId)).sortBy(-_._2),
+      byLabel = counts(tasks.flatMap(_.labelIds)),
+      byMilestone = counts(tasks.flatMap(_.milestoneId)),
       unassigned = tasks.count(_.assigneeId.isEmpty),
       labelsUsed = tasks.flatMap(_.labelIds).distinct.size
     )
