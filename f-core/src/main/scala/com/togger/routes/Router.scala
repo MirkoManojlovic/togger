@@ -40,6 +40,8 @@ object Pages {
 
   case object ChangePasswordPage extends PrivatePage
 
+  case object ApexChartDemoPage extends PrivatePage
+
   case class NotFoundPage(url: String) extends PublicPage
 
   case class CreateTaskPage(projectId: UUID) extends PrivatePage

@@ -31,6 +31,7 @@ import com.togger.ui.taskloadconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
 import com.togger.ui.task.bulk.BulkAddTasks
 import com.togger.ui.projectlabel._
+import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.theme.ThemeStore
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
@@ -199,6 +200,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case LoginPage => new LoginComponent(router, loginService, spinnerService).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
+              case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>
                 new CreateTaskComponent(
                   taskService,

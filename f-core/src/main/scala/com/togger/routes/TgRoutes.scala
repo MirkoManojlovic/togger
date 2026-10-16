@@ -39,6 +39,10 @@ class TgRoutes {
         ChangePasswordPage,
         root / "change-password"
       ),
+      Route.static(
+        ApexChartDemoPage,
+        root / "chart-demo"
+      ),
       Route(
         encode = (page: CreateTaskPage) => page.projectId.toString,
         decode = (projectId: String) => CreateTaskPage(UUID.fromString(projectId)),
