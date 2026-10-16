@@ -135,8 +135,8 @@ class StagedTasksComponent(
       .combineWith(workDays, milestones)
       .map { case (tasks, days, all) => StagedSummary.grouped(grouping, tasks, days, all) }
 
-  /** Tasks by milestone; the chart is only on the page while there are tasks, as it has nothing to draw otherwise. */
-  private def milestonePie(summaries: Signal[Seq[GroupSummary]]): HtmlElement = {
+  /** Tasks by group; the chart is only on the page while there are tasks, as it has nothing to draw otherwise. */
+  private def groupPie(summaries: Signal[Seq[GroupSummary]]): HtmlElement = {
     val chart = new ApexChartComponent(summaries.map(StagedCharts.pieOfTaskCounts), isDark).element
     div(child <-- summaries.map(current => if (current.isEmpty) emptyNode else chart))
   }
@@ -149,7 +149,7 @@ class StagedTasksComponent(
         cls("flex flex-col gap-2"),
         children <-- summaries.map(_.map(groupBlock(grouping, _)))
       ),
-      Option.when(grouping == StagedGrouping.ByMilestone)(milestonePie(summaries))
+      Option.when(grouping != StagedGrouping.NotGrouped)(groupPie(summaries))
     )
   }
 
