@@ -69,11 +69,11 @@ class TimeboxGanttComponent(
     div(
       cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
       styleAttr := gridTemplate(axis),
-      div(cls("px-2 py-1 text-left font-medium"), "Task"),
+      div(cls("flex items-center justify-center px-2 py-1 font-medium"), "Task"),
       axis.days.zipWithIndex.map { case (day, index) =>
         val monthStarts = index == 0 || axis.days(index - 1).getMonth != day.getMonth
         div(
-          cls(s"py-1 ${dayCellClasses(axis, index)}"),
+          cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
           div(cls("h-4 font-medium text-heading"), if (monthStarts) tgDateFormater.monthName(day).take(3) else ""),
           div(tgDateFormater.dayOfWeekAbbrev(day)),
           div(cls("text-heading"), tgDateFormater.dayOnly(day))
