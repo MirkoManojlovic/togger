@@ -117,7 +117,6 @@ class StagedTasksComponent(
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
         column(stat("Tasks staged", summarySignal.map(_.taskCount.toString))),
-        column(stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days")))),
         column(stat("Days of work", summarySignal.map(_.workDays.toString)))
       ),
       div(
