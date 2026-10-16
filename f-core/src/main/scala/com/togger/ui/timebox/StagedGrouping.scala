@@ -32,7 +32,7 @@ object StagedGrouping {
     if (withoutKey.isEmpty) withKey else withKey :+ StagedGroup(emptyTitle, withoutKey)
   }
 
-  case object NotGrouped extends StagedGrouping("none", "Not grouped") {
+  case object NotGrouped extends StagedGrouping("none", "Total") {
     def group(tasks: Seq[FindTaskRespFull], milestones: Seq[FindMilestoneResp]): Seq[StagedGroup] =
       Seq(StagedGroup("", tasks))
   }
