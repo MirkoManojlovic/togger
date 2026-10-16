@@ -1,5 +1,6 @@
 import './app-config.js'
 import './style.css'
+import './apexcharts-bridge.js'
 import '@linkOutputDir/main.js'
 
 import {Command} from '@tauri-apps/plugin-shell';
