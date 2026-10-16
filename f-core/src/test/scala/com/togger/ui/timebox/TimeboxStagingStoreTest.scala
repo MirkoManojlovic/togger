@@ -89,4 +89,94 @@ class TimeboxStagingStoreTest extends AnyWordSpec with Matchers {
       store.now(projectId) shouldBe Seq.empty
     }
   }
+
+  "TimeboxStagingStore date overrides" should {
+    val tuesday = monday.plusDays(1)
+
+    "show the changed dates on the staged task" in {
+      val store = new TimeboxStagingStore(new LocalStorageTest)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday.plusDays(1))
+      store.stagedWithDatesNow(projectId).map(t => (t.startDate, t.dueDate)) shouldBe
+        Seq((tuesday, tuesday.plusDays(1)))
+    }
+
+    "keep the task's own dates in the staged list" in {
+      val store = new TimeboxStagingStore(new LocalStorageTest)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+      store.now(projectId) shouldBe Seq(first)
+    }
+
+    "forget a change that puts the task back on its own dates" in {
+      val storage = new LocalStorageTest
+      val store = new TimeboxStagingStore(storage)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+      store.setDates(projectId, first.id, first.startDate, first.dueDate)
+      storage.getItem(s"${TimeboxStagingStore.DatesKeyPrefix}$projectId") shouldBe None
+    }
+
+    "ignore dates for a task that is not staged" in {
+      val store = new TimeboxStagingStore(new LocalStorageTest)
+      store.toggle(projectId, first)
+      store.setDates(projectId, second.id, tuesday, tuesday)
+      store.stagedWithDatesNow(projectId) shouldBe Seq(first)
+    }
+
+    "list only the staged tasks with changed dates, with the new dates" in {
+      val store = new TimeboxStagingStore(new LocalStorageTest)
+      store.toggle(projectId, first)
+      store.toggle(projectId, second)
+      store.setDates(projectId, second.id, tuesday, tuesday)
+      store.withChangedDatesNow(projectId).map(t => (t.id, t.startDate, t.dueDate)) shouldBe
+        Seq((second.id, tuesday, tuesday))
+    }
+
+    "drop the change when the task is unstaged" in {
+      val storage = new LocalStorageTest
+      val store = new TimeboxStagingStore(storage)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+      store.unstage(projectId, first.id)
+      store.toggle(projectId, first)
+      store.stagedWithDatesNow(projectId) shouldBe Seq(first)
+    }
+
+    "drop every change on clear" in {
+      val storage = new LocalStorageTest
+      val store = new TimeboxStagingStore(storage)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+      store.clear(projectId)
+      storage.getItem(s"${TimeboxStagingStore.DatesKeyPrefix}$projectId") shouldBe None
+    }
+
+    "survive a reload" in {
+      val storage = new LocalStorageTest
+      val store = new TimeboxStagingStore(storage)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+
+      val reloaded = new TimeboxStagingStore(storage)
+      reloaded.open(projectId)
+      reloaded.stagedWithDatesNow(projectId).map(t => (t.startDate, t.dueDate)) shouldBe Seq((tuesday, tuesday))
+    }
+
+    "keep the change when the task is refreshed" in {
+      val store = new TimeboxStagingStore(new LocalStorageTest)
+      store.toggle(projectId, first)
+      store.setDates(projectId, first.id, tuesday, tuesday)
+      store.refresh(projectId, Seq(first.copy(name = "Renamed")))
+      store.stagedWithDatesNow(projectId).map(t => (t.name, t.startDate)) shouldBe Seq(("Renamed", tuesday))
+    }
+
+    "ignore an entry it can't read" in {
+      val storage = new LocalStorageTest
+      storage.setItem(s"${TimeboxStagingStore.DatesKeyPrefix}$projectId", "not json")
+      val store = new TimeboxStagingStore(storage)
+      store.open(projectId)
+      store.stagedWithDatesNow(projectId) shouldBe Seq.empty
+    }
+  }
 }
