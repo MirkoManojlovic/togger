@@ -211,7 +211,7 @@ class TimeboxGanttComponent(
       div(
         cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
         onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
-        rowReorder.controls(task.id),
+        rowReorder.controls(task.id, showGrip = false),
         span(cls("truncate text-sm text-heading"), title := task.name, task.name)
       ),
       // The day cells sit behind the bar so the columns show through.
