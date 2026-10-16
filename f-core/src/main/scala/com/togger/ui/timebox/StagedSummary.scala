@@ -16,7 +16,8 @@ case class GroupSummary(
   byPriority: Seq[(TaskPriority, Int)],
   byLabel: Seq[(FindTaskLabelResp, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
-  byMilestone: Seq[(FindMilestoneResp, Int)]
+  byMilestone: Seq[(FindMilestoneResp, Int)],
+  byAssignee: Seq[(String, Int)]
 )
 
 /** What the tasks staged for a timebox add up to.
@@ -37,6 +38,7 @@ case class StagedSummary(
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
   byMilestone: Seq[(FindMilestoneResp, Int)],
+  byAssignee: Seq[(String, Int)],
   unassigned: Int,
   byLabel: Seq[(FindTaskLabelResp, Int)],
   outsideTimebox: Int
@@ -55,6 +57,12 @@ object StagedSummary {
       (-count, milestone.name)
     }
 
+  /** The assignee names with their task counts; the tasks nobody works on count under [[StagedGrouping.NoAssignee]]. */
+  private def byAssignee(tasks: Seq[FindTaskRespFull]): Seq[(String, Int)] =
+    counts(tasks.map(_.assignedTo.fold(StagedGrouping.NoAssignee)(_.fullName))).sortBy { case (name, count) =>
+      (-count, name)
+    }
+
   private def summaryOf(group: StagedGroup, workDays: Set[DayOfWeek], milestones: Seq[FindMilestoneResp]) =
     GroupSummary(
       title = group.title,
@@ -63,7 +71,8 @@ object StagedSummary {
       byPriority = counts(group.tasks.map(_.priority)).sortBy(_._1.value),
       byLabel = byLabel(group.tasks),
       byStatus = counts(group.tasks.map(_.taskStatus)).sortBy(-_._2),
-      byMilestone = byMilestone(group.tasks, milestones)
+      byMilestone = byMilestone(group.tasks, milestones),
+      byAssignee = byAssignee(group.tasks)
     )
 
   def grouped(
@@ -92,6 +101,7 @@ object StagedSummary {
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.taskStatus)).sortBy(-_._2),
       byMilestone = byMilestone(tasks, milestones),
+      byAssignee = byAssignee(tasks),
       unassigned = tasks.count(_.assignedTo.isEmpty),
       byLabel = byLabel(tasks),
       outsideTimebox = timebox.fold(0) { case (from, to) =>

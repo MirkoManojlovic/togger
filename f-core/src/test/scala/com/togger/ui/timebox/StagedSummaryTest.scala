@@ -84,6 +84,7 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
       val summary = StagedSummary.of(tasks, workDays, None, Seq.empty)
       summary.unassigned shouldBe 1
       summary.byLabel shouldBe Seq(bug -> 2, feature -> 1)
+      summary.byAssignee shouldBe Seq(member.fullName -> 1, StagedGrouping.NoAssignee -> 1)
     }
 
     "count tasks by milestone, ignoring tasks without one" in {

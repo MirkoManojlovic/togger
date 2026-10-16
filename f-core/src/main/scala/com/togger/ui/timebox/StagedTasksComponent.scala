@@ -64,6 +64,9 @@ class StagedTasksComponent(
   private def statusBadge(status: FindTaskStatusResp, count: Int): HtmlElement =
     TgBadge(s"${status.name} × $count", status.badgeColor).element
 
+  private def assigneeCountBadge(assignee: String, count: Int): HtmlElement =
+    TgBadge(s"$assignee × $count", TgBadgeColor.Gray).element
+
   private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
     TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
 
@@ -99,6 +102,11 @@ class StagedTasksComponent(
               badges(summary.byMilestone.map((milestoneCountBadge _).tupled), "items-center")
             )
           )
+        ),
+        Option.when(grouping != StagedGrouping.ByAssignee)(
+          column(
+            statElement("Assignees", badges(summary.byAssignee.map((assigneeCountBadge _).tupled), "items-center"))
+          )
         )
       )
     )
@@ -117,7 +125,8 @@ class StagedTasksComponent(
         column(statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge))),
         column(statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge))),
         column(statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge))),
-        column(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge)))
+        column(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))),
+        column(statElement("By assignee", badgeColumn(summarySignal.map(_.byAssignee))(assigneeCountBadge)))
       )
     )
 
