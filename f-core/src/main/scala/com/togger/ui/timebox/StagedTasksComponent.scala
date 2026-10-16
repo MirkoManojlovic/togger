@@ -51,7 +51,9 @@ class StagedTasksComponent(
     else div(cls(s"flex flex-col $alignment gap-1"), items)
 
   private def badgeColumn[A](counts: Signal[Seq[(A, Int)]])(badge: (A, Int) => HtmlElement): Modifier[HtmlElement] =
-    child <-- counts.map(items => badges(items.map { case (item, count) => badge(item, count) }))
+    child <-- counts.map(items =>
+      badges(items.map { case (item, count) => badge(item, count) }, "items-center")
+    )
 
   private def priorityBadge(priority: TaskPriority, count: Int): HtmlElement =
     TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
@@ -105,17 +107,17 @@ class StagedTasksComponent(
     div(
       cls("flex flex-col gap-4"),
       div(
-        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3"),
-        stat("Tasks staged", summarySignal.map(_.taskCount.toString)),
-        stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days"))),
-        stat("Days of work", summarySignal.map(_.workDays.toString))
+        cls("flex flex-wrap gap-x-4 gap-y-3"),
+        column(stat("Tasks staged", summarySignal.map(_.taskCount.toString))),
+        column(stat("Calendar span", summarySignal.map(_.calendarSpanDays.fold(Empty)(days => s"$days days")))),
+        column(stat("Days of work", summarySignal.map(_.workDays.toString)))
       ),
       div(
-        cls("grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4"),
-        statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge)),
-        statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge)),
-        statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge)),
-        statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))
+        cls("flex flex-wrap gap-x-4 gap-y-3"),
+        column(statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge))),
+        column(statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge))),
+        column(statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge))),
+        column(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge)))
       )
     )
 
