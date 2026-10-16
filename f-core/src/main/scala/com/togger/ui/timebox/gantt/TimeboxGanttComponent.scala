@@ -98,7 +98,7 @@ class TimeboxGanttComponent(
   ): HtmlElement = {
     val side = if (edge == GanttEdge.Start) "left-0" else "right-0"
     div(
-      cls(s"absolute top-0 $side h-full w-2 cursor-ew-resize bg-blue-700/60 hover:bg-blue-800"),
+      cls(s"absolute top-0 $side h-full w-2 cursor-ew-resize hover:bg-white/30"),
       dragModifiers(task, placed, axis, edge)
     )
   }
@@ -165,13 +165,13 @@ class TimeboxGanttComponent(
 
   private def barElement(task: FindTaskRespFull, placed: GanttBar.Placed, axis: GanttAxis): HtmlElement = {
     val rounding = (placed.clippedLeft, placed.clippedRight) match {
-      case (false, false) => "rounded-base"
-      case (true, false)  => "rounded-r-base"
-      case (false, true)  => "rounded-l-base"
+      case (false, false) => "rounded-md"
+      case (true, false)  => "rounded-r-md"
+      case (false, true)  => "rounded-l-md"
       case (true, true)   => ""
     }
     div(
-      cls(s"relative z-10 my-1.5 flex h-6 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
+      cls(s"relative z-10 mx-1 my-1.5 flex h-6 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
       title := barTitle(task, task.startDate, task.dueDate),
       // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
       if (placed.clippedLeft || placed.clippedRight) emptyMod
