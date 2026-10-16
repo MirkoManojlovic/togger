@@ -85,6 +85,7 @@ class TimeboxFormComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgClock: TgClock,
+  isDark: Signal[Boolean],
   val toast: Toast
 )(implicit
   ioRuntime: IORuntime
@@ -438,7 +439,8 @@ class TimeboxFormComponent(
     formDatesSignal,
     tgDateFormater,
     capacitySignal,
-    lookups.milestonesVar.signal
+    lookups.milestonesVar.signal,
+    isDark
   )
 
   private val taskPicker = div(

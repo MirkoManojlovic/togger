@@ -5,6 +5,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
+import com.togger.ui.apexchart.ApexChartComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
@@ -26,7 +27,8 @@ class StagedTasksComponent(
   timebox: Signal[Option[(LocalDate, LocalDate)]],
   tgDateFormater: TgDateFormater,
   capacity: Signal[Option[TimeboxCapacity]],
-  milestones: Signal[Seq[FindMilestoneResp]]
+  milestones: Signal[Seq[FindMilestoneResp]],
+  isDark: Signal[Boolean]
 ) {
 
   private val Empty = "—"
@@ -127,16 +129,29 @@ class StagedTasksComponent(
       )
     )
 
-  private def groupedStats(grouping: StagedGrouping): HtmlElement =
+  private def groupSummaries(grouping: StagedGrouping): Signal[Seq[GroupSummary]] =
+    stagingStore
+      .staged(projectId)
+      .combineWith(workDays, milestones)
+      .map { case (tasks, days, all) => StagedSummary.grouped(grouping, tasks, days, all) }
+
+  /** Tasks by milestone; the chart is only on the page while there are tasks, as it has nothing to draw otherwise. */
+  private def milestonePie(summaries: Signal[Seq[GroupSummary]]): HtmlElement = {
+    val chart = new ApexChartComponent(summaries.map(StagedCharts.pieOfTaskCounts), isDark).element
+    div(child <-- summaries.map(current => if (current.isEmpty) emptyNode else chart))
+  }
+
+  private def groupedStats(grouping: StagedGrouping): HtmlElement = {
+    val summaries = groupSummaries(grouping)
     div(
-      cls("flex flex-col gap-2"),
-      children <-- stagingStore
-        .staged(projectId)
-        .combineWith(workDays, milestones)
-        .map { case (tasks, days, all) =>
-          StagedSummary.grouped(grouping, tasks, days, all).map(groupBlock(grouping, _))
-        }
+      cls("flex flex-col gap-4"),
+      div(
+        cls("flex flex-col gap-2"),
+        children <-- summaries.map(_.map(groupBlock(grouping, _)))
+      ),
+      Option.when(grouping == StagedGrouping.ByMilestone)(milestonePie(summaries))
     )
+  }
 
   private val selectedStatsGroupingVar = Var(StagedGrouping.NotGrouped.id)
 

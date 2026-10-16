@@ -564,6 +564,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   tgClock,
+                  themeStore.isDark,
                   toast
                 ).element
               case EditTimeboxPage(projectId: UUID, timeboxId: UUID) =>
@@ -581,6 +582,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   tgClock,
+                  themeStore.isDark,
                   toast
                 ).element
               case TimeboxHistoryPage(projectId: UUID, timeboxId: UUID) =>

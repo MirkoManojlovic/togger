@@ -7,6 +7,7 @@ sealed trait ApexChartType {
 object ApexChartType {
   case object Area extends ApexChartType { val jsValue = "area" }
   case object Donut extends ApexChartType { val jsValue = "donut" }
+  case object Pie extends ApexChartType { val jsValue = "pie" }
 }
 
 case class ApexNamedSeries(name: String, data: Seq[Int])
