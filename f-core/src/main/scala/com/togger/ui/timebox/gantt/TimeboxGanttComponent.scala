@@ -174,7 +174,7 @@ class TimeboxGanttComponent(
       case (true, true)   => ""
     }
     div(
-      cls(s"relative z-10 mx-1 my-1.5 flex h-6 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
+      cls(s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
       title := barTitle(task, task.startDate, task.dueDate),
       // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
       if (placed.clippedLeft || placed.clippedRight) emptyMod
