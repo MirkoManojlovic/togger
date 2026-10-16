@@ -9,7 +9,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkTaskBadges
 
@@ -151,15 +151,34 @@ class StagedTasksComponent(
         .amend(typ("button"), onClick.mapToUnit --> (_ => stagingStore.clear(projectId)))
     )
 
-  private val stagedList: HtmlElement =
+  private def groupSection(group: StagedGroup, all: Seq[FindMilestoneResp], days: Set[DayOfWeek]): HtmlElement =
     div(
       cls("flex flex-col gap-2"),
+      if (group.title.isEmpty) emptyNode
+      else
+        span(cls("text-xs font-semibold uppercase text-body-subtle"), s"${group.title} (${group.tasks.size})"),
+      group.tasks.map(stagedRow(_, all, days))
+    )
+
+  private def groupedList(grouping: StagedGrouping): HtmlElement =
+    div(
+      cls("flex flex-col gap-4"),
       children <-- stagingStore
         .staged(projectId)
         .combineWith(milestones, workDays)
-        .map { case (tasks, all, days) => tasks.map(stagedRow(_, all, days)) },
+        .map { case (tasks, all, days) => grouping.group(tasks, all).map(groupSection(_, all, days)) }
+    )
+
+  private val selectedGroupingVar = Var(StagedGrouping.NotGrouped.id)
+
+  private val stagedList: HtmlElement =
+    div(
+      new TgTabs(
+        StagedGrouping.all.map(grouping => TgTab(grouping.id, grouping.label, groupedList(grouping))),
+        selectedGroupingVar
+      ).element,
       div(
-        cls("text-sm text-body"),
+        cls("mt-2 text-sm text-body"),
         "No tasks staged. Click a task above to stage it.",
         cls("hidden") <-- stagingStore.staged(projectId).map(_.nonEmpty)
       )
