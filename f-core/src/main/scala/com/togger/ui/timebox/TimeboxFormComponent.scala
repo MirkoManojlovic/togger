@@ -43,6 +43,7 @@ import com.togger.ui.task.{
   TaskStatusFeService,
   TgDateFormater
 }
+import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -173,15 +174,29 @@ class TimeboxFormComponent(
       case TimeboxFormTarget.NewVersion(_, timeboxId) =>
         timeboxService.saveNewVersion(SaveTimeboxVersionReq(timeboxId, start, end, description, form.changeComment.trim, taskIds))
     }
+    // The tasks come first so the timebox picks up their new dates; if one fails the timebox is not saved.
+    val saveTimebox = call.toastMessageCodeBlock("Timebox saved successfully") {
+      stagingStore.clear(projectId)
+      draftStore.clear(projectId)
+      backToList()
+    }
     spinnerService
-      .runWithSpinner(call)
-      .toastMessageCodeBlock("Timebox saved successfully") {
-        stagingStore.clear(projectId)
-        draftStore.clear(projectId)
-        backToList()
-      }
+      .runWithSpinner(saveChangedTaskDates().flatMap(saved => if (saved) saveTimebox else IO.unit))
       .unsafeRunAndForget()
   }
+
+  /** Saves the dates changed on the Gantt chart, one task after the other, and stops at the first that fails. */
+  private def saveChangedTaskDates(): IO[Boolean] =
+    stagingStore.withChangedDatesNow(projectId).foldLeft(IO.pure(true)) { (previous, task) =>
+      previous.flatMap {
+        case false => IO.pure(false)
+        case true =>
+          taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(task, tgClock.currentInstant)).flatMap {
+            case Left(error) => IO(toast.error(error)).as(false)
+            case Right(_)    => IO.pure(true)
+          }
+      }
+    }
 
   private def parsedDate(raw: String): Option[LocalDate] = Try(LocalDate.parse(raw)).toOption
 
@@ -428,7 +443,7 @@ class TimeboxFormComponent(
 
   private val capacitySignal: Signal[Option[TimeboxCapacity]] =
     stagingStore
-      .staged(projectId)
+      .stagedWithDates(projectId)
       .combineWith(lookups.projectVar.signal, formDatesSignal)
       .map { case (tasks, project, dates) =>
         dates.map(TimeboxCapacity.of(tasks, project.members, project.workDays.map(DayOfWeek.of), _))
@@ -453,6 +468,15 @@ class TimeboxFormComponent(
     isDark
   )
 
+  private val ganttChart = new TimeboxGanttComponent(
+    stagingStore,
+    projectId,
+    lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
+    formDatesSignal,
+    tgDateFormater,
+    tgClock
+  )
+
   private val taskPicker = div(
     cls("mb-4"),
     browser.filterBindings,
@@ -467,7 +491,8 @@ class TimeboxFormComponent(
         )
         .element,
       stagedTasks.element
-    )
+    ),
+    div(cls("mt-4"), ganttChart.element)
   )
 
   val element = div(

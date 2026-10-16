@@ -35,7 +35,7 @@ class StagedTasksComponent(
 
   private val summarySignal: Signal[StagedSummary] =
     stagingStore
-      .staged(projectId)
+      .stagedWithDates(projectId)
       .combineWith(workDays, timebox, milestones)
       .map { case (tasks, days, range, all) => StagedSummary.of(tasks, days, range, all) }
       .distinct
@@ -131,7 +131,7 @@ class StagedTasksComponent(
 
   private def groupSummaries(grouping: StagedGrouping): Signal[Seq[GroupSummary]] =
     stagingStore
-      .staged(projectId)
+      .stagedWithDates(projectId)
       .combineWith(workDays, milestones)
       .map { case (tasks, days, all) => StagedSummary.grouped(grouping, tasks, days, all) }
 
@@ -209,7 +209,7 @@ class StagedTasksComponent(
   private val clearAllButton: HtmlElement =
     div(
       cls("mt-2 flex justify-end"),
-      cls("hidden") <-- stagingStore.staged(projectId).map(_.isEmpty),
+      cls("hidden") <-- stagingStore.stagedWithDates(projectId).map(_.isEmpty),
       TgHtmlButton
         .extraSmall("Clear Stage")
         .amend(typ("button"), onClick.mapToUnit --> (_ => stagingStore.clear(projectId)))
@@ -228,7 +228,7 @@ class StagedTasksComponent(
     div(
       cls("flex flex-col gap-4"),
       children <-- stagingStore
-        .staged(projectId)
+        .stagedWithDates(projectId)
         .combineWith(milestones, workDays)
         .map { case (tasks, all, days) => grouping.group(tasks, all).map(groupSection(_, all, days)) }
     )
@@ -244,7 +244,7 @@ class StagedTasksComponent(
       div(
         cls("mt-2 text-sm text-body"),
         "No tasks staged. Click a task above to stage it.",
-        cls("hidden") <-- stagingStore.staged(projectId).map(_.nonEmpty)
+        cls("hidden") <-- stagingStore.stagedWithDates(projectId).map(_.nonEmpty)
       )
     )
 
