@@ -5,6 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.components.reorder.RowReorder
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
@@ -86,11 +87,6 @@ class BulkAddTasks(
 
   /** The last task whose checkbox was clicked, where a shift click extends the selection from. */
   private val selectionAnchor = Var(Option.empty[UUID])
-
-  private val dragKey = Var(Option.empty[UUID])
-
-  /** The gap a drop would land in, counted before each task: 0 is above the first, the list size below the last. */
-  private val dropInsertion = Var(Option.empty[Int])
 
   private def reconciled(current: BulkState, parsed: ParsedBulkInput): Seq[BulkTask] =
     BulkTaskList.reconcile(current.tasks, parsed.lines.map(_.name), current.defaults, () => UUID.randomUUID())
@@ -308,72 +304,14 @@ class BulkAddTasks(
       }
     )
 
-  private def indexOf(key: UUID): Int = state.now().tasks.indexWhere(_.key == key)
+  private val rowReorder = new RowReorder[UUID](
+    state.signal.map(_.tasks.map(_.key)),
+    () => state.now().tasks.map(_.key),
+    (from, insertion) => reorder(BulkTaskList.moveToInsertion(_, from, insertion))
+  )
 
-  private def finishDrop(): Unit = {
-    (dragKey.now(), dropInsertion.now()) match {
-      case (Some(key), Some(insertion)) => reorder(BulkTaskList.moveToInsertion(_, indexOf(key), insertion))
-      case _                            => ()
-    }
-    dragKey.set(None)
-    dropInsertion.set(None)
-  }
-
-  private def dragModifiers(key: UUID): Seq[Modifier[HtmlElement]] =
-    Seq(
-      draggable(true),
-      onDragStart --> { event =>
-        event.dataTransfer.setData("text/plain", key.toString)
-        event.dataTransfer.effectAllowed = dom.DataTransferEffectAllowedKind.move
-        dragKey.set(Some(key))
-      },
-      onDragOver.preventDefault --> { event =>
-        val rect = event.currentTarget.asInstanceOf[dom.html.Element].getBoundingClientRect()
-        val below = event.clientY > rect.top + rect.height / 2
-        if (dragKey.now().isDefined) dropInsertion.set(Some(indexOf(key) + (if (below) 1 else 0)))
-      },
-      onDrop.preventDefault --> (_ => finishDrop()),
-      onDragEnd --> { _ =>
-        dragKey.set(None)
-        dropInsertion.set(None)
-      },
-      cls <-- dragKey.signal.map(dragged => if (dragged.contains(key)) "opacity-50" else ""),
-      cls <-- selected.signal.map(chosen => if (chosen.contains(key)) "bg-neutral-tertiary-medium" else ""),
-      cls <-- dropIndicator(key)
-    )
-
-  private def dropIndicator(key: UUID): Signal[String] = {
-    val position = state.signal.map(current => (current.tasks.indexWhere(_.key == key), current.tasks.size))
-    dropInsertion.signal.combineWith(position).map {
-      case (target, index, _) if target.contains(index)                        => "border-t-2 border-t-blue-500"
-      case (target, index, size) if target.contains(size) && index == size - 1 => "border-b-2 border-b-blue-500"
-      case _                                                                   => ""
-    }
-  }
-
-  private def moveButton(key: UUID, label: String, glyph: String, delta: Int): HtmlElement = {
-    val disabledSignal = state.signal.map { current =>
-      val index = current.tasks.indexWhere(_.key == key)
-      if (delta < 0) index <= 0 else index >= current.tasks.size - 1
-    }
-    button(
-      `type`("button"),
-      cls("px-1.5 text-body-subtle hover:text-heading disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"),
-      aria.label(label),
-      title(label),
-      disabled <-- disabledSignal,
-      glyph,
-      onClick.mapToUnit --> (_ => reorder(BulkTaskList.moveBy(_, indexOf(key), delta)))
-    )
-  }
-
-  private def controls(key: UUID): HtmlElement =
-    div(
-      cls("flex items-center shrink-0"),
-      moveButton(key, "Move task up", "↑", -1),
-      moveButton(key, "Move task down", "↓", 1),
-      span(cls("ps-1.5 text-body-subtle cursor-grab select-none"), title("Drag to reorder"), "⠿")
-    )
+  private def selectionModifier(key: UUID): Modifier[HtmlElement] =
+    cls <-- selected.signal.map(chosen => if (chosen.contains(key)) "bg-neutral-tertiary-medium" else "")
 
   private def loadProjects(): Unit =
     projectDataLoader.loadProjects().map(projects => state.update(_.copy(projects = projects))).unsafeRunAndForget()
@@ -465,8 +403,8 @@ class BulkAddTasks(
             state.signal.map(_.lookups).distinct,
             popups,
             selectCheckbox(key),
-            controls(key),
-            dragModifiers(key) ++ selectOnClick(key)
+            rowReorder.controls(key),
+            rowReorder.dragModifiers(key) ++ (selectionModifier(key) +: selectOnClick(key))
           )
         }
       )

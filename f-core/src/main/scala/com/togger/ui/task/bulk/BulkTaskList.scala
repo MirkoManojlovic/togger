@@ -1,5 +1,7 @@
 package com.togger.ui.task.bulk
 
+import com.togger.ui.components.reorder.ListReorder
+
 import java.util.UUID
 
 object BulkTaskList {
@@ -57,16 +59,9 @@ object BulkTaskList {
   /** Moves a task to a drop position, counted in the gaps before each task: 0 is above the first, `size` below the
     * last.
     */
-  def moveToInsertion(tasks: Seq[BulkTask], from: Int, insertion: Int): Seq[BulkTask] = {
-    if (!tasks.indices.contains(from) || insertion < 0 || insertion > tasks.size) return tasks
-    val target = if (insertion > from) insertion - 1 else insertion
-    if (target == from) return tasks
-    val without = tasks.patch(from, Nil, 1)
-    without.patch(target, Seq(tasks(from)), 0)
-  }
+  def moveToInsertion(tasks: Seq[BulkTask], from: Int, insertion: Int): Seq[BulkTask] =
+    ListReorder.moveToInsertion(tasks, from, insertion)
 
   /** One step up (-1) or down (+1); at either end nothing moves. */
-  def moveBy(tasks: Seq[BulkTask], index: Int, delta: Int): Seq[BulkTask] =
-    if (delta > 0) moveToInsertion(tasks, index, index + delta + 1)
-    else moveToInsertion(tasks, index, index + delta)
+  def moveBy(tasks: Seq[BulkTask], index: Int, delta: Int): Seq[BulkTask] = ListReorder.moveBy(tasks, index, delta)
 }
