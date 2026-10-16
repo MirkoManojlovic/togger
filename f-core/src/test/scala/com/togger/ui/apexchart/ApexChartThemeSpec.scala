@@ -35,4 +35,25 @@ class ApexChartThemeSpec extends AnyFunSuite {
     assert(js1.labels.asInstanceOf[js.Array[String]].toList == List("a", "b"))
     assert(js1.theme.mode.asInstanceOf[String] == "dark")
   }
+
+  test("toJs picks the light colors in light mode and falls back to the colors without them") {
+    val options = ApexChartOptions(
+      ApexChartType.Pie,
+      200,
+      ApexSeries.Slices(Seq(1), Seq("a")),
+      colors = Some(Seq("#111")),
+      lightColors = Some(Seq("#eee"))
+    )
+    def colorsIn(options: ApexChartOptions, isDark: Boolean): List[String] =
+      ApexChartJs
+        .toJs(options, ApexChartTheme(ApexChartPalette.fallback, isDark))
+        .asInstanceOf[js.Dynamic]
+        .colors
+        .asInstanceOf[js.Array[String]]
+        .toList
+
+    assert(colorsIn(options, isDark = false) == List("#eee"))
+    assert(colorsIn(options, isDark = true) == List("#111"))
+    assert(colorsIn(options.copy(lightColors = None), isDark = false) == List("#111"))
+  }
 }

@@ -23,5 +23,12 @@ class StagedChartsTest extends AnyWordSpec with Matchers {
       colors(10) shouldBe colors(0)
       colors.last shouldBe "#9ca3af"
     }
+
+    "have a lighter variant of each color for light mode" in {
+      val groups = Seq(group("Milestone 01", 1), group(StagedGrouping.NoMilestone, 1))
+      val options = StagedCharts.pieOfTaskCounts(groups)
+      options.lightColors.get should have size options.colors.get.size
+      options.lightColors.get should not be options.colors.get
+    }
   }
 }

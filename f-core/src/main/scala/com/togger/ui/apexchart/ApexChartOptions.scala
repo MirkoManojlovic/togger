@@ -29,11 +29,18 @@ object ApexLegendPosition {
   case object Bottom extends ApexLegendPosition { val jsValue = "bottom" }
 }
 
+/** @param colors
+  *   the series colors; the theme's own when empty
+  * @param lightColors
+  *   the series colors in light mode, where `colors` (made for a dark background) would be too dark to read the
+  *   labels on; `colors` again when empty
+  */
 case class ApexChartOptions(
   chartType: ApexChartType,
   height: Int,
   series: ApexSeries,
   colors: Option[Seq[String]] = None,
+  lightColors: Option[Seq[String]] = None,
   stroke: Option[ApexStroke] = None,
   legendPosition: Option[ApexLegendPosition] = None,
   showToolbar: Boolean = false,

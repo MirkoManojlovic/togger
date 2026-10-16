@@ -9,7 +9,7 @@ object ApexChartJs {
 
   def toJs(options: ApexChartOptions, theme: ApexChartTheme): js.Object = {
     val result = literal(
-      "colors" -> options.colors.getOrElse(theme.colors).toJSArray,
+      "colors" -> seriesColors(options, theme).toJSArray,
       "theme" -> literal("mode" -> theme.mode.jsValue),
       "chart" -> literal(
         "type" -> options.chartType.jsValue,
@@ -38,6 +38,14 @@ object ApexChartJs {
   private val nameAndPercent: js.Function2[Double, js.Dynamic, String] = (percent, context) => {
     val name = context.w.globals.labels.asInstanceOf[js.Array[String]](context.seriesIndex.asInstanceOf[Int])
     s"${Math.round(percent)}% | $name"
+  }
+
+  private def seriesColors(options: ApexChartOptions, theme: ApexChartTheme): Seq[String] = {
+    val forMode = theme.mode match {
+      case ApexThemeMode.Light => options.lightColors.orElse(options.colors)
+      case ApexThemeMode.Dark  => options.colors
+    }
+    forMode.getOrElse(theme.colors)
   }
 
   private def seriesToJs(series: ApexSeries): Seq[(String, js.Any)] = series match {
