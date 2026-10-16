@@ -17,6 +17,7 @@ case class SaveTimeboxVersionReq(
   startDate: LocalDate,
   endDate: LocalDate,
   description: Option[String] = None,
+  changeComment: String = "",
   taskIds: Seq[UUID] = Seq.empty
 )
 
@@ -27,6 +28,7 @@ case class TimeboxVersionDto(
   endDate: LocalDate,
   description: Option[String],
   createdAt: Instant,
+  changeComment: String,
   tasks: List[TaskVersionDto]
 )
 
