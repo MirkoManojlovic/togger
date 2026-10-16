@@ -76,7 +76,10 @@ class StagedTasksComponent(
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
         column(stat("Tasks", Val(summary.taskCount.toString))),
-        column(stat("Work days", Val(summary.workDays.toString))),
+        column(stat("Work days", Val(summary.workDays.toString)))
+      ),
+      div(
+        cls("flex flex-wrap gap-x-4 gap-y-3"),
         Option.when(grouping != StagedGrouping.ByPriority)(
           column(statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled))))
         ),
