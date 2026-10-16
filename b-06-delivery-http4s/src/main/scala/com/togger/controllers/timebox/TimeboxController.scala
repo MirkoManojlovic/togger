@@ -2,11 +2,13 @@ package com.togger.controllers.timebox
 
 import cats.effect.IO
 import cats.data.{NonEmptyChain, ValidatedNec}
+import cats.implicits._
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgClock, TgError, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.timebox.TimeboxDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.FindTimeboxResp
+import com.togger.dto.{FindTimeboxResp, SaveTimeboxVersionReq}
+import com.togger.timebox.TimeboxError.ChangeCommentEmpty
 import com.togger.timebox.{TimeboxEndpoints, TimeboxService}
 
 import java.time.LocalDate
@@ -23,6 +25,14 @@ class TimeboxController(
     validated.toEither.map(_ => ())
   }
 
+  private def validateChangeComment(comment: String): Either[NonEmptyChain[TgError], Unit] =
+    Either.cond(comment.trim.nonEmpty, (), NonEmptyChain.one[TgError](ChangeCommentEmpty))
+
+  private def validateNewVersion(dto: SaveTimeboxVersionReq): Either[NonEmptyChain[TgError], Unit] =
+    validateRange(dto.startDate, dto.endDate).toValidated
+      .combine(validateChangeComment(dto.changeComment).toValidated)
+      .toEither
+
   val save = timeboxEndpoints.saveEndpoint.serverLogic { auth => dto =>
     validateRange(dto.startDate, dto.endDate) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
@@ -37,11 +47,11 @@ class TimeboxController(
   }
 
   val saveNewVersion = timeboxEndpoints.saveNewVersionEndpoint.serverLogic { auth => dto =>
-    validateRange(dto.startDate, dto.endDate) match {
+    validateNewVersion(dto) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.taskIds, tgClock.currentInstant)
+          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, dto.taskIds, tgClock.currentInstant)
           .map {
             case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
             case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]

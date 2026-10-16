@@ -15,6 +15,7 @@ object TimeboxDtoMapper {
       endDate = version.endDate,
       description = version.description,
       createdAt = version.createdAt,
+      changeComment = version.changeComment,
       tasks = versionWithTasks.tasks.map(TaskDtoMapper.toVersionDto)
     )
   }

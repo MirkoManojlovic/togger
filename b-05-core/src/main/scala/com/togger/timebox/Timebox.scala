@@ -13,7 +13,8 @@ case class TimeboxVersion(
   startDate: LocalDate,
   endDate: LocalDate,
   description: Option[String],
-  createdAt: Instant
+  createdAt: Instant,
+  changeComment: String
 )
 
 /** A timebox version together with the task versions that were planned in it. */

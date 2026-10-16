@@ -636,6 +636,12 @@ databaseChangeLog:
                   defaultValueComputed: now()
                   constraints:
                     nullable: false
+              - column:
+                  name: change_comment
+                  type: text
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
         - createIndex:
             indexName: idx_timebox_version_timebox_id_version
             tableName: timebox_version

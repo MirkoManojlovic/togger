@@ -15,14 +15,14 @@ import java.util.UUID
 
 class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
 
-  private lazy val returnFields = List("version", "timebox_id", "start_date", "end_date", "description", "created_at")
+  private lazy val returnFields = List("version", "timebox_id", "start_date", "end_date", "description", "created_at", "change_comment")
 
   override def insert(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion] = {
     import timeboxVersion._
     logAroundInfoQuery(
       insertStatement(TIMEBOX_VERSION_TABLE_FRAG)(fr"""
-        (timebox_id, start_date, end_date, description, created_at)
-        values ($timeboxId, $startDate, $endDate, $description, $createdAt)
+        (timebox_id, start_date, end_date, description, created_at, change_comment)
+        values ($timeboxId, $startDate, $endDate, $description, $createdAt, $changeComment)
       """).update
         .withUniqueGeneratedKeys[TimeboxVersion](returnFields: _*)
     )(s"Inserting ${sp(timeboxVersion)}", saved => s"Timebox version inserted ${sp(saved)}")

@@ -72,6 +72,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
             start.plusWeeks(1),
             end.plusWeeks(1),
             None,
+            "second version",
             Seq(task1.id, task2.id),
             nowAsInstant
           )
@@ -84,12 +85,14 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
 
         val oldVersion = versions.last
         oldVersion.version.description shouldBe Some("first")
+        oldVersion.version.changeComment shouldBe ""
         oldVersion.version.startDate shouldBe start
         oldVersion.tasks.map(_.version) shouldBe List(task1v1.version)
         oldVersion.tasks.map(_.name) shouldBe List("task 1")
 
         val newVersion = versions.head
         newVersion.version.description shouldBe None
+        newVersion.version.changeComment shouldBe "second version"
         newVersion.version.startDate shouldBe start.plusWeeks(1)
         newVersion.tasks.map(_.version).toSet shouldBe Set(task1v2.version, task2v1.version)
         newVersion.tasks.map(_.name).toSet shouldBe Set("task 1 edited", "task 2")
@@ -105,7 +108,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
           orgAndProject <- createOrgAndProject
         } yield orgAndProject._2).transact(transactor)
         unknown <- service.createTimebox(project.id, start, end, None, Seq(unknownTask), nowAsInstant)
-        noTimebox <- service.saveNewVersion(UUID.randomUUID(), start, end, None, Seq.empty, nowAsInstant)
+        noTimebox <- service.saveNewVersion(UUID.randomUUID(), start, end, None, "comment", Seq.empty, nowAsInstant)
         notFound <- service.getCurrent(UUID.randomUUID())
       } yield {
         unknown shouldBe Left(TaskNotFound(unknownTask))
@@ -122,7 +125,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
           orgAndProject <- createOrgAndProject
         } yield orgAndProject._2).transact(transactor)
         created <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
-        _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, Seq.empty, nowAsInstant))
+        _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, "comment", Seq.empty, nowAsInstant))
         _ <- service.deleteTimebox(created.timebox.id)
         versions <- service.listVersions(created.timebox.id, DbPageRequest.default).map(_.items)
         found <- service.findPaginatedByProjectId(project.id, DbPageRequest.default)

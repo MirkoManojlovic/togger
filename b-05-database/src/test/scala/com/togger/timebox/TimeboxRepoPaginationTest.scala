@@ -29,7 +29,7 @@ class TimeboxRepoPaginationTest extends BusinessTgDbSpec with TgAccount with TgP
 
   private def insertVersion(timeboxId: UUID, start: LocalDate) =
     timeboxVersionRepo.insert(
-      TimeboxVersion(UUID.randomUUID(), timeboxId, start, start.plusDays(6), None, nowAsInstant)
+      TimeboxVersion(UUID.randomUUID(), timeboxId, start, start.plusDays(6), None, nowAsInstant, "")
     )
 
   private def seed(): ConnectionIO[Seeded] =

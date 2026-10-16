@@ -37,7 +37,7 @@ class TimeboxService(
     (for {
       taskVersions <- resolveTaskVersions(projectId, taskIds)
       timebox <- lift(timeboxRepo.insert(Timebox(UUID.randomUUID(), projectId, now)))
-      saved <- lift(insertVersion(timebox.id, startDate, endDate, description, taskVersions, now))
+      saved <- lift(insertVersion(timebox.id, startDate, endDate, description, "", taskVersions, now))
     } yield TimeboxWithOneVersion(timebox, saved)).value.transact(transactor)
   }
 
@@ -46,13 +46,14 @@ class TimeboxService(
     startDate: LocalDate,
     endDate: LocalDate,
     description: Option[String],
+    changeComment: String,
     taskIds: Seq[UUID],
     now: Instant
   ): IO[Either[TimeboxError, TimeboxWithOneVersion]] =
     (for {
       timebox <- findTimebox(timeboxId)
       taskVersions <- resolveTaskVersions(timebox.projectId, taskIds)
-      saved <- lift(insertVersion(timeboxId, startDate, endDate, description, taskVersions, now))
+      saved <- lift(insertVersion(timeboxId, startDate, endDate, description, changeComment, taskVersions, now))
     } yield TimeboxWithOneVersion(timebox, saved)).value.transact(transactor)
 
   def getCurrent(timeboxId: UUID): IO[Either[TimeboxError, TimeboxWithOneVersion]] =
@@ -89,11 +90,14 @@ class TimeboxService(
     startDate: LocalDate,
     endDate: LocalDate,
     description: Option[String],
+    changeComment: String,
     taskVersions: List[TaskVersion],
     now: Instant
   ): ConnectionIO[TimeboxVersionWithTasks] =
     for {
-      saved <- timeboxVersionRepo.insert(TimeboxVersion(UUID.randomUUID(), timeboxId, startDate, endDate, description, now))
+      saved <- timeboxVersionRepo.insert(
+        TimeboxVersion(UUID.randomUUID(), timeboxId, startDate, endDate, description, now, changeComment)
+      )
       _ <- timeboxVersionRepo.insertPlannedTasks(saved.version, taskVersions.map(_.version))
     } yield TimeboxVersionWithTasks(saved, taskVersions)
 

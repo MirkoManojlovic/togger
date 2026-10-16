@@ -11,6 +11,10 @@ object TimeboxError {
     override def message: String = "Timebox not found"
   }
 
+  case object ChangeCommentEmpty extends TimeboxError {
+    override def message: String = "Change comment must not be empty"
+  }
+
   case class TaskNotFound(taskId: UUID) extends TimeboxError {
     override def message: String = s"Task $taskId not found"
   }

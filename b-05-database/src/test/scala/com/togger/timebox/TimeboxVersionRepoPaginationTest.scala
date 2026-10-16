@@ -30,7 +30,8 @@ class TimeboxVersionRepoPaginationTest
       firstStart.plusWeeks(index.toLong),
       firstStart.plusWeeks(index.toLong).plusDays(6),
       None,
-      nowAsInstant
+      nowAsInstant,
+      ""
     )
 
   private def readPages(timeboxId: UUID)(page: DbPageRequest) =
