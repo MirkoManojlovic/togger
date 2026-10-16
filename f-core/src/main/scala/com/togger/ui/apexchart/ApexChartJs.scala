@@ -34,10 +34,10 @@ object ApexChartJs {
     result
   }
 
-  /** A slice's label reads "20% | In Progress": the percentage ApexCharts works out, then the name from the legend. */
-  private val nameAndPercent: js.Function2[Double, js.Dynamic, String] = (percent, context) => {
+  /** A slice's label is two lines, the percentage ApexCharts works out and below it the name from the legend. */
+  private val nameAndPercent: js.Function2[Double, js.Dynamic, js.Array[String]] = (percent, context) => {
     val name = context.w.globals.labels.asInstanceOf[js.Array[String]](context.seriesIndex.asInstanceOf[Int])
-    s"${Math.round(percent)}% | $name"
+    js.Array(s"${Math.round(percent)}%", name)
   }
 
   private def seriesColors(options: ApexChartOptions, theme: ApexChartTheme): Seq[String] = {
