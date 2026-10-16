@@ -120,11 +120,6 @@ class TimeboxGanttComponent(
       if (edge == GanttEdge.Body) grabbed else grabbed.parentElement.asInstanceOf[dom.html.Element]
     }
 
-    // The row is draggable for reordering, and the browser would start that drag from a press on the handle. The
-    // drag starts from the press itself, so the row must stop being draggable before it, and is again once let go.
-    def rowDraggable(event: dom.PointerEvent, draggable: Boolean): Unit =
-      barOf(event).parentElement.setAttribute("draggable", draggable.toString)
-
     def resized(event: dom.PointerEvent, state: Drag): GanttBar.Placed = {
       val deltaCols = math.round((event.clientX - state.startX) / state.columnWidth).toInt
       GanttResize.resize(state.bar, edge, deltaCols, axis)
@@ -142,7 +137,6 @@ class TimeboxGanttComponent(
       styleAttr := "touch-action: none",
       onPointerDown --> { event =>
         event.stopPropagation()
-        rowDraggable(event, draggable = false)
         event.currentTarget.asInstanceOf[js.Dynamic].setPointerCapture(event.pointerId): Unit
         val columnWidth = barOf(event).getBoundingClientRect().width / placed.width
         drag.set(Some(Drag(event.clientX, columnWidth, placed)))
@@ -155,7 +149,6 @@ class TimeboxGanttComponent(
         }
       },
       onPointerUp --> { event =>
-        rowDraggable(event, draggable = true)
         drag.now().foreach { state =>
           drag.set(None)
           val (start, due) = datesFor(resized(event, state))
@@ -164,7 +157,6 @@ class TimeboxGanttComponent(
         }
       },
       onPointerCancel --> { event =>
-        rowDraggable(event, draggable = true)
         drag.now().foreach(state => show(barOf(event), state.bar, task.startDate, task.dueDate))
         drag.set(None)
       }
@@ -203,13 +195,22 @@ class TimeboxGanttComponent(
     )
   }
 
+  private def setDraggable(element: dom.EventTarget, draggable: Boolean): Unit =
+    element.asInstanceOf[dom.html.Element].setAttribute("draggable", draggable.toString)
+
   private def taskRow(task: FindTaskRespFull, axis: GanttAxis): HtmlElement =
     div(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := gridTemplate(axis),
       rowReorder.dragModifiers(task.id),
+      // The row can be dragged to reorder only by the name cell: it becomes draggable when that is pressed, and stops
+      // being so when the press ends. A press on a bar or on the empty days then never starts dragging the row.
+      draggable(false),
+      onDragEnd --> (event => setDraggable(event.currentTarget, draggable = false)),
+      onMouseUp --> (event => setDraggable(event.currentTarget, draggable = false)),
       div(
-        cls("flex items-center gap-1 overflow-hidden px-1 py-1"),
+        cls("flex cursor-grab items-center gap-1 overflow-hidden px-1 py-1"),
+        onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
         rowReorder.controls(task.id),
         span(cls("truncate text-sm text-heading"), title := task.name, task.name)
       ),
