@@ -2,25 +2,28 @@ package com.togger.ui.apexchart
 
 import com.raquo.laminar.api.L._
 
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.literal
-
 class ApexChartDemoComponent(isDark: Signal[Boolean]) {
 
-  private val areaOptions: js.Object = literal(
-    "chart" -> literal("type" -> "area", "height" -> 320, "toolbar" -> literal("show" -> false)),
-    "series" -> js.Array(literal("name" -> "Logged tasks", "data" -> js.Array(6, 9, 7, 12, 10, 4, 3))),
-    "xaxis" -> literal("categories" -> js.Array("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
-    "stroke" -> literal("curve" -> "smooth", "width" -> 4),
-    "dataLabels" -> literal("enabled" -> false)
+  private val areaOptions = ApexChartOptions(
+    chartType = ApexChartType.Area,
+    height = 320,
+    series = ApexSeries.Axis(
+      series = Seq(ApexNamedSeries("Logged tasks", Seq(6, 9, 7, 12, 10, 4, 3))),
+      categories = Seq("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    ),
+    stroke = Some(ApexStroke(smooth = true, width = 4)),
+    dataLabelsEnabled = false
   )
 
-  private val donutOptions: js.Object = literal(
-    "chart" -> literal("type" -> "donut", "height" -> 320),
-    "series" -> js.Array(14, 9, 5, 2),
-    "labels" -> js.Array("Done", "In progress", "Blocked", "Cancelled"),
-    "colors" -> js.Array("#1447E6", "#16a34a", "#dc2626", "#9ca3af"),
-    "legend" -> literal("position" -> "bottom")
+  private val donutOptions = ApexChartOptions(
+    chartType = ApexChartType.Donut,
+    height = 320,
+    series = ApexSeries.Slices(
+      values = Seq(14, 9, 5, 2),
+      labels = Seq("Done", "In progress", "Blocked", "Cancelled")
+    ),
+    colors = Some(Seq("#1447E6", "#16a34a", "#dc2626", "#9ca3af")),
+    legendPosition = Some(ApexLegendPosition.Bottom)
   )
 
   private def card(title: String, chart: ApexChartComponent): HtmlElement =

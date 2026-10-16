@@ -1,8 +1,5 @@
 package com.togger.ui.apexchart
 
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.literal
-
 case class ApexChartPalette(brand: String, body: String, heading: String, border: String)
 
 object ApexChartPalette {
@@ -21,15 +18,33 @@ object ApexChartPalette {
   }
 }
 
+sealed trait ApexThemeMode {
+  def jsValue: String
+}
+
+object ApexThemeMode {
+  case object Light extends ApexThemeMode { val jsValue = "light" }
+  case object Dark extends ApexThemeMode { val jsValue = "dark" }
+
+  def fromIsDark(isDark: Boolean): ApexThemeMode = if (isDark) Dark else Light
+}
+
+case class ApexChartTheme(
+  mode: ApexThemeMode,
+  colors: Seq[String],
+  foreColor: String,
+  gridBorderColor: String,
+  dataLabelColor: String
+)
+
 object ApexChartTheme {
 
-  def options(palette: ApexChartPalette, isDark: Boolean): js.Object =
-    literal(
-      "colors" -> js.Array(palette.brand),
-      "theme" -> literal("mode" -> (if (isDark) "dark" else "light")),
-      "chart" -> literal("foreColor" -> palette.body, "background" -> "transparent"),
-      "grid" -> literal("borderColor" -> palette.border),
-      "tooltip" -> literal("theme" -> (if (isDark) "dark" else "light")),
-      "dataLabels" -> literal("style" -> literal("colors" -> js.Array(palette.heading)))
+  def apply(palette: ApexChartPalette, isDark: Boolean): ApexChartTheme =
+    ApexChartTheme(
+      mode = ApexThemeMode.fromIsDark(isDark),
+      colors = Seq(palette.brand),
+      foreColor = palette.body,
+      gridBorderColor = palette.border,
+      dataLabelColor = palette.heading
     )
 }
