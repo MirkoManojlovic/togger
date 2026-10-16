@@ -351,6 +351,19 @@ class TimeboxFormComponent(
       workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
     )
 
+  private val lookupsSignal: Signal[BulkLookups] =
+    lookups.statusesVar.signal
+      .combineWith(lookups.taskLabelsVar.signal, lookups.projectVar.signal, lookups.milestonesVar.signal)
+      .map { case (statuses, labels, project, milestones) =>
+        BulkLookups(
+          statuses = statuses.taskStatuses,
+          labels = labels.taskLabels,
+          members = project.members,
+          milestones = milestones,
+          workDays = project.workDays.map(DayOfWeek.of)
+        )
+      }
+
   /** Tasks whose update is in flight; they can't be edited again until it is done. */
   private val savingVar = Var(Set.empty[UUID])
 
@@ -474,7 +487,8 @@ class TimeboxFormComponent(
     lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
     formDatesSignal,
     tgDateFormater,
-    tgClock
+    tgClock,
+    lookupsSignal
   )
 
   private val taskPicker = div(

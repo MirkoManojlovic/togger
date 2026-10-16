@@ -5,7 +5,9 @@ import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.reorder.{ListReorder, RowReorder}
-import com.togger.ui.task.TgDateFormater
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.task.{ShowAllTasksBulkMapping, TgDateFormater}
+import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskBadges, BulkLookups}
 import com.togger.ui.timebox.TimeboxStagingStore
 
 import org.scalajs.dom
@@ -23,11 +25,12 @@ class TimeboxGanttComponent(
   workDays: Signal[Set[DayOfWeek]],
   timebox: Signal[Option[(LocalDate, LocalDate)]],
   tgDateFormater: TgDateFormater,
-  tgClock: TgClock
+  tgClock: TgClock,
+  lookups: Signal[BulkLookups]
 ) {
 
-  private val NameColumn = "15rem"
-  private val NameColumnRem = 15
+  private val NameColumn = "20rem"
+  private val NameColumnRem = 20
 
   /** The order the rows were arranged in. It is only for looking at the chart and is not saved. */
   private val rowOrder = Var(Seq.empty[UUID])
@@ -195,10 +198,29 @@ class TimeboxGanttComponent(
     )
   }
 
+  /** Laid out as in the bulk add: the name with the labels right after it, and the other badges in a row below. */
+  private def taskDetails(task: FindTaskRespFull, taskLookups: BulkLookups): HtmlElement = {
+    val rows = BulkTaskBadges.of(ShowAllTasksBulkMapping.toBulkTask(task), taskLookups)
+    div(
+      cls("flex min-w-0 flex-col gap-1 py-1"),
+      div(
+        cls("flex items-center gap-1.5"),
+        span(cls("min-w-0 truncate text-sm text-heading"), title := task.name, task.name),
+        div(cls("flex shrink-0 items-center gap-1"), rows.labelRow.map(badge))
+      ),
+      div(cls("flex flex-wrap items-center gap-1"), rows.primaryRow.map(badge))
+    )
+  }
+
+  private def badge(spec: BadgeSpec): HtmlElement = {
+    val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
+    TgBadge(text = spec.text, color = spec.color, extraCls = if (neutral) "dark:text-body" else "").element
+  }
+
   private def setDraggable(element: dom.EventTarget, draggable: Boolean): Unit =
     element.asInstanceOf[dom.html.Element].setAttribute("draggable", draggable.toString)
 
-  private def taskRow(task: FindTaskRespFull, axis: GanttAxis): HtmlElement =
+  private def taskRow(task: FindTaskRespFull, axis: GanttAxis, taskLookups: BulkLookups): HtmlElement =
     div(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := gridTemplate(axis),
@@ -212,7 +234,7 @@ class TimeboxGanttComponent(
         cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
         onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
         rowReorder.controls(task.id, showGrip = false),
-        span(cls("truncate text-sm text-heading"), title := task.name, task.name)
+        taskDetails(task, taskLookups)
       ),
       // The day cells sit behind the bar so the columns show through.
       axis.days.indices.map(index =>
@@ -231,7 +253,7 @@ class TimeboxGanttComponent(
 
   private def emptyMessage(text: String): HtmlElement = p(cls("p-3 text-sm text-body-subtle"), text)
 
-  private def chart(axis: GanttAxis, tasks: Seq[FindTaskRespFull]): HtmlElement =
+  private def chart(axis: GanttAxis, tasks: Seq[FindTaskRespFull], taskLookups: BulkLookups): HtmlElement =
     if (axis.isEmpty) emptyMessage("Pick a valid start and end date with at least one work day to see the Gantt chart.")
     else if (tasks.isEmpty) emptyMessage("Stage some tasks to see them on the Gantt chart.")
     else
@@ -240,7 +262,7 @@ class TimeboxGanttComponent(
         div(
           styleAttr := s"min-width: ${NameColumnRem + axis.size * 2.25}rem",
           headerRow(axis),
-          tasks.map(taskRow(_, axis))
+          tasks.map(taskRow(_, axis, taskLookups))
         )
       )
 
@@ -249,8 +271,8 @@ class TimeboxGanttComponent(
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Gantt chart", TgCard.CardHeaderSize.H5),
         body = TgCard.HtmlCardContent(
-          div(child <-- axisSignal.combineWith(orderedTasks).map { case (axis, tasks) =>
-            chart(axis, tasks)
+          div(child <-- axisSignal.combineWith(orderedTasks, lookups).map { case (axis, tasks, taskLookups) =>
+            chart(axis, tasks, taskLookups)
           })
         )
       )
