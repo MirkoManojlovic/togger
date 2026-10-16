@@ -37,5 +37,6 @@ case class ApexChartOptions(
   stroke: Option[ApexStroke] = None,
   legendPosition: Option[ApexLegendPosition] = None,
   showToolbar: Boolean = false,
-  dataLabelsEnabled: Boolean = true
+  dataLabelsEnabled: Boolean = true,
+  nameInDataLabels: Boolean = false
 )

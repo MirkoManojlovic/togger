@@ -26,11 +26,18 @@ object ApexChartJs {
       )
     )
     seriesToJs(options.series).foreach { case (key, value) => result.updateDynamic(key)(value) }
+    if (options.nameInDataLabels) result.dataLabels.updateDynamic("formatter")(nameAndPercent)
     options.stroke.foreach(stroke => result.updateDynamic("stroke")(strokeToJs(stroke)))
     options.legendPosition.foreach(position =>
       result.updateDynamic("legend")(literal("position" -> position.jsValue))
     )
     result
+  }
+
+  /** A slice's label reads "20% | In Progress": the percentage ApexCharts works out, then the name from the legend. */
+  private val nameAndPercent: js.Function2[Double, js.Dynamic, String] = (percent, context) => {
+    val name = context.w.globals.labels.asInstanceOf[js.Array[String]](context.seriesIndex.asInstanceOf[Int])
+    s"${Math.round(percent)}% | $name"
   }
 
   private def seriesToJs(series: ApexSeries): Seq[(String, js.Any)] = series match {

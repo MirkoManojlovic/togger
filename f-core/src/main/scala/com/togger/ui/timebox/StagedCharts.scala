@@ -27,6 +27,7 @@ object StagedCharts {
       height = ChartHeight,
       series = ApexSeries.Slices(groups.map(_.taskCount), groups.map(_.title)),
       colors = Some(sliceColors(groups)),
-      legendPosition = Some(ApexLegendPosition.Bottom)
+      legendPosition = Some(ApexLegendPosition.Bottom),
+      nameInDataLabels = true
     )
 }
