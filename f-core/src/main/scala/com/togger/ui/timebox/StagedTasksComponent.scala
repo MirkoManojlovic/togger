@@ -46,9 +46,9 @@ class StagedTasksComponent(
   private def statElement(title: String, value: Modifier[HtmlElement]): HtmlElement =
     div(cls("flex flex-col gap-0.5"), span(cls("text-xs text-body-subtle"), title), value)
 
-  private def badges(items: Seq[HtmlElement]): HtmlElement =
+  private def badges(items: Seq[HtmlElement], alignment: String = "items-start"): HtmlElement =
     if (items.isEmpty) span(cls("text-sm font-medium text-heading"), Empty)
-    else div(cls("flex flex-col items-start gap-1"), items)
+    else div(cls(s"flex flex-col $alignment gap-1"), items)
 
   private def badgeColumn[A](counts: Signal[Seq[(A, Int)]])(badge: (A, Int) => HtmlElement): Modifier[HtmlElement] =
     child <-- counts.map(items => badges(items.map { case (item, count) => badge(item, count) }))
@@ -65,8 +65,9 @@ class StagedTasksComponent(
   private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
     TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
 
-  /** Columns share the row evenly, so a left out column leaves its space to the others. */
-  private def column(element: HtmlElement): HtmlElement = element.amend(cls("min-w-32 flex-1"))
+  /** Columns are centered and share the row evenly, so a left out column leaves its space to the others. */
+  private def column(element: HtmlElement): HtmlElement =
+    element.amend(cls("min-w-32 flex-1 items-center text-center"))
 
   /** The column a grouping is by is left out: every row in it would say the same. */
   private def groupBlock(grouping: StagedGrouping, summary: GroupSummary): HtmlElement =
@@ -81,16 +82,21 @@ class StagedTasksComponent(
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),
         Option.when(grouping != StagedGrouping.ByPriority)(
-          column(statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled))))
+          column(statElement("Priorities", badges(summary.byPriority.map((priorityBadge _).tupled), "items-center")))
         ),
         Option.when(grouping != StagedGrouping.ByLabel)(
-          column(statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled))))
+          column(statElement("Labels", badges(summary.byLabel.map((labelBadge _).tupled), "items-center")))
         ),
         Option.when(grouping != StagedGrouping.ByStatus)(
-          column(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled))))
+          column(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled), "items-center")))
         ),
         Option.when(grouping != StagedGrouping.ByMilestone)(
-          column(statElement("Milestones", badges(summary.byMilestone.map((milestoneCountBadge _).tupled))))
+          column(
+            statElement(
+              "Milestones",
+              badges(summary.byMilestone.map((milestoneCountBadge _).tupled), "items-center")
+            )
+          )
         )
       )
     )
@@ -119,7 +125,9 @@ class StagedTasksComponent(
       children <-- stagingStore
         .staged(projectId)
         .combineWith(workDays, milestones)
-        .map { case (tasks, days, all) => StagedSummary.grouped(grouping, tasks, days, all).map(groupBlock(grouping, _)) }
+        .map { case (tasks, days, all) =>
+          StagedSummary.grouped(grouping, tasks, days, all).map(groupBlock(grouping, _))
+        }
     )
 
   private val selectedStatsGroupingVar = Var(StagedGrouping.NotGrouped.id)
