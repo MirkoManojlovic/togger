@@ -65,9 +65,9 @@ class StagedTasksComponent(
   private def milestoneCountBadge(milestone: FindMilestoneResp, count: Int): HtmlElement =
     TgBadge(s"${milestone.name} × $count", TgBadgeColor.Alternative).element
 
-  /** Columns are centered and share the row evenly, so a left out column leaves its space to the others. */
+  /** Columns are centered, boxed and share the row evenly, so a left out column leaves its space to the others. */
   private def column(element: HtmlElement): HtmlElement =
-    element.amend(cls("min-w-32 flex-1 items-center text-center"))
+    element.amend(cls("min-w-32 flex-1 items-center rounded-base border border-default px-3 py-2 text-center"))
 
   /** The column a grouping is by is left out: every row in it would say the same. */
   private def groupBlock(grouping: StagedGrouping, summary: GroupSummary): HtmlElement =
