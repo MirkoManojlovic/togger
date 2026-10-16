@@ -209,7 +209,7 @@ class TimeboxGanttComponent(
       onDragEnd --> (event => setDraggable(event.currentTarget, draggable = false)),
       onMouseUp --> (event => setDraggable(event.currentTarget, draggable = false)),
       div(
-        cls("flex cursor-grab items-center gap-1 overflow-hidden px-1 py-1"),
+        cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
         onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
         rowReorder.controls(task.id),
         span(cls("truncate text-sm text-heading"), title := task.name, task.name)
