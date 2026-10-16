@@ -67,7 +67,8 @@ object TimeboxFormTarget {
 case class TimeboxForm(
   startDate: String = "",
   endDate: String = "",
-  description: String = ""
+  description: String = "",
+  changeComment: String = ""
 )
 
 /** Creates a timebox, or saves a new version of an existing one (a full snapshot, versions are never edited). */
@@ -170,7 +171,7 @@ class TimeboxFormComponent(
       case TimeboxFormTarget.Create(projectId) =>
         timeboxService.createTimebox(CreateTimeboxReq(projectId, start, end, description, taskIds))
       case TimeboxFormTarget.NewVersion(_, timeboxId) =>
-        timeboxService.saveNewVersion(SaveTimeboxVersionReq(timeboxId, start, end, description, taskIds))
+        timeboxService.saveNewVersion(SaveTimeboxVersionReq(timeboxId, start, end, description, form.changeComment.trim, taskIds))
     }
     spinnerService
       .runWithSpinner(call)
@@ -254,6 +255,15 @@ class TimeboxFormComponent(
     labelValue = "Description (optional)",
     minWidthRem = 0
   )
+
+  private val changeCommentEditor = formState.wysiwygSplitEditorSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.changeComment),
+    labelValue = "Change comment",
+    minWidthRem = 0
+  )
+
+  private val changeCommentMissingSignal: Signal[Boolean] =
+    formState.signal.map(form => !isCreate && form.changeComment.trim.isEmpty).distinct
 
   private def clearAll(): Unit = {
     formState.set(TimeboxForm())
@@ -428,8 +438,8 @@ class TimeboxFormComponent(
   private val overCapacitySignal: Signal[Boolean] = capacitySignal.map(_.exists(_.isOverCapacity)).distinct
 
   private val cannotSaveSignal: Signal[Boolean] =
-    overCapacitySignal.combineWith(datesInvalidSignal).map { case (overCapacity, datesInvalid) =>
-      overCapacity || datesInvalid
+    overCapacitySignal.combineWith(datesInvalidSignal, changeCommentMissingSignal).map {
+      case (overCapacity, datesInvalid, changeCommentMissing) => overCapacity || datesInvalid || changeCommentMissing
     }
 
   private val stagedTasks = new StagedTasksComponent(
@@ -480,6 +490,14 @@ class TimeboxFormComponent(
             endDateInput.amend(cls("mb-4")),
             child.maybe <-- endBeforeStartError.map(_.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
+            if (isCreate) emptyNode
+            else
+              div(
+                changeCommentEditor.htmlElement.amend(cls("mb-4")),
+                child.maybe <-- changeCommentMissingSignal.map(
+                  Option.when(_)(p(cls("mb-4 text-xs text-fg-danger-strong"), "Change comment is required"))
+                )
+              ),
             taskPicker,
             div(
               cls("flex items-center justify-end gap-2"),
