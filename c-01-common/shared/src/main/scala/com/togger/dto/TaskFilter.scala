@@ -8,7 +8,7 @@ import java.util.UUID
   * with AND, values within one dimension with OR. `labelIds` matches tasks having at least one of the labels.
   * `assigneeIds` may hold `TgIds.UNASSIGNED_UUID` for tasks without assignee and `milestoneIds` may hold
   * `TgIds.NO_MILESTONE_UUID` for tasks without milestone. `search` is a case-insensitive substring of name or
-  * description.
+  * description. `timeboxId` keeps only the tasks planned in the latest version of that timebox, in their current state.
   */
 case class TaskFilter(
   statusIds: List[UUID] = List.empty,
@@ -16,7 +16,8 @@ case class TaskFilter(
   labelIds: List[UUID] = List.empty,
   assigneeIds: List[UUID] = List.empty,
   milestoneIds: List[UUID] = List.empty,
-  search: Option[String] = None
+  search: Option[String] = None,
+  timeboxId: Option[UUID] = None
 )
 
 object TaskFilter {
