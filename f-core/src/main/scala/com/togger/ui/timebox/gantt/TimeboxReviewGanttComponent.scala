@@ -165,7 +165,7 @@ class TimeboxReviewGanttComponent(
   private def entryCards(found: Seq[(FindTaskRespFull, LogEntryDto)], emptyText: String): HtmlElement =
     div(
       cls("mb-4"),
-      if (found.isEmpty) p(emptyText)
+      if (found.isEmpty) p(cls("text-body"), emptyText)
       else
         found.map { case (task, entry) =>
           LogEntryReadOnlyCard(entry, GanttLogStatus.toLocalDate(entry.createdAt), task.name, tgDateFormater, tgMarkdown)
@@ -179,7 +179,7 @@ class TimeboxReviewGanttComponent(
       label = label,
       content = div(
         child <-- selectedVar.signal.combineWith(tasks).map {
-          case (None, _)                  => p(PickTaskText)
+          case (None, _)                  => p(cls("text-body"), PickTaskText)
           case (Some((taskId, _)), all) => entryCards(entriesOf(all.filter(_.id == taskId), inRange), "No status update")
         }
       )
@@ -192,7 +192,7 @@ class TimeboxReviewGanttComponent(
       label = "Single day",
       content = div(
         child <-- selectedVar.signal.combineWith(tasks).map {
-          case (None, _) => p(PickTaskText)
+          case (None, _) => p(cls("text-body"), PickTaskText)
           case (Some((taskId, day)), all) =>
             entryCards(
               entriesOf(all.filter(_.id == taskId), _ == day),
