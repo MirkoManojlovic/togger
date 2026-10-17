@@ -143,6 +143,13 @@ class ShowTimeboxesComponent(
                           onClick.mapToUnit --> (_ => router.route(TimeboxHistoryPage(projectId, dto.id)))
                         ),
                         iconButton(
+                          "Review",
+                          TgIcons.checkIcon(className = "w-4 h-4"),
+                          rowIconButtonCls,
+                          rowButtonMarginCls,
+                          onClick.mapToUnit --> (_ => router.route(TimeboxReviewPage(projectId, dto.id)))
+                        ),
+                        iconButton(
                           "Delete",
                           TgIcons.trashIcon(className = "w-4 h-4"),
                           rowIconButtonDangerCls,

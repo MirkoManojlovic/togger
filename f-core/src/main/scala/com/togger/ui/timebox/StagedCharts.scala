@@ -26,21 +26,30 @@ object StagedCharts {
   private val NoGroupTitles = Set(StagedGrouping.NoAssignee, StagedGrouping.NoMilestone, StagedGrouping.NoLabel)
 
   /** The groups get a color each, round and round; the tasks that are in no group are gray. */
-  private def sliceColors(groups: Seq[GroupSummary]): Seq[SliceColor] =
-    groups.foldLeft((Seq.empty[SliceColor], 0)) { case ((colors, used), group) =>
-      if (NoGroupTitles.contains(group.title)) (colors :+ NoGroupColor, used)
+  private def sliceColors(titles: Seq[String]): Seq[SliceColor] =
+    titles.foldLeft((Seq.empty[SliceColor], 0)) { case ((colors, used), title) =>
+      if (NoGroupTitles.contains(title)) (colors :+ NoGroupColor, used)
       else (colors :+ SliceColors(used % SliceColors.size), used + 1)
     }._1
 
   /** One slice per group, as big as the number of tasks in it. */
   def pieOfTaskCounts(groups: Seq[GroupSummary]): ApexChartOptions =
+    pie(groups.map(group => group.title -> group.taskCount))
+
+  /** One slice per group of tasks, as big as the number of tasks in it. */
+  def pieOfGroups(groups: Seq[StagedGroup]): ApexChartOptions =
+    pie(groups.map(group => group.title -> group.tasks.size))
+
+  private def pie(slices: Seq[(String, Int)]): ApexChartOptions = {
+    val colors = sliceColors(slices.map(_._1))
     ApexChartOptions(
       chartType = ApexChartType.Pie,
       height = ChartHeight,
-      series = ApexSeries.Slices(groups.map(_.taskCount), groups.map(_.title)),
-      colors = Some(sliceColors(groups).map(_.dark)),
-      lightColors = Some(sliceColors(groups).map(_.light)),
+      series = ApexSeries.Slices(slices.map(_._2), slices.map(_._1)),
+      colors = Some(colors.map(_.dark)),
+      lightColors = Some(colors.map(_.light)),
       legendPosition = Some(ApexLegendPosition.Bottom),
       nameInDataLabels = true
     )
+  }
 }

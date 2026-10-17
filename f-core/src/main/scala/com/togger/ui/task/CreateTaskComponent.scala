@@ -260,6 +260,12 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
     PaginatedLoader.loadAll(findByProjectId(projectId, TaskFilter.empty, _))
 
+  /** Every task planned in the latest version of the timebox, in its current state; see [[PaginatedLoader]] for the
+    * bound.
+    */
+  def findAllByTimebox(projectId: UUID, timeboxId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, TaskFilter(timeboxId = Some(timeboxId)), _))
+
   def findLogEntriesByProjectId(
     projectId: UUID,
     filter: LogEntryFilter,

@@ -327,6 +327,12 @@ class TgRoutes {
         decode = { (ids: (String, String)) => TimeboxHistoryPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
         pattern =
           root / "timebox-history" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: TimeboxReviewPage) => page.projectId.toString -> page.timeboxId.toString,
+        decode = { (ids: (String, String)) => TimeboxReviewPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern =
+          root / "timebox-review" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
       )
     )
 

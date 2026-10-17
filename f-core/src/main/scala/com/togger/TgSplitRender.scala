@@ -595,6 +595,21 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   timeboxId
                 ).element
+              case TimeboxReviewPage(projectId: UUID, timeboxId: UUID) =>
+                new TimeboxReviewComponent(
+                  timeboxService,
+                  taskService,
+                  milestoneService,
+                  projectService,
+                  tgDateFormater,
+                  tgMarkdown,
+                  router,
+                  spinnerService,
+                  tgClock,
+                  themeStore.isDark,
+                  projectId,
+                  timeboxId
+                ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
             }
         )

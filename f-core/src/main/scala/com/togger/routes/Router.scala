@@ -122,5 +122,7 @@ object Pages {
 
   case class TimeboxHistoryPage(projectId: UUID, timeboxId: UUID) extends PrivatePage
 
+  case class TimeboxReviewPage(projectId: UUID, timeboxId: UUID) extends PrivatePage
+
   case object HomePage extends PrivatePage
 }
