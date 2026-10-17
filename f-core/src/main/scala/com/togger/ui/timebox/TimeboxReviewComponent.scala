@@ -171,15 +171,18 @@ class TimeboxReviewComponent(
   private def descriptionRow(state: TimeboxReviewState) =
     div(cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"), datesCard(state), changeCommentsCard(state))
 
-  private def ganttRow(state: TimeboxReviewState) =
-    new TimeboxReviewGanttComponent(
+  private def ganttRow(state: TimeboxReviewState) = {
+    val gantt = new TimeboxReviewGanttComponent(
       Val(state.tasks),
       Val(state.workDays),
       Val(state.timebox.map(_.latestVersion).map(version => (version.startDate, version.endDate))),
       Val(state.members.map(_.id)),
       tgDateFormater,
+      tgMarkdown,
       tgClock
-    ).element
+    )
+    div(gantt.element, gantt.detailElement)
+  }
 
   private def pieCard(pie: ReviewPie) =
     div(

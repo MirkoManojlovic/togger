@@ -54,4 +54,13 @@ class GanttLogStatusTest extends AnyWordSpec with Matchers {
         Set((taskA, LocalDate.of(2026, 3, 2)), (taskA, LocalDate.of(2026, 3, 3)))
     }
   }
+
+  "GanttLogStatus.latestByTaskAndDay" should {
+
+    "give the latest entry of a day" in {
+      val early = entry(taskA, "2026-03-02T09:00:00Z", LogEntryStatus.InProgress)
+      val late = entry(taskA, "2026-03-02T15:00:00Z", LogEntryStatus.Completed)
+      GanttLogStatus.latestByTaskAndDay(Seq(late, early)) shouldBe Map((taskA, LocalDate.of(2026, 3, 2)) -> late)
+    }
+  }
 }
