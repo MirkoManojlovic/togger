@@ -35,13 +35,17 @@ class TimeboxGanttComponent(
   /** The order the rows were arranged in. It is only for looking at the chart and is not saved. */
   private val rowOrder = Var(Seq.empty[UUID])
 
+  /** The members of the project, kept here so the rows can be put in order by assignee. */
+  private val memberIds = Var(Seq.empty[UUID])
+
   private val orderedTasks: Signal[Seq[FindTaskRespFull]] =
-    stagingStore.stagedWithDates(projectId).combineWith(rowOrder.signal).map { case (tasks, order) =>
-      GanttRowOrder.ordered(tasks, order)
-    }
+    stagingStore
+      .stagedWithDates(projectId)
+      .combineWith(rowOrder.signal, memberIds.signal)
+      .map { case (tasks, order, members) => GanttRowOrder.ordered(tasks, order, members) }
 
   private def keysNow(): Seq[UUID] =
-    GanttRowOrder.ordered(stagingStore.stagedWithDatesNow(projectId), rowOrder.now()).map(_.id)
+    GanttRowOrder.ordered(stagingStore.stagedWithDatesNow(projectId), rowOrder.now(), memberIds.now()).map(_.id)
 
   private val rowReorder = new RowReorder[UUID](
     orderedTasks.map(_.map(_.id)),
@@ -283,4 +287,5 @@ class TimeboxGanttComponent(
         )
       )
       .element
+      .amend(lookups.map(_.members.map(_.id)) --> memberIds)
 }

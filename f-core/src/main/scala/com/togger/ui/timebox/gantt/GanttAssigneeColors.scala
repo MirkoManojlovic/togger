@@ -34,9 +34,12 @@ object GanttAssigneeColors {
   /** For a task nobody is assigned to, or whose assignee is no longer a member. */
   val Unassigned = "bg-gray-400"
 
+  /** The place of the assignee among the project's members, which is also the place of their colour in the palette;
+    * none for a task nobody is assigned to or whose assignee is no longer a member.
+    */
+  def rank(assignee: Option[UUID], memberIds: Seq[UUID]): Option[Int] =
+    assignee.map(id => memberIds.sortBy(_.toString).indexOf(id)).filter(_ >= 0)
+
   def classFor(assignee: Option[UUID], memberIds: Seq[UUID]): String =
-    assignee
-      .map(id => memberIds.sortBy(_.toString).indexOf(id))
-      .filter(_ >= 0)
-      .fold(Unassigned)(index => Palette(index % Palette.size))
+    rank(assignee, memberIds).fold(Unassigned)(index => Palette(index % Palette.size))
 }
