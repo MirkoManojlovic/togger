@@ -29,8 +29,7 @@ class TimeboxGanttComponent(
   taskBadges: FindTaskRespFull => StagedTaskBadges
 ) {
 
-  private val NameColumn = "20rem"
-  private val NameColumnRem = 20
+  private val layout = new GanttChartLayout(tgDateFormater, tgClock)
 
   /** The order the rows were arranged in. It is only for looking at the chart and is not saved. */
   private val rowOrder = Var(Seq.empty[UUID])
@@ -59,37 +58,8 @@ class TimeboxGanttComponent(
       .map { case (range, days) => range.fold(GanttAxis.empty) { case (start, end) => GanttAxis.of(start, end, days) } }
       .distinct
 
-  private def gridTemplate(axis: GanttAxis): String =
-    s"grid-template-columns: $NameColumn repeat(${axis.size}, minmax(2.25rem, 1fr))"
-
-  /** A column starts a new block when the day before it is not the previous column, so a weekend shows as a gap. */
-  private def startsAfterGap(axis: GanttAxis, index: Int): Boolean =
-    index > 0 && axis.days(index - 1).plusDays(1) != axis.days(index)
-
-  private def dayCellClasses(axis: GanttAxis, index: Int): String = {
-    val gap = if (startsAfterGap(axis, index)) " border-l-2 border-l-default-strong" else " border-l"
-    val today = if (axis.days(index) == tgClock.currentDate()) " bg-neutral-tertiary-medium" else ""
-    s"border-default-medium$gap$today"
-  }
-
-  private def headerRow(axis: GanttAxis): HtmlElement =
-    div(
-      cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
-      styleAttr := gridTemplate(axis),
-      div(cls("flex items-center justify-center px-2 py-1 font-medium"), "Task"),
-      axis.days.zipWithIndex.map { case (day, index) =>
-        val monthStarts = index == 0 || axis.days(index - 1).getMonth != day.getMonth
-        div(
-          cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
-          div(cls("h-4 font-medium text-heading"), if (monthStarts) tgDateFormater.monthName(day).take(3) else ""),
-          div(tgDateFormater.dayOfWeekAbbrev(day)),
-          div(cls("text-heading"), tgDateFormater.dayOnly(day))
-        )
-      }
-    )
-
   private def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
-    s"${task.name}: ${tgDateFormater.asAmericanDate(start)} - ${tgDateFormater.asAmericanDate(due)}"
+    layout.barTitle(task, start, due)
 
   private def columnStyle(bar: GanttBar.Placed): String = s"${bar.startCol + 2} / span ${bar.width}"
 
@@ -175,38 +145,15 @@ class TimeboxGanttComponent(
     placed: GanttBar.Placed,
     axis: GanttAxis,
     taskLookups: BulkLookups
-  ): HtmlElement = {
-    val color = GanttAssigneeColors.classFor(task.assignedTo.map(_.id), taskLookups.members.map(_.id))
-    val rounding = (placed.clippedLeft, placed.clippedRight) match {
-      case (false, false) => "rounded-md"
-      case (true, false)  => "rounded-r-md"
-      case (false, true)  => "rounded-l-md"
-      case (true, true)   => ""
-    }
-    div(
-      cls(s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"),
-      title := barTitle(task, task.startDate, task.dueDate),
+  ): HtmlElement =
+    layout.barElement(task, placed, taskLookups.members.map(_.id)).amend(
       // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
       if (placed.clippedLeft || placed.clippedRight) emptyMod
       else Seq[Modifier[HtmlElement]](cls("cursor-grab select-none")) ++ dragModifiers(task, placed, axis, GanttEdge.Body),
       // A clipped end has its real date out of sight, so it can't be dragged from here.
       if (placed.clippedLeft) emptyNode else resizeHandle(task, placed, axis, GanttEdge.Start),
-      span(if (placed.clippedLeft) "◂" else ""),
-      span(if (placed.clippedRight) "▸" else ""),
       if (placed.clippedRight) emptyNode else resizeHandle(task, placed, axis, GanttEdge.End)
     )
-  }
-
-  private def outsideElement(side: GanttClamp): HtmlElement = {
-    val (label, alignment) = side match {
-      case GanttClamp.After => ("starts after the timebox ▸", "justify-self-end")
-      case _                => ("◂ ends before the timebox", "justify-self-start")
-    }
-    span(
-      cls(s"z-10 my-1.5 whitespace-nowrap px-1 text-xs italic text-body-subtle $alignment"),
-      label
-    )
-  }
 
   /** Laid out as in the bulk add: the name with the labels right after it, and the other badges in a row below. The
     * badges edit the task like everywhere else.
@@ -230,7 +177,7 @@ class TimeboxGanttComponent(
   private def taskRow(task: FindTaskRespFull, axis: GanttAxis, taskLookups: BulkLookups): HtmlElement =
     div(
       cls("relative grid items-center border-b border-default-medium"),
-      styleAttr := gridTemplate(axis),
+      styleAttr := layout.gridTemplate(axis),
       rowReorder.dragModifiers(task.id),
       // The row can be dragged to reorder only by the name cell: it becomes draggable when that is pressed, and stops
       // being so when the press ends. A press on a bar or on the empty days then never starts dragging the row.
@@ -242,35 +189,14 @@ class TimeboxGanttComponent(
         onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
         taskDetails(task)
       ),
-      // The day cells sit behind the bar so the columns show through.
-      axis.days.indices.map(index =>
-        div(cls(s"h-full ${dayCellClasses(axis, index)}"), styleAttr := s"grid-column: ${index + 2}; grid-row: 1")
-      ),
-      GanttBar.of(task.startDate, task.dueDate, axis).fold[Modifier[HtmlElement]](emptyMod) {
-        case placed: GanttBar.Placed => barElement(task, placed, axis, taskLookups).amend(styleAttr := barStyle(placed))
-        case GanttBar.Outside(side)  => outsideElement(side).amend(styleAttr := outsideStyle(axis))
-      }
+      layout.dayCells(axis, "1"),
+      layout.barOrOutside(task, axis, (t, placed) => barElement(t, placed, axis, taskLookups))
     )
 
-  private def barStyle(placed: GanttBar.Placed): String =
-    s"grid-column: ${placed.startCol + 2} / span ${placed.width}; grid-row: 1"
-
-  private def outsideStyle(axis: GanttAxis): String = s"grid-column: 2 / span ${axis.size}; grid-row: 1"
-
-  private def emptyMessage(text: String): HtmlElement = p(cls("p-3 text-sm text-body-subtle"), text)
-
   private def chart(axis: GanttAxis, tasks: Seq[FindTaskRespFull], taskLookups: BulkLookups): HtmlElement =
-    if (axis.isEmpty) emptyMessage("Pick a valid start and end date with at least one work day to see the Gantt chart.")
-    else if (tasks.isEmpty) emptyMessage("Stage some tasks to see them on the Gantt chart.")
-    else
-      div(
-        cls("overflow-x-auto rounded-base border border-default-medium"),
-        div(
-          styleAttr := s"min-width: ${NameColumnRem + axis.size * 2.25}rem",
-          headerRow(axis),
-          tasks.map(taskRow(_, axis, taskLookups))
-        )
-      )
+    if (axis.isEmpty) layout.emptyMessage("Pick a valid start and end date with at least one work day to see the Gantt chart.")
+    else if (tasks.isEmpty) layout.emptyMessage("Stage some tasks to see them on the Gantt chart.")
+    else layout.frame(axis, tasks.map(taskRow(_, axis, taskLookups)))
 
   val element: HtmlElement =
     TgCard
