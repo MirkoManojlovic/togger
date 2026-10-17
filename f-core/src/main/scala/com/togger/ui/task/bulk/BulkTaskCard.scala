@@ -70,6 +70,10 @@ object BulkTaskCard {
       }
     }
 
+  /** The badges as they look on a card, but not to click on. */
+  def readOnlyRow(specs: Seq[BadgeSpec]): HtmlElement =
+    div(cls("flex flex-wrap items-center gap-1.5"), specs.map(badge))
+
   /** The gray and alternative badges are white in dark mode, which is too bright next to the task name, so their text
     * goes gray there; the colored badges keep their own text color.
     */
