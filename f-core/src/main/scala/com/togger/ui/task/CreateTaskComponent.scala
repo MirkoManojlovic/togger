@@ -12,7 +12,7 @@ import com.togger.common.{PageRequest, PaginatedResponse, TgClock, TgJsonFailure
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -58,8 +58,8 @@ case class TaskStatusSelect(id: UUID, name: String) {
   lazy val asTuple: (String, String) = id.toString -> name
 }
 
-/** Deliberately does not mirror [[TaskStatusesState.idToOrder]]'s name-matching-against-a-fixed-enum pattern -
-  * labels are expected to be renamed/added to more freely than statuses, so sorting is plain alphabetical.
+/** Deliberately does not mirror [[TaskStatusesState.idToOrder]]'s name-matching-against-a-fixed-enum pattern - labels
+  * are expected to be renamed/added to more freely than statuses, so sorting is plain alphabetical.
   */
 case class TaskLabelsState(taskLabels: Seq[FindTaskLabelResp] = Seq.empty) {
   lazy val asMultiSelectItems: Seq[MultiSelectItem] =
@@ -83,11 +83,13 @@ class CreateTaskComponent(
   val formState = Var(CreateTaskForm())
 
   private val badges = new TaskFormBadges(
-    BulkTask.withDefaults(
-      UUID.randomUUID(),
-      "",
-      BulkTaskDefaults.of(tgClock.currentDate(), Set.empty, Seq.empty)
-    ).copy(assigneeId = accountService.get.map(_.id)),
+    BulkTask
+      .withDefaults(
+        UUID.randomUUID(),
+        "",
+        BulkTaskDefaults.of(tgClock.currentDate(), Set.empty, Seq.empty)
+      )
+      .copy(assigneeId = accountService.get.map(_.id)),
     tgClock
   )
 
@@ -226,7 +228,6 @@ class CreateTaskComponent(
           )
         )
         .element
-        .amend(heightAndWidthFitContent)
     )
 
 }
