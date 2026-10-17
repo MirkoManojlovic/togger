@@ -2,7 +2,6 @@ package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
 import com.togger.ui.apexchart.ApexChartComponent
@@ -12,10 +11,14 @@ import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgStatColumn, TgTab, TgTabs}
 import com.togger.ui.task.TgDateFormater
-import com.togger.ui.task.bulk.BulkTaskBadges
+
+import org.scalajs.dom
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
+
+/** The badges of a staged task as three rows, each of which can edit what its badges show. */
+case class StagedTaskBadges(labels: HtmlElement, primary: HtmlElement, dates: HtmlElement)
 
 /** The tasks staged for the timebox, in a card of their own beside the task table: the capacity bars on top, then the
   * tasks themselves, then what they add up to. A click on a staged task unstages it.
@@ -28,7 +31,8 @@ class StagedTasksComponent(
   tgDateFormater: TgDateFormater,
   capacity: Signal[Option[TimeboxCapacity]],
   milestones: Signal[Seq[FindMilestoneResp]],
-  isDark: Signal[Boolean]
+  isDark: Signal[Boolean],
+  taskBadges: FindTaskRespFull => StagedTaskBadges
 ) {
 
   private val Empty = "—"
@@ -167,23 +171,14 @@ class StagedTasksComponent(
       selectedStatsGroupingVar
     ).element
 
-  private def milestoneBadge(task: FindTaskRespFull, all: Seq[FindMilestoneResp]): HtmlElement =
-    task.milestone
-      .flatMap(id => all.find(_.id == id))
-      .fold(TgBadge(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray))(milestone =>
-        TgBadge(milestone.name, TgBadgeColor.Alternative)
-      )
-      .element
+  private def isInteractive(target: dom.EventTarget): Boolean =
+    target match {
+      case element: dom.Element => element.closest("button, input, a") != null
+      case _                    => false
+    }
 
-  private def assigneeBadge(task: FindTaskRespFull): HtmlElement =
-    TgBadge(task.assignedTo.fold(BulkTaskBadges.EmptyAssignee)(_.fullName), TgBadgeColor.Gray).element
-
-  private def durationBadge(task: FindTaskRespFull, days: Set[DayOfWeek]): HtmlElement = {
-    val count = WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, days)
-    TgBadge(if (count == 1) "1 day" else s"$count days", TgBadgeColor.Gray).element
-  }
-
-  private def stagedRow(task: FindTaskRespFull, all: Seq[FindMilestoneResp], days: Set[DayOfWeek]): HtmlElement =
+  private def stagedRow(task: FindTaskRespFull): HtmlElement = {
+    val badges = taskBadges(task)
     div(
       cls("flex cursor-pointer flex-col gap-1 rounded-base px-3 py-2"),
       cls("border border-default hover:bg-neutral-tertiary-medium"),
@@ -191,20 +186,14 @@ class StagedTasksComponent(
       div(
         cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
         span(cls("text-sm font-semibold text-heading"), task.name),
-        task.taskLabels.sortBy(_.name).map(label => TgBadge(label.name, label.badgeColor).element)
+        badges.labels
       ),
-      div(
-        cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
-        milestoneBadge(task, all),
-        TgBadge(task.priority.shortCode, task.priority.badgeColor).element,
-        TgBadge(task.taskStatus.name, task.taskStatus.badgeColor).element,
-        assigneeBadge(task),
-        TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.startDate), TgBadgeColor.Gray).element,
-        TgBadge(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray).element,
-        durationBadge(task, days)
-      ),
-      onClick.mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
+      badges.primary,
+      badges.dates,
+      // A click on a badge, or in the popup it opens, edits the task and must not unstage it.
+      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
     )
+  }
 
   private val clearAllButton: HtmlElement =
     div(
@@ -215,13 +204,13 @@ class StagedTasksComponent(
         .amend(typ("button"), onClick.mapToUnit --> (_ => stagingStore.clear(projectId)))
     )
 
-  private def groupSection(group: StagedGroup, all: Seq[FindMilestoneResp], days: Set[DayOfWeek]): HtmlElement =
+  private def groupSection(group: StagedGroup): HtmlElement =
     div(
       cls("flex flex-col gap-2"),
       if (group.title.isEmpty) emptyNode
       else
         span(cls("text-xs font-semibold uppercase text-body-subtle"), s"${group.title} (${group.tasks.size})"),
-      group.tasks.map(stagedRow(_, all, days))
+      group.tasks.map(stagedRow)
     )
 
   private def groupedList(grouping: StagedGrouping): HtmlElement =
@@ -229,8 +218,8 @@ class StagedTasksComponent(
       cls("flex flex-col gap-4"),
       children <-- stagingStore
         .stagedWithDates(projectId)
-        .combineWith(milestones, workDays)
-        .map { case (tasks, all, days) => grouping.group(tasks, all).map(groupSection(_, all, days)) }
+        .combineWith(milestones)
+        .map { case (tasks, all) => grouping.group(tasks, all).map(groupSection) }
     )
 
   private val selectedGroupingVar = Var(StagedGrouping.NotGrouped.id)

@@ -33,8 +33,10 @@ object BulkEditKind {
 
 /** @param scope
   *   the task the popup edits, or none for the selected tasks
+  * @param origin
+  *   where the trigger is, for a page that shows the same task in two places and opens only the popup that was clicked
   */
-case class BulkPopupTarget(scope: Option[UUID], kind: BulkEditKind)
+case class BulkPopupTarget(scope: Option[UUID], kind: BulkEditKind, origin: String = "")
 
 /** The popups that edit one attribute: of the selected tasks when opened from the toolbar, of a single task when opened
   * from one of its badges. Only one is open at a time, wherever it was opened from.
@@ -53,8 +55,8 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
   private def close(): Unit = openVar.set(None)
 
   /** The trigger, which toggles the popup, with the popup itself while it is open. */
-  def anchor(scope: Option[UUID], kind: BulkEditKind, trigger: HtmlElement): HtmlElement = {
-    val target = BulkPopupTarget(scope, kind)
+  def anchor(scope: Option[UUID], kind: BulkEditKind, trigger: HtmlElement, origin: String = ""): HtmlElement = {
+    val target = BulkPopupTarget(scope, kind, origin)
     val isOpen = openVar.signal.map(_.contains(target)).distinct
     div(
       cls("relative"),

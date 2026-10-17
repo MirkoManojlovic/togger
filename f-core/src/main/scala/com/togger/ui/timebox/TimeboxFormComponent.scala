@@ -339,8 +339,16 @@ class TimeboxFormComponent(
       BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
     )
 
-  private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec]) =
-    div(cls("flex flex-wrap items-center gap-1.5"), BulkTaskCard.row(taskId, specs, popups))
+  private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec], origin: String = "") =
+    div(cls("flex flex-wrap items-center gap-1.5"), BulkTaskCard.row(taskId, specs, popups, origin))
+
+  /** The badges of a staged task; they open their popups apart from the ones of the same task in the table. */
+  private def stagedBadges(dto: FindTaskRespFull): StagedTaskBadges = {
+    def row(specs: Seq[BadgeSpec]) =
+      badgeRow(dto.id, specs, origin = "staged")
+        .amend(cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)))
+    StagedTaskBadges(row(labelRow(dto)), row(primaryRow(dto)), row(dateRow(dto)))
+  }
 
   private def lookupsNow(): BulkLookups =
     BulkLookups(
@@ -371,20 +379,25 @@ class TimeboxFormComponent(
     context = scope =>
       BulkEditContext(
         lookupsNow(),
-        browser.rowsVar.now().filter(dto => scope.contains(dto.id)).map(ShowAllTasksBulkMapping.toBulkTask),
+        editableTasks(scope).map(ShowAllTasksBulkMapping.toBulkTask),
         tgClock.currentDate()
       ),
     onEdit = saveEdit
   )
+
+  /** The task a badge edits: as it is staged, with the dates it has on the Gantt chart, or else as the page shows it. */
+  private def editableTasks(scope: Option[UUID]): Seq[FindTaskRespFull] =
+    scope.toSeq.flatMap { id =>
+      stagingStore.stagedWithDatesNow(projectId).find(_.id == id).orElse(browser.rowsVar.now().find(_.id == id))
+    }
 
   /** Saves the edit for the task, which a task the edit would not change (the value it already has) never reaches. The
     * page and the staged copies are read again afterwards, so both show what the backend has.
     */
   private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
     val current = lookupsNow()
-    val changed = browser.rowsVar
-      .now()
-      .filter(dto => scope.contains(dto.id) && !savingVar.now().contains(dto.id))
+    val changed = editableTasks(scope)
+      .filter(dto => !savingVar.now().contains(dto.id))
       .flatMap { dto =>
         val before = ShowAllTasksBulkMapping.toBulkTask(dto)
         val after = BulkTaskEditor(Seq(before), Set(dto.id), edit, current.workDays).head
@@ -478,7 +491,8 @@ class TimeboxFormComponent(
     tgDateFormater,
     capacitySignal,
     lookups.milestonesVar.signal,
-    isDark
+    isDark,
+    stagedBadges
   )
 
   private val ganttChart = new TimeboxGanttComponent(
