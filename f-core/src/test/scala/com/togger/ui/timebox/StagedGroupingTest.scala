@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.chart.ChartColor
 import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
 import com.togger.task.{DefaultTaskStatus, TaskPriority}
 import org.scalatest.matchers.should.Matchers
@@ -62,6 +63,15 @@ class StagedGroupingTest extends AnyWordSpec with Matchers {
       val tasks = Seq(task("a"), task("b").copy(taskStatus = done), task("c"))
       names(StagedGrouping.ByStatus.group(tasks, Seq.empty)).toMap shouldBe
         Map(backlog.name -> Seq("a", "c"), done.name -> Seq("b"))
+    }
+
+    "give the groups the chart color of what they group by" in {
+      val tasks = Seq(task("a").copy(priority = TaskPriority.Critical), task("b").copy(taskStatus = done))
+      StagedGrouping.ByPriority.group(tasks, Seq.empty).flatMap(_.chartColor) shouldBe
+        Seq(ChartColor.Red, ChartColor.Yellow)
+      StagedGrouping.ByStatus.group(tasks, Seq.empty).flatMap(_.chartColor) shouldBe
+        Seq(ChartColor.Gray, ChartColor.Green)
+      StagedGrouping.ByAssignee.group(tasks, Seq.empty).flatMap(_.chartColor) shouldBe Seq.empty
     }
 
     "put a task under each of its labels and the unlabelled ones last" in {

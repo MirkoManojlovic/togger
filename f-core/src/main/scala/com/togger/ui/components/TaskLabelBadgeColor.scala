@@ -1,28 +1,14 @@
 package com.togger.ui.components
 
+import com.togger.chart.TaskLabelChartable
 import com.togger.dto.FindTaskLabelResp
-import com.togger.task.DefaultTaskLabel
 
-/** Maps a task label's name onto the fixed [[TgBadgeColor]] palette (so it keeps working in dark mode), matching it
-  * against [[DefaultTaskLabel]] by name since a project's task labels are stored as free-form rows rather than this
-  * enum. An unrecognized label name falls back to [[TgBadgeColor.Gray]].
+/** The [[TgBadgeColor]] of a task label, the same hue as it has in charts. A label name that is not one of the
+  * default labels is [[TgBadgeColor.Gray]], see [[TaskLabelChartable]].
   */
 object TaskLabelBadgeColor {
 
-  private val colorByLabel: Map[DefaultTaskLabel, TgBadgeColor] = Map(
-    DefaultTaskLabel.Feature -> TgBadgeColor.Green,
-    DefaultTaskLabel.Bug -> TgBadgeColor.Red,
-    DefaultTaskLabel.Refactor -> TgBadgeColor.Purple,
-    DefaultTaskLabel.Test -> TgBadgeColor.Blue,
-    DefaultTaskLabel.Docs -> TgBadgeColor.Cyan,
-    DefaultTaskLabel.Chore -> TgBadgeColor.Gray
-  )
-
-  def of(labelName: String): TgBadgeColor =
-    DefaultTaskLabel.values
-      .find(_.labelName == labelName)
-      .flatMap(colorByLabel.get)
-      .getOrElse(TgBadgeColor.Gray)
+  def of(labelName: String): TgBadgeColor = ChartColorBadgeColor.of(TaskLabelChartable.of(labelName))
 
   /** Lets callers write `taskLabel.badgeColor` instead of `TaskLabelBadgeColor.of(taskLabel.name)`. */
   implicit class TaskLabelBadgeColorOps(private val taskLabel: FindTaskLabelResp) extends AnyVal {

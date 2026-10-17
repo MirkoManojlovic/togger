@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.chart.ChartColor
 import com.togger.ui.apexchart.{ApexChartType, ApexSeries}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -22,6 +23,17 @@ class StagedChartsTest extends AnyWordSpec with Matchers {
       colors.take(10).distinct should have size 10
       colors(10) shouldBe colors(0)
       colors.last shouldBe "#9ca3af"
+    }
+
+    "color a group by what it groups by, the same in every chart" in {
+      val groups = Seq(
+        group("🔴 Blocked", 1).copy(chartColor = Some(ChartColor.Red)),
+        group("▶️ In progress", 1).copy(chartColor = Some(ChartColor.Blue)),
+        group("Custom", 1)
+      )
+      val options = StagedCharts.pieOfTaskCounts(groups)
+      options.colors.get.take(2) shouldBe Seq(ChartColor.Red.dark, ChartColor.Blue.dark)
+      options.lightColors.get.take(2) shouldBe Seq(ChartColor.Red.light, ChartColor.Blue.light)
     }
 
     "have a lighter variant of each color for light mode" in {

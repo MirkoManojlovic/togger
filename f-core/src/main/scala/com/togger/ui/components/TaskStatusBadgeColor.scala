@@ -1,31 +1,14 @@
 package com.togger.ui.components
 
+import com.togger.chart.TaskStatusChartable
 import com.togger.dto.FindTaskStatusResp
-import com.togger.task.DefaultTaskStatus
 
-/** Maps a task's status name onto the fixed [[TgBadgeColor]] palette (so it keeps working in dark mode), matching it
-  * against [[DefaultTaskStatus]] by name since a project's task statuses are stored as free-form rows rather than
-  * this enum. An unrecognized status name falls back to [[TgBadgeColor.Gray]].
+/** The [[TgBadgeColor]] of a task's status, the same hue as it has in charts. A status name that is not one of the
+  * default statuses is [[TgBadgeColor.Gray]], see [[TaskStatusChartable]].
   */
 object TaskStatusBadgeColor {
 
-  private val colorByStatus: Map[DefaultTaskStatus, TgBadgeColor] = Map(
-    DefaultTaskStatus.InProgress -> TgBadgeColor.Blue,
-    DefaultTaskStatus.Testing -> TgBadgeColor.Blue,
-    DefaultTaskStatus.Waiting -> TgBadgeColor.Yellow,
-    DefaultTaskStatus.Blocked -> TgBadgeColor.Red,
-    DefaultTaskStatus.Todo -> TgBadgeColor.Gray,
-    DefaultTaskStatus.Backlog -> TgBadgeColor.Gray,
-    DefaultTaskStatus.Done -> TgBadgeColor.Green,
-    DefaultTaskStatus.WontDo -> TgBadgeColor.Dark,
-    DefaultTaskStatus.Archived -> TgBadgeColor.Dark
-  )
-
-  def of(statusName: String): TgBadgeColor =
-    DefaultTaskStatus.values
-      .find(_.statusName == statusName)
-      .flatMap(colorByStatus.get)
-      .getOrElse(TgBadgeColor.Gray)
+  def of(statusName: String): TgBadgeColor = ChartColorBadgeColor.of(TaskStatusChartable.of(statusName))
 
   /** Lets callers write `taskStatus.badgeColor` instead of `TaskStatusBadgeColor.of(taskStatus.name)`. */
   implicit class TaskStatusBadgeColorOps(private val taskStatus: FindTaskStatusResp) extends AnyVal {

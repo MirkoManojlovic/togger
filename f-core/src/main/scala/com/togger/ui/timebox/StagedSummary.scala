@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.chart.ChartColor
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
@@ -17,7 +18,8 @@ case class GroupSummary(
   byLabel: Seq[(FindTaskLabelResp, Int)],
   byStatus: Seq[(FindTaskStatusResp, Int)],
   byMilestone: Seq[(FindMilestoneResp, Int)],
-  byAssignee: Seq[(String, Int)]
+  byAssignee: Seq[(String, Int)],
+  chartColor: Option[ChartColor] = None
 )
 
 /** What the tasks staged for a timebox add up to.
@@ -72,7 +74,8 @@ object StagedSummary {
       byLabel = byLabel(group.tasks),
       byStatus = counts(group.tasks.map(_.taskStatus)).sortBy(-_._2),
       byMilestone = byMilestone(group.tasks, milestones),
-      byAssignee = byAssignee(group.tasks)
+      byAssignee = byAssignee(group.tasks),
+      chartColor = group.chartColor
     )
 
   def grouped(
