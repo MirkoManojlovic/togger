@@ -72,7 +72,12 @@ class TimeboxReviewGanttComponent(
     task: FindTaskRespFull,
     axis: GanttAxis,
     entries: Map[(UUID, LocalDate), LogEntryDto]
-  ): Seq[HtmlElement] =
+  ): Seq[HtmlElement] = {
+    // Under the planned duration every day has a square, empty or not. Outside it only the days with a log entry do.
+    val planned = GanttBar.of(task.startDate, task.dueDate, axis) match {
+      case Some(bar: GanttBar.Placed) => bar.startCol to bar.endCol
+      case _                          => Range(0, 0)
+    }
     axis.days.zipWithIndex.map { case (day, index) =>
       val key = (task.id, day)
       val entry = entries.get(key)
@@ -87,10 +92,12 @@ class TimeboxReviewGanttComponent(
               onClick.mapToUnit --> (_ => toggle(key)),
               square.amend(cls("ring-2 ring-blue-400") <-- selectedVar.signal.map(_.contains(key)))
             )
-          case None => square
+          case None if planned.contains(index) => square
+          case None                            => emptyNode
         }
       )
     }
+  }
 
   private def taskRow(
     task: FindTaskRespFull,
