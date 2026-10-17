@@ -109,7 +109,7 @@ class TimeboxReviewComponent(
       cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
       card(
         "Days left",
-        div(days.map[HtmlElement](d => progressBar(d.elapsed, d.total, s"${d.left} of ${d.total} days left")).getOrElse(p("No dates")))
+        div(days.map[HtmlElement](d => progressBar(d.elapsed, d.total, s"${d.left} of ${d.total} days left")).getOrElse(p(cls("text-body"), "No dates")))
       ),
       card(
         "Tasks left to do",
@@ -137,9 +137,9 @@ class TimeboxReviewComponent(
               cls("mb-4 font-medium text-heading"),
               s"${tgDateFormater.asEuropeanDate(version.startDate)} - ${tgDateFormater.asEuropeanDate(version.endDate)}"
             ),
-            version.description.map[HtmlElement](tgMarkdown.toLaminarDiv).getOrElse(p("No description"))
+            version.description.map[HtmlElement](tgMarkdown.toLaminarDiv).getOrElse(p(cls("text-body"), "No description"))
           )
-        ).getOrElse(p("No timebox"))
+        ).getOrElse(p(cls("text-body"), "No timebox"))
       )
     )
 
@@ -148,7 +148,7 @@ class TimeboxReviewComponent(
     card(
       "Change comments",
       div(
-        if (commented.isEmpty) p("No change comments")
+        if (commented.isEmpty) p(cls("text-body"), "No change comments")
         else
           commented.map(version =>
             div(
@@ -210,7 +210,7 @@ class TimeboxReviewComponent(
     div(
       cls("mb-6"),
       h5(cls("text-heading text-xl font-bold mb-2"), member.fullName),
-      if (memberTasks.isEmpty) p("No tasks")
+      if (memberTasks.isEmpty) p(cls("text-body"), "No tasks")
       else
         pieGrid(
           TimeboxReviewStats.pies(TimeboxReviewStats.MemberGroupings, memberTasks, state.milestones),
