@@ -2,13 +2,14 @@ package com.togger.ui.timebox.gantt
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindTaskRespFull, LogEntryDto}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.Pages._
+import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.logentry.LogEntryReadOnlyCard
-import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{LogEntryStatusSquare, TgBadge, TgTab, TgTabs}
+import com.togger.ui.components.{LogEntryStatusSquare, TgTab, TgTabs}
 import com.togger.ui.task.TgDateFormater
 
 import java.time.{DayOfWeek, LocalDate}
@@ -22,8 +23,10 @@ class TimeboxReviewGanttComponent(
   workDays: Signal[Set[DayOfWeek]],
   timebox: Signal[Option[(LocalDate, LocalDate)]],
   memberIds: Signal[Seq[UUID]],
+  milestones: Signal[Seq[FindMilestoneResp]],
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
+  router: TgRouter[FrontendPage],
   tgClock: TgClock
 ) {
 
@@ -49,11 +52,20 @@ class TimeboxReviewGanttComponent(
     selectedVar.update(current => if (current.contains(key)) None else Some(key))
     tabVar.set("single-day")
 
-  private def taskDetails(task: FindTaskRespFull): HtmlElement =
+  private def taskDetails(task: FindTaskRespFull, milestones: Seq[FindMilestoneResp]): HtmlElement =
     div(
-      cls("flex min-w-0 flex-col items-start gap-1 py-1"),
-      span(cls("min-w-0 max-w-full truncate text-sm text-heading"), title := task.name, task.name),
-      TgBadge(text = task.taskStatus.name, bordered = true, color = task.taskStatus.badgeColor).element
+      cls("flex min-w-0 flex-col gap-1 py-1"),
+      div(
+        cls("flex items-center gap-1.5"),
+        a(
+          cls("min-w-0 truncate text-sm font-semibold text-heading hover:text-fg-brand hover:underline"),
+          title := task.name,
+          task.name,
+          router.navigateTo(EditTaskPage(task.projectId, task.id))
+        ),
+        ReviewTaskBadges.labels(task).amend(cls("shrink-0"))
+      ),
+      ReviewTaskBadges.primary(task, milestones)
     )
 
   private def statusCells(
@@ -84,6 +96,7 @@ class TimeboxReviewGanttComponent(
     task: FindTaskRespFull,
     axis: GanttAxis,
     members: Seq[UUID],
+    milestoneList: Seq[FindMilestoneResp],
     entries: Map[(UUID, LocalDate), LogEntryDto]
   ): HtmlElement =
     div(
@@ -92,7 +105,7 @@ class TimeboxReviewGanttComponent(
       div(
         cls("flex items-center self-stretch overflow-hidden px-2 py-1"),
         styleAttr := "grid-column: 1; grid-row: 1 / span 2",
-        taskDetails(task)
+        taskDetails(task, milestoneList)
       ),
       layout.dayCells(axis, "1"),
       layout.barOrOutside(task, axis, (t, placed) => layout.barElement(t, placed, members)),
@@ -113,6 +126,7 @@ class TimeboxReviewGanttComponent(
     axis: GanttAxis,
     all: Seq[FindTaskRespFull],
     members: Seq[UUID],
+    milestoneList: Seq[FindMilestoneResp],
     entries: Map[(UUID, LocalDate), LogEntryDto]
   ): HtmlElement =
     if (axis.isEmpty) layout.emptyMessage("The timebox has no work days to show on the Gantt chart.")
@@ -121,7 +135,7 @@ class TimeboxReviewGanttComponent(
       val shown = all.flatMap(_.logEntries).map(_.status).distinct
       div(
         legend(shown),
-        layout.frame(axis, GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, entries)))
+        layout.frame(axis, GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, milestoneList, entries)))
       )
     }
 
@@ -132,8 +146,10 @@ class TimeboxReviewGanttComponent(
         body = TgCard.HtmlCardContent(
           div(
             child <-- axisSignal
-              .combineWith(tasks, memberIds, entryByTaskAndDay)
-              .map { case (axis, all, members, entries) => chart(axis, all, members, entries) }
+              .combineWith(tasks, memberIds, milestones, entryByTaskAndDay)
+              .map { case (axis, all, members, milestoneList, entries) =>
+                chart(axis, all, members, milestoneList, entries)
+              }
           )
         )
       )

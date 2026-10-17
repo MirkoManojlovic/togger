@@ -177,8 +177,10 @@ class TimeboxReviewComponent(
       Val(state.workDays),
       Val(state.timebox.map(_.latestVersion).map(version => (version.startDate, version.endDate))),
       Val(state.members.map(_.id)),
+      Val(state.milestones),
       tgDateFormater,
       tgMarkdown,
+      router,
       tgClock
     )
     div(gantt.element, gantt.detailElement)
