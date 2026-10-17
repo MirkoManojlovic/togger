@@ -342,10 +342,12 @@ class TimeboxFormComponent(
   private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec], origin: String = "") =
     div(cls("flex flex-wrap items-center gap-1.5"), BulkTaskCard.row(taskId, specs, popups, origin))
 
-  /** The badges of a staged task; they open their popups apart from the ones of the same task in the table. */
-  private def stagedBadges(dto: FindTaskRespFull): StagedTaskBadges = {
+  /** The badges of a task shown apart from the table, which open their popups apart from the ones of the same task in
+    * the table, and from those of the other places the task is shown in.
+    */
+  private def badgesAt(origin: String)(dto: FindTaskRespFull): StagedTaskBadges = {
     def row(specs: Seq[BadgeSpec]) =
-      badgeRow(dto.id, specs, origin = "staged")
+      badgeRow(dto.id, specs, origin)
         .amend(cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)))
     StagedTaskBadges(row(labelRow(dto)), row(primaryRow(dto)), row(dateRow(dto)))
   }
@@ -492,7 +494,7 @@ class TimeboxFormComponent(
     capacitySignal,
     lookups.milestonesVar.signal,
     isDark,
-    stagedBadges
+    badgesAt("staged")
   )
 
   private val ganttChart = new TimeboxGanttComponent(
@@ -502,7 +504,8 @@ class TimeboxFormComponent(
     formDatesSignal,
     tgDateFormater,
     tgClock,
-    lookupsSignal
+    lookupsSignal,
+    badgesAt("gantt")
   )
 
   private val taskPicker = div(

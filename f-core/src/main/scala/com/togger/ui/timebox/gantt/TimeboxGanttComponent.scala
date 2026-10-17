@@ -5,10 +5,9 @@ import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.reorder.{ListReorder, RowReorder}
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
-import com.togger.ui.task.{ShowAllTasksBulkMapping, TgDateFormater}
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskBadges, BulkLookups}
-import com.togger.ui.timebox.TimeboxStagingStore
+import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.bulk.BulkLookups
+import com.togger.ui.timebox.{StagedTaskBadges, TimeboxStagingStore}
 
 import org.scalajs.dom
 
@@ -26,7 +25,8 @@ class TimeboxGanttComponent(
   timebox: Signal[Option[(LocalDate, LocalDate)]],
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
-  lookups: Signal[BulkLookups]
+  lookups: Signal[BulkLookups],
+  taskBadges: FindTaskRespFull => StagedTaskBadges
 ) {
 
   private val NameColumn = "20rem"
@@ -208,23 +208,20 @@ class TimeboxGanttComponent(
     )
   }
 
-  /** Laid out as in the bulk add: the name with the labels right after it, and the other badges in a row below. */
-  private def taskDetails(task: FindTaskRespFull, taskLookups: BulkLookups): HtmlElement = {
-    val rows = BulkTaskBadges.of(ShowAllTasksBulkMapping.toBulkTask(task), taskLookups)
+  /** Laid out as in the bulk add: the name with the labels right after it, and the other badges in a row below. The
+    * badges edit the task like everywhere else.
+    */
+  private def taskDetails(task: FindTaskRespFull): HtmlElement = {
+    val badges = taskBadges(task)
     div(
       cls("flex min-w-0 flex-col gap-1 py-1"),
       div(
         cls("flex items-center gap-1.5"),
         span(cls("min-w-0 truncate text-sm text-heading"), title := task.name, task.name),
-        div(cls("flex shrink-0 items-center gap-1"), rows.labelRow.map(badge))
+        badges.labels.amend(cls("shrink-0"))
       ),
-      div(cls("flex flex-wrap items-center gap-1"), rows.primaryRow.map(badge))
+      badges.primary
     )
-  }
-
-  private def badge(spec: BadgeSpec): HtmlElement = {
-    val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
-    TgBadge(text = spec.text, color = spec.color, extraCls = if (neutral) "dark:text-body" else "").element
   }
 
   private def setDraggable(element: dom.EventTarget, draggable: Boolean): Unit =
@@ -243,7 +240,7 @@ class TimeboxGanttComponent(
       div(
         cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
         onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
-        taskDetails(task, taskLookups)
+        taskDetails(task)
       ),
       // The day cells sit behind the bar so the columns show through.
       axis.days.indices.map(index =>
