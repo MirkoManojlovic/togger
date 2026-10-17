@@ -3,6 +3,7 @@ package com.togger.timebox
 import cats.effect.IO
 import com.togger.account.TgAccount
 import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.dto.TaskFilter
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.task._
 import com.togger.timebox.TimeboxError.{TaskNotFound, TimeboxError, TimeboxNotFound}
@@ -97,6 +98,27 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         newVersion.tasks.map(_.version).toSet shouldBe Set(task1v2.version, task2v1.version)
         newVersion.tasks.map(_.name).toSet shouldBe Set("task 1 edited", "task 2")
       }
+    }
+
+    "filter project tasks by the latest timebox version, in their current state" in { transactor =>
+      val service = serviceFor(transactor)
+      for {
+        fixtures <- (for {
+          account <- createAccount
+          orgAndProject <- createOrgAndProject
+          status <- createTaskStatus(orgAndProject._2.id)
+          t1 <- createTask(orgAndProject._2.id, account.id, status.id, "task 1")
+          t2 <- createTask(orgAndProject._2.id, account.id, status.id, "task 2")
+          _ <- createTask(orgAndProject._2.id, account.id, status.id, "task 3")
+        } yield (orgAndProject._2, t1, t2)).transact(transactor)
+        (project, (task1, task1v1), (task2, _)) = fixtures
+        created <- right(service.createTimebox(project.id, start, end, None, Seq(task1.id, task2.id), nowAsInstant))
+        _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, "drop 2", Seq(task1.id), nowAsInstant))
+        _ <- taskVersionRepo.insert(task1v1.copy(version = UUID.randomUUID(), name = "task 1 edited")).transact(transactor)
+        found <- taskVersionRepo
+          .findPaginatedByProjectId(project.id, TaskFilter(timeboxId = Some(created.timebox.id)), DbPageRequest.default)
+          .transact(transactor)
+      } yield found.items.map(_.name) shouldBe List("task 1 edited")
     }
 
     "reject unknown tasks and unknown timeboxes" in { transactor =>

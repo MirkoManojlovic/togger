@@ -13,6 +13,7 @@ import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_F
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
+import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
 import com.togger.util.SplunkMacro.sp
 import doobie.{ConnectionIO, Fragments, Meta}
 import doobie.implicits._
@@ -253,8 +254,15 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         NonEmptyList.fromList(filter.labelIds).map(hasAnyLabel),
         NonEmptyList.fromList(filter.assigneeIds).map(inOrNull(fr"tv.assigned_to", _, TgIds.UNASSIGNED_UUID)),
         NonEmptyList.fromList(filter.milestoneIds).map(inOrNull(fr"tv.milestone_id", _, TgIds.NO_MILESTONE_UUID)),
-        filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText)
+        filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText),
+        filter.timeboxId.map(inLatestTimeboxVersion)
       )
+
+  private def inLatestTimeboxVersion(timeboxId: UUID): Fragment =
+    fr"task.id in (select ptv.task_id from" ++ TIMEBOX_VERSION_TASK_TABLE_FRAG ++ fr"tvt join" ++
+      TASK_VERSION_TABLE_FRAG ++ fr"ptv on ptv.version = tvt.task_version where tvt.timebox_version =" ++
+      fr"(select version from" ++ TIMEBOX_VERSION_TABLE_FRAG ++
+      fr"where timebox_id = $timeboxId order by version desc limit 1))"
 
   private def hasAnyLabel(labelIds: NonEmptyList[UUID]): Fragment =
     fr"exists (select 1 from" ++ TASK_LABEL_ASSIGNMENT_TABLE_FRAG ++
