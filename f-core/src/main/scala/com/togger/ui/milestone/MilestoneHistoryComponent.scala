@@ -9,7 +9,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadgeColor, TgTooltip}
+import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadgeColor, TgTooltip}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
@@ -492,16 +492,7 @@ class MilestoneHistoryComponent(
       styleAttr := gridCellPlacement(colIndex, rowIndex),
       onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
       onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
-      latest match {
-        case Some(e) =>
-          div(
-            title(e.status.toString),
-            cls("w-5.5 h-5.5 rounded-md"),
-            styleAttr := s"background-color: ${e.status.color};"
-          )
-        case None =>
-          div(cls("w-5.5 h-5.5 rounded-md bg-neutral-quaternary-medium"))
-      }
+      LogEntryStatusSquare(latest.map(_.status))
     )
   }
 
