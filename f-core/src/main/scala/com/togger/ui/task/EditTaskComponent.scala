@@ -5,29 +5,21 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJavaTimeSyntax.TgInstantOps
-import com.togger.common.{DateRangeValidation, TgClock, TgIds, TgJsonFailure, TgJsonSuccess}
+import com.togger.common._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
-import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
-import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
-import com.togger.ui.components.TgSelectDropdown.TgSelectDropdownSyntax
-import com.togger.ui.components.{
-  DropdownMeta,
-  LogEntryCalendarComponent,
-  TgBadge,
-  TgSelectDropdownMultiSelect,
-  TgSelectDropdownOption
-}
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.components._
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
+import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
+import com.togger.ui.task.bulk.BulkTask
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -35,7 +27,6 @@ import org.scalajs.dom
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
-import scala.collection.immutable.ListMap
 
 case class LogEntryPanelState(
   newEntryComponent: Option[LogEntryComponent] = None,
@@ -49,11 +40,6 @@ case class EditTaskForm(
   name: String = "",
   description: String = "",
   createBy: UUID = TgIds.UNASSIGNED_UUID,
-  assignedToSelected: String = "",
-  taskStatusSelected: String = "",
-  prioritySelected: String = "",
-  startDate: String = "",
-  dueDate: String = "",
   endDate: String = ""
 )
 
@@ -63,6 +49,7 @@ class EditTaskComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
+  milestoneService: MilestoneFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -77,13 +64,26 @@ class EditTaskComponent(
   val formState = Var(EditTaskForm(taskId = taskId, projectId = projectId))
   val linksVar: Var[Seq[TaskLinkComponent]] = Var(Seq.empty)
   val logEntryPanelVar: Var[LogEntryPanelState] = Var(LogEntryPanelState())
-  val statusesVar = Var(TaskStatusesState())
-  val labelsVar = Var(TaskLabelsState())
-  val currentLabelIdsVar = Var(Set.empty[String])
-  val membersVar = Var(Seq.empty[SearchAccountDto])
   val workDaysVar = Var(Set.empty[DayOfWeek])
 
   private val tgDateFormater = new TgDateFormater
+
+  private val badges = new TaskFormBadges(
+    BulkTask(
+      key = taskId,
+      name = "",
+      priority = TaskPriority.Medium,
+      statusId = None,
+      startDate = tgClock.currentDate(),
+      dueDate = tgClock.currentDate(),
+      endDate = None,
+      assigneeId = None,
+      labelIds = Set.empty,
+      milestoneId = None,
+      dueDateManual = true
+    ),
+    tgClock
+  )
 
   spinnerService
     .runWithSpinner {
@@ -92,13 +92,22 @@ class EditTaskComponent(
       // it to already be resolved by the time they're built.
       projectService
         .findById(projectId)
-        .map(_.fold(e => println(e), success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of))))
+        .map(
+          _.fold(
+            e => println(e),
+            success => {
+              val workDays = success.body.get.workDays.map(DayOfWeek.of)
+              workDaysVar.set(workDays)
+              badges.setWorkDays(workDays)
+            }
+          )
+        )
         .flatMap { _ =>
           val statusesAndTaskCall: IO[Unit] =
             // The status picker offers every status, read page by page (bounded by PaginatedLoader).
             taskStatusFeService
               .findAllByProjectId(projectId)
-              .map(response => response.map(success => statusesVar.set(TaskStatusesState(success.body.get))))
+              .map(response => response.map(success => badges.setStatuses(success.body.get)))
               .flatMap(_ =>
                 taskService
                   .findTaskById(taskId)
@@ -114,15 +123,24 @@ class EditTaskComponent(
                             name = dto.task.name,
                             description = dto.task.description,
                             createBy = dto.task.createdBy,
-                            assignedToSelected = dto.task.assignedTo.map(_.toString).getOrElse(""),
-                            taskStatusSelected = dto.task.taskStatusId.toString,
-                            prioritySelected = dto.task.priority.value.toString,
-                            startDate = dto.task.startDate.toString,
-                            dueDate = dto.task.dueDate.toString,
                             endDate = dto.task.endDate.map(_.toString).getOrElse("")
                           )
                         )
-                        currentLabelIdsVar.set(dto.task.taskLabelIds.map(_.toString).toSet)
+                        badges.taskVar.set(
+                          BulkTask(
+                            key = dto.task.id,
+                            name = dto.task.name,
+                            priority = dto.task.priority,
+                            statusId = Some(dto.task.taskStatusId),
+                            startDate = dto.task.startDate,
+                            dueDate = dto.task.dueDate,
+                            endDate = dto.task.endDate,
+                            assigneeId = dto.task.assignedTo,
+                            labelIds = dto.task.taskLabelIds.toSet,
+                            milestoneId = dto.task.milestone,
+                            dueDateManual = true
+                          )
+                        )
                         linksVar.set(
                           dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto))))
                         )
@@ -196,16 +214,22 @@ class EditTaskComponent(
           val labelsCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskLabelResp]]]] =
             taskLabelFeService.findAllByProjectId(projectId)
 
-          (statusesAndTaskCall, membersCall, labelsCall).parMapN { (_, membersEither, labelsEither) =>
-            membersEither.map(success => membersVar.set(success.body.get))
-            labelsEither.map(success => labelsVar.set(TaskLabelsState(success.body.get)))
+          // The milestone picker offers every milestone, read page by page (bounded by PaginatedLoader).
+          val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
+            milestoneService.findAllByProjectId(projectId)
+
+          (statusesAndTaskCall, membersCall, labelsCall, milestonesCall).parMapN {
+            (_, membersEither, labelsEither, milestonesEither) =>
+              membersEither.map(success => badges.setMembers(success.body.get))
+              labelsEither.map(success => badges.setLabels(success.body.get))
+              milestonesEither.map(success => badges.setMilestones(success.body.get))
           }
         }
     }
     .unsafeRunAndForget()
 
-  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], Set[String])] {
-    case (form, linkComponents, selectedLabelIds) =>
+  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], BulkTask)] {
+    case (form, linkComponents, edited) =>
       val now = tgClock.currentInstant
 
       val (linksToCreate, linksToUpdate) = linkComponents.partition(_.formState.now().id.isEmpty)
@@ -216,16 +240,17 @@ class EditTaskComponent(
           projectId = form.projectId,
           name = form.name,
           description = form.description,
-          assignedTo = Option.when(form.assignedToSelected.nonEmpty)(UUID.fromString(form.assignedToSelected)),
+          assignedTo = edited.assigneeId,
           createdBy = form.createBy,
-          taskStatusId = UUID.fromString(form.taskStatusSelected),
+          taskStatusId = edited.statusId.get,
           createdAt = now,
           updatedAt = now,
-          priority = TaskPriority.withValue(form.prioritySelected.toInt),
-          startDate = Some(LocalDate.parse(form.startDate)),
-          dueDate = Some(LocalDate.parse(form.dueDate)),
+          priority = edited.priority,
+          milestone = edited.milestoneId,
+          startDate = Some(edited.startDate),
+          dueDate = Some(edited.dueDate),
           endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate)),
-          taskLabelIds = selectedLabelIds.map(UUID.fromString(_)).toSeq
+          taskLabelIds = edited.labelIds.toSeq
         ),
         linksForUpdate = linksToUpdate.map { linkComponent =>
           val linkForm = linkComponent.formState.now()
@@ -269,33 +294,9 @@ class EditTaskComponent(
 
   private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
 
-  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
-      Seq("Start date must be one of this project's configured work days")
-    else Seq.empty
-  }
-
-  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    val orderError =
-      if (
-        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
-        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
-      )
-        Seq("Due date must be on or after start date")
-      else Seq.empty
-    val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
-        Seq("Due date must be one of this project's configured work days")
-      else Seq.empty
-    orderError ++ weekendError
-  }
-
   private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
-      if (
-        form.startDate.nonEmpty && form.endDate.nonEmpty &&
-        LocalDate.parse(form.endDate).isBefore(LocalDate.parse(form.startDate))
-      )
+      if (form.endDate.nonEmpty && LocalDate.parse(form.endDate).isBefore(badges.taskVar.now().startDate))
         Seq("End date must be on or after start date")
       else Seq.empty
     val weekendError =
@@ -305,20 +306,6 @@ class EditTaskComponent(
     orderError ++ weekendError
   }
 
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = startDateErrors,
-    labelValue = "Start date",
-    tgInputType = TgInputType.Date
-  )
-
-  private val dueDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
-    errors = dueDateErrors,
-    labelValue = "Due date",
-    tgInputType = TgInputType.Date
-  )
-
   private val endDateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
     errors = endDateErrors,
@@ -327,58 +314,7 @@ class EditTaskComponent(
     isRequired = false
   )
 
-  private val priorityOptions: Seq[TgSelectDropdownOption] =
-    TaskPriority.values.map { priority =>
-      val meta = DropdownMeta(
-        label = s"${priority.shortCode.toUpperCase} - ${priority.priorityName}",
-        description = priority.description
-      )
-      TgSelectDropdownOption(
-        value = priority.value.toString,
-        meta = meta,
-        render = () => TgBadge(text = meta.label, color = priority.badgeColor, bordered = true).element
-      )
-    }
-
-  def renderElement(
-    selectValues: Seq[TaskStatusSelect],
-    members: Seq[SearchAccountDto],
-    labels: Seq[FindTaskLabelResp]
-  ) = {
-    val statusInputSelect = formState.tgSelectManualError(
-      inputAndUpdater = selectorAndUpdaterMacro(_.taskStatusSelected),
-      labelValue = "Status",
-      valuesAndDisplays = ListMap.from(selectValues.map(_.asTuple))
-    )
-
-    val priorityInputSelect = formState.tgSelectDropdownManualError(
-      inputAndUpdater = selectorAndUpdaterMacro(_.prioritySelected),
-      labelValue = "Priority",
-      options = priorityOptions
-    )
-
-    val assignedToSelect = formState.tgSelectManualError(
-      inputAndUpdater = selectorAndUpdaterMacro(_.assignedToSelected),
-      labelValue = "Assigned to",
-      emptyValue = Some("Unassigned"),
-      valuesAndDisplays = ListMap.from(members.map(member => member.id.toString -> member.fullName))
-    )
-
-    val labelOptions: Seq[TgSelectDropdownOption] = labels.sortBy(_.name).map { dto =>
-      TgSelectDropdownOption(
-        value = dto.id.toString,
-        meta = DropdownMeta(label = dto.name, description = dto.description),
-        render = () => span(dto.name)
-      )
-    }
-
-    val labelPicker = TgSelectDropdownMultiSelect(
-      inputSignal = currentLabelIdsVar.signal,
-      inputStateUpdater = currentLabelIdsVar.writer,
-      labelValue = "Labels",
-      options = labelOptions
-    )
-
+  val element =
     div(
       display.flex,
       flexDirection.column,
@@ -390,29 +326,12 @@ class EditTaskComponent(
             div(
               form(
                 onSubmit.preventDefault
-                  .mapTo(formState.now() -> linksVar.now())
-                  .compose(_.withCurrentValueOf(currentLabelIdsVar.signal)) --> submitter,
-                div(
-                  display.flex,
-                  columnGap("2rem"),
-                  cls("mb-4"),
-                  div(
-                    nameInput.htmlElement.amend(cls("mb-4")),
-                    descriptionEditor.htmlElement.amend(cls("mb-4")),
-                    progress.element
-                  ),
-                  div(
-                    flexShrink(0),
-                    width("280px"),
-                    statusInputSelect.htmlElement.amend(cls("mb-4")),
-                    priorityInputSelect.htmlElement.amend(cls("mb-4")),
-                    assignedToSelect.htmlElement.amend(cls("mb-4")),
-                    startDateInput.htmlElement.amend(cls("mb-4")),
-                    dueDateInput.htmlElement.amend(cls("mb-4")),
-                    endDateInput.htmlElement.amend(cls("mb-4")),
-                    labelPicker.htmlElement
-                  )
-                ),
+                  .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
+                nameInput.htmlElement.amend(cls("mb-4")),
+                badges.element.amend(cls("mb-4")),
+                descriptionEditor.htmlElement.amend(cls("mb-4")),
+                progress.element.amend(cls("mb-4")),
+                endDateInput.htmlElement.amend(cls("mb-4"), width("280px")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
@@ -422,7 +341,7 @@ class EditTaskComponent(
           )
         )
         .element
-        .amend(heightAndWidthFitContent, cls("mb-4")),
+        .amend(cls("mb-4")),
       hr(alignSelf.stretch),
       child <-- logEntryPanelVar.signal.map { state =>
         div(
@@ -450,13 +369,5 @@ class EditTaskComponent(
         )
       }
     )
-  }
-
-  val element = div(
-    child <-- statusesVar.signal.combineWith(membersVar.signal, labelsVar.signal).map {
-      case (state, members, labelsState) =>
-        renderElement(state.asTaskStatusSelect, members, labelsState.taskLabels)
-    }
-  )
 
 }

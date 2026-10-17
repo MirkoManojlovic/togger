@@ -206,11 +206,11 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskService,
                   taskStatusService,
                   taskLabelService,
+                  milestoneService,
                   spinnerService,
                   tgClock,
                   accountService,
                   projectService,
-                  dateRangeValidation,
                   projectId,
                   toast
                 ).element
@@ -342,6 +342,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskService,
                   taskStatusService,
                   taskLabelService,
+                  milestoneService,
                   spinnerService,
                   tgClock,
                   accountService,
