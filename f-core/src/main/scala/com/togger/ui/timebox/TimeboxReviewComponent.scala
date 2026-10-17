@@ -198,7 +198,8 @@ class TimeboxReviewComponent(
 
   private def overallRow(state: TimeboxReviewState) =
     div(
-      cls("mb-4"),
+      cls("mb-6"),
+      h5(cls("text-heading text-xl font-bold mb-2"), "General Status"),
       pieGrid(
         TimeboxReviewStats.pies(TimeboxReviewStats.OverallGroupings, state.tasks, state.milestones),
         "md:grid-cols-2 xl:grid-cols-3"
