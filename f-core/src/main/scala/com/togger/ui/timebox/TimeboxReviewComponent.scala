@@ -31,8 +31,9 @@ import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton}
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.timebox.gantt.TimeboxReviewGanttComponent
 
-import java.time.ZoneOffset
+import java.time.{DayOfWeek, ZoneOffset}
 import java.util.UUID
 
 /** Everything the review shows, read in one go. */
@@ -41,7 +42,8 @@ case class TimeboxReviewState(
   versions: Seq[TimeboxVersionDto] = Seq.empty,
   tasks: Seq[FindTaskRespFull] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
-  members: Seq[SearchAccountDto] = Seq.empty
+  members: Seq[SearchAccountDto] = Seq.empty,
+  workDays: Set[DayOfWeek] = Set.empty
 )
 
 /** Read only stats of a timebox: its progress, its change comments and its tasks, in their current state, as pies. */
@@ -74,13 +76,15 @@ class TimeboxReviewComponent(
       tasks <- taskService.findAllByTimebox(projectId, timeboxId)
       milestones <- milestoneService.findAllByProjectId(projectId)
       members <- projectService.findAllMembers(projectId)
+      project <- projectService.findById(projectId)
     } yield stateVar.set(
       TimeboxReviewState(
         timebox = timebox.toOption.flatMap(_.body),
         versions = bodyOf(versions, Seq.empty),
         tasks = bodyOf(tasks, Seq.empty),
         milestones = bodyOf(milestones, Seq.empty),
-        members = bodyOf(members, Seq.empty)
+        members = bodyOf(members, Seq.empty),
+        workDays = project.toOption.flatMap(_.body).map(_.workDays.map(DayOfWeek.of)).getOrElse(Set.empty)
       )
     )
 
@@ -167,6 +171,16 @@ class TimeboxReviewComponent(
   private def descriptionRow(state: TimeboxReviewState) =
     div(cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"), datesCard(state), changeCommentsCard(state))
 
+  private def ganttRow(state: TimeboxReviewState) =
+    new TimeboxReviewGanttComponent(
+      Val(state.tasks),
+      Val(state.workDays),
+      Val(state.timebox.map(_.latestVersion).map(version => (version.startDate, version.endDate))),
+      Val(state.members.map(_.id)),
+      tgDateFormater,
+      tgClock
+    ).element
+
   private def pieCard(pie: ReviewPie) =
     div(
       cls("bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4 md:p-6"),
@@ -224,7 +238,7 @@ class TimeboxReviewComponent(
           body = TgCard.HtmlCardContent(
             div(
               child <-- stateVar.signal.map(state =>
-                div(progressRow(state), descriptionRow(state), overallRow(state), membersRow(state))
+                div(progressRow(state), descriptionRow(state), ganttRow(state), overallRow(state), membersRow(state))
               )
             )
           )
