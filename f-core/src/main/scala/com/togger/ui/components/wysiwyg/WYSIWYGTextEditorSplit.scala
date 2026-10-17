@@ -10,6 +10,7 @@ import com.togger.util.FrontendMacros.SelectAndUpdate
 import io.github.edadma.markdown.MarkdownConfig
 import org.scalajs.dom
 import org.scalajs.dom.SVGSVGElement
+import scala.scalajs.js
 
 /** Which pane is on screen while the editor is too narrow to show both. */
 sealed trait SplitPane
@@ -100,6 +101,8 @@ case class WYSIWYGTextEditorSplit(
     new TgMarkdown(config, allowRawHtml = false, styles, onTaskToggle = Some(Observer[TaskToggle](applyTaskToggle)))
 
   private val sourceVar = Var("")
+  /** True once the editor is given less than `minWidthRem`; the panes then stack behind the tab bar. */
+  private val stackedVar = Var(false)
   private val activePaneVar = Var[SplitPane](SplitPane.Source)
   private val activeMarksVar = Var(Set.empty[String])
   private val caretVar = Var(0)
@@ -134,14 +137,18 @@ case class WYSIWYGTextEditorSplit(
 
   val htmlElement: HtmlDiv =
     div(
+      onMountCallback(context => observeWidth(context.thisNode.ref)),
+      div(cls(WYSIWYGTextEditorStyles.widthReserve), width.rem(minWidthRem)),
       label(cls(WYSIWYGTextEditorStyles.label), labelValue),
       div(
         cls(WYSIWYGTextEditorStyles.wrapper),
-        minWidth.rem(minWidthRem),
         if (showToolbar) toolbarElement else emptyNode,
-        tabBarElement,
+        child <-- stackedVar.signal.map(stacked => if (stacked) tabBarElement else emptyNode),
         div(
-          cls(WYSIWYGTextEditorStyles.splitPanes),
+          cls <-- stackedVar.signal.map(stacked =>
+            if (stacked) WYSIWYGTextEditorStyles.splitPanesStacked
+            else WYSIWYGTextEditorStyles.splitPanesSideBySide
+          ),
           minHeight.rem(minHeightRem),
           sourcePane,
           previewPane
@@ -151,6 +158,20 @@ case class WYSIWYGTextEditorSplit(
       inputSignal --> Observer[String](onExternalValue),
       sourceVar.signal.changes.debounce(debounceTimeMillis) --> Observer[String](emit)
     )
+
+  /** Watches the editor's own box, which `widthReserve` keeps from being measured at a width the editor itself
+    * asked for. jsdom has no `ResizeObserver`, so there the editor just stays side by side.
+    */
+  private def observeWidth(element: dom.html.Div): Unit =
+    if (js.typeOf(js.Dynamic.global.ResizeObserver) != "undefined") {
+      val observer = new dom.ResizeObserver((_, _) => stackedVar.set(element.clientWidth < minWidthPx))
+      observer.observe(element)
+    }
+
+  private def minWidthPx: Double = {
+    val rootFontSize = dom.window.getComputedStyle(dom.document.documentElement).fontSize
+    minWidthRem * rootFontSize.stripSuffix("px").toDoubleOption.getOrElse(16.0)
+  }
 
   private def toTriggerEvent(token: Option[WYSIWYGTriggerToken]): Option[WYSIWYGTriggerEvent] =
     token.map(activeToken =>
@@ -175,8 +196,7 @@ case class WYSIWYGTextEditorSplit(
 
   private def sourcePane: HtmlDiv =
     div(
-      cls(WYSIWYGTextEditorStyles.splitPaneSource),
-      cls <-- visibility(SplitPane.Source),
+      cls <-- layout(SplitPane.Source, WYSIWYGTextEditorStyles.splitPaneSourceSideBySide),
       textArea(
         cls(WYSIWYGTextEditorStyles.splitSource),
         placeholder(placeholderValue),
@@ -196,8 +216,7 @@ case class WYSIWYGTextEditorSplit(
 
   private def previewPane: HtmlDiv =
     div(
-      cls(WYSIWYGTextEditorStyles.splitPanePreview),
-      cls <-- visibility(SplitPane.Preview),
+      cls <-- layout(SplitPane.Preview, WYSIWYGTextEditorStyles.splitPanePreviewSideBySide),
       div(
         cls(WYSIWYGTextEditorStyles.splitPreview),
         aria.label(s"$labelValue preview"),
@@ -212,13 +231,14 @@ case class WYSIWYGTextEditorSplit(
     if (text.trim.isEmpty) Seq(div(cls(WYSIWYGTextEditorStyles.splitPreviewEmpty), previewEmptyText))
     else markdown.toLaminar(text)
 
-  /** Both panes stay in the DOM; only their classes change, so the wide layout is pure CSS and the pane a viewer
-    * is not looking at keeps its scroll position and its caret.
+  /** Both panes stay in the DOM; only their classes change, so the pane a viewer is not looking at keeps its scroll
+    * position and its caret.
     */
-  private def visibility(pane: SplitPane): Signal[String] =
-    activePaneVar.signal.map { active =>
-      if (active == pane) WYSIWYGTextEditorStyles.splitPaneShown
-      else WYSIWYGTextEditorStyles.splitPaneHiddenNarrow
+  private def layout(pane: SplitPane, sideBySideClasses: String): Signal[String] =
+    stackedVar.signal.combineWith(activePaneVar.signal).map { case (stacked, active) =>
+      if (!stacked) sideBySideClasses
+      else if (active == pane) WYSIWYGTextEditorStyles.splitPaneShown
+      else WYSIWYGTextEditorStyles.splitPaneHidden
     }
 
   private def tabBarElement: HtmlDiv =

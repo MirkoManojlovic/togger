@@ -30,12 +30,21 @@ object WYSIWYGTextEditorStyles {
 
   val toolbarIcon = "w-4 h-4"
 
-  /** Side by side from `md` up, stacked under it, where [[splitTabBar]] decides which pane is visible. */
-  val splitPanes = "flex flex-col md:flex-row items-stretch"
+  /** Side by side while the editor has its `minWidthRem`, stacked once it is squeezed below it, where [[splitTabBar]]
+    * decides which pane is visible.
+    */
+  val splitPanesSideBySide = "flex flex-row items-stretch"
 
-  val splitPaneSource = "md:w-1/2 md:border-e border-default"
+  val splitPanesStacked = "flex flex-col items-stretch"
 
-  val splitPanePreview = "md:w-1/2"
+  val splitPaneSourceSideBySide = "w-1/2 border-e border-default"
+
+  val splitPanePreviewSideBySide = "w-1/2"
+
+  /** Takes up the `minWidthRem` the card is meant to grow to, without being the editor's own box — the editor can then
+    * be measured at the width it is really given.
+    */
+  val widthReserve = "h-0 pointer-events-none invisible"
 
   /** `resize-none` because the pane owns the height; the textarea's own grip would desynchronise the two sides. */
   val splitSource =
@@ -46,8 +55,8 @@ object WYSIWYGTextEditorStyles {
 
   val splitPreviewEmpty = "text-sm text-body opacity-60 select-none"
 
-  /** Only below `md` — above it both panes are on screen and the tabs have nothing to switch. */
-  val splitTabBar = "flex md:hidden border-b border-default text-sm font-medium text-center text-body"
+  /** Only while stacked — side by side both panes are on screen and the tabs have nothing to switch. */
+  val splitTabBar = "flex border-b border-default text-sm font-medium text-center text-body"
 
   val splitTab =
     "flex-1 p-2 border-b cursor-pointer bg-transparent focus:outline-none focus-visible:ring-2 " +
@@ -57,8 +66,8 @@ object WYSIWYGTextEditorStyles {
 
   val splitTabInactive = "border-transparent hover:text-fg-brand"
 
-  /** Hides a pane on narrow screens only; the pane's own `md:*` width class wins the layout back above `md`. */
-  val splitPaneHiddenNarrow = "hidden md:block"
+  /** Hides the pane a stacked viewer is not looking at. */
+  val splitPaneHidden = "hidden"
 
   val splitPaneShown = "block"
 }
