@@ -166,7 +166,13 @@ class TimeboxGanttComponent(
     )
   }
 
-  private def barElement(task: FindTaskRespFull, placed: GanttBar.Placed, axis: GanttAxis): HtmlElement = {
+  private def barElement(
+    task: FindTaskRespFull,
+    placed: GanttBar.Placed,
+    axis: GanttAxis,
+    taskLookups: BulkLookups
+  ): HtmlElement = {
+    val color = GanttAssigneeColors.classFor(task.assignedTo.map(_.id), taskLookups.members.map(_.id))
     val rounding = (placed.clippedLeft, placed.clippedRight) match {
       case (false, false) => "rounded-md"
       case (true, false)  => "rounded-r-md"
@@ -174,7 +180,7 @@ class TimeboxGanttComponent(
       case (true, true)   => ""
     }
     div(
-      cls(s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden bg-blue-500 px-1 text-xs text-white $rounding"),
+      cls(s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"),
       title := barTitle(task, task.startDate, task.dueDate),
       // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
       if (placed.clippedLeft || placed.clippedRight) emptyMod
@@ -241,7 +247,7 @@ class TimeboxGanttComponent(
         div(cls(s"h-full ${dayCellClasses(axis, index)}"), styleAttr := s"grid-column: ${index + 2}; grid-row: 1")
       ),
       GanttBar.of(task.startDate, task.dueDate, axis).fold[Modifier[HtmlElement]](emptyMod) {
-        case placed: GanttBar.Placed => barElement(task, placed, axis).amend(styleAttr := barStyle(placed))
+        case placed: GanttBar.Placed => barElement(task, placed, axis, taskLookups).amend(styleAttr := barStyle(placed))
         case GanttBar.Outside(side)  => outsideElement(side).amend(styleAttr := outsideStyle(axis))
       }
     )
