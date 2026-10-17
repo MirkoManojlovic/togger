@@ -3,58 +3,38 @@ package com.togger.ui.timebox
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateTimeboxReq, FindTaskRespFull, FindTimeboxResp, SaveTimeboxVersionReq}
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.timebox.{TimeboxDefault, TimeboxDefaults}
 import com.togger.toast.ToastMessages
-import com.togger.components.button.TgHtmlButton
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.tgInputStyle
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
-import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.components.{CalendarPickerPopup, TgBadgeColor, TgHtmlTable}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.{
-  BadgeSpec,
-  BulkEdit,
-  BulkEditContext,
-  BulkEditKind,
-  BulkEditPopups,
-  BulkLookups,
-  BulkTaskBadges,
-  BulkTaskCard,
-  BulkTaskEditor
-}
-import com.togger.ui.task.{
-  ShowAllTasksBulkMapping,
-  TaskFeService,
-  TaskLabelFeService,
-  TaskListBrowser,
-  TaskListLookups,
-  TaskStatusFeService,
-  TgDateFormater
-}
+import com.togger.ui.task.bulk._
+import com.togger.ui.task._
 import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.time.{DayOfWeek, LocalDate}
-import scala.util.Try
 import java.util.UUID
+import scala.util.Try
 
 sealed trait TimeboxFormTarget {
   def projectId: UUID
@@ -95,11 +75,13 @@ class TimeboxFormComponent(
 
   // Only a new timebox is remembered; a new version starts from the timebox's latest version instead.
   private val isCreate = target match {
-    case TimeboxFormTarget.Create(_)     => true
+    case TimeboxFormTarget.Create(_)        => true
     case TimeboxFormTarget.NewVersion(_, _) => false
   }
 
-  private val formState = Var(if (isCreate) draftStore.load(target.projectId).getOrElse(TimeboxForm()) else TimeboxForm())
+  private val formState = Var(
+    if (isCreate) draftStore.load(target.projectId).getOrElse(TimeboxForm()) else TimeboxForm()
+  )
 
   private val draftSaver = Observer[TimeboxForm](form => if (isCreate) draftStore.save(target.projectId, form))
 
@@ -172,7 +154,9 @@ class TimeboxFormComponent(
       case TimeboxFormTarget.Create(projectId) =>
         timeboxService.createTimebox(CreateTimeboxReq(projectId, start, end, description, taskIds))
       case TimeboxFormTarget.NewVersion(_, timeboxId) =>
-        timeboxService.saveNewVersion(SaveTimeboxVersionReq(timeboxId, start, end, description, form.changeComment.trim, taskIds))
+        timeboxService.saveNewVersion(
+          SaveTimeboxVersionReq(timeboxId, start, end, description, form.changeComment.trim, taskIds)
+        )
     }
     // The tasks come first so the timebox picks up their new dates; if one fails the timebox is not saved.
     val saveTimebox = call.toastMessageCodeBlock("Timebox saved successfully") {
@@ -334,7 +318,11 @@ class TimeboxFormComponent(
 
   private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray, Some(BulkEditKind.StartDate)),
+      BadgeSpec(
+        tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+        TgBadgeColor.Gray,
+        Some(BulkEditKind.StartDate)
+      ),
       BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
       BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
     )
@@ -387,7 +375,8 @@ class TimeboxFormComponent(
     onEdit = saveEdit
   )
 
-  /** The task a badge edits: as it is staged, with the dates it has on the Gantt chart, or else as the page shows it. */
+  /** The task a badge edits: as it is staged, with the dates it has on the Gantt chart, or else as the page shows it.
+    */
   private def editableTasks(scope: Option[UUID]): Seq[FindTaskRespFull] =
     scope.toSeq.flatMap { id =>
       stagingStore.stagedWithDatesNow(projectId).find(_.id == id).orElse(browser.rowsVar.now().find(_.id == id))
@@ -407,10 +396,11 @@ class TimeboxFormComponent(
       }
     changed.foreach { updated =>
       savingVar.update(_ + updated.id)
-      val save = taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(updated, tgClock.currentInstant)).flatMap {
-        case Left(error) => IO(toast.error(error))
-        case Right(_)    => IO.unit
-      }
+      val save =
+        taskService.updateTask(ShowAllTasksBulkMapping.toUpdateRequest(updated, tgClock.currentInstant)).flatMap {
+          case Left(error) => IO(toast.error(error))
+          case Right(_)    => IO.unit
+        }
       spinnerService
         .runWithSpinner(save >> browser.loadPage() >> refreshStaged())
         .guarantee(IO(savingVar.update(_ - updated.id)))
@@ -532,7 +522,7 @@ class TimeboxFormComponent(
       .headerNoFooter(
         header = TgCard.CardHeader.plainText(
           target match {
-            case TimeboxFormTarget.Create(_)     => "Create a timebox"
+            case TimeboxFormTarget.Create(_)        => "Create a timebox"
             case TimeboxFormTarget.NewVersion(_, _) => "Save a new timebox version"
           },
           TgCard.CardHeaderSize.H3
@@ -544,7 +534,9 @@ class TimeboxFormComponent(
             presetButtons,
             startDateInput.amend(cls("mb-4")),
             endDateInput.amend(cls("mb-4")),
-            child.maybe <-- endBeforeStartError.map(_.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))),
+            child.maybe <-- endBeforeStartError.map(
+              _.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))
+            ),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             if (isCreate) emptyNode
             else
@@ -566,7 +558,6 @@ class TimeboxFormComponent(
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
   )
 
 }
