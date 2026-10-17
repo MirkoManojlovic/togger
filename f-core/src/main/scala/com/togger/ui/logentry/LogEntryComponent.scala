@@ -400,7 +400,7 @@ class LogEntryComponent(
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
+//      .amend(heightAndWidthFitContent)
 
   }
 
