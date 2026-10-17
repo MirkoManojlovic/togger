@@ -75,12 +75,11 @@ class RowReorder[K](order: Signal[Seq[K]], orderNow: () => Seq[K], onMove: (Int,
     )
   }
 
-  def controls(key: K, itemName: String = "task", showGrip: Boolean = true): HtmlElement =
+  def controls(key: K, itemName: String = "task"): HtmlElement =
     div(
       cls("flex items-center shrink-0"),
       moveButton(key, s"Move $itemName up", "↑", -1),
       moveButton(key, s"Move $itemName down", "↓", 1),
-      if (showGrip) span(cls("ps-1.5 text-body-subtle cursor-grab select-none"), title("Drag to reorder"), "⠿")
-      else emptyNode
+      span(cls("ps-1.5 text-body-subtle cursor-grab select-none"), title("Drag to reorder"), "⠿")
     )
 }
