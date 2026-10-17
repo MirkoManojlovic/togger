@@ -496,6 +496,7 @@ class TimeboxFormComponent(
     browser.filterBindings,
     // Enter in a search box searches; it must not submit the timebox form around the picker.
     onKeyDown.filter(_.key == "Enter").preventDefault --> Observer.empty,
+    div(cls("mb-4"), ganttChart.element),
     div(
       cls("grid grid-cols-1 items-start gap-4 lg:grid-cols-2"),
       TgCard
@@ -505,8 +506,7 @@ class TimeboxFormComponent(
         )
         .element,
       stagedTasks.element
-    ),
-    div(cls("mt-4"), ganttChart.element)
+    )
   )
 
   val element = div(
