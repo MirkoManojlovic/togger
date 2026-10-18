@@ -6,7 +6,8 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.organization.OrganizationProjectResp
-import com.togger.dto.{LogEntryDto, SearchAccountDto}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.dto.{FindProjectResp, LogEntryDto, SearchAccountDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgInput.tgInputStyle
@@ -16,7 +17,7 @@ import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TaskProjectDataLoader}
+import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader}
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate, LocalTime, ZoneOffset}
@@ -92,36 +93,46 @@ class TeamDailyComponent(
   // ---- loading
 
   private def loadProjects(): Unit =
-    if (currentProjectId.isEmpty)
-      projectDataLoader.loadProjects().map(projects => state.update(_.copy(projects = projects))).unsafeRunAndForget()
+    projectDataLoader
+      .loadProjects()
+      .map(projects => state.update(_.copy(projects = projects)))
+      .unsafeRunAndForget()
 
   private def loadProject(projectId: UUID): Unit =
     projectDataLoader
       .loadProjectData(projectId)
       .flatMap(data => projectService.findById(projectId).map(project => (data, project)))
       .map { case (data, project) =>
-        val workDays = project.toOption
-          .flatMap(_.body)
-          .map(_.workDays.map(DayOfWeek.of))
-          .filter(_.nonEmpty)
-          .getOrElse(WorkDayCalendar.DefaultWorkDays)
-        val restored = draftStore(projectId).flatMap(_.load())
-        val memberIds = data.members.map(_.id).toSet
-        state.update { current =>
-          val me = currentAccountId.filter(memberIds.contains).toSet
-          current.copy(
-            members = data.members,
-            workDays = workDays,
-            selected = restored.fold(me)(_.memberIds.toSet.intersect(memberIds)),
-            todayFirst = restored.fold(current.todayFirst)(_.todayFirst),
-            entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
-            plan = Seq.empty,
-            position = TeamDailyPosition.ChooseMembers
-          )
-        }
-        if (restored.isDefined) toast.success("Restored your unfinished team daily")
+        if (state.now().projectId.contains(projectId)) applyProject(projectId, data, project)
       }
       .unsafeRunAndForget()
+
+  private def applyProject(
+    projectId: UUID,
+    data: TaskProjectData,
+    project: TgResp[FindProjectResp]
+  ): Unit = {
+    val workDays = project.toOption
+      .flatMap(_.body)
+      .map(_.workDays.map(DayOfWeek.of))
+      .filter(_.nonEmpty)
+      .getOrElse(WorkDayCalendar.DefaultWorkDays)
+    val restored = draftStore(projectId).flatMap(_.load())
+    val memberIds = data.members.map(_.id).toSet
+    state.update { current =>
+      val me = currentAccountId.filter(memberIds.contains).toSet
+      current.copy(
+        members = data.members,
+        workDays = workDays,
+        selected = restored.fold(me)(_.memberIds.toSet.intersect(memberIds)),
+        todayFirst = restored.fold(current.todayFirst)(_.todayFirst),
+        entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
+        plan = Seq.empty,
+        position = TeamDailyPosition.ChooseMembers
+      )
+    }
+    if (restored.isDefined) toast.success("Restored your unfinished team daily")
+  }
 
   private def loadPlan(): Unit = {
     val current = state.now()
