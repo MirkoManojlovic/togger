@@ -61,6 +61,11 @@ class TeamDailyComponent(
 )(implicit ioRuntime: IORuntime) {
 
   private val DraftSaveDebounce = 300.millis
+  /** A row with more steps than fit scrolls sideways instead of overflowing: the steps keep their size and the list
+    * grows to its content, but never narrower than the row.
+    */
+  private val BreadcrumbScrollCls =
+    "overflow-x-auto [&_ol]:w-max [&_ol]:min-w-full [&_li]:shrink-0 [&_li]:whitespace-nowrap"
   private val ProcessSteps = Seq("Choose members", "Fill in the status", "Accept all changes")
 
   private val state = Var(TeamDailyState(projectId = currentProjectId))
@@ -247,6 +252,7 @@ class TeamDailyComponent(
 
   private def breadcrumb(labels: Seq[String], current: Int, onSelect: Int => Unit): HtmlElement =
     new TgStepperBreadcrumb(labels.map(TgStep(_)), Val(current), Observer(onSelect)).element
+      .amend(cls(BreadcrumbScrollCls))
 
   private def levelOne: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.map { position =>
