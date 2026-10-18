@@ -483,7 +483,7 @@ object TgIcons {
   def bulkAddIcon(className: String) =
     strokeIcon(className, "M9 8h10M9 12h10M9 16h5M4.99 8H5m-.02 4h.01m0 4H5m12-.5v5m-2.5-2.5h5")
 
-  def dailyIcon(className: String) =
+  def teamDailyIcon(className: String) =
     strokeIcon(className, "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 10 2 2 4-4")
 
   def copyIcon(className: String) =

@@ -1,4 +1,4 @@
-package com.togger.ui.daily
+package com.togger.ui.teamdaily
 
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.localstorage.LocalStorage
@@ -11,28 +11,28 @@ import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 
-case class DailyEntryKey(memberId: UUID, taskId: UUID, date: LocalDate)
+case class TeamDailyEntryKey(memberId: UUID, taskId: UUID, date: LocalDate)
 
 /** What was filled in for one day. A day nobody touched has no draft and is not saved. */
-case class DailyEntryDraft(status: LogEntryStatus, textInternal: String, textExternal: String, skipped: Boolean) {
+case class TeamDailyEntryDraft(status: LogEntryStatus, textInternal: String, textExternal: String, skipped: Boolean) {
   def willBeSaved: Boolean = !skipped
 }
 
-case class DailyEntryRecord(key: DailyEntryKey, draft: DailyEntryDraft)
+case class TeamDailyEntryRecord(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft)
 
-/** Everything of an unfinished daily. Where the user was is not kept; they start again at choosing members. */
-case class DailyDraft(projectId: Option[UUID], memberIds: Seq[UUID], todayFirst: Boolean, entries: Seq[DailyEntryRecord]) {
+/** Everything of an unfinished team daily. Where the user was is not kept; they start again at choosing members. */
+case class TeamDailyDraft(projectId: Option[UUID], memberIds: Seq[UUID], todayFirst: Boolean, entries: Seq[TeamDailyEntryRecord]) {
   def isEmpty: Boolean = entries.isEmpty
 }
 
-/** The draft in the browser's local storage, one per account and project, so an unfinished daily survives a refresh. */
-class DailyDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
+/** The draft in the browser's local storage, one per account and project, so an unfinished team daily survives a refresh. */
+class TeamDailyDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
 
-  import DailyDraftStore._
+  import TeamDailyDraftStore._
 
   private val key = s"$KeyPrefix$accountId-$projectId"
 
-  def load(): Option[DailyDraft] =
+  def load(): Option[TeamDailyDraft] =
     Try(localStorage.getItem(key)).toOption.flatten
       .flatMap(stored => decode[Envelope](stored).toOption)
       .filter(_.version == Version)
@@ -40,21 +40,21 @@ class DailyDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UU
       .filterNot(_.isEmpty)
 
   /** Saving an empty draft removes it, so there is never a stored draft with nothing in it. */
-  def save(draft: DailyDraft): Unit =
+  def save(draft: TeamDailyDraft): Unit =
     if (draft.isEmpty) clear()
     else Try(localStorage.setItem(key, Envelope(Version, draft).asJson.noSpaces)): Unit
 
   def clear(): Unit = Try(localStorage.removeItem(key)): Unit
 }
 
-object DailyDraftStore {
+object TeamDailyDraftStore {
 
-  val KeyPrefix = "tg-daily-draft-"
+  val KeyPrefix = "tg-team-daily-draft-"
 
   /** Bumped when the stored shape changes in a way old drafts can't be read, which then makes them disappear. */
   val Version = 1
 
-  private case class Envelope(version: Int, draft: DailyDraft)
+  private case class Envelope(version: Int, draft: TeamDailyDraft)
 
   // a status is stored as its number, so renaming one doesn't invalidate saved drafts
   private implicit val statusEncoder: Encoder[LogEntryStatus] = Encoder[Int].contramap(_.value)

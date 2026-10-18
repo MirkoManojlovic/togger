@@ -1,4 +1,4 @@
-package com.togger.ui.daily
+package com.togger.ui.teamdaily
 
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec

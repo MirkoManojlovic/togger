@@ -1,9 +1,9 @@
-package com.togger.ui.daily
+package com.togger.ui.teamdaily
 
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.task.DefaultTaskStatus
 
-class DailyStatusOrderTest extends AsyncJsWordSpec {
+class TeamDailyStatusOrderTest extends AsyncJsWordSpec {
 
   testNameFromClassName should {
 
@@ -13,16 +13,16 @@ class DailyStatusOrderTest extends AsyncJsWordSpec {
         DefaultTaskStatus.Testing,
         DefaultTaskStatus.Waiting,
         DefaultTaskStatus.Blocked
-      ).map(status => DailyStatusOrder.rank(status.statusName)) shouldBe Seq(Some(0), Some(1), Some(2), Some(3))
+      ).map(status => TeamDailyStatusOrder.rank(status.statusName)) shouldBe Seq(Some(0), Some(1), Some(2), Some(3))
     }
 
     "ignore other statuses" in { _ =>
-      DailyStatusOrder.rank(DefaultTaskStatus.Todo.statusName) shouldBe None
-      DailyStatusOrder.rank("Something custom") shouldBe None
+      TeamDailyStatusOrder.rank(DefaultTaskStatus.Todo.statusName) shouldBe None
+      TeamDailyStatusOrder.rank("Something custom") shouldBe None
     }
 
     "recognise a name without its emoji" in { _ =>
-      DailyStatusOrder.rank("in progress") shouldBe Some(0)
+      TeamDailyStatusOrder.rank("in progress") shouldBe Some(0)
     }
   }
 }

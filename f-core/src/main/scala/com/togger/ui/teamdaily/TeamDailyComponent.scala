@@ -1,4 +1,4 @@
-package com.togger.ui.daily
+package com.togger.ui.teamdaily
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
@@ -23,30 +23,30 @@ import java.time.{DayOfWeek, LocalDate, LocalTime, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-case class DailyState(
+case class TeamDailyState(
   projectId: Option[UUID],
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
   workDays: Set[DayOfWeek] = WorkDayCalendar.DefaultWorkDays,
   selected: Set[UUID] = Set.empty,
   todayFirst: Boolean = true,
-  plan: Seq[DailyMemberPlan] = Seq.empty,
-  position: DailyPosition = DailyPosition.ChooseMembers,
-  entries: Map[DailyEntryKey, DailyEntryDraft] = Map.empty
+  plan: Seq[TeamDailyMemberPlan] = Seq.empty,
+  position: TeamDailyPosition = TeamDailyPosition.ChooseMembers,
+  entries: Map[TeamDailyEntryKey, TeamDailyEntryDraft] = Map.empty
 ) {
 
-  def positions: Seq[DailyPosition] = DailyPlan.positions(plan, todayFirst)
+  def positions: Seq[TeamDailyPosition] = TeamDailyPlan.positions(plan, todayFirst)
 
-  def draft: DailyDraft =
-    DailyDraft(projectId, selected.toSeq, todayFirst, entries.map { case (key, draft) => DailyEntryRecord(key, draft) }.toSeq)
+  def draft: TeamDailyDraft =
+    TeamDailyDraft(projectId, selected.toSeq, todayFirst, entries.map { case (key, draft) => TeamDailyEntryRecord(key, draft) }.toSeq)
 
-  def toSave: Seq[(DailyEntryKey, DailyEntryDraft)] =
-    plan.flatMap(member => member.tasks.flatMap(task => task.missingDays.map(DailyEntryKey(member.member.id, task.taskId, _))))
+  def toSave: Seq[(TeamDailyEntryKey, TeamDailyEntryDraft)] =
+    plan.flatMap(member => member.tasks.flatMap(task => task.missingDays.map(TeamDailyEntryKey(member.member.id, task.taskId, _))))
       .flatMap(key => entries.get(key).filter(_.willBeSaved).map(key -> _))
 }
 
-/** The daily: choose who it is for, fill in the missing log entries of their open tasks, accept all and submit. */
-class DailyComponent(
+/** The team daily: choose who it is for, fill in the missing log entries of their open tasks, accept all and submit. */
+class TeamDailyComponent(
   taskService: TaskFeService,
   projectDataLoader: TaskProjectDataLoader,
   projectService: ProjectService,
@@ -62,12 +62,12 @@ class DailyComponent(
   private val DraftSaveDebounce = 300.millis
   private val ProcessSteps = Seq("Choose members", "Fill in the status", "Accept all changes")
 
-  private val state = Var(DailyState(projectId = currentProjectId))
+  private val state = Var(TeamDailyState(projectId = currentProjectId))
 
   private val currentAccountId: Option[UUID] = accountService.get.map(_.id)
 
-  private def draftStore(projectId: UUID): Option[DailyDraftStore] =
-    currentAccountId.map(new DailyDraftStore(localStorage, _, projectId))
+  private def draftStore(projectId: UUID): Option[TeamDailyDraftStore] =
+    currentAccountId.map(new TeamDailyDraftStore(localStorage, _, projectId))
 
   /** Off once the draft is discarded or submitted, so a save still waiting can't bring the draft back. */
   private val persisting = Var(true)
@@ -114,12 +114,12 @@ class DailyComponent(
             workDays = workDays,
             selected = restored.fold(me)(_.memberIds.toSet.intersect(memberIds)),
             todayFirst = restored.fold(current.todayFirst)(_.todayFirst),
-            entries = restored.fold(Map.empty[DailyEntryKey, DailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
+            entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
             plan = Seq.empty,
-            position = DailyPosition.ChooseMembers
+            position = TeamDailyPosition.ChooseMembers
           )
         }
-        if (restored.isDefined) toast.success("Restored your unfinished daily")
+        if (restored.isDefined) toast.success("Restored your unfinished team daily")
       }
       .unsafeRunAndForget()
 
@@ -133,7 +133,7 @@ class DailyComponent(
             error => IO(toast.error(error)),
             tasks =>
               IO {
-                val plan = DailyPlan.build(
+                val plan = TeamDailyPlan.build(
                   tasks.body.getOrElse(Seq.empty),
                   current.members,
                   current.selected,
@@ -142,7 +142,7 @@ class DailyComponent(
                 )
                 state.update { s =>
                   val planned = s.copy(plan = plan)
-                  planned.copy(position = planned.positions.drop(1).headOption.getOrElse(DailyPosition.Review))
+                  planned.copy(position = planned.positions.drop(1).headOption.getOrElse(TeamDailyPosition.Review))
                 }
               }
           )
@@ -161,24 +161,24 @@ class DailyComponent(
   }
 
   private def next(): Unit =
-    if (state.now().position == DailyPosition.ChooseMembers) loadPlan() else move(1)
+    if (state.now().position == TeamDailyPosition.ChooseMembers) loadPlan() else move(1)
 
-  private def jumpTo(find: DailyPosition => Boolean): Unit =
+  private def jumpTo(find: TeamDailyPosition => Boolean): Unit =
     state.now().positions.find(find).foreach(target => state.update(_.copy(position = target)))
 
-  private def isPlanned: Boolean = state.now().position != DailyPosition.ChooseMembers || state.now().plan.nonEmpty
+  private def isPlanned: Boolean = state.now().position != TeamDailyPosition.ChooseMembers || state.now().plan.nonEmpty
 
   // ---- editing
 
-  private def defaultEntry(key: DailyEntryKey): DailyEntryDraft = {
+  private def defaultEntry(key: TeamDailyEntryKey): TeamDailyEntryDraft = {
     val previous = state.now().plan
       .flatMap(_.tasks)
       .find(_.taskId == key.taskId)
       .fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus)
-    DailyEntryDraft(previous, "", "", skipped = false)
+    TeamDailyEntryDraft(previous, "", "", skipped = false)
   }
 
-  private def edit(key: DailyEntryKey)(change: DailyEntryDraft => DailyEntryDraft): Unit =
+  private def edit(key: TeamDailyEntryKey)(change: TeamDailyEntryDraft => TeamDailyEntryDraft): Unit =
     state.update(current =>
       current.copy(entries = current.entries.updated(key, change(current.entries.getOrElse(key, defaultEntry(key)))))
     )
@@ -188,7 +188,7 @@ class DailyComponent(
 
   // ---- submit
 
-  private def logEntryOf(key: DailyEntryKey, draft: DailyEntryDraft): LogEntryDto = {
+  private def logEntryOf(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft): LogEntryDto = {
     val today = tgClock.currentDate()
     val createdAt =
       if (key.date == today) tgClock.currentInstant else tgClock.instantFrom(key.date, LocalTime.NOON, ZoneOffset.UTC)
@@ -241,27 +241,27 @@ class DailyComponent(
   private def levelOne: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.map { position =>
       val current = position match {
-        case DailyPosition.ChooseMembers => 0
-        case _: DailyPosition.Fill       => 1
-        case DailyPosition.Review        => 2
+        case TeamDailyPosition.ChooseMembers => 0
+        case _: TeamDailyPosition.Fill       => 1
+        case TeamDailyPosition.Review        => 2
       }
       breadcrumb(ProcessSteps, current, {
-        case 0                 => jumpTo(_ == DailyPosition.ChooseMembers)
-        case 1 if isPlanned    => jumpTo(_.isInstanceOf[DailyPosition.Fill])
-        case 2 if isPlanned    => jumpTo(_ == DailyPosition.Review)
+        case 0                 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
+        case 1 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
+        case 2 if isPlanned    => jumpTo(_ == TeamDailyPosition.Review)
         case _                 => ()
       })
     }
 
   private def levelTwo: Signal[Option[HtmlElement]] =
     state.signal.map(s => (s.plan, s.position)).distinct.map {
-      case (plan, DailyPosition.Fill(memberId, _, _)) =>
+      case (plan, TeamDailyPosition.Fill(memberId, _, _)) =>
         val current = plan.indexWhere(_.member.id == memberId)
         Some(
           breadcrumb(
             plan.map(_.member.fullName),
             current,
-            index => jumpTo { case DailyPosition.Fill(m, _, _) => m == plan(index).member.id; case _ => false }
+            index => jumpTo { case TeamDailyPosition.Fill(m, _, _) => m == plan(index).member.id; case _ => false }
           )
         )
       case _ => None
@@ -269,12 +269,12 @@ class DailyComponent(
 
   private def levelThree: Signal[Option[HtmlElement]] =
     state.signal.map(s => (s.plan, s.position)).distinct.map {
-      case (plan, DailyPosition.Fill(memberId, taskId, _)) =>
+      case (plan, TeamDailyPosition.Fill(memberId, taskId, _)) =>
         plan.find(_.member.id == memberId).map { member =>
           breadcrumb(
             member.tasks.map(_.name),
             member.tasks.indexWhere(_.taskId == taskId),
-            index => jumpTo { case DailyPosition.Fill(_, t, _) => t == member.tasks(index).taskId; case _ => false }
+            index => jumpTo { case TeamDailyPosition.Fill(_, t, _) => t == member.tasks(index).taskId; case _ => false }
           )
         }
       case _ => None
@@ -282,13 +282,13 @@ class DailyComponent(
 
   private def levelFour: Signal[Option[HtmlElement]] =
     state.signal.map(s => (s.plan, s.todayFirst, s.position)).distinct.map {
-      case (plan, todayFirst, DailyPosition.Fill(memberId, taskId, date)) =>
+      case (plan, todayFirst, TeamDailyPosition.Fill(memberId, taskId, date)) =>
         plan.find(_.member.id == memberId).flatMap(_.tasks.find(_.taskId == taskId)).map { task =>
           val days = MissingLogDays.inFillOrder(task.missingDays, todayFirst)
           breadcrumb(
             days.map(_.toString),
             days.indexOf(date),
-            index => jumpTo { case DailyPosition.Fill(_, t, d) => t == taskId && d == days(index); case _ => false }
+            index => jumpTo { case TeamDailyPosition.Fill(_, t, d) => t == taskId && d == days(index); case _ => false }
           )
         }
       case _ => None
@@ -347,7 +347,7 @@ class DailyComponent(
   private val chooseMembers: HtmlElement =
     div(
       div(cls("mb-4 max-w-sm"), child <-- projectPicker),
-      label(cls(labelCls), "Who is this daily for?"),
+      label(cls(labelCls), "Who is this team daily for?"),
       div(
         cls("flex gap-2 mb-2"),
         button(
@@ -380,7 +380,7 @@ class DailyComponent(
       cls("flex items-center gap-1 cursor-pointer"),
       input(
         `type`("radio"),
-        nameAttr("daily-fill-order"),
+        nameAttr("team-daily-fill-order"),
         cls(checkboxCls),
         checked <-- state.signal.map(_.todayFirst == todayFirst).distinct,
         onChange.mapTo(todayFirst) --> (value => state.update(_.copy(todayFirst = value)))
@@ -391,7 +391,7 @@ class DailyComponent(
   // ---- step 2: fill in
 
   private def fillForm(memberId: UUID, taskId: UUID, date: LocalDate): HtmlElement = {
-    val key = DailyEntryKey(memberId, taskId, date)
+    val key = TeamDailyEntryKey(memberId, taskId, date)
     val current = state.now().entries.getOrElse(key, defaultEntry(key))
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == taskId)
     div(
@@ -435,7 +435,7 @@ class DailyComponent(
 
   // ---- step 3: review
 
-  private def reviewView(s: DailyState): HtmlElement = {
+  private def reviewView(s: TeamDailyState): HtmlElement = {
     val toSave = s.toSave.toMap
     if (s.plan.isEmpty) div(cls("text-sm text-body"), "Nothing to fill in: the chosen members have no open tasks with missing days.")
     else
@@ -449,13 +449,13 @@ class DailyComponent(
                 cls("ml-3 mt-2"),
                 p(cls("text-sm font-medium text-heading"), task.name),
                 MissingLogDays.inFillOrder(task.missingDays, s.todayFirst).map { date =>
-                  val key = DailyEntryKey(member.member.id, task.taskId, date)
+                  val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
                   val text = toSave.get(key).fold("Not filled in, will not be saved")(d => d.status.toStringWithEmoji + " " + d.textInternal)
                   button(
                     `type`("button"),
                     cls("block w-full text-start text-sm text-body hover:text-fg-brand cursor-pointer"),
                     s"$date: $text",
-                    onClick.mapToUnit --> (_ => jumpTo(_ == DailyPosition.Fill(member.member.id, task.taskId, date)))
+                    onClick.mapToUnit --> (_ => jumpTo(_ == TeamDailyPosition.Fill(member.member.id, task.taskId, date)))
                   )
                 }
               )
@@ -468,16 +468,16 @@ class DailyComponent(
 
   private val body: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.flatMapSwitch {
-      case DailyPosition.ChooseMembers   => Val(chooseMembers)
-      case DailyPosition.Fill(m, t, d)   => Val(fillForm(m, t, d))
-      case DailyPosition.Review          => state.signal.map(reviewView)
+      case TeamDailyPosition.ChooseMembers   => Val(chooseMembers)
+      case TeamDailyPosition.Fill(m, t, d)   => Val(fillForm(m, t, d))
+      case TeamDailyPosition.Review          => state.signal.map(reviewView)
     }
 
   // ---- footer
 
-  private val onReview = state.signal.map(_.position == DailyPosition.Review)
+  private val onReview = state.signal.map(_.position == TeamDailyPosition.Review)
   private val canGoBack = state.signal.map(s => s.positions.indexOf(s.position) > 0)
-  private val canGoNext = state.signal.map(s => s.position != DailyPosition.ChooseMembers || s.selected.nonEmpty)
+  private val canGoNext = state.signal.map(s => s.position != TeamDailyPosition.ChooseMembers || s.selected.nonEmpty)
 
   private val footer: HtmlElement =
     div(
@@ -509,7 +509,7 @@ class DailyComponent(
           cls("opacity-50 cursor-not-allowed") <-- canGoNext.map(!_),
           disabled <-- canGoNext.map(!_),
           child.text <-- onReview.map(if (_) "Submit all changes" else "Next"),
-          onClick.mapToUnit --> (_ => if (state.now().position == DailyPosition.Review) submit() else next())
+          onClick.mapToUnit --> (_ => if (state.now().position == TeamDailyPosition.Review) submit() else next())
         )
       )
     )
@@ -531,7 +531,7 @@ class DailyComponent(
         cls("w-full max-w-4xl"),
         div(
           cls(ModalStyles.headerCls),
-          h3(cls(ModalStyles.titleCls), "Daily"),
+          h3(cls(ModalStyles.titleCls), "Team daily"),
           button(
             `type`("button"),
             cls(ModalStyles.closeButtonCls),

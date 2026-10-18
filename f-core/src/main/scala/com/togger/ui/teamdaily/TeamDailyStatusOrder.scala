@@ -1,11 +1,11 @@
-package com.togger.ui.daily
+package com.togger.ui.teamdaily
 
 import com.togger.task.DefaultTaskStatus
 
 /** Which task statuses a daily asks about, and in what order. A status is recognised by its default name, ignoring the
   * emoji in front of it, as statuses have no type of their own.
   */
-object DailyStatusOrder {
+object TeamDailyStatusOrder {
 
   private val Ordered: Seq[DefaultTaskStatus] =
     Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
