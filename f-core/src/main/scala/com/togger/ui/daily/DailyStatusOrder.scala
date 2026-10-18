@@ -1,0 +1,21 @@
+package com.togger.ui.daily
+
+import com.togger.task.DefaultTaskStatus
+
+/** Which task statuses a daily asks about, and in what order. A status is recognised by its default name, ignoring the
+  * emoji in front of it, as statuses have no type of their own.
+  */
+object DailyStatusOrder {
+
+  private val Ordered: Seq[DefaultTaskStatus] =
+    Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
+
+  private def normalise(name: String): String =
+    name.dropWhile(!_.isLetter).trim.toLowerCase
+
+  private val RankByName: Map[String, Int] =
+    Ordered.zipWithIndex.map { case (status, rank) => normalise(status.statusName) -> rank }.toMap
+
+  /** 0 for In progress up to 3 for Blocked; none for any other status. */
+  def rank(statusName: String): Option[Int] = RankByName.get(normalise(statusName))
+}
