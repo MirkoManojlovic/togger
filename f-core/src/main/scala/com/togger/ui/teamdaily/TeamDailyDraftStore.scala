@@ -21,7 +21,13 @@ case class TeamDailyEntryDraft(status: LogEntryStatus, textExternal: String, ski
 case class TeamDailyEntryRecord(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft)
 
 /** Everything of an unfinished team daily. Where the user was is not kept; they start again at choosing members. */
-case class TeamDailyDraft(projectId: Option[UUID], memberIds: Seq[UUID], todayFirst: Boolean, entries: Seq[TeamDailyEntryRecord]) {
+case class TeamDailyDraft(
+  projectId: Option[UUID],
+  memberIds: Seq[UUID],
+  taskIds: Option[Seq[UUID]],
+  todayFirst: Boolean,
+  entries: Seq[TeamDailyEntryRecord]
+) {
   def isEmpty: Boolean = entries.isEmpty
 }
 
@@ -52,7 +58,7 @@ object TeamDailyDraftStore {
   val KeyPrefix = "tg-team-daily-draft-"
 
   /** Bumped when the stored shape changes in a way old drafts can't be read, which then makes them disappear. */
-  val Version = 1
+  val Version = 2
 
   private case class Envelope(version: Int, draft: TeamDailyDraft)
 

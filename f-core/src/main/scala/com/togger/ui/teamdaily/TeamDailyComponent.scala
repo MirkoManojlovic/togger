@@ -7,15 +7,25 @@ import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.{FindProjectResp, LogEntryDto, SearchAccountDto}
+import com.togger.dto.{FindMilestoneResp, FindProjectResp, LogEntryDto, SearchAccountDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.auth.AccountService
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption, TgStep, TgStepperBreadcrumb}
+import com.togger.ui.components.{
+  DropdownMeta,
+  TgBadge,
+  TgBadgeColor,
+  TgSelectDropdown,
+  TgSelectDropdownOption,
+  TgStep,
+  TgStepperBreadcrumb
+}
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
+import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater}
 import com.togger.ui.toast.Toast
 
@@ -27,18 +37,25 @@ case class TeamDailyState(
   projectId: Option[UUID],
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
   workDays: Set[DayOfWeek] = WorkDayCalendar.DefaultWorkDays,
   selected: Set[UUID] = Set.empty,
   todayFirst: Boolean = true,
-  plan: Seq[TeamDailyMemberPlan] = Seq.empty,
+  candidates: Seq[TeamDailyMemberPlan] = Seq.empty,
+  selectedTasks: Option[Set[UUID]] = None,
   position: TeamDailyPosition = TeamDailyPosition.ChooseMembers,
   entries: Map[TeamDailyEntryKey, TeamDailyEntryDraft] = Map.empty
 ) {
 
+  /** What is filled in: the chosen tasks of the candidates. */
+  def plan: Seq[TeamDailyMemberPlan] = TeamDailyPlan.chosen(candidates, selectedTasks)
+
+  def isTaskSelected(taskId: UUID): Boolean = selectedTasks.forall(_.contains(taskId))
+
   def positions: Seq[TeamDailyPosition] = TeamDailyPlan.positions(plan, todayFirst)
 
   def draft: TeamDailyDraft =
-    TeamDailyDraft(projectId, selected.toSeq, todayFirst, entries.map { case (key, draft) => TeamDailyEntryRecord(key, draft) }.toSeq)
+    TeamDailyDraft(projectId, selected.toSeq, selectedTasks.map(_.toSeq), todayFirst, entries.map { case (key, draft) => TeamDailyEntryRecord(key, draft) }.toSeq)
 
   def toSave: Seq[(TeamDailyEntryKey, TeamDailyEntryDraft)] =
     plan.flatMap(member => member.tasks.flatMap(task => task.missingDays.map(TeamDailyEntryKey(member.member.id, task.taskId, _))))
@@ -50,6 +67,7 @@ class TeamDailyComponent(
   taskService: TaskFeService,
   projectDataLoader: TaskProjectDataLoader,
   projectService: ProjectService,
+  milestoneService: MilestoneFeService,
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgClock: TgClock,
@@ -67,7 +85,7 @@ class TeamDailyComponent(
     */
   private val BreadcrumbScrollCls =
     "overflow-x-auto [&_ol]:w-max [&_ol]:min-w-full [&_li]:shrink-0 [&_li]:whitespace-nowrap"
-  private val ProcessSteps = Seq("Choose members", "Fill in the status", "Accept all changes")
+  private val ProcessSteps = Seq("Choose members", "Choose tasks", "Fill in the status", "Accept all changes")
 
   private val state = Var(TeamDailyState(projectId = currentProjectId))
 
@@ -107,16 +125,21 @@ class TeamDailyComponent(
   private def loadProject(projectId: UUID): Unit =
     projectDataLoader
       .loadProjectData(projectId)
-      .flatMap(data => projectService.findById(projectId).map(project => (data, project)))
-      .map { case (data, project) =>
-        if (state.now().projectId.contains(projectId)) applyProject(projectId, data, project)
+      .flatMap(data =>
+        projectService.findById(projectId).flatMap { project =>
+          milestoneService.findAllByProjectId(projectId).map(milestones => (data, project, milestones))
+        }
+      )
+      .map { case (data, project, milestones) =>
+        if (state.now().projectId.contains(projectId)) applyProject(projectId, data, project, milestones)
       }
       .unsafeRunAndForget()
 
   private def applyProject(
     projectId: UUID,
     data: TaskProjectData,
-    project: TgResp[FindProjectResp]
+    project: TgResp[FindProjectResp],
+    milestones: TgResp[Seq[FindMilestoneResp]]
   ): Unit = {
     val workDays = project.toOption
       .flatMap(_.body)
@@ -128,11 +151,13 @@ class TeamDailyComponent(
     state.update { current =>
       current.copy(
         members = data.members,
+        milestones = milestones.toOption.flatMap(_.body).getOrElse(Seq.empty),
         workDays = workDays,
         selected = restored.fold(memberIds)(_.memberIds.toSet.intersect(memberIds)),
         todayFirst = restored.fold(current.todayFirst)(_.todayFirst),
         entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
-        plan = Seq.empty,
+        candidates = Seq.empty,
+        selectedTasks = restored.flatMap(_.taskIds.map(_.toSet)),
         position = TeamDailyPosition.ChooseMembers
       )
     }
@@ -157,8 +182,11 @@ class TeamDailyComponent(
                   current.workDays
                 )
                 state.update { s =>
-                  val planned = s.copy(plan = plan)
-                  planned.copy(position = planned.positions.drop(1).headOption.getOrElse(TeamDailyPosition.Review))
+                  s.copy(
+                    candidates = plan,
+                    selectedTasks = s.selectedTasks.map(_.intersect(TeamDailyPlan.taskIds(plan))),
+                    position = TeamDailyPosition.ChooseTasks
+                  )
                 }
               }
           )
@@ -182,7 +210,7 @@ class TeamDailyComponent(
   private def jumpTo(find: TeamDailyPosition => Boolean): Unit =
     state.now().positions.find(find).foreach(target => state.update(_.copy(position = target)))
 
-  private def isPlanned: Boolean = state.now().position != TeamDailyPosition.ChooseMembers || state.now().plan.nonEmpty
+  private def isPlanned: Boolean = state.now().position != TeamDailyPosition.ChooseMembers || state.now().candidates.nonEmpty
 
   // ---- editing
 
@@ -263,13 +291,15 @@ class TeamDailyComponent(
     state.signal.map(_.position).distinct.map { position =>
       val current = position match {
         case TeamDailyPosition.ChooseMembers => 0
-        case _: TeamDailyPosition.Fill       => 1
-        case TeamDailyPosition.Review        => 2
+        case TeamDailyPosition.ChooseTasks   => 1
+        case _: TeamDailyPosition.Fill       => 2
+        case TeamDailyPosition.Review        => 3
       }
       breadcrumb(ProcessSteps, current, {
         case 0                 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
-        case 1 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
-        case 2 if isPlanned    => jumpTo(_ == TeamDailyPosition.Review)
+        case 1 if isPlanned    => jumpTo(_ == TeamDailyPosition.ChooseTasks)
+        case 2 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
+        case 3 if isPlanned    => jumpTo(_ == TeamDailyPosition.Review)
         case _                 => ()
       })
     }
@@ -409,7 +439,84 @@ class TeamDailyComponent(
       text
     )
 
-  // ---- step 2: fill in
+  // ---- step 2: choose tasks
+
+  private def setTaskSelected(taskId: UUID, on: Boolean): Unit =
+    state.update { current =>
+      val all = TeamDailyPlan.taskIds(current.candidates)
+      val chosen = current.selectedTasks.getOrElse(all)
+      val updated = if (on) chosen + taskId else chosen - taskId
+      current.copy(selectedTasks = if (updated == all) None else Some(updated))
+    }
+
+  /** Like the read-only row of a bulk task card, with a border on each badge. */
+  private def badgeRow(specs: Seq[BadgeSpec]): HtmlElement =
+    div(
+      cls("flex flex-wrap items-center gap-1.5"),
+      specs.map { spec =>
+        val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
+        TgBadge(text = spec.text, color = spec.color, bordered = true, extraCls = if (neutral) "dark:text-body" else "").element
+      }
+    )
+
+  private def taskRow(task: TeamDailyTaskPlan): HtmlElement =
+    label(
+      cls("flex flex-wrap items-center gap-2 py-1 text-sm text-body cursor-pointer"),
+      input(
+        `type`("checkbox"),
+        cls(checkboxCls),
+        checked <-- state.signal.map(_.isTaskSelected(task.taskId)).distinct,
+        onChange.mapToChecked --> (on => setTaskSelected(task.taskId, on))
+      ),
+      span(task.name),
+      badgeRow(TeamDailyTaskBadges.of(task, state.now().milestones)),
+      span(cls("text-body-subtle"), s"${task.missingDays.size} days to log")
+    )
+
+  private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
+    div(
+      cls("mb-2 ms-3"),
+      h5(cls("mb-1 text-sm font-medium text-body"), s"${group.statusName} (${group.tasks.size})"),
+      group.tasks.map(taskRow)
+    )
+
+  private def memberGroup(member: TeamDailyMemberPlan): HtmlElement =
+    div(
+      cls("mb-4"),
+      h4(cls("mb-1 text-base font-medium text-heading"), member.member.fullName),
+      TeamDailyPlan.byStatus(member.tasks).map(statusGroup)
+    )
+
+  private val chooseTasks: HtmlElement =
+    div(
+      label(cls(labelCls), "Which tasks do you want to add a status for?"),
+      div(
+        cls("flex gap-2 mb-2"),
+        button(
+          `type`("button"),
+          cls(secondaryButtonCls),
+          "Select all",
+          onClick.mapToUnit --> (_ => state.update(_.copy(selectedTasks = None)))
+        ),
+        button(
+          `type`("button"),
+          cls(secondaryButtonCls),
+          "Unselect all",
+          onClick.mapToUnit --> (_ => state.update(_.copy(selectedTasks = Some(Set.empty))))
+        )
+      ),
+      div(
+        cls("max-h-[28rem] overflow-y-auto rounded-base border border-default-medium p-3"),
+        child.maybe <-- state.signal.map(_.candidates).distinct.map(candidates =>
+          Option.when(candidates.isEmpty)(
+            p(cls("text-sm text-body"), "The chosen members have no open tasks with missing days.")
+          )
+        ),
+        children <-- state.signal.map(_.candidates).distinct.map(_.map(memberGroup))
+      )
+    )
+
+  // ---- step 3: fill in
 
   private def fillForm(memberId: UUID, taskId: UUID, date: LocalDate): HtmlElement = {
     val key = TeamDailyEntryKey(memberId, taskId, date)
@@ -438,7 +545,7 @@ class TeamDailyComponent(
     )
   }
 
-  // ---- step 3: review
+  // ---- step 4: review
 
   private def reviewView(s: TeamDailyState): HtmlElement = {
     val toSave = s.toSave.toMap
@@ -474,6 +581,7 @@ class TeamDailyComponent(
   private val body: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.flatMapSwitch {
       case TeamDailyPosition.ChooseMembers   => Val(chooseMembers)
+      case TeamDailyPosition.ChooseTasks     => Val(chooseTasks)
       case TeamDailyPosition.Fill(m, t, d)   => Val(fillForm(m, t, d))
       case TeamDailyPosition.Review          => state.signal.map(reviewView)
     }
@@ -482,7 +590,13 @@ class TeamDailyComponent(
 
   private val onReview = state.signal.map(_.position == TeamDailyPosition.Review)
   private val canGoBack = state.signal.map(s => s.positions.indexOf(s.position) > 0)
-  private val canGoNext = state.signal.map(s => s.position != TeamDailyPosition.ChooseMembers || s.selected.nonEmpty)
+  private val canGoNext = state.signal.map { s =>
+    s.position match {
+      case TeamDailyPosition.ChooseMembers => s.selected.nonEmpty
+      case TeamDailyPosition.ChooseTasks   => s.plan.nonEmpty
+      case _                               => true
+    }
+  }
 
   private val footer: HtmlElement =
     div(

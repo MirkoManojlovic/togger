@@ -15,6 +15,7 @@ class TeamDailyDraftStoreTest extends AsyncJsWordSpec {
   private val draft = TeamDailyDraft(
     Some(project),
     Seq(entryKey.memberId),
+    Some(Seq(entryKey.taskId)),
     todayFirst = true,
     Seq(TeamDailyEntryRecord(entryKey, TeamDailyEntryDraft(LogEntryStatus.Blocked, "external", skipped = false)))
   )
