@@ -418,7 +418,7 @@ class TeamDailyComponent(
         )
       ),
       div(
-        cls("max-h-[24rem] overflow-y-auto rounded-base border border-default-medium p-3"),
+        cls("rounded-base border border-default-medium p-3"),
         children <-- state.signal.map(_.members).distinct.map(_.map(memberRow))
       ),
       div(
@@ -534,7 +534,7 @@ class TeamDailyComponent(
         )
       ),
       div(
-        cls("max-h-[28rem] overflow-y-auto rounded-base border border-default-medium p-3"),
+        cls("rounded-base border border-default-medium p-3"),
         child.maybe <-- state.signal.map(_.candidates).distinct.map(candidates =>
           Option.when(candidates.isEmpty)(
             p(cls("text-sm text-body"), "The chosen members have no open tasks with missing days.")
@@ -675,7 +675,7 @@ class TeamDailyComponent(
       documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => closeKeepingDraft()),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("w-full max-w-4xl"),
+        cls("flex w-full max-w-4xl flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Team daily"),
@@ -688,7 +688,8 @@ class TeamDailyComponent(
           )
         ),
         stepper,
-        child <-- body,
+        // the steps scroll in the space between the stepper and the footer, which stays at the bottom
+        div(cls("min-h-0 flex-1 overflow-y-auto"), child <-- body),
         footer
       )
     )
