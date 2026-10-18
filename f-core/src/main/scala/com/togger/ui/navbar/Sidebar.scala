@@ -148,6 +148,7 @@ class Sidebar(
   sidebarCollapseStore: SidebarCollapseStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
+  onDaily: () => Unit,
   val toast: Toast
 )(implicit IORuntime: IORuntime)
     extends ToastMessages {
@@ -280,6 +281,16 @@ class Sidebar(
                   }
             }
           )
+        ),
+        button(
+          `type`("button"),
+          title("Daily"),
+          cls(
+            "absolute bottom-32 left-1/2 -translate-x-1/2 inline-flex items-center justify-center w-10 h-10 text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium rounded-full shadow-lg focus:ring-4 focus:ring-brand-medium focus:outline-none cursor-pointer"
+          ),
+          TgIcons.dailyIcon("w-5 h-5"),
+          span(cls("sr-only"), "Daily"),
+          onClick.mapToUnit --> (_ => onDaily())
         ),
         button(
           `type`("button"),

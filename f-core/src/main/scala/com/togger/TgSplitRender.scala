@@ -33,6 +33,7 @@ import com.togger.ui.task.bulk.BulkAddTasks
 import com.togger.ui.projectlabel._
 import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.theme.ThemeStore
+import com.togger.ui.daily.DailyComponent
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -91,6 +92,23 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         onClose
       ).element
   )
+  val elementForDaily = div()
+  lazy val dailyHost = new QuickCreateHost(
+    elementForDaily,
+    onClose =>
+      new DailyComponent(
+        taskService,
+        taskProjectDataLoader,
+        projectService,
+        spinnerService,
+        accountService,
+        tgClock,
+        Sidebar.projectIdForPage(router.currentPageSignal.now()),
+        localStorage,
+        toast,
+        onClose
+      ).element
+  )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
@@ -122,6 +140,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       themeStore,
       () => quickCreateHost.open(),
       () => bulkCreateHost.open(),
+      () => dailyHost.open(),
       toast
     )
 
@@ -185,6 +204,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         elementForModal,
         elementForQuickCreate,
         elementForBulkCreate,
+        elementForDaily,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -634,6 +654,7 @@ case class NavigationSelection(
   themeStore: ThemeStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
+  onDaily: () => Unit,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
 
@@ -653,6 +674,7 @@ case class NavigationSelection(
               sidebarCollapseStore,
               onQuickCreate,
               onBulkCreate,
+              onDaily,
               toast
             ).element
           )
