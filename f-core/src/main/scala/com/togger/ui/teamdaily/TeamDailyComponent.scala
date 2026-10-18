@@ -57,7 +57,8 @@ class TeamDailyComponent(
   currentProjectId: Option[UUID],
   localStorage: LocalStorage,
   toast: Toast,
-  onClose: () => Unit
+  onClose: () => Unit,
+  stepsPerArrowClick: Int = TeamDailyComponent.DefaultStepsPerArrowClick
 )(implicit ioRuntime: IORuntime) {
 
   private val DraftSaveDebounce = 300.millis
@@ -251,8 +252,12 @@ class TeamDailyComponent(
   // ---- stepper
 
   private def breadcrumb(labels: Seq[String], current: Int, onSelect: Int => Unit): HtmlElement =
-    new TgStepperBreadcrumb(labels.map(TgStep(_)), Val(current), Observer(onSelect)).element
-      .amend(cls(BreadcrumbScrollCls))
+    new ScrollableStepper(
+      new TgStepperBreadcrumb(labels.map(TgStep(_)), Val(current), Observer(onSelect)).element
+        .amend(cls(BreadcrumbScrollCls)),
+      stepsPerArrowClick,
+      current
+    ).element
 
   private def levelOne: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.map { position =>
@@ -545,4 +550,10 @@ class TeamDailyComponent(
         footer
       )
     )
+}
+
+object TeamDailyComponent {
+
+  /** How many steps a click on an arrow of a stepper row scrolls by. */
+  val DefaultStepsPerArrowClick = 2
 }
