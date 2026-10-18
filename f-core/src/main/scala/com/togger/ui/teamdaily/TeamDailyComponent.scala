@@ -361,6 +361,9 @@ class TeamDailyComponent(
   private val secondaryButtonCls =
     "text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium " +
       "font-medium leading-5 rounded-base text-xs px-3 py-1.5 whitespace-nowrap cursor-pointer"
+  private val smallButtonCls =
+    "text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium " +
+      "font-medium leading-4 rounded-base text-[11px] px-2 py-0.5 whitespace-nowrap cursor-pointer"
   private val primaryButtonCls =
     "text-white bg-brand border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium " +
       "shadow-xs font-medium leading-5 rounded-base text-xs px-3 py-1.5 whitespace-nowrap cursor-pointer " +
@@ -441,13 +444,15 @@ class TeamDailyComponent(
 
   // ---- step 2: choose tasks
 
-  private def setTaskSelected(taskId: UUID, on: Boolean): Unit =
+  private def setTasksSelected(taskIds: Set[UUID], on: Boolean): Unit =
     state.update { current =>
       val all = TeamDailyPlan.taskIds(current.candidates)
       val chosen = current.selectedTasks.getOrElse(all)
-      val updated = if (on) chosen + taskId else chosen - taskId
+      val updated = if (on) chosen ++ taskIds else chosen -- taskIds
       current.copy(selectedTasks = if (updated == all) None else Some(updated))
     }
+
+  private def setTaskSelected(taskId: UUID, on: Boolean): Unit = setTasksSelected(Set(taskId), on)
 
   /** Like the read-only row of a bulk task card, with a border on each badge. */
   private def badgeRow(specs: Seq[BadgeSpec]): HtmlElement =
@@ -491,7 +496,22 @@ class TeamDailyComponent(
   private def memberGroup(member: TeamDailyMemberPlan): HtmlElement =
     div(
       cls("mb-4"),
-      h4(cls("mb-1 text-base font-medium text-heading"), member.member.fullName),
+      div(
+        cls("mb-1 flex flex-wrap items-center gap-2"),
+        h4(cls("text-base font-medium text-heading"), member.member.fullName),
+        button(
+          `type`("button"),
+          cls(smallButtonCls),
+          "Select all",
+          onClick.mapToUnit --> (_ => setTasksSelected(member.tasks.map(_.taskId).toSet, on = true))
+        ),
+        button(
+          `type`("button"),
+          cls(smallButtonCls),
+          "Unselect all",
+          onClick.mapToUnit --> (_ => setTasksSelected(member.tasks.map(_.taskId).toSet, on = false))
+        )
+      ),
       TeamDailyPlan.byStatus(member.tasks).map(statusGroup)
     )
 
