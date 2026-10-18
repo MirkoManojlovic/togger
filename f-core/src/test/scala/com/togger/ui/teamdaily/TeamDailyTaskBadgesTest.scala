@@ -42,19 +42,25 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
 
   testNameFromClassName should {
 
-    "show milestone, priority and labels by name in that order" in { _ =>
-      val badges = TeamDailyTaskBadges.of(task(Some(milestone.id), Seq(label("b"), label("a"))), Seq(milestone))
-      badges.map(_.text).take(2) shouldBe Seq("Release 1", TaskPriority.Medium.shortCode)
-      badges.map(_.text).slice(2, 4) shouldBe Seq("a", "b")
-      badges should have size 4
+    "show the labels by name" in { _ =>
+      TeamDailyTaskBadges.labels(task(None, Seq(label("b"), label("a")))).map(_.text) shouldBe Seq("a", "b")
     }
 
-    "leave out the milestone and labels a task does not have" in { _ =>
-      TeamDailyTaskBadges.of(task(None, Seq.empty), Seq(milestone)) should have size 1
+    "have no label badge for a task without labels" in { _ =>
+      TeamDailyTaskBadges.labels(task(None, Seq.empty)) shouldBe Seq.empty
     }
 
-    "leave out a milestone that is not known" in { _ =>
-      TeamDailyTaskBadges.of(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone)) should have size 1
+    "show the milestone before the priority" in { _ =>
+      TeamDailyTaskBadges.milestoneAndPriority(task(Some(milestone.id), Seq.empty), Seq(milestone)).map(_.text) shouldBe
+        Seq("Release 1", TaskPriority.Medium.shortCode)
+    }
+
+    "leave out a milestone that is not there or not known" in { _ =>
+      val onlyPriority = Seq(TaskPriority.Medium.shortCode)
+      TeamDailyTaskBadges.milestoneAndPriority(task(None, Seq.empty), Seq(milestone)).map(_.text) shouldBe onlyPriority
+      TeamDailyTaskBadges
+        .milestoneAndPriority(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone))
+        .map(_.text) shouldBe onlyPriority
     }
   }
 }

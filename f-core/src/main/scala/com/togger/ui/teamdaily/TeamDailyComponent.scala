@@ -461,16 +461,24 @@ class TeamDailyComponent(
 
   private def taskRow(task: TeamDailyTaskPlan): HtmlElement =
     label(
-      cls("flex flex-wrap items-center gap-2 py-1 text-sm text-body cursor-pointer"),
+      cls("flex items-start gap-2 py-1 text-sm text-body cursor-pointer"),
       input(
         `type`("checkbox"),
         cls(checkboxCls),
+        cls("mt-0.5 shrink-0"),
         checked <-- state.signal.map(_.isTaskSelected(task.taskId)).distinct,
         onChange.mapToChecked --> (on => setTaskSelected(task.taskId, on))
       ),
-      span(task.name),
-      badgeRow(TeamDailyTaskBadges.of(task, state.now().milestones)),
-      span(cls("text-body-subtle"), s"${task.missingDays.size} days to log")
+      div(
+        cls("flex flex-col gap-1"),
+        div(
+          cls("flex flex-wrap items-center gap-2"),
+          span(task.name),
+          badgeRow(TeamDailyTaskBadges.labels(task)),
+          span(cls("text-body-subtle"), s"${task.missingDays.size} days to log")
+        ),
+        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones))
+      )
     )
 
   private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
