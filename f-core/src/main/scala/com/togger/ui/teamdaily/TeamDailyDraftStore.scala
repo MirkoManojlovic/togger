@@ -14,7 +14,7 @@ import scala.util.Try
 case class TeamDailyEntryKey(memberId: UUID, taskId: UUID, date: LocalDate)
 
 /** What was filled in for one day. A day nobody touched has no draft and is not saved. */
-case class TeamDailyEntryDraft(status: LogEntryStatus, textInternal: String, textExternal: String, skipped: Boolean) {
+case class TeamDailyEntryDraft(status: LogEntryStatus, textExternal: String, skipped: Boolean) {
   def willBeSaved: Boolean = !skipped
 }
 

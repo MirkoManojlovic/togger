@@ -16,7 +16,7 @@ class TeamDailyDraftStoreTest extends AsyncJsWordSpec {
     Some(project),
     Seq(entryKey.memberId),
     todayFirst = true,
-    Seq(TeamDailyEntryRecord(entryKey, TeamDailyEntryDraft(LogEntryStatus.Blocked, "internal", "external", skipped = false)))
+    Seq(TeamDailyEntryRecord(entryKey, TeamDailyEntryDraft(LogEntryStatus.Blocked, "external", skipped = false)))
   )
 
   testNameFromClassName should {

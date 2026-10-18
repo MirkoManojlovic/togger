@@ -103,6 +103,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         spinnerService,
         accountService,
         tgClock,
+        tgDateFormater,
         Sidebar.projectIdForPage(router.currentPageSignal.now()),
         localStorage,
         toast,

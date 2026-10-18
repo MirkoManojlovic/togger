@@ -10,14 +10,13 @@ import com.togger.common.TgResponseTypes.TgResp
 import com.togger.dto.{FindProjectResp, LogEntryDto, SearchAccountDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.auth.AccountService
-import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption, TgStep, TgStepperBreadcrumb}
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader}
+import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater}
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate, LocalTime, ZoneOffset}
@@ -54,6 +53,7 @@ class TeamDailyComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgClock: TgClock,
+  tgDateFormater: TgDateFormater,
   currentProjectId: Option[UUID],
   localStorage: LocalStorage,
   toast: Toast,
@@ -120,11 +120,10 @@ class TeamDailyComponent(
     val restored = draftStore(projectId).flatMap(_.load())
     val memberIds = data.members.map(_.id).toSet
     state.update { current =>
-      val me = currentAccountId.filter(memberIds.contains).toSet
       current.copy(
         members = data.members,
         workDays = workDays,
-        selected = restored.fold(me)(_.memberIds.toSet.intersect(memberIds)),
+        selected = restored.fold(memberIds)(_.memberIds.toSet.intersect(memberIds)),
         todayFirst = restored.fold(current.todayFirst)(_.todayFirst),
         entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
         plan = Seq.empty,
@@ -186,7 +185,7 @@ class TeamDailyComponent(
       .flatMap(_.tasks)
       .find(_.taskId == key.taskId)
       .fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus)
-    TeamDailyEntryDraft(previous, "", "", skipped = false)
+    TeamDailyEntryDraft(previous, "", skipped = false)
   }
 
   private def edit(key: TeamDailyEntryKey)(change: TeamDailyEntryDraft => TeamDailyEntryDraft): Unit =
@@ -209,7 +208,7 @@ class TeamDailyComponent(
       createdBy = currentAccountId.get,
       createdAt = createdAt,
       latestVersion = UUID.randomUUID(),
-      textInternal = draft.textInternal,
+      textInternal = "",
       textExternal = draft.textExternal,
       status = draft.status,
       updatedAt = createdAt
@@ -407,32 +406,16 @@ class TeamDailyComponent(
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == taskId)
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
-      p(cls("mb-3 text-sm text-body-subtle"), s"${task.fold("")(_.statusName)} · $date"),
-      label(cls(labelCls), "Status"),
-      select(
-        cls(tgInputStyle),
-        cls("mb-3 max-w-xs"),
-        LogEntryStatus.values.map(status =>
-          option(value(status.value.toString), selected(status == current.status), status.toStringWithEmoji)
-        ),
-        onChange.mapToValue --> (v => edit(key)(_.copy(status = LogEntryStatus.withValue(v.toInt), skipped = false)))
-      ),
-      label(cls(labelCls), "Internal text"),
-      textArea(
-        cls(tgInputStyle),
-        cls("mb-3 min-h-[6rem]"),
-        defaultValue(current.textInternal),
-        onInput.mapToValue --> (v => edit(key)(_.copy(textInternal = v, skipped = false)))
-      ),
-      label(cls(labelCls), "External text"),
-      textArea(
-        cls(tgInputStyle),
-        cls("mb-3 min-h-[6rem]"),
-        defaultValue(current.textExternal),
-        onInput.mapToValue --> (v => edit(key)(_.copy(textExternal = v, skipped = false)))
-      ),
+      p(cls("mb-3 text-sm text-body-subtle"), task.fold("")(_.statusName)),
+      new TeamDailyEntryForm(
+        taskId,
+        date,
+        current,
+        tgDateFormater,
+        draft => edit(key)(_ => draft)
+      ).element,
       label(
-        cls("flex items-center gap-2 text-sm text-body cursor-pointer"),
+        cls("mt-3 flex items-center gap-2 text-sm text-body cursor-pointer"),
         input(
           `type`("checkbox"),
           cls(checkboxCls),
@@ -461,7 +444,7 @@ class TeamDailyComponent(
                 p(cls("text-sm font-medium text-heading"), task.name),
                 MissingLogDays.inFillOrder(task.missingDays, s.todayFirst).map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
-                  val text = toSave.get(key).fold("Not filled in, will not be saved")(d => d.status.toStringWithEmoji + " " + d.textInternal)
+                  val text = toSave.get(key).fold("Not filled in, will not be saved")(d => d.status.toStringWithEmoji)
                   button(
                     `type`("button"),
                     cls("block w-full text-start text-sm text-body hover:text-fg-brand cursor-pointer"),
