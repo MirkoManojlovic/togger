@@ -473,7 +473,7 @@ class TeamDailyComponent(
         cls("flex flex-col gap-1"),
         div(
           cls("flex flex-wrap items-center gap-2"),
-          span(task.name),
+          span(cls("font-medium text-black dark:text-white"), task.name),
           badgeRow(TeamDailyTaskBadges.labels(task)),
           span(cls("text-body-subtle"), s"${task.missingDays.size} days to log")
         ),
