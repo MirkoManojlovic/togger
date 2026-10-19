@@ -9,7 +9,9 @@ import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.common.TgResponseTypes.TgResp
 import com.togger.dto.{FindMilestoneResp, LogEntryDto, SearchAccountDto}
 import com.togger.logentry.LogEntryStatus
+import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
+import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.{
   DropdownMeta,
   TgBadge,
@@ -73,6 +75,7 @@ class TeamDailyComponent(
   accountService: AccountService,
   tgClock: TgClock,
   tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   currentProjectId: Option[UUID],
   localStorage: LocalStorage,
   toast: Toast,
@@ -541,11 +544,18 @@ class TeamDailyComponent(
                 p(cls("text-sm font-medium text-heading"), task.name),
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
-                  val text = toSave.get(key).fold("Not filled in, will not be saved")(d => d.status.toStringWithEmoji)
-                  button(
-                    `type`("button"),
-                    cls("block w-full text-start text-sm text-body hover:text-fg-brand cursor-pointer"),
-                    s"$date: $text",
+                  div(
+                    cls("mb-2 cursor-pointer rounded-base p-2 hover:bg-neutral-secondary-medium"),
+                    div(
+                      cls("flex items-center gap-2 mb-2"),
+                      TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,
+                      toSave.get(key).map(entry =>
+                        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                      )
+                    ),
+                    toSave.get(key).fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
+                      tgMarkdown.toLaminarDiv(entry.textExternal)
+                    ),
                     onClick.mapToUnit --> (_ => jumpTo(_ == TeamDailyPosition.Fill(member.member.id, task.taskId, date)))
                   )
                 }
