@@ -11,15 +11,19 @@ class MissingLogDaysTest extends AsyncJsWordSpec {
   testNameFromClassName should {
 
     "ask about today when the task has no entry" in { _ =>
-      MissingLogDays.of(None, today) shouldBe Seq(today)
+      MissingLogDays.of(Seq.empty, today) shouldBe Seq(today)
     }
 
     "ask about today when the last entry is older" in { _ =>
-      MissingLogDays.of(Some(today.minusDays(5)), today) shouldBe Seq(today)
+      MissingLogDays.of(Seq(today.minusDays(5)), today) shouldBe Seq(today)
     }
 
     "have nothing missing when the last entry is today" in { _ =>
-      MissingLogDays.of(Some(today), today) shouldBe Seq.empty
+      MissingLogDays.of(Seq(today.minusDays(1), today), today) shouldBe Seq.empty
+    }
+
+    "have nothing missing when an entry of today is not the newest" in { _ =>
+      MissingLogDays.of(Seq(today, today.plusDays(2)), today) shouldBe Seq.empty
     }
   }
 }

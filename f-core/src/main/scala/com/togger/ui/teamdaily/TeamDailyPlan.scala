@@ -59,7 +59,7 @@ object TeamDailyPlan {
       taskId = task.id,
       name = task.name,
       statusName = task.taskStatus.name,
-      missingDays = MissingLogDays.of(latest.map(e => GanttLogStatus.toLocalDate(e.createdAt)), today),
+      missingDays = MissingLogDays.of(task.logEntries.map(e => GanttLogStatus.toLocalDate(e.createdAt)), today),
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
