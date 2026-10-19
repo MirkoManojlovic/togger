@@ -520,7 +520,9 @@ class TeamDailyComponent(
     // the repeat button gets the focus when it is the quick way to fill in a day nobody has touched yet
     val canRepeat = latest.exists(entry => isRepeatable(task, entry))
     val focusRepeat = canRepeat && !state.now().entries.contains(key)
+    // one box per task, so the entry to fill in is clearly the one of the task above it
     div(
+      cls("rounded-base border border-default-medium p-4"),
       task.map(taskHeader(_, headingCls = "text-base font-medium text-heading")),
       latest.map(lastStatus(key, _, canRepeat, focusRepeat)),
       new TeamDailyEntryForm(
@@ -529,7 +531,8 @@ class TeamDailyComponent(
         current,
         tgDateFormater,
         draft => edit(key)(_ => draft),
-        focusEditor = !focusRepeat
+        focusEditor = !focusRepeat,
+        title = s"Today's status for ${task.fold("the task")(_.name)}"
       ).element
     )
   }
@@ -616,12 +619,12 @@ class TeamDailyComponent(
             h4(cls("text-base font-medium text-heading"), member.member.fullName),
             member.tasks.map { task =>
               div(
-                cls("ml-3 mt-2"),
+                cls("mt-2 rounded-base border border-default-medium p-3"),
                 taskHeader(task, headingCls = "text-sm font-medium text-heading"),
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
                   div(
-                    cls("mb-2 cursor-pointer rounded-base p-2 hover:bg-neutral-secondary-medium"),
+                    cls("mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 hover:bg-neutral-secondary-medium"),
                     div(
                       cls("flex items-center gap-2 mb-2"),
                       TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,

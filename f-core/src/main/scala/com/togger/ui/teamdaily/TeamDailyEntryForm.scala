@@ -24,7 +24,8 @@ class TeamDailyEntryForm(
   initial: TeamDailyEntryDraft,
   tgDateFormater: TgDateFormater,
   onChange: TeamDailyEntryDraft => Unit,
-  focusEditor: Boolean = true
+  focusEditor: Boolean = true,
+  title: String = "Status for the day"
 ) {
 
   private val formState = Var(
@@ -147,7 +148,7 @@ class TeamDailyEntryForm(
         .filter(draft => draft.status != initial.status || draft.textExternal != initial.textExternal) --> onChange,
       TgCard
         .headerNoFooter(
-          header = TgCard.CardHeader.html(div("Status for the day"), TgCard.CardHeaderSize.H3),
+          header = TgCard.CardHeader.html(div(title), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
               div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge),
@@ -157,5 +158,7 @@ class TeamDailyEntryForm(
           )
         )
         .element
+        // stands out from the task information above it, as this is the part to fill in
+        .amend(cls("ring-2 ring-brand shadow-lg"))
     )
 }
