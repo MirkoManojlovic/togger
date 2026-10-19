@@ -17,7 +17,7 @@ object TaskProgressVariant {
 /** Renders a task's checkbox progress, in whichever shape `variant` asks for.
   *
   * Nothing renders when the description has no task list (`TaskProgress.total == 0`) — that is "no progress to
-  * show", not "0%".
+  * show", not "0%". `ringSizeCls` and `textSizeCls` size the ring and the "n of m tasks" label.
   */
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
