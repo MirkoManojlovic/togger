@@ -518,7 +518,7 @@ class TeamDailyComponent(
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
       p(cls("mb-3 text-sm text-body-subtle"), task.fold("")(_.statusName)),
-      task.flatMap(_.latestEntry).map(lastStatus),
+      task.flatMap(_.latestEntry).map(lastStatus(key, _)),
       new TeamDailyEntryForm(
         taskId,
         date,
@@ -529,8 +529,14 @@ class TeamDailyComponent(
     )
   }
 
+  /** Fills today with the same status and text, and shows the form again so the editor takes them over. */
+  private def repeat(key: TeamDailyEntryKey, entry: LogEntryDto): Unit = {
+    edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.textExternal))
+    formRefresh.update(_ + 1)
+  }
+
   /** What was logged last (yesterday, or the last work day), above the form for today. */
-  private def lastStatus(entry: LogEntryDto): HtmlElement =
+  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto): HtmlElement =
     div(
       cls("mb-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
@@ -541,7 +547,16 @@ class TeamDailyComponent(
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,
-        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
+        Option.when(TeamDailyComponent.RepeatableStatuses.contains(entry.status))(
+          button(
+            `type`("button"),
+            cls(smallButtonCls),
+            cls("ms-auto"),
+            "Repeat for today",
+            onClick.mapToUnit --> (_ => repeat(key, entry))
+          )
+        )
       ),
       div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
     )
@@ -586,11 +601,14 @@ class TeamDailyComponent(
       )
   }
 
+  /** Counts the repeats, each one builds the fill form again from the entry it has just been given. */
+  private val formRefresh = Var(0)
+
   private val body: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.flatMapSwitch {
       case TeamDailyPosition.ChooseMembers   => Val(chooseMembers)
       case TeamDailyPosition.ChooseTasks     => Val(chooseTasks)
-      case TeamDailyPosition.Fill(m, t, d)   => Val(fillForm(m, t, d))
+      case TeamDailyPosition.Fill(m, t, d)   => formRefresh.signal.map(_ => fillForm(m, t, d))
       case TeamDailyPosition.Review          => state.signal.map(reviewView)
     }
 
@@ -694,6 +712,9 @@ class TeamDailyComponent(
 }
 
 object TeamDailyComponent {
+
+  /** Statuses that likely still hold the next day, for the same reason. */
+  val RepeatableStatuses: Set[LogEntryStatus] = Set(LogEntryStatus.Blocked, LogEntryStatus.Paused)
 
   /** How many steps a click on an arrow of a stepper row scrolls by. */
   val DefaultStepsPerArrowClick = 2
