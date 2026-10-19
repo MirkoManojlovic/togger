@@ -3,6 +3,7 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.reorder.{ListReorder, RowReorder}
 import com.togger.ui.task.TgDateFormater
@@ -165,7 +166,11 @@ class TimeboxGanttComponent(
       div(
         cls("flex items-center gap-1.5"),
         span(cls("min-w-0 truncate text-sm text-heading"), title := task.name, task.name),
-        badges.labels.amend(cls("shrink-0"))
+        badges.labels.amend(cls("shrink-0")),
+        TaskProgressComponent
+          .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+          .element
+          .amend(cls("shrink-0"))
       ),
       badges.primary
     )

@@ -464,7 +464,10 @@ class ShowAllTasksComponent(
                                     dto.name,
                                     router.navigateTo(EditTaskPage(dto.projectId, dto.id))
                                   ),
-                                  badgeRow(dto.id, taskBadges.labelRow(dto))
+                                  badgeRow(dto.id, taskBadges.labelRow(dto)),
+                                  TaskProgressComponent
+                                    .fromDescription(Val(dto.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+                                    .element
                                 ),
                                 badgeRow(dto.id, taskBadges.primaryRow(dto)),
                                 badgeRow(dto.id, taskBadges.dateRow(dto))

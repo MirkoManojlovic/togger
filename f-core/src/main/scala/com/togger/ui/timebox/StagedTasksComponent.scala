@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.task.TaskPriority
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.apexchart.ApexChartComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -186,7 +187,10 @@ class StagedTasksComponent(
       div(
         cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
         span(cls("text-sm font-semibold text-heading"), task.name),
-        badges.labels
+        badges.labels,
+        TaskProgressComponent
+          .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+          .element
       ),
       badges.primary,
       badges.dates,

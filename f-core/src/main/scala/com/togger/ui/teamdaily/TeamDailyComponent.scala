@@ -28,7 +28,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BadgeSpec
-import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater}
+import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater, TaskProgressComponent}
 import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
@@ -446,6 +446,9 @@ class TeamDailyComponent(
           cls("flex flex-wrap items-center gap-2"),
           span(cls("font-medium text-black dark:text-white"), task.name),
           badgeRow(TeamDailyTaskBadges.labels(task)),
+          TaskProgressComponent
+            .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+            .element,
           span(cls("text-body-subtle"), "Not logged today")
         ),
         badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones))
@@ -545,7 +548,10 @@ class TeamDailyComponent(
         cls("flex flex-wrap items-center gap-2"),
         h4(cls(headingCls), task.name),
         if (task.labels.isEmpty) span(cls("text-sm"), aria.label("No labels"), "🏷️")
-        else badgeRow(TeamDailyTaskBadges.labels(task))
+        else badgeRow(TeamDailyTaskBadges.labels(task)),
+        TaskProgressComponent
+          .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+          .element
       ),
       badgeRow(
         TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+

@@ -13,6 +13,7 @@ import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.timebox.{TimeboxDefault, TimeboxDefaults}
 import com.togger.toast.ToastMessages
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -427,7 +428,10 @@ class TimeboxFormComponent(
         div(
           cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
           span(cls("text-base font-semibold text-heading"), dto.name),
-          badgeRow(dto.id, labelRow(dto))
+          badgeRow(dto.id, labelRow(dto)),
+          TaskProgressComponent
+            .fromDescription(Val(dto.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+            .element
         ),
         badgeRow(dto.id, primaryRow(dto)),
         badgeRow(dto.id, dateRow(dto))

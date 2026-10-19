@@ -20,7 +20,8 @@ case class TeamDailyTaskPlan(
   startDate: LocalDate,
   dueDate: LocalDate,
   /** The newest log entry, shown while filling in today's so the user sees what was said last. */
-  latestEntry: Option[LogEntryDto] = None
+  latestEntry: Option[LogEntryDto] = None,
+  description: String = ""
 )
 
 case class TeamDailyMemberPlan(member: SearchAccountDto, tasks: Seq[TeamDailyTaskPlan])
@@ -68,7 +69,8 @@ object TeamDailyPlan {
       labels = task.taskLabels,
       startDate = task.startDate,
       dueDate = task.dueDate,
-      latestEntry = latest
+      latestEntry = latest,
+      description = task.description
     )
   }
 

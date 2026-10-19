@@ -7,6 +7,7 @@ import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.logentry.LogEntryReadOnlyCard
 import com.togger.ui.components.{LogEntryStatusSquare, TgTab, TgTabs}
@@ -63,7 +64,11 @@ class TimeboxReviewGanttComponent(
           task.name,
           router.navigateTo(EditTaskPage(task.projectId, task.id))
         ),
-        ReviewTaskBadges.labels(task).amend(cls("shrink-0"))
+        ReviewTaskBadges.labels(task).amend(cls("shrink-0")),
+        TaskProgressComponent
+          .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+          .element
+          .amend(cls("shrink-0"))
       ),
       ReviewTaskBadges.primary(task, milestones)
     )

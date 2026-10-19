@@ -22,7 +22,8 @@ object TaskProgressVariant {
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
   variant: TaskProgressVariant = TaskProgressVariant.Doughnut,
-  ringSizeCls: String = "w-8 h-8"
+  ringSizeCls: String = "w-8 h-8",
+  textSizeCls: String = "text-sm"
 ) {
 
   val element: HtmlDiv =
@@ -38,7 +39,7 @@ case class TaskProgressComponent(
         case TaskProgressVariant.Doughnut =>
           Seq(
             doughnutRing(progress.percent),
-            span(cls("text-sm text-body whitespace-nowrap"), s"${progress.checked} of ${progress.total} tasks")
+            span(cls(textSizeCls, "text-body whitespace-nowrap"), s"${progress.checked} of ${progress.total} tasks")
           )
       }
 
@@ -78,7 +79,8 @@ object TaskProgressComponent {
   def fromDescription(
     descriptionSignal: Signal[String],
     variant: TaskProgressVariant = TaskProgressVariant.Doughnut,
-    ringSizeCls: String = "w-8 h-8"
+    ringSizeCls: String = "w-8 h-8",
+    textSizeCls: String = "text-sm"
   ): TaskProgressComponent =
-    TaskProgressComponent(descriptionSignal.map(TaskProgressParser.parse), variant, ringSizeCls)
+    TaskProgressComponent(descriptionSignal.map(TaskProgressParser.parse), variant, ringSizeCls, textSizeCls)
 }
