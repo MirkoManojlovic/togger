@@ -701,7 +701,7 @@ class MilestoneHistoryComponent(
                 cls("flex justify-between items-start mb-4"),
                 searchBox.element,
                 div(
-                  cls("flex"),
+                  cls("flex flex-wrap items-start gap-3"),
                   dateFilterComponent.element,
                   taskStatusFilter.element,
                   milestoneFilter.element,
