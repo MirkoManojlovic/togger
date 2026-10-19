@@ -3,8 +3,8 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.common.TgClock
-import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.{CalendarPickerPopup, MultiSelectItem, TableFilterComponent}
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate
@@ -71,7 +71,7 @@ class DateFilterComponent(
 
   /** A date shown as a button that opens the app's calendar picker, in place of the browser's own date input. */
   private def dateField(
-    labelValue: String,
+    placeholderValue: String,
     dateVar: Var[String],
     minDate: => Option[LocalDate],
     maxDate: => Option[LocalDate]
@@ -79,14 +79,12 @@ class DateFilterComponent(
     val isOpen = Var(false)
     val today = tgClock.currentDate()
     div(
-      cls("relative"),
-      label(cls("block mb-2.5 text-sm font-medium text-heading"), labelValue),
+      cls("relative inline-block"),
       button(
         typ("button"),
-        cls(tgInputStyle),
-        cls("cursor-pointer text-left"),
+        cls(dateButtonCls),
         child.text <-- dateVar.signal
-          .map(value => parseDate(value).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
+          .map(value => parseDate(value).fold(placeholderValue)(tgDateFormater.asAmericanDate))
           .distinct,
         // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
         // listening synchronously within this same click when the picker opens
@@ -109,6 +107,10 @@ class DateFilterComponent(
       }
     )
   }
+
+  // the same look and height as the month filter's button, so switching to a date range doesn't move the layout
+  private val dateButtonCls =
+    "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none cursor-pointer"
 
   private val startDateInput = dateField("Start date", startDateVar, None, parseDate(stopDateVar.now()))
 
@@ -156,7 +158,7 @@ class DateFilterComponent(
           div(
             cls("flex items-center gap-2"),
             startDateInput,
-            span(cls("text-body"), "–"),
+            TgIcons.chevronRightIcon(className = "w-4 h-4 text-body"),
             stopDateInput
           )
       }
