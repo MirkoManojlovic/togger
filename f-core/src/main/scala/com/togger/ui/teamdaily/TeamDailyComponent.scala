@@ -624,7 +624,7 @@ class TeamDailyComponent(
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
                   div(
-                    cls("mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 hover:bg-neutral-secondary-medium"),
+                    cls("mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"),
                     div(
                       cls("flex items-center gap-2 mb-2"),
                       TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,

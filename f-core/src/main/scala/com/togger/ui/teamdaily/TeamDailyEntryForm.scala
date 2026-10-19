@@ -159,6 +159,6 @@ class TeamDailyEntryForm(
         )
         .element
         // stands out from the task information above it, as this is the part to fill in
-        .amend(cls("ring-2 ring-brand shadow-lg"))
+        .amend(cls("ring-2 ring-brand shadow-md! dark:shadow-white/15"))
     )
 }
