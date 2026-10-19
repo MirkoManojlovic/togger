@@ -581,7 +581,6 @@ class TeamDailyComponent(
       cls("justify-between space-x-0"),
       div(
         cls("flex gap-2"),
-        button(`type`("button"), cls(secondaryButtonCls), "Cancel", onClick.mapToUnit --> (_ => closeKeepingDraft())),
         button(
           `type`("button"),
           cls(secondaryButtonCls),
