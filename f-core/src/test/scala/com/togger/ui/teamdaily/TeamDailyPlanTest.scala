@@ -59,7 +59,7 @@ class TeamDailyPlanTest extends AsyncJsWordSpec {
     }
 
     "walk through choosing members and tasks before the days" in { _ =>
-      TeamDailyPlan.positions(Seq.empty, todayFirst = true) shouldBe
+      TeamDailyPlan.positions(Seq.empty) shouldBe
         Seq(TeamDailyPosition.ChooseMembers, TeamDailyPosition.ChooseTasks, TeamDailyPosition.Review)
     }
   }

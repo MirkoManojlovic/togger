@@ -99,7 +99,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       new TeamDailyComponent(
         taskService,
         taskProjectDataLoader,
-        projectService,
         milestoneService,
         spinnerService,
         accountService,

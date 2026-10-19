@@ -5,7 +5,7 @@ import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 import com.togger.ui.timebox.gantt.GanttLogStatus
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.LocalDate
 import java.util.UUID
 
 case class TeamDailyTaskPlan(
@@ -39,26 +39,25 @@ object TeamDailyPlan {
     tasks: Seq[FindTaskRespFull],
     members: Seq[SearchAccountDto],
     selectedIds: Set[UUID],
-    today: LocalDate,
-    workDays: Set[DayOfWeek]
+    today: LocalDate
   ): Seq[TeamDailyMemberPlan] =
     members.filter(member => selectedIds.contains(member.id)).flatMap { member =>
       val memberTasks = tasks
         .filter(_.assignedTo.exists(_.id == member.id))
         .flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(rank => rank -> task))
         .sortBy { case (rank, task) => (rank, task.name) }
-        .map { case (_, task) => taskPlan(task, today, workDays) }
+        .map { case (_, task) => taskPlan(task, today) }
         .filter(_.missingDays.nonEmpty)
       Option.when(memberTasks.nonEmpty)(TeamDailyMemberPlan(member, memberTasks))
     }
 
-  private def taskPlan(task: FindTaskRespFull, today: LocalDate, workDays: Set[DayOfWeek]): TeamDailyTaskPlan = {
+  private def taskPlan(task: FindTaskRespFull, today: LocalDate): TeamDailyTaskPlan = {
     val latest = task.logEntries.maxByOption(_.createdAt)
     TeamDailyTaskPlan(
       taskId = task.id,
       name = task.name,
       statusName = task.taskStatus.name,
-      missingDays = MissingLogDays.of(latest.map(e => GanttLogStatus.toLocalDate(e.createdAt)), task.startDate, today, workDays),
+      missingDays = MissingLogDays.of(latest.map(e => GanttLogStatus.toLocalDate(e.createdAt)), today),
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
@@ -87,11 +86,11 @@ object TeamDailyPlan {
         TeamDailyStatusGroup(sorted.head.statusName, sorted)
       }
 
-  /** Every place Next walks through: choosing members, choosing tasks, each day of each task of each member, then the review. */
-  def positions(plan: Seq[TeamDailyMemberPlan], todayFirst: Boolean): Seq[TeamDailyPosition] =
+  /** Every place Next walks through: choosing members, choosing tasks, each task of each member, then the review. */
+  def positions(plan: Seq[TeamDailyMemberPlan]): Seq[TeamDailyPosition] =
     TeamDailyPosition.ChooseMembers +: TeamDailyPosition.ChooseTasks +: plan.flatMap { member =>
       member.tasks.flatMap { task =>
-        MissingLogDays.inFillOrder(task.missingDays, todayFirst).map(TeamDailyPosition.Fill(member.member.id, task.taskId, _))
+        task.missingDays.map(TeamDailyPosition.Fill(member.member.id, task.taskId, _))
       }
     } :+ TeamDailyPosition.Review
 }
