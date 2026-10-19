@@ -28,6 +28,7 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater}
+import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
 import java.time.{LocalDate, LocalTime, ZoneOffset}
@@ -517,6 +518,7 @@ class TeamDailyComponent(
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
       p(cls("mb-3 text-sm text-body-subtle"), task.fold("")(_.statusName)),
+      task.flatMap(_.latestEntry).map(lastStatus),
       new TeamDailyEntryForm(
         taskId,
         date,
@@ -526,6 +528,23 @@ class TeamDailyComponent(
       ).element
     )
   }
+
+  /** What was logged last (yesterday, or the last work day), above the form for today. */
+  private def lastStatus(entry: LogEntryDto): HtmlElement =
+    div(
+      cls("mb-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
+      p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
+      div(
+        cls("flex items-center gap-2 mb-2"),
+        TgBadge(
+          text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
+          bordered = true,
+          color = TgBadgeColor.Gray
+        ).element,
+        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+      ),
+      div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
+    )
 
   // ---- step 4: review
 

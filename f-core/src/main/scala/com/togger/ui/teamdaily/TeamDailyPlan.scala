@@ -1,6 +1,6 @@
 package com.togger.ui.teamdaily
 
-import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, SearchAccountDto}
+import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 import com.togger.ui.timebox.gantt.GanttLogStatus
@@ -16,7 +16,9 @@ case class TeamDailyTaskPlan(
   previousStatus: LogEntryStatus,
   priority: TaskPriority,
   milestoneId: Option[UUID],
-  labels: Seq[FindTaskLabelResp]
+  labels: Seq[FindTaskLabelResp],
+  /** The newest log entry, shown while filling in today's so the user sees what was said last. */
+  latestEntry: Option[LogEntryDto] = None
 )
 
 case class TeamDailyMemberPlan(member: SearchAccountDto, tasks: Seq[TeamDailyTaskPlan])
@@ -61,7 +63,8 @@ object TeamDailyPlan {
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
-      labels = task.taskLabels
+      labels = task.taskLabels,
+      latestEntry = latest
     )
   }
 
