@@ -515,16 +515,22 @@ class TeamDailyComponent(
     val key = TeamDailyEntryKey(memberId, taskId, date)
     val current = state.now().entries.getOrElse(key, defaultEntry(key))
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == taskId)
+    val latest = task.flatMap(_.latestEntry)
+    // the repeat button gets the focus when it is the quick way to fill in a day nobody has touched yet
+    val focusRepeat =
+      latest.exists(entry => TeamDailyComponent.RepeatableStatuses.contains(entry.status)) &&
+        !state.now().entries.contains(key)
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
       p(cls("mb-3 text-sm text-body-subtle"), task.fold("")(_.statusName)),
-      task.flatMap(_.latestEntry).map(lastStatus(key, _)),
+      latest.map(lastStatus(key, _, focusRepeat)),
       new TeamDailyEntryForm(
         taskId,
         date,
         current,
         tgDateFormater,
-        draft => edit(key)(_ => draft)
+        draft => edit(key)(_ => draft),
+        focusEditor = !focusRepeat
       ).element
     )
   }
@@ -536,7 +542,7 @@ class TeamDailyComponent(
   }
 
   /** What was logged last (yesterday, or the last work day), above the form for today. */
-  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto): HtmlElement =
+  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto, focusRepeat: Boolean): HtmlElement =
     div(
       cls("mb-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
@@ -553,7 +559,10 @@ class TeamDailyComponent(
             `type`("button"),
             cls(smallButtonCls),
             cls("ms-auto"),
+            // a clear ring, since this button often has the focus when the day opens
+            cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
             "Repeat for today",
+            onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
             onClick.mapToUnit --> (_ => repeat(key, entry))
           )
         )

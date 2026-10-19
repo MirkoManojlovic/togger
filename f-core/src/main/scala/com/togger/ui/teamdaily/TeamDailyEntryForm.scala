@@ -23,7 +23,8 @@ class TeamDailyEntryForm(
   date: LocalDate,
   initial: TeamDailyEntryDraft,
   tgDateFormater: TgDateFormater,
-  onChange: TeamDailyEntryDraft => Unit
+  onChange: TeamDailyEntryDraft => Unit,
+  focusEditor: Boolean = true
 ) {
 
   private val formState = Var(
@@ -139,7 +140,7 @@ class TeamDailyEntryForm(
   val element: HtmlElement =
     div(
       // each day opens with the cursor in the editor, so Next keeps the user typing; after the editor has mounted
-      onMountCallback(_ => dom.window.setTimeout(() => textExternalEditor.focus(), 0): Unit),
+      onMountCallback(_ => if (focusEditor) dom.window.setTimeout(() => textExternalEditor.focus(), 0): Unit),
       // only what the user changed is reported, not the editor settling on what it was given
       formState.signal.changes
         .map(form => TeamDailyEntryDraft(LogEntryStatus.withValue(form.status.toInt), form.textExternal))
