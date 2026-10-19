@@ -14,9 +14,7 @@ import scala.util.Try
 case class TeamDailyEntryKey(memberId: UUID, taskId: UUID, date: LocalDate)
 
 /** What was filled in for one day. A day nobody touched has no draft and is not saved. */
-case class TeamDailyEntryDraft(status: LogEntryStatus, textExternal: String, skipped: Boolean) {
-  def willBeSaved: Boolean = !skipped
-}
+case class TeamDailyEntryDraft(status: LogEntryStatus, textExternal: String)
 
 case class TeamDailyEntryRecord(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft)
 
@@ -57,7 +55,7 @@ object TeamDailyDraftStore {
   val KeyPrefix = "tg-team-daily-draft-"
 
   /** Bumped when the stored shape changes in a way old drafts can't be read, which then makes them disappear. */
-  val Version = 3
+  val Version = 4
 
   private case class Envelope(version: Int, draft: TeamDailyDraft)
 

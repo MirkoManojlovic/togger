@@ -140,7 +140,7 @@ class TeamDailyEntryForm(
     div(
       // only what the user changed is reported, not the editor settling on what it was given
       formState.signal.changes
-        .map(form => TeamDailyEntryDraft(LogEntryStatus.withValue(form.status.toInt), form.textExternal, skipped = false))
+        .map(form => TeamDailyEntryDraft(LogEntryStatus.withValue(form.status.toInt), form.textExternal))
         .filter(draft => draft.status != initial.status || draft.textExternal != initial.textExternal) --> onChange,
       TgCard
         .headerNoFooter(

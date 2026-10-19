@@ -56,7 +56,7 @@ case class TeamDailyState(
 
   def toSave: Seq[(TeamDailyEntryKey, TeamDailyEntryDraft)] =
     plan.flatMap(member => member.tasks.flatMap(task => task.missingDays.map(TeamDailyEntryKey(member.member.id, task.taskId, _))))
-      .flatMap(key => entries.get(key).filter(_.willBeSaved).map(key -> _))
+      .flatMap(key => entries.get(key).map(key -> _))
 }
 
 /** The team daily: choose who it is for, fill in the missing log entries of their open tasks, accept all and submit. */
@@ -208,7 +208,7 @@ class TeamDailyComponent(
       .flatMap(_.tasks)
       .find(_.taskId == key.taskId)
       .fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus)
-    TeamDailyEntryDraft(previous, "", skipped = false)
+    TeamDailyEntryDraft(previous, "")
   }
 
   private def edit(key: TeamDailyEntryKey)(change: TeamDailyEntryDraft => TeamDailyEntryDraft): Unit =
@@ -514,17 +514,7 @@ class TeamDailyComponent(
         current,
         tgDateFormater,
         draft => edit(key)(_ => draft)
-      ).element,
-      label(
-        cls("mt-3 flex items-center gap-2 text-sm text-body cursor-pointer"),
-        input(
-          `type`("checkbox"),
-          cls(checkboxCls),
-          checked(current.skipped),
-          onChange.mapToChecked --> (on => edit(key)(_.copy(skipped = on)))
-        ),
-        "Skip this day"
-      )
+      ).element
     )
   }
 
