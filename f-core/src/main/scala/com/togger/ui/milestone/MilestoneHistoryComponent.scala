@@ -2,6 +2,7 @@ package com.togger.ui.milestone
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.common.TgClock
 import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
@@ -28,6 +29,7 @@ class MilestoneHistoryComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
   projectId: UUID,
   params: MilestoneHistoryParams
 )(implicit
@@ -147,6 +149,7 @@ class MilestoneHistoryComponent(
   private val dateFilterComponent = new DateFilterComponent(
     monthOptionsSignal,
     tgDateFormater,
+    tgClock,
     initialMode = if (params.byRange) DateFilterMode.Range else DateFilterMode.Month,
     initialMonths = params.months,
     initialStart = params.start,

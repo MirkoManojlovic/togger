@@ -2,8 +2,9 @@ package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import com.togger.ui.auth.{TgInput, TgInputType}
-import com.togger.ui.components.{MultiSelectItem, TableFilterComponent}
+import com.togger.common.TgClock
+import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.components.{CalendarPickerPopup, MultiSelectItem, TableFilterComponent}
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate
@@ -33,6 +34,7 @@ object ActiveDateFilter {
 class DateFilterComponent(
   monthOptionsSignal: Signal[Seq[MonthOption]],
   tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
   initialMode: DateFilterMode,
   initialMonths: Option[Set[String]],
   initialStart: Option[LocalDate],
@@ -67,25 +69,50 @@ class DateFilterComponent(
   private def parseDate(value: String): Option[LocalDate] =
     if (value.isEmpty) None else Try(LocalDate.parse(value)).toOption
 
-  private val startDateInput = TgInput(
-    inputSignal = startDateVar.signal,
-    inputStateUpdater = startDateVar.updater[String]((_, newValue) => newValue),
-    $errors = EventStream.empty,
-    labelValue = "Start date",
-    placeholderValue = "",
-    tgInputType = TgInputType.Date,
-    isRequired = false
-  )
+  /** A date shown as a button that opens the app's calendar picker, in place of the browser's own date input. */
+  private def dateField(
+    labelValue: String,
+    dateVar: Var[String],
+    minDate: => Option[LocalDate],
+    maxDate: => Option[LocalDate]
+  ): HtmlElement = {
+    val isOpen = Var(false)
+    val today = tgClock.currentDate()
+    div(
+      cls("relative"),
+      label(cls("block mb-2.5 text-sm font-medium text-heading"), labelValue),
+      button(
+        typ("button"),
+        cls(tgInputStyle),
+        cls("cursor-pointer text-left"),
+        child.text <-- dateVar.signal
+          .map(value => parseDate(value).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
+          .distinct,
+        // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
+        // listening synchronously within this same click when the picker opens
+        onClick.stopPropagation.mapToUnit --> (_ => isOpen.update(!_))
+      ),
+      child.maybe <-- isOpen.signal.map { open =>
+        Option.when(open) {
+          val current = parseDate(dateVar.now())
+          CalendarPickerPopup(
+            initialMonth = current.getOrElse(today),
+            today = today,
+            tgDateFormater = tgDateFormater,
+            selected = current,
+            minDate = minDate,
+            maxDate = maxDate,
+            onPick = day => dateVar.set(day.toString),
+            onClose = () => isOpen.set(false)
+          ).element
+        }
+      }
+    )
+  }
 
-  private val stopDateInput = TgInput(
-    inputSignal = stopDateVar.signal,
-    inputStateUpdater = stopDateVar.updater[String]((_, newValue) => newValue),
-    $errors = EventStream.empty,
-    labelValue = "Stop date",
-    placeholderValue = "",
-    tgInputType = TgInputType.Date,
-    isRequired = false
-  )
+  private val startDateInput = dateField("Start date", startDateVar, None, parseDate(stopDateVar.now()))
+
+  private val stopDateInput = dateField("Stop date", stopDateVar, parseDate(startDateVar.now()), None)
 
   private val rangeSelectionSignal: Signal[(Option[LocalDate], Option[LocalDate])] =
     startDateVar.signal.combineWith(stopDateVar.signal).map { case (start, stop) =>
@@ -128,9 +155,9 @@ class DateFilterComponent(
         case DateFilterMode.Range =>
           div(
             cls("flex items-center gap-2"),
-            startDateInput.rawHtmlElement,
+            startDateInput,
             span(cls("text-body"), "–"),
-            stopDateInput.rawHtmlElement
+            stopDateInput
           )
       }
     )
