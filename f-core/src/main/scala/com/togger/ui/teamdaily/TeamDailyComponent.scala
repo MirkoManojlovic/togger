@@ -19,7 +19,8 @@ import com.togger.ui.components.{
   TgSelectDropdown,
   TgSelectDropdownOption,
   TgStep,
-  TgStepperBreadcrumb
+  TgStepperBreadcrumb,
+  TaskStatusBadgeColor
 }
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.modal.ModalStyles
@@ -522,7 +523,12 @@ class TeamDailyComponent(
         !state.now().entries.contains(key)
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
-      p(cls("mb-3 text-sm text-body-subtle"), task.fold("")(_.statusName)),
+      task.map(t =>
+        div(
+          cls("mb-3"),
+          TgBadge(text = t.statusName, color = TaskStatusBadgeColor.of(t.statusName), bordered = true).element
+        )
+      ),
       latest.map(lastStatus(key, _, focusRepeat)),
       new TeamDailyEntryForm(
         taskId,
