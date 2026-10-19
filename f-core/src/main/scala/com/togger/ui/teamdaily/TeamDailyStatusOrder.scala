@@ -18,4 +18,9 @@ object TeamDailyStatusOrder {
 
   /** 0 for In progress up to 3 for Blocked; none for any other status. */
   def rank(statusName: String): Option[Int] = RankByName.get(normalise(statusName))
+
+  private val OnHold = Set(DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked).map(status => normalise(status.statusName))
+
+  /** A task that is waiting or blocked most likely still is, for the same reason, the next day. */
+  def isOnHold(statusName: String): Boolean = OnHold.contains(normalise(statusName))
 }

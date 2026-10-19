@@ -518,9 +518,8 @@ class TeamDailyComponent(
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == taskId)
     val latest = task.flatMap(_.latestEntry)
     // the repeat button gets the focus when it is the quick way to fill in a day nobody has touched yet
-    val focusRepeat =
-      latest.exists(entry => TeamDailyComponent.RepeatableStatuses.contains(entry.status)) &&
-        !state.now().entries.contains(key)
+    val canRepeat = latest.exists(entry => isRepeatable(task, entry))
+    val focusRepeat = canRepeat && !state.now().entries.contains(key)
     div(
       h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
       task.map(t =>
@@ -529,7 +528,7 @@ class TeamDailyComponent(
           TgBadge(text = t.statusName, color = TaskStatusBadgeColor.of(t.statusName), bordered = true).element
         )
       ),
-      latest.map(lastStatus(key, _, focusRepeat)),
+      latest.map(lastStatus(key, _, canRepeat, focusRepeat)),
       new TeamDailyEntryForm(
         taskId,
         date,
@@ -541,6 +540,11 @@ class TeamDailyComponent(
     )
   }
 
+  /** The last entry is worth repeating when it says blocked or paused, or when the task itself is waiting or blocked. */
+  private def isRepeatable(task: Option[TeamDailyTaskPlan], entry: LogEntryDto): Boolean =
+    TeamDailyComponent.RepeatableStatuses.contains(entry.status) ||
+      task.exists(t => TeamDailyStatusOrder.isOnHold(t.statusName))
+
   /** Fills today with the same status and text, and shows the form again so the editor takes them over. */
   private def repeat(key: TeamDailyEntryKey, entry: LogEntryDto): Unit = {
     edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.textExternal))
@@ -548,7 +552,7 @@ class TeamDailyComponent(
   }
 
   /** What was logged last (yesterday, or the last work day), above the form for today. */
-  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto, focusRepeat: Boolean): HtmlElement =
+  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto, canRepeat: Boolean, focusRepeat: Boolean): HtmlElement =
     div(
       cls("mb-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
@@ -560,7 +564,7 @@ class TeamDailyComponent(
           color = TgBadgeColor.Gray
         ).element,
         TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
-        Option.when(TeamDailyComponent.RepeatableStatuses.contains(entry.status))(
+        Option.when(canRepeat)(
           button(
             `type`("button"),
             cls(smallButtonCls),

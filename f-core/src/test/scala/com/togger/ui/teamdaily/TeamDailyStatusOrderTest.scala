@@ -24,5 +24,11 @@ class TeamDailyStatusOrderTest extends AsyncJsWordSpec {
     "recognise a name without its emoji" in { _ =>
       TeamDailyStatusOrder.rank("in progress") shouldBe Some(0)
     }
+
+    "know that waiting and blocked tasks are on hold" in { _ =>
+      Seq(DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked).map(s => TeamDailyStatusOrder.isOnHold(s.statusName)) shouldBe
+        Seq(true, true)
+      TeamDailyStatusOrder.isOnHold(DefaultTaskStatus.InProgress.statusName) shouldBe false
+    }
   }
 }
