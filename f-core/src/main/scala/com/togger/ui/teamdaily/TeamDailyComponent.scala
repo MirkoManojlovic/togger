@@ -47,6 +47,11 @@ case class TeamDailyState(
   /** What is filled in: the chosen tasks of the candidates. */
   def plan: Seq[TeamDailyMemberPlan] = TeamDailyPlan.chosen(candidates, selectedTasks)
 
+  def isFilled(memberId: UUID, task: TeamDailyTaskPlan): Boolean =
+    task.missingDays.forall(date => entries.contains(TeamDailyEntryKey(memberId, task.taskId, date)))
+
+  def isFilled(member: TeamDailyMemberPlan): Boolean = member.tasks.forall(isFilled(member.member.id, _))
+
   def isTaskSelected(taskId: UUID): Boolean = selectedTasks.forall(_.contains(taskId))
 
   def positions: Seq[TeamDailyPosition] = TeamDailyPlan.positions(plan)
@@ -268,9 +273,9 @@ class TeamDailyComponent(
 
   // ---- stepper
 
-  private def breadcrumb(labels: Seq[String], current: Int, onSelect: Int => Unit): HtmlElement =
+  private def breadcrumb(steps: Seq[TgStep], current: Int, onSelect: Int => Unit): HtmlElement =
     new ScrollableStepper(
-      new TgStepperBreadcrumb(labels.map(TgStep(_)), Val(current), Observer(onSelect)).element
+      new TgStepperBreadcrumb(steps, Val(current), Observer(onSelect)).element
         .amend(cls(BreadcrumbScrollCls)),
       stepsPerArrowClick,
       current
@@ -284,7 +289,7 @@ class TeamDailyComponent(
         case _: TeamDailyPosition.Fill       => 2
         case TeamDailyPosition.Review        => 3
       }
-      breadcrumb(ProcessSteps, current, {
+      breadcrumb(ProcessSteps.map(TgStep(_)), current, {
         case 0                 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
         case 1 if isPlanned    => jumpTo(_ == TeamDailyPosition.ChooseTasks)
         case 2 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
@@ -294,12 +299,12 @@ class TeamDailyComponent(
     }
 
   private def levelTwo: Signal[Option[HtmlElement]] =
-    state.signal.map(s => (s.plan, s.position)).distinct.map {
-      case (plan, TeamDailyPosition.Fill(memberId, _, _)) =>
+    state.signal.map(s => (s.plan, s.plan.map(s.isFilled), s.position)).distinct.map {
+      case (plan, filled, TeamDailyPosition.Fill(memberId, _, _)) =>
         val current = plan.indexWhere(_.member.id == memberId)
         Some(
           breadcrumb(
-            plan.map(_.member.fullName),
+            plan.zip(filled).map { case (member, done) => TgStep(member.member.fullName, done) },
             current,
             index => jumpTo { case TeamDailyPosition.Fill(m, _, _) => m == plan(index).member.id; case _ => false }
           )
@@ -308,11 +313,12 @@ class TeamDailyComponent(
     }
 
   private def levelThree: Signal[Option[HtmlElement]] =
-    state.signal.map(s => (s.plan, s.position)).distinct.map {
-      case (plan, TeamDailyPosition.Fill(memberId, taskId, _)) =>
+    state.signal.map(s => (s.plan, s.plan.flatMap(m => m.tasks.map(s.isFilled(m.member.id, _))), s.position)).distinct.map {
+      case (plan, _, TeamDailyPosition.Fill(memberId, taskId, _)) =>
         plan.find(_.member.id == memberId).map { member =>
+          val filled = state.now()
           breadcrumb(
-            member.tasks.map(_.name),
+            member.tasks.map(task => TgStep(task.name, filled.isFilled(member.member.id, task))),
             member.tasks.indexWhere(_.taskId == taskId),
             index => jumpTo { case TeamDailyPosition.Fill(_, t, _) => t == member.tasks(index).taskId; case _ => false }
           )

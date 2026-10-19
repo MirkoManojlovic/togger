@@ -5,8 +5,8 @@ import com.togger.ui.organization.TgIcons
 import org.scalajs.dom.HTMLElement
 import com.raquo.laminar.tags.HtmlTag
 
-/** One step. The first word of `label` is always shown, the rest only from the `sm` breakpoint up. */
-case class TgStep(label: String)
+/** One step. The first word of `label` is always shown, the rest only from the `sm` breakpoint up. A `done` step is green. */
+case class TgStep(label: String, done: Boolean = false)
 
 sealed trait TgStepState
 
@@ -17,7 +17,7 @@ object TgStepState {
 
 /** Flowbite breadcrumb stepper for Laminar.
   *
-  * Steps up to and including `current` (0-based) are brand coloured. Clicking any step reports its index to `onSelect`;
+  * Steps up to and including `current` (0-based) are brand coloured, except the done ones, which are green. Clicking any step reports its index to `onSelect`;
   * the caller updates `current`.
   */
 class TgStepperBreadcrumb(steps: Seq[TgStep], current: Signal[Int], onSelect: Observer[Int]) {
@@ -39,7 +39,7 @@ class TgStepperBreadcrumb(steps: Seq[TgStep], current: Signal[Int], onSelect: Ob
     )
 
   private def stepItem(step: TgStep, index: Int): HtmlElement = {
-    val reached = current.map(TgStepperBreadcrumb.stateOf(index, _) == TgStepState.Reached)
+    val reached = current.map(TgStepperBreadcrumb.stateOf(index, _) == TgStepState.Reached && !step.done)
     val (firstWord, rest) = TgStepperBreadcrumb.splitLabel(step.label)
     li(
       aria.current <-- current.map(currentStep => if (currentStep == index) "step" else null),
@@ -47,11 +47,13 @@ class TgStepperBreadcrumb(steps: Seq[TgStep], current: Signal[Int], onSelect: Ob
         typ("button"),
         cls(buttonCls),
         cls("text-fg-brand") <-- reached,
+        Option.when(step.done)(cls("text-fg-success-strong")),
         onClick.mapTo(index) --> onSelect,
         span(
           cls(badgeCls),
           cls("border-brand") <-- reached,
-          cls("border-body") <-- reached.map(!_),
+          Option.when(step.done)(cls("border-success")),
+          cls("border-body") <-- reached.map(!_).map(_ && !step.done),
           (index + 1).toString
         ),
         firstWord,
