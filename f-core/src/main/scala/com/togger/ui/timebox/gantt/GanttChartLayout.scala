@@ -24,7 +24,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
   def dayCellClasses(axis: GanttAxis, index: Int): String = {
     val gap = if (startsAfterGap(axis, index)) " border-l-2 border-l-default-strong" else " border-l"
-    val today = if (axis.days(index) == tgClock.currentDate()) " bg-neutral-tertiary-medium" else ""
+    val today = if (axis.days(index) == tgClock.currentDate()) " bg-brand-softer" else ""
     s"border-default-medium$gap$today"
   }
 
