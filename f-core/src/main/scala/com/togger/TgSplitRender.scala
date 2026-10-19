@@ -549,7 +549,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   listParams
                 ).element
-              case ShowMilestoneHistoryPage(projectId: UUID) =>
+              case ShowMilestoneHistoryPage(projectId: UUID, historyParams) =>
                 new MilestoneHistoryComponent(
                   taskService,
                   milestoneService,
@@ -558,7 +558,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   tgDateFormater,
-                  projectId
+                  projectId,
+                  historyParams
                 ).element
               case ShowTimeboxesPage(projectId: UUID, listParams) =>
                 new ShowTimeboxesComponent(

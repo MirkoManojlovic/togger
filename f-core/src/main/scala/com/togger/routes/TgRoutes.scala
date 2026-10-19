@@ -21,6 +21,18 @@ class TgRoutes {
 
   private type MilestoneListQuery = (Option[String], Option[String], List[String], Option[String])
 
+  private type MilestoneHistoryQuery =
+    (
+      Option[String],
+      List[String],
+      Option[String],
+      Option[String],
+      List[String],
+      List[String],
+      List[String],
+      Option[String]
+    )
+
   private type TaskListQuery =
     (Option[String], Option[String], List[String], List[String], List[String], List[String], List[String], Option[String])
 
@@ -300,10 +312,38 @@ class TgRoutes {
             param[String]("search").?
         )
       ),
-      Route(
-        encode = (page: ShowMilestoneHistoryPage) => page.projectId.toString,
-        decode = (projectId: String) => ShowMilestoneHistoryPage(UUID.fromString(projectId)),
-        pattern = root / "milestone-history" / segment[String] / endOfSegments
+      Route.withQuery[ShowMilestoneHistoryPage, String, MilestoneHistoryQuery](
+        encode = (page: ShowMilestoneHistoryPage) =>
+          PatternArgs(
+            path = page.projectId.toString,
+            params = (
+              MilestoneHistoryParams.modeToQuery(page.history),
+              TaskListParams.selectionToQuery(page.history.months),
+              MilestoneHistoryParams.dateToQuery(page.history.start),
+              MilestoneHistoryParams.dateToQuery(page.history.stop),
+              TaskListParams.selectionToQuery(page.history.taskStatuses),
+              TaskListParams.selectionToQuery(page.history.milestones),
+              TaskListParams.selectionToQuery(page.history.milestoneStatuses),
+              MilestoneHistoryParams.searchToQuery(page.history)
+            )
+          ),
+        decode = { (args: PatternArgs[String, MilestoneHistoryQuery]) =>
+          val (mode, months, start, stop, taskStatuses, milestones, milestoneStatuses, search) = args.params
+          ShowMilestoneHistoryPage(
+            UUID.fromString(args.path),
+            MilestoneHistoryParams.fromQuery(mode, months, start, stop, taskStatuses, milestones, milestoneStatuses, search)
+          )
+        },
+        pattern = (root / "milestone-history" / segment[String] / endOfSegments) ? (
+          param[String]("mode").? &
+            listParam[String]("month") &
+            param[String]("from").? &
+            param[String]("to").? &
+            listParam[String]("status") &
+            listParam[String]("milestone") &
+            listParam[String]("milestoneStatus") &
+            param[String]("search").?
+        )
       ),
       Route.withQuery[ShowTimeboxesPage, String, ListQuery](
         encode = (page: ShowTimeboxesPage) =>

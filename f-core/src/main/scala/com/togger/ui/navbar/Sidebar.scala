@@ -333,7 +333,7 @@ object Sidebar {
     case CreateProjectMappingPage(projectId) => Some(projectId)
     case CreateMilestonePage(projectId)      => Some(projectId)
     case ShowMilestonesPage(projectId, _)    => Some(projectId)
-    case ShowMilestoneHistoryPage(projectId) => Some(projectId)
+    case ShowMilestoneHistoryPage(projectId, _) => Some(projectId)
     case ShowTimeboxesPage(projectId, _)     => Some(projectId)
     case CreateTimeboxPage(projectId)        => Some(projectId)
     case EditTimeboxPage(projectId, _)       => Some(projectId)

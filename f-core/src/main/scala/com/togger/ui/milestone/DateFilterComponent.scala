@@ -27,19 +27,26 @@ object ActiveDateFilter {
   case class ByRange(start: Option[LocalDate], end: Option[LocalDate]) extends ActiveDateFilter
 }
 
+/** @param initialMonths
+  *   the months ticked at first, `None` meaning all of them
+  */
 class DateFilterComponent(
   monthOptionsSignal: Signal[Seq[MonthOption]],
-  tgDateFormater: TgDateFormater
+  tgDateFormater: TgDateFormater,
+  initialMode: DateFilterMode,
+  initialMonths: Option[Set[String]],
+  initialStart: Option[LocalDate],
+  initialStop: Option[LocalDate]
 ) {
 
-  private val modeVar: Var[DateFilterMode] = Var(DateFilterMode.Month)
+  private val modeVar: Var[DateFilterMode] = Var(initialMode)
 
-  private val monthItemsSignal: Signal[Seq[MultiSelectItem]] =
+  val monthItemsSignal: Signal[Seq[MultiSelectItem]] =
     monthOptionsSignal.map(_.map { opt =>
       MultiSelectItem(
         id = opt.id,
         name = s"${tgDateFormater.monthName(LocalDate.of(opt.year, opt.month, 1))} ${opt.year}",
-        isSelected = true
+        isSelected = initialMonths.forall(_.contains(opt.id))
       )
     })
 
@@ -54,8 +61,8 @@ class DateFilterComponent(
   private val monthSelectionSignal: Signal[Set[(Int, Int)]] =
     monthFilterComponent.selectedIds.map(_.flatMap(parseMonthId))
 
-  private val startDateVar: Var[String] = Var("")
-  private val stopDateVar: Var[String] = Var("")
+  private val startDateVar: Var[String] = Var(initialStart.fold("")(_.toString))
+  private val stopDateVar: Var[String] = Var(initialStop.fold("")(_.toString))
 
   private def parseDate(value: String): Option[LocalDate] =
     if (value.isEmpty) None else Try(LocalDate.parse(value)).toOption
@@ -84,6 +91,12 @@ class DateFilterComponent(
     startDateVar.signal.combineWith(stopDateVar.signal).map { case (start, stop) =>
       (parseDate(start), parseDate(stop))
     }
+
+  val modeSignal: Signal[DateFilterMode] = modeVar.signal
+
+  val selectedMonthIds: Signal[Set[String]] = monthFilterComponent.selectedIds
+
+  val rangeSignal: Signal[(Option[LocalDate], Option[LocalDate])] = rangeSelectionSignal
 
   val activeFilter: Signal[ActiveDateFilter] =
     modeVar.signal.combineWith(monthSelectionSignal, rangeSelectionSignal).map {

@@ -5,7 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
@@ -28,7 +28,8 @@ class MilestoneHistoryComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
-  projectId: UUID
+  projectId: UUID,
+  params: MilestoneHistoryParams
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -113,24 +114,53 @@ class MilestoneHistoryComponent(
         .map { case (year, month) => MonthOption(year, month) }
     }
 
-  private val dateFilterComponent = new DateFilterComponent(monthOptionsSignal, tgDateFormater)
+  private def showHistory(newParams: MilestoneHistoryParams): Unit =
+    if (newParams != params) router.route(ShowMilestoneHistoryPage(projectId, newParams))
+
+  /** Navigates when the user changes a multi-select widget. The ticks the URL itself implies (the widget seeds them as
+    * its items arrive) are not a change, and picking exactly the widget's default is spelled by leaving it out of the
+    * URL.
+    */
+  private def navigateOnSelection(
+    selectedIds: Signal[Set[String]],
+    itemsSignal: Signal[Seq[MultiSelectItem]],
+    defaultIds: Seq[MultiSelectItem] => Set[String]
+  )(withSelection: Option[Set[String]] => MilestoneHistoryParams): Modifier[HtmlElement] =
+    selectedIds.changes.withCurrentValueOf(itemsSignal) --> Observer[(Set[String], Seq[MultiSelectItem])] {
+      case (picked, items) =>
+        val seeded = items.filter(_.isSelected).map(_.id).toSet
+        if (picked != seeded) showHistory(withSelection(Option.when(picked != defaultIds(items))(picked)))
+    }
+
+  private def allIds(items: Seq[MultiSelectItem]): Set[String] = items.map(_.id).toSet
+
+  private val dateFilterComponent = new DateFilterComponent(
+    monthOptionsSignal,
+    tgDateFormater,
+    initialMode = if (params.byRange) DateFilterMode.Range else DateFilterMode.Month,
+    initialMonths = params.months,
+    initialStart = params.start,
+    initialStop = params.stop
+  )
 
   private val taskStatusItemsSignal: Signal[Seq[MultiSelectItem]] =
     tasksVar.signal.map(
       _.map(_.taskStatus)
         .distinctBy(_.id)
         .sortBy(s => statusOrder(s.name))
-        .map(s => MultiSelectItem(id = s.id.toString, name = s.name, isSelected = true))
+        .map(s => MultiSelectItem(id = s.id.toString, name = s.name, isSelected = params.taskStatuses.forall(_.contains(s.id.toString))))
     )
 
   private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
 
   private val UnassignedMilestoneId = "unassigned"
 
+  private def isMilestoneTicked(id: String): Boolean = params.milestones.forall(_.contains(id))
+
   private val milestoneItemsSignal: Signal[Seq[MultiSelectItem]] =
     milestonesVar.signal.map { milestones =>
-      milestones.sortBy(_.name).map(m => MultiSelectItem(id = m.id.toString, name = m.name, isSelected = true)) :+
-        MultiSelectItem(id = UnassignedMilestoneId, name = "Unassigned", isSelected = true)
+      milestones.sortBy(_.name).map(m => MultiSelectItem(id = m.id.toString, name = m.name, isSelected = isMilestoneTicked(m.id.toString))) :+
+        MultiSelectItem(id = UnassignedMilestoneId, name = "Unassigned", isSelected = isMilestoneTicked(UnassignedMilestoneId))
     }
 
   private val milestoneFilter = new TableFilterComponent(milestoneItemsSignal, label = "Filter by milestone")
@@ -138,18 +168,41 @@ class MilestoneHistoryComponent(
   private val milestoneStatusItemsSignal: Signal[Seq[MultiSelectItem]] = Val(
     MilestoneStatus.values
       .sortBy(_.value)
-      .map(s => MultiSelectItem(id = s.value.toString, name = s.statusName, isSelected = s == MilestoneStatus.InProgress))
+      .map(s => MultiSelectItem(id = s.value.toString, name = s.statusName, isSelected = params.selectedMilestoneStatuses.contains(s.value.toString)))
   )
 
   private val milestoneStatusFilter =
     new TableFilterComponent(milestoneStatusItemsSignal, label = "Filter by milestone status")
 
-  private val searchTermVar = Var("")
+  private val searchTermVar = Var(params.search)
   private val searchBox = TableSearchComponent(
     inputSignal = searchTermVar.signal,
     inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description",
-    debounceMs = 0
+    placeholderValue = "Search by name, description"
+  )
+
+  private val navigateOnChange: Seq[Modifier[HtmlElement]] = Seq(
+    navigateOnSelection(taskStatusFilter.selectedIds, taskStatusItemsSignal, allIds)(selection =>
+      params.copy(taskStatuses = selection)
+    ),
+    navigateOnSelection(milestoneFilter.selectedIds, milestoneItemsSignal, allIds)(selection =>
+      params.copy(milestones = selection)
+    ),
+    navigateOnSelection(
+      milestoneStatusFilter.selectedIds,
+      milestoneStatusItemsSignal,
+      _ => MilestoneHistoryParams.DefaultMilestoneStatuses
+    )(selection => params.copy(milestoneStatuses = selection)),
+    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)(selection =>
+      params.copy(months = selection)
+    ),
+    dateFilterComponent.modeSignal.changes --> Observer[DateFilterMode](mode =>
+      showHistory(params.copy(byRange = mode == DateFilterMode.Range))
+    ),
+    dateFilterComponent.rangeSignal.changes --> Observer[(Option[LocalDate], Option[LocalDate])] {
+      case (start, stop) => showHistory(params.copy(start = start, stop = stop))
+    },
+    searchTermVar.signal.changes --> Observer[String](term => showHistory(params.copy(search = term.trim)))
   )
 
   private val taskColWidthPxVar: Var[Double] = Var(192.0) // 12rem at default root font size
@@ -632,6 +685,7 @@ class MilestoneHistoryComponent(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
+              navigateOnChange,
               historySignal --> (_ => hoveredRowIndexVar.set(None)),
               div(
                 cls("flex justify-between items-start mb-4"),
