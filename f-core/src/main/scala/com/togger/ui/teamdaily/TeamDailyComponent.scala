@@ -521,24 +521,7 @@ class TeamDailyComponent(
     val canRepeat = latest.exists(entry => isRepeatable(task, entry))
     val focusRepeat = canRepeat && !state.now().entries.contains(key)
     div(
-      div(
-        cls("mb-3 flex flex-col gap-1.5"),
-        div(
-          cls("flex flex-wrap items-center gap-2"),
-          h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
-          task.map(t =>
-            if (t.labels.isEmpty) span(cls("text-sm"), aria.label("No labels"), "🏷️")
-            else badgeRow(TeamDailyTaskBadges.labels(t))
-          )
-        ),
-        task.map(t =>
-          badgeRow(
-            TeamDailyTaskBadges.milestoneAndPriority(t, state.now().milestones) :+
-              BadgeSpec(t.statusName, TaskStatusBadgeColor.of(t.statusName))
-          )
-        ),
-        task.map(t => badgeRow(TeamDailyTaskBadges.dates(t, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)))
-      ),
+      task.map(taskHeader(_, headingCls = "text-base font-medium text-heading")),
       latest.map(lastStatus(key, _, canRepeat, focusRepeat)),
       new TeamDailyEntryForm(
         taskId,
@@ -550,6 +533,25 @@ class TeamDailyComponent(
       ).element
     )
   }
+
+  /** The task as the fill form and the review show it: name and labels, then milestone, priority and status, then dates. */
+  private def taskHeader(task: TeamDailyTaskPlan, headingCls: String): HtmlElement =
+    div(
+      cls("mb-3 flex flex-col gap-1.5"),
+      div(
+        cls("flex flex-wrap items-center gap-2"),
+        h4(cls(headingCls), task.name),
+        if (task.labels.isEmpty) span(cls("text-sm"), aria.label("No labels"), "🏷️")
+        else badgeRow(TeamDailyTaskBadges.labels(task))
+      ),
+      badgeRow(
+        TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+
+          BadgeSpec(task.statusName, TaskStatusBadgeColor.of(task.statusName))
+      ),
+      badgeRow(
+        TeamDailyTaskBadges.dates(task, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)
+      )
+    )
 
   /** The work days of the chosen project, the calendar default until the projects are loaded. */
   private def projectWorkDays: Set[DayOfWeek] = {
@@ -615,7 +617,7 @@ class TeamDailyComponent(
             member.tasks.map { task =>
               div(
                 cls("ml-3 mt-2"),
-                p(cls("text-sm font-medium text-heading"), task.name),
+                taskHeader(task, headingCls = "text-sm font-medium text-heading"),
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
                   div(
