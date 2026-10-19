@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.common.TgResponseTypes.TgResp
 import com.togger.dto.{FindMilestoneResp, LogEntryDto, SearchAccountDto}
@@ -32,7 +32,7 @@ import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader
 import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
-import java.time.{LocalDate, LocalTime, ZoneOffset}
+import java.time.{DayOfWeek, LocalDate, LocalTime, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
@@ -521,12 +521,23 @@ class TeamDailyComponent(
     val canRepeat = latest.exists(entry => isRepeatable(task, entry))
     val focusRepeat = canRepeat && !state.now().entries.contains(key)
     div(
-      h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
-      task.map(t =>
+      div(
+        cls("mb-3 flex flex-col gap-1.5"),
         div(
-          cls("mb-3"),
-          TgBadge(text = t.statusName, color = TaskStatusBadgeColor.of(t.statusName), bordered = true).element
-        )
+          cls("flex flex-wrap items-center gap-2"),
+          h4(cls("text-base font-medium text-heading"), task.fold("")(_.name)),
+          task.map(t =>
+            if (t.labels.isEmpty) span(cls("text-sm"), aria.label("No labels"), "🏷️")
+            else badgeRow(TeamDailyTaskBadges.labels(t))
+          )
+        ),
+        task.map(t =>
+          badgeRow(
+            TeamDailyTaskBadges.milestoneAndPriority(t, state.now().milestones) :+
+              BadgeSpec(t.statusName, TaskStatusBadgeColor.of(t.statusName))
+          )
+        ),
+        task.map(t => badgeRow(TeamDailyTaskBadges.dates(t, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)))
       ),
       latest.map(lastStatus(key, _, canRepeat, focusRepeat)),
       new TeamDailyEntryForm(
@@ -538,6 +549,16 @@ class TeamDailyComponent(
         focusEditor = !focusRepeat
       ).element
     )
+  }
+
+  /** The work days of the chosen project, the calendar default until the projects are loaded. */
+  private def projectWorkDays: Set[DayOfWeek] = {
+    val current = state.now()
+    current.projects
+      .find(project => current.projectId.contains(project.id))
+      .map(_.workDays.map(DayOfWeek.of))
+      .filter(_.nonEmpty)
+      .getOrElse(WorkDayCalendar.DefaultWorkDays)
   }
 
   /** The last entry is worth repeating when it says blocked or paused, or when the task itself is waiting or blocked. */

@@ -1,5 +1,6 @@
 package com.togger.ui.teamdaily
 
+import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp}
 import com.togger.logentry.LogEntryStatus
@@ -37,7 +38,9 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
       LogEntryStatus.InProgress,
       TaskPriority.Medium,
       milestoneId,
-      labels
+      labels,
+      dueDate.minusDays(10),
+      dueDate
     )
 
   testNameFromClassName should {
@@ -61,6 +64,20 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
       TeamDailyTaskBadges
         .milestoneAndPriority(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone))
         .map(_.text) shouldBe onlyPriority
+    }
+
+    "show the start date, the due date and the work days left" in { _ =>
+      val monday = LocalDate.of(2026, 10, 26)
+      TeamDailyTaskBadges
+        .dates(task(None, Seq.empty), monday, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .map(_.text) shouldBe Seq("2026-10-20", "2026-10-30", "5 days left")
+    }
+
+    "say overdue after the due date" in { _ =>
+      TeamDailyTaskBadges
+        .dates(task(None, Seq.empty), dueDate.plusDays(1), WorkDayCalendar.DefaultWorkDays, _.toString)
+        .map(_.text)
+        .last shouldBe "Overdue"
     }
   }
 }

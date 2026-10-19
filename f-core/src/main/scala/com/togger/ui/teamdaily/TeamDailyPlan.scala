@@ -17,6 +17,8 @@ case class TeamDailyTaskPlan(
   priority: TaskPriority,
   milestoneId: Option[UUID],
   labels: Seq[FindTaskLabelResp],
+  startDate: LocalDate,
+  dueDate: LocalDate,
   /** The newest log entry, shown while filling in today's so the user sees what was said last. */
   latestEntry: Option[LogEntryDto] = None
 )
@@ -64,6 +66,8 @@ object TeamDailyPlan {
       priority = task.priority,
       milestoneId = task.milestone,
       labels = task.taskLabels,
+      startDate = task.startDate,
+      dueDate = task.dueDate,
       latestEntry = latest
     )
   }

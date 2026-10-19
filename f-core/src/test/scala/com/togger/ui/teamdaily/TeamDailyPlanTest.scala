@@ -20,7 +20,9 @@ class TeamDailyPlanTest extends AsyncJsWordSpec {
       LogEntryStatus.InProgress,
       TaskPriority.Medium,
       None,
-      Seq.empty
+      Seq.empty,
+      LocalDate.of(2026, 10, 19),
+      LocalDate.of(2026, 10, 30)
     )
 
   private val john = member("John")
