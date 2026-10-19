@@ -114,22 +114,32 @@ class MilestoneHistoryComponent(
         .map { case (year, month) => MonthOption(year, month) }
     }
 
-  private def showHistory(newParams: MilestoneHistoryParams): Unit =
-    if (newParams != params) router.route(ShowMilestoneHistoryPage(projectId, newParams))
+  private val currentParamsVar = Var(params)
 
-  /** Navigates when the user changes a multi-select widget. The ticks the URL itself implies (the widget seeds them as
-    * its items arrive) are not a change, and picking exactly the widget's default is spelled by leaving it out of the
-    * URL.
+  /** Puts the filters in the address bar without going through the router, so the page is not rebuilt. */
+  private def showHistory(change: MilestoneHistoryParams => MilestoneHistoryParams): Unit = {
+    val newParams = change(currentParamsVar.now())
+    if (newParams != currentParamsVar.now()) {
+      currentParamsVar.set(newParams)
+      dom.window.history.replaceState(
+        null,
+        "",
+        router.absoluteUrlForPage(ShowMilestoneHistoryPage(projectId, newParams))
+      )
+    }
+  }
+
+  /** Updates the URL when the user changes a multi-select widget. Picking exactly the widget's default is spelled by
+    * leaving it out of the URL.
     */
   private def navigateOnSelection(
     selectedIds: Signal[Set[String]],
     itemsSignal: Signal[Seq[MultiSelectItem]],
     defaultIds: Seq[MultiSelectItem] => Set[String]
-  )(withSelection: Option[Set[String]] => MilestoneHistoryParams): Modifier[HtmlElement] =
+  )(withSelection: (MilestoneHistoryParams, Option[Set[String]]) => MilestoneHistoryParams): Modifier[HtmlElement] =
     selectedIds.changes.withCurrentValueOf(itemsSignal) --> Observer[(Set[String], Seq[MultiSelectItem])] {
       case (picked, items) =>
-        val seeded = items.filter(_.isSelected).map(_.id).toSet
-        if (picked != seeded) showHistory(withSelection(Option.when(picked != defaultIds(items))(picked)))
+        showHistory(withSelection(_, Option.when(picked != defaultIds(items))(picked)))
     }
 
   private def allIds(items: Seq[MultiSelectItem]): Set[String] = items.map(_.id).toSet
@@ -182,27 +192,27 @@ class MilestoneHistoryComponent(
   )
 
   private val navigateOnChange: Seq[Modifier[HtmlElement]] = Seq(
-    navigateOnSelection(taskStatusFilter.selectedIds, taskStatusItemsSignal, allIds)(selection =>
-      params.copy(taskStatuses = selection)
+    navigateOnSelection(taskStatusFilter.selectedIds, taskStatusItemsSignal, allIds)((current, selection) =>
+      current.copy(taskStatuses = selection)
     ),
-    navigateOnSelection(milestoneFilter.selectedIds, milestoneItemsSignal, allIds)(selection =>
-      params.copy(milestones = selection)
+    navigateOnSelection(milestoneFilter.selectedIds, milestoneItemsSignal, allIds)((current, selection) =>
+      current.copy(milestones = selection)
     ),
     navigateOnSelection(
       milestoneStatusFilter.selectedIds,
       milestoneStatusItemsSignal,
       _ => MilestoneHistoryParams.DefaultMilestoneStatuses
-    )(selection => params.copy(milestoneStatuses = selection)),
-    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)(selection =>
-      params.copy(months = selection)
+    )((current, selection) => current.copy(milestoneStatuses = selection)),
+    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)((current, selection) =>
+      current.copy(months = selection)
     ),
     dateFilterComponent.modeSignal.changes --> Observer[DateFilterMode](mode =>
-      showHistory(params.copy(byRange = mode == DateFilterMode.Range))
+      showHistory(_.copy(byRange = mode == DateFilterMode.Range))
     ),
     dateFilterComponent.rangeSignal.changes --> Observer[(Option[LocalDate], Option[LocalDate])] {
-      case (start, stop) => showHistory(params.copy(start = start, stop = stop))
+      case (start, stop) => showHistory(_.copy(start = start, stop = stop))
     },
-    searchTermVar.signal.changes --> Observer[String](term => showHistory(params.copy(search = term.trim)))
+    searchTermVar.signal.changes --> Observer[String](term => showHistory(_.copy(search = term.trim)))
   )
 
   private val taskColWidthPxVar: Var[Double] = Var(192.0) // 12rem at default root font size
