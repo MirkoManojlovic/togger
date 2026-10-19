@@ -579,14 +579,8 @@ class TeamDailyComponent(
 
   private val stepButtons: HtmlElement =
     div(
-      cls("flex gap-2"),
-      button(
-        `type`("button"),
-        cls(secondaryButtonCls),
-        cls("hidden") <-- canGoBack.map(!_),
-        "Back",
-        onClick.mapToUnit --> (_ => move(-1))
-      ),
+      // Next comes first in the DOM so Tab reaches it before Back; the row is reversed to show Back on the left
+      cls("flex flex-row-reverse gap-2"),
       button(
         `type`("button"),
         cls(primaryButtonCls),
@@ -594,6 +588,13 @@ class TeamDailyComponent(
         disabled <-- canGoNext.map(!_),
         child.text <-- onReview.map(if (_) "Submit all changes" else "Next"),
         onClick.mapToUnit --> (_ => if (state.now().position == TeamDailyPosition.Review) submit() else next())
+      ),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        cls("hidden") <-- canGoBack.map(!_),
+        "Back",
+        onClick.mapToUnit --> (_ => move(-1))
       )
     )
 
