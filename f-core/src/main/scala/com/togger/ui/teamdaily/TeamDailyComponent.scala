@@ -104,6 +104,12 @@ class TeamDailyComponent(
     onClose()
   }
 
+  /** Asked before the modal closes with something filled in, so a stray click can't lose it. */
+  private val confirmingClose = Var(false)
+
+  private def requestClose(): Unit =
+    if (state.now().draft.isEmpty) closeDiscardingDraft() else confirmingClose.set(true)
+
   private def closeDiscardingDraft(): Unit = {
     persisting.set(false)
     state.now().projectId.flatMap(draftStore).foreach(_.clear())
@@ -575,44 +581,61 @@ class TeamDailyComponent(
     }
   }
 
+  private val stepButtons: HtmlElement =
+    div(
+      cls("flex gap-2"),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        cls("hidden") <-- canGoBack.map(!_),
+        "Back",
+        onClick.mapToUnit --> (_ => move(-1))
+      ),
+      button(
+        `type`("button"),
+        cls(primaryButtonCls),
+        cls("opacity-50 cursor-not-allowed") <-- canGoNext.map(!_),
+        disabled <-- canGoNext.map(!_),
+        child.text <-- onReview.map(if (_) "Submit all changes" else "Next"),
+        onClick.mapToUnit --> (_ => if (state.now().position == TeamDailyPosition.Review) submit() else next())
+      )
+    )
+
+  private val closeConfirmation: HtmlElement =
+    div(
+      cls("flex flex-wrap items-center justify-end gap-2"),
+      span(cls("text-sm text-body"), "Your team daily is saved as a draft."),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        "Keep editing",
+        onClick.mapToUnit --> (_ => confirmingClose.set(false))
+      ),
+      button(
+        `type`("button"),
+        cls(secondaryButtonCls),
+        "Discard",
+        onClick.mapToUnit --> (_ => closeDiscardingDraft())
+      ),
+      button(
+        `type`("button"),
+        cls(primaryButtonCls),
+        "Close, keep draft",
+        onClick.mapToUnit --> (_ => closeKeepingDraft())
+      )
+    )
+
   private val footer: HtmlElement =
     div(
       cls(ModalStyles.footerCls),
-      cls("justify-between space-x-0"),
-      div(
-        cls("flex gap-2"),
-        button(
-          `type`("button"),
-          cls(secondaryButtonCls),
-          cls("hidden") <-- state.signal.map(_.draft.isEmpty).distinct,
-          "Discard draft",
-          onClick.mapToUnit --> (_ => closeDiscardingDraft())
-        )
-      ),
-      div(
-        cls("flex gap-2"),
-        button(
-          `type`("button"),
-          cls(secondaryButtonCls),
-          cls("hidden") <-- canGoBack.map(!_),
-          "Back",
-          onClick.mapToUnit --> (_ => move(-1))
-        ),
-        button(
-          `type`("button"),
-          cls(primaryButtonCls),
-          cls("opacity-50 cursor-not-allowed") <-- canGoNext.map(!_),
-          disabled <-- canGoNext.map(!_),
-          child.text <-- onReview.map(if (_) "Submit all changes" else "Next"),
-          onClick.mapToUnit --> (_ => if (state.now().position == TeamDailyPosition.Review) submit() else next())
-        )
-      )
+      cls("justify-end space-x-0"),
+      child <-- confirmingClose.signal.map(if (_) closeConfirmation else stepButtons)
     )
 
   val element: HtmlElement =
     div(
       cls("fixed inset-0 z-[100] flex items-start justify-center pt-16 px-4 bg-white/90 dark:bg-neutral-primary/90"),
-      onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => closeKeepingDraft()),
+      onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
       onMountCallback { _ =>
         loadProjects()
         state.now().projectId.foreach(loadProject)
@@ -620,7 +643,8 @@ class TeamDailyComponent(
       state.signal.map(_.projectId).distinct.changes.collect { case Some(id) => id } --> (id => loadProject(id)),
       state.signal.map(_.draft).distinct.changes.debounce(DraftSaveDebounce.toMillis.toInt) --> (_ => saveDraft()),
       windowEvents(_.onBeforeUnload) --> (_ => saveDraft()),
-      documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => closeKeepingDraft()),
+      documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit -->
+        (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
       div(
         cls(ModalStyles.contentBoxCls),
         cls("flex w-full max-w-4xl flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
@@ -632,7 +656,7 @@ class TeamDailyComponent(
             cls(ModalStyles.closeButtonCls),
             aria.label("Close"),
             TgIcons.closeIcon("w-4 h-4"),
-            onClick.mapToUnit --> (_ => closeKeepingDraft())
+            onClick.mapToUnit --> (_ => requestClose())
           )
         ),
         stepper,
