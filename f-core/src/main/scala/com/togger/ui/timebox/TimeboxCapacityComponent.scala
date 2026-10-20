@@ -35,7 +35,11 @@ class TimeboxCapacityComponent(capacity: Signal[Option[TimeboxCapacity]]) {
       current.people.map(bar(_, TgProgressSize.Default)),
       div(cls("text-sm text-body"), s"Without assignee: ${current.unassignedDays} days (counted in the total only)"),
       Option.when(current.isOverCapacity)(
-        div(cls("text-sm font-medium text-fg-danger-strong"), "Over capacity: unstage tasks to be able to save.")
+        div(
+          cls("text-sm font-medium text-fg-danger-strong"),
+          div("Over capacity: unstage tasks to be able to save."),
+          current.people.filter(_.isOver).map(p => div(s"${p.name}: ${p.usedDays} / ${p.capacityDays} days"))
+        )
       ),
       Option.when(current.hasOverlap)(
         div(
