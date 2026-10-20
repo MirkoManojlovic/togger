@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
+import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.dto.{FindMilestoneResp, LogEntryDto}
@@ -114,6 +115,7 @@ class SlackerComponent(
   private val state = Var(SlackerState(projectId = currentProjectId))
 
   private val currentAccountId: Option[UUID] = accountService.get.map(_.id)
+  private val currentAccountName: String = accountService.get.map(LogEntryMemberBadge.nameOf).getOrElse("")
 
   private def draftStore(projectId: UUID): Option[SlackerDraftStore] =
     currentAccountId.map(new SlackerDraftStore(localStorage, _, projectId))
@@ -548,7 +550,8 @@ class SlackerComponent(
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,
-        TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
+        TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+        LogEntryMemberBadge(entry.createdByName)
       ),
       div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
     )
@@ -628,6 +631,7 @@ class SlackerComponent(
           tgDateFormater,
           draft => edit(key)(_ => draft),
           focusEditor = !focusRepeat,
+          authorName = currentAccountName,
           title = s"Status for ${task.name}"
         ).element
       )
@@ -654,7 +658,8 @@ class SlackerComponent(
                   TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,
                   toSave.get(key).map(entry =>
                     TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
-                  )
+                  ),
+                  LogEntryMemberBadge(currentAccountName)
                 ),
                 toSave.get(key).fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
                   tgMarkdown.toLaminarDiv(entry.textExternal)

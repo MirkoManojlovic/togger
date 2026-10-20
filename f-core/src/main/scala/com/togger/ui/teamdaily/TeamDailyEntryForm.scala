@@ -7,7 +7,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components._
-import com.togger.ui.logentry.{ActivePopup, LogEntryForm}
+import com.togger.ui.logentry.{ActivePopup, LogEntryForm, LogEntryMemberBadge}
 import com.togger.ui.task.TgDateFormater
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -25,6 +25,7 @@ class TeamDailyEntryForm(
   tgDateFormater: TgDateFormater,
   onChange: TeamDailyEntryDraft => Unit,
   focusEditor: Boolean = true,
+  authorName: String = "",
   title: String = "Status for the day"
 ) {
 
@@ -151,7 +152,7 @@ class TeamDailyEntryForm(
           header = TgCard.CardHeader.html(div(title), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
-              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge),
+              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(authorName)),
               textExternalEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 text-xs text-body-subtle"), "$ status")
             )

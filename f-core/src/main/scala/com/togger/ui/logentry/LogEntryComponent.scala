@@ -33,7 +33,8 @@ case class LogEntryForm(
   status: String = "",
   textExternal: String = "",
   textInternal: String = "",
-  date: String = ""
+  date: String = "",
+  createdByName: String = ""
 ) {
   lazy val dateAsInstant: Instant = {
     val localDate = LocalDate.parse(date)
@@ -57,7 +58,8 @@ object LogEntryForm {
       status = dto.status.value.toString,
       textExternal = dto.textExternal,
       textInternal = dto.textInternal,
-      date = dto.updatedAt.toLocalDate().toString
+      date = dto.updatedAt.toLocalDate().toString,
+      createdByName = dto.createdByName
     )
 }
 
@@ -182,7 +184,8 @@ class LogEntryComponent(
                           bordered = true,
                           color = TgBadgeColor.Gray
                         ).element,
-                        TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
+                        TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element,
+                        LogEntryMemberBadge(state.createdByName)
                       ),
                       TgHtmlButton
                         .extraSmall("Edit")
@@ -208,6 +211,11 @@ class LogEntryComponent(
 
   private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
 
+    // an entry that isn't saved yet is made by whoever is logged in
+    val memberName = Option(formState.now().createdByName)
+      .filter(_.nonEmpty)
+      .orElse(accountService.get.map(LogEntryMemberBadge.nameOf))
+      .getOrElse("")
     val activePopupVar: Var[Option[ActivePopup]] = Var(None)
     val highlightedVar: Var[Int] = Var(0)
 
@@ -391,7 +399,7 @@ class LogEntryComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge),
+              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(memberName)),
               textExternalEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 mb-4 text-xs text-body-subtle"), "@ date  $ status"),
               div(TgHtmlButton.primary(buttonLabel))

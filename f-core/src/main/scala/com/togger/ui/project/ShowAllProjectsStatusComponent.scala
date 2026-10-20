@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits.toTraverseOps
 import com.raquo.laminar.api.L._
+import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.common.TgIds
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
@@ -310,7 +311,8 @@ class ShowAllProjectsStatusComponent(
                   div(
                     cls("flex items-center gap-2 mb-2"),
                     dateBadge(),
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
+                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
                 )
@@ -346,7 +348,8 @@ class ShowAllProjectsStatusComponent(
                       bordered = true,
                       color = TgBadgeColor.Gray
                     ).element,
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
+                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
                 )

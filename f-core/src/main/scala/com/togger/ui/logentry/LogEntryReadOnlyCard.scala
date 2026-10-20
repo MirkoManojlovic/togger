@@ -31,7 +31,8 @@ object LogEntryReadOnlyCard {
               bordered = true,
               color = TgBadgeColor.Gray
             ).element,
-            TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
+            TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+            LogEntryMemberBadge(entry.createdByName)
           ),
           TgCard.CardHeaderSize.H3
         ),
