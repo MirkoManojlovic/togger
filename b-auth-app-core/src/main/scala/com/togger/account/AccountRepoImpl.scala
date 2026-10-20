@@ -6,9 +6,11 @@ import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
+import cats.data.NonEmptyList
+import cats.implicits._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Meta}
+import doobie.{ConnectionIO, Fragment, Fragments, Meta}
 import doobie.postgres.implicits._
 
 import java.time.Instant
@@ -54,6 +56,15 @@ class AccountRepoImpl extends AccountRepo with TgLogging {
       account => s"Account found $account"
     )
   }
+
+  override def findByIds(ids: Set[UUID]): ConnectionIO[List[Account]] =
+    NonEmptyList.fromList(ids.toList).fold(List.empty[Account].pure[ConnectionIO]) { nonEmptyIds =>
+      logAroundInfoQuery(
+        (selectAllStatement(ACCOUNT_TABLE_FRAG) ++ fr"where" ++ Fragments.in(fr"id", nonEmptyIds))
+          .query[Account]
+          .to[List]
+      )(s"Finding accounts with ${sp(ids)}", accounts => s"Found ${accounts.size} accounts")
+    }
 
   override def deleteById(id: UUID): ConnectionIO[Int] =
     logAroundInfoQuery((deleteByIdStatementUUID(ACCOUNT_TABLE_FRAG)(id)).update.run)(
