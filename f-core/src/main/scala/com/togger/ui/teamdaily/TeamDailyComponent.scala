@@ -664,7 +664,7 @@ class TeamDailyComponent(
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,
-        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+        TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
       ),
       div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
     )
@@ -703,7 +703,7 @@ class TeamDailyComponent(
                       cls("flex items-center gap-2 mb-2"),
                       TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,
                       toSave.get(key).map(entry =>
-                        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                        TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
                       )
                     ),
                     toSave.get(key).fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>

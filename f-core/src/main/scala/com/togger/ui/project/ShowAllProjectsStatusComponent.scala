@@ -310,7 +310,7 @@ class ShowAllProjectsStatusComponent(
                   div(
                     cls("flex items-center gap-2 mb-2"),
                     dateBadge(),
-                    TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
                 )
@@ -346,7 +346,7 @@ class ShowAllProjectsStatusComponent(
                       bordered = true,
                       color = TgBadgeColor.Gray
                     ).element,
-                    TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
+                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
                 )

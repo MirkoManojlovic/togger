@@ -182,7 +182,7 @@ class LogEntryComponent(
                           bordered = true,
                           color = TgBadgeColor.Gray
                         ).element,
-                        TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+                        TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
                       ),
                       TgHtmlButton
                         .extraSmall("Edit")
@@ -325,7 +325,7 @@ class LogEntryComponent(
         cls("relative"),
         child <-- formState.signal.map(_.status).distinct.map { statusStr =>
           val status = LogEntryStatus.withValue(statusStr.toInt)
-          TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+          TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
             .amend(
               cls("cursor-pointer"),
               cls("ring-2 ring-blue-400") <-- activePopupVar.signal
@@ -348,7 +348,7 @@ class LogEntryComponent(
                 options = matches.map(status =>
                   QuickOption(
                     id = status.value.toString,
-                    label = status.statusName,
+                    label = status.toStringWithEmoji,
                     description = status.description,
                     isSelected = formState.now().status == status.value.toString,
                     badgeColor = Some(status.badgeColor)

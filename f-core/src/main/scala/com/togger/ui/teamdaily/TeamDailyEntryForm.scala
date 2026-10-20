@@ -102,7 +102,7 @@ class TeamDailyEntryForm(
       cls("relative"),
       child <-- formState.signal.map(_.status).distinct.map { statusStr =>
         val status = LogEntryStatus.withValue(statusStr.toInt)
-        TgBadge(text = status.statusName, color = status.badgeColor, bordered = true).element
+        TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
           .amend(
             cls("cursor-pointer"),
             cls("ring-2 ring-blue-400") <-- activePopupVar.signal.map(_.exists(_.isInstanceOf[ActivePopup.StatusOpen])),
@@ -123,7 +123,7 @@ class TeamDailyEntryForm(
               options = matchesOf(query).map(status =>
                 QuickOption(
                   id = status.value.toString,
-                  label = status.statusName,
+                  label = status.toStringWithEmoji,
                   description = status.description,
                   isSelected = formState.now().status == status.value.toString,
                   badgeColor = Some(status.badgeColor)
