@@ -606,10 +606,14 @@ class TeamDailyComponent(
           statusTab("Last status", selectedDay.signal.map(_.isEmpty), () => selectedDay.set(None)),
           child.maybe <-- selectedDay.signal.map(_.map(day =>
             statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ())
-          ))
+          )),
+          // only the last status can be repeated, so the button goes with its tab
+          child.maybe <-- selectedDay.signal.map(selected =>
+            Option.when(canRepeat && selected.isEmpty)(repeatButton(key, entry, focusRepeat))
+          )
         ),
         child <-- selectedDay.signal.map {
-          case None      => entryView(entry, Some(key).filter(_ => canRepeat), focusRepeat)
+          case None      => entryView(entry)
           case Some(day) => dayView(day, dayEntries(day))
         }
       ),
@@ -630,8 +634,19 @@ class TeamDailyComponent(
       onClick.mapToUnit --> (_ => onSelect())
     )
 
-  /** One log entry: its date, its status, and the text. `repeatKey` adds the button that copies it to today. */
-  private def entryView(entry: LogEntryDto, repeatKey: Option[TeamDailyEntryKey], focusRepeat: Boolean): HtmlElement =
+  private def repeatButton(key: TeamDailyEntryKey, entry: LogEntryDto, focusRepeat: Boolean): HtmlElement =
+    button(
+      `type`("button"),
+      cls(smallButtonCls),
+      // a clear ring, since this button often has the focus when the day opens
+      cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
+      "Repeat for today",
+      onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
+      onClick.mapToUnit --> (_ => repeat(key, entry))
+    )
+
+  /** One log entry: its date, its status, and the text. */
+  private def entryView(entry: LogEntryDto): HtmlElement =
     div(
       div(
         cls("flex items-center gap-2 mb-2"),
@@ -640,19 +655,7 @@ class TeamDailyComponent(
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,
-        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
-        repeatKey.map(key =>
-          button(
-            `type`("button"),
-            cls(smallButtonCls),
-            cls("ms-auto"),
-            // a clear ring, since this button often has the focus when the day opens
-            cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
-            "Repeat for today",
-            onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
-            onClick.mapToUnit --> (_ => repeat(key, entry))
-          )
-        )
+        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element
       ),
       div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
     )
@@ -666,7 +669,7 @@ class TeamDailyComponent(
         ),
         p(cls("text-sm text-body-subtle"), "No status update")
       )
-    else div(entries.map(entryView(_, None, focusRepeat = false)))
+    else div(entries.map(entryView))
 
   // ---- step 4: review
 
