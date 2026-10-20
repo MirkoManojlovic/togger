@@ -3,6 +3,7 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.togger.dto.LogEntryDto
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 
 import java.time.{DayOfWeek, LocalDate, ZoneOffset}
@@ -12,7 +13,7 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid. The task's `startDate` and `dueDate` are marked
+  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid. The task's `startDate` and `dueDate` are marked
   * on it when they fall in the days shown.
   */
 class LogEntryCalendarComponent(
@@ -57,10 +58,36 @@ class LogEntryCalendarComponent(
           .takeWhile(!_.isAfter(calendarEnd))
           .filter(day => workDays.contains(day.getDayOfWeek))
           .toSeq
-      val shownDays = if (tiny) allDays.takeRight(TinyWeeks * sortedWorkDays.size) else allDays
+      val pageSize = TinyWeeks * sortedWorkDays.size
+      val pageCount = (allDays.size + pageSize - 1) / pageSize
+      // the mini calendar shows one page of weeks at a time, the latest first, and opens on the page of the marked day
+      val markedPage = markedDay.map(allDays.indexOf).filter(_ >= 0).map(index => (allDays.size - 1 - index) / pageSize)
+      val page = Var(markedPage.getOrElse(0))
 
-      div(
-        if (tiny) cls("w-fit") else marginBottom.rem(1),
+      def cells(shownDays: Seq[LocalDate]) =
+        shownDays.zipWithIndex.map { case (day, index) =>
+          val entries = entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)
+          // the month is named on the first day shown and wherever a new month starts
+          val startsMonth = index == 0 || shownDays(index - 1).getMonth != day.getMonth
+          if (tiny) tinyDayCell(day, entries, startsMonth, dateMarks(day)) else calendarDayCell(day, entries)
+        }
+
+      def pageDays(current: Int): Seq[LocalDate] =
+        allDays.slice(math.max(allDays.size - (current + 1) * pageSize, 0), allDays.size - current * pageSize)
+
+      def pageButton(label: String, icon: SvgElement, delta: Int) =
+        button(
+          `type`("button"),
+          cls("flex h-5 w-5 items-center justify-center rounded-sm text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"),
+          aria.label(label),
+          title(label),
+          icon,
+          disabled <-- page.signal.map(current => current + delta < 0 || current + delta >= pageCount),
+          onClick.mapToUnit --> (_ => page.update(_ + delta))
+        )
+
+      val grid = div(
+        if (tiny) emptyMod else marginBottom.rem(1),
         // Tailwind only generates CSS for class names it can find as literal text in the source, so a dynamic
         // column count (1..7, driven by the project's configured work days) can't be a `grid-cols-N` utility
         // class -- it has to be an inline style instead, same as MilestoneHistoryComponent's dynamic-width grid.
@@ -72,13 +99,28 @@ class LogEntryCalendarComponent(
           if (tiny) div(cls("text-xs leading-3 font-semibold text-center text-body-subtle"), dayAbbrev(day).take(1))
           else div(cls("text-xs font-semibold text-center text-body-subtle"), dayAbbrev(day))
         },
-        shownDays.zipWithIndex.map { case (day, index) =>
-          val entries = entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)
-          // the month is named on the first day shown and wherever a new month starts
-          val startsMonth = index == 0 || shownDays(index - 1).getMonth != day.getMonth
-          if (tiny) tinyDayCell(day, entries, startsMonth, dateMarks(day)) else calendarDayCell(day, entries)
-        }
+        if (tiny) children <-- page.signal.map(current => cells(pageDays(current))) else cells(allDays)
       )
+
+      if (tiny)
+        div(
+          cls("w-fit"),
+          div(
+            cls("mb-1 flex items-center justify-between"),
+            pageButton(s"Back $TinyWeeks weeks", TgIcons.chevronLeftIcon("w-3 h-3"), delta = 1),
+            button(
+              `type`("button"),
+              cls("rounded-sm px-1.5 text-[11px] font-medium leading-5 text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"),
+              title("Latest weeks"),
+              "Today",
+              disabled <-- page.signal.map(_ == 0),
+              onClick.mapToUnit --> (_ => page.set(0))
+            ),
+            pageButton(s"Forward $TinyWeeks weeks", TgIcons.chevronRightIcon("w-3 h-3"), delta = -1)
+          ),
+          grid
+        )
+      else grid
     }
   }
 
