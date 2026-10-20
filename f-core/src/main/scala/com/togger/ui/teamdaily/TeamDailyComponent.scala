@@ -92,7 +92,7 @@ class TeamDailyComponent(
     */
   private val BreadcrumbScrollCls =
     "overflow-x-auto [&_ol]:w-max [&_ol]:min-w-full [&_li]:shrink-0 [&_li]:whitespace-nowrap"
-  private val ProcessSteps = Seq("Choose members", "Choose tasks", "Fill in the status", "Accept all changes")
+  private val ProcessSteps = Seq("Choose members", "Choose tasks", "Fill in the status", "Review changes")
 
   private val state = Var(TeamDailyState(projectId = currentProjectId))
 
