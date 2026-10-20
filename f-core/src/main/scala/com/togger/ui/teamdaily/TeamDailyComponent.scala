@@ -12,6 +12,7 @@ import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.LogEntryCalendarComponent
 import com.togger.ui.components.{
   DropdownMeta,
   TgBadge,
@@ -527,7 +528,7 @@ class TeamDailyComponent(
     div(
       cls("rounded-base border border-default-medium p-4"),
       task.map(taskHeader(_, headingCls = "text-base font-medium text-heading")),
-      latest.map(lastStatus(key, _, canRepeat, focusRepeat)),
+      latest.map(lastStatus(key, task, _, canRepeat, focusRepeat)),
       new TeamDailyEntryForm(
         taskId,
         date,
@@ -584,32 +585,43 @@ class TeamDailyComponent(
   }
 
   /** What was logged last (yesterday, or the last work day), above the form for today. */
-  private def lastStatus(key: TeamDailyEntryKey, entry: LogEntryDto, canRepeat: Boolean, focusRepeat: Boolean): HtmlElement =
+  private def lastStatus(
+    key: TeamDailyEntryKey,
+    task: Option[TeamDailyTaskPlan],
+    entry: LogEntryDto,
+    canRepeat: Boolean,
+    focusRepeat: Boolean
+  ): HtmlElement =
     div(
-      cls("mb-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
-      p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
+      cls("mb-3 flex items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
-        cls("flex items-center gap-2 mb-2"),
-        TgBadge(
-          text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
-          bordered = true,
-          color = TgBadgeColor.Gray
-        ).element,
-        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
-        Option.when(canRepeat)(
-          button(
-            `type`("button"),
-            cls(smallButtonCls),
-            cls("ms-auto"),
-            // a clear ring, since this button often has the focus when the day opens
-            cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
-            "Repeat for today",
-            onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
-            onClick.mapToUnit --> (_ => repeat(key, entry))
+        cls("min-w-0 flex-1"),
+        p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
+        div(
+          cls("flex items-center gap-2 mb-2"),
+          TgBadge(
+            text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
+            bordered = true,
+            color = TgBadgeColor.Gray
+          ).element,
+          TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
+          Option.when(canRepeat)(
+            button(
+              `type`("button"),
+              cls(smallButtonCls),
+              cls("ms-auto"),
+              // a clear ring, since this button often has the focus when the day opens
+              cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
+              "Repeat for today",
+              onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
+              onClick.mapToUnit --> (_ => repeat(key, entry))
+            )
           )
-        )
+        ),
+        div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
       ),
-      div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
+      // the recent days of the task at a glance, small enough to sit beside the text
+      task.map(t => new LogEntryCalendarComponent(t.logEntries, tgDateFormater, projectWorkDays).tinyElement.amend(cls("shrink-0")))
     )
 
   // ---- step 4: review

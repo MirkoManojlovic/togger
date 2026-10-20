@@ -10,6 +10,9 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 /** A grid of a task's log entries, one column per the project's configured work day, each showing that day's status
   * emoji(s). Clicking a cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail
   * view elsewhere.
+  *
+  * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
+  * cells, only the latest `TinyWeeks` weeks, and not clickable.
   */
 class LogEntryCalendarComponent(
   logEntries: Seq[LogEntryDto],
@@ -17,11 +20,15 @@ class LogEntryCalendarComponent(
   workDays: Set[DayOfWeek],
   selectedDayVar: Var[Option[LocalDate]] = Var(None)
 ) {
-  import LogEntryCalendarComponent.isWorkDay
+  import LogEntryCalendarComponent.{isWorkDay, TinyWeeks}
 
   private val sortedWorkDays: Seq[DayOfWeek] = workDays.toSeq.sortBy(_.getValue)
 
-  val element: HtmlDiv = {
+  val element: HtmlDiv = render(tiny = false)
+
+  val tinyElement: HtmlDiv = render(tiny = true)
+
+  private def render(tiny: Boolean): HtmlDiv = {
     val workDayEntries =
       logEntries.filter(entry => isWorkDay(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate, workDays))
 
@@ -44,26 +51,50 @@ class LogEntryCalendarComponent(
           .takeWhile(!_.isAfter(calendarEnd))
           .filter(day => workDays.contains(day.getDayOfWeek))
           .toSeq
+      val shownDays = if (tiny) allDays.takeRight(TinyWeeks * sortedWorkDays.size) else allDays
 
       div(
-        marginBottom.rem(1),
+        if (tiny) cls("w-fit") else marginBottom.rem(1),
         // Tailwind only generates CSS for class names it can find as literal text in the source, so a dynamic
         // column count (1..7, driven by the project's configured work days) can't be a `grid-cols-N` utility
         // class -- it has to be an inline style instead, same as MilestoneHistoryComponent's dynamic-width grid.
-        styleAttr := s"display: grid; grid-template-columns: repeat(${sortedWorkDays.size}, minmax(0, 1fr)); gap: 0.25rem;",
-        sortedWorkDays
-          .map(day => div(cls("text-xs font-semibold text-center text-body-subtle"), dayAbbrev(day))),
-        allDays.map(day => calendarDayCell(day, entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)))
+        styleAttr := (if (tiny)
+                        s"display: grid; grid-template-columns: repeat(${sortedWorkDays.size}, 2.5rem); gap: 0.125rem;"
+                      else
+                        s"display: grid; grid-template-columns: repeat(${sortedWorkDays.size}, minmax(0, 1fr)); gap: 0.25rem;"),
+        sortedWorkDays.map { day =>
+          if (tiny) div(cls("text-xs leading-3 font-semibold text-center text-body-subtle"), dayAbbrev(day).take(1))
+          else div(cls("text-xs font-semibold text-center text-body-subtle"), dayAbbrev(day))
+        },
+        shownDays.zipWithIndex.map { case (day, index) =>
+          val entries = entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)
+          // the month is named on the first day shown and wherever a new month starts
+          val startsMonth = index == 0 || shownDays(index - 1).getMonth != day.getMonth
+          if (tiny) tinyDayCell(day, entries, startsMonth) else calendarDayCell(day, entries)
+        }
       )
     }
   }
 
+  private def monthAbbrev(day: LocalDate): String = day.getMonth.name().toLowerCase.capitalize.take(3)
+
   private def dayAbbrev(day: DayOfWeek): String = day.name().toLowerCase.capitalize.take(3)
 
+  private def tooltipOf(day: LocalDate, entries: Seq[LogEntryDto]): String =
+    if (entries.isEmpty) ""
+    else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
+
+  private def tinyDayCell(day: LocalDate, entries: Seq[LogEntryDto], startsMonth: Boolean) =
+    div(
+      cls("relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
+      cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
+      title(tooltipOf(day, entries)),
+      span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
+      entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji))
+    )
+
   private def calendarDayCell(day: LocalDate, entries: Seq[LogEntryDto]) = {
-    val tooltip =
-      if (entries.isEmpty) ""
-      else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
+    val tooltip = tooltipOf(day, entries)
 
     div(
       cls("border border-default-medium rounded-md cursor-pointer"),
@@ -81,6 +112,9 @@ class LogEntryCalendarComponent(
 }
 
 object LogEntryCalendarComponent {
+
+  /** How many weeks the tiny calendar shows. */
+  val TinyWeeks = 3
 
   def isWorkDay(day: LocalDate, workDays: Set[DayOfWeek]): Boolean = workDays.contains(day.getDayOfWeek)
 
