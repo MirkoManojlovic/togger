@@ -12,15 +12,18 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one.
+  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The task's `startDate` and `dueDate` are marked
+  * on it when they fall in the days shown.
   */
 class LogEntryCalendarComponent(
   logEntries: Seq[LogEntryDto],
   tgDateFormater: TgDateFormater,
   workDays: Set[DayOfWeek],
-  selectedDayVar: Var[Option[LocalDate]] = Var(None)
+  selectedDayVar: Var[Option[LocalDate]] = Var(None),
+  startDate: Option[LocalDate] = None,
+  dueDate: Option[LocalDate] = None
 ) {
-  import LogEntryCalendarComponent.{isWorkDay, TinyWeeks}
+  import LogEntryCalendarComponent.{DateMark, isWorkDay, TinyWeeks}
 
   private val sortedWorkDays: Seq[DayOfWeek] = workDays.toSeq.sortBy(_.getValue)
 
@@ -70,7 +73,7 @@ class LogEntryCalendarComponent(
           val entries = entriesByDate.getOrElse(day, Seq.empty).sortBy(_.createdAt)
           // the month is named on the first day shown and wherever a new month starts
           val startsMonth = index == 0 || shownDays(index - 1).getMonth != day.getMonth
-          if (tiny) tinyDayCell(day, entries, startsMonth) else calendarDayCell(day, entries)
+          if (tiny) tinyDayCell(day, entries, startsMonth, dateMarks(day)) else calendarDayCell(day, entries)
         }
       )
     }
@@ -84,15 +87,27 @@ class LogEntryCalendarComponent(
     if (entries.isEmpty) ""
     else (tgDateFormater.asAmericanDate(day) +: entries.map(_.status.toStringWithEmoji)).mkString("\n")
 
-  private def tinyDayCell(day: LocalDate, entries: Seq[LogEntryDto], startsMonth: Boolean) =
+  private def dateMarks(day: LocalDate): Seq[DateMark] =
+    Seq(
+      Option.when(startDate.contains(day))(DateMark("S", "Start date", "bg-green-600")),
+      Option.when(dueDate.contains(day))(DateMark("D", "Due date", "bg-red-600"))
+    ).flatten
+
+  private def tinyDayCell(day: LocalDate, entries: Seq[LogEntryDto], startsMonth: Boolean, marks: Seq[DateMark]) =
     div(
       cls("relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
       cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
-      title(tooltipOf(day, entries)),
+      title((tooltipOf(day, entries) +: marks.map(_.title)).filter(_.nonEmpty).mkString("\n")),
       onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
-      entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji))
+      entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji)),
+      div(
+        cls("absolute bottom-0.5 end-0.5 flex gap-px"),
+        marks.map(mark =>
+          span(cls("rounded-sm px-0.5 text-[8px] font-bold leading-3 text-white"), cls(mark.colorCls), mark.letter)
+        )
+      )
     )
 
   private def calendarDayCell(day: LocalDate, entries: Seq[LogEntryDto]) = {
@@ -114,6 +129,9 @@ class LogEntryCalendarComponent(
 }
 
 object LogEntryCalendarComponent {
+
+  /** A small letter on a day of the tiny calendar, such as the start or the due date of the task. */
+  private case class DateMark(letter: String, title: String, colorCls: String)
 
   /** How many weeks the tiny calendar shows. */
   val TinyWeeks = 3

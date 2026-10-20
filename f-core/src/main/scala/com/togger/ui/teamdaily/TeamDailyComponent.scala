@@ -619,7 +619,14 @@ class TeamDailyComponent(
       ),
       // the recent days of the task at a glance, small enough to sit beside the text
       task.map(t =>
-        new LogEntryCalendarComponent(t.logEntries, tgDateFormater, projectWorkDays, selectedDay).tinyElement
+        new LogEntryCalendarComponent(
+          t.logEntries,
+          tgDateFormater,
+          projectWorkDays,
+          selectedDay,
+          startDate = Some(t.startDate),
+          dueDate = Some(t.dueDate)
+        ).tinyElement
           .amend(cls("shrink-0"))
       )
     )
