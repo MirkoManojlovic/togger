@@ -481,7 +481,11 @@ class SlackerComponent(
     current.projectId.fold(WorkDayCalendar.DefaultWorkDays)(workDaysOf(current.projects, _))
   }
 
-  private def taskHeader(task: TeamDailyTaskPlan, headingCls: String): HtmlElement =
+  private def taskHeader(
+    task: TeamDailyTaskPlan,
+    headingCls: String,
+    trailing: Option[HtmlElement] = None
+  ): HtmlElement =
     div(
       cls("mb-3 flex flex-col gap-1.5"),
       div(
@@ -491,7 +495,8 @@ class SlackerComponent(
         else badgeRow(TeamDailyTaskBadges.labels(task)),
         TaskProgressComponent
           .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
-          .element
+          .element,
+        trailing.map(_.amend(cls("ms-auto")))
       ),
       badgeRow(
         TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+
@@ -504,8 +509,7 @@ class SlackerComponent(
 
   private def directionTabs(taskId: UUID): HtmlElement =
     div(
-      cls("mb-3 flex flex-wrap items-center gap-1.5"),
-      span(cls("text-xs text-body-subtle"), "Fill in the days"),
+      cls("flex flex-wrap items-center gap-1.5"),
       statusTab("Today → past", state.signal.map(!_.pastFirst.contains(taskId)).distinct, () => setPastFirst(taskId, on = false)),
       statusTab("Past → today", state.signal.map(_.pastFirst.contains(taskId)).distinct, () => setPastFirst(taskId, on = true))
     )
@@ -607,8 +611,7 @@ class SlackerComponent(
       val focusRepeat = canRepeat && !state.now().entries.contains(key)
       div(
         cls("rounded-base border border-default-medium p-4"),
-        taskHeader(task, headingCls = "text-base font-medium text-heading"),
-        directionTabs(taskId),
+        taskHeader(task, headingCls = "text-base font-medium text-heading", trailing = Some(directionTabs(taskId))),
         latest.map(lastStatus(key, task, _, canRepeat, focusRepeat)),
         new TeamDailyEntryForm(
           taskId,
