@@ -36,6 +36,12 @@ class TimeboxCapacityComponent(capacity: Signal[Option[TimeboxCapacity]]) {
       div(cls("text-sm text-body"), s"Without assignee: ${current.unassignedDays} days (counted in the total only)"),
       Option.when(current.isOverCapacity)(
         div(cls("text-sm font-medium text-fg-danger-strong"), "Over capacity: unstage tasks to be able to save.")
+      ),
+      Option.when(current.hasOverlap)(
+        div(
+          cls("text-sm font-medium text-fg-warning"),
+          "Heads up: several tasks share the same day. The day is split between them, so make sure it is realistic."
+        )
       )
     )
 

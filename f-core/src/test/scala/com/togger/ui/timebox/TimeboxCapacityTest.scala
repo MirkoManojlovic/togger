@@ -21,7 +21,7 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
   private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
 
   /** A task of `days` work days, starting on the Monday of the timebox week. */
-  private def task(days: Int, assignee: Option[SearchAccountDto] = None) = FindTaskRespFull(
+  private def task(days: Int, assignee: Option[SearchAccountDto] = None, start: LocalDate = monday) = FindTaskRespFull(
     id = UUID.randomUUID(),
     projectId = projectId,
     name = "A task",
@@ -36,8 +36,8 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
     latestVersion = UUID.randomUUID(),
     logEntries = Seq.empty,
     links = Seq.empty,
-    startDate = monday,
-    dueDate = WorkDayCalendar.lastDayOfWorkDays(monday, days, workDays)
+    startDate = start,
+    dueDate = WorkDayCalendar.lastDayOfWorkDays(start, days, workDays)
   )
 
   private def capacity(tasks: Seq[FindTaskRespFull], members: Seq[SearchAccountDto]) =
@@ -70,7 +70,25 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
     }
 
     "not fit more than the timebox has for one person" in {
-      capacity(Seq(task(5, Some(ada)), task(1, Some(ada))), Seq(ada)).isOverCapacity shouldBe true
+      capacity(Seq(task(5, Some(ada)), task(1, Some(ada), monday.plusWeeks(1))), Seq(ada)).isOverCapacity shouldBe true
+    }
+
+    "share a day between tasks that overlap" in {
+      val tasks = Seq(task(3, Some(ada)), task(3, Some(ada), monday.plusDays(2)))
+      val result = capacity(tasks, Seq(ada))
+      (result.people.head.usedDays, result.isOverCapacity, result.hasOverlap, result.people.head.overlapDays) shouldBe
+        (5, false, true, 1)
+    }
+
+    "not warn when tasks do not overlap" in {
+      val tasks = Seq(task(2, Some(ada)), task(3, Some(ada), monday.plusDays(2)))
+      capacity(tasks, Seq(ada)).hasOverlap shouldBe false
+    }
+
+    "not mix up the overlap of different people" in {
+      val tasks = Seq(task(3, Some(ada)), task(3, Some(bob)))
+      val result = capacity(tasks, Seq(ada, bob))
+      (result.hasOverlap, result.total.usedDays) shouldBe (false, 6)
     }
 
     "fit two 5 day tasks for two people" in {
@@ -89,7 +107,7 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
     }
 
     "be over when one person has more than the timebox, though the team still has room" in {
-      val result = capacity(Seq(task(5, Some(ada)), task(1, Some(ada))), Seq(ada, bob))
+      val result = capacity(Seq(task(5, Some(ada)), task(1, Some(ada), monday.plusWeeks(1))), Seq(ada, bob))
       (result.total.isOver, result.people.map(_.isOver), result.isOverCapacity) shouldBe
         (false, Seq(true, false), true)
     }
