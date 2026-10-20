@@ -136,7 +136,8 @@ case class LogEntryDto(
   textInternal: String,
   textExternal: String,
   status: LogEntryStatus,
-  updatedAt: Instant
+  updatedAt: Instant,
+  createdByName: String = ""
 )
 
 case class LogEntryVersionDto(
