@@ -105,19 +105,15 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
   }
 
   "CapacityLevel.of" should {
-    "be green below 70%" in {
+    "be green up to and including 100%" in {
       CapacityLevel.of(69, 100) shouldBe CapacityLevel.Green
+      CapacityLevel.of(99, 100) shouldBe CapacityLevel.Green
+      CapacityLevel.of(100, 100) shouldBe CapacityLevel.Green
       CapacityLevel.of(0, 5) shouldBe CapacityLevel.Green
     }
 
-    "be yellow from 70% to 99%" in {
-      CapacityLevel.of(70, 100) shouldBe CapacityLevel.Yellow
-      CapacityLevel.of(99, 100) shouldBe CapacityLevel.Yellow
-      CapacityLevel.of(4, 5) shouldBe CapacityLevel.Yellow
-    }
-
-    "be red at 100% and over" in {
-      CapacityLevel.of(100, 100) shouldBe CapacityLevel.Red
+    "be red over 100%" in {
+      CapacityLevel.of(101, 100) shouldBe CapacityLevel.Red
       CapacityLevel.of(6, 5) shouldBe CapacityLevel.Red
     }
 

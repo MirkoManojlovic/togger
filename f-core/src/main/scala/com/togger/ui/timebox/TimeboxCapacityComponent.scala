@@ -9,9 +9,8 @@ import com.togger.ui.components.{TgProgressColor, TgProgressComponent, TgProgres
 class TimeboxCapacityComponent(capacity: Signal[Option[TimeboxCapacity]]) {
 
   private def color(level: CapacityLevel): TgProgressColor = level match {
-    case CapacityLevel.Green  => TgProgressColor.Success
-    case CapacityLevel.Yellow => TgProgressColor.Warning
-    case CapacityLevel.Red    => TgProgressColor.Danger
+    case CapacityLevel.Green => TgProgressColor.Success
+    case CapacityLevel.Red   => TgProgressColor.Danger
   }
 
   private def bar(line: CapacityLine, size: TgProgressSize): HtmlElement =
