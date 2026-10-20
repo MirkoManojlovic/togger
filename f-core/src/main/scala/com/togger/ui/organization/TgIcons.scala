@@ -486,6 +486,10 @@ object TgIcons {
   def teamDailyIcon(className: String) =
     strokeIcon(className, "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 10 2 2 4-4")
 
+  /** A clock with an arrow back: catching up on the days gone by. */
+  def slackerIcon(className: String) =
+    strokeIcon(className, "M12 8v4l3 3M3.05 11a9 9 0 1 1 .5 4M3 4v5h5")
+
   def copyIcon(className: String) =
     strokeIcon(
       className,

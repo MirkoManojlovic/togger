@@ -33,6 +33,7 @@ import com.togger.ui.task.bulk.BulkAddTasks
 import com.togger.ui.projectlabel._
 import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.theme.ThemeStore
+import com.togger.ui.slacker.SlackerComponent
 import com.togger.ui.teamdaily.TeamDailyComponent
 import com.togger.ui.toast.{Toast, ToastMessagesService}
 import org.scalajs.dom.HTMLDivElement
@@ -111,6 +112,25 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         onClose
       ).element
   )
+  val elementForSlacker = div()
+  lazy val slackerHost = new QuickCreateHost(
+    elementForSlacker,
+    onClose =>
+      new SlackerComponent(
+        taskService,
+        taskProjectDataLoader,
+        milestoneService,
+        spinnerService,
+        accountService,
+        tgClock,
+        tgDateFormater,
+        tgMarkdown,
+        Sidebar.projectIdForPage(router.currentPageSignal.now()),
+        localStorage,
+        toast,
+        onClose
+      ).element
+  )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
@@ -143,6 +163,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       () => quickCreateHost.open(),
       () => bulkCreateHost.open(),
       () => teamDailyHost.open(),
+      () => slackerHost.open(),
       toast
     )
 
@@ -207,6 +228,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         elementForQuickCreate,
         elementForBulkCreate,
         elementForTeamDaily,
+        elementForSlacker,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -659,6 +681,7 @@ case class NavigationSelection(
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
   onTeamDaily: () => Unit,
+  onSlacker: () => Unit,
   toast: Toast
 )(implicit IORuntime: IORuntime) {
 
@@ -679,6 +702,7 @@ case class NavigationSelection(
               onQuickCreate,
               onBulkCreate,
               onTeamDaily,
+              onSlacker,
               toast
             ).element
           )
