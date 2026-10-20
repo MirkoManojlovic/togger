@@ -32,7 +32,7 @@ class TgMarkdown(
 
   private lazy val render = new TgMarkdownRender(config, allowRawHtml, styles, onTaskToggle)
 
-  def toHtml(markdown: String): String = Markdown.renderToHTML(markdown, config)
+  def toHtml(markdown: String): String = Markdown.renderToHTML(withoutTrailingWhitespace(markdown), config)
 
   /** The markdown's top-level blocks as Laminar elements, ready to splice into a component. */
   def toLaminar(markdown: String): Seq[HtmlElement] = render.blocks(parse(markdown))
@@ -40,7 +40,13 @@ class TgMarkdown(
   /** Same as [[toLaminar]], wrapped in a single `<div>`. */
   def toLaminarDiv(markdown: String): HtmlDiv = div(toLaminar(markdown))
 
-  def parse(markdown: String): Document = Markdown.parseDocumentContent(markdown, config)
+  def parse(markdown: String): Document = Markdown.parseDocumentContent(withoutTrailingWhitespace(markdown), config)
+
+  /** The library throws `last of empty list` when the text ends on a list marker and its single space (`- `,
+    * `1. `, `> - `), as it does while someone is still typing a new item. Trailing whitespace carries no meaning
+    * in CommonMark, so dropping it avoids the crash without changing the rendering.
+    */
+  private def withoutTrailingWhitespace(markdown: String): String = markdown.replaceAll("\\s+$", "")
 }
 
 object TgMarkdown {

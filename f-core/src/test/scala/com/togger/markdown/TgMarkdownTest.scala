@@ -23,5 +23,15 @@ class TgMarkdownTest extends AsyncJsWordSpec {
     "escape HTML in text" in { _ =>
       toHtml("a < b & c") shouldBe "<p>a &lt; b &amp; c</p>\n"
     }
+
+    "render a list item that is still empty when the text ends on its marker" in { _ =>
+      toHtml("- ") shouldBe "<ul>\n<li></li>\n</ul>\n"
+      toHtml("1. ") shouldBe "<ol>\n<li></li>\n</ol>\n"
+      toHtml("- a\n- ") shouldBe "<ul>\n<li>a</li>\n<li></li>\n</ul>\n"
+    }
+
+    "parse a document that ends on an empty list item inside a block quote" in { _ =>
+      new TgMarkdown().toLaminar("> - ") should not be empty
+    }
   }
 }
