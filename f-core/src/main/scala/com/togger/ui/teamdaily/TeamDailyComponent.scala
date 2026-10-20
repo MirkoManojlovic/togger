@@ -297,6 +297,8 @@ class TeamDailyComponent(
       }
       breadcrumb(ProcessSteps.map(TgStep(_)), current, {
         case 0                 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
+        // from choosing members this is the Next button, which loads the tasks of the members chosen now
+        case 1 if state.now().position == TeamDailyPosition.ChooseMembers => if (state.now().selected.nonEmpty) next()
         case 1 if isPlanned    => jumpTo(_ == TeamDailyPosition.ChooseTasks)
         case 2 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
         case 3 if isPlanned    => jumpTo(_ == TeamDailyPosition.Review)
