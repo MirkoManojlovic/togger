@@ -2,6 +2,7 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.togger.dto.LogEntryDto
+import com.togger.logentry.LogEntryStatus
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
@@ -13,7 +14,7 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid. The task's `startDate` and `dueDate` are marked
+  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid, as are the `extraDays`. A status in `pendingStatuses` is shown faded on a dashed cell: it is not saved yet. The task's `startDate` and `dueDate` are marked
   * on it when they fall in the days shown.
   */
 class LogEntryCalendarComponent(
@@ -23,7 +24,9 @@ class LogEntryCalendarComponent(
   selectedDayVar: Var[Option[LocalDate]] = Var(None),
   startDate: Option[LocalDate] = None,
   dueDate: Option[LocalDate] = None,
-  markedDay: Option[LocalDate] = None
+  markedDay: Option[LocalDate] = None,
+  extraDays: Seq[LocalDate] = Seq.empty,
+  pendingStatuses: Signal[Map[LocalDate, LogEntryStatus]] = Val(Map.empty)
 ) {
   import LogEntryCalendarComponent.{DateMark, isWorkDay, TinyWeeks}
 
@@ -42,8 +45,8 @@ class LogEntryCalendarComponent(
       val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
         workDayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
 
-      // the marked day is part of the grid even when it has no entry, as the days still to log have none
-      val shownDates = entriesByDate.keys ++ markedDay
+      // the marked and the extra days are part of the grid even when they have no entry, as the days still to log have none
+      val shownDates = entriesByDate.keys ++ markedDay ++ extraDays.filter(isWorkDay(_, workDays))
       val minDate = shownDates.min
       val maxDate = shownDates.max
 
@@ -144,10 +147,16 @@ class LogEntryCalendarComponent(
       cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
       cls(if (markedDay.contains(day)) "border-brand!" else ""),
+      cls <-- pendingStatuses.map(pending => if (pending.contains(day)) "border-dashed" else ""),
       title((tooltipOf(day, entries) +: marks.map(_.title)).filter(_.nonEmpty).mkString("\n")),
       onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
       entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji)),
+      child.maybe <-- pendingStatuses.map(_.get(day).map { status =>
+        // beside a saved entry it goes in the corner, so both can be told apart
+        val placement = if (entries.isEmpty) "mt-2" else "absolute bottom-0.5 start-0.5 text-[10px]"
+        span(cls(placement, "opacity-50"), title("Will be added"), status.emoji)
+      }),
       div(
         cls("absolute bottom-0.5 end-0.5 flex gap-px"),
         marks.map(mark =>

@@ -64,6 +64,10 @@ case class SlackerState(
   def isFilled(task: TeamDailyTaskPlan): Boolean =
     task.missingDays.forall(date => entries.contains(SlackerEntryKey(task.taskId, date)))
 
+  /** The status of each day of a task that is filled in and will be saved. */
+  def pendingStatuses(taskId: UUID): Map[LocalDate, LogEntryStatus] =
+    entries.collect { case (SlackerEntryKey(`taskId`, date), draft) => date -> draft.status }
+
   def isTaskSelected(taskId: UUID): Boolean = selectedTasks.forall(_.contains(taskId))
 
   def positions: Seq[SlackerPosition] = SlackerPlan.positions(plan, pastFirst)
@@ -597,7 +601,9 @@ class SlackerComponent(
         selectedDay,
         startDate = Some(task.startDate),
         dueDate = Some(task.dueDate),
-        markedDay = Some(key.date)
+        markedDay = Some(key.date),
+        extraDays = task.missingDays,
+        pendingStatuses = state.signal.map(_.pendingStatuses(task.taskId)).distinct
       ).tinyElement
         .amend(cls("shrink-0"))
     )
