@@ -14,7 +14,7 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid, as are the `extraDays`. A status in `pendingStatuses` is shown faded on a dashed cell: it is not saved yet. The task's `startDate` and `dueDate` are marked
+  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid, as are the `extraDays`. A status in `pendingStatuses` is shown faded on a dashed cell: it is not saved yet, and clicking such a day without a saved entry calls `onPendingClick` instead of toggling it. The task's `startDate` and `dueDate` are marked
   * on it when they fall in the days shown.
   */
 class LogEntryCalendarComponent(
@@ -26,7 +26,8 @@ class LogEntryCalendarComponent(
   dueDate: Option[LocalDate] = None,
   markedDay: Option[LocalDate] = None,
   extraDays: Seq[LocalDate] = Seq.empty,
-  pendingStatuses: Signal[Map[LocalDate, LogEntryStatus]] = Val(Map.empty)
+  pendingStatuses: Signal[Map[LocalDate, LogEntryStatus]] = Val(Map.empty),
+  onPendingClick: Option[LocalDate => Unit] = None
 ) {
   import LogEntryCalendarComponent.{DateMark, isWorkDay, TinyWeeks}
 
@@ -149,7 +150,12 @@ class LogEntryCalendarComponent(
       cls(if (markedDay.contains(day)) "border-brand!" else ""),
       cls <-- pendingStatuses.map(pending => if (pending.contains(day)) "border-dashed" else ""),
       title((tooltipOf(day, entries) +: marks.map(_.title)).filter(_.nonEmpty).mkString("\n")),
-      onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
+      onClick.compose(_.withCurrentValueOf(pendingStatuses)) --> { case (_, pending) =>
+        onPendingClick.filter(_ => entries.isEmpty && pending.contains(day)) match {
+          case Some(navigate) => navigate(day)
+          case None           => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))
+        }
+      },
       span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
       entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji)),
       child.maybe <-- pendingStatuses.map(_.get(day).map { status =>

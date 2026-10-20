@@ -603,7 +603,8 @@ class SlackerComponent(
         dueDate = Some(task.dueDate),
         markedDay = Some(key.date),
         extraDays = task.missingDays,
-        pendingStatuses = state.signal.map(_.pendingStatuses(task.taskId)).distinct
+        pendingStatuses = state.signal.map(_.pendingStatuses(task.taskId)).distinct,
+        onPendingClick = Some(day => jumpTo(_ == SlackerPosition.Fill(task.taskId, day)))
       ).tinyElement
         .amend(cls("shrink-0"))
     )
