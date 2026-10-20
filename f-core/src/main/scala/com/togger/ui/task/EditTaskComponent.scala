@@ -82,7 +82,12 @@ class EditTaskComponent(
       milestoneId = None,
       dueDateManual = true
     ),
-    tgClock
+    tgClock,
+    Some(
+      TaskProgressComponent
+        .fromDescription(formState.signal.map(_.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+        .element
+    )
   )
 
   spinnerService
@@ -292,8 +297,6 @@ class EditTaskComponent(
     placeholderValue = "Describe the task"
   )
 
-  private val progress = TaskProgressComponent.fromDescription(formState.signal.map(_.description))
-
   private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (form.endDate.nonEmpty && LocalDate.parse(form.endDate).isBefore(badges.taskVar.now().startDate))
@@ -330,7 +333,6 @@ class EditTaskComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 badges.element.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                progress.element.amend(cls("mb-4")),
                 endDateInput.htmlElement.amend(cls("mb-4"), width("280px")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))

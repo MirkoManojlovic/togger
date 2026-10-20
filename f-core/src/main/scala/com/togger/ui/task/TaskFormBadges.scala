@@ -14,7 +14,7 @@ import java.time.DayOfWeek
 /** The attributes of the task a form edits, as badges that open the same popups the task list uses; the form reads the
   * edited task from [[taskVar]] when it is submitted.
   */
-class TaskFormBadges(initial: BulkTask, tgClock: TgClock) {
+class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlElement] = None) {
 
   val taskVar: Var[BulkTask] = Var(initial)
   private val lookupsVar = Var(BulkLookups(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Set.empty))
@@ -79,14 +79,21 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock) {
     }
   }
 
-  private def row(specs: Seq[BadgeSpec]): HtmlElement =
-    div(cls("flex flex-wrap items-center gap-1.5"), BulkTaskCard.row(initial.key, specs, popups))
+  private def row(specs: Seq[BadgeSpec], extraCls: String = ""): HtmlElement =
+    div(cls("flex flex-wrap items-center gap-1.5", extraCls), BulkTaskCard.row(initial.key, specs, popups))
 
   val element: HtmlElement =
     div(
       cls("flex flex-col gap-1.5"),
-      children <-- taskVar.signal.combineWith(lookupsVar.signal).map { case (task, lookups) =>
-        Seq(row(primaryRow(task, lookups)), row(dateRow(task, lookups)))
+      div(
+        cls("flex flex-wrap items-center gap-1.5"),
+        child <-- taskVar.signal.combineWith(lookupsVar.signal).map { case (task, lookups) =>
+          row(primaryRow(task, lookups), "contents")
+        },
+        trailing.toSeq
+      ),
+      child <-- taskVar.signal.combineWith(lookupsVar.signal).map { case (task, lookups) =>
+        row(dateRow(task, lookups))
       }
     )
 }

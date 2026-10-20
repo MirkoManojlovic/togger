@@ -90,7 +90,12 @@ class CreateTaskComponent(
         BulkTaskDefaults.of(tgClock.currentDate(), Set.empty, Seq.empty)
       )
       .copy(assigneeId = accountService.get.map(_.id)),
-    tgClock
+    tgClock,
+    Some(
+      TaskProgressComponent
+        .fromDescription(formState.signal.map(_.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+        .element
+    )
   )
 
   val firstLink = new TaskLinkComponent()
