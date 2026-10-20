@@ -34,6 +34,7 @@ trait AccountRepo {
   def insert(account: Account): ConnectionIO[Account]
   def findById(id: UUID): ConnectionIO[Account]
   def findByEmail(email: String): ConnectionIO[Account]
+  def findByIds(ids: Set[UUID]): ConnectionIO[List[Account]]
   def deleteById(id: UUID): ConnectionIO[Int]
   def update(account: Account, updateAt: Instant): ConnectionIO[Account]
 

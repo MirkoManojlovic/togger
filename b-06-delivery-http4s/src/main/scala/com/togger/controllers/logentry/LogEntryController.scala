@@ -1,5 +1,7 @@
 package com.togger.controllers.logentry
 
+import cats.effect.IO
+import com.togger.account.AccountNameLookup
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
@@ -11,7 +13,8 @@ import java.util.UUID
 
 class LogEntryController(
   logEntryEndpoints: LogEntryEndpoints,
-  logEntryService: LogEntryService
+  logEntryService: LogEntryService,
+  accountNameLookup: AccountNameLookup
 ) {
 
   val save = logEntryEndpoints.saveEndpoint.serverLogic { auth => dto =>
@@ -34,7 +37,11 @@ class LogEntryController(
 
     logEntryService
       .createLogEntry(logEntry, firstVersion)
-      .map(result => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version)))
+      .flatMap(result =>
+        accountNameLookup
+          .namesByIds(Set(result.logEntry.createdBy))
+          .map(names => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version, names)))
+      )
   }
 
   val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { auth => request =>
@@ -42,8 +49,12 @@ class LogEntryController(
     PageRequestValidation.withPage(pageRequest) { page =>
       logEntryService
         .findPaginatedByTaskId(taskId, page)
-        .map(entriesPage =>
-          TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.versions.head)))
+        .flatMap(entriesPage =>
+          accountNameLookup
+            .namesByIds(entriesPage.items.map(_.logEntry.createdBy).toSet)
+            .map(names =>
+              TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.versions.head, names)))
+            )
         )
     }
   }
@@ -53,8 +64,12 @@ class LogEntryController(
     PageRequestValidation.withPage(pageRequest) { page =>
       logEntryService
         .findPaginatedByProjectId(projectId, filter, page)
-        .map(entriesPage =>
-          TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.latestVersion)))
+        .flatMap(entriesPage =>
+          accountNameLookup
+            .namesByIds(entriesPage.items.map(_.logEntry.createdBy).toSet)
+            .map(names =>
+              TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.latestVersion, names)))
+            )
         )
     }
   }
@@ -73,9 +88,12 @@ class LogEntryController(
 
     logEntryService
       .saveNewVersion(dto.id, newVersion)
-      .map {
-        case Right(result) => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version))
-        case Left(error)   => error.toBadRequestLeft[LogEntryDto]
+      .flatMap {
+        case Right(result) =>
+          accountNameLookup
+            .namesByIds(Set(result.logEntry.createdBy))
+            .map(names => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version, names)))
+        case Left(error) => IO.pure(error.toBadRequestLeft[LogEntryDto])
       }
   }
 

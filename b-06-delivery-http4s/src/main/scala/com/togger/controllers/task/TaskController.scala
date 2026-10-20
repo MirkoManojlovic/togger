@@ -1,7 +1,7 @@
 package com.togger.controllers.task
 
 import cats.effect.IO
-import com.togger.account.Account
+import com.togger.account.{Account, AccountNameLookup}
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgClock, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
@@ -22,7 +22,8 @@ class TaskController(
   taskEndpoints: TaskEndpoints,
   tgClock: TgClock,
   dateRangeValidation: DateRangeValidation,
-  projectService: ProjectService
+  projectService: ProjectService,
+  accountNameLookup: AccountNameLookup
 ) {
 
   import taskEndpoints._
@@ -31,12 +32,14 @@ class TaskController(
     findByIdEndpoint.serverLogic { auth => taskId =>
       taskService
         .findById(taskId)
-        .map { case (taskWithVersions, links, logEntries, taskLabels) =>
-          TgJsonSuccess.justBodyRight(
-            FindTaskResp(
-              task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion, taskLabels.map(_.id)),
-              links = links.map(link => toLinkDto(link.link, link.latestVersion)),
-              logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion))
+        .flatMap { case (taskWithVersions, links, logEntries, taskLabels) =>
+          namesOf(logEntries).map(names =>
+            TgJsonSuccess.justBodyRight(
+              FindTaskResp(
+                task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion, taskLabels.map(_.id)),
+                links = links.map(link => toLinkDto(link.link, link.latestVersion)),
+                logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion, names))
+              )
             )
           )
         }
@@ -48,11 +51,21 @@ class TaskController(
       PageRequestValidation.withPage(pageRequest) { page =>
         taskService
           .findPaginatedByProjectId(projectId, filter, page)
-          .map(tasksPage => TgJsonSuccess.justBodyRight(tasksPage.mapItem(toFullDto)))
+          .flatMap(tasksPage =>
+            namesOf(tasksPage.items.flatMap(_._3)).map(names =>
+              TgJsonSuccess.justBodyRight(tasksPage.mapItem(toFullDto(_, names)))
+            )
+          )
       }
     }
 
-  private def toFullDto(item: (TaskFull, List[LinkWithVersions], List[LogEntryWithVersions])): FindTaskRespFull = {
+  private def namesOf(logEntries: List[LogEntryWithVersions]): IO[Map[UUID, String]] =
+    accountNameLookup.namesByIds(logEntries.map(_.logEntry.createdBy).toSet)
+
+  private def toFullDto(
+    item: (TaskFull, List[LinkWithVersions], List[LogEntryWithVersions]),
+    names: Map[UUID, String]
+  ): FindTaskRespFull = {
     val (taskFull, links, logEntries) = item
     FindTaskRespFull(
       id = taskFull.id,
@@ -72,7 +85,7 @@ class TaskController(
       createdAt = taskFull.createdAt,
       updatedAt = taskFull.updatedAt,
       latestVersion = taskFull.latestVersion,
-      logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head)),
+      logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head, names)),
       links = links.map(link => toLinkDto(link.link, link.latestVersion)),
       milestone = taskFull.milestone,
       startDate = taskFull.startDate,

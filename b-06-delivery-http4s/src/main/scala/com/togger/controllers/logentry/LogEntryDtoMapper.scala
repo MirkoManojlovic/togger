@@ -3,9 +3,11 @@ package com.togger.controllers.logentry
 import com.togger.dto.{LogEntryDto, LogEntryVersionDto}
 import com.togger.logentry.{LogEntry, LogEntryVersion}
 
+import java.util.UUID
+
 object LogEntryDtoMapper {
 
-  def toDto(logEntry: LogEntry, version: LogEntryVersion): LogEntryDto =
+  def toDto(logEntry: LogEntry, version: LogEntryVersion, names: Map[UUID, String]): LogEntryDto =
     LogEntryDto(
       id = logEntry.id,
       taskId = logEntry.taskId,
@@ -15,7 +17,8 @@ object LogEntryDtoMapper {
       textInternal = version.textInternal,
       textExternal = version.textExternal,
       status = version.status,
-      updatedAt = version.updatedAt
+      updatedAt = version.updatedAt,
+      createdByName = names.getOrElse(logEntry.createdBy, "")
     )
 
   def toVersionDto(version: LogEntryVersion): LogEntryVersionDto =

@@ -52,6 +52,7 @@ class AccountControllerSearchTest extends AnyWordSpec with Matchers {
     override def insert(account: Account): ConnectionIO[Account] = ???
     override def findById(id: UUID): ConnectionIO[Account] = ???
     override def findByEmail(email: String): ConnectionIO[Account] = ???
+    override def findByIds(ids: Set[UUID]): ConnectionIO[List[Account]] = ???
     override def deleteById(id: UUID): ConnectionIO[Int] = ???
     override def update(account: Account, updateAt: Instant): ConnectionIO[Account] = ???
   }
