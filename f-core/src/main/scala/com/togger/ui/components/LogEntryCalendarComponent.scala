@@ -12,7 +12,7 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The task's `startDate` and `dueDate` are marked
+  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid. The task's `startDate` and `dueDate` are marked
   * on it when they fall in the days shown.
   */
 class LogEntryCalendarComponent(
@@ -21,7 +21,8 @@ class LogEntryCalendarComponent(
   workDays: Set[DayOfWeek],
   selectedDayVar: Var[Option[LocalDate]] = Var(None),
   startDate: Option[LocalDate] = None,
-  dueDate: Option[LocalDate] = None
+  dueDate: Option[LocalDate] = None,
+  markedDay: Option[LocalDate] = None
 ) {
   import LogEntryCalendarComponent.{DateMark, isWorkDay, TinyWeeks}
 
@@ -40,8 +41,10 @@ class LogEntryCalendarComponent(
       val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
         workDayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
 
-      val minDate = entriesByDate.keys.min
-      val maxDate = entriesByDate.keys.max
+      // the marked day is part of the grid even when it has no entry, as the days still to log have none
+      val shownDates = entriesByDate.keys ++ markedDay
+      val minDate = shownDates.min
+      val maxDate = shownDates.max
 
       // Rounded out to the first/last work day of their respective weeks, so the grid always starts and ends on
       // a full week -- otherwise the first/last row's cells wouldn't line up under the right column headers.
@@ -98,6 +101,7 @@ class LogEntryCalendarComponent(
       cls("relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
       cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
+      cls(if (markedDay.contains(day)) "border-brand!" else ""),
       title((tooltipOf(day, entries) +: marks.map(_.title)).filter(_.nonEmpty).mkString("\n")),
       onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),

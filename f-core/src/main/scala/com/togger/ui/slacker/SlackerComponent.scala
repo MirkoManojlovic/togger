@@ -596,7 +596,8 @@ class SlackerComponent(
         projectWorkDays,
         selectedDay,
         startDate = Some(task.startDate),
-        dueDate = Some(task.dueDate)
+        dueDate = Some(task.dueDate),
+        markedDay = Some(key.date)
       ).tinyElement
         .amend(cls("shrink-0"))
     )
