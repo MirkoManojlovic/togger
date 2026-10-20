@@ -12,7 +12,7 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * view elsewhere.
   *
   * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, only the latest `TinyWeeks` weeks, and not clickable.
+  * cells, only the latest `TinyWeeks` weeks. Clicking a cell toggles it in `selectedDayVar`, as in the big one.
   */
 class LogEntryCalendarComponent(
   logEntries: Seq[LogEntryDto],
@@ -86,9 +86,11 @@ class LogEntryCalendarComponent(
 
   private def tinyDayCell(day: LocalDate, entries: Seq[LogEntryDto], startsMonth: Boolean) =
     div(
-      cls("relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
+      cls("relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
       cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
+      cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
       title(tooltipOf(day, entries)),
+      onClick.mapToUnit --> (_ => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))),
       span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
       entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji))
     )

@@ -584,45 +584,89 @@ class TeamDailyComponent(
     formRefresh.update(_ + 1)
   }
 
-  /** What was logged last (yesterday, or the last work day), above the form for today. */
+  /** What was logged last (yesterday, or the last work day), above the form for today. Clicking a day of the tiny
+    * calendar beside it shows what was logged that day instead, and "Last status" goes back.
+    */
   private def lastStatus(
     key: TeamDailyEntryKey,
     task: Option[TeamDailyTaskPlan],
     entry: LogEntryDto,
     canRepeat: Boolean,
     focusRepeat: Boolean
-  ): HtmlElement =
+  ): HtmlElement = {
+    val selectedDay = Var(Option.empty[LocalDate])
+    val dayEntries = (day: LocalDate) =>
+      task.fold(Seq.empty[LogEntryDto])(_.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt))
     div(
       cls("mb-3 flex items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
         cls("min-w-0 flex-1"),
-        p(cls("mb-2 text-xs font-medium uppercase text-body-subtle"), "Last status"),
         div(
-          cls("flex items-center gap-2 mb-2"),
-          TgBadge(
-            text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
-            bordered = true,
-            color = TgBadgeColor.Gray
-          ).element,
-          TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
-          Option.when(canRepeat)(
-            button(
-              `type`("button"),
-              cls(smallButtonCls),
-              cls("ms-auto"),
-              // a clear ring, since this button often has the focus when the day opens
-              cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
-              "Repeat for today",
-              onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
-              onClick.mapToUnit --> (_ => repeat(key, entry))
-            )
-          )
+          cls("mb-2 flex flex-wrap items-center gap-1.5"),
+          statusTab("Last status", selectedDay.signal.map(_.isEmpty), () => selectedDay.set(None)),
+          child.maybe <-- selectedDay.signal.map(_.map(day =>
+            statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ())
+          ))
         ),
-        div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
+        child <-- selectedDay.signal.map {
+          case None      => entryView(entry, Some(key).filter(_ => canRepeat), focusRepeat)
+          case Some(day) => dayView(day, dayEntries(day))
+        }
       ),
       // the recent days of the task at a glance, small enough to sit beside the text
-      task.map(t => new LogEntryCalendarComponent(t.logEntries, tgDateFormater, projectWorkDays).tinyElement.amend(cls("shrink-0")))
+      task.map(t =>
+        new LogEntryCalendarComponent(t.logEntries, tgDateFormater, projectWorkDays, selectedDay).tinyElement
+          .amend(cls("shrink-0"))
+      )
     )
+  }
+
+  private def statusTab(text: String, active: Signal[Boolean], onSelect: () => Unit): HtmlElement =
+    button(
+      `type`("button"),
+      cls(smallButtonCls),
+      cls("border-brand font-semibold text-fg-brand") <-- active,
+      text,
+      onClick.mapToUnit --> (_ => onSelect())
+    )
+
+  /** One log entry: its date, its status, and the text. `repeatKey` adds the button that copies it to today. */
+  private def entryView(entry: LogEntryDto, repeatKey: Option[TeamDailyEntryKey], focusRepeat: Boolean): HtmlElement =
+    div(
+      div(
+        cls("flex items-center gap-2 mb-2"),
+        TgBadge(
+          text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
+          bordered = true,
+          color = TgBadgeColor.Gray
+        ).element,
+        TgBadge(text = entry.status.statusName, color = entry.status.badgeColor, bordered = true).element,
+        repeatKey.map(key =>
+          button(
+            `type`("button"),
+            cls(smallButtonCls),
+            cls("ms-auto"),
+            // a clear ring, since this button often has the focus when the day opens
+            cls("focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand focus:text-fg-brand"),
+            "Repeat for today",
+            onMountCallback(context => if (focusRepeat) context.thisNode.ref.focus()),
+            onClick.mapToUnit --> (_ => repeat(key, entry))
+          )
+        )
+      ),
+      div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
+    )
+
+  private def dayView(day: LocalDate, entries: Seq[LogEntryDto]): HtmlElement =
+    if (entries.isEmpty)
+      div(
+        div(
+          cls("flex items-center gap-2 mb-2"),
+          TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element
+        ),
+        p(cls("text-sm text-body-subtle"), "No status update")
+      )
+    else div(entries.map(entryView(_, None, focusRepeat = false)))
 
   // ---- step 4: review
 
