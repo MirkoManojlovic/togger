@@ -52,7 +52,7 @@ class MilestoneContributionCard(
       div(
         cls("grid grid-cols-1 lg:grid-cols-2 gap-4"),
         chartCard("Share of the work", ContributionCharts.teamShare(milestone.members), isDark),
-        chartCard("Tasks closed", ContributionCharts.tasksClosedOnTimeAndLate(milestone.members), isDark),
+        chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(milestone.members), isDark),
         chartCard("Log entries by status", ContributionCharts.entriesByStatus(milestone.members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(milestone.members), isDark)
       )

@@ -33,8 +33,8 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
   // the repos give every inserted version a new time ordered id, so versions inserted later are the newer ones
   private def versionId(number: Long): UUID = new UUID(number, 0L)
 
-  /** Tasks: t1 in the milestone, assigned to and closed on time by `first`, older version assigned to `second` without
-    * a milestone; t2 in the milestone, assigned to and closed late by `second`; t3 without a milestone, assigned to
+  /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without
+    * a milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to
     * `first`, still open.
     *
     * Log entries: e1 of t1 by `first` on the 13th, completed by its latest version (an older one was in progress); e2
@@ -217,15 +217,15 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       } yield rows shouldBe List(TaskAssignedRow(seeded.first.id, None, 1L))).transact(transactor)
     }
 
-    "split the closed tasks into on time and late" in { transactor =>
+    "count the closed tasks by the closer and milestone of their latest version" in { transactor =>
       (for {
         seeded <- seed()
         rows <- contributionRepo.tasksClosed(seeded.projectId, ContributionsFilter.empty)
       } yield {
         val milestone = Some(seeded.milestone.id)
         rows.toSet shouldBe Set(
-          TaskClosedRow(seeded.first.id, milestone, onTime = true, 1L),
-          TaskClosedRow(seeded.second.id, milestone, onTime = false, 1L)
+          TaskClosedRow(seeded.first.id, milestone, 1L),
+          TaskClosedRow(seeded.second.id, milestone, 1L)
         )
       }).transact(transactor)
     }
@@ -234,7 +234,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       (for {
         seeded <- seed()
         rows <- contributionRepo.tasksClosed(seeded.projectId, range(19, 31))
-      } yield rows shouldBe List(TaskClosedRow(seeded.second.id, Some(seeded.milestone.id), onTime = false, 1L)))
+      } yield rows shouldBe List(TaskClosedRow(seeded.second.id, Some(seeded.milestone.id), 1L)))
         .transact(transactor)
     }
 

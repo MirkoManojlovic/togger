@@ -40,11 +40,10 @@ object MemberContributionViews {
       cls("bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4"),
       div(cls("mb-3"), LogEntryMemberBadge(member.memberName).getOrElse(span(member.memberName))),
       div(
-        cls("grid grid-cols-2 gap-3 mb-3"),
+        cls("grid grid-cols-3 gap-3 mb-3"),
         stat("Log entries", totalEntries(member).toString),
         stat("Tasks assigned", member.tasksAssigned.toString),
-        stat("Tasks closed", (member.tasksClosedOnTime + member.tasksClosedLate).toString),
-        stat("Closed late", member.tasksClosedLate.toString)
+        stat("Tasks closed", member.tasksClosed.toString)
       ),
       TgProgressComponent(
         value = member.activeDays.min(member.workDaysInRange),

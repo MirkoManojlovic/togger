@@ -32,8 +32,6 @@ object ContributionCharts {
 
   private def workEntries(member: MemberContributionDto): Int = member.dailyEntries.map(_.count).sum
 
-  private def tasksClosed(member: MemberContributionDto): Int = member.tasksClosedOnTime + member.tasksClosedLate
-
   private def columns(
     members: Seq[MemberContributionDto],
     series: Seq[(String, ChartColor, MemberContributionDto => Int)],
@@ -111,16 +109,8 @@ object ContributionCharts {
   def tasksAssignedAndClosed(members: Seq[MemberContributionDto]): ApexChartOptions =
     columns(
       members,
-      Seq(("Assigned", ChartColor.Blue, _.tasksAssigned), ("Closed", ChartColor.Green, tasksClosed)),
+      Seq(("Assigned", ChartColor.Blue, _.tasksAssigned), ("Closed", ChartColor.Green, _.tasksClosed)),
       stacked = false
-    )
-
-  /** A column per member of the tasks they closed, stacked by whether they ended by the due date. */
-  def tasksClosedOnTimeAndLate(members: Seq[MemberContributionDto]): ApexChartOptions =
-    columns(
-      members,
-      Seq(("On time", ChartColor.Green, _.tasksClosedOnTime), ("Late", ChartColor.Red, _.tasksClosedLate)),
-      stacked = true
     )
 
   /** Two columns per member, the days they worked next to the work days of the range. */

@@ -15,13 +15,12 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
   private def day(dayOfMonth: Int): LocalDate = LocalDate.of(2026, 10, dayOfMonth)
 
   private def member(name: String): MemberContributionDto =
-    MemberContributionDto(UUID.randomUUID(), name, List.empty, 0, 0, 0, 0, 0, List.empty)
+    MemberContributionDto(UUID.randomUUID(), name, List.empty, 0, 0, 0, 0, List.empty)
 
   private val ann = member("Ann Adams").copy(
     entriesByStatus = List(StatusCountDto(LogEntryStatus.InProgress, 1), StatusCountDto(LogEntryStatus.Completed, 2)),
     tasksAssigned = 3,
-    tasksClosedOnTime = 1,
-    tasksClosedLate = 1,
+    tasksClosed = 2,
     activeDays = 2,
     workDaysInRange = 5,
     dailyEntries = List(DailyCountDto(day(13), 2), DailyCountDto(day(15), 1))
@@ -109,18 +108,6 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
         ApexNamedSeries("Assigned", Seq(3, 1, 0)),
         ApexNamedSeries("Closed", Seq(2, 0, 0))
       )
-    }
-  }
-
-  "ContributionCharts.tasksClosedOnTimeAndLate" should {
-    "stack the on time and the late tasks" in {
-      val options = ContributionCharts.tasksClosedOnTimeAndLate(everyone)
-      options.stacked shouldBe true
-      axisOf(options.series).series shouldBe Seq(
-        ApexNamedSeries("On time", Seq(1, 0, 0)),
-        ApexNamedSeries("Late", Seq(1, 0, 0))
-      )
-      options.colors shouldBe Some(Seq(ChartColor.Green.dark, ChartColor.Red.dark))
     }
   }
 

@@ -17,7 +17,7 @@ trait ContributionRepo {
   /** Tasks whose latest version is assigned to someone, filtered by the start date of that version. */
   def tasksAssigned(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskAssignedRow]]
 
-  /** Tasks whose latest version has a closer, filtered by its end date. On time means ended on or before the due date.
+  /** Tasks whose latest version has a closer, filtered by its end date.
     */
   def tasksClosed(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskClosedRow]]
 

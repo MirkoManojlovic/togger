@@ -78,7 +78,6 @@ class ContributionsComponent(
           isDark
         ),
         chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(members), isDark),
-        chartCard("Tasks closed", ContributionCharts.tasksClosedOnTimeAndLate(members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(members), isDark)
       )
     )

@@ -18,8 +18,7 @@ case class MemberContributionDto(
   memberName: String,
   entriesByStatus: List[StatusCountDto],
   tasksAssigned: Int,
-  tasksClosedOnTime: Int,
-  tasksClosedLate: Int,
+  tasksClosed: Int,
   activeDays: Int,
   workDaysInRange: Int,
   dailyEntries: List[DailyCountDto]

@@ -113,8 +113,7 @@ object ContributionAssembler {
         .sortBy(_._1.value)
         .map { case (status, count) => StatusCountDto(status, count.toInt) },
       tasksAssigned = assigned.map(_.count).sum.toInt,
-      tasksClosedOnTime = closed.filter(_.onTime).map(_.count).sum.toInt,
-      tasksClosedLate = closed.filterNot(_.onTime).map(_.count).sum.toInt,
+      tasksClosed = closed.map(_.count).sum.toInt,
       activeDays = dailyEntries.size,
       workDaysInRange = workDaysInRange,
       dailyEntries = dailyEntries

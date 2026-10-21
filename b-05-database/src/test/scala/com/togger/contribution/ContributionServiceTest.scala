@@ -98,8 +98,8 @@ class ContributionServiceTest
       .expects(projectId, filter)
       .returns(
         List(
-          TaskClosedRow(ann.id, Some(alpha), onTime = true, 1L),
-          TaskClosedRow(bob.id, Some(alpha), onTime = false, 1L)
+          TaskClosedRow(ann.id, Some(alpha), 1L),
+          TaskClosedRow(bob.id, Some(alpha), 1L)
         ).pure[ConnectionIO]
       )
   }
@@ -119,10 +119,9 @@ class ContributionServiceTest
           StatusCountDto(LogEntryStatus.Vacation, 1)
         )
         annStats.tasksAssigned shouldBe 1
-        annStats.tasksClosedOnTime shouldBe 1
-        annStats.tasksClosedLate shouldBe 0
+        annStats.tasksClosed shouldBe 1
         bobStats.tasksAssigned shouldBe 2
-        bobStats.tasksClosedLate shouldBe 1
+        bobStats.tasksClosed shouldBe 1
         cyStats.entriesByStatus shouldBe empty
         cyStats.activeDays shouldBe 0
       }

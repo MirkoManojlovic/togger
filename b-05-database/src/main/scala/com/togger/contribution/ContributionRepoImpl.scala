@@ -53,14 +53,14 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def tasksClosed(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskClosedRow]] =
     logAroundInfoQuery(
-      (fr"select tv.closed_by, tv.milestone_id, coalesce(tv.end_date <= tv.due_date, true), count(*) from" ++
+      (fr"select tv.closed_by, tv.milestone_id, count(*) from" ++
         TASK_TABLE_FRAG ++ latestVersionLateral ++
         Fragments.whereAndOpt(
           Some(fr"task.project_id = $projectId"),
           Some(fr"tv.closed_by is not null"),
           filter.from.map(from => fr"tv.end_date >= $from"),
           filter.to.map(to => fr"tv.end_date <= $to")
-        ) ++ fr"group by tv.closed_by, tv.milestone_id, 3").query[TaskClosedRow].to[List]
+        ) ++ fr"group by tv.closed_by, tv.milestone_id").query[TaskClosedRow].to[List]
     )(
       s"Counting closed tasks of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Closed tasks counted in ${sp(rows.size)} rows for ${sp(projectId)}"

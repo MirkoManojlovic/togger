@@ -17,7 +17,7 @@ case class EntryActivityRow(
 
 case class TaskAssignedRow(memberId: UUID, milestoneId: Option[UUID], count: Long)
 
-case class TaskClosedRow(memberId: UUID, milestoneId: Option[UUID], onTime: Boolean, count: Long)
+case class TaskClosedRow(memberId: UUID, milestoneId: Option[UUID], count: Long)
 
 case class MilestoneTaskTotalsRow(milestoneId: Option[UUID], total: Long, closed: Long)
 
