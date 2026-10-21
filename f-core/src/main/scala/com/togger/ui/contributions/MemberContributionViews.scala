@@ -61,17 +61,27 @@ object MemberContributionViews {
       members.filter(_.tasks.byStatus.nonEmpty).map(memberTaskCharts(_, isDark))
     )
 
+  private val tileCls = "bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4"
+
   private def stat(label: String, value: String): HtmlElement =
     div(
       div(cls("text-sm text-body"), label),
       div(cls("text-lg font-semibold text-heading"), value)
     )
 
+  // A card of its own for a group, in the style of the member's numbers: a label with a big number below it.
+  private def countCard(group: StatCountGroup): HtmlElement =
+    div(
+      cls(tileCls),
+      div(cls("mb-3 font-medium text-heading"), group.title),
+      div(cls("grid grid-cols-2 gap-3"), group.counts.map(count => stat(count.label, count.count.toString)))
+    )
+
   def totalEntries(member: MemberContributionDto): Int = member.entriesByStatus.map(_.count).sum
 
   private def memberTile(member: MemberContributionDto): HtmlElement =
     div(
-      cls("bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4"),
+      cls(tileCls),
       div(cls("mb-3"), LogEntryMemberBadge(member.memberName).getOrElse(span(member.memberName))),
       div(
         cls("grid grid-cols-3 gap-3 mb-3"),
@@ -88,7 +98,15 @@ object MemberContributionViews {
       ).element
     )
 
+  // The first row of a member: their numbers, then a card for each group of counts they have.
+  private def memberRow(member: MemberContributionDto): HtmlElement =
+    div(
+      cls("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4"),
+      memberTile(member),
+      MemberStatCounts.groupsOf(member).map(countCard)
+    )
+
   def memberTiles(members: Seq[MemberContributionDto]): HtmlElement =
     if (members.isEmpty) p(cls("text-body"), "Nobody did anything here")
-    else div(cls("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"), members.map(memberTile))
+    else div(cls("flex flex-col gap-4"), members.map(memberRow))
 }
