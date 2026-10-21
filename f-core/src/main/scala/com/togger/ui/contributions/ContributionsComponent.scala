@@ -36,7 +36,8 @@ class ContributionsComponent(
 ) extends ToastMessages {
 
   private val contributionsVar = Var(Option.empty[ContributionsDto])
-  private val paramsVar = Var(params)
+  private val initialParams = ContributionsFilterMapping.withDefaultRange(params, tgClock.currentDate())
+  private val paramsVar = Var(initialParams)
   private val selectedTabVar = Var(ContributionsComponent.GeneralTabId)
 
   private def load(current: ContributionsParams): IO[Unit] =
@@ -45,7 +46,11 @@ class ContributionsComponent(
       .toastJustErrors(Option.empty[ContributionsDto])(Some(_))
       .map(contributionsVar.set)
 
-  spinnerService.runWithSpinner(load(params)).unsafeRunAndForget()
+  if (initialParams != params)
+    dom.window.history
+      .replaceState(null, "", router.absoluteUrlForPage(ShowContributionsPage(projectId, initialParams)))
+
+  spinnerService.runWithSpinner(load(initialParams)).unsafeRunAndForget()
 
   /** Puts the range in the address bar without going through the router, so the page is not rebuilt, and reads the
     * contributions of the new range.
@@ -61,10 +66,10 @@ class ContributionsComponent(
     Val(ContributionsFilterMapping.monthOptions(tgClock.currentDate())),
     tgDateFormater,
     tgClock,
-    initialMode = if (params == ContributionsParams.default) DateFilterMode.Month else DateFilterMode.Range,
+    initialMode = if (initialParams == ContributionsParams.default) DateFilterMode.Month else DateFilterMode.Range,
     initialMonths = Some(Set.empty),
-    initialStart = params.from,
-    initialStop = params.to
+    initialStart = initialParams.from,
+    initialStop = initialParams.to
   )
 
   private def generalSection(contributions: ContributionsDto): HtmlElement = {
