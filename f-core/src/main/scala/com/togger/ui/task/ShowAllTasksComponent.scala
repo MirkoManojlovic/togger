@@ -404,6 +404,13 @@ class ShowAllTasksComponent(
                   router.navigateTo(ShowAllTaskLabelsPage(projectId))
                 ),
                 iconButton(
+                  "Task templates",
+                  TgIcons.listIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowAllTaskTemplatesPage(projectId))
+                ),
+                iconButton(
                   "Create Milestone",
                   TgIcons.plusIcon(className = "w-4 h-4"),
                   headerIconButtonCls,

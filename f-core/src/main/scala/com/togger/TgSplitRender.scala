@@ -26,6 +26,7 @@ import com.togger.ui.projectmapping._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.taskconfig._
+import com.togger.ui.tasktemplate._
 import com.togger.ui.taskdumpconfig._
 import com.togger.ui.taskdumpstatus._
 import com.togger.ui.taskloadconfig._
@@ -59,6 +60,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
         taskService,
         taskStatusService,
         taskLabelService,
+        taskTemplateService,
         projectService,
         milestoneService,
         organizationService,
@@ -176,6 +178,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val projectLabelService = new ProjectLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
+  lazy val taskTemplateService = new TaskTemplateFeService(securedEndpoint, protectedBackendClient)
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
@@ -252,6 +255,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskService,
                   taskStatusService,
                   taskLabelService,
+                  taskTemplateService,
                   milestoneService,
                   spinnerService,
                   tgClock,
@@ -314,6 +318,41 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId,
                   taskLabelId,
+                  toast
+                ).element
+              case CreateTaskTemplatePage(projectId: UUID) =>
+                new CreateTaskTemplateComponent(
+                  taskTemplateService,
+                  taskLabelService,
+                  spinnerService,
+                  tgClock,
+                  accountService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllTaskTemplatesPage(projectId, listParams) =>
+                new ShowAllTaskTemplatesComponent(
+                  taskTemplateService,
+                  router,
+                  spinnerService,
+                  accountService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  listParams,
+                  toast
+                ).element
+              case EditTaskTemplatePage(projectId: UUID, taskTemplateId: UUID) =>
+                new EditTaskTemplateComponent(
+                  taskTemplateService,
+                  taskLabelService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  tgClock,
+                  accountService,
+                  projectId,
+                  taskTemplateId,
                   toast
                 ).element
               case ShowAllTaskConfigsPage(projectId: UUID, listParams) =>

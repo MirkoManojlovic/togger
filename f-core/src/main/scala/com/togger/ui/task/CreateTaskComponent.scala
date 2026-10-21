@@ -23,6 +23,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
 import com.togger.ui.task.bulk.{BulkTask, BulkTaskDefaults}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -70,6 +71,7 @@ class CreateTaskComponent(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
+  taskTemplateFeService: TaskTemplateFeService,
   milestoneService: MilestoneFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -98,6 +100,37 @@ class CreateTaskComponent(
     )
   )
 
+  private val templatesVar = Var(Seq.empty[FindTaskTemplateResp])
+  private val selectedTemplateVar = Var(Option.empty[UUID])
+  private val appliedBodyVar = Var(Option.empty[String])
+  private val previousLabelIdsVar = Var(Set.empty[UUID])
+
+  private def applyTemplate(template: FindTaskTemplateResp): Unit = {
+    formState.update(_.copy(description = template.body))
+    appliedBodyVar.set(Some(template.body))
+    selectedTemplateVar.set(Some(template.id))
+  }
+
+  private val onLabelsChanged = Observer[Set[UUID]] { labelIds =>
+    TaskTemplateSelection
+      .onLabelsChanged(
+        templatesVar.now(),
+        previousLabelIdsVar.now(),
+        labelIds,
+        formState.now().description,
+        appliedBodyVar.now()
+      )
+      .foreach(applyTemplate)
+    previousLabelIdsVar.set(labelIds)
+  }
+
+  private val onTemplatePicked = Observer[Option[FindTaskTemplateResp]] { choice =>
+    val body = TaskTemplateSelection.descriptionFor(choice)
+    formState.update(_.copy(description = body))
+    appliedBodyVar.set(choice.map(_.body))
+    selectedTemplateVar.set(choice.map(_.id))
+  }
+
   val firstLink = new TaskLinkComponent()
   val linksVar = Var(Seq(firstLink))
 
@@ -122,14 +155,20 @@ class CreateTaskComponent(
       val call5: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
         milestoneService.findAllByProjectId(projectId)
 
-      (call1, call2, call3, call4, call5).parMapN {
+      // The template picker offers every template, read page by page (bounded by PaginatedLoader).
+      val call6: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskTemplateResp]]]] =
+        taskTemplateFeService.findAllByProjectId(projectId)
+
+      (call1, call2, call3, call4, call5, call6).parMapN {
         (
           findTaskStatusRespEither,
           searchAccountDtoEither,
           findTaskLabelRespEither,
           findProjectRespEither,
-          findMilestoneRespEither
+          findMilestoneRespEither,
+          findTaskTemplateRespEither
         ) =>
+          findTaskTemplateRespEither.map(success => templatesVar.set(success.body.get))
           findTaskStatusRespEither.map(success => badges.setStatuses(success.body.get))
           searchAccountDtoEither.map(success => badges.setMembers(success.body.get))
           findTaskLabelRespEither.map(success => badges.setLabels(success.body.get))
@@ -212,6 +251,7 @@ class CreateTaskComponent(
   val element =
     div(
       justifyCenterFlex,
+      badges.taskVar.signal.map(_.labelIds).distinct.changes --> onLabelsChanged,
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Create a task", TgCard.CardHeaderSize.H3),
@@ -223,6 +263,10 @@ class CreateTaskComponent(
                   .compose(_.withCurrentValueOf(badges.taskVar.signal)) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4")),
                 badges.element.amend(cls("mb-4")),
+                div(
+                  cls("mb-4"),
+                  child <-- TaskTemplatePicker(templatesVar.signal, selectedTemplateVar.signal, onTemplatePicked)
+                ),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))

@@ -7,6 +7,7 @@ import com.togger.routes.Pages.{
   ShowAllProjectLabelsPage,
   ShowAllTaskLabelsPage,
   ShowAllTaskStatusesPage,
+  ShowAllTaskTemplatesPage,
   ShowProjectsForOrganizationIdTable,
   ShowTimeboxesPage
 }
@@ -31,6 +32,7 @@ class ListRouteTest extends AsyncJsWordSpec {
     ("organizations", "/organization", ShowAllOrganizationsPage(_)),
     ("task statuses", s"/task-status/$id", ShowAllTaskStatusesPage(id, _)),
     ("task labels", s"/task-label/$id", ShowAllTaskLabelsPage(id, _)),
+    ("task templates", s"/task-template/$id", ShowAllTaskTemplatesPage(id, _)),
     ("project labels", "/settings/project-label", ShowAllProjectLabelsPage(_)),
     ("project label categories", "/settings/project-label-category", ShowAllProjectLabelCategoriesPage(_))
   )

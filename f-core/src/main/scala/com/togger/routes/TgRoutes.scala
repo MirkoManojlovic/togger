@@ -155,6 +155,30 @@ class TgRoutes {
         pattern = (root / "task-label" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
+        encode = (page: CreateTaskTemplatePage) => page.projectId.toString,
+        decode = (projectId: String) => CreateTaskTemplatePage(UUID.fromString(projectId)),
+        pattern = root / "create-task-template" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditTaskTemplatePage) => page.projectId.toString -> page.taskTemplateId.toString,
+        decode = { (projectIdAndTemplateId: (String, String)) =>
+          EditTaskTemplatePage(
+            UUID.fromString(projectIdAndTemplateId._1),
+            UUID.fromString(projectIdAndTemplateId._2)
+          )
+        },
+        pattern = root / "edit-task-template" / "project-id" / segment[String] / "task-template-id" / segment[
+          String
+        ] / endOfSegments
+      ),
+      Route.withQuery[ShowAllTaskTemplatesPage, String, ListQuery](
+        encode = (page: ShowAllTaskTemplatesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllTaskTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "task-template" / segment[String] / endOfSegments) ? listQueryParams
+      ),
+      Route(
         encode = (page: CreateProjectPage) => page.organizationId.toString,
         decode = (organizationId: String) => CreateProjectPage(UUID.fromString(organizationId)),
         pattern = root / "create-project" / segment[String] / endOfSegments

@@ -38,6 +38,9 @@ object TgBreadcrumbTrail {
   private def underTaskLabels(projectId: UUID, label: String) =
     underTasks(projectId, link("Task labels", ShowAllTaskLabelsPage(projectId)), current(label))
 
+  private def underTaskTemplates(projectId: UUID, label: String) =
+    underTasks(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
+
   private def underConfigs(projectId: UUID, label: String) =
     underTasks(projectId, link("Task configs", ShowAllTaskConfigsPage(projectId)), current(label))
 
@@ -81,6 +84,10 @@ object TgBreadcrumbTrail {
     case ShowAllTaskLabelsPage(projectId, _) => underTasks(projectId, current("Task labels"))
     case CreateTaskLabelPage(projectId)   => underTaskLabels(projectId, "Create label")
     case EditTaskLabelPage(projectId, _)  => underTaskLabels(projectId, "Edit label")
+
+    case ShowAllTaskTemplatesPage(projectId, _) => underTasks(projectId, current("Task templates"))
+    case CreateTaskTemplatePage(projectId)      => underTaskTemplates(projectId, "Create template")
+    case EditTaskTemplatePage(projectId, _)     => underTaskTemplates(projectId, "Edit template")
 
     case ShowAllTaskConfigsPage(projectId, _) => underTasks(projectId, current("Task configs"))
     case TaskDumpStatusPage(projectId)       => underTasks(projectId, current("Task dump status"))

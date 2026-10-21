@@ -24,6 +24,7 @@ import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.quick.QuickDropdown._
 import com.togger.ui.task._
+import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -48,6 +49,9 @@ case class QuickState(
   badgePopup: Option[BadgePopup] = None,
   highlighted: Int = 0,
   description: String = "",
+  templates: Seq[FindTaskTemplateResp] = Seq.empty,
+  templateId: Option[UUID] = None,
+  appliedTemplateBody: Option[String] = None,
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   statuses: Seq[FindTaskStatusResp] = Seq.empty,
   labels: Seq[FindTaskLabelResp] = Seq.empty,
@@ -68,6 +72,22 @@ case class QuickState(
   lazy val sortedStatuses: Seq[FindTaskStatusResp] = TaskStatusesState(statuses).taskStatusesSorted
 
   def effectiveStatusId: Option[UUID] = statusId.orElse(sortedStatuses.headOption.map(_.id))
+
+  def withTemplate(template: FindTaskTemplateResp): QuickState =
+    copy(description = template.body, appliedTemplateBody = Some(template.body), templateId = Some(template.id))
+
+  def withTemplateChoice(choice: Option[FindTaskTemplateResp]): QuickState =
+    copy(
+      description = TaskTemplateSelection.descriptionFor(choice),
+      appliedTemplateBody = choice.map(_.body),
+      templateId = choice.map(_.id)
+    )
+
+  /** Seeds the description from the template of the label selected last, while the description is untouched. */
+  def withTemplateForLabels(labelsBefore: Set[UUID]): QuickState =
+    TaskTemplateSelection
+      .onLabelsChanged(templates, labelsBefore, labelIds, description, appliedTemplateBody)
+      .fold(this)(withTemplate)
   def effectiveAssigneeId: Option[UUID] = assigneeId.orElse(currentAccountId)
   def effectivePriority: TaskPriority = priority.getOrElse(TaskPriority.Medium)
 
@@ -125,6 +145,7 @@ class CreateTaskQuick(
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
+  taskTemplateFeService: TaskTemplateFeService,
   projectService: ProjectService,
   milestoneFeService: MilestoneFeService,
   organizationServiceFe: OrganizationServiceFe,
@@ -301,7 +322,9 @@ class CreateTaskQuick(
         case MilestoneDropdown                   => cleared.copy(milestoneId = Some(UUID.fromString(option.id)))
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
-          cleared.copy(labelIds = if (cleared.labelIds.contains(id)) cleared.labelIds - id else cleared.labelIds + id)
+          cleared
+            .copy(labelIds = if (cleared.labelIds.contains(id)) cleared.labelIds - id else cleared.labelIds + id)
+            .withTemplateForLabels(cleared.labelIds)
       }
     }
 
@@ -317,10 +340,20 @@ class CreateTaskQuick(
         milestones = Seq.empty,
         statusId = None,
         labelIds = Set.empty,
-        milestoneId = None
+        milestoneId = None,
+        templates = Seq.empty,
+        templateId = None,
+        appliedTemplateBody = None
       )
     )
     projectId.foreach { id =>
+      taskTemplateFeService
+        .findAllByProjectId(id)
+        .map { response =>
+          if (state.now().projectId.contains(id))
+            state.update(_.copy(templates = response.toOption.flatMap(_.body).getOrElse(Seq.empty)))
+        }
+        .unsafeRunAndForget()
       projectDataLoader
         .loadProjectData(id)
         .map { data =>
@@ -692,6 +725,14 @@ class CreateTaskQuick(
             Set(ProjectDropdown, MilestoneDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
           ),
           badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false))
+        ),
+        div(
+          cls("mb-4"),
+          child <-- TaskTemplatePicker(
+            state.signal.map(_.templates).distinct,
+            state.signal.map(_.templateId).distinct,
+            Observer[Option[FindTaskTemplateResp]](choice => state.update(_.withTemplateChoice(choice)))
+          )
         ),
         descriptionEditor.htmlElement.amend(cls("mb-4")),
         div(
