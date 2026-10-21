@@ -6,6 +6,7 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.{PageRequest, PaginatedResponse}
+import com.togger.common.TgClock
 import com.togger.dto.{CreateMilestoneDateReq, FindMilestoneDateResp, UpdateMilestoneDateReq}
 import com.togger.milestone.MilestoneDateEndpoints
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -27,18 +28,8 @@ case class CreateMilestoneDateForm(
     LocalDate.parse(date).atTime(0, 0, 0).toInstant(ZoneOffset.UTC)
 }
 
-class CreateMilestoneDateComponent(milestoneStartDate: Signal[String] = Val("")) {
+class CreateMilestoneDateComponent(milestoneStartDate: Signal[String], tgClock: TgClock) {
   val formState = Var(CreateMilestoneDateForm())
-
-  private val dateErrors: EventStream[Seq[String]] =
-    formState.signal.combineWith(milestoneStartDate).changes.map { case (form, startDate) =>
-      if (
-        form.date.nonEmpty && startDate.nonEmpty &&
-        LocalDate.parse(form.date).isBefore(LocalDate.parse(startDate))
-      )
-        Seq("Date must be on or after the milestone start date")
-      else Seq.empty
-    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -55,20 +46,23 @@ class CreateMilestoneDateComponent(milestoneStartDate: Signal[String] = Val(""))
     minWidthRem = 0
   )
 
-  private val dateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.date),
-    errors = dateErrors,
-    labelValue = "Date",
-    tgInputType = TgInputType.Date,
-    isRequired = false
+  private val startDateVar = Var("")
+
+  private val dateBadge = new MilestoneDateBadge(
+    date = formState.signal.map(_.date),
+    currentDate = () => formState.now().date,
+    milestoneStartDate = () => startDateVar.now(),
+    onDate = picked => formState.update(_.copy(date = picked.toString)),
+    tgClock = tgClock
   )
 
   val htmlElement: ReactiveHtmlElement[HTMLDivElement] =
     div(
       cls("mb-4"),
+      milestoneStartDate --> startDateVar,
       nameInput.htmlElement.amend(cls("mb-4")),
-      descriptionEditor.htmlElement.amend(cls("mb-4")),
-      dateInput.htmlElement
+      dateBadge.element.amend(cls("mb-4")),
+      descriptionEditor.htmlElement
     )
 
   override def toString = s"CreateMilestoneDateComponent(${formState.now()})"

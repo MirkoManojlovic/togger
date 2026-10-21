@@ -2,6 +2,7 @@ package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common.TgClock
 import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.dto.FindMilestoneDateResp
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -33,18 +34,8 @@ object EditMilestoneDateForm {
     )
 }
 
-class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate: Signal[String] = Val("")) {
+class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate: Signal[String], tgClock: TgClock) {
   val formState = Var(EditMilestoneDateForm.fromDto(dto))
-
-  private val dateErrors: EventStream[Seq[String]] =
-    formState.signal.combineWith(milestoneStartDate).changes.map { case (form, startDate) =>
-      if (
-        form.date.nonEmpty && startDate.nonEmpty &&
-        LocalDate.parse(form.date).isBefore(LocalDate.parse(startDate))
-      )
-        Seq("Date must be on or after the milestone start date")
-      else Seq.empty
-    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -61,20 +52,23 @@ class EditMilestoneDateComponent(dto: FindMilestoneDateResp, milestoneStartDate:
     minWidthRem = 0
   )
 
-  private val dateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.date),
-    errors = dateErrors,
-    labelValue = "Date",
-    tgInputType = TgInputType.Date,
-    isRequired = false
+  private val startDateVar = Var("")
+
+  private val dateBadge = new MilestoneDateBadge(
+    date = formState.signal.map(_.date),
+    currentDate = () => formState.now().date,
+    milestoneStartDate = () => startDateVar.now(),
+    onDate = picked => formState.update(_.copy(date = picked.toString)),
+    tgClock = tgClock
   )
 
   val htmlElement: ReactiveHtmlElement[HTMLDivElement] =
     div(
       cls("mb-4"),
+      milestoneStartDate --> startDateVar,
       nameInput.htmlElement.amend(cls("mb-4")),
-      descriptionEditor.htmlElement.amend(cls("mb-4")),
-      dateInput.htmlElement
+      dateBadge.element.amend(cls("mb-4")),
+      descriptionEditor.htmlElement
     )
 
   override def toString = s"EditMilestoneDateComponent(${formState.now()})"

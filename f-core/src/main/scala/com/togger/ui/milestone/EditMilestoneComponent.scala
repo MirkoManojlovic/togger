@@ -8,7 +8,7 @@ import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
@@ -67,7 +67,7 @@ class EditMilestoneComponent(
         typ("button"),
         cls("mb-4"),
         onClick --> (_ =>
-          newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate))
+          newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
         )
       )
 
@@ -104,7 +104,7 @@ class EditMilestoneComponent(
     .map(
       _.fold(
         error => println(error),
-        success => milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_, milestoneStartDate)))
+        success => milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_, milestoneStartDate, tgClock)))
       )
     )
     .unsafeRunAndForget()
@@ -239,7 +239,6 @@ class EditMilestoneComponent(
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
   )
 
 }
