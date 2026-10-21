@@ -99,6 +99,15 @@ class ProjectAccountRepoImpl extends ProjectAccountRepo {
       innerJoin(AccountRepoImpl.ACCOUNT_TABLE_FRAG)(fr"project_account.account_id = account.id") ++
       fr"where project_account.project_id = $projectId"
 
+  override def isMember(projectId: UUID, accountId: UUID): ConnectionIO[Boolean] =
+    logAroundInfoQuery(
+      (fr"select exists (select 1 from" ++ ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG ++
+        fr"where project_id = $projectId and account_id = $accountId)").query[Boolean].unique
+    )(
+      s"Checking if ${sp(accountId)} is a member of ${sp(projectId)}",
+      isMember => s"Membership of ${sp(accountId)} in ${sp(projectId)} is ${sp(isMember)}"
+    )
+
   override def findAllMembersByProjectIds(projectIds: Seq[UUID]): ConnectionIO[Map[UUID, Seq[Account]]] =
     NonEmptyList.fromList(projectIds.toList) match {
       case None => Map.empty[UUID, Seq[Account]].pure[ConnectionIO]

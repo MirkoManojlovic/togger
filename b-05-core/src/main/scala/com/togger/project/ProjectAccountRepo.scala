@@ -13,6 +13,8 @@ trait ProjectAccountRepo {
 
   def deleteById(projectId: UUID, accountId: UUID): ConnectionIO[Int]
 
+  def isMember(projectId: UUID, accountId: UUID): ConnectionIO[Boolean]
+
 //  def update(organizationAccount: ProjectAccount, updatedAt: Instant): ConnectionIO[ProjectAccount]
 
   /** One page of the project's members by last name, first name. */

@@ -56,6 +56,23 @@ class ProjectAccountRepoTest
     }
   }
 
+  "tell members from accounts that are not in the project" in { transactor =>
+    (for {
+      member <- createAccount
+      other <- accountRepo.insert(member.copy(id = java.util.UUID.randomUUID(), email = "other@email.com"))
+      orgAndProject <- createOrgAndProject
+      project = orgAndProject._2
+      _ <- projectAccountRepo.insert(ProjectAccount(project.id, member.id, nowAsInstant))
+      memberResult <- projectAccountRepo.isMember(project.id, member.id)
+      otherResult <- projectAccountRepo.isMember(project.id, other.id)
+      unknownProject <- projectAccountRepo.isMember(java.util.UUID.randomUUID(), member.id)
+    } yield {
+      memberResult shouldBe true
+      otherResult shouldBe false
+      unknownProject shouldBe false
+    }).transact(transactor)
+  }
+
   "find all members of the project" in { transactor =>
     val accounts = Seq(
       createAccount("John", "Smith", "shark@email.com"),
