@@ -9,9 +9,9 @@ object StagedCharts {
   val ChartHeight = 320
 
   /** The colors of a slice, one for a dark background and a lighter one for a light background. */
-  private case class SliceColor(dark: String, light: String)
+  case class SliceColor(dark: String, light: String)
 
-  private val SliceColors = Seq(
+  val SliceColors: Seq[SliceColor] = Seq(
     SliceColor("#1447E6", "#60A5FA"),
     SliceColor("#16a34a", "#4ADE80"),
     SliceColor("#f59e0b", "#FBBF24"),
