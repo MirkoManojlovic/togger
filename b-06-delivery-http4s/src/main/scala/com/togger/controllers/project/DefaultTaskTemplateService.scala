@@ -65,18 +65,31 @@ object DefaultTaskTemplateService {
       |""".stripMargin
 
   val bugBody: String =
-    """## Steps to reproduce
+    """**Summary**  
+      |Login button does nothing on Safari 17
       |
-      |1. Go to ...
-      |2. Do ...
+      |**Description**  
+      |We identified a bug in the checkout flow that blocks paying customers from completing an order.
       |
-      |## Expected
+      |**Steps to reproduce**  
+      |- Open the login page in Safari 17.
+      |-  Enter valid credentials.
+      |- Click Sign in.
       |
-      |What should happen.
+      |**Actual behavior**  
+      |Nothing happens. No network request fires and no error is shown.
       |
-      |## Actual
+      |**Expected behavior**  
+      |User is redirected to the dashboard within a second.
       |
-      |What happens instead.
+      |**Impact**  
+      |All Safari users on the Pro plan, roughly 8 percent of daily sign-ins.
+      |
+      |**Environment**
+      |macOS 14.4, Safari 17.4, build 2026.5.21
+      |
+      |**Additional notes**
+      |Reproducible on every attempt. Workaround: reload the tab.
       |""".stripMargin
 
   def contentOf(labelName: String): Option[(String, String)] =
