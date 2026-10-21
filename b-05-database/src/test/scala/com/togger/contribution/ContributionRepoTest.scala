@@ -7,7 +7,17 @@ import com.togger.dto.ContributionsFilter
 import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
 import com.togger.milestone.{Milestone, MilestoneRepoImpl, MilestoneStatus, MilestoneVersion, MilestoneVersionRepoImpl}
 import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.task.{Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.task.{
+  Task,
+  TaskLabel,
+  TaskLabelAssignment,
+  TaskLabelAssignmentRepoImpl,
+  TaskLabelRepoImpl,
+  TaskPriority,
+  TaskRepoImpl,
+  TaskVersion,
+  TaskVersionRepoImpl
+}
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -21,6 +31,8 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
   private val taskRepo = new TaskRepoImpl
   private val taskVersionRepo = new TaskVersionRepoImpl
   private val milestoneRepo = new MilestoneRepoImpl
+  private val taskLabelRepo = new TaskLabelRepoImpl
+  private val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
   private val milestoneVersionRepo = new MilestoneVersionRepoImpl
   private val logEntryRepo = new LogEntryRepoImpl
   private val logEntryVersionRepo = new LogEntryVersionRepoImpl
@@ -35,13 +47,20 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
 
   /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without
     * a milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to
-    * `first`, still open.
+    * `first`, still open. t2 is "Done" and critical, the others are in the first status and medium. t1 is labelled
+    * "bug", t2 "bug" and "feature", t3 has no label.
     *
     * Log entries: e1 of t1 by `first` on the 13th, completed by its latest version (an older one was in progress); e2
     * of t1 by `first` on the 13th, in progress; e3 of t2 by `second` on the 14th at 23:30 UTC, completed; e4 of t3 by
     * `first` on the 20th, on vacation.
     */
-  private case class Seeded(projectId: UUID, first: Account, second: Account, milestone: Milestone)
+  private case class Seeded(
+    projectId: UUID,
+    first: Account,
+    second: Account,
+    milestone: Milestone,
+    statusName: String
+  )
 
   private def seed(): ConnectionIO[Seeded] =
     for {
@@ -50,6 +69,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       orgAndProject <- createOrgAndProject
       projectId = orgAndProject._2.id
       status <- createTaskStatus(projectId)
+      done <- taskStatusRepo.insert(taskStatus.copy(id = UUID.randomUUID(), projectId = projectId, name = "Done"))
       milestone <- milestoneRepo.insert(Milestone(UUID.randomUUID(), projectId, nowAsInstant))
       t1 <- newTask(projectId, first)
       t2 <- newTask(projectId, first)
@@ -67,8 +87,9 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       )
       _ <- newTaskVersion(
         t2,
-        status.id,
+        done.id,
         1,
+        priority = TaskPriority.Critical,
         assignedTo = Some(second.id),
         closedBy = Some(second.id),
         milestone = Some(milestone.id),
@@ -76,14 +97,24 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         endDate = Some(day(20))
       )
       _ <- newTaskVersion(t3, status.id, 1, assignedTo = Some(first.id), startDate = day(15))
+      bug <- newLabel(projectId, "bug")
+      feature <- newLabel(projectId, "feature")
+      _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(t1.id, bug.id, nowAsInstant))
+      _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(t2.id, bug.id, nowAsInstant))
+      _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(t2.id, feature.id, nowAsInstant))
       _ <- newEntry(t1, first, "2026-10-13T10:00:00Z", LogEntryStatus.InProgress, LogEntryStatus.Completed)
       _ <- newEntry(t1, first, "2026-10-13T15:00:00Z", LogEntryStatus.InProgress)
       _ <- newEntry(t2, second, "2026-10-14T23:30:00Z", LogEntryStatus.Completed)
       _ <- newEntry(t3, first, "2026-10-20T08:00:00Z", LogEntryStatus.Vacation)
-    } yield Seeded(projectId, first, second, milestone)
+    } yield Seeded(projectId, first, second, milestone, status.name)
 
   private def newTask(projectId: UUID, creator: Account): ConnectionIO[Task] =
     taskRepo.insert(Task(UUID.randomUUID(), projectId, creator.id, nowAsInstant))
+
+  private def newLabel(projectId: UUID, name: String): ConnectionIO[TaskLabel] =
+    taskLabelRepo.insert(
+      TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", nowAsInstant, nowAsInstant)
+    )
 
   private def newTaskVersion(
     task: Task,
@@ -92,6 +123,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     assignedTo: Option[UUID] = None,
     closedBy: Option[UUID] = None,
     milestone: Option[UUID] = None,
+    priority: TaskPriority = TaskPriority.Medium,
     startDate: LocalDate = day(12),
     endDate: Option[LocalDate] = None
   ): ConnectionIO[TaskVersion] =
@@ -105,6 +137,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         closedBy = closedBy,
         taskStatusId = statusId,
         milestone = milestone,
+        priority = priority,
         startDate = startDate,
         dueDate = day(19),
         endDate = endDate,
@@ -236,6 +269,52 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         rows <- contributionRepo.tasksClosed(seeded.projectId, range(19, 31))
       } yield rows shouldBe List(TaskClosedRow(seeded.second.id, Some(seeded.milestone.id), 1L)))
         .transact(transactor)
+    }
+
+    "count the tasks by the status of their latest version, in their milestone" in { transactor =>
+      (for {
+        seeded <- seed()
+        rows <- contributionRepo.tasksByStatus(seeded.projectId, ContributionsFilter.empty)
+      } yield rows.toSet shouldBe Set(
+        TaskStatusCountRow(Some(seeded.milestone.id), seeded.statusName, 1L),
+        TaskStatusCountRow(Some(seeded.milestone.id), "Done", 1L),
+        TaskStatusCountRow(None, seeded.statusName, 1L)
+      )).transact(transactor)
+    }
+
+    "count the tasks by the priority of their latest version" in { transactor =>
+      (for {
+        seeded <- seed()
+        rows <- contributionRepo.tasksByPriority(seeded.projectId, ContributionsFilter.empty)
+      } yield rows.toSet shouldBe Set(
+        TaskPriorityCountRow(Some(seeded.milestone.id), TaskPriority.Medium, 1L),
+        TaskPriorityCountRow(Some(seeded.milestone.id), TaskPriority.Critical, 1L),
+        TaskPriorityCountRow(None, TaskPriority.Medium, 1L)
+      )).transact(transactor)
+    }
+
+    "count a task once for every label it has, and the tasks without a label together" in { transactor =>
+      (for {
+        seeded <- seed()
+        rows <- contributionRepo.tasksByLabel(seeded.projectId, ContributionsFilter.empty)
+      } yield rows.toSet shouldBe Set(
+        TaskLabelCountRow(Some(seeded.milestone.id), Some("bug"), 2L),
+        TaskLabelCountRow(Some(seeded.milestone.id), Some("feature"), 1L),
+        TaskLabelCountRow(None, None, 1L)
+      )).transact(transactor)
+    }
+
+    "filter the attribute counts by the start date of the latest version" in { transactor =>
+      (for {
+        seeded <- seed()
+        statuses <- contributionRepo.tasksByStatus(seeded.projectId, range(14, 31))
+        priorities <- contributionRepo.tasksByPriority(seeded.projectId, range(14, 31))
+        labels <- contributionRepo.tasksByLabel(seeded.projectId, range(14, 31))
+      } yield {
+        statuses shouldBe List(TaskStatusCountRow(None, seeded.statusName, 1L))
+        priorities shouldBe List(TaskPriorityCountRow(None, TaskPriority.Medium, 1L))
+        labels shouldBe List(TaskLabelCountRow(None, None, 1L))
+      }).transact(transactor)
     }
 
     "list the milestones of the project by their creation time, newest first, with the latest version of each" in { transactor =>

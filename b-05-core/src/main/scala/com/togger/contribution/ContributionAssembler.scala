@@ -8,7 +8,11 @@ import com.togger.dto.{
   DailyStatusCountDto,
   MemberContributionDto,
   MilestoneContributionsDto,
-  StatusCountDto
+  StatusCountDto,
+  TaskAttributesDto,
+  TaskLabelCountDto,
+  TaskPriorityCountDto,
+  TaskStatusCountDto
 }
 import com.togger.logentry.LogEntryStatus
 
@@ -28,7 +32,10 @@ object ContributionAssembler {
     taskTotals: Seq[MilestoneTaskTotalsRow],
     activity: Seq[EntryActivityRow],
     assigned: Seq[TaskAssignedRow],
-    closed: Seq[TaskClosedRow]
+    closed: Seq[TaskClosedRow],
+    statusCounts: Seq[TaskStatusCountRow],
+    priorityCounts: Seq[TaskPriorityCountRow],
+    labelCounts: Seq[TaskLabelCountRow]
   )
 
   /** The tasks without a milestone come first, then the milestones in the order of the rows.
@@ -68,6 +75,29 @@ object ContributionAssembler {
       (totals.map(_.total).sum.toInt, totals.map(_.closed).sum.toInt)
     }
 
+    // The tasks of a scope are counted by what their latest version has; the same name is one count, whichever row.
+    def tasksIn(inScope: Option[UUID] => Boolean): TaskAttributesDto =
+      TaskAttributesDto(
+        byStatus = rows.statusCounts
+          .filter(row => inScope(row.milestoneId))
+          .groupMapReduce(_.statusName)(_.count)(_ + _)
+          .toList
+          .sortBy { case (name, count) => (-count, name) }
+          .map { case (name, count) => TaskStatusCountDto(name, count.toInt) },
+        byPriority = rows.priorityCounts
+          .filter(row => inScope(row.milestoneId))
+          .groupMapReduce(_.priority)(_.count)(_ + _)
+          .toList
+          .sortBy { case (priority, _) => priority.value }
+          .map { case (priority, count) => TaskPriorityCountDto(priority, count.toInt) },
+        byLabel = rows.labelCounts
+          .filter(row => inScope(row.milestoneId))
+          .groupMapReduce(_.labelName)(_.count)(_ + _)
+          .toList
+          .sortBy { case (name, count) => (-count, name.isEmpty, name) }
+          .map { case (name, count) => TaskLabelCountDto(name, count.toInt) }
+      )
+
     val milestoneCards = rows.milestones.toList.map { header =>
       val (total, closedCount) = totalsOf(Some(header.milestoneId))
       MilestoneContributionsDto(
@@ -78,7 +108,8 @@ object ContributionAssembler {
         dueDate = Some(header.dueDate),
         totalTasks = total,
         closedTasks = closedCount,
-        members = membersIn(_.contains(header.milestoneId), onlyActive = true)
+        members = membersIn(_.contains(header.milestoneId), onlyActive = true),
+        tasks = tasksIn(_.contains(header.milestoneId))
       )
     }
 
@@ -86,11 +117,26 @@ object ContributionAssembler {
       val (total, closedCount) = totalsOf(None)
       val noMilestoneMembers = membersIn(_.isEmpty, onlyActive = true)
       Option.when(total > 0 || noMilestoneMembers.nonEmpty)(
-        MilestoneContributionsDto(None, NoMilestoneName, None, None, None, total, closedCount, noMilestoneMembers)
+        MilestoneContributionsDto(
+          milestoneId = None,
+          name = NoMilestoneName,
+          status = None,
+          startDate = None,
+          dueDate = None,
+          totalTasks = total,
+          closedTasks = closedCount,
+          members = noMilestoneMembers,
+          tasks = tasksIn(_.isEmpty)
+        )
       )
     }
 
-    ContributionsDto(projectId, membersIn(_ => true, onlyActive = false), withoutMilestone.toList ++ milestoneCards)
+    ContributionsDto(
+      projectId,
+      membersIn(_ => true, onlyActive = false),
+      tasksIn(_ => true),
+      withoutMilestone.toList ++ milestoneCards
+    )
   }
 
   private def memberDto(

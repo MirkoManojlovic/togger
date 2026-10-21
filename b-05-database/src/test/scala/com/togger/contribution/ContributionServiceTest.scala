@@ -6,10 +6,19 @@ import com.togger.TestLoggingJvm
 import com.togger.account.{Account, HashedPasswordImpl}
 import com.togger.common.{Password, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
-import com.togger.dto.{ContributionsFilter, DailyStatusCountDto, StatusCountDto}
+import com.togger.dto.{
+  ContributionsFilter,
+  DailyStatusCountDto,
+  StatusCountDto,
+  TaskAttributesDto,
+  TaskLabelCountDto,
+  TaskPriorityCountDto,
+  TaskStatusCountDto
+}
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
 import com.togger.project.{Project, ProjectAccountRepo, ProjectRepo}
+import com.togger.task.TaskPriority
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import org.scalamock.scalatest.AsyncMockFactory
@@ -102,6 +111,33 @@ class ContributionServiceTest
           TaskClosedRow(bob.id, Some(alpha), 1L)
         ).pure[ConnectionIO]
       )
+    (contributionRepo.tasksByStatus _)
+      .expects(projectId, filter)
+      .returns(
+        List(
+          TaskStatusCountRow(Some(alpha), "Todo", 2L),
+          TaskStatusCountRow(Some(alpha), "Done", 1L),
+          TaskStatusCountRow(None, "Todo", 1L)
+        ).pure[ConnectionIO]
+      )
+    (contributionRepo.tasksByPriority _)
+      .expects(projectId, filter)
+      .returns(
+        List(
+          TaskPriorityCountRow(Some(alpha), TaskPriority.Medium, 2L),
+          TaskPriorityCountRow(Some(alpha), TaskPriority.Critical, 1L),
+          TaskPriorityCountRow(None, TaskPriority.Medium, 1L)
+        ).pure[ConnectionIO]
+      )
+    (contributionRepo.tasksByLabel _)
+      .expects(projectId, filter)
+      .returns(
+        List(
+          TaskLabelCountRow(Some(alpha), Some("bug"), 2L),
+          TaskLabelCountRow(Some(alpha), Some("feature"), 1L),
+          TaskLabelCountRow(None, None, 1L)
+        ).pure[ConnectionIO]
+      )
   }
 
   testNameFromClassName should {
@@ -176,6 +212,31 @@ class ContributionServiceTest
         // Ann only took a vacation day there: listed, but not worked
         noMilestoneCard.members.head.activeDays shouldBe 0
         noMilestoneCard.members.last.tasksAssigned shouldBe 2
+      }
+    }
+
+    "count the tasks of the project and of each milestone by status, priority and label" in {
+      expectReads(ContributionsFilter.empty)
+
+      service.findByProjectId(projectId, ContributionsFilter.empty).unsafeToFuture().map { result =>
+        val general = result.generalTasks
+        general.byStatus shouldBe List(TaskStatusCountDto("Todo", 3), TaskStatusCountDto("Done", 1))
+        general.byPriority shouldBe List(
+          TaskPriorityCountDto(TaskPriority.Critical, 1),
+          TaskPriorityCountDto(TaskPriority.Medium, 3)
+        )
+        general.byLabel shouldBe List(
+          TaskLabelCountDto(Some("bug"), 2),
+          TaskLabelCountDto(Some("feature"), 1),
+          TaskLabelCountDto(None, 1)
+        )
+
+        val List(noMilestoneCard, alphaCard, betaCard) = result.milestones
+        alphaCard.tasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 2), TaskStatusCountDto("Done", 1))
+        alphaCard.tasks.byLabel shouldBe List(TaskLabelCountDto(Some("bug"), 2), TaskLabelCountDto(Some("feature"), 1))
+        noMilestoneCard.tasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 1))
+        noMilestoneCard.tasks.byLabel shouldBe List(TaskLabelCountDto(None, 1))
+        betaCard.tasks shouldBe TaskAttributesDto(List.empty, List.empty, List.empty)
       }
     }
 

@@ -30,12 +30,24 @@ class ContributionService(
       activity <- contributionRepo.entryActivity(projectId, filter)
       assigned <- contributionRepo.tasksAssigned(projectId, filter)
       closed <- contributionRepo.tasksClosed(projectId, filter)
+      statusCounts <- contributionRepo.tasksByStatus(projectId, filter)
+      priorityCounts <- contributionRepo.tasksByPriority(projectId, filter)
+      labelCounts <- contributionRepo.tasksByLabel(projectId, filter)
     } yield ContributionAssembler.assemble(
       projectId,
       membersByProject.getOrElse(projectId, Seq.empty),
       project.workDays,
       filter,
-      ContributionAssembler.Rows(milestones, taskTotals, activity, assigned, closed)
+      ContributionAssembler.Rows(
+        milestones,
+        taskTotals,
+        activity,
+        assigned,
+        closed,
+        statusCounts,
+        priorityCounts,
+        labelCounts
+      )
     )).transact(transactor)
   }
 }

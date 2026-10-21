@@ -40,6 +40,10 @@ class ContributionControllerTest extends AnyWordSpec with Matchers {
     override def entryActivity(projectId: UUID, filter: ContributionsFilter) = read(List.empty[EntryActivityRow])
     override def tasksAssigned(projectId: UUID, filter: ContributionsFilter) = read(List.empty[TaskAssignedRow])
     override def tasksClosed(projectId: UUID, filter: ContributionsFilter) = read(List.empty[TaskClosedRow])
+    override def tasksByStatus(projectId: UUID, filter: ContributionsFilter) = read(List.empty[TaskStatusCountRow])
+    override def tasksByPriority(projectId: UUID, filter: ContributionsFilter) =
+      read(List.empty[TaskPriorityCountRow])
+    override def tasksByLabel(projectId: UUID, filter: ContributionsFilter) = read(List.empty[TaskLabelCountRow])
     override def milestoneHeaders(projectId: UUID) = read(List.empty[MilestoneHeaderRow])
     override def milestoneTaskTotals(projectId: UUID) = read(List.empty[MilestoneTaskTotalsRow])
   }
@@ -96,7 +100,7 @@ class ContributionControllerTest extends AnyWordSpec with Matchers {
       val repo = new StubContributionRepo
       val result = callFindByProjectId(memberId, repo)
       result.toOption.flatMap(_.body).map(_.projectId) shouldBe Some(projectId)
-      repo.reads shouldBe 5
+      repo.reads shouldBe 8
     }
   }
 }

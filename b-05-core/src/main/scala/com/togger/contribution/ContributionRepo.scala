@@ -21,6 +21,13 @@ trait ContributionRepo {
     */
   def tasksClosed(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskClosedRow]]
 
+  /** Tasks by the status of their latest version, filtered by the start date of that version. */
+  def tasksByStatus(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskStatusCountRow]]
+
+  def tasksByPriority(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskPriorityCountRow]]
+
+  def tasksByLabel(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskLabelCountRow]]
+
   /** Every milestone of the project with its latest version, the one created last first. */
   def milestoneHeaders(projectId: UUID): ConnectionIO[List[MilestoneHeaderRow]]
 
