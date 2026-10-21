@@ -117,7 +117,8 @@ class ContributionRepoImpl extends ContributionRepo {
       (fr"select milestone.id, latest.name, latest.description, latest.status, latest.start_date, latest.due_date from" ++
         MILESTONE_TABLE_FRAG ++ fr"join lateral (select * from" ++ MILESTONE_VERSION_TABLE_FRAG ++
         fr"where milestone_id = milestone.id order by version desc limit 1) latest on true" ++
-        fr"where milestone.project_id = $projectId order by milestone.created_at desc, milestone.id")
+        fr"where milestone.project_id = $projectId" ++
+        fr"order by latest.start_date desc, milestone.created_at desc, milestone.id")
         .query[MilestoneHeaderRow]
         .to[List]
     )(

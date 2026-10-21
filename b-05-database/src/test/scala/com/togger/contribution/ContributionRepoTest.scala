@@ -150,7 +150,8 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     milestone: Milestone,
     name: String,
     status: MilestoneStatus,
-    dueDate: LocalDate
+    dueDate: LocalDate,
+    startDate: LocalDate = day(1)
   ): ConnectionIO[MilestoneVersion] =
     milestoneVersionRepo.insert(
       MilestoneVersion(
@@ -159,7 +160,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         name = name,
         description = "Description",
         status = status,
-        startDate = day(1),
+        startDate = startDate,
         dueDate = dueDate,
         createdAt = nowAsInstant,
         updatedAt = nowAsInstant
@@ -318,25 +319,34 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       }).transact(transactor)
     }
 
-    "list the milestones of the project by their creation time, newest first, with the latest version of each" in { transactor =>
-      (for {
-        seeded <- seed()
-        older <- milestoneRepo.insert(
-          Milestone(UUID.randomUUID(), seeded.projectId, seeded.milestone.createdAt.minusSeconds(3600))
-        )
-        _ <- milestoneVersion(seeded.milestone, "Old name", MilestoneStatus.InProgress, day(30))
-        _ <- milestoneVersion(seeded.milestone, "First", MilestoneStatus.Done, day(20))
-        _ <- milestoneVersion(older, "Second", MilestoneStatus.InProgress, day(25))
-        rows <- contributionRepo.milestoneHeaders(seeded.projectId)
-        otherProject <- contributionRepo.milestoneHeaders(UUID.randomUUID())
-      } yield {
-        // created later and due earlier: the creation time decides
-        rows shouldBe List(
-          MilestoneHeaderRow(seeded.milestone.id, "First", "Description", MilestoneStatus.Done, day(1), day(20)),
-          MilestoneHeaderRow(older.id, "Second", "Description", MilestoneStatus.InProgress, day(1), day(25))
-        )
-        otherProject shouldBe empty
-      }).transact(transactor)
+    "list the milestones of the project by the start of their latest version, latest first, then by creation" in {
+      transactor =>
+        (for {
+          seeded <- seed()
+          createdAt = seeded.milestone.createdAt
+          later <- milestoneRepo.insert(Milestone(UUID.randomUUID(), seeded.projectId, createdAt.minusSeconds(3600)))
+          sameDay <- milestoneRepo.insert(Milestone(UUID.randomUUID(), seeded.projectId, createdAt.minusSeconds(7200)))
+          // the old version of the first one starts latest of all, but only the latest version counts
+          _ <- milestoneVersion(seeded.milestone, "Old name", MilestoneStatus.InProgress, day(30), day(28))
+          _ <- milestoneVersion(seeded.milestone, "First", MilestoneStatus.Done, day(20), day(5))
+          _ <- milestoneVersion(later, "Second", MilestoneStatus.InProgress, day(25), day(10))
+          _ <- milestoneVersion(sameDay, "Third", MilestoneStatus.Paused, day(26), day(5))
+          rows <- contributionRepo.milestoneHeaders(seeded.projectId)
+          otherProject <- contributionRepo.milestoneHeaders(UUID.randomUUID())
+        } yield {
+          // "Second" starts last. "First" and "Third" start the same day, "First" was created later.
+          rows.map(_.name) shouldBe List("Second", "First", "Third")
+          rows.map(_.startDate) shouldBe List(day(10), day(5), day(5))
+          rows.head shouldBe MilestoneHeaderRow(
+            later.id,
+            "Second",
+            "Description",
+            MilestoneStatus.InProgress,
+            day(10),
+            day(25)
+          )
+          otherProject shouldBe empty
+        }).transact(transactor)
     }
 
     "count all and ended tasks per milestone, with the tasks without a milestone together" in { transactor =>

@@ -28,7 +28,9 @@ trait ContributionRepo {
 
   def tasksByLabel(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskLabelCountRow]]
 
-  /** Every milestone of the project with its latest version, the one created last first. */
+  /** Every milestone of the project with its latest version, the one that starts last first. Milestones that start the
+    * same day come the one created last first.
+    */
   def milestoneHeaders(projectId: UUID): ConnectionIO[List[MilestoneHeaderRow]]
 
   /** All tasks and ended tasks per milestone, ignoring the range. */
