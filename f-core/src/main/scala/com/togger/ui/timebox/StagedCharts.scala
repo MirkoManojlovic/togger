@@ -38,7 +38,7 @@ object StagedCharts {
       }
     }._1
 
-  private case class Slice(title: String, size: Int, chartColor: Option[ChartColor])
+  case class Slice(title: String, size: Int, chartColor: Option[ChartColor])
 
   /** One slice per group, as big as the number of tasks in it. */
   def pieOfTaskCounts(groups: Seq[GroupSummary]): ApexChartOptions =
@@ -48,7 +48,7 @@ object StagedCharts {
   def pieOfGroups(groups: Seq[StagedGroup]): ApexChartOptions =
     pie(groups.map(group => Slice(group.title, group.tasks.size, group.chartColor)))
 
-  private def pie(slices: Seq[Slice]): ApexChartOptions = {
+  def pie(slices: Seq[Slice]): ApexChartOptions = {
     val colors = sliceColors(slices)
     ApexChartOptions(
       chartType = ApexChartType.Pie,

@@ -1,7 +1,7 @@
 package com.togger.ui.contributions
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.MemberContributionDto
+import com.togger.dto.{MemberContributionDto, TaskAttributesDto}
 import com.togger.ui.apexchart.{ApexChartComponent, ApexChartOptions}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
@@ -33,6 +33,15 @@ object MemberContributionViews {
       if (ContributionCharts.hasData(options)) new ApexChartComponent(Val(options), isDark, options.height).element
       else p(cls("text-body"), "Nothing to show for this range")
     ).amend(cls(extraCls))
+
+  /** The tasks of a scope by their status, priority and label, side by side. */
+  def taskAttributeCharts(tasks: TaskAttributesDto, isDark: Signal[Boolean]): HtmlElement =
+    div(
+      cls("grid grid-cols-1 lg:grid-cols-3 gap-4"),
+      chartCard("Tasks by status", ContributionCharts.tasksByStatus(tasks), isDark),
+      chartCard("Tasks by priority", ContributionCharts.tasksByPriority(tasks), isDark),
+      chartCard("Tasks by label", ContributionCharts.tasksByLabel(tasks), isDark)
+    )
 
   private def stat(label: String, value: String): HtmlElement =
     div(

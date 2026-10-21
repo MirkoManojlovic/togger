@@ -11,7 +11,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{TgTab, TgTabs}
 import com.togger.ui.contributions.ContributionsComponent.GeneralTabId
-import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles}
+import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles, taskAttributeCharts}
 import com.togger.ui.milestone.{DateFilterComponent, DateFilterMode}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TgDateFormater
@@ -84,6 +84,7 @@ class ContributionsComponent(
         chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(members), isDark)
       ),
+      taskAttributeCharts(contributions.generalTasks, isDark).amend(cls("mt-4")),
       div(
         cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
         members.map(member =>

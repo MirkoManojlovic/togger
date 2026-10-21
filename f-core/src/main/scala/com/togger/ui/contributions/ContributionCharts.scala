@@ -1,9 +1,10 @@
 package com.togger.ui.contributions
 
-import com.togger.chart.ChartColor
-import com.togger.dto.MemberContributionDto
+import com.togger.chart.{ChartColor, TaskLabelChartable, TaskStatusChartable}
+import com.togger.dto.{MemberContributionDto, TaskAttributesDto}
 import com.togger.ui.apexchart.{ApexChartOptions, ApexChartType, ApexLegendPosition, ApexNamedSeries, ApexSeries}
-import com.togger.ui.timebox.StagedCharts
+import com.togger.ui.timebox.{StagedCharts, StagedGrouping}
+import com.togger.ui.timebox.StagedCharts.Slice
 
 import java.time.LocalDate
 
@@ -106,6 +107,33 @@ object ContributionCharts {
       statuses.map(_.chartColor)
     )
   }
+
+  // Only the default statuses and labels have a color of their own, any other gets one from the palette.
+  private def statusColor(name: String): Option[ChartColor] =
+    TaskStatusChartable.all.find(_.label == name).map(_.chartColor)
+
+  private def labelColor(name: String): Option[ChartColor] =
+    TaskLabelChartable.all.find(_.label == name).map(_.chartColor)
+
+  /** A slice per task status, as big as the number of tasks in it. */
+  def tasksByStatus(tasks: TaskAttributesDto): ApexChartOptions =
+    StagedCharts.pie(tasks.byStatus.map(status => Slice(status.name, status.count, statusColor(status.name))))
+
+  /** A slice per task priority, as big as the number of tasks with it. */
+  def tasksByPriority(tasks: TaskAttributesDto): ApexChartOptions =
+    StagedCharts.pie(
+      tasks.byPriority.map(task => Slice(task.priority.priorityName, task.count, Some(task.priority.chartColor)))
+    )
+
+  /** A slice per task label, as big as the number of tasks with it, which makes a task with two labels two. The tasks
+    * without a label are one gray slice.
+    */
+  def tasksByLabel(tasks: TaskAttributesDto): ApexChartOptions =
+    StagedCharts.pie(
+      tasks.byLabel.map(label =>
+        Slice(label.name.getOrElse(StagedGrouping.NoLabel), label.count, label.name.flatMap(labelColor))
+      )
+    )
 
   /** Two columns per member, the tasks assigned to them and the tasks they closed. */
   def tasksAssignedAndClosed(members: Seq[MemberContributionDto]): ApexChartOptions =

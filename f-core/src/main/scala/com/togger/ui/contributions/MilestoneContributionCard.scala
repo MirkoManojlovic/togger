@@ -11,7 +11,7 @@ import com.togger.ui.components.{
   TgProgressLabel,
   TgProgressSize
 }
-import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles}
+import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles, taskAttributeCharts}
 import com.togger.ui.task.TgDateFormater
 
 /** The contributions to one milestone, or to the tasks that have none: its progress, its members and their charts. */
@@ -56,6 +56,7 @@ class MilestoneContributionCard(
         chartCard("Log entries by status", ContributionCharts.entriesByStatus(milestone.members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(milestone.members), isDark)
       ),
+      taskAttributeCharts(milestone.tasks, isDark).amend(cls("mt-4")),
       div(
         cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
         milestone.members.map(member =>

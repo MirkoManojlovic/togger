@@ -1,8 +1,17 @@
 package com.togger.ui.contributions
 
 import com.togger.chart.ChartColor
-import com.togger.dto.{DailyStatusCountDto, MemberContributionDto, StatusCountDto}
+import com.togger.dto.{
+  DailyStatusCountDto,
+  MemberContributionDto,
+  StatusCountDto,
+  TaskAttributesDto,
+  TaskLabelCountDto,
+  TaskPriorityCountDto,
+  TaskStatusCountDto
+}
 import com.togger.logentry.LogEntryStatus
+import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus, TaskPriority}
 import com.togger.ui.apexchart.{ApexChartType, ApexNamedSeries, ApexSeries}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -133,6 +142,63 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
         ApexNamedSeries("Active days", Seq(2, 1, 0)),
         ApexNamedSeries("Work days", Seq(5, 5, 0))
       )
+    }
+  }
+
+  private val tasks = TaskAttributesDto(
+    byStatus = List(
+      TaskStatusCountDto(DefaultTaskStatus.Done.statusName, 3),
+      TaskStatusCountDto("Custom", 2),
+      TaskStatusCountDto("Other", 1)
+    ),
+    byPriority = List(TaskPriorityCountDto(TaskPriority.Critical, 1), TaskPriorityCountDto(TaskPriority.Medium, 4)),
+    byLabel = List(
+      TaskLabelCountDto(Some(DefaultTaskLabel.Bug.labelName), 2),
+      TaskLabelCountDto(Some("Custom"), 2),
+      TaskLabelCountDto(None, 1)
+    )
+  )
+
+  "ContributionCharts.tasksByStatus" should {
+
+    "make a pie slice per status sized by its tasks" in {
+      val options = ContributionCharts.tasksByStatus(tasks)
+      options.chartType shouldBe ApexChartType.Pie
+      options.series shouldBe ApexSeries.Slices(Seq(3, 2, 1), Seq(DefaultTaskStatus.Done.statusName, "Custom", "Other"))
+    }
+
+    "color a default status by its chart color and give the other statuses a color each" in {
+      val colors = ContributionCharts.tasksByStatus(tasks).colors.get
+      colors.head shouldBe ChartColor.Green.dark
+      colors.distinct should have size 3
+      colors.tail should not contain ChartColor.Gray.dark
+    }
+  }
+
+  "ContributionCharts.tasksByPriority" should {
+    "make a pie slice per priority in the color of the priority" in {
+      val options = ContributionCharts.tasksByPriority(tasks)
+      options.series shouldBe ApexSeries.Slices(Seq(1, 4), Seq("Critical", "Medium"))
+      options.colors shouldBe Some(Seq(TaskPriority.Critical.chartColor.dark, TaskPriority.Medium.chartColor.dark))
+    }
+  }
+
+  "ContributionCharts.tasksByLabel" should {
+    "make a pie slice per label and a gray one for the tasks without a label" in {
+      val options = ContributionCharts.tasksByLabel(tasks)
+      options.series shouldBe ApexSeries.Slices(Seq(2, 2, 1), Seq(DefaultTaskLabel.Bug.labelName, "Custom", "No label"))
+      val colors = options.colors.get
+      colors.head shouldBe ChartColor.Red.dark
+      colors.last shouldBe "#9ca3af"
+    }
+  }
+
+  "ContributionCharts with no tasks" should {
+    "have nothing to draw" in {
+      val none = TaskAttributesDto(List.empty, List.empty, List.empty)
+      ContributionCharts.hasData(ContributionCharts.tasksByStatus(none)) shouldBe false
+      ContributionCharts.hasData(ContributionCharts.tasksByPriority(none)) shouldBe false
+      ContributionCharts.hasData(ContributionCharts.tasksByLabel(none)) shouldBe false
     }
   }
 }
