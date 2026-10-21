@@ -332,8 +332,8 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       } yield {
         // created later and due earlier: the creation time decides
         rows shouldBe List(
-          MilestoneHeaderRow(seeded.milestone.id, "First", MilestoneStatus.Done, day(1), day(20)),
-          MilestoneHeaderRow(older.id, "Second", MilestoneStatus.InProgress, day(1), day(25))
+          MilestoneHeaderRow(seeded.milestone.id, "First", "Description", MilestoneStatus.Done, day(1), day(20)),
+          MilestoneHeaderRow(older.id, "Second", "Description", MilestoneStatus.InProgress, day(1), day(25))
         )
         otherProject shouldBe empty
       }).transact(transactor)

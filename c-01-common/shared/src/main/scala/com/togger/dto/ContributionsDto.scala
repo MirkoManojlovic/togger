@@ -48,6 +48,7 @@ case class MemberContributionDto(
 case class MilestoneContributionsDto(
   milestoneId: Option[UUID],
   name: String,
+  description: Option[String],
   status: Option[MilestoneStatus],
   startDate: Option[LocalDate],
   dueDate: Option[LocalDate],

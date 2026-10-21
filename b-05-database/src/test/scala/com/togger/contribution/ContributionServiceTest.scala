@@ -78,8 +78,8 @@ class ContributionServiceTest
       .expects(projectId)
       .returns(
         List(
-          MilestoneHeaderRow(alpha, "Alpha", MilestoneStatus.InProgress, day(1), day(20)),
-          MilestoneHeaderRow(beta, "Beta", MilestoneStatus.InProgress, day(1), day(30))
+          MilestoneHeaderRow(alpha, "Alpha", "The first one", MilestoneStatus.InProgress, day(1), day(20)),
+          MilestoneHeaderRow(beta, "Beta", "", MilestoneStatus.InProgress, day(1), day(30))
         ).pure[ConnectionIO]
       )
     (contributionRepo.milestoneTaskTotals _)
@@ -195,6 +195,8 @@ class ContributionServiceTest
 
       service.findByProjectId(projectId, ContributionsFilter.empty).unsafeToFuture().map { result =>
         val List(noMilestoneCard, alphaCard, betaCard) = result.milestones
+        alphaCard.description shouldBe Some("The first one")
+        noMilestoneCard.description shouldBe None
         alphaCard.milestoneId shouldBe Some(alpha)
         alphaCard.name shouldBe "Alpha"
         alphaCard.status shouldBe Some(MilestoneStatus.InProgress)

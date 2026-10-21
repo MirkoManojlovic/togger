@@ -114,6 +114,7 @@ object ContributionAssembler {
       MilestoneContributionsDto(
         milestoneId = Some(header.milestoneId),
         name = header.name,
+        description = Some(header.description),
         status = Some(header.status),
         startDate = Some(header.startDate),
         dueDate = Some(header.dueDate),
@@ -131,6 +132,7 @@ object ContributionAssembler {
         MilestoneContributionsDto(
           milestoneId = None,
           name = NoMilestoneName,
+          description = None,
           status = None,
           startDate = None,
           dueDate = None,

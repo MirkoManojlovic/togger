@@ -46,6 +46,7 @@ case class TaskLabelCountRow(
 case class MilestoneHeaderRow(
   milestoneId: UUID,
   name: String,
+  description: String,
   status: MilestoneStatus,
   startDate: LocalDate,
   dueDate: LocalDate
