@@ -9,7 +9,7 @@ import com.togger.routes.Pages.ShowContributionsPage
 import com.togger.routes.{ContributionsParams, FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.components.{TableFilterComponent, TgTab, TgTabs}
 import com.togger.ui.contributions.ContributionsComponent.GeneralTabId
 import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles, taskAttributeCharts}
 import com.togger.ui.milestone.{DateFilterComponent, DateFilterMode}
@@ -73,6 +73,12 @@ class ContributionsComponent(
     initialStop = initialParams.to
   )
 
+  private val milestoneStatusFilter = new TableFilterComponent(
+    Val(MilestoneTabFilter.items),
+    label = "Milestone status",
+    selectedIdsVar = Var(MilestoneTabFilter.DefaultIds)
+  )
+
   private def generalSection(contributions: ContributionsDto): HtmlElement = {
     val members = contributions.general
     div(
@@ -115,9 +121,10 @@ class ContributionsComponent(
   private def memberTabId(member: MemberContributionDto): String = s"member-${member.memberId}"
 
   // The general tab, the milestones, then a tab with a user icon for each member with all they contributed.
-  private def tabsOf(contributions: ContributionsDto): Seq[TgTab] =
+  // The tabs of milestones are those the status filter lets through; the general and the member tabs are always there.
+  private def tabsOf(contributions: ContributionsDto, selectedStatusIds: Set[String]): Seq[TgTab] =
     TgTab(GeneralTabId, "General", whenSelected(GeneralTabId)(generalSection(contributions))) +:
-      (contributions.milestones.map { milestone =>
+      (MilestoneTabFilter.visible(contributions.milestones, selectedStatusIds).map { milestone =>
         val tabId = milestoneTabId(milestone)
         TgTab(
           tabId,
@@ -141,23 +148,27 @@ class ContributionsComponent(
         )
       })
 
-  private def page(contributions: ContributionsDto): HtmlElement =
+  private def page(contributions: ContributionsDto, selectedStatusIds: Set[String]): HtmlElement =
     if (contributions.general.isEmpty) p(cls("text-body"), "This project has no members")
-    else new TgTabs(tabsOf(contributions), selectedTabVar).element
+    else new TgTabs(tabsOf(contributions, selectedStatusIds), selectedTabVar).element
 
   val element: HtmlElement =
     div(
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Contributions", TgCard.CardHeaderSize.H3),
-          body = TgCard.HtmlCardContent(dateFilterComponent.element)
+          body = TgCard.HtmlCardContent(div(dateFilterComponent.element, milestoneStatusFilter.element))
         )
         .element
         .amend(cls("mb-4")),
       dateFilterComponent.activeFilter.map(ContributionsFilterMapping.paramsOf) --> Observer[ContributionsParams](
         showRange
       ),
-      child <-- contributionsVar.signal.map(_.fold[HtmlElement](div())(page))
+      child <-- contributionsVar.signal
+        .combineWith(milestoneStatusFilter.selectedIds)
+        .map { case (contributions, selectedStatusIds) =>
+          contributions.fold[HtmlElement](div())(page(_, selectedStatusIds))
+        }
     )
 }
 
