@@ -17,7 +17,7 @@ import com.togger.dto.{
   UpdateMilestoneReq
 }
 import com.togger.milestone.MilestoneEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -173,7 +173,7 @@ class CreateMilestoneComponent(
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               startDateInput.htmlElement.amend(cls("mb-4")),
               dueDateInput.htmlElement.amend(cls("mb-4")),
-              h5(cls("mb-2"), "Additional Milestone dates"),
+              h5(cls("text-heading mb-2"), "Additional Milestone dates"),
               addNewMilestoneDate,
               child <-- milestoneDatesVar.signal.map(dateComponents =>
                 div(
@@ -188,7 +188,6 @@ class CreateMilestoneComponent(
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
   )
 
 }

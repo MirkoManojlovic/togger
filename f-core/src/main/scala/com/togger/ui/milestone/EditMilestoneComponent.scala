@@ -249,7 +249,7 @@ class EditMilestoneComponent(
               dueDateInput.htmlElement.amend(cls("mb-4")),
               endDateInput.htmlElement.amend(cls("mb-4")),
               addNewMilestoneDate,
-              h5(cls("mb-2"), "Additional Milestone dates"),
+              h5(cls("text-heading mb-2"), "Additional Milestone dates"),
               children <-- milestoneDatesVar.signal.map(dateComponents =>
                 dateComponents.map(
                   _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
