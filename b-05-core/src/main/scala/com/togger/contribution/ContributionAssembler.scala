@@ -31,7 +31,9 @@ object ContributionAssembler {
     closed: Seq[TaskClosedRow]
   )
 
-  /** Everyone who is a member is listed in the general part, even without activity. Rows of accounts that left the
+  /** The tasks without a milestone come first, then the milestones in the order of the rows.
+    *
+    * Everyone who is a member is listed in the general part, even without activity. Rows of accounts that left the
     * project are dropped. A milestone lists the members that did something in it.
     */
   def assemble(
@@ -88,7 +90,7 @@ object ContributionAssembler {
       )
     }
 
-    ContributionsDto(projectId, membersIn(_ => true, onlyActive = false), milestoneCards ++ withoutMilestone)
+    ContributionsDto(projectId, membersIn(_ => true, onlyActive = false), withoutMilestone.toList ++ milestoneCards)
   }
 
   private def memberDto(

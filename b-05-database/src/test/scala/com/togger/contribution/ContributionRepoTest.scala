@@ -238,19 +238,22 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         .transact(transactor)
     }
 
-    "list the milestones of the project by the due date of their latest version" in { transactor =>
+    "list the milestones of the project by their creation time, newest first, with the latest version of each" in { transactor =>
       (for {
         seeded <- seed()
-        later <- milestoneRepo.insert(Milestone(UUID.randomUUID(), seeded.projectId, nowAsInstant))
+        older <- milestoneRepo.insert(
+          Milestone(UUID.randomUUID(), seeded.projectId, seeded.milestone.createdAt.minusSeconds(3600))
+        )
         _ <- milestoneVersion(seeded.milestone, "Old name", MilestoneStatus.InProgress, day(30))
         _ <- milestoneVersion(seeded.milestone, "First", MilestoneStatus.Done, day(20))
-        _ <- milestoneVersion(later, "Second", MilestoneStatus.InProgress, day(25))
+        _ <- milestoneVersion(older, "Second", MilestoneStatus.InProgress, day(25))
         rows <- contributionRepo.milestoneHeaders(seeded.projectId)
         otherProject <- contributionRepo.milestoneHeaders(UUID.randomUUID())
       } yield {
+        // created later and due earlier: the creation time decides
         rows shouldBe List(
           MilestoneHeaderRow(seeded.milestone.id, "First", MilestoneStatus.Done, day(1), day(20)),
-          MilestoneHeaderRow(later.id, "Second", MilestoneStatus.InProgress, day(1), day(25))
+          MilestoneHeaderRow(older.id, "Second", MilestoneStatus.InProgress, day(1), day(25))
         )
         otherProject shouldBe empty
       }).transact(transactor)

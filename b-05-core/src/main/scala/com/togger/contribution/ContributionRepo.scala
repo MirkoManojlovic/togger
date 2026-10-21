@@ -21,7 +21,7 @@ trait ContributionRepo {
     */
   def tasksClosed(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskClosedRow]]
 
-  /** Every milestone of the project with its latest version, the one due first first. */
+  /** Every milestone of the project with its latest version, the one created last first. */
   def milestoneHeaders(projectId: UUID): ConnectionIO[List[MilestoneHeaderRow]]
 
   /** All tasks and ended tasks per milestone, ignoring the range. */

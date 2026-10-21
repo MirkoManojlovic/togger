@@ -156,7 +156,7 @@ class ContributionServiceTest
       expectReads(ContributionsFilter.empty)
 
       service.findByProjectId(projectId, ContributionsFilter.empty).unsafeToFuture().map { result =>
-        val List(alphaCard, betaCard, noMilestoneCard) = result.milestones
+        val List(noMilestoneCard, alphaCard, betaCard) = result.milestones
         alphaCard.milestoneId shouldBe Some(alpha)
         alphaCard.name shouldBe "Alpha"
         alphaCard.status shouldBe Some(MilestoneStatus.InProgress)
