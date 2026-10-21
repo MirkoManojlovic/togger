@@ -34,13 +34,31 @@ object MemberContributionViews {
       else p(cls("text-body"), "Nothing to show for this range")
     ).amend(cls(extraCls))
 
-  /** The tasks of a scope by their status, priority and label, side by side. */
-  def taskAttributeCharts(tasks: TaskAttributesDto, isDark: Signal[Boolean]): HtmlElement =
+  private def memberTaskCharts(member: MemberContributionDto, isDark: Signal[Boolean]): HtmlElement =
     div(
       cls("grid grid-cols-1 lg:grid-cols-3 gap-4"),
-      chartCard("Tasks by status", ContributionCharts.tasksByStatus(tasks), isDark),
-      chartCard("Tasks by priority", ContributionCharts.tasksByPriority(tasks), isDark),
-      chartCard("Tasks by label", ContributionCharts.tasksByLabel(tasks), isDark)
+      chartCard(s"Tasks by status: ${member.memberName}", ContributionCharts.tasksByStatus(member.tasks), isDark),
+      chartCard(s"Tasks by priority: ${member.memberName}", ContributionCharts.tasksByPriority(member.tasks), isDark),
+      chartCard(s"Tasks by label: ${member.memberName}", ContributionCharts.tasksByLabel(member.tasks), isDark)
+    )
+
+  /** The tasks of a scope by their status, priority and label, side by side, then a row of the same for each member
+    * the tasks are assigned to. The tasks of nobody are only in the first row, and a member without tasks has no row.
+    */
+  def taskAttributeCharts(
+    tasks: TaskAttributesDto,
+    members: Seq[MemberContributionDto],
+    isDark: Signal[Boolean]
+  ): HtmlElement =
+    div(
+      cls("flex flex-col gap-4"),
+      div(
+        cls("grid grid-cols-1 lg:grid-cols-3 gap-4"),
+        chartCard("Tasks by status", ContributionCharts.tasksByStatus(tasks), isDark),
+        chartCard("Tasks by priority", ContributionCharts.tasksByPriority(tasks), isDark),
+        chartCard("Tasks by label", ContributionCharts.tasksByLabel(tasks), isDark)
+      ),
+      members.filter(_.tasks.byStatus.nonEmpty).map(memberTaskCharts(_, isDark))
     )
 
   private def stat(label: String, value: String): HtmlElement =

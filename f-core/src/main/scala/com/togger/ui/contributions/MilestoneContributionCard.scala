@@ -56,7 +56,7 @@ class MilestoneContributionCard(
         chartCard("Log entries by status", ContributionCharts.entriesByStatus(milestone.members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(milestone.members), isDark)
       ),
-      taskAttributeCharts(milestone.tasks, isDark).amend(cls("mt-4")),
+      taskAttributeCharts(milestone.tasks, milestone.members, isDark).amend(cls("mt-4")),
       div(
         cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
         milestone.members.map(member =>

@@ -24,7 +24,7 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
   private def day(dayOfMonth: Int): LocalDate = LocalDate.of(2026, 10, dayOfMonth)
 
   private def member(name: String): MemberContributionDto =
-    MemberContributionDto(UUID.randomUUID(), name, List.empty, 0, 0, 0, 0, List.empty)
+    MemberContributionDto(UUID.randomUUID(), name, List.empty, 0, 0, 0, 0, List.empty, TaskAttributesDto.empty)
 
   private val ann = member("Ann Adams").copy(
     entriesByStatus = List(StatusCountDto(LogEntryStatus.InProgress, 1), StatusCountDto(LogEntryStatus.Completed, 2)),
