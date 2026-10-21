@@ -3,6 +3,8 @@ import cats.effect.{IO, Resource}
 import com.togger.account.{AccountEndpoints, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
+import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
+import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController}
 import com.togger.controllers.timebox.TimeboxController
@@ -98,6 +100,7 @@ object TgServer {
             projectController.findAllMembers,
             projectController.searchByLabels,
             accountController.searchByFirstNameLastNameEmail,
+            contributionController.findByProjectId,
             logEntryController.findByTaskId,
             logEntryController.findByProjectId,
             logEntryController.save,
@@ -196,6 +199,12 @@ class DependenciesModule(
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
   lazy val accountNameLookup = new AccountNameLookup(accountRepo, transactor)
   lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService, accountNameLookup)
+
+  lazy val contributionRepo = new ContributionRepoImpl
+  lazy val contributionService =
+    new ContributionService(contributionRepo, projectRepo, projectAccountRepo, transactor)
+  lazy val contributionEndpoints = new ContributionEndpoints(securedEndpoint)
+  lazy val contributionController = new ContributionController(contributionEndpoints, contributionService)
 
   lazy val milestoneRepo = new MilestoneRepoImpl
   lazy val milestoneVersionRepo = new MilestoneVersionRepoImpl
