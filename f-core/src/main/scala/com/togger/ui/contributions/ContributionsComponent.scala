@@ -120,18 +120,20 @@ class ContributionsComponent(
 
   private def memberTabId(member: MemberContributionDto): String = s"member-${member.memberId}"
 
-  // The general tab, the milestones, then a tab with a user icon for each member with all they contributed.
-  // The tabs of milestones are those the status filter lets through; the general and the member tabs are always there.
-  private def tabsOf(contributions: ContributionsDto, selectedStatusIds: Set[String]): Seq[TgTab] =
+  private def milestoneTabsOf(contributions: ContributionsDto, selectedStatusIds: Set[String]): Seq[TgTab] =
+    MilestoneTabFilter.visible(contributions.milestones, selectedStatusIds).map { milestone =>
+      val tabId = milestoneTabId(milestone)
+      TgTab(
+        tabId,
+        milestone.name,
+        whenSelected(tabId)(new MilestoneContributionCard(milestone, tgDateFormater, isDark).element)
+      )
+    }
+
+  // The general tab, then a tab with a user icon for each member with all they contributed.
+  private def memberTabsOf(contributions: ContributionsDto): Seq[TgTab] =
     TgTab(GeneralTabId, "General", whenSelected(GeneralTabId)(generalSection(contributions))) +:
-      (MilestoneTabFilter.visible(contributions.milestones, selectedStatusIds).map { milestone =>
-        val tabId = milestoneTabId(milestone)
-        TgTab(
-          tabId,
-          milestone.name,
-          whenSelected(tabId)(new MilestoneContributionCard(milestone, tgDateFormater, isDark).element)
-        )
-      } ++ contributions.general.map { member =>
+      contributions.general.map { member =>
         val tabId = memberTabId(member)
         TgTab(
           tabId,
@@ -146,11 +148,27 @@ class ContributionsComponent(
           ),
           icon = Some(TgIcons.userIcon)
         )
-      })
+      }
 
+  // Two rows of tabs over one place for the panels: the general and the member tabs, then under them the milestones,
+  // those the status filter lets through. Both rows share the selection, so the selection is put right here when a
+  // filter or a new range takes the selected tab away.
   private def page(contributions: ContributionsDto, selectedStatusIds: Set[String]): HtmlElement =
     if (contributions.general.isEmpty) p(cls("text-body"), "This project has no members")
-    else new TgTabs(tabsOf(contributions, selectedStatusIds), selectedTabVar).element
+    else {
+      val memberTabList = memberTabsOf(contributions)
+      val milestoneTabList = milestoneTabsOf(contributions, selectedStatusIds)
+      val memberTabs = new TgTabs(memberTabList, selectedTabVar)
+      val milestoneRow = Option.when(milestoneTabList.nonEmpty)(new TgTabs(milestoneTabList, selectedTabVar))
+      val selectableIds = (memberTabList ++ milestoneTabList).map(_.id).toSet
+      div(
+        onMountCallback(_ => if (!selectableIds.contains(selectedTabVar.now())) selectedTabVar.set(GeneralTabId)),
+        memberTabs.tabBar,
+        milestoneRow.map(row => div(div(cls("mt-3 mb-1 text-sm text-body"), "Milestones"), row.tabBar)),
+        memberTabs.panels,
+        milestoneRow.toSeq.flatMap(_.panels)
+      )
+    }
 
   val element: HtmlElement =
     div(

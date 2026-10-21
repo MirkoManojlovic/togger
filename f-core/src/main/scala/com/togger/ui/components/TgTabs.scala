@@ -55,9 +55,17 @@ class TgTabs(
   val element: HtmlDiv =
     div(
       onMountCallback(_ => selectFallbackWhenUnselectable()),
-      div(cls(barCls), tabList),
+      tabBar,
       tabPanels
     )
+
+  /** The row of tabs alone, for a page that puts the panels of several rows of tabs in one place. The caller then
+    * also keeps the selection selectable: only [[element]] does that.
+    */
+  lazy val tabBar: HtmlDiv = div(cls(barCls), tabList)
+
+  /** The panels alone, see [[tabBar]]. */
+  def panels: Seq[HtmlDiv] = tabPanels
 
   private lazy val tabButtons: Seq[HtmlButton] = tabs.map(tabButton)
 
