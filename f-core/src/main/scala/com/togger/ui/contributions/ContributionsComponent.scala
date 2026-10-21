@@ -5,6 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.{ContributionsDto, MemberContributionDto, MilestoneContributionsDto}
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages.ShowContributionsPage
 import com.togger.routes.{ContributionsParams, FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
@@ -24,6 +25,7 @@ import java.util.UUID
 class ContributionsComponent(
   contributionsService: ContributionsFeService,
   tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -97,7 +99,7 @@ class ContributionsComponent(
       TgTab(
         tabId,
         milestone.name,
-        whenSelected(tabId)(new MilestoneContributionCard(milestone, tgDateFormater, isDark).element)
+        whenSelected(tabId)(new MilestoneContributionCard(milestone, tgDateFormater, tgMarkdown, isDark).element)
       )
     }
 

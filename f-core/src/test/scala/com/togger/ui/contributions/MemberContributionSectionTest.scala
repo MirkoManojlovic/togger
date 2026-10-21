@@ -22,7 +22,18 @@ class MemberContributionSectionTest extends AnyWordSpec with Matchers {
     )
 
   private def milestone(name: String, members: List[MemberContributionDto]) =
-    MilestoneContributionsDto(Some(UUID.randomUUID()), name, None, None, None, 0, 0, members, TaskAttributesDto.empty)
+    MilestoneContributionsDto(
+      Some(UUID.randomUUID()),
+      name,
+      None,
+      None,
+      None,
+      None,
+      0,
+      0,
+      members,
+      TaskAttributesDto.empty
+    )
 
   private val ann = member("Ann Adams")
   private val bob = member("Bob Brown")

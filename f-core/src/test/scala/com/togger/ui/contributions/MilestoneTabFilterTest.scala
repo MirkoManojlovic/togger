@@ -13,6 +13,7 @@ class MilestoneTabFilterTest extends AnyWordSpec with Matchers {
     MilestoneContributionsDto(
       status.map(_ => UUID.randomUUID()),
       name,
+      None,
       status,
       None,
       None,

@@ -662,6 +662,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ContributionsComponent(
                   contributionsService,
                   tgDateFormater,
+                  tgMarkdown,
                   tgClock,
                   router,
                   spinnerService,
