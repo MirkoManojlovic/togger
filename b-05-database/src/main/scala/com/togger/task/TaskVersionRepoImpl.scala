@@ -11,7 +11,7 @@ import com.togger.dto.TaskFilter
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
-import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.{TASK_VERSION_TABLE_FRAG, latestVersionLateral}
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
 import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
 import com.togger.util.SplunkMacro.sp
@@ -41,11 +41,6 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     "created_at",
     "updated_at"
   )
-
-  // Latest task_version row per task, correlated on the outer `task` row via LATERAL.
-  private def latestVersionLateral: Fragment =
-    fr"join lateral (select * from" ++ TASK_VERSION_TABLE_FRAG ++
-      fr"where task_id = task.id order by version desc limit 1) tv on true"
 
   private def toTaskFull(
     row: (Task, TaskVersion, TaskStatus, Account, Option[Account], Option[Account])
@@ -290,4 +285,9 @@ object TaskVersionRepoImpl {
   val TASK_VERSION_TABLE_FRAG: Fragment = Fragment.const(TASK_VERSION_TABLE)
 
   implicit val taskPriorityCodec: Meta[TaskPriority] = Meta[Int].imap(TaskPriority.withValue)(_.value)
+
+  // Latest task_version row per task, correlated on the outer `task` row via LATERAL.
+  def latestVersionLateral: Fragment =
+    fr"join lateral (select * from" ++ TASK_VERSION_TABLE_FRAG ++
+      fr"where task_id = task.id order by version desc limit 1) tv on true"
 }
