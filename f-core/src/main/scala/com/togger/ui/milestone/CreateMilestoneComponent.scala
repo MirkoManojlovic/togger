@@ -6,7 +6,7 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse}
+import com.togger.common.{PageRequest, PaginatedResponse, TgClock}
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{
@@ -24,6 +24,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.project.ProjectService
+import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -43,7 +44,7 @@ class CreateMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
-  dateRangeValidation: DateRangeValidation,
+  tgClock: TgClock,
   projectService: ProjectService,
   projectId: UUID,
   val toast: Toast
@@ -57,9 +58,24 @@ class CreateMilestoneComponent(
     .runWithSpinner(
       projectService
         .findById(projectId)
-        .map(_.fold(error => println(error), success => workDaysVar.set(success.body.get.workDays.map(DayOfWeek.of))))
+        .map(_.fold(error => println(error), success => applyProjectWorkDays(success.body.get.workDays.map(DayOfWeek.of))))
     )
     .unsafeRunAndForget()
+
+  /** A new milestone starts on the next work day after next Monday and lasts the default number of work days. */
+  private def applyProjectWorkDays(workDays: Set[DayOfWeek]): Unit = {
+    workDaysVar.set(workDays)
+    val defaults = BulkTaskDefaults.of(tgClock.currentDate(), workDays, Seq.empty)
+    formState.update(_.copy(startDate = defaults.startDate.toString, dueDate = defaults.dueDate.toString))
+  }
+
+  private val dateBadges = new MilestoneDateBadges(
+    dates = formState.signal.map(form => form.startDate -> form.dueDate),
+    currentDates = () => formState.now().startDate -> formState.now().dueDate,
+    currentWorkDays = () => workDaysVar.now(),
+    onDates = (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString)),
+    tgClock = tgClock
+  )
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
 
@@ -125,41 +141,6 @@ class CreateMilestoneComponent(
     minWidthRem = 0
   )
 
-  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
-      Seq("Start date must be one of this project's configured work days")
-    else Seq.empty
-  }
-
-  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    val orderError =
-      if (
-        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
-        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
-      )
-        Seq("Due date must be on or after start date")
-      else Seq.empty
-    val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
-        Seq("Due date must be one of this project's configured work days")
-      else Seq.empty
-    orderError ++ weekendError
-  }
-
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = startDateErrors,
-    labelValue = "Start date",
-    tgInputType = TgInputType.Date
-  )
-
-  private val dueDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
-    errors = dueDateErrors,
-    labelValue = "Due date",
-    tgInputType = TgInputType.Date
-  )
-
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -170,9 +151,8 @@ class CreateMilestoneComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              dateBadges.element.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
-              startDateInput.htmlElement.amend(cls("mb-4")),
-              dueDateInput.htmlElement.amend(cls("mb-4")),
               h5(cls("text-heading mb-2"), "Additional Milestone dates"),
               addNewMilestoneDate,
               child <-- milestoneDatesVar.signal.map(dateComponents =>

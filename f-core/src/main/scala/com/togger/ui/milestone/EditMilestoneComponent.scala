@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.DateRangeValidation
+import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
@@ -38,6 +38,7 @@ class EditMilestoneComponent(
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
   dateRangeValidation: DateRangeValidation,
+  tgClock: TgClock,
   projectService: ProjectService,
   milestoneId: UUID,
   val toast: Toast
@@ -48,6 +49,14 @@ class EditMilestoneComponent(
   val milestoneDatesVar = Var(Seq.empty[EditMilestoneDateComponent])
   val newMilestoneDatesVar = Var(Seq.empty[CreateMilestoneDateComponent])
   val workDaysVar = Var(Set.empty[DayOfWeek])
+
+  private val dateBadges = new MilestoneDateBadges(
+    dates = formState.signal.map(form => form.startDate -> form.dueDate),
+    currentDates = () => formState.now().startDate -> formState.now().dueDate,
+    currentWorkDays = () => workDaysVar.now(),
+    onDates = (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString)),
+    tgClock = tgClock
+  )
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
 
@@ -173,27 +182,6 @@ class EditMilestoneComponent(
       ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.statusName))
   )
 
-  private val startDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    if (form.startDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.startDate), workDaysVar.now()))
-      Seq("Start date must be one of this project's configured work days")
-    else Seq.empty
-  }
-
-  private val dueDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    val orderError =
-      if (
-        form.startDate.nonEmpty && form.dueDate.nonEmpty &&
-        LocalDate.parse(form.dueDate).isBefore(LocalDate.parse(form.startDate))
-      )
-        Seq("Due date must be on or after start date")
-      else Seq.empty
-    val weekendError =
-      if (form.dueDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.dueDate), workDaysVar.now()))
-        Seq("Due date must be one of this project's configured work days")
-      else Seq.empty
-    orderError ++ weekendError
-  }
-
   private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
     val orderError =
       if (
@@ -208,20 +196,6 @@ class EditMilestoneComponent(
       else Seq.empty
     orderError ++ weekendError
   }
-
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = startDateErrors,
-    labelValue = "Start date",
-    tgInputType = TgInputType.Date,
-  )
-
-  private val dueDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
-    errors = dueDateErrors,
-    labelValue = "Due date",
-    tgInputType = TgInputType.Date,
-  )
 
   private val endDateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
@@ -243,10 +217,9 @@ class EditMilestoneComponent(
                 (formState.now(), milestoneDatesVar.now(), newMilestoneDatesVar.now())
               ) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              dateBadges.element.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               statusSelect.htmlElement.amend(cls("mb-4")),
-              startDateInput.htmlElement.amend(cls("mb-4")),
-              dueDateInput.htmlElement.amend(cls("mb-4")),
               endDateInput.htmlElement.amend(cls("mb-4")),
               addNewMilestoneDate,
               h5(cls("text-heading mb-2"), "Additional Milestone dates"),
