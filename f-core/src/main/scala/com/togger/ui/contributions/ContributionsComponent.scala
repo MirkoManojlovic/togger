@@ -11,7 +11,6 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{TableFilterComponent, TgTab, TgTabs}
 import com.togger.ui.contributions.ContributionsComponent.GeneralTabId
-import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles, taskAttributeCharts}
 import com.togger.ui.milestone.{DateFilterComponent, DateFilterMode}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -79,36 +78,8 @@ class ContributionsComponent(
     selectedIdsVar = Var(MilestoneTabFilter.DefaultIds)
   )
 
-  private def generalSection(contributions: ContributionsDto): HtmlElement = {
-    val members = contributions.general
-    div(
-      memberTiles(members).amend(cls("mb-4")),
-      div(
-        cls("grid grid-cols-1 lg:grid-cols-2 gap-4"),
-        chartCard("Log entries by status", ContributionCharts.entriesByStatus(members), isDark),
-        chartCard("Share of the work", ContributionCharts.teamShare(members), isDark),
-        chartCard(
-          "Log entries per day",
-          ContributionCharts.dailyTrend(members, tgDateFormater.asEuropeanDate),
-          isDark,
-          extraCls = "lg:col-span-2"
-        ),
-        chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(members), isDark),
-        chartCard("Active days", ContributionCharts.activeDays(members), isDark)
-      ),
-      taskAttributeCharts(contributions.generalTasks, members, isDark).amend(cls("mt-4")),
-      div(
-        cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
-        members.map(member =>
-          chartCard(
-            s"Log entries per day: ${member.memberName}",
-            ContributionCharts.dailyTrend(Seq(member), tgDateFormater.asEuropeanDate, ContributionCharts.ChartHeight),
-            isDark
-          )
-        )
-      )
-    )
-  }
+  private def generalSection(contributions: ContributionsDto): HtmlElement =
+    ScopeCharts.forTeam(contributions.general, contributions.generalTasks, isDark, tgDateFormater.asEuropeanDate)
 
   private def milestoneTabId(milestone: MilestoneContributionsDto): String =
     milestone.milestoneId.fold("no-milestone")(id => s"milestone-$id")
@@ -141,6 +112,7 @@ class ContributionsComponent(
           whenSelected(tabId)(
             new MemberContributionSection(
               member,
+              contributions.general,
               MemberContributionSection.milestonesOf(contributions, member.memberId),
               tgDateFormater,
               isDark
