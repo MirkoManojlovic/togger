@@ -28,20 +28,40 @@ class DefaultTaskTemplateService(tgClock: TgClock) {
 object DefaultTaskTemplateService {
 
   val featureBody: String =
-    """## Feature description
+    """**Summary**  
+      |Upgrade Node runtime to 22.x on staging
       |
-      |What should be possible after this task is done, and why.
+      |**Description**  
+      |A detailed description of the task, including the context, requirements and constraints needed to complete it.
       |
-      |## Feature scope
+      |**Outcome**  
+      |Staging environment runs Node 22 with no test regressions.
       |
-      |- What is included
-      |- What is not included
+      |**In scope**  
+      |-  Update the Dockerfile
+      |-  Refresh the lockfile
+      |- Run the full test suite
+      |- Update the CI base image
       |
-      |## Definition of done
+      |**Out of scope**  
+      |- Production rollout (tracked separately) 
       |
-      |- [ ] Implemented
-      |- [ ] Tested
-      |- [ ] Documented
+      |**Dependencies**  
+      |- SRE approval for the staging window
+      |- Lockfile audit completed
+      |- CI base image published
+      |
+      |**Exit criteria**
+      |- All tests pass
+      |- CI green for 24 hours
+      |- Sign-off from SRE
+      |
+      |---
+      |**Steps**
+      |
+      |- [ ] Step 1
+      |- [ ] Step 2
+      |- [ ] Step 3
       |""".stripMargin
 
   val bugBody: String =

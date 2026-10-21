@@ -31,7 +31,7 @@ class DefaultTaskTemplateServiceTest extends AnyWordSpec with Matchers {
 
       created should have size 2
       byLabel.keySet shouldBe Set(feature.id, bug.id)
-      byLabel(feature.id)._2.body should include("Definition of done")
+      byLabel(feature.id)._2.body should include("Exit criteria")
       byLabel(bug.id)._2.body should include("Steps to reproduce")
     }
 
