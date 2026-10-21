@@ -22,15 +22,15 @@ class DefaultTaskTemplateServiceTest extends AnyWordSpec with Matchers {
 
   "DefaultTaskTemplateService" should {
 
-    "create a template for the feature and the bug labels only, linked to them" in {
+    "create a template for every default label, linked to it" in {
       val created = service.createDefaultTaskTemplates(projectId, accountId, labels)
 
       val byLabel = created.map { case (template, version) => template.taskLabelId.get -> (template, version) }.toMap
       val feature = labels.find(_.name == DefaultTaskLabel.Feature.labelName).get
       val bug = labels.find(_.name == DefaultTaskLabel.Bug.labelName).get
 
-      created should have size 2
-      byLabel.keySet shouldBe Set(feature.id, bug.id)
+      created should have size DefaultTaskLabel.values.size
+      byLabel.keySet shouldBe labels.map(_.id).toSet
       byLabel(feature.id)._2.body should include("Exit criteria")
       byLabel(bug.id)._2.body should include("Steps to reproduce")
     }
@@ -44,7 +44,8 @@ class DefaultTaskTemplateServiceTest extends AnyWordSpec with Matchers {
     }
 
     "create nothing for labels without a default template" in {
-      service.createDefaultTaskTemplates(projectId, accountId, labels.filter(_.name.contains("docs"))) shouldBe empty
+      val custom = TaskLabel(UUID.randomUUID(), projectId, "custom", "Custom label", now, now)
+      service.createDefaultTaskTemplates(projectId, accountId, Seq(custom)) shouldBe empty
     }
   }
 }
