@@ -80,6 +80,16 @@ class ContributionsComponent(
         ),
         chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(members), isDark)
+      ),
+      div(
+        cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
+        members.map(member =>
+          chartCard(
+            s"Log entries per day: ${member.memberName}",
+            ContributionCharts.dailyTrend(Seq(member), tgDateFormater.asEuropeanDate, ContributionCharts.ChartHeight),
+            isDark
+          )
+        )
       )
     )
   }

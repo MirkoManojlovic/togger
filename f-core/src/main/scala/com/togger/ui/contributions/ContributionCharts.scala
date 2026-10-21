@@ -80,7 +80,11 @@ object ContributionCharts {
   /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without
     * a status is a zero.
     */
-  def dailyTrend(members: Seq[MemberContributionDto], formatDate: LocalDate => String): ApexChartOptions = {
+  def dailyTrend(
+    members: Seq[MemberContributionDto],
+    formatDate: LocalDate => String,
+    height: Int = LargeChartHeight
+  ): ApexChartOptions = {
     val entries = members.flatMap(_.dailyEntries)
     val days = entries.map(_.date).distinct.sorted
     val statuses = entries.map(_.status).distinct.sortBy(_.value)
@@ -88,7 +92,7 @@ object ContributionCharts {
     withColors(
       ApexChartOptions(
         chartType = ApexChartType.Column,
-        height = LargeChartHeight,
+        height = height,
         series = ApexSeries.Axis(
           statuses.map(status =>
             ApexNamedSeries(status.label, days.map(day => countsByDayAndStatus.getOrElse((day, status), 0)))

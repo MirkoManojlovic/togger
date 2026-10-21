@@ -101,6 +101,15 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
       options.lightColors shouldBe Some(Seq(ChartColor.Blue.light, ChartColor.Red.light, ChartColor.Green.light))
     }
 
+    "make a chart of the entries of one member of a given height" in {
+      val options = ContributionCharts.dailyTrend(Seq(ann), _.toString, ContributionCharts.ChartHeight)
+      options.height shouldBe ContributionCharts.ChartHeight
+      axisOf(options.series) shouldBe ApexSeries.Axis(
+        Seq(ApexNamedSeries("In progress", Seq(0, 1)), ApexNamedSeries("Completed", Seq(2, 0))),
+        Seq("2026-10-13", "2026-10-15")
+      )
+    }
+
     "write the days with the given format" in {
       val options = ContributionCharts.dailyTrend(Seq(bob), date => s"${date.getDayOfMonth}.${date.getMonthValue}.")
       axisOf(options.series).categories shouldBe Seq("14.10.")
