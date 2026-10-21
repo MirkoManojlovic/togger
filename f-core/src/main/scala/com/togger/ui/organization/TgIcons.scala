@@ -395,6 +395,38 @@ object TgIcons {
       )
     )
 
+  def arrowLeftIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("M19 12H5m0 0 6 6m-6-6 6-6")
+      )
+    )
+
+  def arrowRightIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeLineCap("round"),
+        svg.strokeLineJoin("round"),
+        svg.strokeWidth("2"),
+        svg.d("M5 12h14m0 0-6-6m6 6-6 6")
+      )
+    )
+
   def chevronDoubleRightIcon(className: String) =
     svg.svg(
       svg.className(className),

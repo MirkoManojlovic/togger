@@ -5,7 +5,10 @@ import com.raquo.laminar.nodes.ReactiveSvgElement
 import com.raquo.laminar.tags.HtmlTag
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.organization.TgIcons
+import org.scalajs.dom
 import org.scalajs.dom.{HTMLElement, SVGSVGElement}
+
+import scala.scalajs.js
 
 /** One crumb. `page = None` renders plain text (a level with no page of its own).
   *
@@ -49,6 +52,29 @@ class TgBreadcrumbs(
   private val currentCls = "inline-flex items-center text-sm font-medium text-body-subtle"
   private val separatorCls = "w-3.5 h-3.5 rtl:rotate-180 text-body"
   private val iconCls = "w-4 h-4 me-1.5"
+  private val historyButtonCls = "inline-flex items-center text-body enabled:hover:text-fg-brand enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+
+  // The Navigation API is the only way to know if history has entries; where it is missing both buttons stay enabled.
+  private val canGoBack = Var(true)
+  private val canGoForward = Var(true)
+
+  private val navigation: Option[js.Dynamic] =
+    Option(dom.window.asInstanceOf[js.Dynamic].selectDynamic("navigation")).filterNot(js.isUndefined)
+
+  private val onHistoryChange: js.Function1[dom.Event, Unit] = _ => refreshHistoryState()
+
+  private def refreshHistoryState(): Unit = navigation.foreach { nav =>
+    canGoBack.set(nav.selectDynamic("canGoBack").asInstanceOf[Boolean])
+    canGoForward.set(nav.selectDynamic("canGoForward").asInstanceOf[Boolean])
+  }
+
+  private def listenToHistory(): Unit = navigation.foreach { nav =>
+    nav.addEventListener("currententrychange", onHistoryChange): Unit
+    refreshHistoryState()
+  }
+
+  private def stopListeningToHistory(): Unit =
+    navigation.foreach(_.removeEventListener("currententrychange", onHistoryChange): Unit)
 
   private val navTag = new HtmlTag[HTMLElement]("nav")
 
@@ -57,7 +83,34 @@ class TgBreadcrumbs(
       cls("flex"),
       cls.toggle(solidCls) := variant == TgBreadcrumbVariant.Solid,
       aria.label("Breadcrumb"),
+      onMountUnmountCallback(_ => listenToHistory(), _ => stopListeningToHistory()),
+      div(
+        cls("inline-flex items-center space-x-1 me-3"),
+        historyButton("Back", TgIcons.arrowLeftIcon(iconCls), canGoBack.signal, () => dom.window.history.back()),
+        historyButton(
+          "Forward",
+          TgIcons.arrowRightIcon(iconCls),
+          canGoForward.signal,
+          () => dom.window.history.forward()
+        )
+      ),
       ol(cls(listCls), items.zipWithIndex.map { case (item, index) => crumb(item, index) })
+    )
+
+  private def historyButton(
+    label: String,
+    icon: ReactiveSvgElement[SVGSVGElement],
+    enabled: Signal[Boolean],
+    action: () => Unit
+  ): HtmlElement =
+    button(
+      typ("button"),
+      disabled <-- enabled.map(!_),
+      cls(historyButtonCls),
+      aria.label(label),
+      title(label),
+      icon,
+      onClick --> Observer[Any](_ => action())
     )
 
   private def crumb(item: TgBreadcrumb, index: Int): HtmlElement = {
