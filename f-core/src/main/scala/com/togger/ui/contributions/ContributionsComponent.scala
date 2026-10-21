@@ -4,12 +4,14 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.ContributionsDto
+import com.togger.dto.{ContributionsDto, MilestoneContributionsDto}
 import com.togger.routes.Pages.ShowContributionsPage
 import com.togger.routes.{ContributionsParams, FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.contributions.MemberContributionViews.{card, chartCard, memberTiles}
+import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.contributions.ContributionsComponent.GeneralTabId
+import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles}
 import com.togger.ui.milestone.{DateFilterComponent, DateFilterMode}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TgDateFormater
@@ -35,6 +37,7 @@ class ContributionsComponent(
 
   private val contributionsVar = Var(Option.empty[ContributionsDto])
   private val paramsVar = Var(params)
+  private val selectedTabVar = Var(ContributionsComponent.GeneralTabId)
 
   private def load(current: ContributionsParams): IO[Unit] =
     contributionsService
@@ -94,22 +97,28 @@ class ContributionsComponent(
     )
   }
 
-  private def milestonesSection(contributions: ContributionsDto): HtmlElement =
-    div(
-      cls("flex flex-col gap-4"),
-      contributions.milestones.map(milestone =>
-        new MilestoneContributionCard(milestone, tgDateFormater, isDark).element
-      )
-    )
+  private def milestoneTabId(milestone: MilestoneContributionsDto): String =
+    milestone.milestoneId.fold("no-milestone")(id => s"milestone-$id")
+
+  // A tab's charts are built when the tab is opened, not with the page: ApexCharts measures its box on mount, which
+  // a hidden panel does not have, and a project with many milestones would draw every chart before any is seen.
+  private def whenSelected(tabId: String)(build: => HtmlElement): HtmlElement =
+    div(child <-- selectedTabVar.signal.map(selected => if (selected == tabId) build else emptyNode))
+
+  private def tabsOf(contributions: ContributionsDto): Seq[TgTab] =
+    TgTab(GeneralTabId, "General", whenSelected(GeneralTabId)(generalSection(contributions))) +:
+      contributions.milestones.map { milestone =>
+        val tabId = milestoneTabId(milestone)
+        TgTab(
+          tabId,
+          milestone.name,
+          whenSelected(tabId)(new MilestoneContributionCard(milestone, tgDateFormater, isDark).element)
+        )
+      }
 
   private def page(contributions: ContributionsDto): HtmlElement =
     if (contributions.general.isEmpty) p(cls("text-body"), "This project has no members")
-    else
-      div(
-        cls("flex flex-col gap-4"),
-        card("General", generalSection(contributions)),
-        if (contributions.milestones.isEmpty) emptyNode else milestonesSection(contributions)
-      )
+    else new TgTabs(tabsOf(contributions), selectedTabVar).element
 
   val element: HtmlElement =
     div(
@@ -125,4 +134,8 @@ class ContributionsComponent(
       ),
       child <-- contributionsVar.signal.map(_.fold[HtmlElement](div())(page))
     )
+}
+
+object ContributionsComponent {
+  val GeneralTabId = "general"
 }
