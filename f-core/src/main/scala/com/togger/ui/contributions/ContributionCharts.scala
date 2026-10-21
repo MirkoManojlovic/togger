@@ -52,19 +52,18 @@ object ContributionCharts {
       series.map(_._2)
     )
 
-  /** A column per member, stacked by the status of the log entries, with every status that someone has used. */
+  /** A slice per status that someone has used, as big as the number of log entries with that status. */
   def entriesByStatus(members: Seq[MemberContributionDto]): ApexChartOptions = {
-    val statuses = members.flatMap(_.entriesByStatus.map(_.status)).distinct.sortBy(_.value)
-    columns(
-      members,
-      statuses.map(status =>
-        (
-          status.label,
-          status.chartColor,
-          (member: MemberContributionDto) => member.entriesByStatus.find(_.status == status).map(_.count).getOrElse(0)
-        )
-      ),
-      stacked = true
+    val countsByStatus = members.flatMap(_.entriesByStatus).groupMapReduce(_.status)(_.count)(_ + _)
+    val statuses = countsByStatus.keys.toSeq.sortBy(_.value)
+    ApexChartOptions(
+      chartType = ApexChartType.Pie,
+      height = ChartHeight,
+      series = ApexSeries.Slices(statuses.map(countsByStatus), statuses.map(_.label)),
+      colors = Some(statuses.map(_.chartColor.dark)),
+      lightColors = Some(statuses.map(_.chartColor.light)),
+      legendPosition = Some(ApexLegendPosition.Bottom),
+      nameInDataLabels = true
     )
   }
 

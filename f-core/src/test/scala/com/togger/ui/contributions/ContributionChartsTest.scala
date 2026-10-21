@@ -42,18 +42,10 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
 
   "ContributionCharts.entriesByStatus" should {
 
-    "stack a column per member by the statuses in use, in the order of their values" in {
-      val options = ContributionCharts.entriesByStatus(everyone)
-      options.chartType shouldBe ApexChartType.Column
-      options.stacked shouldBe true
-      axisOf(options.series) shouldBe ApexSeries.Axis(
-        Seq(
-          ApexNamedSeries("In progress", Seq(1, 0, 0)),
-          ApexNamedSeries("Blocked", Seq(0, 4, 0)),
-          ApexNamedSeries("Completed", Seq(2, 0, 0))
-        ),
-        Seq("Ann Adams", "Bob Brown", "Cy Clark")
-      )
+    "make a pie slice per status in use, summed over the members, in the order of the status values" in {
+      val options = ContributionCharts.entriesByStatus(everyone :+ ann)
+      options.chartType shouldBe ApexChartType.Pie
+      options.series shouldBe ApexSeries.Slices(Seq(2, 4, 4), Seq("In progress", "Blocked", "Completed"))
     }
 
     "color a status by its chart color, in both themes" in {
@@ -62,8 +54,8 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
       options.lightColors shouldBe Some(Seq(ChartColor.Blue.light, ChartColor.Red.light, ChartColor.Green.light))
     }
 
-    "have no series for no members" in {
-      axisOf(ContributionCharts.entriesByStatus(Seq.empty).series) shouldBe ApexSeries.Axis(Seq.empty, Seq.empty)
+    "have no slices for no members" in {
+      ContributionCharts.entriesByStatus(Seq.empty).series shouldBe ApexSeries.Slices(Seq.empty, Seq.empty)
     }
   }
 
