@@ -1363,3 +1363,106 @@ databaseChangeLog:
                   name: project_id_dump
               - column:
                   name: project_id_db
+  - changeSet:
+      id: 6
+      author: mirko
+      labels: task-template
+      comment: >
+        Task templates: a project-scoped starting text for the description of a new task, optionally linked to one
+        task label (at most one template per label), with an append-only history of versions
+      changes:
+        - createTable:
+            tableName: task_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_task_template
+                    references: project(id)
+              - column:
+                  name: task_label_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_task_template_task_label
+            baseTableName: task_template
+            baseColumnNames: task_label_id
+            referencedTableName: task_label
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createTable:
+            tableName: task_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_template_version_task_template
+                    references: task_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              create unique index uq_task_template_task_label_id on task_template (task_label_id)
+              where task_label_id is not null
+        - createIndex:
+            indexName: idx_task_template_project_id
+            tableName: task_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_task_template_version_task_template_id_version
+            tableName: task_template_version
+            columns:
+              - column:
+                  name: task_template_id
+              - column:
+                  name: version
+                  descending: true

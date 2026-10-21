@@ -5,7 +5,12 @@ import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
 import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.controllers.organization.OrganizationService
-import com.togger.controllers.project.{DefaultTaskLabelService, DefaultTaskStatusService, ProjectService}
+import com.togger.controllers.project.{
+  DefaultTaskLabelService,
+  DefaultTaskStatusService,
+  DefaultTaskTemplateService,
+  ProjectService
+}
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
 import com.togger.login.SessionTokenFactoryImpl
 import com.togger.milestone.{MilestoneRepoImpl, MilestoneService, MilestoneVersionRepoImpl}
@@ -13,6 +18,7 @@ import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImp
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
 import doobie.Transactor
 
 import java.time.Instant
@@ -65,6 +71,9 @@ trait SeedAppModule {
   protected val milestoneVersionRepo = new MilestoneVersionRepoImpl
   protected val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
   protected val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
+  protected val taskTemplateRepo = new TaskTemplateRepoImpl
+  protected val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
+  protected val defaultTaskTemplateService = new DefaultTaskTemplateService(tgClock)
 
   protected val organizationService =
     new OrganizationService(
@@ -84,6 +93,9 @@ trait SeedAppModule {
       tgClock = tgClock,
       defaultTaskStatusService = defaultTaskStatusService,
       defaultTaskLabelService = defaultTaskLabelService,
+      taskTemplateRepo = taskTemplateRepo,
+      taskTemplateVersionRepo = taskTemplateVersionRepo,
+      defaultTaskTemplateService = defaultTaskTemplateService,
       transactor = xa
     )
 

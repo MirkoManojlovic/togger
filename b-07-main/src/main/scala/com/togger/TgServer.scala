@@ -11,6 +11,7 @@ import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
   DefaultTaskLabelService,
+  DefaultTaskTemplateService,
   DefaultTaskStatusService,
   ProjectController,
   ProjectService,
@@ -18,7 +19,13 @@ import com.togger.controllers.project.{
 }
 import com.togger.controllers.accountmapping.AccountMappingController
 import com.togger.controllers.projectmapping.ProjectMappingController
-import com.togger.controllers.task.{LinkController, TaskController, TaskLabelController, TaskStatusController}
+import com.togger.controllers.task.{
+  LinkController,
+  TaskController,
+  TaskLabelController,
+  TaskStatusController,
+  TaskTemplateController
+}
 import com.togger.controllers.taskdumpconfig.TaskDumpConfigController
 import com.togger.controllers.taskloadconfig.TaskLoadConfigController
 import com.togger.controllers.projectlabel.{ProjectLabelCategoryController, ProjectLabelController}
@@ -35,6 +42,7 @@ import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImp
 import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
 import com.togger.taskdumpconfig.{TaskDumpConfigEndpoints, TaskDumpConfigRepoImpl, TaskDumpConfigService}
 import com.togger.taskloadconfig.{TaskLoadConfigEndpoints, TaskLoadConfigRepoImpl, TaskLoadConfigService}
 import com.togger.projectlabel.{
@@ -147,6 +155,13 @@ object TgServer {
             taskLabelController.save,
             taskLabelController.update,
             taskLabelController.delete,
+            taskTemplateController.save,
+            taskTemplateController.findById,
+            taskTemplateController.update,
+            taskTemplateController.findByProjectId,
+            taskTemplateController.findByLabel,
+            taskTemplateController.listVersions,
+            taskTemplateController.delete,
             taskDumpController.dumpTasks,
             taskDumpController.checkStatus,
             taskDumpController.dumpByConfig,
@@ -264,6 +279,7 @@ class DependenciesModule(
   lazy val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
   lazy val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
   lazy val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
+  lazy val defaultTaskTemplateService = new DefaultTaskTemplateService(tgClock)
   lazy val projectService =
     new ProjectService(
       projectRepo,
@@ -274,6 +290,9 @@ class DependenciesModule(
       tgClock,
       defaultTaskStatusService,
       defaultTaskLabelService,
+      taskTemplateRepo,
+      taskTemplateVersionRepo,
+      defaultTaskTemplateService,
       transactor
     )
   lazy val projectController = new ProjectController(projectEndpoints, projectService, tgClock)
@@ -313,6 +332,13 @@ class DependenciesModule(
   lazy val taskLabelService = new TaskLabelService(taskLabelRepo, tgClock, transactor)
   lazy val taskLabelEndpoints = new TaskLabelEndpoints(securedEndpoint)
   lazy val taskLabelController = new TaskLabelController(taskLabelService, taskLabelEndpoints, tgClock)
+
+  lazy val taskTemplateRepo = new TaskTemplateRepoImpl
+  lazy val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
+  lazy val taskTemplateService =
+    new TaskTemplateService(taskTemplateRepo, taskTemplateVersionRepo, taskLabelRepo, transactor)
+  lazy val taskTemplateEndpoints = new TaskTemplateEndpoints(securedEndpoint)
+  lazy val taskTemplateController = new TaskTemplateController(taskTemplateService, taskTemplateEndpoints, tgClock)
 
   lazy val taskDumpDiskOps = new DiskOps
   lazy val taskDumpRepo =

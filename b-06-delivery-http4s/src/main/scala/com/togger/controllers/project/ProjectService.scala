@@ -13,6 +13,7 @@ import com.togger.project.{
   ProjectLabelAssignmentRepo
 }
 import com.togger.task.{TaskLabelRepo, TaskStatusRepo}
+import com.togger.tasktemplate.{TaskTemplateRepo, TaskTemplateVersionRepo}
 import com.togger.projectlabel.ProjectLabel
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
@@ -29,6 +30,9 @@ class ProjectService(
   tgClock: TgClock,
   defaultTaskStatusService: DefaultTaskStatusService,
   defaultTaskLabelService: DefaultTaskLabelService,
+  taskTemplateRepo: TaskTemplateRepo,
+  taskTemplateVersionRepo: TaskTemplateVersionRepo,
+  defaultTaskTemplateService: DefaultTaskTemplateService,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
@@ -53,7 +57,15 @@ class ProjectService(
       members <- findMembersLocal(savedProject.id)
       _ <- addProjectLabels(savedProject, projectLabelIds)
       _ <- defaultTaskStatusService.createDefaultTaskStatuses(savedProject.id).map(taskStatusRepo.insert).sequence
-      _ <- defaultTaskLabelService.createDefaultTaskLabels(savedProject.id).map(taskLabelRepo.insert).sequence
+      savedLabels <- defaultTaskLabelService.createDefaultTaskLabels(savedProject.id).map(taskLabelRepo.insert).sequence
+      _ <- defaultTaskTemplateService
+        .createDefaultTaskTemplates(savedProject.id, accountId, savedLabels)
+        .map { case (template, version) =>
+          taskTemplateRepo
+            .insert(template)
+            .flatMap(saved => taskTemplateVersionRepo.insert(version.copy(taskTemplateId = saved.id)))
+        }
+        .sequence
     } yield savedProject -> members).transact(transactor)
   }
 
