@@ -16,6 +16,7 @@ import com.togger.ui.auth._
 import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.milestone._
+import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore}
@@ -178,6 +179,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
+  lazy val contributionsService = new ContributionsFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
   lazy val dateRangeValidation = new DateRangeValidation
 
@@ -655,6 +657,18 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   themeStore.isDark,
                   projectId,
                   timeboxId
+                ).element
+              case ShowContributionsPage(projectId: UUID, params) =>
+                new ContributionsComponent(
+                  contributionsService,
+                  tgDateFormater,
+                  tgClock,
+                  router,
+                  spinnerService,
+                  themeStore.isDark,
+                  projectId,
+                  params,
+                  toast
                 ).element
               case NotFoundPage(url) => div(p(s"Oops page $url not found!"))
             }

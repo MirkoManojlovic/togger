@@ -350,6 +350,7 @@ object Sidebar {
     case EditTimeboxPage(projectId, _)       => Some(projectId)
     case TimeboxHistoryPage(projectId, _)    => Some(projectId)
     case TimeboxReviewPage(projectId, _)     => Some(projectId)
+    case ShowContributionsPage(projectId, _) => Some(projectId)
     case EditProjectPage(id)                 => Some(id)
     case _                                   => None
   }

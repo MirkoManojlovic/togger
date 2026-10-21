@@ -423,6 +423,13 @@ class ShowAllTasksComponent(
                   headerIconButtonCls,
                   "mr-2",
                   router.navigateTo(ShowTimeboxesPage(projectId))
+                ),
+                iconButton(
+                  "Contributions",
+                  TgIcons.userGroupIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowContributionsPage(projectId))
                 )
               )
             ),

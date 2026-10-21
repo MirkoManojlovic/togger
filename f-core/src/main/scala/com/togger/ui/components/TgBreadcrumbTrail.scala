@@ -95,6 +95,7 @@ object TgBreadcrumbTrail {
     case EditTimeboxPage(projectId, _)       => underTimeboxes(projectId, "Save new timebox version")
     case TimeboxHistoryPage(projectId, _)    => underTimeboxes(projectId, "Timebox history")
     case TimeboxReviewPage(projectId, _)     => underTimeboxes(projectId, "Timebox review")
+    case ShowContributionsPage(projectId, _) => underTasks(projectId, current("Contributions"))
     case ShowMilestonesPage(projectId, _)    => underTasks(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId, _) => underMilestones(projectId, "Milestone history")
     case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")

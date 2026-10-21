@@ -24,6 +24,11 @@ class TgBreadcrumbTrailTest extends AsyncJsWordSpec {
       TgBreadcrumbTrail.forPage(ShowAllTasksPage(projectId)).map(_.label) shouldBe Seq("Organizations", "Tasks")
     }
 
+    "put the contributions under the project's tasks" in { _ =>
+      TgBreadcrumbTrail.forPage(ShowContributionsPage(projectId)).map(_.label) shouldBe
+        Seq("Organizations", "Tasks", "Contributions")
+    }
+
   }
 
 }

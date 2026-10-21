@@ -21,6 +21,8 @@ class TgRoutes {
 
   private type MilestoneListQuery = (Option[String], Option[String], List[String], Option[String])
 
+  private type ContributionsQuery = (Option[String], Option[String])
+
   private type MilestoneHistoryQuery =
     (
       Option[String],
@@ -373,6 +375,21 @@ class TgRoutes {
         decode = { (ids: (String, String)) => TimeboxReviewPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
         pattern =
           root / "timebox-review" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
+      ),
+      Route.withQuery[ShowContributionsPage, String, ContributionsQuery](
+        encode = (page: ShowContributionsPage) =>
+          PatternArgs(
+            path = page.projectId.toString,
+            params =
+              (ContributionsParams.dateToQuery(page.params.from), ContributionsParams.dateToQuery(page.params.to))
+          ),
+        decode = { (args: PatternArgs[String, ContributionsQuery]) =>
+          val (from, to) = args.params
+          ShowContributionsPage(UUID.fromString(args.path), ContributionsParams.fromQuery(from, to))
+        },
+        pattern = (root / "contributions" / segment[String] / endOfSegments) ? (
+          param[String]("from").? & param[String]("to").?
+        )
       )
     )
 

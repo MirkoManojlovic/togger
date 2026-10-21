@@ -125,5 +125,8 @@ object Pages {
 
   case class TimeboxReviewPage(projectId: UUID, timeboxId: UUID) extends PrivatePage
 
+  case class ShowContributionsPage(projectId: UUID, params: ContributionsParams = ContributionsParams.default)
+      extends PrivatePage
+
   case object HomePage extends PrivatePage
 }
