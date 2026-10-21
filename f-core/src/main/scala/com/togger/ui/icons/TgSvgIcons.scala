@@ -11,13 +11,6 @@ object TgSvgIcons {
       svg.width("24"),
       svg.height("24"),
       svg.viewBox("0 0 600 600"),
-      svg.rect(
-        svg.x("0"),
-        svg.y("0"),
-        svg.width("600"),
-        svg.height("600"),
-        svg.fill("#ffffff")
-      ),
       svg.g(
         svg.strokeLineCap("round"),
         svg.transform("translate(0 0) rotate(0 300 300)"),
@@ -112,13 +105,6 @@ object TgSvgIcons {
       svg.width("250"),
       svg.height("250"),
       svg.viewBox("0 0 600 600"),
-      svg.rect(
-        svg.x("0"),
-        svg.y("0"),
-        svg.width("600"),
-        svg.height("600"),
-        svg.fill("#ffffff")
-      ),
       svg.g(
         svg.strokeLineCap("round"),
         svg.transform("translate(0 0) rotate(0 300 300)"),
