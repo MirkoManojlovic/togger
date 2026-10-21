@@ -194,7 +194,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         innerJoin(fr"account as a1")(fr"task.created_by = a1.id") ++
         leftJoin(fr"account as a2")(fr"tv.assigned_to = a2.id") ++
         leftJoin(fr"account as a3")(fr"tv.closed_by = a3.id") ++
-        fr"where task.project_id = $projectId" ++ PaginationSql.orderBy(fr"tv.updated_at desc", fr"task.id"))
+        fr"where task.project_id = $projectId" ++ PaginationSql.orderBy(fr"task.created_at desc", fr"task.id"))
         .query[(Task, TaskVersion, TaskStatus, Account, Option[Account], Option[Account])]
         .map(toTaskFull)
         .to[List]
@@ -219,14 +219,14 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     )
 
   // The limit applies to task ids, so the joins below can't multiply or cut the rows of a page. Order is total: the
-  // latest version's update time, then the task id.
+  // task creation time, then the task id.
   private def findPageWithLatest(
     projectId: UUID,
     filter: TaskFilter,
     page: DbPageRequest
   ): ConnectionIO[List[TaskFull]] =
-    (fr"with page_ids as (select task.id as id, tv.updated_at as sort_key" ++ filteredTasks(projectId, filter) ++
-      PaginationSql.orderBy(fr"tv.updated_at desc", fr"task.id") ++ PaginationSql.limitOffset(page) ++ fr")" ++
+    (fr"with page_ids as (select task.id as id, task.created_at as sort_key" ++ filteredTasks(projectId, filter) ++
+      PaginationSql.orderBy(fr"task.created_at desc", fr"task.id") ++ PaginationSql.limitOffset(page) ++ fr")" ++
       fr"select task.*, tv.*, task_status.*, a1.*, a2.*, a3.* from page_ids" ++
       innerJoin(TASK_TABLE_FRAG)(fr"task.id = page_ids.id") ++
       latestVersionLateral ++
