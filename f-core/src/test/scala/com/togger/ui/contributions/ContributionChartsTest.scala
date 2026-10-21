@@ -77,9 +77,11 @@ class ContributionChartsTest extends AnyWordSpec with Matchers {
 
   "ContributionCharts.dailyTrend" should {
 
-    "make a line per member that worked over every day anyone worked, with zero for a quiet day" in {
+    "stack a column per day anyone worked by the members that worked, with zero for a quiet day" in {
       val options = ContributionCharts.dailyTrend(everyone, _.toString)
-      options.chartType shouldBe ApexChartType.Area
+      options.chartType shouldBe ApexChartType.Column
+      options.stacked shouldBe true
+      options.height shouldBe ContributionCharts.LargeChartHeight
       axisOf(options.series) shouldBe ApexSeries.Axis(
         Seq(ApexNamedSeries("Ann Adams", Seq(2, 0, 1)), ApexNamedSeries("Bob Brown", Seq(0, 4, 0))),
         Seq("2026-10-13", "2026-10-14", "2026-10-15")

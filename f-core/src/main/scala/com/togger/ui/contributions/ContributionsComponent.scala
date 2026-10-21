@@ -75,7 +75,8 @@ class ContributionsComponent(
         chartCard(
           "Log entries per day",
           ContributionCharts.dailyTrend(members, tgDateFormater.asEuropeanDate),
-          isDark
+          isDark,
+          extraCls = "lg:col-span-2"
         ),
         chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(members), isDark)

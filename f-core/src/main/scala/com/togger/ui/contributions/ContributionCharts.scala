@@ -2,14 +2,7 @@ package com.togger.ui.contributions
 
 import com.togger.chart.ChartColor
 import com.togger.dto.MemberContributionDto
-import com.togger.ui.apexchart.{
-  ApexChartOptions,
-  ApexChartType,
-  ApexLegendPosition,
-  ApexNamedSeries,
-  ApexSeries,
-  ApexStroke
-}
+import com.togger.ui.apexchart.{ApexChartOptions, ApexChartType, ApexLegendPosition, ApexNamedSeries, ApexSeries}
 import com.togger.ui.timebox.StagedCharts
 
 import java.time.LocalDate
@@ -20,6 +13,9 @@ import java.time.LocalDate
 object ContributionCharts {
 
   val ChartHeight = 320
+
+  /** For a chart that has a whole row to itself. */
+  val LargeChartHeight = 480
 
   /** Whether there is anything to draw: a chart of only zeros is an empty page, not a chart. */
   def hasData(options: ApexChartOptions): Boolean = options.series match {
@@ -81,14 +77,14 @@ object ContributionCharts {
     )
   }
 
-  /** A line per member that worked, of the log entries on every day that anyone worked; a quiet day is a zero. */
+  /** A column per day that anyone worked, stacked by member, of their log entries; a quiet day is a zero. */
   def dailyTrend(members: Seq[MemberContributionDto], formatDate: LocalDate => String): ApexChartOptions = {
     val workers = members.filter(workEntries(_) > 0)
     val days = workers.flatMap(_.dailyEntries.map(_.date)).distinct.sorted
     val colors = workers.indices.map(index => StagedCharts.SliceColors(index % StagedCharts.SliceColors.size))
     ApexChartOptions(
-      chartType = ApexChartType.Area,
-      height = ChartHeight,
+      chartType = ApexChartType.Column,
+      height = LargeChartHeight,
       series = ApexSeries.Axis(
         workers.map { member =>
           val countsByDay = member.dailyEntries.map(entry => entry.date -> entry.count).toMap
@@ -98,9 +94,9 @@ object ContributionCharts {
       ),
       colors = Some(colors.map(_.dark)),
       lightColors = Some(colors.map(_.light)),
-      stroke = Some(ApexStroke(smooth = true, width = 2)),
       legendPosition = Some(ApexLegendPosition.Bottom),
-      dataLabelsEnabled = false
+      dataLabelsEnabled = false,
+      stacked = true
     )
   }
 

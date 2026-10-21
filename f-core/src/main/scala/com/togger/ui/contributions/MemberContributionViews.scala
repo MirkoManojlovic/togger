@@ -19,13 +19,20 @@ object MemberContributionViews {
       .element
       .amend(cls("w-full"))
 
-  /** A chart in a card, or a line saying there is nothing to draw. */
-  def chartCard(title: String, options: ApexChartOptions, isDark: Signal[Boolean]): HtmlElement =
+  /** A chart in a card, or a line saying there is nothing to draw. `extraCls` is for the place the card takes in its
+    * grid.
+    */
+  def chartCard(
+    title: String,
+    options: ApexChartOptions,
+    isDark: Signal[Boolean],
+    extraCls: String = ""
+  ): HtmlElement =
     card(
       title,
-      if (ContributionCharts.hasData(options)) new ApexChartComponent(Val(options), isDark).element
+      if (ContributionCharts.hasData(options)) new ApexChartComponent(Val(options), isDark, options.height).element
       else p(cls("text-body"), "Nothing to show for this range")
-    )
+    ).amend(cls(extraCls))
 
   private def stat(label: String, value: String): HtmlElement =
     div(
