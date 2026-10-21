@@ -55,6 +55,16 @@ class MilestoneContributionCard(
         chartCard("Tasks assigned and closed", ContributionCharts.tasksAssignedAndClosed(milestone.members), isDark),
         chartCard("Log entries by status", ContributionCharts.entriesByStatus(milestone.members), isDark),
         chartCard("Active days", ContributionCharts.activeDays(milestone.members), isDark)
+      ),
+      div(
+        cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"),
+        milestone.members.map(member =>
+          chartCard(
+            s"Log entries per day: ${member.memberName}",
+            ContributionCharts.dailyTrend(Seq(member), tgDateFormater.asEuropeanDate, ContributionCharts.ChartHeight),
+            isDark
+          )
+        )
       )
     )
 
