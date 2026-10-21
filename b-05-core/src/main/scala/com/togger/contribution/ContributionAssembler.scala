@@ -5,7 +5,7 @@ import com.togger.common.WorkDayCalendar
 import com.togger.dto.{
   ContributionsDto,
   ContributionsFilter,
-  DailyCountDto,
+  DailyStatusCountDto,
   MemberContributionDto,
   MilestoneContributionsDto,
   StatusCountDto
@@ -100,10 +100,10 @@ object ContributionAssembler {
   ): MemberContributionDto = {
     val dailyEntries = activity
       .filterNot(row => daysOff.contains(row.status))
-      .groupMapReduce(_.day)(_.count)(_ + _)
+      .groupMapReduce(row => (row.day, row.status))(_.count)(_ + _)
       .toList
-      .sortBy(_._1)
-      .map { case (day, count) => DailyCountDto(day, count.toInt) }
+      .sortBy { case ((day, status), _) => (day, status.value) }
+      .map { case ((day, status), count) => DailyStatusCountDto(day, status, count.toInt) }
     MemberContributionDto(
       memberId = member.id,
       memberName = nameOf(member),
@@ -114,7 +114,7 @@ object ContributionAssembler {
         .map { case (status, count) => StatusCountDto(status, count.toInt) },
       tasksAssigned = assigned.map(_.count).sum.toInt,
       tasksClosed = closed.map(_.count).sum.toInt,
-      activeDays = dailyEntries.size,
+      activeDays = dailyEntries.map(_.date).distinct.size,
       workDaysInRange = workDaysInRange,
       dailyEntries = dailyEntries
     )

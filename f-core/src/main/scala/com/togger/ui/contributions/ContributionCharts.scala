@@ -77,26 +77,29 @@ object ContributionCharts {
     )
   }
 
-  /** A column per day that anyone worked, stacked by member, of their log entries; a quiet day is a zero. */
+  /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without
+    * a status is a zero.
+    */
   def dailyTrend(members: Seq[MemberContributionDto], formatDate: LocalDate => String): ApexChartOptions = {
-    val workers = members.filter(workEntries(_) > 0)
-    val days = workers.flatMap(_.dailyEntries.map(_.date)).distinct.sorted
-    val colors = workers.indices.map(index => StagedCharts.SliceColors(index % StagedCharts.SliceColors.size))
-    ApexChartOptions(
-      chartType = ApexChartType.Column,
-      height = LargeChartHeight,
-      series = ApexSeries.Axis(
-        workers.map { member =>
-          val countsByDay = member.dailyEntries.map(entry => entry.date -> entry.count).toMap
-          ApexNamedSeries(member.memberName, days.map(countsByDay.getOrElse(_, 0)))
-        },
-        days.map(formatDate)
+    val entries = members.flatMap(_.dailyEntries)
+    val days = entries.map(_.date).distinct.sorted
+    val statuses = entries.map(_.status).distinct.sortBy(_.value)
+    val countsByDayAndStatus = entries.groupMapReduce(entry => (entry.date, entry.status))(_.count)(_ + _)
+    withColors(
+      ApexChartOptions(
+        chartType = ApexChartType.Column,
+        height = LargeChartHeight,
+        series = ApexSeries.Axis(
+          statuses.map(status =>
+            ApexNamedSeries(status.label, days.map(day => countsByDayAndStatus.getOrElse((day, status), 0)))
+          ),
+          days.map(formatDate)
+        ),
+        legendPosition = Some(ApexLegendPosition.Bottom),
+        dataLabelsEnabled = false,
+        stacked = true
       ),
-      colors = Some(colors.map(_.dark)),
-      lightColors = Some(colors.map(_.light)),
-      legendPosition = Some(ApexLegendPosition.Bottom),
-      dataLabelsEnabled = false,
-      stacked = true
+      statuses.map(_.chartColor)
     )
   }
 

@@ -8,7 +8,7 @@ import java.util.UUID
 
 case class StatusCountDto(status: LogEntryStatus, count: Int)
 
-case class DailyCountDto(date: LocalDate, count: Int)
+case class DailyStatusCountDto(date: LocalDate, status: LogEntryStatus, count: Int)
 
 /** What one member contributed in some scope: the whole project or a single milestone. Holiday and vacation entries are
   * listed under `entriesByStatus` but are not work: they are left out of `activeDays` and `dailyEntries`.
@@ -21,7 +21,7 @@ case class MemberContributionDto(
   tasksClosed: Int,
   activeDays: Int,
   workDaysInRange: Int,
-  dailyEntries: List[DailyCountDto]
+  dailyEntries: List[DailyStatusCountDto]
 )
 
 /** The contributions to one milestone; `milestoneId` is empty for the tasks that have no milestone. */

@@ -6,7 +6,7 @@ import com.togger.TestLoggingJvm
 import com.togger.account.{Account, HashedPasswordImpl}
 import com.togger.common.{Password, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
-import com.togger.dto.{ContributionsFilter, DailyCountDto, StatusCountDto}
+import com.togger.dto.{ContributionsFilter, DailyStatusCountDto, StatusCountDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
 import com.togger.project.{Project, ProjectAccountRepo, ProjectRepo}
@@ -133,7 +133,10 @@ class ContributionServiceTest
       service.findByProjectId(projectId, ContributionsFilter.empty).unsafeToFuture().map { result =>
         val annStats = result.general.head
         annStats.activeDays shouldBe 2
-        annStats.dailyEntries shouldBe List(DailyCountDto(day(13), 2), DailyCountDto(day(14), 1))
+        annStats.dailyEntries shouldBe List(
+          DailyStatusCountDto(day(13), LogEntryStatus.Completed, 2),
+          DailyStatusCountDto(day(14), LogEntryStatus.InProgress, 1)
+        )
         // the 13th to the 15th, Tuesday to Thursday
         result.general.map(_.workDaysInRange).distinct shouldBe List(3)
       }
