@@ -57,6 +57,33 @@ object ContributionAssembler {
     val workDaysInRange = countWorkDaysInRange(filter, activity, workDays)
     val sortedMembers = members.sortBy(member => (nameOf(member).toLowerCase, member.id.toString))
 
+    // The tasks of a scope are counted by what their latest version has; the same name is one count, whichever row.
+    // `ofAssignee` picks the tasks of one member, the scope as a whole has the assigned and the unassigned ones.
+    def tasksIn(
+      inScope: Option[UUID] => Boolean,
+      ofAssignee: Option[UUID] => Boolean = _ => true
+    ): TaskAttributesDto =
+      TaskAttributesDto(
+        byStatus = rows.statusCounts
+          .filter(row => inScope(row.milestoneId) && ofAssignee(row.assigneeId))
+          .groupMapReduce(_.statusName)(_.count)(_ + _)
+          .toList
+          .sortBy { case (name, count) => (-count, name) }
+          .map { case (name, count) => TaskStatusCountDto(name, count.toInt) },
+        byPriority = rows.priorityCounts
+          .filter(row => inScope(row.milestoneId) && ofAssignee(row.assigneeId))
+          .groupMapReduce(_.priority)(_.count)(_ + _)
+          .toList
+          .sortBy { case (priority, _) => priority.value }
+          .map { case (priority, count) => TaskPriorityCountDto(priority, count.toInt) },
+        byLabel = rows.labelCounts
+          .filter(row => inScope(row.milestoneId) && ofAssignee(row.assigneeId))
+          .groupMapReduce(_.labelName)(_.count)(_ + _)
+          .toList
+          .sortBy { case (name, count) => (-count, name.isEmpty, name) }
+          .map { case (name, count) => TaskLabelCountDto(name, count.toInt) }
+      )
+
     // `inScope` picks the rows of a scope by their milestone; a milestone card lists only the members that did
     // something in it, the general part lists all of them.
     def membersIn(inScope: Option[UUID] => Boolean, onlyActive: Boolean): List[MemberContributionDto] =
@@ -66,7 +93,14 @@ object ContributionAssembler {
         val memberClosed = closed.filter(row => row.memberId == member.id && inScope(row.milestoneId))
         val hasNothing = memberActivity.isEmpty && memberAssigned.isEmpty && memberClosed.isEmpty
         Option.when(!(onlyActive && hasNothing))(
-          memberDto(member, workDaysInRange, memberActivity, memberAssigned, memberClosed)
+          memberDto(
+            member,
+            workDaysInRange,
+            memberActivity,
+            memberAssigned,
+            memberClosed,
+            tasksIn(inScope, _.contains(member.id))
+          )
         )
       }
 
@@ -74,29 +108,6 @@ object ContributionAssembler {
       val totals = rows.taskTotals.filter(_.milestoneId == milestoneId)
       (totals.map(_.total).sum.toInt, totals.map(_.closed).sum.toInt)
     }
-
-    // The tasks of a scope are counted by what their latest version has; the same name is one count, whichever row.
-    def tasksIn(inScope: Option[UUID] => Boolean): TaskAttributesDto =
-      TaskAttributesDto(
-        byStatus = rows.statusCounts
-          .filter(row => inScope(row.milestoneId))
-          .groupMapReduce(_.statusName)(_.count)(_ + _)
-          .toList
-          .sortBy { case (name, count) => (-count, name) }
-          .map { case (name, count) => TaskStatusCountDto(name, count.toInt) },
-        byPriority = rows.priorityCounts
-          .filter(row => inScope(row.milestoneId))
-          .groupMapReduce(_.priority)(_.count)(_ + _)
-          .toList
-          .sortBy { case (priority, _) => priority.value }
-          .map { case (priority, count) => TaskPriorityCountDto(priority, count.toInt) },
-        byLabel = rows.labelCounts
-          .filter(row => inScope(row.milestoneId))
-          .groupMapReduce(_.labelName)(_.count)(_ + _)
-          .toList
-          .sortBy { case (name, count) => (-count, name.isEmpty, name) }
-          .map { case (name, count) => TaskLabelCountDto(name, count.toInt) }
-      )
 
     val milestoneCards = rows.milestones.toList.map { header =>
       val (total, closedCount) = totalsOf(Some(header.milestoneId))
@@ -144,7 +155,8 @@ object ContributionAssembler {
     workDaysInRange: Int,
     activity: Seq[EntryActivityRow],
     assigned: Seq[TaskAssignedRow],
-    closed: Seq[TaskClosedRow]
+    closed: Seq[TaskClosedRow],
+    tasks: TaskAttributesDto
   ): MemberContributionDto = {
     val dailyEntries = activity
       .filterNot(row => daysOff.contains(row.status))
@@ -164,7 +176,8 @@ object ContributionAssembler {
       tasksClosed = closed.map(_.count).sum.toInt,
       activeDays = dailyEntries.map(_.date).distinct.size,
       workDaysInRange = workDaysInRange,
-      dailyEntries = dailyEntries
+      dailyEntries = dailyEntries,
+      tasks = tasks
     )
   }
 

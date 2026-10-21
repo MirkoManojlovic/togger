@@ -115,27 +115,29 @@ class ContributionServiceTest
       .expects(projectId, filter)
       .returns(
         List(
-          TaskStatusCountRow(Some(alpha), "Todo", 2L),
-          TaskStatusCountRow(Some(alpha), "Done", 1L),
-          TaskStatusCountRow(None, "Todo", 1L)
+          TaskStatusCountRow(Some(alpha), Some(ann.id), "Todo", 1L),
+          TaskStatusCountRow(Some(alpha), Some(bob.id), "Todo", 1L),
+          TaskStatusCountRow(Some(alpha), Some(ann.id), "Done", 1L),
+          TaskStatusCountRow(None, None, "Todo", 1L)
         ).pure[ConnectionIO]
       )
     (contributionRepo.tasksByPriority _)
       .expects(projectId, filter)
       .returns(
         List(
-          TaskPriorityCountRow(Some(alpha), TaskPriority.Medium, 2L),
-          TaskPriorityCountRow(Some(alpha), TaskPriority.Critical, 1L),
-          TaskPriorityCountRow(None, TaskPriority.Medium, 1L)
+          TaskPriorityCountRow(Some(alpha), Some(ann.id), TaskPriority.Medium, 2L),
+          TaskPriorityCountRow(Some(alpha), Some(bob.id), TaskPriority.Critical, 1L),
+          TaskPriorityCountRow(None, None, TaskPriority.Medium, 1L)
         ).pure[ConnectionIO]
       )
     (contributionRepo.tasksByLabel _)
       .expects(projectId, filter)
       .returns(
         List(
-          TaskLabelCountRow(Some(alpha), Some("bug"), 2L),
-          TaskLabelCountRow(Some(alpha), Some("feature"), 1L),
-          TaskLabelCountRow(None, None, 1L)
+          TaskLabelCountRow(Some(alpha), Some(ann.id), Some("bug"), 1L),
+          TaskLabelCountRow(Some(alpha), Some(bob.id), Some("bug"), 1L),
+          TaskLabelCountRow(Some(alpha), Some(bob.id), Some("feature"), 1L),
+          TaskLabelCountRow(None, None, None, 1L)
         ).pure[ConnectionIO]
       )
   }
@@ -237,6 +239,27 @@ class ContributionServiceTest
         noMilestoneCard.tasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 1))
         noMilestoneCard.tasks.byLabel shouldBe List(TaskLabelCountDto(None, 1))
         betaCard.tasks shouldBe TaskAttributesDto(List.empty, List.empty, List.empty)
+      }
+    }
+
+    "count the tasks assigned to each member by status, priority and label, in the project and in each milestone" in {
+      expectReads(ContributionsFilter.empty)
+
+      service.findByProjectId(projectId, ContributionsFilter.empty).unsafeToFuture().map { result =>
+        val List(annStats, bobStats, cyStats) = result.general
+        annStats.tasks.byStatus shouldBe List(TaskStatusCountDto("Done", 1), TaskStatusCountDto("Todo", 1))
+        annStats.tasks.byPriority shouldBe List(TaskPriorityCountDto(TaskPriority.Medium, 2))
+        annStats.tasks.byLabel shouldBe List(TaskLabelCountDto(Some("bug"), 1))
+        bobStats.tasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 1))
+        bobStats.tasks.byLabel shouldBe List(TaskLabelCountDto(Some("bug"), 1), TaskLabelCountDto(Some("feature"), 1))
+        cyStats.tasks shouldBe TaskAttributesDto(List.empty, List.empty, List.empty)
+
+        // the tasks of nobody are in the counts of the scope, not in those of a member
+        result.generalTasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 3), TaskStatusCountDto("Done", 1))
+        val List(noMilestoneCard, alphaCard, _) = result.milestones
+        noMilestoneCard.tasks.byStatus shouldBe List(TaskStatusCountDto("Todo", 1))
+        noMilestoneCard.members.flatMap(_.tasks.byStatus) shouldBe empty
+        alphaCard.members.map(_.tasks.byStatus.map(_.count).sum) shouldBe List(2, 1)
       }
     }
 

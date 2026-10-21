@@ -271,14 +271,14 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         .transact(transactor)
     }
 
-    "count the tasks by the status of their latest version, in their milestone" in { transactor =>
+    "count the tasks by the status of their latest version, in their milestone and by their assignee" in { transactor =>
       (for {
         seeded <- seed()
         rows <- contributionRepo.tasksByStatus(seeded.projectId, ContributionsFilter.empty)
       } yield rows.toSet shouldBe Set(
-        TaskStatusCountRow(Some(seeded.milestone.id), seeded.statusName, 1L),
-        TaskStatusCountRow(Some(seeded.milestone.id), "Done", 1L),
-        TaskStatusCountRow(None, seeded.statusName, 1L)
+        TaskStatusCountRow(Some(seeded.milestone.id), Some(seeded.first.id), seeded.statusName, 1L),
+        TaskStatusCountRow(Some(seeded.milestone.id), Some(seeded.second.id), "Done", 1L),
+        TaskStatusCountRow(None, Some(seeded.first.id), seeded.statusName, 1L)
       )).transact(transactor)
     }
 
@@ -287,9 +287,9 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         seeded <- seed()
         rows <- contributionRepo.tasksByPriority(seeded.projectId, ContributionsFilter.empty)
       } yield rows.toSet shouldBe Set(
-        TaskPriorityCountRow(Some(seeded.milestone.id), TaskPriority.Medium, 1L),
-        TaskPriorityCountRow(Some(seeded.milestone.id), TaskPriority.Critical, 1L),
-        TaskPriorityCountRow(None, TaskPriority.Medium, 1L)
+        TaskPriorityCountRow(Some(seeded.milestone.id), Some(seeded.first.id), TaskPriority.Medium, 1L),
+        TaskPriorityCountRow(Some(seeded.milestone.id), Some(seeded.second.id), TaskPriority.Critical, 1L),
+        TaskPriorityCountRow(None, Some(seeded.first.id), TaskPriority.Medium, 1L)
       )).transact(transactor)
     }
 
@@ -298,9 +298,10 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         seeded <- seed()
         rows <- contributionRepo.tasksByLabel(seeded.projectId, ContributionsFilter.empty)
       } yield rows.toSet shouldBe Set(
-        TaskLabelCountRow(Some(seeded.milestone.id), Some("bug"), 2L),
-        TaskLabelCountRow(Some(seeded.milestone.id), Some("feature"), 1L),
-        TaskLabelCountRow(None, None, 1L)
+        TaskLabelCountRow(Some(seeded.milestone.id), Some(seeded.first.id), Some("bug"), 1L),
+        TaskLabelCountRow(Some(seeded.milestone.id), Some(seeded.second.id), Some("bug"), 1L),
+        TaskLabelCountRow(Some(seeded.milestone.id), Some(seeded.second.id), Some("feature"), 1L),
+        TaskLabelCountRow(None, Some(seeded.first.id), None, 1L)
       )).transact(transactor)
     }
 
@@ -311,9 +312,9 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         priorities <- contributionRepo.tasksByPriority(seeded.projectId, range(14, 31))
         labels <- contributionRepo.tasksByLabel(seeded.projectId, range(14, 31))
       } yield {
-        statuses shouldBe List(TaskStatusCountRow(None, seeded.statusName, 1L))
-        priorities shouldBe List(TaskPriorityCountRow(None, TaskPriority.Medium, 1L))
-        labels shouldBe List(TaskLabelCountRow(None, None, 1L))
+        statuses shouldBe List(TaskStatusCountRow(None, Some(seeded.first.id), seeded.statusName, 1L))
+        priorities shouldBe List(TaskPriorityCountRow(None, Some(seeded.first.id), TaskPriority.Medium, 1L))
+        labels shouldBe List(TaskLabelCountRow(None, Some(seeded.first.id), None, 1L))
       }).transact(transactor)
     }
 

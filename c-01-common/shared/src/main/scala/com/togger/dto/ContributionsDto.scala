@@ -25,6 +25,10 @@ case class TaskAttributesDto(
   byLabel: List[TaskLabelCountDto]
 )
 
+object TaskAttributesDto {
+  val empty: TaskAttributesDto = TaskAttributesDto(List.empty, List.empty, List.empty)
+}
+
 /** What one member contributed in some scope: the whole project or a single milestone. Holiday and vacation entries are
   * listed under `entriesByStatus` but are not work: they are left out of `activeDays` and `dailyEntries`.
   */
@@ -36,7 +40,8 @@ case class MemberContributionDto(
   tasksClosed: Int,
   activeDays: Int,
   workDaysInRange: Int,
-  dailyEntries: List[DailyStatusCountDto]
+  dailyEntries: List[DailyStatusCountDto],
+  tasks: TaskAttributesDto
 )
 
 /** The contributions to one milestone; `milestoneId` is empty for the tasks that have no milestone. */
