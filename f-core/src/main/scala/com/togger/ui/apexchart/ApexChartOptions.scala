@@ -2,12 +2,20 @@ package com.togger.ui.apexchart
 
 sealed trait ApexChartType {
   def jsValue: String
+
+  /** Only bars have a direction: a column stands, a bar lies. */
+  def horizontal: Boolean = false
 }
 
 object ApexChartType {
   case object Area extends ApexChartType { val jsValue = "area" }
   case object Donut extends ApexChartType { val jsValue = "donut" }
   case object Pie extends ApexChartType { val jsValue = "pie" }
+  case object Column extends ApexChartType { val jsValue = "bar" }
+  case object Bar extends ApexChartType {
+    val jsValue = "bar"
+    override val horizontal = true
+  }
 }
 
 case class ApexNamedSeries(name: String, data: Seq[Int])
@@ -34,6 +42,8 @@ object ApexLegendPosition {
   * @param lightColors
   *   the series colors in light mode, where `colors` (made for a dark background) would be too dark to read the
   *   labels on; `colors` again when empty
+  * @param stacked
+  *   stack the series of a column or bar chart on top of each other instead of side by side
   */
 case class ApexChartOptions(
   chartType: ApexChartType,
@@ -45,5 +55,6 @@ case class ApexChartOptions(
   legendPosition: Option[ApexLegendPosition] = None,
   showToolbar: Boolean = false,
   dataLabelsEnabled: Boolean = true,
-  nameInDataLabels: Boolean = false
+  nameInDataLabels: Boolean = false,
+  stacked: Boolean = false
 )

@@ -14,6 +14,7 @@ object ApexChartJs {
       "chart" -> literal(
         "type" -> options.chartType.jsValue,
         "height" -> options.height,
+        "stacked" -> options.stacked,
         "toolbar" -> literal("show" -> options.showToolbar),
         "foreColor" -> theme.foreColor,
         "background" -> "transparent"
@@ -27,6 +28,8 @@ object ApexChartJs {
     )
     seriesToJs(options.series).foreach { case (key, value) => result.updateDynamic(key)(value) }
     if (options.nameInDataLabels) result.dataLabels.updateDynamic("formatter")(nameAndPercent)
+    if (options.chartType == ApexChartType.Column || options.chartType == ApexChartType.Bar)
+      result.updateDynamic("plotOptions")(literal("bar" -> literal("horizontal" -> options.chartType.horizontal)))
     options.stroke.foreach(stroke => result.updateDynamic("stroke")(strokeToJs(stroke)))
     options.legendPosition.foreach(position =>
       result.updateDynamic("legend")(literal("position" -> position.jsValue))

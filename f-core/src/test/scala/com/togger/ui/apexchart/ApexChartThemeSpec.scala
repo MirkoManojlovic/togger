@@ -56,4 +56,37 @@ class ApexChartThemeSpec extends AnyFunSuite {
     assert(colorsIn(options, isDark = true) == List("#111"))
     assert(colorsIn(options.copy(lightColors = None), isDark = false) == List("#111"))
   }
+
+  private def chartOf(options: ApexChartOptions): js.Dynamic =
+    ApexChartJs
+      .toJs(options, ApexChartTheme(ApexChartPalette.fallback, isDark = false))
+      .asInstanceOf[js.Dynamic]
+
+  private val columns = ApexChartOptions(
+    ApexChartType.Column,
+    200,
+    ApexSeries.Axis(Seq(ApexNamedSeries("Entries", Seq(1, 2)), ApexNamedSeries("Tasks", Seq(3, 4))), Seq("Ann", "Bob"))
+  )
+
+  test("toJs makes a column chart a standing bar chart with the series and the categories") {
+    val js1 = chartOf(columns)
+    assert(js1.chart.`type`.asInstanceOf[String] == "bar")
+    assert(!js1.plotOptions.bar.horizontal.asInstanceOf[Boolean])
+    assert(!js1.chart.stacked.asInstanceOf[Boolean])
+    assert(js1.xaxis.categories.asInstanceOf[js.Array[String]].toList == List("Ann", "Bob"))
+    assert(
+      js1.series.asInstanceOf[js.Array[js.Dynamic]].map(_.name.asInstanceOf[String]).toList == List("Entries", "Tasks")
+    )
+  }
+
+  test("toJs makes a bar chart lie and stacks the series when asked to") {
+    val js1 = chartOf(columns.copy(chartType = ApexChartType.Bar, stacked = true))
+    assert(js1.chart.`type`.asInstanceOf[String] == "bar")
+    assert(js1.plotOptions.bar.horizontal.asInstanceOf[Boolean])
+    assert(js1.chart.stacked.asInstanceOf[Boolean])
+  }
+
+  test("toJs gives the other chart types no bar options") {
+    assert(js.isUndefined(chartOf(columns.copy(chartType = ApexChartType.Area)).plotOptions))
+  }
 }
