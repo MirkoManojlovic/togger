@@ -1,1177 +1,150 @@
 package com.togger.dump
 
-import com.togger.account.{Account, AccountRepoImpl, AccountType, TgAccount}
-import com.togger.accountmapping.{AccountMapping, AccountMappingRepoImpl}
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgClock, TgClockImpl, TgIds, TimeHelpers}
-import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
-import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.project.{Project, ProjectAccount, ProjectAccountRepoImpl, ProjectError}
-import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepoImpl}
-import com.togger.task.{
-  Link,
-  LinkRepoImpl,
-  LinkVersion,
-  LinkVersionRepoImpl,
-  Task,
-  TaskRepoImpl,
-  TaskStatus,
-  TaskVersion,
-  TaskVersionRepoImpl
-}
-import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigRepoImpl, DataExportConfigService}
-import com.togger.db.TgPages
-import com.togger.dump.DayOfWeekCodec._
-import doobie.ConnectionIO
+import com.togger.project.{ProjectAccount, ProjectError}
+import com.togger.task.TaskLabelAssignment
+import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
+import com.togger.timebox.{Timebox, TimeboxVersion}
 import doobie.implicits._
-import io.circe.generic.auto._
-import io.circe.syntax._
 
-import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
+import java.time.LocalDate
 import java.util.UUID
 
-class DataImportServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+class DataImportServiceTest extends ExportImportTestSupport {
 
-  val projectAccountRepo = new ProjectAccountRepoImpl
-  val accountRepo = new AccountRepoImpl
-  val taskRepo = new TaskRepoImpl
-  val taskVersionRepo = new TaskVersionRepoImpl
-  val linkRepo = new LinkRepoImpl
-  val linkVersionRepo = new LinkVersionRepoImpl
-  val logEntryRepo = new LogEntryRepoImpl
-  val logEntryVersionRepo = new LogEntryVersionRepoImpl
-  val projectMappingRepo = new ProjectMappingRepoImpl
-  val accountMappingRepo = new AccountMappingRepoImpl
-
-  val dataExportRepo = new DataExportRepo(
-    projectRepo,
-    projectAccountRepo,
-    accountRepo,
-    taskRepo,
-    taskVersionRepo,
-    taskStatusRepo,
-    linkRepo,
-    linkVersionRepo,
-    logEntryRepo,
-    logEntryVersionRepo
-  )
-  val dataImportRepo =
-    new DataImportRepo(
-      taskRepo,
-      taskVersionRepo,
-      linkRepo,
-      linkVersionRepo,
-      logEntryRepo,
-      logEntryVersionRepo,
-      projectMappingRepo,
-      taskStatusRepo,
-      new TgClockImpl,
-      accountRepo,
-      accountTypeRepo,
-      accountMappingRepo
-    )
-  val diskOps = new DiskOps
-  val dataExportDiskWriter = new DataExportDiskWriter(diskOps, dumpLimit = Int.MaxValue)
-  val dataExportConfigRepo = new DataExportConfigRepoImpl
-
-  private class TestClock extends TgClock {
-    var instant: Instant = Instant.now
-    override def currentInstant: Instant = instant
-    override def currentOffsetDateTime(zoneOffset: ZoneOffset = ZoneOffset.UTC): OffsetDateTime = instant.atOffset(zoneOffset)
-    override def currentYear(zoneOffset: ZoneOffset = ZoneOffset.UTC): Int = instant.atOffset(zoneOffset).getYear
-    override def currentDate(zoneOffset: ZoneOffset = ZoneOffset.UTC): LocalDate = instant.atOffset(zoneOffset).toLocalDate
-  }
-
-  case class FullHistory(
+  private case class Fixture(
+    accountId: UUID,
+    projectId: UUID,
     taskId: UUID,
-    taskVersions: List[TaskVersion],
-    link: Link,
-    linkVersions: List[LinkVersion],
-    logEntry: LogEntry,
-    logEntryVersions: List[LogEntryVersion]
+    milestoneId: UUID,
+    templateId: UUID,
+    timeboxId: UUID
   )
 
-  def createTaskWithFullHistory(projectId: UUID, createdBy: UUID, taskStatusId: UUID): ConnectionIO[FullHistory] =
+  private def createFullProject(exportPath: os.Path) =
     for {
-      savedTask <- taskRepo.insert(Task(id = UUID.randomUUID(), projectId = projectId, createdBy = createdBy, createdAt = nowAsInstant))
-      firstVersion <- taskVersionRepo.insert(
-        TaskVersion(
-          version = UUID.randomUUID(),
-          taskId = savedTask.id,
-          name = "Task name",
-          description = "Task description",
-          assignedTo = None,
-          closedBy = None,
-          taskStatusId = taskStatusId,
-          startDate = LocalDate.now(),
-          dueDate = LocalDate.now().plusDays(7),
-          createdAt = nowAsInstant,
-          updatedAt = nowAsInstant
+      projectData <- createExportableProject(exportPath)
+      (account, savedProject) = projectData
+      status <- createTaskStatus(savedProject.id)
+      label <- createTaskLabel(savedProject.id)
+      milestoneId <- createMilestoneWithDate(savedProject.id)
+      taskId <- createTaskWithFullHistory(savedProject.id, account.id, status.id, Some(milestoneId))
+      _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(taskId, label.id, nowAsInstant))
+      template <- taskTemplateRepo.insert(
+        TaskTemplate(UUID.randomUUID(), savedProject.id, Some(label.id), account.id, nowAsInstant)
+      )
+      _ <- taskTemplateVersionRepo.insert(
+        TaskTemplateVersion(UUID.randomUUID(), template.id, "Template", "Template body", nowAsInstant)
+      )
+      timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), savedProject.id, nowAsInstant))
+      timeboxVersion <- timeboxVersionRepo.insert(
+        TimeboxVersion(
+          UUID.randomUUID(),
+          timebox.id,
+          LocalDate.now(),
+          LocalDate.now().plusDays(14),
+          Some("Sprint"),
+          nowAsInstant,
+          "Created"
         )
       )
-      secondVersion <- taskVersionRepo.insert(firstVersion.copy(name = "Task name v2", description = "Task description v2"))
-      savedLink <- linkRepo.insert(Link(id = UUID.randomUUID(), taskId = savedTask.id, createdAt = nowAsInstant))
-      firstLinkVersion <- linkVersionRepo.insert(
-        LinkVersion(
-          version = UUID.randomUUID(),
-          linkId = savedLink.id,
-          name = "Link",
-          url = "https://example.com",
-          createdAt = nowAsInstant,
-          updatedAt = nowAsInstant
-        )
-      )
-      secondLinkVersion <- linkVersionRepo.insert(firstLinkVersion.copy(name = "Link v2"))
-      savedLogEntry <- logEntryRepo.insert(LogEntry(id = UUID.randomUUID(), taskId = savedTask.id, createdBy = createdBy, createdAt = nowAsInstant))
-      firstLogEntryVersion <- logEntryVersionRepo.insert(
-        LogEntryVersion(
-          version = UUID.randomUUID(),
-          logEntryId = savedLogEntry.id,
-          textInternal = "internal",
-          textExternal = "external",
-          status = LogEntryStatus.InProgress,
-          createdBy = createdBy,
-          createdAt = nowAsInstant,
-          updatedAt = nowAsInstant
-        )
-      )
-      secondLogEntryVersion <- logEntryVersionRepo.insert(firstLogEntryVersion.copy(textInternal = "internal v2"))
-    } yield FullHistory(
-      taskId = savedTask.id,
-      taskVersions = List(firstVersion, secondVersion),
-      link = savedLink,
-      linkVersions = List(firstLinkVersion, secondLinkVersion),
-      logEntry = savedLogEntry,
-      logEntryVersions = List(firstLogEntryVersion, secondLogEntryVersion)
-    )
+      taskVersion <- taskVersionRepo.findLatestByTaskId(taskId)
+      _ <- timeboxVersionRepo.insertPlannedTasks(timeboxVersion.version, List(taskVersion.version))
+    } yield Fixture(account.id, savedProject.id, taskId, milestoneId, template.id, timebox.id)
 
-  private def newDataImportService(transactor: doobie.Transactor[cats.effect.IO]) =
-    new DataImportService(dataExportRepo, dataImportRepo, dataExportDiskWriter, transactor)
-
-  private def newDataExportService(transactor: doobie.Transactor[cats.effect.IO]) = {
-    val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
-    new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
-  }
-
-  private def insertDumpConfig(projectId: UUID, accountId: UUID, importPath: os.Path): ConnectionIO[DataExportConfig] =
-    dataExportConfigRepo.insert(
-      DataExportConfig(
-        id = UUID.randomUUID(),
-        projectId = projectId,
-        accountId = accountId,
-        name = "Dump config",
-        exportPath = importPath.toString,
-        createdAt = nowAsInstant,
-        updatedAt = nowAsInstant
-      )
-    )
-
-  private def insertMapping(projectIdDb: UUID, projectIdDump: UUID): ConnectionIO[ProjectMapping] =
-    projectMappingRepo.insert(
-      ProjectMapping(
-        projectIdDb = projectIdDb,
-        projectIdDump = projectIdDump,
-        createdAt = nowAsInstant,
-        updatedAt = nowAsInstant
-      )
-    )
-
-  private def insertAccountMapping(accountIdDb: UUID, accountIdDump: UUID): ConnectionIO[AccountMapping] =
-    accountMappingRepo.insert(
-      AccountMapping(
-        accountIdDb = accountIdDb,
-        accountIdDump = accountIdDump,
-        createdAt = nowAsInstant,
-        updatedAt = nowAsInstant
-      )
-    )
-
-  private def createSecondProject(organizationId: UUID): ConnectionIO[Project] =
-    projectRepo.insert(project.copy(id = UUID.randomUUID(), organizationId = organizationId, name = "Second project"))
+  private def resultOf(result: DataImportResult, entityType: DataExportEntityType): List[DataImportEntityResult] =
+    result.results.filter(_.entityType == entityType)
 
   testNameFromClassName should {
 
-    "reject load for an account not assigned to the project" in { transactor =>
-      val dataImportService = newDataImportService(transactor)
-
+    "reject an import for an account not assigned to the project" in { transactor =>
       for {
         savedAccount <- createAccount.transact(transactor)
         savedOrgAndProject <- createOrgAndProject.transact(transactor)
         (_, savedProject) = savedOrgAndProject
-        result <- dataImportService.importProject(savedProject.id, savedAccount.id, (os.pwd / "target").toString)
+        result <- newImportService(transactor).importProject(savedProject.id, savedAccount.id, newExportPath().toString)
       } yield result shouldBe Left(ProjectError.NotAssignedToProject)
     }
 
-    "insert a task that exists on disk but not in the db" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
+    "reject an import from a folder without an index" in { transactor =>
+      val emptyFolder = newExportPath()
+      os.makeDir.all(emptyFolder)
       val setup = for {
         savedAccount <- createAccount
         savedOrgAndProject <- createOrgAndProject
         (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-        savedTaskStatus <- createTaskStatus(savedProject.id)
-      } yield (savedAccount, savedProject, savedTaskStatus)
+        _ <- projectAccountRepo.insert(ProjectAccount(savedProject.id, savedAccount.id, nowAsInstant))
+      } yield (savedAccount, savedProject)
 
       for {
         setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject, savedTaskStatus) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        newTaskId = UUID.randomUUID()
-        newLinkId = UUID.randomUUID()
-        newLogEntryId = UUID.randomUUID()
-        diskData = DataExportData(
-          task = Task(id = newTaskId, projectId = savedProject.id, createdBy = savedAccount.id, createdAt = nowAsInstant),
-          taskVersions = List(
-            TaskVersion(
-              version = UUID.randomUUID(),
-              taskId = newTaskId,
-              name = "Disk task",
-              description = "Disk task description",
-              assignedTo = None,
-              closedBy = None,
-              taskStatusId = savedTaskStatus.id,
-              startDate = LocalDate.now(),
-              dueDate = LocalDate.now().plusDays(7),
-              createdAt = nowAsInstant,
-              updatedAt = nowAsInstant
-            )
-          ),
-          links = List(
-            LinkDumpData(
-              link = Link(id = newLinkId, taskId = newTaskId, createdAt = nowAsInstant),
-              versions = List(
-                LinkVersion(
-                  version = UUID.randomUUID(),
-                  linkId = newLinkId,
-                  name = "Disk link",
-                  url = "https://example.com",
-                  createdAt = nowAsInstant,
-                  updatedAt = nowAsInstant
-                )
-              )
-            )
-          ),
-          logEntries = List(
-            LogEntryDumpData(
-              logEntry = LogEntry(id = newLogEntryId, taskId = newTaskId, createdBy = savedAccount.id, createdAt = nowAsInstant),
-              versions = List(
-                LogEntryVersion(
-                  version = UUID.randomUUID(),
-                  logEntryId = newLogEntryId,
-                  textInternal = "internal",
-                  textExternal = "external",
-                  status = LogEntryStatus.InProgress,
-                  createdBy = savedAccount.id,
-                  createdAt = nowAsInstant,
-                  updatedAt = nowAsInstant
-                )
-              )
-            )
-          )
-        )
-        _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
-        persistedVersions <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor)
-        persistedLinks <- linkRepo.findByTaskId(newTaskId).transact(transactor)
-        persistedLogEntries <- logEntryRepo.findByTaskId(newTaskId).transact(transactor)
-      } yield {
-        importResult.isRight shouldBe true
-        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == newTaskId).get
-        taskResult.status shouldBe DataImportTaskStatus.Inserted
-        taskResult.versionsAdded shouldBe 3
-        taskResult.linksAdded shouldBe 1
-        taskResult.logEntriesAdded shouldBe 1
-        persistedTask.id shouldBe newTaskId
-        persistedVersions.size shouldBe 1
-        persistedLinks.size shouldBe 1
-        persistedLogEntries.size shouldBe 1
-      }
-    }
-
-    "merge missing versions and links into a task that already exists in the db, and be idempotent on reload" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-        savedTaskStatus <- createTaskStatus(savedProject.id)
-        fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
-      } yield (savedAccount, savedProject, fullHistory)
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject, fullHistory) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        _ = dumpResult.isRight shouldBe true
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        // simulate a local db that's behind the dump: drop the older task version, the whole link, and the older log entry version
-        _ <- taskVersionRepo.deleteByVersion(fullHistory.taskVersions.head.version).transact(transactor)
-        _ <- linkRepo.deleteById(fullHistory.link.id).transact(transactor)
-        _ <- logEntryVersionRepo.deleteByVersion(fullHistory.logEntryVersions.head.version).transact(transactor)
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        persistedVersions <- taskVersionRepo.findByTaskId(fullHistory.taskId).transact(transactor)
-        persistedLinks <- linkRepo.findByTaskId(fullHistory.taskId).transact(transactor)
-        persistedLogEntryVersions <- logEntryVersionRepo.findByLogEntryId(fullHistory.logEntry.id).transact(transactor)
-        reimportResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield {
-        importResult.isRight shouldBe true
-        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe DataImportTaskStatus.Merged
-        taskResult.versionsAdded shouldBe 4 // 1 task version + 2 link versions (whole link re-inserted) + 1 log entry version
-        taskResult.linksAdded shouldBe 1
-        taskResult.logEntriesAdded shouldBe 0
-        persistedVersions.size shouldBe 2
-        persistedLinks.size shouldBe 1
-        persistedLogEntryVersions.size shouldBe 2
-
-        reimportResult.isRight shouldBe true
-        val reloadTaskResult = reimportResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        reloadTaskResult.status shouldBe DataImportTaskStatus.Unchanged
-        reloadTaskResult.versionsAdded shouldBe 0
-        reloadTaskResult.linksAdded shouldBe 0
-        reloadTaskResult.logEntriesAdded shouldBe 0
-      }
-    }
-
-    "report a task with no new data on disk as unchanged" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-        savedTaskStatus <- createTaskStatus(savedProject.id)
-        fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
-      } yield (savedAccount, savedProject, fullHistory)
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject, fullHistory) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        _ = dumpResult.isRight shouldBe true
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield {
-        importResult.isRight shouldBe true
-        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe DataImportTaskStatus.Unchanged
-        taskResult.versionsAdded shouldBe 0
-        taskResult.linksAdded shouldBe 0
-        taskResult.logEntriesAdded shouldBe 0
-      }
-    }
-
-    "flag an unparseable dump file as malformed without failing the rest of the batch" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-        savedTaskStatus <- createTaskStatus(savedProject.id)
-        fullHistory <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
-      } yield (savedAccount, savedProject, fullHistory)
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject, fullHistory) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        _ = os.write.over(rootFolder / s"${fullHistory.taskId}.json", "not valid json")
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield {
-        importResult.isRight shouldBe true
-        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe DataImportTaskStatus.Malformed
-        taskResult.error should not be empty
-      }
-    }
-
-    "reject loading when the dump path has no readable project.json manifest" in { transactor =>
-      val dataImportService = newDataImportService(transactor)
-
-      for {
-        savedAccount <- createAccount.transact(transactor)
-        savedOrgAndProject <- createOrgAndProject.transact(transactor)
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo
-          .insert(ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant))
-          .transact(transactor)
-        emptyFolder = os.pwd / "target" / s"test-data-import-empty-${UUID.randomUUID()}"
-        _ = os.makeDir.all(emptyFolder)
-        result <- dataImportService.importProject(savedProject.id, savedAccount.id, emptyFolder.toString)
+        (savedAccount, savedProject) = setupResult
+        result <- newImportService(transactor).importProject(savedProject.id, savedAccount.id, emptyFolder.toString)
       } yield result shouldBe Left(ProjectError.DumpManifestMissing)
     }
 
-    "auto-create a project mapping and load when none exists for the target project" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (savedOrganization, dumpProject) = savedOrgAndProject
-        targetProject <- createSecondProject(savedOrganization.id)
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
-      } yield (savedAccount, dumpProject, targetProject)
-
+    "restore every entity type from the tree and be idempotent on a second import" in { transactor =>
+      val exportPath = newExportPath()
       for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, dumpProject, targetProject) = setupResult
-        dumpResult <- dataExportService.dumpProject(dumpProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
-        mappings <- projectMappingRepo
-          .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
-          .map(_.items)
+        fixture <- createFullProject(exportPath).transact(transactor)
+        exported <- newExportService(transactor).exportProject(fixture.projectId, fixture.accountId)
+        root = exported.toOption.get.pathResults.head.exportPath
+        _ <- deleteProjectContent.transact(transactor)
+        first <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root)
+        second <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root)
+        restoredTask <- taskRepo.findById(fixture.taskId).transact(transactor)
+        restoredLabels <- taskLabelAssignmentRepo.findLabelsByTaskId(fixture.taskId).transact(transactor)
+        restoredMilestone <- milestoneRepo.findById(fixture.milestoneId).transact(transactor)
+        restoredTemplate <- taskTemplateRepo.findFullById(fixture.templateId).transact(transactor)
+        restoredTimebox <- timeboxRepo.findById(fixture.timeboxId).transact(transactor)
+        restoredPlanned <- taskVersionRepo
+          .findLatestByTaskId(fixture.taskId)
+          .flatMap(v => timeboxVersionRepo.findLatestByTimeboxId(fixture.timeboxId).flatMap(tv => timeboxVersionRepo.findPlannedTasks(tv.version).map(_.map(_.version) -> v.version)))
           .transact(transactor)
       } yield {
-        importResult.isRight shouldBe true
-        mappings.map(_.projectIdDump) shouldBe List(dumpProject.id)
-      }
-    }
-
-    "auto-create an additional project mapping and load when the target project already maps to a different dump project" in {
-      transactor =>
-        val dataExportService = newDataExportService(transactor)
-        val dataImportService = newDataImportService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-        val setup = for {
-          savedAccount <- createAccount
-          savedOrgAndProject <- createOrgAndProject
-          (savedOrganization, dumpProject) = savedOrgAndProject
-          targetProject <- createSecondProject(savedOrganization.id)
-          unrelatedDumpProject <- createSecondProject(savedOrganization.id)
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
-          _ <- insertMapping(targetProject.id, unrelatedDumpProject.id)
-        } yield (savedAccount, dumpProject, targetProject, unrelatedDumpProject)
-
-        for {
-          setupResult <- setup.transact(transactor)
-          (savedAccount, dumpProject, targetProject, unrelatedDumpProject) = setupResult
-          dumpResult <- dataExportService.dumpProject(dumpProject.id, savedAccount.id)
-          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-          projectRoot = rootFolder / os.up
-          importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
-          mappings <- projectMappingRepo
-            .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-        } yield {
-          importResult.isRight shouldBe true
-          mappings.map(_.projectIdDump).toSet shouldBe Set(unrelatedDumpProject.id, dumpProject.id)
+        val cp = new Checkpoint
+        val imported = first.toOption.get
+        List(
+          DataExportEntityType.Task,
+          DataExportEntityType.LogEntry,
+          DataExportEntityType.Milestone,
+          DataExportEntityType.TaskTemplate,
+          DataExportEntityType.Timebox,
+          DataExportEntityType.TaskStatus,
+          DataExportEntityType.TaskLabel
+        ).foreach { entityType =>
+          cp(resultOf(imported, entityType).map(_.status).distinct shouldBe List(DataImportStatus.Inserted))
         }
-    }
+        cp(imported.results.filter(_.error.isDefined) shouldBe empty)
+        cp(restoredTask.projectId shouldBe fixture.projectId)
+        cp(restoredLabels.map(_.name) shouldBe List("Label"))
+        cp(restoredMilestone.id shouldBe fixture.milestoneId)
+        cp(restoredTemplate.taskLabelName shouldBe Some("Label"))
+        cp(restoredTimebox.id shouldBe fixture.timeboxId)
+        cp(restoredPlanned._1 shouldBe List(restoredPlanned._2))
 
-    "remap the project id and reconcile task statuses by name/description when loading across a mapping" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (savedOrganization, dumpProject) = savedOrgAndProject
-        targetProject <- createSecondProject(savedOrganization.id)
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = dumpProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = targetProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(dumpProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(targetProject.id, dumpProject.id)
-        doneStatusOnDumpSide <- taskStatusRepo.insert(
-          TaskStatus(
-            id = UUID.randomUUID(),
-            projectId = dumpProject.id,
-            name = "Done",
-            description = "Task completed",
-            createdAt = nowAsInstant,
-            updatedAt = nowAsInstant
-          )
-        )
-        blockedStatusOnDumpSide <- taskStatusRepo.insert(
-          TaskStatus(
-            id = UUID.randomUUID(),
-            projectId = dumpProject.id,
-            name = "Blocked",
-            description = "Task blocked",
-            createdAt = nowAsInstant,
-            updatedAt = nowAsInstant
-          )
-        )
-        doneStatusOnTargetSide <- taskStatusRepo.insert(
-          TaskStatus(
-            id = UUID.randomUUID(),
-            projectId = targetProject.id,
-            name = "Done",
-            description = "Task completed",
-            createdAt = nowAsInstant,
-            updatedAt = nowAsInstant
-          )
-        )
-      } yield (savedAccount, dumpProject, targetProject, doneStatusOnDumpSide, blockedStatusOnDumpSide, doneStatusOnTargetSide)
-
-      // These tasks only ever exist as hand-written dump files, never as real rows in this DB under
-      // dumpProject - a real cross-database load would never find them by id either, so this exercises
-      // the "insert with remapped project id" branch of DataImportRepo.mergeTask, not the "merge into an
-      // already-present row" branch.
-      val doneTaskId = UUID.randomUUID()
-      val blockedTaskId = UUID.randomUUID()
-
-      def diskTaskFor(taskId: UUID, dumpProjectId: UUID, accountId: UUID, taskStatusId: UUID): DataExportData =
-        DataExportData(
-          task = Task(id = taskId, projectId = dumpProjectId, createdBy = accountId, createdAt = nowAsInstant),
-          taskVersions = List(
-            TaskVersion(
-              version = UUID.randomUUID(),
-              taskId = taskId,
-              name = "Disk task",
-              description = "Disk task description",
-              assignedTo = None,
-              closedBy = None,
-              taskStatusId = taskStatusId,
-              startDate = LocalDate.now(),
-              dueDate = LocalDate.now().plusDays(7),
-              createdAt = nowAsInstant,
-              updatedAt = nowAsInstant
-            )
-          ),
-          links = Nil,
-          logEntries = Nil
-        )
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, dumpProject, targetProject, doneStatusOnDumpSide, blockedStatusOnDumpSide, doneStatusOnTargetSide) =
-          setupResult
-        dumpResult <- dataExportService.dumpProject(dumpProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        _ = os.write.over(
-          rootFolder / s"$doneTaskId.json",
-          diskTaskFor(doneTaskId, dumpProject.id, savedAccount.id, doneStatusOnDumpSide.id).asJson.spaces2
-        )
-        _ = os.write.over(
-          rootFolder / s"$blockedTaskId.json",
-          diskTaskFor(blockedTaskId, dumpProject.id, savedAccount.id, blockedStatusOnDumpSide.id).asJson.spaces2
-        )
-        importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
-        persistedDoneTask <- taskRepo.findById(doneTaskId).transact(transactor)
-        persistedBlockedTask <- taskRepo.findById(blockedTaskId).transact(transactor)
-        persistedDoneVersion <- taskVersionRepo.findByTaskId(doneTaskId).transact(transactor).map(_.head)
-        persistedBlockedVersion <- taskVersionRepo.findByTaskId(blockedTaskId).transact(transactor).map(_.head)
-        targetStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
-        reimportResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
-        targetStatusesAfterReload <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
-      } yield {
-        importResult.isRight shouldBe true
-        // both tasks and their statuses are remapped into the target project, not left pointing at the dump project
-        persistedDoneTask.projectId shouldBe targetProject.id
-        persistedBlockedTask.projectId shouldBe targetProject.id
-        persistedDoneVersion.taskStatusId shouldBe doneStatusOnTargetSide.id
-        targetStatuses.count(_.name == "Done") shouldBe 1
-        val newBlockedStatus = targetStatuses.find(_.name == "Blocked").get
-        newBlockedStatus.description shouldBe "Task blocked"
-        persistedBlockedVersion.taskStatusId shouldBe newBlockedStatus.id
-
-        // reloading is idempotent: no duplicate task statuses get created in the target project
-        reimportResult.isRight shouldBe true
-        targetStatusesAfterReload.size shouldBe targetStatuses.size
+        cp(second.toOption.get.results.map(_.status).distinct shouldBe List(DataImportStatus.Unchanged))
+        cp.reportAll()
       }
     }
 
-    "create the dumped-by account when it doesn't exist in the target db, then load" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-        developerAccountType <- accountTypeRepo.findByName("developer")
-      } yield (savedAccount, savedProject, developerAccountType)
-
+    "report a tampered file as malformed without failing the rest of the import" in { transactor =>
+      val exportPath = newExportPath()
       for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject, developerAccountType) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        _ = dumpResult.isRight shouldBe true
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-        newAccountEmail = s"new-${UUID.randomUUID().toString.take(8)}@example.com"
-        manifestWithMissingAccount = originalManifest.copy(
-          dumpedBy = AccountDumpData(UUID.randomUUID(), "New", "Person", newAccountEmail)
-        )
-        _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        createdAccount <- accountRepo.findByEmail(newAccountEmail).transact(transactor)
-        createdMappings <- accountMappingRepo
-          .findPaginatedByAccountIdDump(manifestWithMissingAccount.dumpedBy.id, DbPageRequest.default)
-          .map(_.items)
-          .transact(transactor)
+        fixture <- createFullProject(exportPath).transact(transactor)
+        exported <- newExportService(transactor).exportProject(fixture.projectId, fixture.accountId)
+        root = os.Path(exported.toOption.get.pathResults.head.exportPath)
+        _ = os.write.over(root / "tasks" / s"${fixture.taskId}.json", "{}")
+        _ <- deleteProjectContent.transact(transactor)
+        result <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        milestoneRestored <- milestoneRepo.findById(fixture.milestoneId).transact(transactor).attempt
       } yield {
-        importResult.isRight shouldBe true
-        createdAccount.firstName shouldBe "New"
-        createdAccount.lastName shouldBe "Person"
-        createdAccount.email shouldBe newAccountEmail
-        createdAccount.verified shouldBe false
-        createdAccount.enabled shouldBe true
-        createdAccount.accountTypeId shouldBe developerAccountType.id
-        createdMappings.map(_.accountIdDb) shouldBe List(createdAccount.id)
+        val imported = result.toOption.get
+        resultOf(imported, DataExportEntityType.Task).map(_.status) shouldBe List(DataImportStatus.Malformed)
+        resultOf(imported, DataExportEntityType.Milestone).map(_.status) shouldBe List(DataImportStatus.Inserted)
+        milestoneRestored.isRight shouldBe true
       }
     }
 
-    "remap account ids in a task and its log entry when the dumped-by account is found by email under a different id" in {
-      transactor =>
-        val dataExportService = newDataExportService(transactor)
-        val dataImportService = newDataImportService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-        val setup = for {
-          savedAccount <- createAccount
-          savedOrgAndProject <- createOrgAndProject
-          (_, savedProject) = savedOrgAndProject
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-          _ <- insertMapping(savedProject.id, savedProject.id)
-          savedTaskStatus <- createTaskStatus(savedProject.id)
-        } yield (savedAccount, savedProject, savedTaskStatus)
-
-        for {
-          setupResult <- setup.transact(transactor)
-          (savedAccount, savedProject, savedTaskStatus) = setupResult
-          dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-          _ = dumpResult.isRight shouldBe true
-          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-          projectRoot = rootFolder / os.up
-          originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-          // dump-side id for the same person differs from their id in this db, but the email still matches
-          dumpSideAccountId = UUID.randomUUID()
-          manifestWithForeignAccountId = originalManifest.copy(
-            dumpedBy = originalManifest.dumpedBy.copy(id = dumpSideAccountId)
-          )
-          _ = os.write.over(rootFolder / "project.json", manifestWithForeignAccountId.asJson.spaces2)
-          newTaskId = UUID.randomUUID()
-          newLogEntryId = UUID.randomUUID()
-          diskData = DataExportData(
-            task = Task(id = newTaskId, projectId = savedProject.id, createdBy = dumpSideAccountId, createdAt = nowAsInstant),
-            taskVersions = List(
-              TaskVersion(
-                version = UUID.randomUUID(),
-                taskId = newTaskId,
-                name = "Disk task",
-                description = "Disk task description",
-                assignedTo = Some(dumpSideAccountId),
-                closedBy = Some(dumpSideAccountId),
-                taskStatusId = savedTaskStatus.id,
-                startDate = LocalDate.now(),
-                dueDate = LocalDate.now().plusDays(7),
-                createdAt = nowAsInstant,
-                updatedAt = nowAsInstant
-              )
-            ),
-            links = Nil,
-            logEntries = List(
-              LogEntryDumpData(
-                logEntry =
-                  LogEntry(id = newLogEntryId, taskId = newTaskId, createdBy = dumpSideAccountId, createdAt = nowAsInstant),
-                versions = List(
-                  LogEntryVersion(
-                    version = UUID.randomUUID(),
-                    logEntryId = newLogEntryId,
-                    textInternal = "internal",
-                    textExternal = "external",
-                    status = LogEntryStatus.InProgress,
-                    createdBy = dumpSideAccountId,
-                    createdAt = nowAsInstant,
-                    updatedAt = nowAsInstant
-                  )
-                )
-              )
-            )
-          )
-          _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-          persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
-          persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
-          persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
-          persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
-          createdMappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-        } yield {
-          importResult.isRight shouldBe true
-          persistedTask.createdBy shouldBe savedAccount.id
-          persistedVersion.assignedTo shouldBe Some(savedAccount.id)
-          persistedVersion.closedBy shouldBe Some(savedAccount.id)
-          persistedLogEntry.createdBy shouldBe savedAccount.id
-          persistedLogEntryVersion.createdBy shouldBe savedAccount.id
-          createdMappings.map(_.accountIdDb) shouldBe List(savedAccount.id)
-        }
-    }
-
-    "reuse an existing account mapping on a subsequent import without re-doing the email lookup" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-      } yield (savedAccount, savedProject)
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        _ = dumpResult.isRight shouldBe true
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-        dumpSideAccountId = UUID.randomUUID()
-        bogusEmail = s"bogus-${UUID.randomUUID().toString.take(8)}@example.com"
-        // pre-existing mapping for this dump-side id, pointing to the already-saved account
-        _ <- insertAccountMapping(savedAccount.id, dumpSideAccountId).transact(transactor)
-        manifestWithMappedAccount = originalManifest.copy(
-          dumpedBy = AccountDumpData(dumpSideAccountId, "Bogus", "Person", bogusEmail)
-        )
-        _ = os.write.over(rootFolder / "project.json", manifestWithMappedAccount.asJson.spaces2)
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        bogusAccountLookup <- accountRepo.findByEmail(bogusEmail).transact(transactor).attempt
-        mappingsForDumpId <- accountMappingRepo
-          .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
-          .map(_.items)
-          .transact(transactor)
-      } yield {
-        importResult.isRight shouldBe true
-        bogusAccountLookup.isLeft shouldBe true
-        mappingsForDumpId.map(_.accountIdDb) shouldBe List(savedAccount.id)
-      }
-    }
-
-    "reject the load when the dumped-by account is missing and no 'developer' account type exists" in { transactor =>
-      val dataExportService = newDataExportService(transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        managerAccountType <- accountTypeRepo.insert(
-          AccountType(id = TgIds.UNASSIGNED_UUID, name = "manager", createdAt = nowAsInstant, updatedAt = nowAsInstant)
-        )
-        savedAccount <- accountRepo.insert(
-          Account(
-            id = TgIds.UNASSIGNED_UUID,
-            firstName = "John",
-            lastName = "Doe",
-            email = email,
-            password = passwordHashed,
-            accountTypeId = managerAccountType.id,
-            verified = false,
-            enabled = true,
-            createdAt = nowAsInstant,
-            updatedAt = nowAsInstant
-          )
-        )
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-      } yield (savedAccount, savedProject)
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject) = setupResult
-        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        _ = dumpResult.isRight shouldBe true
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-        projectRoot = rootFolder / os.up
-        originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-        missingAccountEmail = s"missing-${UUID.randomUUID().toString.take(8)}@example.com"
-        manifestWithMissingAccount = originalManifest.copy(
-          dumpedBy = AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail)
-        )
-        _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)
-    }
-
-    "load only the most recent dump when several dumps exist under the project root" in { transactor =>
-      val testClock = new TestClock
-      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, testClock, transactor)
-      val dataExportService = new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, testClock, transactor)
-      val dataImportService = newDataImportService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-      val setup = for {
-        savedAccount <- createAccount
-        savedOrgAndProject <- createOrgAndProject
-        (_, savedProject) = savedOrgAndProject
-        _ <- projectAccountRepo.insert(
-          ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-        )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-        _ <- insertMapping(savedProject.id, savedProject.id)
-      } yield (savedAccount, savedProject)
-
-      def orphanDiskTask(taskId: UUID, projectId: UUID, accountId: UUID): DataExportData =
-        DataExportData(
-          task = Task(id = taskId, projectId = projectId, createdBy = accountId, createdAt = nowAsInstant),
-          taskVersions = Nil,
-          links = Nil,
-          logEntries = Nil
-        )
-
-      val taskInOldDump = UUID.randomUUID()
-      val taskInLatestDump = UUID.randomUUID()
-
-      for {
-        setupResult <- setup.transact(transactor)
-        (savedAccount, savedProject) = setupResult
-        _ = testClock.instant = Instant.parse("2026-01-01T00:00:00Z")
-        firstDump <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        firstRootFolder = os.Path(firstDump.toOption.get.pathResults.head.exportPath)
-        _ = os.write.over(
-          firstRootFolder / s"$taskInOldDump.json",
-          orphanDiskTask(taskInOldDump, savedProject.id, savedAccount.id).asJson.spaces2
-        )
-        _ = testClock.instant = Instant.parse("2026-01-02T00:00:00Z")
-        secondDump <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-        lastRootFolder = os.Path(secondDump.toOption.get.pathResults.head.exportPath)
-        projectRoot = lastRootFolder / os.up
-        _ = os.write.over(
-          lastRootFolder / s"$taskInLatestDump.json",
-          orphanDiskTask(taskInLatestDump, savedProject.id, savedAccount.id).asJson.spaces2
-        )
-        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield {
-        importResult.isRight shouldBe true
-        val importedTaskIds = importResult.toOption.get.taskResults.map(_.taskId).toSet
-        importedTaskIds shouldBe Set(taskInLatestDump)
-      }
-    }
-
-    "resolve account mappings for every account referenced by a task, its versions and its log entry, not just the dumper" in {
-      transactor =>
-        val dataExportService = newDataExportService(transactor)
-        val dataImportService = newDataImportService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-        def createNamedAccount(firstName: String, lastName: String, emailAddress: String, accountTypeId: UUID): ConnectionIO[Account] =
-          accountRepo.insert(
-            Account(
-              id = TgIds.UNASSIGNED_UUID,
-              firstName = firstName,
-              lastName = lastName,
-              email = emailAddress,
-              password = passwordHashed,
-              accountTypeId = accountTypeId,
-              verified = true,
-              enabled = true,
-              createdAt = nowAsInstant,
-              updatedAt = nowAsInstant
-            )
-          )
-
-        val setup = for {
-          savedAccount <- createAccount
-          developerAccountType <- accountTypeRepo.findByName("developer")
-          creatorAccount <- createNamedAccount(
-            "Creator",
-            "Person",
-            s"creator-${UUID.randomUUID().toString.take(8)}@example.com",
-            developerAccountType.id
-          )
-          assigneeAccount <- createNamedAccount(
-            "Assignee",
-            "Person",
-            s"assignee-${UUID.randomUUID().toString.take(8)}@example.com",
-            developerAccountType.id
-          )
-          closerAccount <- createNamedAccount(
-            "Closer",
-            "Person",
-            s"closer-${UUID.randomUUID().toString.take(8)}@example.com",
-            developerAccountType.id
-          )
-          logAuthorAccount <- createNamedAccount(
-            "LogAuthor",
-            "Person",
-            s"logauthor-${UUID.randomUUID().toString.take(8)}@example.com",
-            developerAccountType.id
-          )
-          savedOrgAndProject <- createOrgAndProject
-          (_, savedProject) = savedOrgAndProject
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-          _ <- insertMapping(savedProject.id, savedProject.id)
-          savedTaskStatus <- createTaskStatus(savedProject.id)
-        } yield (savedAccount, creatorAccount, assigneeAccount, closerAccount, logAuthorAccount, savedProject, savedTaskStatus)
-
-        for {
-          setupResult <- setup.transact(transactor)
-          (savedAccount, creatorAccount, assigneeAccount, closerAccount, logAuthorAccount, savedProject, savedTaskStatus) = setupResult
-          dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-          _ = dumpResult.isRight shouldBe true
-          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-          projectRoot = rootFolder / os.up
-          originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-          creatorDumpId = UUID.randomUUID()
-          assigneeDumpId = UUID.randomUUID()
-          closerDumpId = UUID.randomUUID()
-          logAuthorDumpId = UUID.randomUUID()
-          manifestWithReferencedAccounts = originalManifest.copy(
-            referencedAccounts = List(
-              AccountDumpData(creatorDumpId, creatorAccount.firstName, creatorAccount.lastName, creatorAccount.email),
-              AccountDumpData(assigneeDumpId, assigneeAccount.firstName, assigneeAccount.lastName, assigneeAccount.email),
-              AccountDumpData(closerDumpId, closerAccount.firstName, closerAccount.lastName, closerAccount.email),
-              AccountDumpData(logAuthorDumpId, logAuthorAccount.firstName, logAuthorAccount.lastName, logAuthorAccount.email)
-            )
-          )
-          _ = os.write.over(rootFolder / "project.json", manifestWithReferencedAccounts.asJson.spaces2)
-          newTaskId = UUID.randomUUID()
-          newLogEntryId = UUID.randomUUID()
-          diskData = DataExportData(
-            task = Task(id = newTaskId, projectId = savedProject.id, createdBy = creatorDumpId, createdAt = nowAsInstant),
-            taskVersions = List(
-              TaskVersion(
-                version = UUID.randomUUID(),
-                taskId = newTaskId,
-                name = "Disk task",
-                description = "Disk task description",
-                assignedTo = Some(assigneeDumpId),
-                closedBy = Some(closerDumpId),
-                taskStatusId = savedTaskStatus.id,
-                startDate = LocalDate.now(),
-                dueDate = LocalDate.now().plusDays(7),
-                createdAt = nowAsInstant,
-                updatedAt = nowAsInstant
-              )
-            ),
-            links = Nil,
-            logEntries = List(
-              LogEntryDumpData(
-                logEntry =
-                  LogEntry(id = newLogEntryId, taskId = newTaskId, createdBy = logAuthorDumpId, createdAt = nowAsInstant),
-                versions = List(
-                  LogEntryVersion(
-                    version = UUID.randomUUID(),
-                    logEntryId = newLogEntryId,
-                    textInternal = "internal",
-                    textExternal = "external",
-                    status = LogEntryStatus.InProgress,
-                    createdBy = logAuthorDumpId,
-                    createdAt = nowAsInstant,
-                    updatedAt = nowAsInstant
-                  )
-                )
-              )
-            )
-          )
-          _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-          persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
-          persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
-          persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
-          persistedLogEntryVersion <- logEntryVersionRepo.findByLogEntryId(newLogEntryId).transact(transactor).map(_.head)
-          creatorMappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(creatorDumpId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-          assigneeMappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(assigneeDumpId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-          closerMappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(closerDumpId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-          logAuthorMappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(logAuthorDumpId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-        } yield {
-          importResult.isRight shouldBe true
-          persistedTask.createdBy shouldBe creatorAccount.id
-          persistedVersion.assignedTo shouldBe Some(assigneeAccount.id)
-          persistedVersion.closedBy shouldBe Some(closerAccount.id)
-          persistedLogEntry.createdBy shouldBe logAuthorAccount.id
-          persistedLogEntryVersion.createdBy shouldBe logAuthorAccount.id
-          creatorMappings.map(_.accountIdDb) shouldBe List(creatorAccount.id)
-          assigneeMappings.map(_.accountIdDb) shouldBe List(assigneeAccount.id)
-          closerMappings.map(_.accountIdDb) shouldBe List(closerAccount.id)
-          logAuthorMappings.map(_.accountIdDb) shouldBe List(logAuthorAccount.id)
-        }
-    }
-
-    "reject the whole load when a non-dumper referenced account is missing and no 'developer' account type exists" in {
-      transactor =>
-        val dataExportService = newDataExportService(transactor)
-        val dataImportService = newDataImportService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-        // deliberately avoid the trait's createAccount, which auto-seeds a "developer" account type
-        val setup = for {
-          managerAccountType <- accountTypeRepo.insert(
-            AccountType(id = TgIds.UNASSIGNED_UUID, name = "manager", createdAt = nowAsInstant, updatedAt = nowAsInstant)
-          )
-          savedAccount <- accountRepo.insert(
-            Account(
-              id = TgIds.UNASSIGNED_UUID,
-              firstName = "John",
-              lastName = "Doe",
-              email = email,
-              password = passwordHashed,
-              accountTypeId = managerAccountType.id,
-              verified = false,
-              enabled = true,
-              createdAt = nowAsInstant,
-              updatedAt = nowAsInstant
-            )
-          )
-          savedOrgAndProject <- createOrgAndProject
-          (_, savedProject) = savedOrgAndProject
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-          _ <- insertMapping(savedProject.id, savedProject.id)
-        } yield (savedAccount, savedProject)
-
-        for {
-          setupResult <- setup.transact(transactor)
-          (savedAccount, savedProject) = setupResult
-          dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-          _ = dumpResult.isRight shouldBe true
-          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-          projectRoot = rootFolder / os.up
-          originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-          // the dumper resolves fine via its existing email; the referenced account does not exist and can't
-          // be created because there's no 'developer' account type -- this must fail the whole load, not just
-          // silently skip that one account
-          missingAccountEmail = s"missing-${UUID.randomUUID().toString.take(8)}@example.com"
-          manifestWithMissingReferencedAccount = originalManifest.copy(
-            referencedAccounts = List(AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail))
-          )
-          _ = os.write.over(rootFolder / "project.json", manifestWithMissingReferencedAccount.asJson.spaces2)
-          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)
-    }
-
-    "deduplicate an account referenced both as the dumper and in referencedAccounts, creating only one mapping" in {
-      transactor =>
-        val dataExportService = newDataExportService(transactor)
-        val dataImportService = newDataImportService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
-
-        val setup = for {
-          savedAccount <- createAccount
-          savedOrgAndProject <- createOrgAndProject
-          (_, savedProject) = savedOrgAndProject
-          _ <- projectAccountRepo.insert(
-            ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
-          )
-          _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
-          _ <- insertMapping(savedProject.id, savedProject.id)
-        } yield (savedAccount, savedProject)
-
-        for {
-          setupResult <- setup.transact(transactor)
-          (savedAccount, savedProject) = setupResult
-          dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
-          _ = dumpResult.isRight shouldBe true
-          rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
-          projectRoot = rootFolder / os.up
-          originalManifest = dataExportDiskWriter.readManifest(rootFolder.toString).toOption.get
-          dumpSideAccountId = UUID.randomUUID()
-          // the dumper is also the creator of another task on disk, so the same dump-side id
-          // legitimately shows up again in referencedAccounts
-          manifestWithDuplicateReference = originalManifest.copy(
-            dumpedBy = originalManifest.dumpedBy.copy(id = dumpSideAccountId),
-            referencedAccounts = List(originalManifest.dumpedBy.copy(id = dumpSideAccountId))
-          )
-          _ = os.write.over(rootFolder / "project.json", manifestWithDuplicateReference.asJson.spaces2)
-          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
-          mappings <- accountMappingRepo
-            .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
-            .map(_.items)
-            .transact(transactor)
-        } yield {
-          importResult.isRight shouldBe true
-          mappings.map(_.accountIdDb) shouldBe List(savedAccount.id)
-        }
-    }
   }
 
 }
