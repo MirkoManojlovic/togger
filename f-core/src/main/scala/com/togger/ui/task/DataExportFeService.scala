@@ -3,7 +3,7 @@ package com.togger.ui.task
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{DataExportResp, DataExportStatusResp, TaskLoadReq, TaskLoadResp}
+import com.togger.dto.{DataExportResp, DataExportStatusResp, DataImportReq, DataImportResp}
 import com.togger.dump.DataExportEndpoints
 
 import java.util.UUID
@@ -23,6 +23,6 @@ class DataExportFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
   def checkStatusByConfig(exportConfigId: UUID): TgRespIO[DataExportStatusResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkStatusByConfigEndpoint)(exportConfigId)
 
-  def loadTasks(projectId: UUID, dumpPath: String): TgRespIO[TaskLoadResp] =
-    protectedBackendClient.protectedHttpCall(dataExportEndpoints.loadEndpoint)((projectId, TaskLoadReq(dumpPath)))
+  def importData(projectId: UUID, importPath: String): TgRespIO[DataImportResp] =
+    protectedBackendClient.protectedHttpCall(dataExportEndpoints.importEndpoint)((projectId, DataImportReq(importPath)))
 }

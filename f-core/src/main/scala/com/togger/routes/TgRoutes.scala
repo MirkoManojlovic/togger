@@ -258,22 +258,22 @@ class TgRoutes {
             params = (
               ListParams.pageToQuery(page.list.export),
               ListParams.sizeToQuery(page.list.export),
-              ListParams.pageToQuery(page.list.load),
-              ListParams.sizeToQuery(page.list.load)
+              ListParams.pageToQuery(page.list.importData),
+              ListParams.sizeToQuery(page.list.importData)
             )
           ),
         decode = { (args: PatternArgs[String, TaskConfigListQuery]) =>
-          val (exportPage, exportSize, loadPage, loadSize) = args.params
+          val (exportPage, exportSize, importPage, importSize) = args.params
           ShowAllTaskConfigsPage(
             UUID.fromString(args.path),
-            TaskConfigListParams.fromQuery(exportPage, exportSize, loadPage, loadSize)
+            TaskConfigListParams.fromQuery(exportPage, exportSize, importPage, importSize)
           )
         },
         pattern = (root / "task-config" / "project" / segment[String] / endOfSegments) ? (
           param[String]("exportPage").? &
             param[String]("exportSize").? &
-            param[String]("loadPage").? &
-            param[String]("loadSize").?
+            param[String]("importPage").? &
+            param[String]("importSize").?
         )
       ),
       Route(
@@ -292,14 +292,14 @@ class TgRoutes {
         pattern = root / "data-export-status" / "project" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: CreateTaskLoadConfigPage) => page.projectId.toString,
-        decode = (projectId: String) => CreateTaskLoadConfigPage(UUID.fromString(projectId)),
-        pattern = root / "task-load-config" / "create" / segment[String] / endOfSegments
+        encode = (page: CreateDataImportConfigPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateDataImportConfigPage(UUID.fromString(projectId)),
+        pattern = root / "data-import-config" / "create" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditTaskLoadConfigPage) => page.id.toString,
-        decode = (id: String) => EditTaskLoadConfigPage(UUID.fromString(id)),
-        pattern = root / "task-load-config" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditDataImportConfigPage) => page.id.toString,
+        decode = (id: String) => EditDataImportConfigPage(UUID.fromString(id)),
+        pattern = root / "data-import-config" / "edit" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: CreateProjectMappingPage) => page.projectId.toString,

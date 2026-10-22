@@ -92,10 +92,10 @@ object TgBreadcrumbTrail {
     case ShowAllTaskConfigsPage(projectId, _) => underTasks(projectId, current("Task configs"))
     case DataExportStatusPage(projectId)       => underTasks(projectId, current("Export data status"))
     case CreateDataExportConfigPage(projectId) => underConfigs(projectId, "Create export data config")
-    case CreateTaskLoadConfigPage(projectId) => underConfigs(projectId, "Create load config")
+    case CreateDataImportConfigPage(projectId) => underConfigs(projectId, "Create import data config")
     case CreateProjectMappingPage(projectId) => underConfigs(projectId, "Create project mapping")
     case EditDataExportConfigPage(_)           => underOrganizations(current("Edit export data config"))
-    case EditTaskLoadConfigPage(_)           => underOrganizations(current("Edit load config"))
+    case EditDataImportConfigPage(_)           => underOrganizations(current("Edit import data config"))
 
     case ShowTimeboxesPage(projectId, _)     => underTasks(projectId, current("Timeboxes"))
     case CreateTimeboxPage(projectId)        => underTimeboxes(projectId, "Create timebox")

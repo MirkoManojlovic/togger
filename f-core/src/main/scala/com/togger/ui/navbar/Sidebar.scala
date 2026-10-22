@@ -4,7 +4,7 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.dto.TaskLoadResp
+import com.togger.dto.DataImportResp
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -13,7 +13,7 @@ import com.togger.ui.auth.AccountService
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
-import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
+import com.togger.ui.dataimportconfig.DataImportConfigFeService
 import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLLIElement
 
@@ -25,7 +25,7 @@ case class SidebarLink(
   collapsed: Signal[Boolean],
   onExportClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
-  onLoadClick: Option[() => Unit] = None,
+  onImportClick: Option[() => Unit] = None,
   icon: String = ""
 ) {
 
@@ -64,14 +64,14 @@ case class SidebarLink(
             onClick.mapToUnit --> (_ => exportAction())
           )
         ),
-        onLoadClick.map(loadAction =>
+        onImportClick.map(importAction =>
           button(
             `type`("button"),
             TgIcons.uploadIcon("w-3.5 h-3.5"),
             cls(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
-            onClick.mapToUnit --> (_ => loadAction())
+            onClick.mapToUnit --> (_ => importAction())
           )
         ),
         onConfigClick.map(configAction =>
@@ -143,7 +143,7 @@ class Sidebar(
   organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
   dataExportService: DataExportFeService,
-  taskLoadConfigService: TaskLoadConfigFeService,
+  dataImportConfigService: DataImportConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
@@ -165,23 +165,23 @@ class Sidebar(
       )(_ => IO.unit)
       .unsafeRunAndForget()
 
-  private def loadAllForProject(projectId: UUID): Unit = {
-    val program: IO[Unit] = taskLoadConfigService.findAllByProjectId(projectId).flatMap {
+  private def importAllForProject(projectId: UUID): Unit = {
+    val program: IO[Unit] = dataImportConfigService.findAllByProjectId(projectId).flatMap {
       _.fold(
         error => IO(toast.error(error)),
         success => {
-          val paths = success.body.get.map(_.dumpPath).distinct.toList
-          if (paths.isEmpty) IO(toast.error("No load paths configured for this project"))
+          val paths = success.body.get.map(_.importPath).distinct.toList
+          if (paths.isEmpty) IO(toast.error("No import paths configured for this project"))
           else
             paths
-              .traverse(path => dataExportService.loadTasks(projectId, path).map(_.map(_.body.get)))
-              .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]) =>
+              .traverse(path => dataExportService.importData(projectId, path).map(_.map(_.body.get)))
+              .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, DataImportResp]]) =>
                 val successes = outcomes.collect { case Right(dto) => dto }
                 outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
                 val totalTasks = successes.map(_.taskCount).sum
                 val failedCount = outcomes.count(_.isLeft)
-                if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
-                else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+                if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalTasks task(s) total")
+                else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
               }
         }
       )
@@ -274,7 +274,7 @@ class Sidebar(
                               collapsed = collapsed,
                               onExportClick = Some(() => dumpProject(project.id)),
                               onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
-                              onLoadClick = Some(() => loadAllForProject(project.id)),
+                              onImportClick = Some(() => importAllForProject(project.id)),
                               icon = project.icon
                             )
                             if (isProjectSelected(project, page)) projectLink.selectedProject
@@ -347,7 +347,7 @@ object Sidebar {
     case ShowAllTaskConfigsPage(projectId, _) => Some(projectId)
     case CreateDataExportConfigPage(projectId) => Some(projectId)
     case DataExportStatusPage(projectId)       => Some(projectId)
-    case CreateTaskLoadConfigPage(projectId) => Some(projectId)
+    case CreateDataImportConfigPage(projectId) => Some(projectId)
     case CreateProjectMappingPage(projectId) => Some(projectId)
     case CreateMilestonePage(projectId)      => Some(projectId)
     case ShowMilestonesPage(projectId, _)    => Some(projectId)

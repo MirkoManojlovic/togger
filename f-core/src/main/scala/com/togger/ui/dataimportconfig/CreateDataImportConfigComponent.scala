@@ -1,9 +1,9 @@
-package com.togger.ui.taskloadconfig
+package com.togger.ui.dataimportconfig
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.taskloadconfig.CreateTaskLoadConfigReq
+import com.togger.dto.dataimportconfig.CreateDataImportConfigReq
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -14,30 +14,30 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
 
-case class CreateTaskLoadConfigForm(
+case class CreateDataImportConfigForm(
   name: String = "",
-  dumpPath: String = ""
+  importPath: String = ""
 )
 
-class CreateTaskLoadConfigComponent(
-  taskLoadConfigService: TaskLoadConfigFeService,
+class CreateDataImportConfigComponent(
+  dataImportConfigService: DataImportConfigFeService,
   spinnerService: SpinnerService,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  val formState = Var(CreateTaskLoadConfigForm())
+  val formState = Var(CreateDataImportConfigForm())
 
-  lazy val createSubmitter = Observer[CreateTaskLoadConfigForm] { state =>
-    val request = CreateTaskLoadConfigReq(
+  lazy val createSubmitter = Observer[CreateDataImportConfigForm] { state =>
+    val request = CreateDataImportConfigReq(
       name = state.name,
       projectId = projectId,
-      dumpPath = state.dumpPath
+      importPath = state.importPath
     )
     spinnerService
-      .runWithSpinner(taskLoadConfigService.create(request))
-      .toastMessageJustMessage("Task load config created successfully")
+      .runWithSpinner(dataImportConfigService.create(request))
+      .toastMessageJustMessage("Import data config created successfully")
       .unsafeRunAndForget()
   }
 
@@ -48,10 +48,10 @@ class CreateTaskLoadConfigComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val dumpPathInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
+  private val importPathInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.importPath),
     errors = EventStream.empty,
-    labelValue = "Project dump root path (must be an abs path; the latest dump inside it is loaded)",
+    labelValue = "Import path (must be an abs path; the latest dump inside it is imported)",
     tgInputType = TgInputType.Text
   )
 
@@ -59,13 +59,13 @@ class CreateTaskLoadConfigComponent(
     justifyCenterFlex,
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Create a task load config", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Create a Import data config", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
-              dumpPathInput.htmlElement.amend(cls("mb-4")),
+              importPathInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.create(EventStream.fromValue(false))
             )
           )

@@ -29,7 +29,7 @@ import com.togger.ui.taskconfig._
 import com.togger.ui.tasktemplate._
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
-import com.togger.ui.taskloadconfig._
+import com.togger.ui.dataimportconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
 import com.togger.ui.task.bulk.BulkAddTasks
 import com.togger.ui.projectlabel._
@@ -160,7 +160,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       accountService,
       router,
       dataExportService,
-      taskLoadConfigService,
+      dataImportConfigService,
       spinnerService,
       sidebarCollapseStore,
       sidebarRefresh,
@@ -213,7 +213,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationProjectsLoader = new OrganizationProjectsLoader(organizationService, projectService)
   lazy val dataExportConfigService = new DataExportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
-  lazy val taskLoadConfigService = new TaskLoadConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val dataImportConfigService = new DataImportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val projectMappingService = new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
 
   lazy val tgMarkdown = new TgMarkdown()
@@ -361,7 +361,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ShowAllTaskConfigsComponent(
                   dataExportConfigService,
                   dataExportService,
-                  taskLoadConfigService,
+                  dataImportConfigService,
                   tgDateFormater,
                   router,
                   spinnerService,
@@ -391,17 +391,17 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   toast
                 ).element
-              case CreateTaskLoadConfigPage(projectId: UUID) =>
-                new CreateTaskLoadConfigComponent(
-                  taskLoadConfigService,
+              case CreateDataImportConfigPage(projectId: UUID) =>
+                new CreateDataImportConfigComponent(
+                  dataImportConfigService,
                   spinnerService,
                   projectId,
                   toast
                 ).element
-              case EditTaskLoadConfigPage(id: UUID) =>
-                new EditTaskLoadConfigComponent(
+              case EditDataImportConfigPage(id: UUID) =>
+                new EditDataImportConfigComponent(
                   id,
-                  taskLoadConfigService,
+                  dataImportConfigService,
                   router,
                   spinnerService,
                   toast
@@ -735,7 +735,7 @@ case class NavigationSelection(
   accountService: AccountService,
   router: TgRouter[FrontendPage],
   dataExportService: DataExportFeService,
-  taskLoadConfigService: TaskLoadConfigFeService,
+  dataImportConfigService: DataImportConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
@@ -758,7 +758,7 @@ case class NavigationSelection(
               organizationProjectsLoader,
               accountService,
               dataExportService,
-              taskLoadConfigService,
+              dataImportConfigService,
               spinnerService,
               sidebarCollapseStore,
               sidebarRefresh,

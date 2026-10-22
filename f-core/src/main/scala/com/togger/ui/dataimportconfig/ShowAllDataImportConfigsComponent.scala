@@ -1,12 +1,12 @@
-package com.togger.ui.taskloadconfig
+package com.togger.ui.dataimportconfig
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.dto.{TaskLoadResp, TaskLoadStatusResp, TaskLoadTaskResultResp}
-import com.togger.routes.Pages.{CreateTaskLoadConfigPage, EditTaskLoadConfigPage}
+import com.togger.dto.dataimportconfig.DataImportConfigResp
+import com.togger.dto.{DataImportResp, DataImportStatusResp, DataImportTaskResultResp}
+import com.togger.routes.Pages.{CreateDataImportConfigPage, EditDataImportConfigPage}
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -21,8 +21,8 @@ import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
-class ShowAllTaskLoadConfigsComponent(
-  taskLoadConfigService: TaskLoadConfigFeService,
+class ShowAllDataImportConfigsComponent(
+  dataImportConfigService: DataImportConfigFeService,
   dataExportService: DataExportFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
@@ -37,14 +37,14 @@ class ShowAllTaskLoadConfigsComponent(
 
   import TaskConfigTableSupport._
 
-  private val stateFormVar = Var(Seq.empty[TaskLoadConfigResp])
-  private val resultsVar = Var(Seq.empty[TaskLoadTaskResultResp])
+  private val stateFormVar = Var(Seq.empty[DataImportConfigResp])
+  private val resultsVar = Var(Seq.empty[DataImportTaskResultResp])
 
   private val paginationVar = Var(Option.empty[PaginationState])
 
   /** Reads the page the URL asks for. A page past the end steps back to the last page. */
   private def loadPage(): IO[Unit] =
-    taskLoadConfigService.findByProjectId(projectId, params.pageRequest).map {
+    dataImportConfigService.findByProjectId(projectId, params.pageRequest).map {
       case Left(failure) => println(failure)
       case Right(success) =>
         val response = success.body.get
@@ -61,34 +61,34 @@ class ShowAllTaskLoadConfigsComponent(
 
   reload()
 
-  private def summaryMessage(dto: TaskLoadResp): String = {
+  private def summaryMessage(dto: DataImportResp): String = {
     val counts = dto.results.groupBy(_.status).view.mapValues(_.size).toMap
-    s"Loaded ${dto.taskCount} task(s): " +
-      s"${counts.getOrElse(TaskLoadStatusResp.Inserted, 0)} inserted, " +
-      s"${counts.getOrElse(TaskLoadStatusResp.Merged, 0)} merged, " +
-      s"${counts.getOrElse(TaskLoadStatusResp.Unchanged, 0)} unchanged, " +
-      s"${counts.getOrElse(TaskLoadStatusResp.Malformed, 0) + counts.getOrElse(TaskLoadStatusResp.Failed, 0)} failed"
+    s"Imported ${dto.taskCount} task(s): " +
+      s"${counts.getOrElse(DataImportStatusResp.Inserted, 0)} inserted, " +
+      s"${counts.getOrElse(DataImportStatusResp.Merged, 0)} merged, " +
+      s"${counts.getOrElse(DataImportStatusResp.Unchanged, 0)} unchanged, " +
+      s"${counts.getOrElse(DataImportStatusResp.Malformed, 0) + counts.getOrElse(DataImportStatusResp.Failed, 0)} failed"
   }
 
-  private def handleLoadResponse(dto: TaskLoadResp): Unit = {
+  private def handleImportResponse(dto: DataImportResp): Unit = {
     resultsVar.set(dto.results)
     toast.success(summaryMessage(dto))
   }
 
-  private def load(dumpPath: String): Unit =
+  private def importFrom(importPath: String): Unit =
     spinnerService
-      .runWithSpinner(dataExportService.loadTasks(projectId, dumpPath))
-      .toastJustErrors(())(handleLoadResponse)
+      .runWithSpinner(dataExportService.importData(projectId, importPath))
+      .toastJustErrors(())(handleImportResponse)
       .unsafeRunAndForget()
 
-  /** "Load all" loads from every config of the project, not only the ones on the page on screen. */
+  /** "Import all" loads from every config of the project, not only the ones on the page on screen. */
   private def loadAll(): Unit = {
-    val program: IO[List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]] =
-      taskLoadConfigService.findAllByProjectId(projectId).flatMap {
-        case Left(failure) => IO.pure(List(failure.asLeft[TaskLoadResp]))
+    val program: IO[List[Either[com.togger.common.TgJsonFailure, DataImportResp]]] =
+      dataImportConfigService.findAllByProjectId(projectId).flatMap {
+        case Left(failure) => IO.pure(List(failure.asLeft[DataImportResp]))
         case Right(success) =>
-          val paths = success.body.get.map(_.dumpPath).distinct.toList
-          paths.traverse(path => dataExportService.loadTasks(projectId, path).map(_.map(_.body.get)))
+          val paths = success.body.get.map(_.importPath).distinct.toList
+          paths.traverse(path => dataExportService.importData(projectId, path).map(_.map(_.body.get)))
       }
 
     spinnerService
@@ -99,17 +99,17 @@ class ShowAllTaskLoadConfigsComponent(
         outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
         val totalTasks = successes.map(_.taskCount).sum
         val failedCount = outcomes.count(_.isLeft)
-        if (failedCount == 0) toast.success(s"Loaded from ${successes.size} path(s), $totalTasks task(s) total")
-        else toast.error(s"Loaded from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+        if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalTasks task(s) total")
+        else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
       }
       .unsafeRunAndForget()
   }
 
-  private def configRow(dto: TaskLoadConfigResp) =
+  private def configRow(dto: DataImportConfigResp) =
     tr(
       cls(rowCls),
       createTd(dto.name),
-      createTd(dto.dumpPath),
+      createTd(dto.importPath),
       createTd(tgDateFormater.yearMonthDayTimeFormat(dto.updatedAt)),
       createTd(
         div(
@@ -118,7 +118,7 @@ class ShowAllTaskLoadConfigsComponent(
             TgIcons.editIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditTaskLoadConfigPage(dto.id)))
+            onClick.mapToUnit --> (_ => router.route(EditDataImportConfigPage(dto.id)))
           ),
           iconButton(
             "Delete",
@@ -127,7 +127,7 @@ class ShowAllTaskLoadConfigsComponent(
             rowButtonMarginCls,
             onClick.mapToUnit --> (_ =>
               spinnerService
-                .runWithSpinner(taskLoadConfigService.deleteById(dto.id))
+                .runWithSpinner(dataImportConfigService.deleteById(dto.id))
                 .toastBackendMessageCodeBlock {
                   reload()
                 }
@@ -135,11 +135,11 @@ class ShowAllTaskLoadConfigsComponent(
             )
           ),
           iconButton(
-            "Load",
+            "Import",
             TgIcons.uploadIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             lastRowButtonMarginCls,
-            onClick.mapToUnit --> (_ => load(dto.dumpPath))
+            onClick.mapToUnit --> (_ => importFrom(dto.importPath))
           )
         )
       )
@@ -152,10 +152,10 @@ class ShowAllTaskLoadConfigsComponent(
           header = TgCard.CardHeader.html(
             div(
               cls("flex justify-between"),
-              div("Task load configs"),
+              div("Import data configs"),
               div(
                 iconButton(
-                  "Load all",
+                  "Import all",
                   TgIcons.uploadIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   headerButtonMarginCls,
@@ -166,7 +166,7 @@ class ShowAllTaskLoadConfigsComponent(
                   TgIcons.plusIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   "",
-                  router.navigateTo(CreateTaskLoadConfigPage(projectId))
+                  router.navigateTo(CreateDataImportConfigPage(projectId))
                 )
               )
             ),
@@ -181,7 +181,7 @@ class ShowAllTaskLoadConfigsComponent(
                     cls(tableCls),
                     thead(
                       cls(theadCls),
-                      tr(Seq("name", "dump path", "loaded at", "Action").map(createTh))
+                      tr(Seq("name", "import path", "imported at", "Action").map(createTh))
                     ),
                     tbody(dtos.map(configRow))
                   )
@@ -194,15 +194,15 @@ class ShowAllTaskLoadConfigsComponent(
         .element,
       div(
         cls("mt-4"),
-        child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(loadResultsTable(results)))
+        child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(importResultsTable(results)))
       )
     )
   }
 
-  private def loadResultsTable(results: Seq[TaskLoadTaskResultResp]) =
+  private def importResultsTable(results: Seq[DataImportTaskResultResp]) =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Load results", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Import results", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             cls(tableWrapperCls),
@@ -215,12 +215,12 @@ class ShowAllTaskLoadConfigsComponent(
               tbody(
                 results
                   .sortBy(_.taskId)
-                  .map { (r: TaskLoadTaskResultResp) =>
+                  .map { (r: DataImportTaskResultResp) =>
                     tr(
                       cls(rowCls),
                       createTd(r.taskId.toString),
                       createTd(r.taskName.getOrElse("-"): String),
-                      createTd(loadStatusBadge(r.status)),
+                      createTd(importStatusBadge(r.status)),
                       createTd(r.versionsAdded.toString),
                       createTd(r.linksAdded.toString),
                       createTd(r.logEntriesAdded.toString),
@@ -234,15 +234,15 @@ class ShowAllTaskLoadConfigsComponent(
       )
       .element
 
-  private def loadStatusBadgeColor(status: TaskLoadStatusResp): TgBadgeColor = status match {
-    case TaskLoadStatusResp.Inserted  => TgBadgeColor.Green
-    case TaskLoadStatusResp.Merged    => TgBadgeColor.Blue
-    case TaskLoadStatusResp.Unchanged => TgBadgeColor.Dark
-    case TaskLoadStatusResp.Malformed => TgBadgeColor.Red
-    case TaskLoadStatusResp.Failed    => TgBadgeColor.Red
+  private def importStatusBadgeColor(status: DataImportStatusResp): TgBadgeColor = status match {
+    case DataImportStatusResp.Inserted  => TgBadgeColor.Green
+    case DataImportStatusResp.Merged    => TgBadgeColor.Blue
+    case DataImportStatusResp.Unchanged => TgBadgeColor.Dark
+    case DataImportStatusResp.Malformed => TgBadgeColor.Red
+    case DataImportStatusResp.Failed    => TgBadgeColor.Red
   }
 
-  private def loadStatusBadge(status: TaskLoadStatusResp) =
-    TgBadge(status.entryName, loadStatusBadgeColor(status)).element
+  private def importStatusBadge(status: DataImportStatusResp) =
+    TgBadge(status.entryName, importStatusBadgeColor(status)).element
 
 }

@@ -32,19 +32,19 @@ class TaskConfigListRouteTest extends AsyncJsWordSpec {
     "round trip the page and size of both lists apart from each other" in { _ =>
       val page = ShowAllTaskConfigsPage(
         projectId,
-        TaskConfigListParams(export = ListParams(page = 3, size = 50), load = ListParams(page = 2, size = 10))
+        TaskConfigListParams(export = ListParams(page = 3, size = 50), importData = ListParams(page = 2, size = 10))
       )
       pageOf(urlOf(page)) shouldBe Some(page)
     }
 
     "move one list without moving the other" in { _ =>
-      val moved = TaskConfigListParams.default.exportAtPage(4, 20).loadAtPage(2, 10)
-      (moved, TaskConfigListParams.default.loadAtPage(3, 20).export) shouldBe
+      val moved = TaskConfigListParams.default.exportAtPage(4, 20).importAtPage(2, 10)
+      (moved, TaskConfigListParams.default.importAtPage(3, 20).export) shouldBe
         (TaskConfigListParams(ListParams(4, 20), ListParams(2, 10)), ListParams.default)
     }
 
     "fall back to the defaults for a bad page and size" in { _ =>
-      pageOf(s"$path?exportPage=abc&exportSize=7&loadPage=0&loadSize=1000").map(_.list) shouldBe
+      pageOf(s"$path?exportPage=abc&exportSize=7&loadPage=0&importSize=1000").map(_.list) shouldBe
         Some(TaskConfigListParams.default)
     }
 
