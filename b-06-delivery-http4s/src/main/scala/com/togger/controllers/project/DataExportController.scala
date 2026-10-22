@@ -3,25 +3,31 @@ package com.togger.controllers.project
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.dto.{
+  DataExportEntityCountResp,
+  DataExportEntityStatusResp,
+  DataExportEntityTypeResp,
   DataExportPathResultResp,
   DataExportPathStatusResp,
   DataExportResp,
   DataExportStatusResp,
   DataExportSyncStatusResp,
-  DataExportTaskStatusResp,
+  DataImportEntityResultResp,
   DataImportResp,
-  DataImportStatusResp,
-  DataImportTaskResultResp
+  DataImportStatusResp
 }
 import com.togger.dump.{
   DataExportEndpoints,
+  DataExportEntityStatus,
+  DataExportEntityType,
+  DataExportResult,
   DataExportService,
   DataExportSyncStatus,
-  DataExportTaskStatus,
+  DataImportEntityResult,
   DataImportService,
-  DataImportTaskResult,
-  DataImportTaskStatus
+  DataImportStatus
 }
+
+import java.util.UUID
 
 class DataExportController(
   dataExportEndpoints: DataExportEndpoints,
@@ -29,14 +35,12 @@ class DataExportController(
   dataImportService: DataImportService
 ) {
 
-  val dumpTasks = dataExportEndpoints.exportEndpoint.serverLogic { auth => projectId =>
+  val exportTasks = dataExportEndpoints.exportEndpoint.serverLogic { auth => projectId =>
     dataExportService
-      .dumpProject(projectId, auth.body.get.id)
+      .exportProject(projectId, auth.body.get.id)
       .map {
-        case Right(result) =>
-          val results = result.pathResults.map(r => DataExportPathResultResp(r.exportPath, r.error))
-          TgJsonSuccess.justBodyRight(DataExportResp(projectId, result.taskCount, results))
-        case Left(error) => error.toBadRequestLeft[DataExportResp]
+        case Right(result) => TgJsonSuccess.justBodyRight(toResp(projectId, result))
+        case Left(error)   => error.toBadRequestLeft[DataExportResp]
       }
   }
 
@@ -45,30 +49,30 @@ class DataExportController(
       .checkStatus(projectId, auth.body.get.id)
       .map {
         case Right(result) =>
-          val pathStatuses = result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.taskStatuses.map(toResp)))
+          val pathStatuses =
+            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp)))
           TgJsonSuccess.justBodyRight(DataExportStatusResp(projectId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
   }
 
-  val dumpByConfig = dataExportEndpoints.exportByConfigEndpoint.serverLogic { auth => dumpConfigId =>
+  val exportByConfig = dataExportEndpoints.exportByConfigEndpoint.serverLogic { auth => exportConfigId =>
     dataExportService
-      .dumpConfig(dumpConfigId, auth.body.get.id)
+      .exportConfig(exportConfigId, auth.body.get.id)
       .map {
-        case Right(result) =>
-          val results = result.pathResults.map(r => DataExportPathResultResp(r.exportPath, r.error))
-          TgJsonSuccess.justBodyRight(DataExportResp(dumpConfigId, result.taskCount, results))
-        case Left(error) => error.toBadRequestLeft[DataExportResp]
+        case Right(result) => TgJsonSuccess.justBodyRight(toResp(exportConfigId, result))
+        case Left(error)   => error.toBadRequestLeft[DataExportResp]
       }
   }
 
-  val checkStatusByConfig = dataExportEndpoints.checkStatusByConfigEndpoint.serverLogic { auth => dumpConfigId =>
+  val checkStatusByConfig = dataExportEndpoints.checkStatusByConfigEndpoint.serverLogic { auth => exportConfigId =>
     dataExportService
-      .checkConfigStatus(dumpConfigId, auth.body.get.id)
+      .checkConfigStatus(exportConfigId, auth.body.get.id)
       .map {
         case Right(result) =>
-          val pathStatuses = result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.taskStatuses.map(toResp)))
-          TgJsonSuccess.justBodyRight(DataExportStatusResp(dumpConfigId, pathStatuses))
+          val pathStatuses =
+            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp)))
+          TgJsonSuccess.justBodyRight(DataExportStatusResp(exportConfigId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
   }
@@ -79,41 +83,65 @@ class DataExportController(
         .importProject(projectId, auth.body.get.id, req.importPath)
         .map {
           case Right(result) =>
-            val results = result.taskResults.map(toResp)
-            TgJsonSuccess.justBodyRight(DataImportResp(projectId, result.dumpPath, result.taskCount, results))
+            val results = result.results.map(toResp)
+            val counts = DataExportEntityType.all.map(t => t -> results.count(_.entityType == toResp(t)))
+            TgJsonSuccess.justBodyRight(DataImportResp(projectId, result.importPath, toCountsResp(counts), results))
           case Left(error) => error.toBadRequestLeft[DataImportResp]
         }
     }
   }
 
-  private def toResp(r: DataImportTaskResult): DataImportTaskResultResp =
-    DataImportTaskResultResp(
-      r.taskId,
-      r.taskName,
+  private def toResp(id: UUID, result: DataExportResult): DataExportResp =
+    DataExportResp(
+      id,
+      toCountsResp(result.entityCounts),
+      result.pathResults.map(r => DataExportPathResultResp(r.exportPath, r.error))
+    )
+
+  private def toCountsResp(counts: List[(DataExportEntityType, Int)]): List[DataExportEntityCountResp] =
+    counts.map { case (entityType, count) => DataExportEntityCountResp(toResp(entityType), count) }
+
+  private def toResp(t: DataExportEntityType): DataExportEntityTypeResp = t match {
+    case DataExportEntityType.Project      => DataExportEntityTypeResp.Project
+    case DataExportEntityType.Members      => DataExportEntityTypeResp.Members
+    case DataExportEntityType.TaskStatus   => DataExportEntityTypeResp.TaskStatus
+    case DataExportEntityType.TaskLabel    => DataExportEntityTypeResp.TaskLabel
+    case DataExportEntityType.ProjectLabel => DataExportEntityTypeResp.ProjectLabel
+    case DataExportEntityType.Milestone    => DataExportEntityTypeResp.Milestone
+    case DataExportEntityType.Task         => DataExportEntityTypeResp.Task
+    case DataExportEntityType.LogEntry     => DataExportEntityTypeResp.LogEntry
+    case DataExportEntityType.TaskTemplate => DataExportEntityTypeResp.TaskTemplate
+    case DataExportEntityType.Timebox      => DataExportEntityTypeResp.Timebox
+  }
+
+  private def toResp(r: DataImportEntityResult): DataImportEntityResultResp =
+    DataImportEntityResultResp(
+      toResp(r.entityType),
+      r.entityId,
+      r.entityName,
       toRespStatus(r.status),
       r.versionsAdded,
-      r.linksAdded,
-      r.logEntriesAdded,
+      r.childrenAdded,
       r.error
     )
 
-  private def toRespStatus(s: DataImportTaskStatus): DataImportStatusResp = s match {
-    case DataImportTaskStatus.Inserted  => DataImportStatusResp.Inserted
-    case DataImportTaskStatus.Merged    => DataImportStatusResp.Merged
-    case DataImportTaskStatus.Unchanged => DataImportStatusResp.Unchanged
-    case DataImportTaskStatus.Malformed => DataImportStatusResp.Malformed
-    case DataImportTaskStatus.Failed    => DataImportStatusResp.Failed
+  private def toRespStatus(s: DataImportStatus): DataImportStatusResp = s match {
+    case DataImportStatus.Inserted  => DataImportStatusResp.Inserted
+    case DataImportStatus.Merged    => DataImportStatusResp.Merged
+    case DataImportStatus.Unchanged => DataImportStatusResp.Unchanged
+    case DataImportStatus.Malformed => DataImportStatusResp.Malformed
+    case DataImportStatus.Failed    => DataImportStatusResp.Failed
   }
 
-  private def toResp(s: DataExportTaskStatus): DataExportTaskStatusResp =
-    DataExportTaskStatusResp(s.taskId, s.taskName, toRespStatus(s.status), s.differences)
+  private def toResp(s: DataExportEntityStatus): DataExportEntityStatusResp =
+    DataExportEntityStatusResp(toResp(s.entityType), s.entityId, s.entityName, toRespStatus(s.status), s.differences)
 
   private def toRespStatus(s: DataExportSyncStatus): DataExportSyncStatusResp = s match {
-    case DataExportSyncStatus.InSync          => DataExportSyncStatusResp.InSync
-    case DataExportSyncStatus.OutOfSync       => DataExportSyncStatusResp.OutOfSync
+    case DataExportSyncStatus.InSync            => DataExportSyncStatusResp.InSync
+    case DataExportSyncStatus.OutOfSync         => DataExportSyncStatusResp.OutOfSync
     case DataExportSyncStatus.MissingFromExport => DataExportSyncStatusResp.MissingFromExport
-    case DataExportSyncStatus.MissingFromDb   => DataExportSyncStatusResp.MissingFromDb
-    case DataExportSyncStatus.Malformed       => DataExportSyncStatusResp.Malformed
+    case DataExportSyncStatus.MissingFromDb     => DataExportSyncStatusResp.MissingFromDb
+    case DataExportSyncStatus.Malformed         => DataExportSyncStatusResp.Malformed
   }
 
 }

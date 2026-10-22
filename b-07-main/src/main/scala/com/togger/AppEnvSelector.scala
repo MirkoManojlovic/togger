@@ -5,8 +5,7 @@ import pureconfig.generic.auto._
 import scribe.Logging
 
 case class AppConfigBe(
-  isDesktopMode: Boolean,
-  dumpLimit: Int
+  isDesktopMode: Boolean
 )
 class AppEnvSelector(appEnv: AppEnv) extends Logging {
 
@@ -16,7 +15,6 @@ class AppEnvSelector(appEnv: AppEnv) extends Logging {
     val config = ConfigSource
       .resources(configFile)
       .loadOrThrow[AppConfigBe]
-    require(config.dumpLimit > 0, s"dump-limit must be positive, got ${config.dumpLimit}")
     config
   }
 

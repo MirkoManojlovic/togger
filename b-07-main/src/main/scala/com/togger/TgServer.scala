@@ -64,7 +64,7 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule, dumpLimit: Int): Resource[IO, Server] = {
+  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
@@ -73,8 +73,7 @@ object TgServer {
       new DependenciesModule(
         transactorModule.transactor,
         securedEndpoint,
-        authDependenciesModule,
-        dumpLimit
+        authDependenciesModule
       )
     import dependenciesModule._
 
@@ -162,9 +161,9 @@ object TgServer {
             taskTemplateController.findByLabel,
             taskTemplateController.listVersions,
             taskTemplateController.delete,
-            dataExportController.dumpTasks,
+            dataExportController.exportTasks,
             dataExportController.checkStatus,
-            dataExportController.dumpByConfig,
+            dataExportController.exportByConfig,
             dataExportController.checkStatusByConfig,
             dataExportController.importData,
             dataExportConfigController.findById,
@@ -204,8 +203,7 @@ object TgServer {
 class DependenciesModule(
   val transactor: Transactor[IO],
   securedEndpoint: SecuredEndpoint,
-  authDependenciesModule: AuthDependenciesModule,
-  dumpLimit: Int
+  authDependenciesModule: AuthDependenciesModule
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
@@ -345,16 +343,28 @@ class DependenciesModule(
     new DataExportRepo(
       projectRepo,
       projectAccountRepo,
+      projectLabelAssignmentRepo,
+      projectLabelCategoryRepo,
       accountRepo,
       taskRepo,
       taskVersionRepo,
       taskStatusRepo,
+      taskLabelRepo,
+      taskLabelAssignmentRepo,
       linkRepo,
       linkVersionRepo,
       logEntryRepo,
-      logEntryVersionRepo
+      logEntryVersionRepo,
+      milestoneRepo,
+      milestoneVersionRepo,
+      milestoneDateRepo,
+      milestoneDateVersionRepo,
+      taskTemplateRepo,
+      taskTemplateVersionRepo,
+      timeboxRepo,
+      timeboxVersionRepo
     )
-  lazy val dataExportDiskWriter = new DataExportDiskWriter(dataExportDiskOps, dumpLimit)
+  lazy val dataExportTreeStore = new DataExportTreeStore(dataExportDiskOps)
 
   lazy val dataImportConfigVerification = new DataImportConfigVerification()
 
@@ -393,7 +403,7 @@ class DependenciesModule(
     new AccountMappingController(accountMappingEndpoints, accountMappingService, tgClock)
 
   lazy val dataExportService =
-    new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, tgClock, transactor)
+    new DataExportService(dataExportRepo, dataExportTreeStore, dataExportConfigService, tgClock, transactor)
   lazy val dataImportRepo =
     new DataImportRepo(
       taskRepo,
@@ -407,9 +417,23 @@ class DependenciesModule(
       tgClock,
       accountRepo,
       accountTypeRepo,
-      accountMappingRepo
+      accountMappingRepo,
+      taskLabelRepo,
+      taskLabelAssignmentRepo,
+      projectLabelRepo,
+      projectLabelCategoryRepo,
+      projectLabelAssignmentRepo,
+      projectAccountRepo,
+      milestoneRepo,
+      milestoneVersionRepo,
+      milestoneDateRepo,
+      milestoneDateVersionRepo,
+      taskTemplateRepo,
+      taskTemplateVersionRepo,
+      timeboxRepo,
+      timeboxVersionRepo
     )
-  lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportDiskWriter, transactor)
+  lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
   lazy val dataExportController = new DataExportController(dataExportEndpoints, dataExportService, dataImportService)
 
