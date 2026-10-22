@@ -85,6 +85,14 @@ just desktop                # both of the above
 just desktop-clean          # sbt clean first
 ```
 
+## Rules for using sbt
+
+- The user always has a manually started `sbt ~frontendMain/fastLinkJS` process running. To check that frontend
+  changes compile, find that process's pid and tail its output for errors instead of starting another sbt.
+- To run tests or any other sbt command, start a new sbt client, remember its pid, and kill exactly that pid when
+  the check is done.
+- Never kill all sbt processes (no `pkill -f sbt`): that would also kill the user's watcher.
+
 ## Architecture
 
 **Module layering by prefix:**
