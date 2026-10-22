@@ -8,6 +8,7 @@ import java.util.UUID
 trait MilestoneDateRepo {
 
   def insert(milestoneDate: MilestoneDate): ConnectionIO[MilestoneDate]
+  def insertWithId(milestoneDate: MilestoneDate): ConnectionIO[MilestoneDate]
 
   def findById(id: UUID): ConnectionIO[MilestoneDate]
 

@@ -25,6 +25,20 @@ class TimeboxRepoImpl extends TimeboxRepo {
     )(s"Inserting ${sp(timebox)}", timebox => s"Timebox inserted ${sp(timebox)}")
   }
 
+  override def insertWithId(timebox: Timebox): ConnectionIO[Timebox] = {
+    import timebox._
+    logAroundInfoQuery(
+      insertStatement(TIMEBOX_TABLE_FRAG)(fr"""
+        (id, project_id, created_at)
+        values ($id, $projectId, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[Timebox]("id", "project_id", "created_at")
+    )(
+      s"Inserting ${sp(timebox)} with existing id",
+      timebox => s"Timebox inserted with existing id ${sp(timebox)}"
+    )
+  }
+
   override def findById(id: UUID): ConnectionIO[Timebox] =
     logAroundInfoQuery(findByIdStatementUUID(TIMEBOX_TABLE_FRAG)(id).query[Timebox].unique)(
       s"Finding timebox with ${sp(id)}",

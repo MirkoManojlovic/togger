@@ -38,6 +38,20 @@ class MilestoneVersionRepoImpl extends MilestoneVersionRepo {
     )(s"Inserting ${sp(milestoneVersion)}", milestoneVersion => s"Milestone version inserted ${sp(milestoneVersion)}")
   }
 
+  override def insertWithId(milestoneVersion: MilestoneVersion): ConnectionIO[MilestoneVersion] = {
+    import milestoneVersion._
+    logAroundInfoQuery(
+      insertStatement(MILESTONE_VERSION_TABLE_FRAG)(fr"""
+        (version, milestone_id, name, description, status, start_date, due_date, end_date, created_at, updated_at)
+        values ($version, $milestoneId, $name, $description, $status, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
+      """).update
+        .withUniqueGeneratedKeys[MilestoneVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(milestoneVersion)} with existing version",
+      milestoneVersion => s"Milestone version inserted with existing version ${sp(milestoneVersion)}"
+    )
+  }
+
   override def findByVersion(version: UUID): ConnectionIO[MilestoneVersion] =
     logAroundInfoQuery(
       (selectAllStatement(MILESTONE_VERSION_TABLE_FRAG) ++ fr"where version = $version").query[MilestoneVersion].unique

@@ -8,6 +8,7 @@ import java.util.UUID
 trait MilestoneVersionRepo {
 
   def insert(milestoneVersion: MilestoneVersion): ConnectionIO[MilestoneVersion]
+  def insertWithId(milestoneVersion: MilestoneVersion): ConnectionIO[MilestoneVersion]
 
   def findByVersion(version: UUID): ConnectionIO[MilestoneVersion]
 

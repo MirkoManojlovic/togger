@@ -30,6 +30,20 @@ class TaskTemplateRepoImpl extends TaskTemplateRepo with TgLogging {
     )(s"Inserting ${sp(taskTemplate)}", saved => s"Task template inserted ${sp(saved)}")
   }
 
+  override def insertWithId(taskTemplate: TaskTemplate): ConnectionIO[TaskTemplate] = {
+    import taskTemplate._
+    logAroundInfoQuery(
+      insertStatement(TASK_TEMPLATE_TABLE_FRAG)(fr"""
+        (id, project_id, task_label_id, created_by, created_at)
+        values ($id, $projectId, $taskLabelId, $createdBy, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[TaskTemplate](returnFields: _*)
+    )(
+      s"Inserting ${sp(taskTemplate)} with existing id",
+      saved => s"Task template inserted with existing id ${sp(saved)}"
+    )
+  }
+
   override def findById(id: UUID): ConnectionIO[TaskTemplate] =
     logAroundInfoQuery(findByIdStatementUUID(TASK_TEMPLATE_TABLE_FRAG)(id).query[TaskTemplate].unique)(
       s"Finding task template with ${sp(id)}",

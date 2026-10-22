@@ -11,6 +11,8 @@ trait TimeboxVersionRepo {
 
   def insert(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion]
 
+  def insertWithId(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion]
+
   def insertPlannedTasks(timeboxVersion: UUID, taskVersions: Seq[UUID]): ConnectionIO[Int]
 
   def findByVersion(version: UUID): ConnectionIO[TimeboxVersion]

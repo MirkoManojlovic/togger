@@ -25,6 +25,20 @@ class MilestoneDateRepoImpl extends MilestoneDateRepo {
     )(s"Inserting ${sp(milestoneDate)}", milestoneDate => s"Milestone date inserted ${sp(milestoneDate)}")
   }
 
+  override def insertWithId(milestoneDate: MilestoneDate): ConnectionIO[MilestoneDate] = {
+    import milestoneDate._
+    logAroundInfoQuery(
+      insertStatement(MILESTONE_DATE_TABLE_FRAG)(fr"""
+        (id, milestone_id, created_at)
+        values ($id, $milestoneId, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[MilestoneDate]("id", "milestone_id", "created_at")
+    )(
+      s"Inserting ${sp(milestoneDate)} with existing id",
+      milestoneDate => s"Milestone date inserted with existing id ${sp(milestoneDate)}"
+    )
+  }
+
   override def findById(id: UUID): ConnectionIO[MilestoneDate] =
     logAroundInfoQuery(findByIdStatementUUID(MILESTONE_DATE_TABLE_FRAG)(id).query[MilestoneDate].unique)(
       s"Finding milestone date with ${sp(id)}",

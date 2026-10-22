@@ -8,6 +8,7 @@ import java.util.UUID
 trait TimeboxRepo {
 
   def insert(timebox: Timebox): ConnectionIO[Timebox]
+  def insertWithId(timebox: Timebox): ConnectionIO[Timebox]
 
   def findById(id: UUID): ConnectionIO[Timebox]
 

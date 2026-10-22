@@ -28,6 +28,20 @@ class TaskTemplateVersionRepoImpl extends TaskTemplateVersionRepo with TgLogging
     )(s"Inserting ${sp(templateVersion)}", saved => s"Task template version inserted ${sp(saved)}")
   }
 
+  override def insertWithId(templateVersion: TaskTemplateVersion): ConnectionIO[TaskTemplateVersion] = {
+    import templateVersion._
+    logAroundInfoQuery(
+      insertStatement(TASK_TEMPLATE_VERSION_TABLE_FRAG)(fr"""
+        (version, task_template_id, name, body, created_at)
+        values ($version, $taskTemplateId, $name, $body, $createdAt)
+      """).update
+        .withUniqueGeneratedKeys[TaskTemplateVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(templateVersion)} with existing version",
+      saved => s"Task template version inserted with existing version ${sp(saved)}"
+    )
+  }
+
   override def findByVersion(version: UUID): ConnectionIO[TaskTemplateVersion] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_TEMPLATE_VERSION_TABLE_FRAG) ++ fr"where version = $version")

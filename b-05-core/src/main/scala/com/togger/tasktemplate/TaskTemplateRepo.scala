@@ -8,6 +8,7 @@ import java.util.UUID
 trait TaskTemplateRepo {
 
   def insert(taskTemplate: TaskTemplate): ConnectionIO[TaskTemplate]
+  def insertWithId(taskTemplate: TaskTemplate): ConnectionIO[TaskTemplate]
 
   def findById(id: UUID): ConnectionIO[TaskTemplate]
 
@@ -35,6 +36,7 @@ trait TaskTemplateRepo {
 trait TaskTemplateVersionRepo {
 
   def insert(version: TaskTemplateVersion): ConnectionIO[TaskTemplateVersion]
+  def insertWithId(version: TaskTemplateVersion): ConnectionIO[TaskTemplateVersion]
 
   def findByVersion(version: UUID): ConnectionIO[TaskTemplateVersion]
 

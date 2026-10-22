@@ -28,6 +28,20 @@ class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
     )(s"Inserting ${sp(timeboxVersion)}", saved => s"Timebox version inserted ${sp(saved)}")
   }
 
+  override def insertWithId(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion] = {
+    import timeboxVersion._
+    logAroundInfoQuery(
+      insertStatement(TIMEBOX_VERSION_TABLE_FRAG)(fr"""
+        (version, timebox_id, start_date, end_date, description, created_at, change_comment)
+        values ($version, $timeboxId, $startDate, $endDate, $description, $createdAt, $changeComment)
+      """).update
+        .withUniqueGeneratedKeys[TimeboxVersion](returnFields: _*)
+    )(
+      s"Inserting ${sp(timeboxVersion)} with existing version",
+      saved => s"Timebox version inserted with existing version ${sp(saved)}"
+    )
+  }
+
   override def insertPlannedTasks(timeboxVersion: UUID, taskVersions: Seq[UUID]): ConnectionIO[Int] =
     logAroundInfoQuery(
       Update[(UUID, UUID)](
