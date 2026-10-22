@@ -1,10 +1,11 @@
 package com.togger.dump
 
 import com.togger.project.{ProjectAccount, ProjectError}
-import com.togger.task.TaskLabelAssignment
+import com.togger.task.{Link, LinkVersion, TaskLabelAssignment}
 import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
 import com.togger.timebox.{Timebox, TimeboxVersion}
 import doobie.implicits._
+import io.circe.generic.auto._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -124,6 +125,120 @@ class DataImportServiceTest extends ExportImportTestSupport {
 
         cp(second.toOption.get.results.map(_.status).distinct shouldBe List(DataImportStatus.Unchanged))
         cp.reportAll()
+      }
+    }
+
+    "insert a task, its link and its log entry that exist in the tree but not in the db" in { transactor =>
+      val setup = for {
+        projectData <- createExportableProject(newExportPath())
+        (account, project) = projectData
+        status <- createTaskStatus(project.id)
+      } yield (account, project, status)
+
+      val taskId = UUID.randomUUID()
+      val linkId = UUID.randomUUID()
+      val logEntryId = UUID.randomUUID()
+      val linkData = LinkDumpData(
+        Link(linkId, taskId, nowAsInstant),
+        List(LinkVersion(UUID.randomUUID(), linkId, "Disk link", "https://example.com", nowAsInstant, nowAsInstant))
+      )
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (account, project, status) = setupResult
+        root <- exportToFolder(transactor, project.id, account.id)
+        task = handWrittenTask(taskId, project.id, account.id, status.id).copy(links = List(linkData))
+        _ = putEntity(root, DataExportEntityType.Task, taskId, None, task)
+        _ = putEntity(root, DataExportEntityType.LogEntry, logEntryId, None, handWrittenLogEntry(logEntryId, taskId, account.id))
+        importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+        persistedTask <- taskRepo.findById(taskId).transact(transactor)
+        versions <- taskVersionRepo.findByTaskId(taskId).transact(transactor)
+        links <- linkRepo.findByTaskId(taskId).transact(transactor)
+        logEntries <- logEntryRepo.findByTaskId(taskId).transact(transactor)
+      } yield {
+        val cp = new Checkpoint
+        val imported = importResult.toOption.get
+        val taskResult = resultOf(imported, DataExportEntityType.Task).find(_.entityId == taskId).get
+        val logEntryResult = resultOf(imported, DataExportEntityType.LogEntry).find(_.entityId == logEntryId).get
+        cp(taskResult.status shouldBe DataImportStatus.Inserted)
+        cp(taskResult.versionsAdded shouldBe 2) // the task version and the link version
+        cp(taskResult.childrenAdded shouldBe 1) // the link
+        cp(logEntryResult.status shouldBe DataImportStatus.Inserted)
+        cp(logEntryResult.versionsAdded shouldBe 1)
+        cp(persistedTask.id shouldBe taskId)
+        cp(versions.size shouldBe 1)
+        cp(links.size shouldBe 1)
+        cp(logEntries.size shouldBe 1)
+        cp.reportAll()
+      }
+    }
+
+    "merge missing versions and links into a task that already exists in the db, and be idempotent on reimport" in {
+      transactor =>
+        val setup = for {
+          projectData <- createExportableProject(newExportPath())
+          (account, project) = projectData
+          status <- createTaskStatus(project.id)
+          taskId <- createTaskWithFullHistory(project.id, account.id, status.id)
+        } yield (account, project, taskId)
+
+        for {
+          setupResult <- setup.transact(transactor)
+          (account, project, taskId) = setupResult
+          root <- exportToFolder(transactor, project.id, account.id)
+          // a local db that is behind the export: no older task version, no link, no older log entry version
+          taskVersions <- taskVersionRepo.findByTaskId(taskId).transact(transactor)
+          link <- linkRepo.findByTaskId(taskId).transact(transactor).map(_.head)
+          logEntry <- logEntryRepo.findByTaskId(taskId).transact(transactor).map(_.head)
+          logEntryVersions <- logEntryVersionRepo.findByLogEntryId(logEntry.id).transact(transactor)
+          _ <- taskVersionRepo.deleteByVersion(taskVersions.map(_.version).min).transact(transactor)
+          _ <- linkRepo.deleteById(link.id).transact(transactor)
+          _ <- logEntryVersionRepo.deleteByVersion(logEntryVersions.map(_.version).min).transact(transactor)
+          importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+          restoredVersions <- taskVersionRepo.findByTaskId(taskId).transact(transactor)
+          restoredLinks <- linkRepo.findByTaskId(taskId).transact(transactor)
+          restoredLogEntryVersions <- logEntryVersionRepo.findByLogEntryId(logEntry.id).transact(transactor)
+          reimportResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+        } yield {
+          val cp = new Checkpoint
+          val imported = importResult.toOption.get
+          val taskResult = resultOf(imported, DataExportEntityType.Task).find(_.entityId == taskId).get
+          val logEntryResult = resultOf(imported, DataExportEntityType.LogEntry).find(_.entityId == logEntry.id).get
+          cp(taskResult.status shouldBe DataImportStatus.Merged)
+          cp(taskResult.versionsAdded shouldBe 3) // 1 task version + 2 link versions of the re-inserted link
+          cp(taskResult.childrenAdded shouldBe 1) // the link
+          cp(logEntryResult.status shouldBe DataImportStatus.Merged)
+          cp(logEntryResult.versionsAdded shouldBe 1)
+          cp(restoredVersions.size shouldBe 2)
+          cp(restoredLinks.size shouldBe 1)
+          cp(restoredLogEntryVersions.size shouldBe 2)
+
+          val reimported = reimportResult.toOption.get
+          cp(reimported.results.map(_.status).distinct shouldBe List(DataImportStatus.Unchanged))
+          cp(reimported.results.map(_.versionsAdded).sum shouldBe 0)
+          cp(reimported.results.map(_.childrenAdded).sum shouldBe 0)
+          cp.reportAll()
+        }
+    }
+
+    "report a task with nothing new in the tree as unchanged" in { transactor =>
+      val setup = for {
+        projectData <- createExportableProject(newExportPath())
+        (account, project) = projectData
+        status <- createTaskStatus(project.id)
+        taskId <- createTaskWithFullHistory(project.id, account.id, status.id)
+      } yield (account, project, taskId)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (account, project, taskId) = setupResult
+        root <- exportToFolder(transactor, project.id, account.id)
+        importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+      } yield {
+        val taskResult = resultOf(importResult.toOption.get, DataExportEntityType.Task).find(_.entityId == taskId).get
+        taskResult.status shouldBe DataImportStatus.Unchanged
+        taskResult.versionsAdded shouldBe 0
+        taskResult.childrenAdded shouldBe 0
       }
     }
 
