@@ -87,7 +87,7 @@ object DataExportEntityType {
   case object Timebox extends DataExportEntityType("timeboxes")
 
   /** Dependency order: an entity only refers to entities listed before it. */
-  val all: List[DataExportEntityType] =
+  lazy val all: List[DataExportEntityType] =
     List(Project, Members, TaskStatus, TaskLabel, ProjectLabel, Milestone, Task, LogEntry, TaskTemplate, Timebox)
 
   def fromFolder(folder: String): Option[DataExportEntityType] = all.find(_.folder == folder)

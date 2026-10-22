@@ -53,7 +53,7 @@ class DataExportServiceTest extends ExportImportTestSupport {
       } yield {
         val cp = new Checkpoint
         val exported = result.toOption.get
-        cp(exported.pathResults.forall(_.success) shouldBe true)
+        withClue(exported.pathResults.toString)(exported.pathResults.forall(_.success) shouldBe true)
         val root = os.Path(exported.pathResults.head.exportPath)
         cp(os.exists(root / "project.json") shouldBe true)
         cp(os.exists(root / "members.json") shouldBe true)
