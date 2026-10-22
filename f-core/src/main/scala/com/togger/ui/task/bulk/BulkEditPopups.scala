@@ -8,7 +8,7 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{CalendarPickerPopup, QuickOption, QuickOptionsPopup, TgBadge}
+import com.togger.ui.components.{CalendarPickerPopup, QuickOption, QuickOptionsPopup}
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 
@@ -213,40 +213,27 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
         onClick.mapToUnit --> (_ => choose(edit(chosen.now())))
       )
 
-    div(
-      cls("absolute z-10 w-64 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg p-2"),
-      ul(
-        cls("max-h-60 overflow-y-auto"),
-        if (current.lookups.labels.isEmpty) li(cls("p-2 text-sm text-body"), "This project has no labels")
-        else
-          current.lookups.labels.sortBy(_.name).map { projectLabel =>
-            li(
-              label(
-                cls("flex items-center gap-2 p-2 rounded-md hover:bg-neutral-tertiary-medium cursor-pointer"),
-                input(
-                  `type`("checkbox"),
-                  cls("w-4 h-4 border border-default-strong rounded-xs bg-neutral-secondary-strong"),
-                  checked <-- chosen.signal.map(_.contains(projectLabel.id)),
-                  onClick.mapToChecked --> (isChecked =>
-                    chosen.update(labels => if (isChecked) labels + projectLabel.id else labels - projectLabel.id)
-                  )
-                ),
-                TgBadge(text = projectLabel.name, color = projectLabel.badgeColor, bordered = true).element
-              )
-            )
-          }
-      ),
-      div(
-        cls("flex gap-1.5 pt-2 border-t border-default-medium"),
-        if (forOneTask) Seq(applyButton("Apply", BulkEdit.SetLabels, needsLabels = false))
-        else
-          Seq(
-            applyButton("Add", BulkEdit.AddLabels, needsLabels = true),
-            applyButton("Remove", BulkEdit.RemoveLabels, needsLabels = true),
-            applyButton("Replace", BulkEdit.SetLabels, needsLabels = false)
-          )
-      )
+    val projectLabels = current.lookups.labels.sortBy(_.name)
+    val footer = div(
+      cls("flex gap-1.5 p-2 border-t border-default-medium"),
+      if (forOneTask) Seq(applyButton("Apply", BulkEdit.SetLabels, needsLabels = false))
+      else
+        Seq(
+          applyButton("Add", BulkEdit.AddLabels, needsLabels = true),
+          applyButton("Remove", BulkEdit.RemoveLabels, needsLabels = true),
+          applyButton("Replace", BulkEdit.SetLabels, needsLabels = false)
+        )
     )
+    QuickOptionsPopup(
+      options = projectLabels.map(l => QuickOption(l.id.toString, l.name, "", isSelected = false, Some(l.badgeColor))),
+      onChoose = option => {
+        val id = UUID.fromString(option.id)
+        chosen.update(labels => if (labels.contains(id)) labels - id else labels + id)
+      },
+      widthCls = "w-64",
+      isChecked = Some(index => chosen.signal.map(_.contains(projectLabels(index).id))),
+      footer = Some(footer)
+    ).element
   }
 
   private def datePopup(current: BulkEditContext, isStart: Boolean, choose: BulkEdit => Unit): HtmlElement = {

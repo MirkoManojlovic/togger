@@ -39,7 +39,9 @@ case class QuickOptionsPopup(
   isHighlighted: Int => Signal[Boolean] = _ => Val(false),
   onChoose: QuickOption => Unit,
   widthCls: String = "w-full",
-  leftPx: Option[Double] = None
+  leftPx: Option[Double] = None,
+  isChecked: Option[Int => Signal[Boolean]] = None,
+  footer: Option[HtmlElement] = None
 ) {
 
   val element: HtmlElement =
@@ -52,8 +54,16 @@ case class QuickOptionsPopup(
         cls("p-2 text-sm text-body font-medium max-h-72 overflow-y-auto"),
         if (options.isEmpty) Seq(li(cls("p-2 text-sm text-body"), "No matches"))
         else options.zipWithIndex.map { case (option, index) => optionRow(option, index) }
-      )
+      ),
+      footer
     )
+
+  /** A caller that lets several options be ticked passes `isChecked`, so a tick shows without rebuilding the list. */
+  private def checkMark(option: QuickOption, index: Int): Modifier[HtmlElement] =
+    isChecked match {
+      case Some(checked) => child.maybe <-- checked(index).map(Option.when(_)(TgIcons.checkIcon("w-4 h-4")))
+      case None          => Option.when(option.isSelected)(TgIcons.checkIcon("w-4 h-4"))
+    }
 
   private def optionRow(option: QuickOption, index: Int): HtmlElement = {
     val highlighted = isHighlighted(index)
@@ -77,7 +87,7 @@ case class QuickOptionsPopup(
         onClick.stopPropagation.mapToUnit --> (_ => onChoose(option)),
         div(
           cls("inline-flex items-center w-full gap-1.5"),
-          div(cls("w-4 h-4 shrink-0"), Option.when(option.isSelected)(TgIcons.checkIcon("w-4 h-4"))),
+          div(cls("w-4 h-4 shrink-0"), checkMark(option, index)),
           option.badgeColor.fold[HtmlElement](span(option.label))(color =>
             TgBadge(text = option.label, color = color, bordered = true).element
           )
