@@ -2,14 +2,12 @@ package com.togger.dump
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.account.Account
 import com.togger.common.TgClock
+import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.project.ProjectError.{NoExportPathConfigured, NotAssignedToProject, ProjectError}
-import com.togger.task.TaskStatus
-import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -32,157 +30,159 @@ object DataExportPathResult {
     DataExportPathResult(exportPath = exportPath, error = Some(error))
 }
 
-case class DataExportResult(taskCount: Int, pathResults: List[DataExportPathResult])
+case class DataExportResult(entityCounts: List[(DataExportEntityType, Int)], pathResults: List[DataExportPathResult])
 
 class DataExportService(
   dataExportRepo: DataExportRepo,
-  dataExportDiskWriter: DataExportDiskWriter,
+  dataExportTreeStore: DataExportTreeStore,
   dataExportConfigService: DataExportConfigService,
   tgClock: TgClock,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  private type DumpData = (Project, List[TaskStatus], Account, List[DataExportData], List[AccountDumpData])
+  private case class ExportData(
+    project: Project,
+    exportedBy: AccountDumpData,
+    entities: List[ExportEntity]
+  )
 
-  /** A project dump or status check visits every dump config of the project, so all pages are read. */
+  /** An export or status check visits every export config of the project, so all pages are read. */
   private def findAllConfigs(projectId: UUID): IO[List[DataExportConfig]] =
     TgPages.readAll[IO, DataExportConfig](dataExportConfigService.findPaginatedByProjectId(projectId, _))
 
-  def dumpProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportResult]] =
-    dumpWithConfigs(projectId, accountId, findAllConfigs(projectId))
+  def exportProject(projectId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportResult]] =
+    exportWithConfigs(projectId, accountId, findAllConfigs(projectId))
 
-  def dumpConfig(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportResult]] =
-    dataExportConfigService.findById(dumpConfigId).flatMap { config =>
-      dumpWithConfigs(config.projectId, accountId, IO.pure(List(config)))
+  def exportConfig(exportConfigId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportResult]] =
+    dataExportConfigService.findById(exportConfigId).flatMap { config =>
+      exportWithConfigs(config.projectId, accountId, IO.pure(List(config)))
     }
 
   def checkStatus(projectId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportStatusResult]] =
     checkStatusWithConfigs(projectId, accountId, findAllConfigs(projectId))
 
-  def checkConfigStatus(dumpConfigId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportStatusResult]] =
-    dataExportConfigService.findById(dumpConfigId).flatMap { config =>
+  def checkConfigStatus(exportConfigId: UUID, accountId: UUID): IO[Either[ProjectError, DataExportStatusResult]] =
+    dataExportConfigService.findById(exportConfigId).flatMap { config =>
       checkStatusWithConfigs(config.projectId, accountId, IO.pure(List(config)))
     }
 
-  private def dumpWithConfigs(
+  private def exportWithConfigs(
     projectId: UUID,
     accountId: UUID,
     configsIO: IO[List[DataExportConfig]]
   ): IO[Either[ProjectError, DataExportResult]] = {
-    logger.info(s"Dumping tasks for ${sp(projectId)} requested by ${sp(accountId)}")
-    getDumpData(projectId, accountId)
+    logger.info(s"Exporting project ${sp(projectId)} requested by ${sp(accountId)}")
+    getExportData(projectId, accountId)
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, taskStatuses, account, tasks, referencedAccounts)) =>
+        case Right(data) =>
           configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoExportPathConfigured)
             else {
-              val manifest = ProjectDumpManifest(
-                project = project,
-                taskStatuses = taskStatuses,
-                dumpedBy = AccountDumpData.from(account),
-                referencedAccounts = referencedAccounts,
-                dumpedAt = tgClock.currentInstant,
-                taskCount = tasks.size
-              )
+              val exportedAt = tgClock.currentInstant
               val pathResults = configs.map { config =>
-                Try(dataExportDiskWriter.write(config.exportPath, manifest, tasks)) match {
-                  case Success(resolvedPath) => DataExportPathResult.success(resolvedPath)
-                  case Failure(e)            => DataExportPathResult.error(config.exportPath, e.getMessage)
+                Try(
+                  dataExportTreeStore.write(config.exportPath, data.project, exportedAt, data.exportedBy, data.entities)
+                ) match {
+                  case Success(written) => DataExportPathResult.success(written.path)
+                  case Failure(e)       => DataExportPathResult.error(config.exportPath, e.getMessage)
                 }
               }
-              Right(DataExportResult(tasks.size, pathResults))
+              Right(DataExportResult(entityCounts(data.entities), pathResults))
             }
           }
       }
   }
+
+  private def entityCounts(entities: List[ExportEntity]): List[(DataExportEntityType, Int)] =
+    DataExportEntityType.all.map(entityType => entityType -> entities.count(_.entityType == entityType))
 
   private def checkStatusWithConfigs(
     projectId: UUID,
     accountId: UUID,
     configsIO: IO[List[DataExportConfig]]
   ): IO[Either[ProjectError, DataExportStatusResult]] = {
-    logger.info(s"Checking dump status for ${sp(projectId)} requested by ${sp(accountId)}")
-    getDumpData(projectId, accountId)
+    logger.info(s"Checking export status for ${sp(projectId)} requested by ${sp(accountId)}")
+    getExportData(projectId, accountId)
       .transact(transactor)
       .flatMap {
         case Left(error) => IO.pure(Left(error))
-        case Right((project, _, _, dbTasks, _)) =>
+        case Right(data) =>
           configsIO.map { configs =>
             if (configs.isEmpty)
               Left(NoExportPathConfigured)
-            else {
-              val dbTasksById = dbTasks.map(t => t.task.id -> t).toMap
-              val pathStatuses = configs.map(config => buildPathStatus(config.exportPath, project, dbTasksById))
-              Right(DataExportStatusResult(pathStatuses))
-            }
+            else
+              Right(
+                DataExportStatusResult(configs.map(config => buildPathStatus(config.exportPath, data)))
+              )
           }
       }
   }
 
-  private def buildPathStatus(
-    exportPath: String,
-    project: Project,
-    dbTasksById: Map[UUID, DataExportData]
-  ): DataExportPathStatus = {
-    val diskTasksById = dataExportDiskWriter.readDumpedTasks(exportPath, project)
-    val commonIds = dbTasksById.keySet.intersect(diskTasksById.keySet)
-    val missingFromDumpIds = dbTasksById.keySet.diff(diskTasksById.keySet)
-    val missingFromDbIds = diskTasksById.keySet.diff(dbTasksById.keySet)
+  /** Compares the hashes of the database entities with the index of the tree, without reading the entity files. */
+  private def buildPathStatus(exportPath: String, data: ExportData): DataExportPathStatus = {
+    val dbEntities = data.entities.map(e => (e.entityType, e.id) -> e).toMap
 
-    def taskName(taskId: UUID): Option[String] =
-      dbTasksById
-        .get(taskId)
-        .orElse(diskTasksById.get(taskId).flatMap(_.toOption))
-        .flatMap(_.taskVersions.headOption)
-        .map(_.name)
-
-    val commonStatuses = commonIds.toList.map { taskId =>
-      diskTasksById(taskId) match {
-        case Left(parseError) =>
-          DataExportTaskStatus(taskId, taskName(taskId), DataExportSyncStatus.Malformed, List(parseError))
-        case Right(diskData) =>
-          val diffs = differences(dbTasksById(taskId), diskData)
-          if (diffs.isEmpty) DataExportTaskStatus(taskId, taskName(taskId), DataExportSyncStatus.InSync, Nil)
-          else DataExportTaskStatus(taskId, taskName(taskId), DataExportSyncStatus.OutOfSync, diffs)
-      }
+    val statuses = dataExportTreeStore.readIndex(exportPath, data.project) match {
+      case Left(error) =>
+        DataExportEntityStatus(
+          DataExportEntityType.Project,
+          data.project.id,
+          Some(data.project.name),
+          DataExportSyncStatus.Malformed,
+          List(error)
+        ) :: Nil
+      case Right(None) =>
+        data.entities.map(e => status(e.entityType, e.id, e.name, DataExportSyncStatus.MissingFromExport))
+      case Right(Some(index)) =>
+        val folderPath = dataExportTreeStore.projectFolder(exportPath, data.project).toString
+        DataExportEntityType.all.flatMap { entityType =>
+          val indexed = index.entriesOf(entityType)
+          val db = dbEntities.collect { case ((`entityType`, id), entity) => id -> entity }
+          val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
+            val entity = db(id)
+            if (indexed(id).hash != entity.hash)
+              status(entityType, id, entity.name, DataExportSyncStatus.OutOfSync, List("content differs"))
+            else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
+              status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
+            else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
+          }
+          val missingFromExport = db.keySet.diff(indexed.keySet).toList.map { id =>
+            status(entityType, id, db(id).name, DataExportSyncStatus.MissingFromExport)
+          }
+          val missingFromDb = indexed.keySet.diff(db.keySet).toList.map { id =>
+            status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
+          }
+          common ++ missingFromExport ++ missingFromDb
+        }
     }
-    val missingFromDumpStatuses =
-      missingFromDumpIds.toList.map(taskId =>
-        DataExportTaskStatus(taskId, taskName(taskId), DataExportSyncStatus.MissingFromExport, Nil)
-      )
-    val missingFromDbStatuses =
-      missingFromDbIds.toList.map(taskId =>
-        DataExportTaskStatus(taskId, taskName(taskId), DataExportSyncStatus.MissingFromDb, Nil)
-      )
-
-    DataExportPathStatus(exportPath, commonStatuses ++ missingFromDumpStatuses ++ missingFromDbStatuses)
+    DataExportPathStatus(exportPath, statuses)
   }
 
-  private def differences(db: DataExportData, disk: DataExportData): List[String] =
-    List(
-      Option.when(db.task != disk.task)("task fields differ"),
-      Option.when(db.taskVersions != disk.taskVersions)("task versions differ"),
-      Option.when(db.links != disk.links)("links differ"),
-      Option.when(db.logEntries != disk.logEntries)("log entries differ")
-    ).flatten
+  private def status(
+    entityType: DataExportEntityType,
+    id: UUID,
+    name: Option[String],
+    syncStatus: DataExportSyncStatus,
+    differences: List[String] = Nil
+  ) = DataExportEntityStatus(entityType, id, name, syncStatus, differences)
 
-  private def getDumpData(projectId: UUID, accountId: UUID): ConnectionIO[Either[ProjectError, DumpData]] =
-    for {
-      assigned <- dataExportRepo.isAssigned(projectId, accountId)
-      result <-
-        if (!assigned)
-          (NotAssignedToProject: ProjectError).asLeft[DumpData].pure[ConnectionIO]
-        else
-          for {
-            projectAndStatuses <- dataExportRepo.getProjectAndTaskStatuses(projectId)
-            account <- dataExportRepo.findAccountById(accountId)
-            tasks <- dataExportRepo.getAllTasksForProject(projectId)
-            referencedAccounts <- dataExportRepo.getReferencedAccounts(tasks)
-          } yield (projectAndStatuses._1, projectAndStatuses._2, account, tasks, referencedAccounts)
-            .asRight[ProjectError]
-    } yield result
+  private def getExportData(projectId: UUID, accountId: UUID): ConnectionIO[Either[ProjectError, ExportData]] =
+    dataExportRepo.isAssigned(projectId, accountId).flatMap { assigned =>
+      if (!assigned)
+        (NotAssignedToProject: ProjectError).asLeft[ExportData].pure[ConnectionIO]
+      else
+        for {
+          snapshot <- dataExportRepo.readSnapshot(projectId)
+          account <- dataExportRepo.findAccountById(accountId)
+          referencedAccounts <- dataExportRepo.findAccounts(DataExportRepo.referencedAccountIds(snapshot))
+        } yield ExportData(
+          snapshot.project,
+          AccountDumpData.from(account),
+          DataExportEntities.build(snapshot, referencedAccounts)
+        ).asRight[ProjectError]
+    }
 
 }

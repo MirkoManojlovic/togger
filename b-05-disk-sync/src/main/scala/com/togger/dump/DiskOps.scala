@@ -11,6 +11,12 @@ class DiskOps extends TgLogging {
   def readFileFromDisk(filePath: os.Path): String =
     os.read(filePath)
 
+  def exists(path: os.Path): Boolean =
+    os.exists(path)
+
+  def deleteFile(filePath: os.Path): Boolean =
+    os.remove(filePath)
+
   def listFiles(folderPath: os.Path): Seq[os.Path] =
     if (os.exists(folderPath)) os.list(folderPath) else Seq.empty
 
