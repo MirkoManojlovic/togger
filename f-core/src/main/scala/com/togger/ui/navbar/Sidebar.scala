@@ -146,6 +146,7 @@ class Sidebar(
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
+  sidebarRefresh: SidebarRefresh,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
   onTeamDaily: () => Unit,
@@ -206,22 +207,22 @@ class Sidebar(
   private val organizationState: Var[Seq[OrganizationWithProjects]] = Var(Seq.empty)
 
   // The sidebar lists every organization with all of its projects, read page by page.
-  organizationProjectsLoader
-    .loadForAccount(accountService.get.get.id)
-    .map(
-      _.fold(
-        error => println(error),
-        success => {
-          val dto = success.body.get
-          organizationState.set(dto)
-
-        }
+  private def reloadOrganizations(): Unit =
+    organizationProjectsLoader
+      .loadForAccount(accountService.get.get.id)
+      .map(
+        _.fold(
+          error => println(error),
+          success => organizationState.set(success.body.get)
+        )
       )
-    )
-    .unsafeRunAndForget()
+      .unsafeRunAndForget()
+
+  reloadOrganizations()
 
   val element = {
     div(
+      sidebarRefresh.requests --> (_ => reloadOrganizations()),
       asideTag(
         idAttr("logo-sidebar"),
         cls(

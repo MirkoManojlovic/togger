@@ -11,6 +11,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.components.TgSelectDropdownMultiSelectFilter.TgSelectDropdownMultiSelectFilterSyntax
@@ -46,6 +47,7 @@ class EditProjectComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   localStorage: LocalStorage,
+  sidebarRefresh: SidebarRefresh,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -134,7 +136,10 @@ class EditProjectComponent(
 
       spinnerService
         .runWithSpinner(projectService.updateProject(request))
-        .toastMessageFn("Project updated successfully")(_ => router.route(EditProjectPage(projectId)))
+        .toastMessageFn("Project updated successfully") { _ =>
+          sidebarRefresh.request()
+          router.route(EditProjectPage(projectId))
+        }
         .unsafeRunAndForget()
     }
   }

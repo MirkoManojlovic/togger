@@ -19,7 +19,7 @@ import com.togger.ui.milestone._
 import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
-import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore}
+import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
 import com.togger.ui.organization._
 import com.togger.ui.project._
 import com.togger.ui.projectmapping._
@@ -141,6 +141,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val localStorage = new LocalStorageBrowser
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
+  lazy val sidebarRefresh = new SidebarRefresh
   lazy val themeStore = new ThemeStore(localStorage)
   lazy val timeboxStagingStore = new TimeboxStagingStore(localStorage)
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
@@ -162,6 +163,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       taskLoadConfigService,
       spinnerService,
       sidebarCollapseStore,
+      sidebarRefresh,
       themeStore,
       () => quickCreateHost.open(),
       () => bulkCreateHost.open(),
@@ -447,6 +449,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   localStorage,
                   organizationId,
+                  sidebarRefresh,
                   toast
                 ).element
               case ShowProjectsForOrganizationIdTable(organizationId, listParams) =>
@@ -480,6 +483,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   spinnerService,
                   localStorage,
+                  sidebarRefresh,
                   toast
                 ).element
               case ShowAllOrganizationsPage(listParams) =>
@@ -499,6 +503,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   localStorage,
+                  sidebarRefresh,
                   toast
                 ).element
               case CreateProjectLabelPage =>
@@ -564,6 +569,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   localStorage,
+                  sidebarRefresh,
                   projectId,
                   toast
                 ).element
@@ -732,6 +738,7 @@ case class NavigationSelection(
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
+  sidebarRefresh: SidebarRefresh,
   themeStore: ThemeStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
@@ -754,6 +761,7 @@ case class NavigationSelection(
               taskLoadConfigService,
               spinnerService,
               sidebarCollapseStore,
+              sidebarRefresh,
               onQuickCreate,
               onBulkCreate,
               onTeamDaily,

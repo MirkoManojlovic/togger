@@ -11,6 +11,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
@@ -37,6 +38,7 @@ class EditOrganizationComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   localStorage: LocalStorage,
+  sidebarRefresh: SidebarRefresh,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -100,7 +102,10 @@ class EditOrganizationComponent(
 
     spinnerService
       .runWithSpinner(organizationService.update(dto))
-      .toastMessageFn("Organization updated successfully")(_ => router.route(EditOrganizationPage(organizationId)))
+      .toastMessageFn("Organization updated successfully") { _ =>
+        sidebarRefresh.request()
+        router.route(EditOrganizationPage(organizationId))
+      }
       .unsafeRunAndForget()
   }
 

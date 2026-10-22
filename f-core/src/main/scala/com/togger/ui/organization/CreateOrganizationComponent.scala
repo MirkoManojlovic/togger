@@ -14,6 +14,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.localstorage.LocalStorage
@@ -91,6 +92,7 @@ class CreateOrganizationComponent(
   accountService: AccountService,
   spinnerService: SpinnerService,
   localStorage: LocalStorage,
+  sidebarRefresh: SidebarRefresh,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -113,7 +115,7 @@ class CreateOrganizationComponent(
 
     spinnerService
       .runWithSpinner(organizationService.createOrganization(request))
-      .toastMessageJustMessage("Organization created successfully")
+      .toastMessageCodeBlock("Organization created successfully")(sidebarRefresh.request())
       .unsafeRunAndForget()
   }
 

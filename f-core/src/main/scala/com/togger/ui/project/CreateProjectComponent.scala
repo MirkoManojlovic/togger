@@ -14,6 +14,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
@@ -107,6 +108,7 @@ class CreateProjectComponent(
   spinnerService: SpinnerService,
   localStorage: LocalStorage,
   organizationId: UUID,
+  sidebarRefresh: SidebarRefresh,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -155,7 +157,7 @@ class CreateProjectComponent(
 
     spinnerService
       .runWithSpinner(projectService.createProject(request))
-      .toastMessageJustMessage("Project created successfully")
+      .toastMessageCodeBlock("Project created successfully")(sidebarRefresh.request())
       .unsafeRunAndForget()
   }
 
