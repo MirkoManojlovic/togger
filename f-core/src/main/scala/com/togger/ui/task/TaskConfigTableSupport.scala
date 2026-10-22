@@ -3,7 +3,7 @@ package com.togger.ui.task
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.dto.{DataExportPathStatusResp, DataExportSyncStatusResp, DataExportTaskStatusResp}
+import com.togger.dto.{DataExportEntityStatusResp, DataExportPathStatusResp, DataExportSyncStatusResp}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
@@ -65,18 +65,19 @@ object TaskConfigTableSupport {
               cls(tableCls),
               thead(
                 cls(theadCls),
-                tr(Seq("task id", "task name", "status", "details").map(createTh))
+                tr(Seq("type", "id", "name", "status", "details").map(createTh))
               ),
               tbody(
-                pathStatus.taskStatuses
-                  .sortBy(_.taskId)
-                  .map { (taskStatus: DataExportTaskStatusResp) =>
+                pathStatus.entityStatuses
+                  .sortBy(s => (s.entityType.entryName, s.entityId))
+                  .map { (entityStatus: DataExportEntityStatusResp) =>
                     tr(
                       cls(rowCls),
-                      createTd(taskStatus.taskId.toString),
-                      createTd(taskStatus.taskName.getOrElse("-"): String),
-                      createTd(exportSyncStatusBadge(taskStatus.status)),
-                      createTd(taskStatus.differences.mkString(", "))
+                      createTd(entityStatus.entityType.entryName),
+                      createTd(entityStatus.entityId.toString),
+                      createTd(entityStatus.entityName.getOrElse("-"): String),
+                      createTd(exportSyncStatusBadge(entityStatus.status)),
+                      createTd(entityStatus.differences.mkString(", "))
                     )
                   }
               )

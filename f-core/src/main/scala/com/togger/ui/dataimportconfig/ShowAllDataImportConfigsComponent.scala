@@ -5,7 +5,7 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.dto.dataimportconfig.DataImportConfigResp
-import com.togger.dto.{DataImportResp, DataImportStatusResp, DataImportTaskResultResp}
+import com.togger.dto.{DataImportEntityResultResp, DataImportResp, DataImportStatusResp}
 import com.togger.routes.Pages.{CreateDataImportConfigPage, EditDataImportConfigPage}
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
@@ -38,7 +38,7 @@ class ShowAllDataImportConfigsComponent(
   import TaskConfigTableSupport._
 
   private val stateFormVar = Var(Seq.empty[DataImportConfigResp])
-  private val resultsVar = Var(Seq.empty[DataImportTaskResultResp])
+  private val resultsVar = Var(Seq.empty[DataImportEntityResultResp])
 
   private val paginationVar = Var(Option.empty[PaginationState])
 
@@ -63,7 +63,7 @@ class ShowAllDataImportConfigsComponent(
 
   private def summaryMessage(dto: DataImportResp): String = {
     val counts = dto.results.groupBy(_.status).view.mapValues(_.size).toMap
-    s"Imported ${dto.taskCount} task(s): " +
+    s"Imported ${dto.results.size} entity(ies): " +
       s"${counts.getOrElse(DataImportStatusResp.Inserted, 0)} inserted, " +
       s"${counts.getOrElse(DataImportStatusResp.Merged, 0)} merged, " +
       s"${counts.getOrElse(DataImportStatusResp.Unchanged, 0)} unchanged, " +
@@ -97,9 +97,9 @@ class ShowAllDataImportConfigsComponent(
         val successes = outcomes.collect { case Right(dto) => dto }
         resultsVar.set(successes.flatMap(_.results))
         outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
-        val totalTasks = successes.map(_.taskCount).sum
+        val totalEntities = successes.map(_.results.size).sum
         val failedCount = outcomes.count(_.isLeft)
-        if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalTasks task(s) total")
+        if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalEntities entity(ies) total")
         else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
       }
       .unsafeRunAndForget()
@@ -199,7 +199,7 @@ class ShowAllDataImportConfigsComponent(
     )
   }
 
-  private def importResultsTable(results: Seq[DataImportTaskResultResp]) =
+  private def importResultsTable(results: Seq[DataImportEntityResultResp]) =
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Import results", TgCard.CardHeaderSize.H3),
@@ -210,20 +210,20 @@ class ShowAllDataImportConfigsComponent(
               cls(tableCls),
               thead(
                 cls(theadCls),
-                tr(Seq("task id", "task name", "status", "versions", "links", "log entries", "error").map(createTh))
+                tr(Seq("type", "id", "name", "status", "versions", "children", "error").map(createTh))
               ),
               tbody(
                 results
-                  .sortBy(_.taskId)
-                  .map { (r: DataImportTaskResultResp) =>
+                  .sortBy(r => (r.entityType.entryName, r.entityId))
+                  .map { (r: DataImportEntityResultResp) =>
                     tr(
                       cls(rowCls),
-                      createTd(r.taskId.toString),
-                      createTd(r.taskName.getOrElse("-"): String),
+                      createTd(r.entityType.entryName),
+                      createTd(r.entityId.toString),
+                      createTd(r.entityName.getOrElse("-"): String),
                       createTd(importStatusBadge(r.status)),
                       createTd(r.versionsAdded.toString),
-                      createTd(r.linksAdded.toString),
-                      createTd(r.logEntriesAdded.toString),
+                      createTd(r.childrenAdded.toString),
                       createTd(r.error.getOrElse("-"): String)
                     )
                   }

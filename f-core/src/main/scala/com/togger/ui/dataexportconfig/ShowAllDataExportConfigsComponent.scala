@@ -89,7 +89,7 @@ class ShowAllDataExportConfigsComponent(
       _.toastJustErrorsUnit { resp =>
         resp.results.headOption.flatMap(_.error) match {
           case Some(err) => toast.error(s"Export to ${dto.exportPath} failed: $err")
-          case None      => toast.success(s"Exported ${resp.taskCount} tasks to ${dto.exportPath}")
+          case None      => toast.success(s"Exported ${resp.entityCounts.map(_.count).sum} entities to ${dto.exportPath}")
         }
       }
     }

@@ -178,9 +178,9 @@ class Sidebar(
               .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, DataImportResp]]) =>
                 val successes = outcomes.collect { case Right(dto) => dto }
                 outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
-                val totalTasks = successes.map(_.taskCount).sum
+                val totalEntities = successes.map(_.results.size).sum
                 val failedCount = outcomes.count(_.isLeft)
-                if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalTasks task(s) total")
+                if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalEntities entity(ies) total")
                 else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
               }
         }
