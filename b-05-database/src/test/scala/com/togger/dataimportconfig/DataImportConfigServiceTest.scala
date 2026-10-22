@@ -1,4 +1,4 @@
-package com.togger.taskloadconfig
+package com.togger.dataimportconfig
 
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
@@ -15,7 +15,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import java.util.UUID
 
-class TaskLoadConfigServiceTest
+class DataImportConfigServiceTest
     extends AsyncWordSpec
     with AsyncMockFactory
     with Matchers
@@ -25,18 +25,18 @@ class TaskLoadConfigServiceTest
     with Checkpoints
     with TestLoggingJvm {
 
-  val taskLoadConfigRepo: TaskLoadConfigRepo = mock[TaskLoadConfigRepo]
+  val dataImportConfigRepo: DataImportConfigRepo = mock[DataImportConfigRepo]
   val tgClock: TgClock = mock[TgClock]
 
-  val service = new TaskLoadConfigService(taskLoadConfigRepo, tgClock, transactorMock)
+  val service = new DataImportConfigService(dataImportConfigRepo, tgClock, transactorMock)
 
   val projectId: UUID = UUID.randomUUID()
   val accountId: UUID = UUID.randomUUID()
 
-  def newTaskLoadConfig() = TaskLoadConfig(
+  def newDataImportConfig() = DataImportConfig(
     id = UUID.randomUUID(),
     name = "My load config",
-    dumpPath = "/tmp/dumps",
+    importPath = "/tmp/dumps",
     projectId = projectId,
     accountId = accountId,
     createdAt = nowAsInstant,
@@ -45,26 +45,26 @@ class TaskLoadConfigServiceTest
 
   testNameFromClassName should {
 
-    "create a task load config" in {
-      val config = newTaskLoadConfig()
+    "create a Import data config" in {
+      val config = newDataImportConfig()
 
-      (taskLoadConfigRepo.insert _).expects(config).returns(config.pure[ConnectionIO])
+      (dataImportConfigRepo.insert _).expects(config).returns(config.pure[ConnectionIO])
 
       service.create(config).map(_ shouldBe config).unsafeToFuture()
     }
 
-    "find a task load config by id" in {
-      val config = newTaskLoadConfig()
+    "find a Import data config by id" in {
+      val config = newDataImportConfig()
 
-      (taskLoadConfigRepo.findById _).expects(config.id).returns(config.pure[ConnectionIO])
+      (dataImportConfigRepo.findById _).expects(config.id).returns(config.pure[ConnectionIO])
 
       service.findById(config.id).map(_ shouldBe config).unsafeToFuture()
     }
 
-    "find task load configs by project id" in {
-      val config = newTaskLoadConfig()
+    "find Import data configs by project id" in {
+      val config = newDataImportConfig()
 
-      (taskLoadConfigRepo.findPaginatedByProjectId _)
+      (dataImportConfigRepo.findPaginatedByProjectId _)
         .expects(projectId, DbPageRequest.default)
         .returns(PaginatedResponse.of(1, 20, List(config), 1L).pure[ConnectionIO])
 
@@ -74,21 +74,21 @@ class TaskLoadConfigServiceTest
         .unsafeToFuture()
     }
 
-    "update a task load config, stamping the current time from the clock" in {
-      val config = newTaskLoadConfig()
+    "update a Import data config, stamping the current time from the clock" in {
+      val config = newDataImportConfig()
       val now = nowAsInstant
-      val updated = config.copy(name = "Renamed config", dumpPath = "/tmp/dumps-new", updatedAt = now)
+      val updated = config.copy(name = "Renamed config", importPath = "/tmp/dumps-new", updatedAt = now)
 
       (() => tgClock.currentInstant).expects().returns(now)
-      (taskLoadConfigRepo.update _).expects(config, now).returns(updated.pure[ConnectionIO])
+      (dataImportConfigRepo.update _).expects(config, now).returns(updated.pure[ConnectionIO])
 
       service.update(config).map(_ shouldBe updated).unsafeToFuture()
     }
 
-    "delete a task load config by id" in {
-      val config = newTaskLoadConfig()
+    "delete a Import data config by id" in {
+      val config = newDataImportConfig()
 
-      (taskLoadConfigRepo.deleteById _).expects(config.id).returns(1.pure[ConnectionIO])
+      (dataImportConfigRepo.deleteById _).expects(config.id).returns(1.pure[ConnectionIO])
 
       service.deleteById(config.id).map(_ shouldBe 1).unsafeToFuture()
     }

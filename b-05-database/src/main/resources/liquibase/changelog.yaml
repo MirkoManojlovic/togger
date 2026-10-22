@@ -1485,3 +1485,22 @@ databaseChangeLog:
               alter index idx_task_dump_config_project_id_id rename to idx_data_export_config_project_id_id;
               alter table data_export_config rename constraint fk_task_dump_config_project to fk_data_export_config_project;
               alter table data_export_config rename constraint fk_task_dump_config_account to fk_data_export_config_account
+  - changeSet:
+      id: 8
+      author: mirko
+      labels: data-import
+      comment: Task load config is now the data import config
+      changes:
+        - renameTable:
+            oldTableName: task_load_config
+            newTableName: data_import_config
+        - renameColumn:
+            tableName: data_import_config
+            oldColumnName: dump_path
+            newColumnName: import_path
+            columnDataType: text
+        - sql:
+            sql: >
+              alter index idx_task_load_config_project_id_id rename to idx_data_import_config_project_id_id;
+              alter table data_import_config rename constraint fk_task_load_config_project to fk_data_import_config_project;
+              alter table data_import_config rename constraint fk_task_load_config_account to fk_data_import_config_account

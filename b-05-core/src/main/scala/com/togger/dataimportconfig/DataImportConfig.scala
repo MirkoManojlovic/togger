@@ -1,12 +1,12 @@
-package com.togger.taskloadconfig
+package com.togger.dataimportconfig
 
 import java.time.Instant
 import java.util.UUID
 
-case class TaskLoadConfig(
+case class DataImportConfig(
   id: UUID,
   name: String,
-  dumpPath: String,
+  importPath: String,
   projectId: UUID,
   accountId: UUID,
   createdAt: Instant,

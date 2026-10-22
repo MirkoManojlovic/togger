@@ -27,7 +27,7 @@ import com.togger.controllers.task.{
   TaskTemplateController
 }
 import com.togger.controllers.dataexportconfig.DataExportConfigController
-import com.togger.controllers.taskloadconfig.TaskLoadConfigController
+import com.togger.controllers.dataimportconfig.DataImportConfigController
 import com.togger.controllers.projectlabel.{ProjectLabelCategoryController, ProjectLabelController}
 import com.togger.common.DateRangeValidation
 import com.togger.dep.AuthDependenciesModule
@@ -44,7 +44,7 @@ import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
 import com.togger.dataexportconfig.{DataExportConfigEndpoints, DataExportConfigRepoImpl, DataExportConfigService}
-import com.togger.taskloadconfig.{TaskLoadConfigEndpoints, TaskLoadConfigRepoImpl, TaskLoadConfigService}
+import com.togger.dataimportconfig.{DataImportConfigEndpoints, DataImportConfigRepoImpl, DataImportConfigService}
 import com.togger.projectlabel.{
   ProjectLabelCategoryEndpoints,
   ProjectLabelCategoryRepoImpl,
@@ -166,17 +166,17 @@ object TgServer {
             dataExportController.checkStatus,
             dataExportController.dumpByConfig,
             dataExportController.checkStatusByConfig,
-            dataExportController.loadTasks,
+            dataExportController.importData,
             dataExportConfigController.findById,
             dataExportConfigController.save,
             dataExportConfigController.update,
             dataExportConfigController.delete,
             dataExportConfigController.findByProjectId,
-            taskLoadConfigController.findById,
-            taskLoadConfigController.save,
-            taskLoadConfigController.update,
-            taskLoadConfigController.delete,
-            taskLoadConfigController.findByProjectId,
+            dataImportConfigController.findById,
+            dataImportConfigController.save,
+            dataImportConfigController.update,
+            dataImportConfigController.delete,
+            dataImportConfigController.findByProjectId,
             projectMappingController.save,
             projectMappingController.findByProjectIdDb,
             projectMappingController.findByProjectIdDump,
@@ -356,7 +356,7 @@ class DependenciesModule(
     )
   lazy val dataExportDiskWriter = new DataExportDiskWriter(dataExportDiskOps, dumpLimit)
 
-  lazy val dataExportLoadConfigVerification = new DataExportLoadConfigVerification()
+  lazy val dataImportConfigVerification = new DataImportConfigVerification()
 
   lazy val dataExportConfigRepo = new DataExportConfigRepoImpl
   lazy val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, tgClock, transactor)
@@ -365,18 +365,18 @@ class DependenciesModule(
     new DataExportConfigController(
       dataExportConfigEndpoints,
       dataExportConfigService,
-      dataExportLoadConfigVerification,
+      dataImportConfigVerification,
       tgClock
     )
 
-  lazy val taskLoadConfigRepo = new TaskLoadConfigRepoImpl
-  lazy val taskLoadConfigService = new TaskLoadConfigService(taskLoadConfigRepo, tgClock, transactor)
-  lazy val taskLoadConfigEndpoints = new TaskLoadConfigEndpoints(securedEndpoint)
-  lazy val taskLoadConfigController =
-    new TaskLoadConfigController(
-      taskLoadConfigEndpoints,
-      taskLoadConfigService,
-      dataExportLoadConfigVerification,
+  lazy val dataImportConfigRepo = new DataImportConfigRepoImpl
+  lazy val dataImportConfigService = new DataImportConfigService(dataImportConfigRepo, tgClock, transactor)
+  lazy val dataImportConfigEndpoints = new DataImportConfigEndpoints(securedEndpoint)
+  lazy val dataImportConfigController =
+    new DataImportConfigController(
+      dataImportConfigEndpoints,
+      dataImportConfigService,
+      dataImportConfigVerification,
       tgClock
     )
 
@@ -394,8 +394,8 @@ class DependenciesModule(
 
   lazy val dataExportService =
     new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, tgClock, transactor)
-  lazy val taskLoadRepo =
-    new TaskLoadRepo(
+  lazy val dataImportRepo =
+    new DataImportRepo(
       taskRepo,
       taskVersionRepo,
       linkRepo,
@@ -409,8 +409,8 @@ class DependenciesModule(
       accountTypeRepo,
       accountMappingRepo
     )
-  lazy val taskLoadService = new TaskLoadService(dataExportRepo, taskLoadRepo, dataExportDiskWriter, transactor)
+  lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportDiskWriter, transactor)
   lazy val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
-  lazy val dataExportController = new DataExportController(dataExportEndpoints, dataExportService, taskLoadService)
+  lazy val dataExportController = new DataExportController(dataExportEndpoints, dataExportService, dataImportService)
 
 }

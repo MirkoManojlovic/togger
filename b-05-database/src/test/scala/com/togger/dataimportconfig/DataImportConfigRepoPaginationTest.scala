@@ -1,4 +1,4 @@
-package com.togger.taskloadconfig
+package com.togger.dataimportconfig
 
 import cats.implicits._
 import com.togger.account.TgAccount
@@ -9,17 +9,17 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TaskLoadConfigRepoPaginationTest
+class DataImportConfigRepoPaginationTest
     extends BusinessTgDbSpec
     with TgAccount
     with TgProject
     with TimeHelpers
     with PaginationTestSupport {
 
-  private val repo = new TaskLoadConfigRepoImpl
+  private val repo = new DataImportConfigRepoImpl
 
   private def newConfig(projectId: UUID, accountId: UUID, name: String) =
-    TaskLoadConfig(UUID.randomUUID(), name, s"/dumps/$name", projectId, accountId, nowAsInstant, nowAsInstant)
+    DataImportConfig(UUID.randomUUID(), name, s"/dumps/$name", projectId, accountId, nowAsInstant, nowAsInstant)
 
   private def readPages(projectId: UUID)(page: DbPageRequest) = repo.findPaginatedByProjectId(projectId, page)
 

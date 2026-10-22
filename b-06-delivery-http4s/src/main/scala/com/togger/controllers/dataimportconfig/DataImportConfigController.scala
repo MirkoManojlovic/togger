@@ -1,60 +1,60 @@
-package com.togger.controllers.taskloadconfig
+package com.togger.controllers.dataimportconfig
 
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.dump.DataExportLoadConfigVerification
-import com.togger.taskloadconfig.{TaskLoadConfig, TaskLoadConfigEndpoints, TaskLoadConfigService}
+import com.togger.dto.dataimportconfig.DataImportConfigResp
+import com.togger.dump.DataImportConfigVerification
+import com.togger.dataimportconfig.{DataImportConfig, DataImportConfigEndpoints, DataImportConfigService}
 
 import java.util.UUID
 
-class TaskLoadConfigController(
-  taskLoadConfigEndpoints: TaskLoadConfigEndpoints,
-  taskLoadConfigService: TaskLoadConfigService,
-  taskLoadConfigVerification: DataExportLoadConfigVerification,
+class DataImportConfigController(
+  dataImportConfigEndpoints: DataImportConfigEndpoints,
+  dataImportConfigService: DataImportConfigService,
+  dataImportConfigVerification: DataImportConfigVerification,
   tgClock: TgClock
 ) {
 
-  import taskLoadConfigEndpoints._
+  import dataImportConfigEndpoints._
 
-  private def toResp(taskLoadConfig: TaskLoadConfig): TaskLoadConfigResp =
-    TaskLoadConfigResp(
-      id = taskLoadConfig.id,
-      name = taskLoadConfig.name,
-      projectId = taskLoadConfig.projectId,
-      accountId = taskLoadConfig.accountId,
-      dumpPath = taskLoadConfig.dumpPath,
-      createdAt = taskLoadConfig.createdAt,
-      updatedAt = taskLoadConfig.updatedAt
+  private def toResp(dataImportConfig: DataImportConfig): DataImportConfigResp =
+    DataImportConfigResp(
+      id = dataImportConfig.id,
+      name = dataImportConfig.name,
+      projectId = dataImportConfig.projectId,
+      accountId = dataImportConfig.accountId,
+      importPath = dataImportConfig.importPath,
+      createdAt = dataImportConfig.createdAt,
+      updatedAt = dataImportConfig.updatedAt
     )
 
   val findById =
     findByIdEndpoint.serverLogic { auth => id =>
-      taskLoadConfigService
+      dataImportConfigService
         .findById(id)
-        .map(taskLoadConfig => TgJsonSuccess.justBodyRight(toResp(taskLoadConfig)))
+        .map(dataImportConfig => TgJsonSuccess.justBodyRight(toResp(dataImportConfig)))
     }
 
   val save = saveEndpoint.serverLogic { auth => dto =>
-    taskLoadConfigVerification
-      .verify(dto.name, dto.dumpPath)
+    dataImportConfigVerification
+      .verify(dto.name, dto.importPath)
       .fold(
         errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
-          val taskLoadConfig = TaskLoadConfig(
+          val dataImportConfig = DataImportConfig(
             id = UUID.randomUUID(),
             name = dto.name,
-            dumpPath = dto.dumpPath,
+            importPath = dto.importPath,
             projectId = dto.projectId,
             accountId = auth.body.get.id,
             createdAt = now,
             updatedAt = now
           )
 
-          taskLoadConfigService
-            .create(taskLoadConfig)
+          dataImportConfigService
+            .create(dataImportConfig)
             .map(saved => TgJsonSuccess.justBodyRight(toResp(saved)))
         }
       )
@@ -62,25 +62,25 @@ class TaskLoadConfigController(
   }
 
   val update = updateEndpoint.serverLogic { auth => dto =>
-    taskLoadConfigVerification
-      .verify(dto.name, dto.dumpPath)
+    dataImportConfigVerification
+      .verify(dto.name, dto.importPath)
       .fold(
         errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
-          val taskLoadConfig = TaskLoadConfig(
+          val dataImportConfig = DataImportConfig(
             id = dto.id,
             name = dto.name,
-            dumpPath = dto.dumpPath,
+            importPath = dto.importPath,
             projectId = dto.projectId,
             accountId = auth.body.get.id,
             createdAt = now,
             updatedAt = now
           )
 
-          taskLoadConfigService
-            .update(taskLoadConfig)
+          dataImportConfigService
+            .update(dataImportConfig)
             .map(updated => TgJsonSuccess.justBodyRight(toResp(updated)))
         }
       )
@@ -88,16 +88,16 @@ class TaskLoadConfigController(
   }
 
   val delete = deleteByIdEndpoint.serverLogic { auth => id =>
-    taskLoadConfigService
+    dataImportConfigService
       .deleteById(id)
-      .map(_ => TgJsonSuccess.justMessageRight("Task load config deleted successfully"))
+      .map(_ => TgJsonSuccess.justMessageRight("Import data config deleted successfully"))
   }
 
   val findByProjectId =
     findByProjectIdEndpoint.serverLogic { auth => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
-        taskLoadConfigService
+        dataImportConfigService
           .findPaginatedByProjectId(projectId, page)
           .map(configsPage => TgJsonSuccess.justBodyRight(configsPage.mapItem(toResp)))
       }

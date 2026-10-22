@@ -9,24 +9,24 @@ import com.togger.dto.{
   DataExportStatusResp,
   DataExportSyncStatusResp,
   DataExportTaskStatusResp,
-  TaskLoadResp,
-  TaskLoadStatusResp,
-  TaskLoadTaskResultResp
+  DataImportResp,
+  DataImportStatusResp,
+  DataImportTaskResultResp
 }
 import com.togger.dump.{
   DataExportEndpoints,
   DataExportService,
   DataExportSyncStatus,
   DataExportTaskStatus,
-  TaskLoadService,
-  TaskLoadTaskResult,
-  TaskLoadTaskStatus
+  DataImportService,
+  DataImportTaskResult,
+  DataImportTaskStatus
 }
 
 class DataExportController(
   dataExportEndpoints: DataExportEndpoints,
   dataExportService: DataExportService,
-  taskLoadService: TaskLoadService
+  dataImportService: DataImportService
 ) {
 
   val dumpTasks = dataExportEndpoints.exportEndpoint.serverLogic { auth => projectId =>
@@ -73,21 +73,21 @@ class DataExportController(
       }
   }
 
-  val loadTasks = dataExportEndpoints.loadEndpoint.serverLogic { auth =>
+  val importData = dataExportEndpoints.importEndpoint.serverLogic { auth =>
     { case (projectId, req) =>
-      taskLoadService
-        .loadProject(projectId, auth.body.get.id, req.dumpPath)
+      dataImportService
+        .importProject(projectId, auth.body.get.id, req.importPath)
         .map {
           case Right(result) =>
             val results = result.taskResults.map(toResp)
-            TgJsonSuccess.justBodyRight(TaskLoadResp(projectId, result.dumpPath, result.taskCount, results))
-          case Left(error) => error.toBadRequestLeft[TaskLoadResp]
+            TgJsonSuccess.justBodyRight(DataImportResp(projectId, result.dumpPath, result.taskCount, results))
+          case Left(error) => error.toBadRequestLeft[DataImportResp]
         }
     }
   }
 
-  private def toResp(r: TaskLoadTaskResult): TaskLoadTaskResultResp =
-    TaskLoadTaskResultResp(
+  private def toResp(r: DataImportTaskResult): DataImportTaskResultResp =
+    DataImportTaskResultResp(
       r.taskId,
       r.taskName,
       toRespStatus(r.status),
@@ -97,12 +97,12 @@ class DataExportController(
       r.error
     )
 
-  private def toRespStatus(s: TaskLoadTaskStatus): TaskLoadStatusResp = s match {
-    case TaskLoadTaskStatus.Inserted  => TaskLoadStatusResp.Inserted
-    case TaskLoadTaskStatus.Merged    => TaskLoadStatusResp.Merged
-    case TaskLoadTaskStatus.Unchanged => TaskLoadStatusResp.Unchanged
-    case TaskLoadTaskStatus.Malformed => TaskLoadStatusResp.Malformed
-    case TaskLoadTaskStatus.Failed    => TaskLoadStatusResp.Failed
+  private def toRespStatus(s: DataImportTaskStatus): DataImportStatusResp = s match {
+    case DataImportTaskStatus.Inserted  => DataImportStatusResp.Inserted
+    case DataImportTaskStatus.Merged    => DataImportStatusResp.Merged
+    case DataImportTaskStatus.Unchanged => DataImportStatusResp.Unchanged
+    case DataImportTaskStatus.Malformed => DataImportStatusResp.Malformed
+    case DataImportTaskStatus.Failed    => DataImportStatusResp.Failed
   }
 
   private def toResp(s: DataExportTaskStatus): DataExportTaskStatusResp =

@@ -3,7 +3,7 @@ package com.togger.controllers.dataexportconfig
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.dataexportconfig.DataExportConfigResp
-import com.togger.dump.DataExportLoadConfigVerification
+import com.togger.dump.DataImportConfigVerification
 import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigEndpoints, DataExportConfigService}
 
 import java.util.UUID
@@ -11,7 +11,7 @@ import java.util.UUID
 class DataExportConfigController(
   dataExportConfigEndpoints: DataExportConfigEndpoints,
   dataExportConfigService: DataExportConfigService,
-  dataExportConfigVerification: DataExportLoadConfigVerification,
+  dataExportConfigVerification: DataImportConfigVerification,
   tgClock: TgClock
 ) {
 

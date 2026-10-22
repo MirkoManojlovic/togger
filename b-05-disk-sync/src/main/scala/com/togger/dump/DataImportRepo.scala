@@ -14,7 +14,7 @@ import doobie.ConnectionIO
 import java.security.SecureRandom
 import java.util.UUID
 
-class TaskLoadRepo(
+class DataImportRepo(
   taskRepo: TaskRepo,
   taskVersionRepo: TaskVersionRepo,
   linkRepo: LinkRepo,
@@ -91,7 +91,7 @@ class TaskLoadRepo(
     Password.fromString(rawPassword).toOption.get
   }
 
-  def prepareLoad(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[Map[UUID, UUID]] =
+  def prepareImport(projectIdDb: UUID, manifest: ProjectDumpManifest): ConnectionIO[Map[UUID, UUID]] =
     // the project has one mapping per dump it was loaded from, a handful at most
     TgPages.readAll(projectMappingRepo.findPaginatedByProjectIdDb(projectIdDb, _)).flatMap { mappings =>
       val ensureMapping: ConnectionIO[Unit] =
@@ -124,7 +124,7 @@ class TaskLoadRepo(
       }
     } yield folded._2
 
-  def mergeTask(diskData: DataExportData): ConnectionIO[TaskLoadTaskResult] =
+  def mergeTask(diskData: DataExportData): ConnectionIO[DataImportTaskResult] =
     for {
       taskExists <- taskRepo.findById(diskData.task.id).attempt.map(_.isRight)
       _ <- if (taskExists) ().pure[ConnectionIO] else taskRepo.insertWithId(diskData.task).void
@@ -137,11 +137,11 @@ class TaskLoadRepo(
       val versionsAdded =
         taskVersionsAdded + linkOutcomes.map(_.versionsAdded).sum + logEntryOutcomes.map(_.versionsAdded).sum
       val status =
-        if (!taskExists) TaskLoadTaskStatus.Inserted
-        else if (versionsAdded > 0 || linksAdded > 0 || logEntriesAdded > 0) TaskLoadTaskStatus.Merged
-        else TaskLoadTaskStatus.Unchanged
+        if (!taskExists) DataImportTaskStatus.Inserted
+        else if (versionsAdded > 0 || linksAdded > 0 || logEntriesAdded > 0) DataImportTaskStatus.Merged
+        else DataImportTaskStatus.Unchanged
 
-      TaskLoadTaskResult(
+      DataImportTaskResult(
         taskId = diskData.task.id,
         taskName = diskData.taskVersions.headOption.map(_.name),
         status = status,

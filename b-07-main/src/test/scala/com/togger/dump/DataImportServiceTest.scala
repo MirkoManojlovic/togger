@@ -29,7 +29,7 @@ import io.circe.syntax._
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
-class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+class DataImportServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val projectAccountRepo = new ProjectAccountRepoImpl
   val accountRepo = new AccountRepoImpl
@@ -54,8 +54,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     logEntryRepo,
     logEntryVersionRepo
   )
-  val taskLoadRepo =
-    new TaskLoadRepo(
+  val dataImportRepo =
+    new DataImportRepo(
       taskRepo,
       taskVersionRepo,
       linkRepo,
@@ -144,22 +144,22 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       logEntryVersions = List(firstLogEntryVersion, secondLogEntryVersion)
     )
 
-  private def newTaskLoadService(transactor: doobie.Transactor[cats.effect.IO]) =
-    new TaskLoadService(dataExportRepo, taskLoadRepo, dataExportDiskWriter, transactor)
+  private def newDataImportService(transactor: doobie.Transactor[cats.effect.IO]) =
+    new DataImportService(dataExportRepo, dataImportRepo, dataExportDiskWriter, transactor)
 
   private def newDataExportService(transactor: doobie.Transactor[cats.effect.IO]) = {
     val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
     new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
   }
 
-  private def insertDumpConfig(projectId: UUID, accountId: UUID, dumpPath: os.Path): ConnectionIO[DataExportConfig] =
+  private def insertDumpConfig(projectId: UUID, accountId: UUID, importPath: os.Path): ConnectionIO[DataExportConfig] =
     dataExportConfigRepo.insert(
       DataExportConfig(
         id = UUID.randomUUID(),
         projectId = projectId,
         accountId = accountId,
         name = "Dump config",
-        exportPath = dumpPath.toString,
+        exportPath = importPath.toString,
         createdAt = nowAsInstant,
         updatedAt = nowAsInstant
       )
@@ -191,20 +191,20 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   testNameFromClassName should {
 
     "reject load for an account not assigned to the project" in { transactor =>
-      val taskLoadService = newTaskLoadService(transactor)
+      val dataImportService = newDataImportService(transactor)
 
       for {
         savedAccount <- createAccount.transact(transactor)
         savedOrgAndProject <- createOrgAndProject.transact(transactor)
         (_, savedProject) = savedOrgAndProject
-        result <- taskLoadService.loadProject(savedProject.id, savedAccount.id, (os.pwd / "target").toString)
+        result <- dataImportService.importProject(savedProject.id, savedAccount.id, (os.pwd / "target").toString)
       } yield result shouldBe Left(ProjectError.NotAssignedToProject)
     }
 
     "insert a task that exists on disk but not in the db" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -278,15 +278,15 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           )
         )
         _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
         persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
         persistedVersions <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor)
         persistedLinks <- linkRepo.findByTaskId(newTaskId).transact(transactor)
         persistedLogEntries <- logEntryRepo.findByTaskId(newTaskId).transact(transactor)
       } yield {
-        loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == newTaskId).get
-        taskResult.status shouldBe TaskLoadTaskStatus.Inserted
+        importResult.isRight shouldBe true
+        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == newTaskId).get
+        taskResult.status shouldBe DataImportTaskStatus.Inserted
         taskResult.versionsAdded shouldBe 3
         taskResult.linksAdded shouldBe 1
         taskResult.logEntriesAdded shouldBe 1
@@ -299,8 +299,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "merge missing versions and links into a task that already exists in the db, and be idempotent on reload" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -326,15 +326,15 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- taskVersionRepo.deleteByVersion(fullHistory.taskVersions.head.version).transact(transactor)
         _ <- linkRepo.deleteById(fullHistory.link.id).transact(transactor)
         _ <- logEntryVersionRepo.deleteByVersion(fullHistory.logEntryVersions.head.version).transact(transactor)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
         persistedVersions <- taskVersionRepo.findByTaskId(fullHistory.taskId).transact(transactor)
         persistedLinks <- linkRepo.findByTaskId(fullHistory.taskId).transact(transactor)
         persistedLogEntryVersions <- logEntryVersionRepo.findByLogEntryId(fullHistory.logEntry.id).transact(transactor)
-        reloadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        reimportResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
       } yield {
-        loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe TaskLoadTaskStatus.Merged
+        importResult.isRight shouldBe true
+        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        taskResult.status shouldBe DataImportTaskStatus.Merged
         taskResult.versionsAdded shouldBe 4 // 1 task version + 2 link versions (whole link re-inserted) + 1 log entry version
         taskResult.linksAdded shouldBe 1
         taskResult.logEntriesAdded shouldBe 0
@@ -342,9 +342,9 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         persistedLinks.size shouldBe 1
         persistedLogEntryVersions.size shouldBe 2
 
-        reloadResult.isRight shouldBe true
-        val reloadTaskResult = reloadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        reloadTaskResult.status shouldBe TaskLoadTaskStatus.Unchanged
+        reimportResult.isRight shouldBe true
+        val reloadTaskResult = reimportResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        reloadTaskResult.status shouldBe DataImportTaskStatus.Unchanged
         reloadTaskResult.versionsAdded shouldBe 0
         reloadTaskResult.linksAdded shouldBe 0
         reloadTaskResult.logEntriesAdded shouldBe 0
@@ -353,8 +353,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "report a task with no new data on disk as unchanged" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -376,11 +376,11 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ = dumpResult.isRight shouldBe true
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         projectRoot = rootFolder / os.up
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
       } yield {
-        loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe TaskLoadTaskStatus.Unchanged
+        importResult.isRight shouldBe true
+        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        taskResult.status shouldBe DataImportTaskStatus.Unchanged
         taskResult.versionsAdded shouldBe 0
         taskResult.linksAdded shouldBe 0
         taskResult.logEntriesAdded shouldBe 0
@@ -389,8 +389,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "flag an unparseable dump file as malformed without failing the rest of the batch" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -412,17 +412,17 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         projectRoot = rootFolder / os.up
         _ = os.write.over(rootFolder / s"${fullHistory.taskId}.json", "not valid json")
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
       } yield {
-        loadResult.isRight shouldBe true
-        val taskResult = loadResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
-        taskResult.status shouldBe TaskLoadTaskStatus.Malformed
+        importResult.isRight shouldBe true
+        val taskResult = importResult.toOption.get.taskResults.find(_.taskId == fullHistory.taskId).get
+        taskResult.status shouldBe DataImportTaskStatus.Malformed
         taskResult.error should not be empty
       }
     }
 
     "reject loading when the dump path has no readable project.json manifest" in { transactor =>
-      val taskLoadService = newTaskLoadService(transactor)
+      val dataImportService = newDataImportService(transactor)
 
       for {
         savedAccount <- createAccount.transact(transactor)
@@ -431,16 +431,16 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- projectAccountRepo
           .insert(ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant))
           .transact(transactor)
-        emptyFolder = os.pwd / "target" / s"test-task-load-empty-${UUID.randomUUID()}"
+        emptyFolder = os.pwd / "target" / s"test-data-import-empty-${UUID.randomUUID()}"
         _ = os.makeDir.all(emptyFolder)
-        result <- taskLoadService.loadProject(savedProject.id, savedAccount.id, emptyFolder.toString)
+        result <- dataImportService.importProject(savedProject.id, savedAccount.id, emptyFolder.toString)
       } yield result shouldBe Left(ProjectError.DumpManifestMissing)
     }
 
     "auto-create a project mapping and load when none exists for the target project" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -462,13 +462,13 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         dumpResult <- dataExportService.dumpProject(dumpProject.id, savedAccount.id)
         rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         projectRoot = rootFolder / os.up
-        loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
         mappings <- projectMappingRepo
           .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
           .map(_.items)
           .transact(transactor)
       } yield {
-        loadResult.isRight shouldBe true
+        importResult.isRight shouldBe true
         mappings.map(_.projectIdDump) shouldBe List(dumpProject.id)
       }
     }
@@ -476,8 +476,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     "auto-create an additional project mapping and load when the target project already maps to a different dump project" in {
       transactor =>
         val dataExportService = newDataExportService(transactor)
-        val taskLoadService = newTaskLoadService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+        val dataImportService = newDataImportService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
         val setup = for {
           savedAccount <- createAccount
@@ -501,21 +501,21 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           dumpResult <- dataExportService.dumpProject(dumpProject.id, savedAccount.id)
           rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
           projectRoot = rootFolder / os.up
-          loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
+          importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
           mappings <- projectMappingRepo
             .findPaginatedByProjectIdDb(targetProject.id, DbPageRequest.default)
             .map(_.items)
             .transact(transactor)
         } yield {
-          loadResult.isRight shouldBe true
+          importResult.isRight shouldBe true
           mappings.map(_.projectIdDump).toSet shouldBe Set(unrelatedDumpProject.id, dumpProject.id)
         }
     }
 
     "remap the project id and reconcile task statuses by name/description when loading across a mapping" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -564,7 +564,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
       // These tasks only ever exist as hand-written dump files, never as real rows in this DB under
       // dumpProject - a real cross-database load would never find them by id either, so this exercises
-      // the "insert with remapped project id" branch of TaskLoadRepo.mergeTask, not the "merge into an
+      // the "insert with remapped project id" branch of DataImportRepo.mergeTask, not the "merge into an
       // already-present row" branch.
       val doneTaskId = UUID.randomUUID()
       val blockedTaskId = UUID.randomUUID()
@@ -606,16 +606,16 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           rootFolder / s"$blockedTaskId.json",
           diskTaskFor(blockedTaskId, dumpProject.id, savedAccount.id, blockedStatusOnDumpSide.id).asJson.spaces2
         )
-        loadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
         persistedDoneTask <- taskRepo.findById(doneTaskId).transact(transactor)
         persistedBlockedTask <- taskRepo.findById(blockedTaskId).transact(transactor)
         persistedDoneVersion <- taskVersionRepo.findByTaskId(doneTaskId).transact(transactor).map(_.head)
         persistedBlockedVersion <- taskVersionRepo.findByTaskId(blockedTaskId).transact(transactor).map(_.head)
         targetStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
-        reloadResult <- taskLoadService.loadProject(targetProject.id, savedAccount.id, projectRoot.toString)
+        reimportResult <- dataImportService.importProject(targetProject.id, savedAccount.id, projectRoot.toString)
         targetStatusesAfterReload <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(targetProject.id, _)).transact(transactor)
       } yield {
-        loadResult.isRight shouldBe true
+        importResult.isRight shouldBe true
         // both tasks and their statuses are remapped into the target project, not left pointing at the dump project
         persistedDoneTask.projectId shouldBe targetProject.id
         persistedBlockedTask.projectId shouldBe targetProject.id
@@ -626,15 +626,15 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         persistedBlockedVersion.taskStatusId shouldBe newBlockedStatus.id
 
         // reloading is idempotent: no duplicate task statuses get created in the target project
-        reloadResult.isRight shouldBe true
+        reimportResult.isRight shouldBe true
         targetStatusesAfterReload.size shouldBe targetStatuses.size
       }
     }
 
     "create the dumped-by account when it doesn't exist in the target db, then load" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -661,14 +661,14 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           dumpedBy = AccountDumpData(UUID.randomUUID(), "New", "Person", newAccountEmail)
         )
         _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
         createdAccount <- accountRepo.findByEmail(newAccountEmail).transact(transactor)
         createdMappings <- accountMappingRepo
           .findPaginatedByAccountIdDump(manifestWithMissingAccount.dumpedBy.id, DbPageRequest.default)
           .map(_.items)
           .transact(transactor)
       } yield {
-        loadResult.isRight shouldBe true
+        importResult.isRight shouldBe true
         createdAccount.firstName shouldBe "New"
         createdAccount.lastName shouldBe "Person"
         createdAccount.email shouldBe newAccountEmail
@@ -682,8 +682,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     "remap account ids in a task and its log entry when the dumped-by account is found by email under a different id" in {
       transactor =>
         val dataExportService = newDataExportService(transactor)
-        val taskLoadService = newTaskLoadService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+        val dataImportService = newDataImportService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
         val setup = for {
           savedAccount <- createAccount
@@ -751,7 +751,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             )
           )
           _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
           persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
           persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
@@ -761,7 +761,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             .map(_.items)
             .transact(transactor)
         } yield {
-          loadResult.isRight shouldBe true
+          importResult.isRight shouldBe true
           persistedTask.createdBy shouldBe savedAccount.id
           persistedVersion.assignedTo shouldBe Some(savedAccount.id)
           persistedVersion.closedBy shouldBe Some(savedAccount.id)
@@ -773,8 +773,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "reuse an existing account mapping on a subsequent import without re-doing the email lookup" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -803,14 +803,14 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           dumpedBy = AccountDumpData(dumpSideAccountId, "Bogus", "Person", bogusEmail)
         )
         _ = os.write.over(rootFolder / "project.json", manifestWithMappedAccount.asJson.spaces2)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
         bogusAccountLookup <- accountRepo.findByEmail(bogusEmail).transact(transactor).attempt
         mappingsForDumpId <- accountMappingRepo
           .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
           .map(_.items)
           .transact(transactor)
       } yield {
-        loadResult.isRight shouldBe true
+        importResult.isRight shouldBe true
         bogusAccountLookup.isLeft shouldBe true
         mappingsForDumpId.map(_.accountIdDb) shouldBe List(savedAccount.id)
       }
@@ -818,8 +818,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "reject the load when the dumped-by account is missing and no 'developer' account type exists" in { transactor =>
       val dataExportService = newDataExportService(transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         managerAccountType <- accountTypeRepo.insert(
@@ -861,16 +861,16 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           dumpedBy = AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail)
         )
         _ = os.write.over(rootFolder / "project.json", manifestWithMissingAccount.asJson.spaces2)
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
-      } yield loadResult shouldBe Left(ProjectError.AccountTypeMissing)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
+      } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)
     }
 
     "load only the most recent dump when several dumps exist under the project root" in { transactor =>
       val testClock = new TestClock
       val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, testClock, transactor)
       val dataExportService = new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, testClock, transactor)
-      val taskLoadService = newTaskLoadService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+      val dataImportService = newDataImportService(transactor)
+      val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -912,19 +912,19 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           lastRootFolder / s"$taskInLatestDump.json",
           orphanDiskTask(taskInLatestDump, savedProject.id, savedAccount.id).asJson.spaces2
         )
-        loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
       } yield {
-        loadResult.isRight shouldBe true
-        val loadedTaskIds = loadResult.toOption.get.taskResults.map(_.taskId).toSet
-        loadedTaskIds shouldBe Set(taskInLatestDump)
+        importResult.isRight shouldBe true
+        val importedTaskIds = importResult.toOption.get.taskResults.map(_.taskId).toSet
+        importedTaskIds shouldBe Set(taskInLatestDump)
       }
     }
 
     "resolve account mappings for every account referenced by a task, its versions and its log entry, not just the dumper" in {
       transactor =>
         val dataExportService = newDataExportService(transactor)
-        val taskLoadService = newTaskLoadService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+        val dataImportService = newDataImportService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
         def createNamedAccount(firstName: String, lastName: String, emailAddress: String, accountTypeId: UUID): ConnectionIO[Account] =
           accountRepo.insert(
@@ -1040,7 +1040,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             )
           )
           _ = os.write.over(rootFolder / s"$newTaskId.json", diskData.asJson.spaces2)
-          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
           persistedTask <- taskRepo.findById(newTaskId).transact(transactor)
           persistedVersion <- taskVersionRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
           persistedLogEntry <- logEntryRepo.findByTaskId(newTaskId).transact(transactor).map(_.head)
@@ -1062,7 +1062,7 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             .map(_.items)
             .transact(transactor)
         } yield {
-          loadResult.isRight shouldBe true
+          importResult.isRight shouldBe true
           persistedTask.createdBy shouldBe creatorAccount.id
           persistedVersion.assignedTo shouldBe Some(assigneeAccount.id)
           persistedVersion.closedBy shouldBe Some(closerAccount.id)
@@ -1078,8 +1078,8 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     "reject the whole load when a non-dumper referenced account is missing and no 'developer' account type exists" in {
       transactor =>
         val dataExportService = newDataExportService(transactor)
-        val taskLoadService = newTaskLoadService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+        val dataImportService = newDataImportService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
         // deliberately avoid the trait's createAccount, which auto-seeds a "developer" account type
         val setup = for {
@@ -1125,15 +1125,15 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             referencedAccounts = List(AccountDumpData(UUID.randomUUID(), "Missing", "Person", missingAccountEmail))
           )
           _ = os.write.over(rootFolder / "project.json", manifestWithMissingReferencedAccount.asJson.spaces2)
-          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
-        } yield loadResult shouldBe Left(ProjectError.AccountTypeMissing)
+          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
+        } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)
     }
 
     "deduplicate an account referenced both as the dumper and in referencedAccounts, creating only one mapping" in {
       transactor =>
         val dataExportService = newDataExportService(transactor)
-        val taskLoadService = newTaskLoadService(transactor)
-        val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-load-${UUID.randomUUID()}"
+        val dataImportService = newDataImportService(transactor)
+        val dumpBasePath: os.Path = os.pwd / "target" / s"test-data-import-${UUID.randomUUID()}"
 
         val setup = for {
           savedAccount <- createAccount
@@ -1162,13 +1162,13 @@ class TaskLoadServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
             referencedAccounts = List(originalManifest.dumpedBy.copy(id = dumpSideAccountId))
           )
           _ = os.write.over(rootFolder / "project.json", manifestWithDuplicateReference.asJson.spaces2)
-          loadResult <- taskLoadService.loadProject(savedProject.id, savedAccount.id, projectRoot.toString)
+          importResult <- dataImportService.importProject(savedProject.id, savedAccount.id, projectRoot.toString)
           mappings <- accountMappingRepo
             .findPaginatedByAccountIdDump(dumpSideAccountId, DbPageRequest.default)
             .map(_.items)
             .transact(transactor)
         } yield {
-          loadResult.isRight shouldBe true
+          importResult.isRight shouldBe true
           mappings.map(_.accountIdDb) shouldBe List(savedAccount.id)
         }
     }

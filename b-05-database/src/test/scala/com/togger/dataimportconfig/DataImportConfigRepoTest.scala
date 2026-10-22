@@ -1,4 +1,4 @@
-package com.togger.taskloadconfig
+package com.togger.dataimportconfig
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
@@ -9,20 +9,20 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
+class DataImportConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
 
-  val taskLoadConfigRepo = new TaskLoadConfigRepoImpl
+  val dataImportConfigRepo = new DataImportConfigRepoImpl
   val accountRepo = new AccountRepoImpl
 
-  def newTaskLoadConfig(
+  def newDataImportConfig(
     projectId: UUID,
     accountId: UUID,
     name: String = "My load config",
-    dumpPath: String = "/tmp/dumps"
-  ) = TaskLoadConfig(
+    importPath: String = "/tmp/dumps"
+  ) = DataImportConfig(
     id = UUID.randomUUID(),
     name = name,
-    dumpPath = dumpPath,
+    importPath = importPath,
     projectId = projectId,
     accountId = accountId,
     createdAt = nowAsInstant,
@@ -49,22 +49,22 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
         savedAccount <- createAccount
-        savedConfig <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject.id, savedAccount.id))
-        foundConfig1 <- taskLoadConfigRepo.findById(savedConfig.id)
+        savedConfig <- dataImportConfigRepo.insert(newDataImportConfig(savedProject.id, savedAccount.id))
+        foundConfig1 <- dataImportConfigRepo.findById(savedConfig.id)
         newUpdatedAt = nowAsInstant
-        updatedConfig <- taskLoadConfigRepo.update(
-          savedConfig.copy(name = "Renamed config", dumpPath = "/tmp/dumps-new"),
+        updatedConfig <- dataImportConfigRepo.update(
+          savedConfig.copy(name = "Renamed config", importPath = "/tmp/dumps-new"),
           newUpdatedAt
         )
-        foundConfig2 <- taskLoadConfigRepo.findById(savedConfig.id)
-        _ <- taskLoadConfigRepo.deleteById(foundConfig2.id)
-        foundConfig3 <- taskLoadConfigRepo.findById(savedConfig.id).attempt
+        foundConfig2 <- dataImportConfigRepo.findById(savedConfig.id)
+        _ <- dataImportConfigRepo.deleteById(foundConfig2.id)
+        foundConfig3 <- dataImportConfigRepo.findById(savedConfig.id).attempt
       } yield {
         val cp = new Checkpoint
         cp(savedConfig shouldBe foundConfig1)
         cp(updatedConfig shouldBe foundConfig2)
         cp(updatedConfig.name shouldBe "Renamed config")
-        cp(updatedConfig.dumpPath shouldBe "/tmp/dumps-new")
+        cp(updatedConfig.importPath shouldBe "/tmp/dumps-new")
         cp.reportAll()
         foundConfig3.isLeft shouldBe true
       }
@@ -72,7 +72,7 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
       res.transact(transactor)
     }
 
-    "find task load configs by project id, scoped to that project" in { transactor =>
+    "find Import data configs by project id, scoped to that project" in { transactor =>
       val res = for {
         orgAndProject <- createOrgAndProject
         savedOrganization = orgAndProject._1
@@ -81,14 +81,14 @@ class TaskLoadConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Second project")
         )
         savedAccount <- createAccount
-        config1 <- taskLoadConfigRepo.insert(
-          newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
+        config1 <- dataImportConfigRepo.insert(
+          newDataImportConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
         )
-        config2 <- taskLoadConfigRepo.insert(
-          newTaskLoadConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
+        config2 <- dataImportConfigRepo.insert(
+          newDataImportConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
         )
-        _ <- taskLoadConfigRepo.insert(newTaskLoadConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
-        found <- taskLoadConfigRepo.findPaginatedByProjectId(savedProject1.id, DbPageRequest.default).map(_.items)
+        _ <- dataImportConfigRepo.insert(newDataImportConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
+        found <- dataImportConfigRepo.findPaginatedByProjectId(savedProject1.id, DbPageRequest.default).map(_.items)
       } yield {
         found.toSet shouldBe Set(config1, config2)
       }
