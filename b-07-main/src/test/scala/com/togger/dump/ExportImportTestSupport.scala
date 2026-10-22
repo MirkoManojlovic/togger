@@ -15,9 +15,15 @@ import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
 import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
-import doobie.{ConnectionIO, Transactor}
-import doobie.implicits._
 import cats.effect.IO
+import com.togger.dump.DayOfWeekCodec._
+import com.togger.project.Project
+import doobie.implicits._
+import doobie.{ConnectionIO, Transactor}
+import io.circe.generic.auto._
+import io.circe.parser.decode
+import io.circe.syntax._
+import io.circe.Encoder
 
 import java.time.LocalDate
 import java.util.UUID
@@ -256,5 +262,85 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
       TaskLabelRepoImpl.TASK_LABEL_TABLE,
       TaskStatusRepoImpl.TASK_STATUS_TABLE
     ).traverse_(table => doobie.Fragment.const(s"delete from $table").update.run.void)
+
+  def createSecondProject(organizationId: UUID): ConnectionIO[Project] =
+    projectRepo.insert(project.copy(id = UUID.randomUUID(), organizationId = organizationId, name = "Second project"))
+
+  def exportToFolder(transactor: Transactor[IO], projectId: UUID, accountId: UUID): IO[os.Path] =
+    newExportService(transactor)
+      .exportProject(projectId, accountId)
+      .map(result => os.Path(result.toOption.get.pathResults.head.exportPath))
+
+  def readIndex(root: os.Path): ExportIndex = treeStore.readIndexAtPath(root.toString).toOption.get
+
+  /** Rewrites `index.json`, keeping its root hash consistent with the entries. */
+  def editIndex(root: os.Path)(change: ExportIndex => ExportIndex): Unit = {
+    val updated = change(readIndex(root))
+    val withRootHash = updated.copy(rootHash = ExportHasher.rootHash(updated.entities))
+    os.write.over(root / "index.json", withRootHash.asJson.spaces2)
+  }
+
+  /** Writes an entity file by hand and records its hash in the index, as an export would have. */
+  def putEntity[A: Encoder](root: os.Path, entityType: DataExportEntityType, id: UUID, name: Option[String], data: A): Unit = {
+    val json = data.asJson
+    val path = if (entityType.singleton) root / s"${entityType.folder}.json" else root / entityType.folder / s"$id.json"
+    os.write.over(path, json.spaces2, createFolders = true)
+    editIndex(root) { index =>
+      val entries = index.entities.getOrElse(entityType.folder, Map.empty) +
+        (id.toString -> ExportIndexEntry(ExportHasher.hashJson(json), name))
+      index.copy(entities = index.entities + (entityType.folder -> entries))
+    }
+  }
+
+  def editProjectDump(root: os.Path)(change: ProjectDumpData => ProjectDumpData): Unit = {
+    val current = decode[ProjectDumpData](os.read(root / "project.json")).toOption.get
+    putEntity(root, DataExportEntityType.Project, current.project.id, Some(current.project.name), change(current))
+  }
+
+  def handWrittenTask(
+    taskId: UUID,
+    projectId: UUID,
+    createdBy: UUID,
+    taskStatusId: UUID,
+    assignedTo: Option[UUID] = None,
+    closedBy: Option[UUID] = None
+  ): TaskDumpData =
+    TaskDumpData(
+      task = Task(id = taskId, projectId = projectId, createdBy = createdBy, createdAt = nowAsInstant),
+      taskVersions = List(
+        TaskVersion(
+          version = UUID.randomUUID(),
+          taskId = taskId,
+          name = "Disk task",
+          description = "Disk task description",
+          assignedTo = assignedTo,
+          closedBy = closedBy,
+          taskStatusId = taskStatusId,
+          startDate = LocalDate.now(),
+          dueDate = LocalDate.now().plusDays(7),
+          createdAt = nowAsInstant,
+          updatedAt = nowAsInstant
+        )
+      ),
+      links = Nil,
+      labelIds = Nil
+    )
+
+  def handWrittenLogEntry(logEntryId: UUID, taskId: UUID, createdBy: UUID): LogEntryDumpData =
+    LogEntryDumpData(
+      logEntry = LogEntry(id = logEntryId, taskId = taskId, createdBy = createdBy, createdAt = nowAsInstant),
+      versions = List(
+        LogEntryVersion(
+          version = UUID.randomUUID(),
+          logEntryId = logEntryId,
+          textInternal = "internal",
+          textExternal = "external",
+          status = LogEntryStatus.InProgress,
+          createdBy = createdBy,
+          createdAt = nowAsInstant,
+          updatedAt = nowAsInstant
+        )
+      )
+    )
 
 }
