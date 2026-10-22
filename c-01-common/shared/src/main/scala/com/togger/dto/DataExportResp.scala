@@ -16,8 +16,11 @@ object DataExportPathResultResp {
   def error(exportPath: String, error: String) =
     DataExportPathResultResp(exportPath = exportPath, error = Some(error))
 }
+
+case class DataExportEntityCountResp(entityType: DataExportEntityTypeResp, count: Int)
+
 case class DataExportResp(
   projectId: UUID,
-  taskCount: Int,
+  entityCounts: List[DataExportEntityCountResp],
   results: List[DataExportPathResultResp]
 )

@@ -18,19 +18,19 @@ object DataImportStatusResp extends Enum[DataImportStatusResp] {
   case object Failed extends DataImportStatusResp
 }
 
-case class DataImportTaskResultResp(
-  taskId: UUID,
-  taskName: Option[String],
+case class DataImportEntityResultResp(
+  entityType: DataExportEntityTypeResp,
+  entityId: UUID,
+  entityName: Option[String],
   status: DataImportStatusResp,
   versionsAdded: Int,
-  linksAdded: Int,
-  logEntriesAdded: Int,
+  childrenAdded: Int,
   error: Option[String]
 )
 
 case class DataImportResp(
   projectId: UUID,
   importPath: String,
-  taskCount: Int,
-  results: List[DataImportTaskResultResp]
+  entityCounts: List[DataExportEntityCountResp],
+  results: List[DataImportEntityResultResp]
 )

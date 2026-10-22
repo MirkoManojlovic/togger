@@ -16,16 +16,17 @@ object DataExportSyncStatusResp extends Enum[DataExportSyncStatusResp] {
   case object Malformed extends DataExportSyncStatusResp
 }
 
-case class DataExportTaskStatusResp(
-  taskId: UUID,
-  taskName: Option[String],
+case class DataExportEntityStatusResp(
+  entityType: DataExportEntityTypeResp,
+  entityId: UUID,
+  entityName: Option[String],
   status: DataExportSyncStatusResp,
   differences: List[String]
 )
 
 case class DataExportPathStatusResp(
   exportPath: String,
-  taskStatuses: List[DataExportTaskStatusResp]
+  entityStatuses: List[DataExportEntityStatusResp]
 )
 
 case class DataExportStatusResp(
