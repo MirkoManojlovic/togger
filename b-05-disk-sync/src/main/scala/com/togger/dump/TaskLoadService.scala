@@ -11,21 +11,21 @@ import doobie.Transactor
 import java.util.UUID
 
 class TaskLoadService(
-  taskDumpRepo: TaskDumpRepo,
+  dataExportRepo: DataExportRepo,
   taskLoadRepo: TaskLoadRepo,
-  taskDumpDiskWriter: TaskDumpDiskWriter,
+  dataExportDiskWriter: DataExportDiskWriter,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
   def loadProject(projectId: UUID, accountId: UUID, projectRootPath: String): IO[Either[ProjectError, TaskLoadResult]] = {
     logger.info(s"Loading tasks for ${sp(projectId)} from ${sp(projectRootPath)} requested by ${sp(accountId)}")
-    taskDumpRepo.isAssigned(projectId, accountId).transact(transactor).flatMap { assigned =>
+    dataExportRepo.isAssigned(projectId, accountId).transact(transactor).flatMap { assigned =>
       if (!assigned) IO.pure(Left(NotAssignedToProject))
       else
-        taskDumpDiskWriter.resolveLatestDumpFolder(projectRootPath) match {
+        dataExportDiskWriter.resolveLatestDumpFolder(projectRootPath) match {
           case None => IO.pure(Left(DumpManifestMissing))
           case Some(dumpPath) =>
-            taskDumpDiskWriter.readManifest(dumpPath) match {
+            dataExportDiskWriter.readManifest(dumpPath) match {
               case Left(_) => IO.pure(Left(DumpManifestMissing))
               case Right(manifest) =>
                 taskLoadRepo
@@ -38,7 +38,7 @@ class TaskLoadService(
                         .prepareLoad(projectId, manifest)
                         .transact(transactor)
                         .flatMap { statusIdMap =>
-                          val diskTasksById = taskDumpDiskWriter.readDumpedTasksAtPath(dumpPath)
+                          val diskTasksById = dataExportDiskWriter.readDumpedTasksAtPath(dumpPath)
                           diskTasksById.toList
                             .traverse {
                               case (taskId, Left(parseError)) =>
@@ -82,11 +82,11 @@ class TaskLoadService(
   }
 
   private def remapForTarget(
-    diskData: TaskDumpData,
+    diskData: DataExportData,
     projectIdDb: UUID,
     taskStatusIdMap: Map[UUID, UUID],
     accountIdMap: Map[UUID, UUID]
-  ): TaskDumpData = {
+  ): DataExportData = {
     def remapAccount(id: UUID): UUID = accountIdMap.getOrElse(id, id)
     def remapAccountOpt(id: Option[UUID]): Option[UUID] = id.map(remapAccount)
 

@@ -1,4 +1,4 @@
-package com.togger.taskdumpconfig
+package com.togger.dataexportconfig
 
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
@@ -15,7 +15,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import java.util.UUID
 
-class TaskDumpConfigServiceTest
+class DataExportConfigServiceTest
     extends AsyncWordSpec
     with AsyncMockFactory
     with Matchers
@@ -25,20 +25,20 @@ class TaskDumpConfigServiceTest
     with Checkpoints
     with TestLoggingJvm {
 
-  val taskDumpConfigRepo: TaskDumpConfigRepo = mock[TaskDumpConfigRepo]
+  val dataExportConfigRepo: DataExportConfigRepo = mock[DataExportConfigRepo]
   val tgClock: TgClock = mock[TgClock]
 
-  val service = new TaskDumpConfigService(taskDumpConfigRepo, tgClock, transactorMock)
+  val service = new DataExportConfigService(dataExportConfigRepo, tgClock, transactorMock)
 
   val projectId: UUID = UUID.randomUUID()
   val accountId: UUID = UUID.randomUUID()
 
-  def newTaskDumpConfig() = TaskDumpConfig(
+  def newDataExportConfig() = DataExportConfig(
     id = UUID.randomUUID(),
     projectId = projectId,
     accountId = accountId,
     name = "My dump config",
-    dumpPath = "/tmp/dumps",
+    exportPath = "/tmp/dumps",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -46,25 +46,25 @@ class TaskDumpConfigServiceTest
   testNameFromClassName should {
 
     "create a task dump config" in {
-      val config = newTaskDumpConfig()
+      val config = newDataExportConfig()
 
-      (taskDumpConfigRepo.insert _).expects(config).returns(config.pure[ConnectionIO])
+      (dataExportConfigRepo.insert _).expects(config).returns(config.pure[ConnectionIO])
 
       service.create(config).map(_ shouldBe config).unsafeToFuture()
     }
 
     "find a task dump config by id" in {
-      val config = newTaskDumpConfig()
+      val config = newDataExportConfig()
 
-      (taskDumpConfigRepo.findById _).expects(config.id).returns(config.pure[ConnectionIO])
+      (dataExportConfigRepo.findById _).expects(config.id).returns(config.pure[ConnectionIO])
 
       service.findById(config.id).map(_ shouldBe config).unsafeToFuture()
     }
 
     "find task dump configs by project id" in {
-      val config = newTaskDumpConfig()
+      val config = newDataExportConfig()
 
-      (taskDumpConfigRepo.findPaginatedByProjectId _)
+      (dataExportConfigRepo.findPaginatedByProjectId _)
         .expects(projectId, DbPageRequest.default)
         .returns(PaginatedResponse.of(1, 20, List(config), 1L).pure[ConnectionIO])
 
@@ -75,20 +75,20 @@ class TaskDumpConfigServiceTest
     }
 
     "update a task dump config, stamping the current time from the clock" in {
-      val config = newTaskDumpConfig()
+      val config = newDataExportConfig()
       val now = nowAsInstant
-      val updated = config.copy(dumpPath = "/tmp/dumps-new", updatedAt = now)
+      val updated = config.copy(exportPath = "/tmp/dumps-new", updatedAt = now)
 
       (() => tgClock.currentInstant).expects().returns(now)
-      (taskDumpConfigRepo.update _).expects(config, now).returns(updated.pure[ConnectionIO])
+      (dataExportConfigRepo.update _).expects(config, now).returns(updated.pure[ConnectionIO])
 
       service.update(config).map(_ shouldBe updated).unsafeToFuture()
     }
 
     "delete a task dump config by id" in {
-      val config = newTaskDumpConfig()
+      val config = newDataExportConfig()
 
-      (taskDumpConfigRepo.deleteById _).expects(config.id).returns(1.pure[ConnectionIO])
+      (dataExportConfigRepo.deleteById _).expects(config.id).returns(1.pure[ConnectionIO])
 
       service.deleteById(config.id).map(_ shouldBe 1).unsafeToFuture()
     }

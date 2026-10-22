@@ -3,7 +3,7 @@ package com.togger.controllers.taskloadconfig
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.taskloadconfig.TaskLoadConfigResp
-import com.togger.dump.TaskDumpLoadConfigVerification
+import com.togger.dump.DataExportLoadConfigVerification
 import com.togger.taskloadconfig.{TaskLoadConfig, TaskLoadConfigEndpoints, TaskLoadConfigService}
 
 import java.util.UUID
@@ -11,7 +11,7 @@ import java.util.UUID
 class TaskLoadConfigController(
   taskLoadConfigEndpoints: TaskLoadConfigEndpoints,
   taskLoadConfigService: TaskLoadConfigService,
-  taskLoadConfigVerification: TaskDumpLoadConfigVerification,
+  taskLoadConfigVerification: DataExportLoadConfigVerification,
   tgClock: TgClock
 ) {
 

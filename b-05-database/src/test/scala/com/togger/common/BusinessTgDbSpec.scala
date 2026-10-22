@@ -19,7 +19,7 @@ import com.togger.task.{
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
 import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
-import com.togger.taskdumpconfig.TaskDumpConfigRepoImpl
+import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.taskloadconfig.TaskLoadConfigRepoImpl
 import com.togger.projectlabel.{ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.ConnectionIO
@@ -30,7 +30,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
       Seq(
         AccountMappingRepoImpl.ACCOUNT_MAPPING_TABLE,
         ProjectMappingRepoImpl.PROJECT_MAPPING_TABLE,
-        TaskDumpConfigRepoImpl.TASK_DUMP_CONFIG_TABLE,
+        DataExportConfigRepoImpl.DATA_EXPORT_CONFIG_TABLE,
         TaskLoadConfigRepoImpl.TASK_LOAD_CONFIG_TABLE,
         TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE,
         TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE,

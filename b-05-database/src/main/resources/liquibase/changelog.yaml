@@ -1466,3 +1466,22 @@ databaseChangeLog:
               - column:
                   name: version
                   descending: true
+  - changeSet:
+      id: 7
+      author: mirko
+      labels: data-export
+      comment: Task dump config is now the data export config
+      changes:
+        - renameTable:
+            oldTableName: task_dump_config
+            newTableName: data_export_config
+        - renameColumn:
+            tableName: data_export_config
+            oldColumnName: dump_path
+            newColumnName: export_path
+            columnDataType: text
+        - sql:
+            sql: >
+              alter index idx_task_dump_config_project_id_id rename to idx_data_export_config_project_id_id;
+              alter table data_export_config rename constraint fk_task_dump_config_project to fk_data_export_config_project;
+              alter table data_export_config rename constraint fk_task_dump_config_account to fk_data_export_config_account

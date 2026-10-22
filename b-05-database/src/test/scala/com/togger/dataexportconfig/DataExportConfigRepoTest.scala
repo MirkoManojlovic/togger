@@ -1,4 +1,4 @@
-package com.togger.taskdumpconfig
+package com.togger.dataexportconfig
 
 import cats.implicits._
 import com.togger.account.{Account, AccountRepoImpl, TgAccount}
@@ -9,22 +9,22 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
+class DataExportConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TimeHelpers {
 
-  val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
+  val dataExportConfigRepo = new DataExportConfigRepoImpl
   val accountRepo = new AccountRepoImpl
 
-  def newTaskDumpConfig(
+  def newDataExportConfig(
     projectId: UUID,
     accountId: UUID,
     name: String = "My dump config",
-    dumpPath: String = "/tmp/dumps"
-  ) = TaskDumpConfig(
+    exportPath: String = "/tmp/dumps"
+  ) = DataExportConfig(
     id = UUID.randomUUID(),
     projectId = projectId,
     accountId = accountId,
     name = name,
-    dumpPath = dumpPath,
+    exportPath = exportPath,
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )
@@ -49,22 +49,22 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
         savedAccount <- createAccount
-        savedConfig <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject.id, savedAccount.id))
-        foundConfig1 <- taskDumpConfigRepo.findById(savedConfig.id)
+        savedConfig <- dataExportConfigRepo.insert(newDataExportConfig(savedProject.id, savedAccount.id))
+        foundConfig1 <- dataExportConfigRepo.findById(savedConfig.id)
         newUpdatedAt = nowAsInstant
-        updatedConfig <- taskDumpConfigRepo.update(
-          savedConfig.copy(name = "Renamed config", dumpPath = "/tmp/dumps-new"),
+        updatedConfig <- dataExportConfigRepo.update(
+          savedConfig.copy(name = "Renamed config", exportPath = "/tmp/dumps-new"),
           newUpdatedAt
         )
-        foundConfig2 <- taskDumpConfigRepo.findById(savedConfig.id)
-        _ <- taskDumpConfigRepo.deleteById(foundConfig2.id)
-        foundConfig3 <- taskDumpConfigRepo.findById(savedConfig.id).attempt
+        foundConfig2 <- dataExportConfigRepo.findById(savedConfig.id)
+        _ <- dataExportConfigRepo.deleteById(foundConfig2.id)
+        foundConfig3 <- dataExportConfigRepo.findById(savedConfig.id).attempt
       } yield {
         val cp = new Checkpoint
         cp(savedConfig shouldBe foundConfig1)
         cp(updatedConfig shouldBe foundConfig2)
         cp(updatedConfig.name shouldBe "Renamed config")
-        cp(updatedConfig.dumpPath shouldBe "/tmp/dumps-new")
+        cp(updatedConfig.exportPath shouldBe "/tmp/dumps-new")
         cp.reportAll()
         foundConfig3.isLeft shouldBe true
       }
@@ -81,14 +81,14 @@ class TaskDumpConfigRepoTest extends BusinessTgDbSpec with TgAccount with TgProj
           project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Second project")
         )
         savedAccount <- createAccount
-        config1 <- taskDumpConfigRepo.insert(
-          newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
+        config1 <- dataExportConfigRepo.insert(
+          newDataExportConfig(savedProject1.id, savedAccount.id, "p1-a", "/dumps/p1-a")
         )
-        config2 <- taskDumpConfigRepo.insert(
-          newTaskDumpConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
+        config2 <- dataExportConfigRepo.insert(
+          newDataExportConfig(savedProject1.id, savedAccount.id, "p1-b", "/dumps/p1-b")
         )
-        _ <- taskDumpConfigRepo.insert(newTaskDumpConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
-        found <- taskDumpConfigRepo.findPaginatedByProjectId(savedProject1.id, DbPageRequest.default).map(_.items)
+        _ <- dataExportConfigRepo.insert(newDataExportConfig(savedProject2.id, savedAccount.id, "p2-a", "/dumps/p2-a"))
+        found <- dataExportConfigRepo.findPaginatedByProjectId(savedProject1.id, DbPageRequest.default).map(_.items)
       } yield {
         found.toSet shouldBe Set(config1, config2)
       }

@@ -10,7 +10,7 @@ import doobie.ConnectionIO
 
 import java.util.UUID
 
-class TaskDumpRepo(
+class DataExportRepo(
   projectRepo: ProjectRepo,
   projectAccountRepo: ProjectAccountRepo,
   accountRepo: AccountRepo,
@@ -36,14 +36,14 @@ class TaskDumpRepo(
       taskStatuses <- TgPages.readAll(taskStatusRepo.findPaginatedByProjectId(projectId, _))
     } yield project -> taskStatuses
 
-  def getAllTasksForProject(projectId: UUID): ConnectionIO[List[TaskDumpData]] =
+  def getAllTasksForProject(projectId: UUID): ConnectionIO[List[DataExportData]] =
     for {
       tasks <- taskVersionRepo.findAllByProjectIdWithLatest(projectId) // whole-project dump, intentionally unbounded
       dumpableTasks = tasks.filterNot(_.taskStatus.name == DefaultTaskStatus.Archived.statusName)
-      dumpData <- dumpableTasks.traverse(task => getTaskDumpData(task.id))
+      dumpData <- dumpableTasks.traverse(task => getDataExportData(task.id))
     } yield dumpData
 
-  private def getTaskDumpData(taskId: UUID): ConnectionIO[TaskDumpData] =
+  private def getDataExportData(taskId: UUID): ConnectionIO[DataExportData] =
     for {
       task <- taskRepo.findById(taskId)
       taskVersions <- taskVersionRepo.findByTaskId(taskId)
@@ -55,16 +55,16 @@ class TaskDumpRepo(
       logEntriesDump <- logEntries.traverse(logEntry =>
         logEntryVersionRepo.findByLogEntryId(logEntry.id).map(versions => LogEntryDumpData(logEntry, versions))
       )
-    } yield TaskDumpData(task, taskVersions, linksDump, logEntriesDump)
+    } yield DataExportData(task, taskVersions, linksDump, logEntriesDump)
 
-  private def referencedAccountIds(tasks: List[TaskDumpData]): Set[UUID] =
+  private def referencedAccountIds(tasks: List[DataExportData]): Set[UUID] =
     tasks.flatMap { t =>
       t.task.createdBy ::
         t.taskVersions.flatMap(v => v.assignedTo.toList ++ v.closedBy.toList) :::
         t.logEntries.flatMap(le => le.logEntry.createdBy :: le.versions.map(_.createdBy))
     }.toSet
 
-  def getReferencedAccounts(tasks: List[TaskDumpData]): ConnectionIO[List[AccountDumpData]] =
+  def getReferencedAccounts(tasks: List[DataExportData]): ConnectionIO[List[AccountDumpData]] =
     referencedAccountIds(tasks).toList
       .traverse(id => accountRepo.findById(id).attempt.map(_.toOption.map(AccountDumpData.from)))
       .map(_.flatten)

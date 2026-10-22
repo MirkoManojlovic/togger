@@ -11,7 +11,7 @@ import java.util.UUID
 
 // `Project.workDays: Set[DayOfWeek]` has no circe instance by default (unlike LocalDate/Instant, circe has no
 // built-in support for java.time.DayOfWeek) -- `ProjectDumpManifest` embeds `Project` directly and is
-// (de)serialized via `io.circe.generic.auto._` in TaskDumpDiskWriter/TaskDumpServiceTest, so those call sites
+// (de)serialized via `io.circe.generic.auto._` in DataExportDiskWriter/DataExportServiceTest, so those call sites
 // need this imported into scope.
 object DayOfWeekCodec {
   implicit val dayOfWeekEncoder: Encoder[DayOfWeek] = Encoder.encodeInt.contramap(_.getValue)
@@ -22,7 +22,7 @@ case class LinkDumpData(link: Link, versions: List[LinkVersion])
 
 case class LogEntryDumpData(logEntry: LogEntry, versions: List[LogEntryVersion])
 
-case class TaskDumpData(
+case class DataExportData(
   task: Task,
   taskVersions: List[TaskVersion],
   links: List[LinkDumpData],
@@ -45,16 +45,16 @@ case class ProjectDumpManifest(
   taskCount: Int
 )
 
-sealed trait TaskDumpSyncStatus
+sealed trait DataExportSyncStatus
 
-object TaskDumpSyncStatus {
-  case object InSync extends TaskDumpSyncStatus
-  case object OutOfSync extends TaskDumpSyncStatus
-  case object MissingFromDump extends TaskDumpSyncStatus
-  case object MissingFromDb extends TaskDumpSyncStatus
-  case object Malformed extends TaskDumpSyncStatus
+object DataExportSyncStatus {
+  case object InSync extends DataExportSyncStatus
+  case object OutOfSync extends DataExportSyncStatus
+  case object MissingFromExport extends DataExportSyncStatus
+  case object MissingFromDb extends DataExportSyncStatus
+  case object Malformed extends DataExportSyncStatus
 }
 
-case class TaskDumpTaskStatus(taskId: UUID, taskName: Option[String], status: TaskDumpSyncStatus, differences: List[String])
-case class TaskDumpPathStatus(dumpPath: String, taskStatuses: List[TaskDumpTaskStatus])
-case class TaskDumpStatusResult(pathStatuses: List[TaskDumpPathStatus])
+case class DataExportTaskStatus(taskId: UUID, taskName: Option[String], status: DataExportSyncStatus, differences: List[String])
+case class DataExportPathStatus(exportPath: String, taskStatuses: List[DataExportTaskStatus])
+case class DataExportStatusResult(pathStatuses: List[DataExportPathStatus])

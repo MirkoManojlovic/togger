@@ -8,7 +8,7 @@ import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntry
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
 import com.togger.task.{DefaultTaskStatus, Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskStatus, TaskVersion, TaskVersionRepoImpl}
-import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
+import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigRepoImpl, DataExportConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -19,7 +19,7 @@ import io.circe.syntax._
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 
-class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+class DataExportServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val projectAccountRepo = new ProjectAccountRepoImpl
   val accountRepo = new AccountRepoImpl
@@ -30,7 +30,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   val logEntryRepo = new LogEntryRepoImpl
   val logEntryVersionRepo = new LogEntryVersionRepoImpl
 
-  val taskDumpRepo = new TaskDumpRepo(
+  val dataExportRepo = new DataExportRepo(
     projectRepo,
     projectAccountRepo,
     accountRepo,
@@ -43,8 +43,8 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     logEntryVersionRepo
   )
   val diskOps = new DiskOps
-  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = Int.MaxValue)
-  val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
+  val dataExportDiskWriter = new DataExportDiskWriter(diskOps, dumpLimit = Int.MaxValue)
+  val dataExportConfigRepo = new DataExportConfigRepoImpl
 
   private class TestClock extends TgClock {
     var instant: Instant = Instant.now
@@ -120,26 +120,26 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
   testNameFromClassName should {
 
     "reject dump for an account not assigned to the project" in { transactor =>
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
 
       for {
         savedAccount <- createAccount.transact(transactor)
         savedOrgAndProject <- createOrgAndProject.transact(transactor)
         (_, savedProject) = savedOrgAndProject
-        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        result <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
         result shouldBe Left(ProjectError.NotAssignedToProject)
-        os.exists(dumpBasePath) shouldBe false
+        os.exists(exportBasePath) shouldBe false
       }
     }
 
     "reject dump for a project with no dump path configured" in { transactor =>
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
-      val noConfigDumpPath: os.Path = os.pwd / "target" / s"test-task-dump-no-config-${UUID.randomUUID()}"
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
+      val noConfigExportPath: os.Path = os.pwd / "target" / s"test-data-export-no-config-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -153,18 +153,18 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject) = setupResult
-        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        result <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
-        result shouldBe Left(ProjectError.NoDumpPathConfigured)
-        os.exists(noConfigDumpPath) shouldBe false
+        result shouldBe Left(ProjectError.NoExportPathConfigured)
+        os.exists(noConfigExportPath) shouldBe false
       }
     }
 
     "dump all tasks with links, log entries and task statuses to every configured dump path" in { transactor =>
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
-      val secondDumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-${UUID.randomUUID()}"
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
+      val secondDumpBasePath: os.Path = os.pwd / "target" / s"test-data-export-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -173,24 +173,24 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- taskDumpConfigRepo.insert(
-          TaskDumpConfig(
+        _ <- dataExportConfigRepo.insert(
+          DataExportConfig(
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
             name = "First dump config",
-            dumpPath = dumpBasePath.toString,
+            exportPath = exportBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
         )
-        _ <- taskDumpConfigRepo.insert(
-          TaskDumpConfig(
+        _ <- dataExportConfigRepo.insert(
+          DataExportConfig(
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
             name = "Second dump config",
-            dumpPath = secondDumpBasePath.toString,
+            exportPath = secondDumpBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
@@ -202,7 +202,7 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, savedTaskStatus, taskIds) = setupResult
-        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        result <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
         val cp = new Checkpoint
         result.isRight shouldBe true
@@ -211,9 +211,9 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         cp(dumpResult.pathResults.size shouldBe 2)
         cp(dumpResult.pathResults.forall(_.success) shouldBe true)
 
-        List(dumpBasePath, secondDumpBasePath).foreach { basePath =>
-          val pathResult = dumpResult.pathResults.find(_.dumpPath.startsWith(basePath.toString)).get
-          val rootFolder = os.Path(pathResult.dumpPath)
+        List(exportBasePath, secondDumpBasePath).foreach { basePath =>
+          val pathResult = dumpResult.pathResults.find(_.exportPath.startsWith(basePath.toString)).get
+          val rootFolder = os.Path(pathResult.exportPath)
           val manifest = decode[ProjectDumpManifest](os.read(rootFolder / "project.json")).toOption.get
           cp(manifest.project.id shouldBe savedProject.id)
           cp(manifest.taskStatuses.map(_.id) shouldBe List(savedTaskStatus.id))
@@ -224,13 +224,13 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
           cp(manifest.taskCount shouldBe 2)
 
           taskIds.foreach { taskId =>
-            val taskDump = decode[TaskDumpData](os.read(rootFolder / s"$taskId.json")).toOption.get
-            cp(taskDump.task.id shouldBe taskId)
-            cp(taskDump.taskVersions.size shouldBe 2)
-            cp(taskDump.links.size shouldBe 1)
-            cp(taskDump.links.head.versions.size shouldBe 2)
-            cp(taskDump.logEntries.size shouldBe 1)
-            cp(taskDump.logEntries.head.versions.size shouldBe 2)
+            val dataExport = decode[DataExportData](os.read(rootFolder / s"$taskId.json")).toOption.get
+            cp(dataExport.task.id shouldBe taskId)
+            cp(dataExport.taskVersions.size shouldBe 2)
+            cp(dataExport.links.size shouldBe 1)
+            cp(dataExport.links.head.versions.size shouldBe 2)
+            cp(dataExport.logEntries.size shouldBe 1)
+            cp(dataExport.logEntries.head.versions.size shouldBe 2)
           }
         }
         cp.reportAll()
@@ -238,10 +238,10 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     }
 
     "exclude tasks with an Archived task status from the dump" in { transactor =>
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
-      val archivedDumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-archived-${UUID.randomUUID()}"
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
+      val archivedDumpBasePath: os.Path = os.pwd / "target" / s"test-data-export-archived-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -250,13 +250,13 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- taskDumpConfigRepo.insert(
-          TaskDumpConfig(
+        _ <- dataExportConfigRepo.insert(
+          DataExportConfig(
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
             name = "Dump config",
-            dumpPath = archivedDumpBasePath.toString,
+            exportPath = archivedDumpBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
@@ -272,13 +272,13 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, activeTaskId, archivedTaskId) = setupResult
-        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        result <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
         val cp = new Checkpoint
         result.isRight shouldBe true
         val dumpResult = result.toOption.get
         cp(dumpResult.taskCount shouldBe 1)
-        val rootFolder = os.Path(dumpResult.pathResults.head.dumpPath)
+        val rootFolder = os.Path(dumpResult.pathResults.head.exportPath)
         cp(os.exists(rootFolder / s"$activeTaskId.json") shouldBe true)
         cp(os.exists(rootFolder / s"$archivedTaskId.json") shouldBe false)
         cp.reportAll()
@@ -287,11 +287,11 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "delete the oldest dump folders once the number of dumps exceeds dump-limit" in { transactor =>
       val testClock = new TestClock
-      val limitedDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = 2)
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, testClock, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, limitedDumpDiskWriter, taskDumpConfigService, testClock, transactor)
-      val limitedDumpPath: os.Path = os.pwd / "target" / s"test-task-dump-limit-${UUID.randomUUID()}"
+      val limitedDumpDiskWriter = new DataExportDiskWriter(diskOps, dumpLimit = 2)
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, testClock, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, limitedDumpDiskWriter, dataExportConfigService, testClock, transactor)
+      val limitedExportPath: os.Path = os.pwd / "target" / s"test-data-export-limit-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -300,13 +300,13 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- taskDumpConfigRepo.insert(
-          TaskDumpConfig(
+        _ <- dataExportConfigRepo.insert(
+          DataExportConfig(
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
             name = "Dump config",
-            dumpPath = limitedDumpPath.toString,
+            exportPath = limitedExportPath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
@@ -317,18 +317,18 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject) = setupResult
         _ = testClock.instant = Instant.parse("2026-01-01T00:00:00Z")
-        first <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        first <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
         _ = testClock.instant = Instant.parse("2026-01-02T00:00:00Z")
-        second <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        second <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
         _ = testClock.instant = Instant.parse("2026-01-03T00:00:00Z")
-        third <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        third <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
         val cp = new Checkpoint
         cp(first.isRight shouldBe true)
         cp(second.isRight shouldBe true)
         cp(third.isRight shouldBe true)
 
-        val projectFolder = os.Path(third.toOption.get.pathResults.head.dumpPath) / os.up
+        val projectFolder = os.Path(third.toOption.get.pathResults.head.exportPath) / os.up
         val remainingDumpFolders = os.list(projectFolder).map(_.last).toSet
         cp(remainingDumpFolders shouldBe Set("20260102000000", "20260103000000"))
         cp.reportAll()
@@ -336,9 +336,9 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     }
 
     "include every account referenced by a project's tasks in referencedAccounts, deduplicated" in { transactor =>
-      val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-      val taskDumpService =
-        new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+      val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+      val dataExportService =
+        new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
 
       val setup = for {
         savedAccount <- createAccount
@@ -366,13 +366,13 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- taskDumpConfigRepo.insert(
-          TaskDumpConfig(
+        _ <- dataExportConfigRepo.insert(
+          DataExportConfig(
             id = UUID.randomUUID(),
             projectId = savedProject.id,
             accountId = savedAccount.id,
             name = "Dump config",
-            dumpPath = dumpBasePath.toString,
+            exportPath = exportBasePath.toString,
             createdAt = nowAsInstant,
             updatedAt = nowAsInstant
           )
@@ -420,10 +420,10 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, creatorAccount, assigneeAccount, closerAccount, savedProject) = setupResult
-        result <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        result <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
       } yield {
         result.isRight shouldBe true
-        val rootFolder = os.Path(result.toOption.get.pathResults.head.dumpPath)
+        val rootFolder = os.Path(result.toOption.get.pathResults.head.exportPath)
         val manifest = decode[ProjectDumpManifest](os.read(rootFolder / "project.json")).toOption.get
         val referencedIds = manifest.referencedAccounts.map(_.id)
         referencedIds.toSet shouldBe Set(creatorAccount.id, assigneeAccount.id, closerAccount.id)
@@ -433,14 +433,14 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
 
     "omit accounts that no longer exist when gathering referenced accounts" in { transactor =>
       val missingAccountId = UUID.randomUUID()
-      val diskData = TaskDumpData(
+      val diskData = DataExportData(
         task = Task(id = UUID.randomUUID(), projectId = UUID.randomUUID(), createdBy = missingAccountId, createdAt = nowAsInstant),
         taskVersions = Nil,
         links = Nil,
         logEntries = Nil
       )
 
-      taskDumpRepo.getReferencedAccounts(List(diskData)).transact(transactor).map(_ shouldBe Nil)
+      dataExportRepo.getReferencedAccounts(List(diskData)).transact(transactor).map(_ shouldBe Nil)
     }
 
     // circe's generic-auto derivation requires every field to be present and does not fall back to the case
@@ -464,6 +464,6 @@ class TaskDumpServiceTest extends BusinessTgDbSpec with TgAccount with TgProject
     }
   }
 
-  private val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-${UUID.randomUUID()}"
+  private val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-${UUID.randomUUID()}"
 
 }

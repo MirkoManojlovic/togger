@@ -8,21 +8,21 @@ import com.togger.util.SplunkMacro.sp
 
 import scala.util.Try
 
-sealed trait TaskDumpLoadConfigError extends TgError
+sealed trait DataExportLoadConfigError extends TgError
 
-case class InvalidAbsolutePath(dumpPath: String) extends TaskDumpLoadConfigError {
+case class InvalidAbsolutePath(dumpPath: String) extends DataExportLoadConfigError {
   override def message: String = s"Invalid dump path $dumpPath. Path must be an absolute path."
 }
 
-case class BlankName(name: String) extends TaskDumpLoadConfigError {
+case class BlankName(name: String) extends DataExportLoadConfigError {
   override def message: String = "Name must not be blank."
 }
 
-case class PathDoesNotExist(dumpPath: String) extends TaskDumpLoadConfigError {
+case class PathDoesNotExist(dumpPath: String) extends DataExportLoadConfigError {
   override def message: String = s"Dump path $dumpPath does not exist."
 }
 
-class TaskDumpLoadConfigVerification extends TgLogging {
+class DataExportLoadConfigVerification extends TgLogging {
 
   def verify(name: String, dumpPath: String): EitherNec[TgError, (String, String)] =
     (

@@ -124,7 +124,7 @@ class TaskLoadRepo(
       }
     } yield folded._2
 
-  def mergeTask(diskData: TaskDumpData): ConnectionIO[TaskLoadTaskResult] =
+  def mergeTask(diskData: DataExportData): ConnectionIO[TaskLoadTaskResult] =
     for {
       taskExists <- taskRepo.findById(diskData.task.id).attempt.map(_.isRight)
       _ <- if (taskExists) ().pure[ConnectionIO] else taskRepo.insertWithId(diskData.task).void

@@ -13,20 +13,20 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.util.Try
 
-class TaskDumpDiskWriter(diskOps: DiskOps, dumpLimit: Int) extends TgLogging {
+class DataExportDiskWriter(diskOps: DiskOps, dumpLimit: Int) extends TgLogging {
 
   require(dumpLimit > 0, s"dumpLimit must be positive, got $dumpLimit")
 
   private val dumpFolderFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneOffset.UTC)
 
-  def write(basePath: String, manifest: ProjectDumpManifest, tasks: List[TaskDumpData]): String = {
+  def write(basePath: String, manifest: ProjectDumpManifest, tasks: List[DataExportData]): String = {
     val projectFolder = diskOps.resolvePath(basePath, projectFolderName(manifest.project))
     val rootFolder = projectFolder / dumpFolderFormatter.format(manifest.dumpedAt)
     logger.info(s"Writing task dump to ${sp(rootFolder)}")
 
     diskOps.overwriteFileToDisk(rootFolder / "project.json", manifest.asJson.spaces2)
-    tasks.foreach { taskDump =>
-      diskOps.overwriteFileToDisk(rootFolder / s"${taskDump.task.id}.json", taskDump.asJson.spaces2)
+    tasks.foreach { dataExport =>
+      diskOps.overwriteFileToDisk(rootFolder / s"${dataExport.task.id}.json", dataExport.asJson.spaces2)
     }
 
     logger.info(s"Task dump written to ${sp(rootFolder)} with ${sp(tasks.size)} tasks")
@@ -34,14 +34,14 @@ class TaskDumpDiskWriter(diskOps: DiskOps, dumpLimit: Int) extends TgLogging {
     rootFolder.toString
   }
 
-  def readDumpedTasks(basePath: String, project: Project): Map[UUID, Either[String, TaskDumpData]] = {
+  def readDumpedTasks(basePath: String, project: Project): Map[UUID, Either[String, DataExportData]] = {
     val projectFolder = diskOps.resolvePath(basePath, projectFolderName(project))
     latestDumpFolder(projectFolder) match {
       case Some(rootFolder) =>
         diskOps
           .listFiles(rootFolder)
           .flatMap { file =>
-            Try(UUID.fromString(file.baseName)).toOption.map(taskId => taskId -> parseTaskDumpFile(file))
+            Try(UUID.fromString(file.baseName)).toOption.map(taskId => taskId -> parseDataExportFile(file))
           }
           .toMap
       case None => Map.empty
@@ -56,18 +56,18 @@ class TaskDumpDiskWriter(diskOps: DiskOps, dumpLimit: Int) extends TgLogging {
       .map(_.getMessage)
       .flatMap(content => decode[ProjectDumpManifest](content).left.map(_.getMessage))
 
-  def readDumpedTasksAtPath(folderPath: String): Map[UUID, Either[String, TaskDumpData]] =
+  def readDumpedTasksAtPath(folderPath: String): Map[UUID, Either[String, DataExportData]] =
     diskOps
       .listFiles(diskOps.resolvePath(folderPath))
       .flatMap { file =>
-        Try(UUID.fromString(file.baseName)).toOption.map(taskId => taskId -> parseTaskDumpFile(file))
+        Try(UUID.fromString(file.baseName)).toOption.map(taskId => taskId -> parseDataExportFile(file))
       }
       .toMap
 
-  private def parseTaskDumpFile(file: os.Path): Either[String, TaskDumpData] =
+  private def parseDataExportFile(file: os.Path): Either[String, DataExportData] =
     Try(diskOps.readFileFromDisk(file)).toEither.left
       .map(_.getMessage)
-      .flatMap(content => decode[TaskDumpData](content).left.map(_.getMessage))
+      .flatMap(content => decode[DataExportData](content).left.map(_.getMessage))
 
   private def projectFolderName(project: Project): String = {
     val sanitizedName = project.name.replaceAll("[^A-Za-z0-9-_]", "-")

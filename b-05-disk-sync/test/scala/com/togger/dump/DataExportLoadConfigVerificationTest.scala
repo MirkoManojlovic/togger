@@ -4,17 +4,17 @@ import com.togger.common.NonEmptyChainHelpers
 
 import java.util.UUID
 
-class TaskDumpLoadConfigVerificationTest extends TgWordSpecJvm with EitherValues with NonEmptyChainHelpers {
+class DataExportLoadConfigVerificationTest extends TgWordSpecJvm with EitherValues with NonEmptyChainHelpers {
 
-  val verification = new TaskDumpLoadConfigVerification
+  val verification = new DataExportLoadConfigVerification
 
   private def existingDumpPath: os.Path = {
-    val path = os.pwd / "target" / s"test-task-dump-config-${UUID.randomUUID()}"
+    val path = os.pwd / "target" / s"test-data-export-config-${UUID.randomUUID()}"
     os.makeDir.all(path)
     path
   }
 
-  "TaskDumpLoadConfigVerification.verify" should {
+  "DataExportLoadConfigVerification.verify" should {
 
     "return name and dump path when both are valid and the path exists" in {
       val name = "My dump config"

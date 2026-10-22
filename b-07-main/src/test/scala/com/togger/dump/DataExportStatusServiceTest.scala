@@ -7,7 +7,7 @@ import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntry
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl, ProjectError}
 import com.togger.task.{Link, LinkRepoImpl, LinkVersion, LinkVersionRepoImpl, Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
-import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigRepoImpl, TaskDumpConfigService}
+import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigRepoImpl, DataExportConfigService}
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -17,7 +17,7 @@ import io.circe.syntax._
 import java.time.LocalDate
 import java.util.UUID
 
-class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+class DataExportStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
 
   val projectAccountRepo = new ProjectAccountRepoImpl
   val accountRepo = new AccountRepoImpl
@@ -28,7 +28,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
   val logEntryRepo = new LogEntryRepoImpl
   val logEntryVersionRepo = new LogEntryVersionRepoImpl
 
-  val taskDumpRepo = new TaskDumpRepo(
+  val dataExportRepo = new DataExportRepo(
     projectRepo,
     projectAccountRepo,
     accountRepo,
@@ -41,8 +41,8 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
     logEntryVersionRepo
   )
   val diskOps = new DiskOps
-  val taskDumpDiskWriter = new TaskDumpDiskWriter(diskOps, dumpLimit = Int.MaxValue)
-  val taskDumpConfigRepo = new TaskDumpConfigRepoImpl
+  val dataExportDiskWriter = new DataExportDiskWriter(diskOps, dumpLimit = Int.MaxValue)
+  val dataExportConfigRepo = new DataExportConfigRepoImpl
 
   def createTaskWithFullHistory(projectId: UUID, createdBy: UUID, taskStatusId: UUID): ConnectionIO[UUID] =
     for {
@@ -91,19 +91,19 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       _ <- logEntryVersionRepo.insert(firstLogEntryVersion.copy(textInternal = "internal v2"))
     } yield savedTask.id
 
-  private def newTaskDumpService(transactor: doobie.Transactor[cats.effect.IO]) = {
-    val taskDumpConfigService = new TaskDumpConfigService(taskDumpConfigRepo, new TgClockImpl, transactor)
-    new TaskDumpService(taskDumpRepo, taskDumpDiskWriter, taskDumpConfigService, new TgClockImpl, transactor)
+  private def newDataExportService(transactor: doobie.Transactor[cats.effect.IO]) = {
+    val dataExportConfigService = new DataExportConfigService(dataExportConfigRepo, new TgClockImpl, transactor)
+    new DataExportService(dataExportRepo, dataExportDiskWriter, dataExportConfigService, new TgClockImpl, transactor)
   }
 
-  private def insertDumpConfig(projectId: UUID, accountId: UUID, dumpPath: os.Path): ConnectionIO[TaskDumpConfig] =
-    taskDumpConfigRepo.insert(
-      TaskDumpConfig(
+  private def insertDumpConfig(projectId: UUID, accountId: UUID, exportPath: os.Path): ConnectionIO[DataExportConfig] =
+    dataExportConfigRepo.insert(
+      DataExportConfig(
         id = UUID.randomUUID(),
         projectId = projectId,
         accountId = accountId,
         name = "Dump config",
-        dumpPath = dumpPath.toString,
+        exportPath = exportPath.toString,
         createdAt = nowAsInstant,
         updatedAt = nowAsInstant
       )
@@ -112,18 +112,18 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
   testNameFromClassName should {
 
     "reject status check for an account not assigned to the project" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
+      val dataExportService = newDataExportService(transactor)
 
       for {
         savedAccount <- createAccount.transact(transactor)
         savedOrgAndProject <- createOrgAndProject.transact(transactor)
         (_, savedProject) = savedOrgAndProject
-        result <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        result <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield result shouldBe Left(ProjectError.NotAssignedToProject)
     }
 
     "reject status check for a project with no dump path configured" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
+      val dataExportService = newDataExportService(transactor)
 
       val setup = for {
         savedAccount <- createAccount
@@ -137,13 +137,13 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject) = setupResult
-        result <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
-      } yield result shouldBe Left(ProjectError.NoDumpPathConfigured)
+        result <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
+      } yield result shouldBe Left(ProjectError.NoExportPathConfigured)
     }
 
     "report every task as in sync right after a dump" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -152,7 +152,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         taskIds <- List.fill(2)(()).traverse(_ => createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id))
       } yield (savedAccount, savedProject, taskIds)
@@ -160,26 +160,26 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, taskIds) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         dumpResult.isRight shouldBe true
         statusResult.isRight shouldBe true
         val status = statusResult.toOption.get
         status.pathStatuses.size shouldBe 1
         val pathStatus = status.pathStatuses.head
-        pathStatus.dumpPath.startsWith(dumpBasePath.toString) shouldBe true
+        pathStatus.exportPath.startsWith(exportBasePath.toString) shouldBe true
         pathStatus.taskStatuses.map(_.taskId).toSet shouldBe taskIds.toSet
         pathStatus.taskStatuses.foreach { taskStatus =>
-          taskStatus.status shouldBe TaskDumpSyncStatus.InSync
+          taskStatus.status shouldBe DataExportSyncStatus.InSync
           taskStatus.differences shouldBe empty
         }
       }
     }
 
     "flag a task out of sync when it changes after being dumped" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -188,7 +188,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, taskId, savedTaskStatus.id)
@@ -196,7 +196,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, taskId, taskStatusId) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
         _ <- taskVersionRepo
           .insert(
             TaskVersion(
@@ -214,19 +214,19 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
             )
           )
           .transact(transactor)
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         dumpResult.isRight shouldBe true
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         val taskStatus = pathStatus.taskStatuses.find(_.taskId == taskId).get
-        taskStatus.status shouldBe TaskDumpSyncStatus.OutOfSync
+        taskStatus.status shouldBe DataExportSyncStatus.OutOfSync
         taskStatus.differences shouldBe List("task versions differ")
       }
     }
 
     "flag a task created after the dump as missing from dump" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -235,27 +235,27 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
         savedTaskStatus <- createTaskStatus(savedProject.id)
       } yield (savedAccount, savedProject, savedTaskStatus.id)
 
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, taskStatusId) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
         newTaskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, taskStatusId).transact(transactor)
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         dumpResult.isRight shouldBe true
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         val taskStatus = pathStatus.taskStatuses.find(_.taskId == newTaskId).get
-        taskStatus.status shouldBe TaskDumpSyncStatus.MissingFromDump
+        taskStatus.status shouldBe DataExportSyncStatus.MissingFromExport
       }
     }
 
     "flag an orphaned dump file with no matching DB task as missing from db" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -264,33 +264,33 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
       } yield (savedAccount, savedProject)
 
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         orphanTaskId = UUID.randomUUID()
-        orphanDump = TaskDumpData(
+        orphanDump = DataExportData(
           task = Task(id = orphanTaskId, projectId = savedProject.id, createdBy = savedAccount.id, createdAt = nowAsInstant),
           taskVersions = Nil,
           links = Nil,
           logEntries = Nil
         )
         _ = os.write.over(rootFolder / s"$orphanTaskId.json", orphanDump.asJson.spaces2)
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         val taskStatus = pathStatus.taskStatuses.find(_.taskId == orphanTaskId).get
-        taskStatus.status shouldBe TaskDumpSyncStatus.MissingFromDb
+        taskStatus.status shouldBe DataExportSyncStatus.MissingFromDb
       }
     }
 
     "check status against the most recent dump folder when multiple dumps exist" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -299,7 +299,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, taskId)
@@ -307,13 +307,13 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, taskId) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
-        firstDumpFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
+        firstDumpFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         projectFolder = firstDumpFolder / os.up
         // A dated folder that always sorts after any real timestamp, simulating a later dump.
         laterDumpFolder = projectFolder / "99999999999999"
         orphanTaskId = UUID.randomUUID()
-        orphanDump = TaskDumpData(
+        orphanDump = DataExportData(
           task = Task(id = orphanTaskId, projectId = savedProject.id, createdBy = savedAccount.id, createdAt = nowAsInstant),
           taskVersions = Nil,
           links = Nil,
@@ -321,18 +321,18 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         )
         _ = os.write.over(laterDumpFolder / "project.json", os.read(firstDumpFolder / "project.json"), createFolders = true)
         _ = os.write.over(laterDumpFolder / s"$orphanTaskId.json", orphanDump.asJson.spaces2)
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         pathStatus.taskStatuses.map(_.taskId).toSet shouldBe Set(taskId, orphanTaskId)
-        pathStatus.taskStatuses.find(_.taskId == taskId).get.status shouldBe TaskDumpSyncStatus.MissingFromDump
-        pathStatus.taskStatuses.find(_.taskId == orphanTaskId).get.status shouldBe TaskDumpSyncStatus.MissingFromDb
+        pathStatus.taskStatuses.find(_.taskId == taskId).get.status shouldBe DataExportSyncStatus.MissingFromExport
+        pathStatus.taskStatuses.find(_.taskId == orphanTaskId).get.status shouldBe DataExportSyncStatus.MissingFromDb
       }
     }
 
     "flag an unparseable dump file as malformed" in { transactor =>
-      val taskDumpService = newTaskDumpService(transactor)
-      val dumpBasePath: os.Path = os.pwd / "target" / s"test-task-dump-status-${UUID.randomUUID()}"
+      val dataExportService = newDataExportService(transactor)
+      val exportBasePath: os.Path = os.pwd / "target" / s"test-data-export-status-${UUID.randomUUID()}"
 
       val setup = for {
         savedAccount <- createAccount
@@ -341,7 +341,7 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
         _ <- projectAccountRepo.insert(
           ProjectAccount(projectId = savedProject.id, accountId = savedAccount.id, createdAt = nowAsInstant)
         )
-        _ <- insertDumpConfig(savedProject.id, savedAccount.id, dumpBasePath)
+        _ <- insertDumpConfig(savedProject.id, savedAccount.id, exportBasePath)
         savedTaskStatus <- createTaskStatus(savedProject.id)
         taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, savedTaskStatus.id)
       } yield (savedAccount, savedProject, taskId)
@@ -349,14 +349,14 @@ class TaskDumpStatusServiceTest extends BusinessTgDbSpec with TgAccount with TgP
       for {
         setupResult <- setup.transact(transactor)
         (savedAccount, savedProject, taskId) = setupResult
-        dumpResult <- taskDumpService.dumpProject(savedProject.id, savedAccount.id)
-        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.dumpPath)
+        dumpResult <- dataExportService.dumpProject(savedProject.id, savedAccount.id)
+        rootFolder = os.Path(dumpResult.toOption.get.pathResults.head.exportPath)
         _ = os.write.over(rootFolder / s"$taskId.json", "not valid json")
-        statusResult <- taskDumpService.checkStatus(savedProject.id, savedAccount.id)
+        statusResult <- dataExportService.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         val pathStatus = statusResult.toOption.get.pathStatuses.head
         val taskStatus = pathStatus.taskStatuses.find(_.taskId == taskId).get
-        taskStatus.status shouldBe TaskDumpSyncStatus.Malformed
+        taskStatus.status shouldBe DataExportSyncStatus.Malformed
         taskStatus.differences should not be empty
       }
     }

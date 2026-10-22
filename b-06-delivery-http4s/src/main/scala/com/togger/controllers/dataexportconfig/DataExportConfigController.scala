@@ -1,60 +1,60 @@
-package com.togger.controllers.taskdumpconfig
+package com.togger.controllers.dataexportconfig
 
 import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
-import com.togger.dump.TaskDumpLoadConfigVerification
-import com.togger.taskdumpconfig.{TaskDumpConfig, TaskDumpConfigEndpoints, TaskDumpConfigService}
+import com.togger.dto.dataexportconfig.DataExportConfigResp
+import com.togger.dump.DataExportLoadConfigVerification
+import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigEndpoints, DataExportConfigService}
 
 import java.util.UUID
 
-class TaskDumpConfigController(
-  taskDumpConfigEndpoints: TaskDumpConfigEndpoints,
-  taskDumpConfigService: TaskDumpConfigService,
-  taskDumpConfigVerification: TaskDumpLoadConfigVerification,
+class DataExportConfigController(
+  dataExportConfigEndpoints: DataExportConfigEndpoints,
+  dataExportConfigService: DataExportConfigService,
+  dataExportConfigVerification: DataExportLoadConfigVerification,
   tgClock: TgClock
 ) {
 
-  import taskDumpConfigEndpoints._
+  import dataExportConfigEndpoints._
 
-  private def toResp(taskDumpConfig: TaskDumpConfig): TaskDumpConfigResp =
-    TaskDumpConfigResp(
-      id = taskDumpConfig.id,
-      projectId = taskDumpConfig.projectId,
-      accountId = taskDumpConfig.accountId,
-      name = taskDumpConfig.name,
-      dumpPath = taskDumpConfig.dumpPath,
-      createdAt = taskDumpConfig.createdAt,
-      updatedAt = taskDumpConfig.updatedAt
+  private def toResp(dataExportConfig: DataExportConfig): DataExportConfigResp =
+    DataExportConfigResp(
+      id = dataExportConfig.id,
+      projectId = dataExportConfig.projectId,
+      accountId = dataExportConfig.accountId,
+      name = dataExportConfig.name,
+      exportPath = dataExportConfig.exportPath,
+      createdAt = dataExportConfig.createdAt,
+      updatedAt = dataExportConfig.updatedAt
     )
 
   val findById =
     findByIdEndpoint.serverLogic { auth => id =>
-      taskDumpConfigService
+      dataExportConfigService
         .findById(id)
-        .map(taskDumpConfig => TgJsonSuccess.justBodyRight(toResp(taskDumpConfig)))
+        .map(dataExportConfig => TgJsonSuccess.justBodyRight(toResp(dataExportConfig)))
     }
 
   val save = saveEndpoint.serverLogic { auth => dto =>
-    taskDumpConfigVerification
-      .verify(dto.name, dto.dumpPath)
+    dataExportConfigVerification
+      .verify(dto.name, dto.exportPath)
       .fold(
         errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
-          val taskDumpConfig = TaskDumpConfig(
+          val dataExportConfig = DataExportConfig(
             id = UUID.randomUUID(),
             projectId = dto.projectId,
             accountId = auth.body.get.id,
             name = dto.name,
-            dumpPath = dto.dumpPath,
+            exportPath = dto.exportPath,
             createdAt = now,
             updatedAt = now
           )
 
-          taskDumpConfigService
-            .create(taskDumpConfig)
+          dataExportConfigService
+            .create(dataExportConfig)
             .map(saved => TgJsonSuccess.justBodyRight(toResp(saved)))
         }
       )
@@ -62,25 +62,25 @@ class TaskDumpConfigController(
   }
 
   val update = updateEndpoint.serverLogic { auth => dto =>
-    taskDumpConfigVerification
-      .verify(dto.name, dto.dumpPath)
+    dataExportConfigVerification
+      .verify(dto.name, dto.exportPath)
       .fold(
         errors => TgJsonFailure.badRequestLeftIO(TgJsonError.fromErrorsNec(errors)),
         _ => {
           val now = tgClock.currentInstant
 
-          val taskDumpConfig = TaskDumpConfig(
+          val dataExportConfig = DataExportConfig(
             id = dto.id,
             projectId = dto.projectId,
             accountId = auth.body.get.id,
             name = dto.name,
-            dumpPath = dto.dumpPath,
+            exportPath = dto.exportPath,
             createdAt = now,
             updatedAt = now
           )
 
-          taskDumpConfigService
-            .update(taskDumpConfig)
+          dataExportConfigService
+            .update(dataExportConfig)
             .map(updated => TgJsonSuccess.justBodyRight(toResp(updated)))
         }
       )
@@ -88,7 +88,7 @@ class TaskDumpConfigController(
   }
 
   val delete = deleteByIdEndpoint.serverLogic { auth => id =>
-    taskDumpConfigService
+    dataExportConfigService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Task dump config deleted successfully"))
   }
@@ -97,7 +97,7 @@ class TaskDumpConfigController(
     findByProjectIdEndpoint.serverLogic { auth => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
-        taskDumpConfigService
+        dataExportConfigService
           .findPaginatedByProjectId(projectId, page)
           .map(configsPage => TgJsonSuccess.justBodyRight(configsPage.mapItem(toResp)))
       }

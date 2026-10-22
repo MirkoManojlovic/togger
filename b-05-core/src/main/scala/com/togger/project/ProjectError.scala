@@ -9,8 +9,8 @@ object ProjectError {
     override def message: String = "Account is not assigned to this project"
   }
 
-  case object NoDumpPathConfigured extends ProjectError {
-    override def message: String = "No dump path configured for this project. Configure at least one task dump config path first."
+  case object NoExportPathConfigured extends ProjectError {
+    override def message: String = "No export path configured for this project. Configure at least one export data config path first."
   }
 
   case object DumpManifestMissing extends ProjectError {
