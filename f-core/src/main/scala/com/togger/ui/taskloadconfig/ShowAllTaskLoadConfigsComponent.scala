@@ -16,14 +16,14 @@ import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}
+import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
 class ShowAllTaskLoadConfigsComponent(
   taskLoadConfigService: TaskLoadConfigFeService,
-  taskDumpService: TaskDumpFeService,
+  dataExportService: DataExportFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -77,7 +77,7 @@ class ShowAllTaskLoadConfigsComponent(
 
   private def load(dumpPath: String): Unit =
     spinnerService
-      .runWithSpinner(taskDumpService.loadTasks(projectId, dumpPath))
+      .runWithSpinner(dataExportService.loadTasks(projectId, dumpPath))
       .toastJustErrors(())(handleLoadResponse)
       .unsafeRunAndForget()
 
@@ -88,7 +88,7 @@ class ShowAllTaskLoadConfigsComponent(
         case Left(failure) => IO.pure(List(failure.asLeft[TaskLoadResp]))
         case Right(success) =>
           val paths = success.body.get.map(_.dumpPath).distinct.toList
-          paths.traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+          paths.traverse(path => dataExportService.loadTasks(projectId, path).map(_.map(_.body.get)))
       }
 
     spinnerService

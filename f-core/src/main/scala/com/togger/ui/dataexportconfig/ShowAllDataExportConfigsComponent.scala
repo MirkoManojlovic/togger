@@ -1,11 +1,11 @@
-package com.togger.ui.taskdumpconfig
+package com.togger.ui.dataexportconfig
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto._
-import com.togger.dto.taskdumpconfig.TaskDumpConfigResp
-import com.togger.routes.Pages.{CreateTaskDumpConfigPage, EditTaskDumpConfigPage}
+import com.togger.dto.dataexportconfig.DataExportConfigResp
+import com.togger.routes.Pages.{CreateDataExportConfigPage, EditDataExportConfigPage}
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -14,14 +14,14 @@ import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService, TgDateFormater}
+import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService, TgDateFormater}
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
-class ShowAllTaskDumpConfigsComponent(
-  taskDumpConfigService: TaskDumpConfigFeService,
-  taskDumpService: TaskDumpFeService,
+class ShowAllDataExportConfigsComponent(
+  dataExportConfigService: DataExportConfigFeService,
+  dataExportService: DataExportFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -35,14 +35,14 @@ class ShowAllTaskDumpConfigsComponent(
 
   import TaskConfigTableSupport._
 
-  private val stateFormVar = Var(Seq.empty[TaskDumpConfigResp])
-  private val statusResultVar = Var(Seq.empty[TaskDumpPathStatusResp])
+  private val stateFormVar = Var(Seq.empty[DataExportConfigResp])
+  private val statusResultVar = Var(Seq.empty[DataExportPathStatusResp])
 
   private val paginationVar = Var(Option.empty[PaginationState])
 
   /** Reads the page the URL asks for. A page past the end steps back to the last page. */
   private def loadPage(): IO[Unit] =
-    taskDumpConfigService.findByProjectId(projectId, params.pageRequest).map {
+    dataExportConfigService.findByProjectId(projectId, params.pageRequest).map {
       case Left(failure) => println(failure)
       case Right(success) =>
         val response = success.body.get
@@ -62,48 +62,48 @@ class ShowAllTaskDumpConfigsComponent(
   private def runAction[A](io: IO[A])(handle: IO[A] => IO[Unit]): Unit =
     handle(spinnerService.runWithSpinner(io)).unsafeRunAndForget()
 
-  private def statusPanel(pathStatus: TaskDumpPathStatusResp) =
-    dumpPathStatusCard(pathStatus, s"Dump status: ${pathStatus.dumpPath}")
+  private def statusPanel(pathStatus: DataExportPathStatusResp) =
+    exportPathStatusCard(pathStatus, s"Export status: ${pathStatus.exportPath}")
 
-  private def dumpAll(): Unit =
-    runAction(taskDumpService.dumpTasks(projectId)) {
+  private def exportAll(): Unit =
+    runAction(dataExportService.exportData(projectId)) {
       _.toastMessageDto(dto =>
-        s"Tasks dumped to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
+        s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
       )(_ => IO.unit)
     }
 
   private def checkAllStatuses(): Unit =
-    runAction(taskDumpService.checkStatus(projectId)) {
+    runAction(dataExportService.checkStatus(projectId)) {
       _.toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
     }
 
-  private def deleteConfig(dto: TaskDumpConfigResp): Unit =
-    runAction(taskDumpConfigService.deleteById(dto.id)) {
+  private def deleteConfig(dto: DataExportConfigResp): Unit =
+    runAction(dataExportConfigService.deleteById(dto.id)) {
       _.toastBackendMessageCodeBlock {
         reload()
       }
     }
 
-  private def dumpByConfig(dto: TaskDumpConfigResp): Unit =
-    runAction(taskDumpService.dumpByConfig(dto.id)) {
+  private def exportByConfig(dto: DataExportConfigResp): Unit =
+    runAction(dataExportService.exportByConfig(dto.id)) {
       _.toastJustErrorsUnit { resp =>
         resp.results.headOption.flatMap(_.error) match {
-          case Some(err) => toast.error(s"Dump to ${dto.dumpPath} failed: $err")
-          case None      => toast.success(s"Dumped ${resp.taskCount} tasks to ${dto.dumpPath}")
+          case Some(err) => toast.error(s"Export to ${dto.exportPath} failed: $err")
+          case None      => toast.success(s"Exported ${resp.taskCount} tasks to ${dto.exportPath}")
         }
       }
     }
 
-  private def checkStatusByConfig(dto: TaskDumpConfigResp): Unit =
-    runAction(taskDumpService.checkStatusByConfig(dto.id)) {
+  private def checkStatusByConfig(dto: DataExportConfigResp): Unit =
+    runAction(dataExportService.checkStatusByConfig(dto.id)) {
       _.toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
     }
 
-  private def configRow(dto: TaskDumpConfigResp) =
+  private def configRow(dto: DataExportConfigResp) =
     tr(
       cls(rowCls),
       createTd(dto.name),
-      createTd(dto.dumpPath),
+      createTd(dto.exportPath),
       createTd(tgDateFormater.yearMonthDayTimeFormat(dto.updatedAt)),
       createTd(
         div(
@@ -112,7 +112,7 @@ class ShowAllTaskDumpConfigsComponent(
             TgIcons.editIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditTaskDumpConfigPage(dto.id)))
+            onClick.mapToUnit --> (_ => router.route(EditDataExportConfigPage(dto.id)))
           ),
           iconButton(
             "Delete",
@@ -122,11 +122,11 @@ class ShowAllTaskDumpConfigsComponent(
             onClick.mapToUnit --> (_ => deleteConfig(dto))
           ),
           iconButton(
-            "Dump",
+            "Export",
             TgIcons.downloadIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => dumpByConfig(dto))
+            onClick.mapToUnit --> (_ => exportByConfig(dto))
           ),
           iconButton(
             "Check status",
@@ -146,14 +146,14 @@ class ShowAllTaskDumpConfigsComponent(
           header = TgCard.CardHeader.html(
             div(
               cls("flex justify-between"),
-              div("Task dump configs"),
+              div("Export data configs"),
               div(
                 iconButton(
-                  "Dump all",
+                  "Export all",
                   TgIcons.downloadIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   headerButtonMarginCls,
-                  onClick.mapToUnit --> (_ => dumpAll())
+                  onClick.mapToUnit --> (_ => exportAll())
                 ),
                 iconButton(
                   "Check all statuses",
@@ -167,7 +167,7 @@ class ShowAllTaskDumpConfigsComponent(
                   TgIcons.plusIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
                   "",
-                  router.navigateTo(CreateTaskDumpConfigPage(projectId))
+                  router.navigateTo(CreateDataExportConfigPage(projectId))
                 )
               )
             ),
@@ -182,7 +182,7 @@ class ShowAllTaskDumpConfigsComponent(
                     cls(tableCls),
                     thead(
                       cls(theadCls),
-                      tr(Seq("name", "dump path", "dumped at", "Action").map(createTh))
+                      tr(Seq("name", "export path", "exported at", "Action").map(createTh))
                     ),
                     tbody(dtos.map(configRow))
                   )

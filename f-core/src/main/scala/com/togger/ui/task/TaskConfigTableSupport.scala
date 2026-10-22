@@ -3,7 +3,7 @@ package com.togger.ui.task
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.dto.{TaskDumpPathStatusResp, TaskDumpSyncStatusResp, TaskDumpTaskStatusResp}
+import com.togger.dto.{DataExportPathStatusResp, DataExportSyncStatusResp, DataExportTaskStatusResp}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
@@ -46,15 +46,15 @@ object TaskConfigTableSupport {
       action
     )
 
-  private def dumpSyncStatusBadgeColor(status: TaskDumpSyncStatusResp): TgBadgeColor = status match {
-    case TaskDumpSyncStatusResp.InSync          => TgBadgeColor.Green
-    case TaskDumpSyncStatusResp.OutOfSync       => TgBadgeColor.Yellow
-    case TaskDumpSyncStatusResp.MissingFromDump => TgBadgeColor.Red
-    case TaskDumpSyncStatusResp.MissingFromDb   => TgBadgeColor.Red
-    case TaskDumpSyncStatusResp.Malformed       => TgBadgeColor.Red
+  private def exportSyncStatusBadgeColor(status: DataExportSyncStatusResp): TgBadgeColor = status match {
+    case DataExportSyncStatusResp.InSync          => TgBadgeColor.Green
+    case DataExportSyncStatusResp.OutOfSync       => TgBadgeColor.Yellow
+    case DataExportSyncStatusResp.MissingFromExport => TgBadgeColor.Red
+    case DataExportSyncStatusResp.MissingFromDb   => TgBadgeColor.Red
+    case DataExportSyncStatusResp.Malformed       => TgBadgeColor.Red
   }
 
-  def dumpPathStatusCard(pathStatus: TaskDumpPathStatusResp, header: String) =
+  def exportPathStatusCard(pathStatus: DataExportPathStatusResp, header: String) =
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.html(div(header), TgCard.CardHeaderSize.H3),
@@ -70,12 +70,12 @@ object TaskConfigTableSupport {
               tbody(
                 pathStatus.taskStatuses
                   .sortBy(_.taskId)
-                  .map { (taskStatus: TaskDumpTaskStatusResp) =>
+                  .map { (taskStatus: DataExportTaskStatusResp) =>
                     tr(
                       cls(rowCls),
                       createTd(taskStatus.taskId.toString),
                       createTd(taskStatus.taskName.getOrElse("-"): String),
-                      createTd(dumpSyncStatusBadge(taskStatus.status)),
+                      createTd(exportSyncStatusBadge(taskStatus.status)),
                       createTd(taskStatus.differences.mkString(", "))
                     )
                   }
@@ -86,7 +86,7 @@ object TaskConfigTableSupport {
       )
       .element
 
-  private def dumpSyncStatusBadge(status: TaskDumpSyncStatusResp) =
-    TgBadge(status.entryName, dumpSyncStatusBadgeColor(status)).element
+  private def exportSyncStatusBadge(status: DataExportSyncStatusResp) =
+    TgBadge(status.entryName, exportSyncStatusBadgeColor(status)).element
 
 }

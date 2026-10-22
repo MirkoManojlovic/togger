@@ -173,7 +173,7 @@ class ShowAllProjectsTableComponent(
                                   onClick.mapToUnit --> (_ => router.route(ShowAllTasksPage(dto.id)))
                                 ),
                                 iconButton(
-                                  "Task Dump/Load Configuration",
+                                  "Export/Load Data Configuration",
                                   TgIcons.downloadIcon(className = "w-4 h-4"),
                                   rowIconButtonCls,
                                   rowButtonMarginCls,

@@ -27,8 +27,8 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.taskconfig._
 import com.togger.ui.tasktemplate._
-import com.togger.ui.taskdumpconfig._
-import com.togger.ui.taskdumpstatus._
+import com.togger.ui.dataexportconfig._
+import com.togger.ui.dataexportstatus._
 import com.togger.ui.taskloadconfig._
 import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
 import com.togger.ui.task.bulk.BulkAddTasks
@@ -159,7 +159,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       organizationProjectsLoader,
       accountService,
       router,
-      taskDumpService,
+      dataExportService,
       taskLoadConfigService,
       spinnerService,
       sidebarCollapseStore,
@@ -181,7 +181,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val taskTemplateService = new TaskTemplateFeService(securedEndpoint, protectedBackendClient)
-  lazy val taskDumpService = new TaskDumpFeService(securedEndpoint, protectedBackendClient)
+  lazy val dataExportService = new DataExportFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
   lazy val contributionsService = new ContributionsFeService(securedEndpoint, protectedBackendClient)
@@ -212,7 +212,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val projectService = new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationProjectsLoader = new OrganizationProjectsLoader(organizationService, projectService)
-  lazy val taskDumpConfigService = new TaskDumpConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val dataExportConfigService = new DataExportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val taskLoadConfigService = new TaskLoadConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val projectMappingService = new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
 
@@ -359,8 +359,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 ).element
               case ShowAllTaskConfigsPage(projectId: UUID, listParams) =>
                 new ShowAllTaskConfigsComponent(
-                  taskDumpConfigService,
-                  taskDumpService,
+                  dataExportConfigService,
+                  dataExportService,
                   taskLoadConfigService,
                   tgDateFormater,
                   router,
@@ -369,24 +369,24 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   listParams
                 ).element
-              case TaskDumpStatusPage(projectId: UUID) =>
-                new TaskDumpStatusComponent(
-                  taskDumpService,
+              case DataExportStatusPage(projectId: UUID) =>
+                new DataExportStatusComponent(
+                  dataExportService,
                   spinnerService,
                   toast,
                   projectId
                 ).element
-              case CreateTaskDumpConfigPage(projectId: UUID) =>
-                new CreateTaskDumpConfigComponent(
-                  taskDumpConfigService,
+              case CreateDataExportConfigPage(projectId: UUID) =>
+                new CreateDataExportConfigComponent(
+                  dataExportConfigService,
                   spinnerService,
                   projectId,
                   toast
                 ).element
-              case EditTaskDumpConfigPage(id: UUID) =>
-                new EditTaskDumpConfigComponent(
+              case EditDataExportConfigPage(id: UUID) =>
+                new EditDataExportConfigComponent(
                   id,
-                  taskDumpConfigService,
+                  dataExportConfigService,
                   router,
                   spinnerService,
                   toast
@@ -734,7 +734,7 @@ case class NavigationSelection(
   organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
   router: TgRouter[FrontendPage],
-  taskDumpService: TaskDumpFeService,
+  dataExportService: DataExportFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
@@ -757,7 +757,7 @@ case class NavigationSelection(
               router,
               organizationProjectsLoader,
               accountService,
-              taskDumpService,
+              dataExportService,
               taskLoadConfigService,
               spinnerService,
               sidebarCollapseStore,

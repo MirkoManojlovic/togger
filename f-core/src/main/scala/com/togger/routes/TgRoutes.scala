@@ -256,40 +256,40 @@ class TgRoutes {
           PatternArgs(
             path = page.projectId.toString,
             params = (
-              ListParams.pageToQuery(page.list.dump),
-              ListParams.sizeToQuery(page.list.dump),
+              ListParams.pageToQuery(page.list.export),
+              ListParams.sizeToQuery(page.list.export),
               ListParams.pageToQuery(page.list.load),
               ListParams.sizeToQuery(page.list.load)
             )
           ),
         decode = { (args: PatternArgs[String, TaskConfigListQuery]) =>
-          val (dumpPage, dumpSize, loadPage, loadSize) = args.params
+          val (exportPage, exportSize, loadPage, loadSize) = args.params
           ShowAllTaskConfigsPage(
             UUID.fromString(args.path),
-            TaskConfigListParams.fromQuery(dumpPage, dumpSize, loadPage, loadSize)
+            TaskConfigListParams.fromQuery(exportPage, exportSize, loadPage, loadSize)
           )
         },
         pattern = (root / "task-config" / "project" / segment[String] / endOfSegments) ? (
-          param[String]("dumpPage").? &
-            param[String]("dumpSize").? &
+          param[String]("exportPage").? &
+            param[String]("exportSize").? &
             param[String]("loadPage").? &
             param[String]("loadSize").?
         )
       ),
       Route(
-        encode = (page: CreateTaskDumpConfigPage) => page.projectId.toString,
-        decode = (projectId: String) => CreateTaskDumpConfigPage(UUID.fromString(projectId)),
-        pattern = root / "task-dump-config" / "create" / segment[String] / endOfSegments
+        encode = (page: CreateDataExportConfigPage) => page.projectId.toString,
+        decode = (projectId: String) => CreateDataExportConfigPage(UUID.fromString(projectId)),
+        pattern = root / "data-export-config" / "create" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditTaskDumpConfigPage) => page.id.toString,
-        decode = (id: String) => EditTaskDumpConfigPage(UUID.fromString(id)),
-        pattern = root / "task-dump-config" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditDataExportConfigPage) => page.id.toString,
+        decode = (id: String) => EditDataExportConfigPage(UUID.fromString(id)),
+        pattern = root / "data-export-config" / "edit" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: TaskDumpStatusPage) => page.projectId.toString,
-        decode = (projectId: String) => TaskDumpStatusPage(UUID.fromString(projectId)),
-        pattern = root / "task-dump-status" / "project" / segment[String] / endOfSegments
+        encode = (page: DataExportStatusPage) => page.projectId.toString,
+        decode = (projectId: String) => DataExportStatusPage(UUID.fromString(projectId)),
+        pattern = root / "data-export-status" / "project" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: CreateTaskLoadConfigPage) => page.projectId.toString,

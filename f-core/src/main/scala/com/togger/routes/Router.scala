@@ -99,11 +99,11 @@ object Pages {
   case class ShowAllTaskConfigsPage(projectId: UUID, list: TaskConfigListParams = TaskConfigListParams.default)
       extends PrivatePage
 
-  case class CreateTaskDumpConfigPage(projectId: UUID) extends PrivatePage
+  case class CreateDataExportConfigPage(projectId: UUID) extends PrivatePage
 
-  case class EditTaskDumpConfigPage(id: UUID) extends PrivatePage
+  case class EditDataExportConfigPage(id: UUID) extends PrivatePage
 
-  case class TaskDumpStatusPage(projectId: UUID) extends PrivatePage
+  case class DataExportStatusPage(projectId: UUID) extends PrivatePage
 
   case class CreateTaskLoadConfigPage(projectId: UUID) extends PrivatePage
 

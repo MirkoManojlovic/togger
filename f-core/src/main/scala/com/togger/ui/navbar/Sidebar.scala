@@ -12,7 +12,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskDumpFeService
+import com.togger.ui.task.DataExportFeService
 import com.togger.ui.taskloadconfig.TaskLoadConfigFeService
 import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLLIElement
@@ -23,7 +23,7 @@ case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
   collapsed: Signal[Boolean],
-  onDumpClick: Option[() => Unit] = None,
+  onExportClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
   onLoadClick: Option[() => Unit] = None,
   icon: String = ""
@@ -54,14 +54,14 @@ case class SidebarLink(
       ),
       div(
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-        onDumpClick.map(dumpAction =>
+        onExportClick.map(exportAction =>
           button(
             `type`("button"),
             TgIcons.downloadIcon("w-3.5 h-3.5"),
             cls(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
             ),
-            onClick.mapToUnit --> (_ => dumpAction())
+            onClick.mapToUnit --> (_ => exportAction())
           )
         ),
         onLoadClick.map(loadAction =>
@@ -142,7 +142,7 @@ class Sidebar(
   router: TgRouter[FrontendPage],
   organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
-  taskDumpService: TaskDumpFeService,
+  dataExportService: DataExportFeService,
   taskLoadConfigService: TaskLoadConfigFeService,
   spinnerService: SpinnerService,
   sidebarCollapseStore: SidebarCollapseStore,
@@ -159,9 +159,9 @@ class Sidebar(
 
   private def dumpProject(projectId: UUID): Unit =
     spinnerService
-      .runWithSpinner(taskDumpService.dumpTasks(projectId))
+      .runWithSpinner(dataExportService.exportData(projectId))
       .toastMessageDto(dto =>
-        s"Tasks dumped to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
+        s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
       )(_ => IO.unit)
       .unsafeRunAndForget()
 
@@ -174,7 +174,7 @@ class Sidebar(
           if (paths.isEmpty) IO(toast.error("No load paths configured for this project"))
           else
             paths
-              .traverse(path => taskDumpService.loadTasks(projectId, path).map(_.map(_.body.get)))
+              .traverse(path => dataExportService.loadTasks(projectId, path).map(_.map(_.body.get)))
               .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, TaskLoadResp]]) =>
                 val successes = outcomes.collect { case Right(dto) => dto }
                 outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
@@ -272,7 +272,7 @@ class Sidebar(
                               linkName = project.name,
                               link = router.navigateTo(ShowAllTasksPage(project.id)),
                               collapsed = collapsed,
-                              onDumpClick = Some(() => dumpProject(project.id)),
+                              onExportClick = Some(() => dumpProject(project.id)),
                               onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
                               onLoadClick = Some(() => loadAllForProject(project.id)),
                               icon = project.icon
@@ -345,8 +345,8 @@ object Sidebar {
     case ShowAllTaskTemplatesPage(projectId, _) => Some(projectId)
     case EditTaskPage(projectId, _)          => Some(projectId)
     case ShowAllTaskConfigsPage(projectId, _) => Some(projectId)
-    case CreateTaskDumpConfigPage(projectId) => Some(projectId)
-    case TaskDumpStatusPage(projectId)       => Some(projectId)
+    case CreateDataExportConfigPage(projectId) => Some(projectId)
+    case DataExportStatusPage(projectId)       => Some(projectId)
     case CreateTaskLoadConfigPage(projectId) => Some(projectId)
     case CreateProjectMappingPage(projectId) => Some(projectId)
     case CreateMilestonePage(projectId)      => Some(projectId)

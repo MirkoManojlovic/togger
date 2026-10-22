@@ -32,25 +32,25 @@ class TaskConfigListRouteTest extends AsyncJsWordSpec {
     "round trip the page and size of both lists apart from each other" in { _ =>
       val page = ShowAllTaskConfigsPage(
         projectId,
-        TaskConfigListParams(dump = ListParams(page = 3, size = 50), load = ListParams(page = 2, size = 10))
+        TaskConfigListParams(export = ListParams(page = 3, size = 50), load = ListParams(page = 2, size = 10))
       )
       pageOf(urlOf(page)) shouldBe Some(page)
     }
 
     "move one list without moving the other" in { _ =>
-      val moved = TaskConfigListParams.default.dumpAtPage(4, 20).loadAtPage(2, 10)
-      (moved, TaskConfigListParams.default.loadAtPage(3, 20).dump) shouldBe
+      val moved = TaskConfigListParams.default.exportAtPage(4, 20).loadAtPage(2, 10)
+      (moved, TaskConfigListParams.default.loadAtPage(3, 20).export) shouldBe
         (TaskConfigListParams(ListParams(4, 20), ListParams(2, 10)), ListParams.default)
     }
 
     "fall back to the defaults for a bad page and size" in { _ =>
-      pageOf(s"$path?dumpPage=abc&dumpSize=7&loadPage=0&loadSize=1000").map(_.list) shouldBe
+      pageOf(s"$path?exportPage=abc&exportSize=7&loadPage=0&loadSize=1000").map(_.list) shouldBe
         Some(TaskConfigListParams.default)
     }
 
     "accept a valid page and one of the size options" in { _ =>
-      pageOf(s"$path?dumpPage=2&dumpSize=10").map(_.list) shouldBe
-        Some(TaskConfigListParams(dump = ListParams(page = 2, size = 10)))
+      pageOf(s"$path?exportPage=2&exportSize=10").map(_.list) shouldBe
+        Some(TaskConfigListParams(export = ListParams(page = 2, size = 10)))
     }
   }
 }

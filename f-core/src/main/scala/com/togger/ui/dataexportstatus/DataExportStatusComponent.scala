@@ -1,17 +1,17 @@
-package com.togger.ui.taskdumpstatus
+package com.togger.ui.dataexportstatus
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.TaskDumpPathStatusResp
+import com.togger.dto.DataExportPathStatusResp
 import com.togger.toast.ToastMessages
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskConfigTableSupport, TaskDumpFeService}
+import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService}
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
-class TaskDumpStatusComponent(
-  taskDumpService: TaskDumpFeService,
+class DataExportStatusComponent(
+  dataExportService: DataExportFeService,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID
@@ -21,15 +21,15 @@ class TaskDumpStatusComponent(
 
   import TaskConfigTableSupport._
 
-  private val stateVar = Var(Seq.empty[TaskDumpPathStatusResp])
+  private val stateVar = Var(Seq.empty[DataExportPathStatusResp])
 
   spinnerService
-    .runWithSpinner(taskDumpService.checkStatus(projectId))
+    .runWithSpinner(dataExportService.checkStatus(projectId))
     .toastJustErrorsUnit(resp => stateVar.set(resp.pathStatuses))
     .unsafeRunAndForget()
 
-  private def pathCard(pathStatus: TaskDumpPathStatusResp) =
-    dumpPathStatusCard(pathStatus, pathStatus.dumpPath)
+  private def pathCard(pathStatus: DataExportPathStatusResp) =
+    exportPathStatusCard(pathStatus, pathStatus.exportPath)
 
   val element = {
     div(

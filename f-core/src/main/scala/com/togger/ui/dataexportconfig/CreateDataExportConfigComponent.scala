@@ -1,9 +1,9 @@
-package com.togger.ui.taskdumpconfig
+package com.togger.ui.dataexportconfig
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.taskdumpconfig.CreateTaskDumpConfigReq
+import com.togger.dto.dataexportconfig.CreateDataExportConfigReq
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -14,30 +14,30 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
 
-case class CreateTaskDumpConfigForm(
+case class CreateDataExportConfigForm(
   name: String = "",
-  dumpPath: String = ""
+  exportPath: String = ""
 )
 
-class CreateTaskDumpConfigComponent(
-  taskDumpConfigService: TaskDumpConfigFeService,
+class CreateDataExportConfigComponent(
+  dataExportConfigService: DataExportConfigFeService,
   spinnerService: SpinnerService,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  val formState = Var(CreateTaskDumpConfigForm())
+  val formState = Var(CreateDataExportConfigForm())
 
-  lazy val createSubmitter = Observer[CreateTaskDumpConfigForm] { state =>
-    val request = CreateTaskDumpConfigReq(
+  lazy val createSubmitter = Observer[CreateDataExportConfigForm] { state =>
+    val request = CreateDataExportConfigReq(
       projectId = projectId,
       name = state.name,
-      dumpPath = state.dumpPath
+      exportPath = state.exportPath
     )
     spinnerService
-      .runWithSpinner(taskDumpConfigService.create(request))
-      .toastMessageJustMessage("Task dump config created successfully")
+      .runWithSpinner(dataExportConfigService.create(request))
+      .toastMessageJustMessage("Export data config created successfully")
       .unsafeRunAndForget()
   }
 
@@ -48,10 +48,10 @@ class CreateTaskDumpConfigComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val dumpPathInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
+  private val exportPathInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.exportPath),
     errors = EventStream.empty,
-    labelValue = "Dump path (must be an abs path)",
+    labelValue = "Export path (must be an abs path)",
     tgInputType = TgInputType.Text
   )
 
@@ -59,13 +59,13 @@ class CreateTaskDumpConfigComponent(
     justifyCenterFlex,
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Create a task dump config", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Create an export data config", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
-              dumpPathInput.htmlElement.amend(cls("mb-4")),
+              exportPathInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.create(EventStream.fromValue(false))
             )
           )

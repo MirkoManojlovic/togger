@@ -1,10 +1,10 @@
-package com.togger.ui.taskdumpconfig
+package com.togger.ui.dataexportconfig
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.taskdumpconfig.UpdateTaskDumpConfigReq
-import com.togger.routes.Pages.EditTaskDumpConfigPage
+import com.togger.dto.dataexportconfig.UpdateDataExportConfigReq
+import com.togger.routes.Pages.EditDataExportConfigPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -17,28 +17,28 @@ import org.scalajs.dom
 
 import java.util.UUID
 
-case class EditTaskDumpConfigForm(
+case class EditDataExportConfigForm(
   id: UUID = UUID.randomUUID(),
   projectId: UUID = UUID.randomUUID(),
   accountId: UUID = UUID.randomUUID(),
   name: String = "",
-  dumpPath: String = ""
+  exportPath: String = ""
 )
 
-class EditTaskDumpConfigComponent(
+class EditDataExportConfigComponent(
   id: UUID,
-  taskDumpConfigService: TaskDumpConfigFeService,
+  dataExportConfigService: DataExportConfigFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
-  val formState = Var(EditTaskDumpConfigForm(id = id))
+  val formState = Var(EditDataExportConfigForm(id = id))
 
   spinnerService
     .runWithSpinner(
-      taskDumpConfigService
+      dataExportConfigService
         .findById(id)
         .map(
           _.fold(
@@ -46,12 +46,12 @@ class EditTaskDumpConfigComponent(
             success => {
               val dto = success.body.get
               formState.set(
-                EditTaskDumpConfigForm(
+                EditDataExportConfigForm(
                   id = dto.id,
                   projectId = dto.projectId,
                   accountId = dto.accountId,
                   name = dto.name,
-                  dumpPath = dto.dumpPath
+                  exportPath = dto.exportPath
                 )
               )
             }
@@ -60,17 +60,17 @@ class EditTaskDumpConfigComponent(
     )
     .unsafeRunAndForget()
 
-  private val submitter = Observer[EditTaskDumpConfigForm] { state =>
-    val dto = UpdateTaskDumpConfigReq(
+  private val submitter = Observer[EditDataExportConfigForm] { state =>
+    val dto = UpdateDataExportConfigReq(
       id = state.id,
       projectId = state.projectId,
       name = state.name,
-      dumpPath = state.dumpPath
+      exportPath = state.exportPath
     )
 
     spinnerService
-      .runWithSpinner(taskDumpConfigService.update(dto))
-      .toastMessageFn("Task dump config updated successfully")(_ => router.route(EditTaskDumpConfigPage(id)))
+      .runWithSpinner(dataExportConfigService.update(dto))
+      .toastMessageFn("Export data config updated successfully")(_ => router.route(EditDataExportConfigPage(id)))
       .unsafeRunAndForget()
   }
 
@@ -81,10 +81,10 @@ class EditTaskDumpConfigComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val dumpPathInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dumpPath),
+  private val exportPathInput = formState.tgInputManualErrorLPSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.exportPath),
     errors = EventStream.empty,
-    labelValue = "Dump path (must be an abs path)",
+    labelValue = "Export path (must be an abs path)",
     tgInputType = TgInputType.Text
   )
 
@@ -92,13 +92,13 @@ class EditTaskDumpConfigComponent(
     justifyCenterFlex,
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Edit task dump config", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Edit export data config", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
-              dumpPathInput.htmlElement.amend(cls("mb-4")),
+              exportPathInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.update(EventStream.fromValue(false))
             )
           )
