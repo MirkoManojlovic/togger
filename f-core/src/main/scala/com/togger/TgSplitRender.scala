@@ -264,6 +264,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectService,
                   projectId,
+                  router,
                   toast
                 ).element
               case CreateTaskStatusPage(projectId: UUID) =>

@@ -12,6 +12,8 @@ import com.togger.common._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
+import com.togger.routes.Pages.EditTaskPage
+import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
@@ -79,6 +81,7 @@ class CreateTaskComponent(
   accountService: AccountService,
   projectService: ProjectService,
   projectId: UUID,
+  router: TgRouter[FrontendPage],
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -223,7 +226,9 @@ class CreateTaskComponent(
       )
       spinnerService
         .runWithSpinner(taskService.createTask(dto))
-        .toastMessageJustMessage("Task created successfully")
+        .toastMessageFn("Task created successfully")(created =>
+          router.route(EditTaskPage(projectId, created.task.id))
+        )
         .unsafeRunAndForget()
   }
 
