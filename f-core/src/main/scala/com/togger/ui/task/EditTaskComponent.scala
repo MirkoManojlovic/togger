@@ -664,7 +664,7 @@ class EditTaskComponent(
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
       child.maybe <-- slackerVar.signal,
       div(
-        cls("flex w-full flex-col items-start gap-8 mb-4 lg:flex-row"),
+        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         editTaskCard.amend(cls("min-w-0 lg:flex-1")),
         div(
           cls("flex w-full shrink-0 flex-col gap-8 lg:w-[42rem]"),
