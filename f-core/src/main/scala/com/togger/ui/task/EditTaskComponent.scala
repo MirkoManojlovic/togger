@@ -161,6 +161,7 @@ class EditTaskComponent(
                         linksVar.set(
                           dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto))))
                         )
+                        rememberSaved()
 
                         val taskStartDate = dto.task.startDate
                         val taskEndDate = dto.task.endDate
@@ -416,6 +417,48 @@ class EditTaskComponent(
       .unsafeRunAndForget()
   }
 
+  // ---- unsaved changes
+
+  private val savedDetails = Var(Option.empty[(String, String, BulkTask)])
+  private val savedLinks = Var(Option.empty[Seq[TaskLinkFormData]])
+
+  private val currentDetails: Signal[(String, String, BulkTask)] =
+    formState.signal.combineWith(badges.taskVar.signal).map { case (form, task) => (form.name, form.description, task) }
+
+  private val currentLinks: Signal[Seq[TaskLinkFormData]] =
+    linksVar.signal.flatMapSwitch(components =>
+      if (components.isEmpty) Val(Seq.empty) else Signal.sequence(components.map(_.formState.signal))
+    )
+
+  /** What the backend has now; the notes below compare the form against it. */
+  private def rememberSaved(): Unit = {
+    val form = formState.now()
+    savedDetails.set(Some((form.name, form.description, badges.taskVar.now())))
+    savedLinks.set(Some(linksVar.now().map(_.formState.now())))
+  }
+
+  private def changedNote(text: String, changed: Signal[Boolean]): Signal[Option[HtmlElement]] =
+    changed.distinct.map(
+      Option.when(_)(
+        div(
+          cls("px-2 py-1 mb-2 border-s-4 rounded-base bg-warning-soft border-warning-subtle text-fg-warning text-xs"),
+          text
+        )
+      )
+    )
+
+  private val unsavedNotes: HtmlElement =
+    div(
+      child.maybe <-- changedNote(
+        "The task details have changed. Press Update to save them.",
+        savedDetails.signal.combineWith(currentDetails).map { case (saved, name, description, task) => saved.exists(_ != ((name, description, task))) }
+      ),
+      child.maybe <-- changedNote(
+        "The links have changed. Press Update to save them.",
+        savedLinks.signal.combineWith(currentLinks).map { case (saved, current) => saved.exists(_ != current) }
+      )
+    )
+
   private val archivedNote =
     div(
       cls("p-4 mb-4 border-s-4 rounded-base bg-warning-soft border-warning-subtle text-fg-warning text-sm"),
@@ -452,7 +495,16 @@ class EditTaskComponent(
 
   /** The update call; what it was told to delete is gone once it went through. */
   private def sendUpdate(dto: UpdateTaskReq): IO[TgResponseTypes.TgResp[FindTaskResp]] =
-    taskService.updateTask(dto).flatTap(response => IO(if (response.isRight) linksToDelete.set(Set.empty)))
+    taskService
+      .updateTask(dto)
+      .flatTap(response =>
+        IO(
+          if (response.isRight) {
+            linksToDelete.set(Set.empty)
+            rememberSaved()
+          }
+        )
+      )
 
   private def closeLinkEditor(): Unit = openLinkEditor.set(None)
 
@@ -552,6 +604,7 @@ class EditTaskComponent(
               form(
                 onSubmit.preventDefault
                   .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
+                unsavedNotes,
                 child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
                 nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 badges.element.amend(cls("mb-4")),
@@ -593,4 +646,5 @@ class EditTaskComponent(
     )
 
 }
+
 
