@@ -18,7 +18,9 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components._
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.modal.ModalStyles
+import com.togger.routes.Pages.EditTaskPage
+import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainTextModalMessage}
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -153,6 +155,8 @@ class CreateTaskQuick(
   tgClock: TgClock,
   accountService: AccountService,
   currentProjectId: Option[UUID],
+  router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   val toast: Toast,
   onClose: () => Unit
 )(implicit ioRuntime: IORuntime)
@@ -367,6 +371,17 @@ class CreateTaskQuick(
     }
   }
 
+  private def askToOpen(projectId: UUID, taskId: UUID): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage("Do you want to open the newly created task?"),
+      title = "Task created",
+      confirmButtonMsg = "Open task",
+      cancelButtonMsg = "Stay here"
+    ) { close =>
+      close()
+      router.route(EditTaskPage(projectId, taskId))
+    }
+
   private def submit(): Unit = {
     val current = state.now()
     val name = current.parsed.taskName
@@ -399,7 +414,9 @@ class CreateTaskQuick(
           .flatMap(
             _.fold(
               error => IO(toast.error(error)),
-              _ => IO(toast.success("Task created successfully")) >> IO(onClose())
+              created =>
+                IO(toast.success("Task created successfully")) >> IO(onClose()) >>
+                  IO(askToOpen(projectId, created.body.get.task.id))
             )
           )
           .unsafeRunAndForget()
