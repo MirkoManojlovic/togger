@@ -3,7 +3,7 @@ import './style.css'
 import './apexcharts-bridge.js'
 import '@linkOutputDir/main.js'
 
-import {Command} from '@tauri-apps/plugin-shell';
+import {Command, open} from '@tauri-apps/plugin-shell';
 import {resolveResource} from '@tauri-apps/api/path';
 import {getCurrentWindow} from '@tauri-apps/api/window';
 
@@ -13,6 +13,15 @@ if (appConfig.isDesktopMode === "true") {
     const command = Command.sidecar('binaries/backend-app-exec', resourcePath);
     const output = await command.spawn();
   }
+
+  // a webview does not hand links to the browser of the system, so web links that ask for a new tab are opened there
+  document.addEventListener('click', event => {
+    const link = event.target instanceof Element ? event.target.closest('a[target="_blank"]') : null
+    if (link && /^https?:\/\//i.test(link.href)) {
+      event.preventDefault()
+      open(link.href).catch(error => console.log('Error:', error))
+    }
+  })
 
   load().then(res => console.log("Loaded"))
 
