@@ -1,10 +1,10 @@
 package com.togger.task
 
-import cats.effect.IO
+import cats.effect.{IO, Sync}
 import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
-import doobie.Transactor
+import doobie.{ConnectionIO, Transactor}
 import doobie.implicits._
 
 import java.util.UUID
@@ -44,7 +44,12 @@ class TaskStatusService(
     }).transact(transactor)
   }
 
-  def deleteById(id: UUID) = {
-    taskStatusRepo.deleteById(id).transact(transactor)
-  }
+  def deleteById(id: UUID): IO[Int] =
+    (for {
+      taskStatus <- taskStatusRepo.findById(id)
+      _ <- Sync[ConnectionIO].raiseWhen(taskStatus.name == DefaultTaskStatus.Done.statusName)(
+        new IllegalArgumentException(s"Task status ${DefaultTaskStatus.Done.statusName} cannot be deleted")
+      )
+      deleted <- taskStatusRepo.deleteById(id)
+    } yield deleted).transact(transactor)
 }
