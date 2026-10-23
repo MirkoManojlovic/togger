@@ -45,7 +45,8 @@ trait TgDbSpec
     new HikariConfig()
       .tap { hikariConfig =>
         hikariConfig.setDataSource(pgConfig)
-        hikariConfig.setMinimumIdle(1)
+        hikariConfig.setMinimumIdle(0)
+        hikariConfig.setInitializationFailTimeout(-1)
       }
       .pipe(hikariConfig => HikariTransactor.fromHikariConfig(hikariConfig, None))
 
