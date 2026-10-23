@@ -621,6 +621,33 @@ class EditTaskComponent(
     placeholderValue = "Describe the task"
   )
 
+  private lazy val editTaskCard: HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Edit task", TgCard.CardHeaderSize.H3),
+        body = TgCard.HtmlCardContent(
+          div(
+            form(
+              onSubmit.preventDefault
+                .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
+              unsavedNotes,
+              child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
+              badges.element.amend(cls("mb-4")),
+              linksSection.amend(cls("mb-4")),
+              descriptionEditor.htmlElement.amend(cls("mb-4")),
+              div(
+                cls("flex justify-end gap-2"),
+                archiveButton,
+                closeButton,
+                TgHtmlButton.updateSmall(EventStream.fromValue(false))
+              )
+            )
+          )
+        )
+      )
+      .element
+
   val element =
     div(
       display.flex,
@@ -634,44 +661,20 @@ class EditTaskComponent(
       }),
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
       child.maybe <-- slackerVar.signal,
-      TgCard
-        .headerNoFooter(
-          header = TgCard.CardHeader.plainText("Edit task", TgCard.CardHeaderSize.H3),
-          body = TgCard.HtmlCardContent(
-            div(
-              form(
-                onSubmit.preventDefault
-                  .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
-                unsavedNotes,
-                child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
-                nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-                badges.element.amend(cls("mb-4")),
-                linksSection.amend(cls("mb-4")),
-                descriptionEditor.htmlElement.amend(cls("mb-4")),
-                div(
-                  cls("flex justify-end gap-2"),
-                  archiveButton,
-                  closeButton,
-                  TgHtmlButton.updateSmall(EventStream.fromValue(false))
-                )
-              )
-            )
-          )
+      div(
+        cls("flex w-full flex-col items-start gap-8 mb-4 lg:flex-row"),
+        editTaskCard.amend(cls("min-w-0 lg:flex-1")),
+        div(
+          cls("w-full shrink-0 lg:w-[42rem]"),
+          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element))
         )
-        .element
-        .amend(cls("mb-4")),
+      ),
       hr(alignSelf.stretch),
       child <-- logEntryPanelVar.signal.map { state =>
         div(
           display.flex,
           columnGap("2rem"),
           alignItems.flexStart,
-          div(
-            flexGrow(1),
-            minWidth("0"),
-            h4(cls("text-lg font-semibold text-heading mb-2"), "Add new log status"),
-            state.newEntryComponent.map(_.element).getOrElse(emptyNode)
-          ),
           div(
             flexGrow(1),
             minWidth("0"),
