@@ -69,6 +69,14 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
     }
   }
 
+  /** jsdom has no `ResizeObserver` and no layout, so the editor never stacks; this one reports a zero width on observe. */
+  private def withResizeObserverReportingNoWidth(body: => Future[Assertion]): Future[Assertion] = {
+    js.eval(
+      "globalThis.ResizeObserver = class { constructor(cb) { this.cb = cb } observe() { this.cb([], this) } disconnect() {} }"
+    )
+    body.andThen { case _ => js.eval("delete globalThis.ResizeObserver") }
+  }
+
   /** What a browser does when a key lands in a textarea: the value changes, then `input` fires. */
   private def typeInto(source: dom.html.TextArea, text: String): Unit = {
     source.value = source.value + text
@@ -306,12 +314,14 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
     }
 
     "offer a Write and a Preview tab for narrow screens" in { _ =>
-      mounted("text") { view =>
-        val tabs = view.editor.querySelectorAll("[role='tab']")
+      withResizeObserverReportingNoWidth {
+        mounted("text") { view =>
+          val tabs = view.editor.querySelectorAll("[role='tab']")
 
-        Future.successful {
-          tabs.length shouldBe 2
-          tabs.map(_.textContent).toSeq shouldBe Seq("Write", "Preview")
+          Future.successful {
+            tabs.length shouldBe 2
+            tabs.map(_.textContent).toSeq shouldBe Seq("Write", "Preview")
+          }
         }
       }
     }
