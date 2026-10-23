@@ -94,7 +94,7 @@ object BulkSummaryBar {
   private def statusBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byStatus.map { case (statusId, count) =>
       statusId.flatMap(id => lookups.statuses.find(_.id == id)) match {
-        case Some(status) => BadgeSpec(s"${EmojiPrefix.of(status.name)} × $count", status.badgeColor)
+        case Some(status) => BadgeSpec(s"${status.emoji} × $count", status.badgeColor)
         case None         => BadgeSpec(s"${EmojiPrefix.Fallback} × $count", TgBadgeColor.Gray)
       }
     }

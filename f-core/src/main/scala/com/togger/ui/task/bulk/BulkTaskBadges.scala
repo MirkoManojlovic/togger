@@ -89,7 +89,7 @@ object BulkTaskBadges {
   private def status(task: BulkTask, lookups: BulkLookups): BadgeSpec =
     task.statusId
       .flatMap(id => lookups.statuses.find(_.id == id))
-      .map(status => BadgeSpec(EmojiPrefix.of(status.name), status.badgeColor, Some(BulkEditKind.Status)))
+      .map(status => BadgeSpec(status.emoji, status.badgeColor, Some(BulkEditKind.Status)))
       .getOrElse(BadgeSpec(EmojiPrefix.Fallback, TgBadgeColor.Gray, Some(BulkEditKind.Status)))
 
   private def labels(task: BulkTask, lookups: BulkLookups): Seq[BadgeSpec] = {
