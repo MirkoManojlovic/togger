@@ -12,6 +12,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.toast.ToastMessages
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -175,8 +176,23 @@ class LogEntryComponent(
                 .headerNoFooter(
                   header = TgCard.CardHeader.html(
                     div(
-                      cls("flex"),
-                      justifyContent.spaceBetween, // TODO: fix this
+                      cls("flex flex-col"),
+                      div(
+                        cls("flex justify-end mb-2"),
+                        button(
+                          typ("button"),
+                          cls(
+                            "text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white " +
+                              "focus:ring-4 focus:ring-brand-subtle rounded-base p-1 focus:outline-none"
+                          ),
+                          aria.label("Edit"),
+                          title("Edit"),
+                          TgIcons.editIcon("w-3.5 h-3.5"),
+                          onClick.mapToUnit --> { _ =>
+                            displayAsEditVar.update(displayAsEdit => !displayAsEdit)
+                          }
+                        )
+                      ),
                       div(
                         cls("flex items-center gap-2"),
                         TgBadge(
@@ -186,14 +202,7 @@ class LogEntryComponent(
                         ).element,
                         TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element,
                         LogEntryMemberBadge(state.createdByName)
-                      ),
-                      TgHtmlButton
-                        .extraSmall("Edit")
-                        .amend(
-                          onClick.mapToUnit --> { _ =>
-                            displayAsEditVar.update(displayAsEdit => !displayAsEdit)
-                          }
-                        )
+                      )
                     ),
                     TgCard.CardHeaderSize.H3
                   ),
