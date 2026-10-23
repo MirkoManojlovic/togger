@@ -33,7 +33,7 @@ import scala.util.Try
 
 case class LogEntryPanelState(
   newEntryComponent: Option[LogEntryComponent] = None,
-  logEntryComponents: Seq[LogEntryComponent] = Seq.empty,
+  logEntryComponents: Seq[(LocalDate, LogEntryComponent)] = Seq.empty,
   calendarComponent: Option[LogEntryCalendarComponent] = None
 )
 
@@ -70,6 +70,7 @@ class EditTaskComponent(
   val linksVar: Var[Seq[TaskLinkComponent]] = Var(Seq.empty)
   val logEntryPanelVar: Var[LogEntryPanelState] = Var(LogEntryPanelState())
   val workDaysVar = Var(Set.empty[DayOfWeek])
+  private val calendarSelectedDay = Var(Option.empty[LocalDate])
 
   private val tgDateFormater = new TgDateFormater
 
@@ -175,7 +176,7 @@ class EditTaskComponent(
                             .sortBy(_.createdAt)
                             .reverse
                             .map(logEntry =>
-                              new LogEntryComponent(
+                              dateOf(logEntry) -> new LogEntryComponent(
                                 LogEntryForm.fromDto(logEntry),
                                 taskService,
                                 spinnerService,
@@ -207,11 +208,12 @@ class EditTaskComponent(
                             workDaysVar.now()
                           )
 
+                        calendarSelectedDay.set(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries, workDaysVar.now()))
                         val calendarComponent = new LogEntryCalendarComponent(
                           dto.logEntries,
                           tgDateFormater,
                           workDaysVar.now(),
-                          Var(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries, workDaysVar.now()))
+                          calendarSelectedDay
                         )
                         logEntryPanelVar.set(
                           LogEntryPanelState(
@@ -665,30 +667,50 @@ class EditTaskComponent(
         cls("flex w-full flex-col items-start gap-8 mb-4 lg:flex-row"),
         editTaskCard.amend(cls("min-w-0 lg:flex-1")),
         div(
-          cls("w-full shrink-0 lg:w-[42rem]"),
-          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element))
+          cls("flex w-full shrink-0 flex-col gap-8 lg:w-[42rem]"),
+          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element)),
+          child <-- logEntryPanelVar.signal.map(logEntriesCard)
         )
-      ),
-      hr(alignSelf.stretch),
-      child <-- logEntryPanelVar.signal.map { state =>
-        div(
-          display.flex,
-          columnGap("2rem"),
-          alignItems.flexStart,
-          div(
-            flexGrow(1),
-            minWidth("0"),
-            h4(cls("text-lg font-semibold text-heading mb-2"), "Log entries"),
-            div(state.logEntryComponents.map(_.element))
-          ),
-          div(
-            flexShrink(0),
-            cls("w-fit"),
-            h4(cls("text-lg font-semibold text-heading mb-2"), "Calendar"),
-            state.calendarComponent.map(_.element).getOrElse(emptyNode)
-          )
-        )
-      }
+      )
     )
 
+  private val logDateAttr = dataAttr("log-date")
+
+  /** Scrolls the pane to the first log entry of the day, within the pane only so the page itself stays where it is. */
+  private def scrollToDay(pane: dom.html.Element, day: LocalDate): Unit =
+    Option(pane.querySelector(s"[data-log-date='$day']")).foreach { entry =>
+      pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
+    }
+
+  /** The log entries on the left in a pane that scrolls and the calendar on the right outside of it, so the calendar
+    * stays where it is; a click on a day of the calendar scrolls the pane to the entry of that day.
+    */
+  private def logEntriesCard(state: LogEntryPanelState): HtmlElement = {
+    val pane = div(
+      cls("max-h-[70vh] overflow-y-auto scroll-smooth pe-2"),
+      if (state.logEntryComponents.isEmpty) p(cls("text-sm text-body-subtle"), "No log entries yet")
+      else state.logEntryComponents.map { case (day, entry) => div(logDateAttr := day.toString, entry.element) }
+    )
+    // a click on the day that is already selected clears it, the day that was clicked is then the one before
+    val clickedDays: EventStream[LocalDate] =
+      calendarSelectedDay.signal.changes
+        .scanLeft((Option.empty[LocalDate], Option.empty[LocalDate])) { case ((_, previous), next) =>
+          (next.orElse(previous), next)
+        }
+        .changes
+        .collect { case (Some(day), _) => day }
+    div(
+      cls("w-full bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"),
+      clickedDays --> Observer[LocalDate](day => scrollToDay(pane.ref, day)),
+      div(
+        cls("flex items-start gap-6"),
+        div(cls("min-w-0 flex-1"), h4(cls("text-lg font-semibold text-heading mb-2"), "Log entries"), pane),
+        div(
+          cls("w-fit shrink-0"),
+          h4(cls("text-lg font-semibold text-heading mb-2"), "Calendar"),
+          state.calendarComponent.map(_.element).getOrElse(emptyNode)
+        )
+      )
+    )
+  }
 }
