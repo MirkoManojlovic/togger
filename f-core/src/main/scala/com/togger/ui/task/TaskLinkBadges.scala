@@ -23,7 +23,7 @@ object TaskLinkBadges {
   def badge(link: TaskLinkFormData): TgHtmlElement = {
     val text = if (link.name.trim.nonEmpty) link.name.trim else link.url.trim
     val action = safeHref(link.url).map(TgBadgeAction.Link(_))
-    val element = TgBadge(text = text, color = TgBadgeColor.Gray, bordered = true, action = action).element
+    val element = TgBadge(text = s"🔗 $text", color = TgBadgeColor.Gray, bordered = true, action = action).element
     action.fold(element)(_ => element.amend(target("_blank"), rel("noopener noreferrer")))
   }
 }
