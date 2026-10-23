@@ -433,7 +433,7 @@ class BulkAddTasks(
       state.signal.map(_.defaults).distinct.changes --> (_ => state.update(_.afterDefaultsChange)),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("w-full max-w-6xl"),
+        cls("w-full max-w-[96rem]"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Bulk add tasks"),
