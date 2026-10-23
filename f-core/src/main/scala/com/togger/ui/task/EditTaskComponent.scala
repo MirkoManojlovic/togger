@@ -443,17 +443,25 @@ class EditTaskComponent(
       child <-- linksVar.signal.map { components =>
         val (saved, added) = components.partition(_.formState.now().id.isDefined)
         div(
-          div(cls("flex flex-wrap items-center gap-1.5 mb-2"), saved.map(link => TaskLinkBadges.badge(link.formState.now()))),
-          addNewLink,
+          Option.when(saved.nonEmpty)(
+            div(cls("flex flex-wrap items-center gap-1.5 mb-2"), saved.map(link => TaskLinkBadges.badge(link.formState.now())))
+          ),
+          div(cls("flex items-center mb-2"), addNewLink),
           added.map(_.htmlElement)
         )
       }
     )
 
-  lazy val addNewLink =
-    TgHtmlButton
-      .extraSmall("+")
-      .amend(cls("mb-4"), onClick --> (_ => linksVar.update(state => state :+ new TaskLinkComponent())))
+  lazy val addNewLink: HtmlElement =
+    TgBadge(text = "+ Add link", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
+      .amend(
+        role("button"),
+        tabIndex(0),
+        onClick --> (_ => addLink()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addLink())
+      )
+
+  private def addLink(): Unit = linksVar.update(state => state :+ new TaskLinkComponent())
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
