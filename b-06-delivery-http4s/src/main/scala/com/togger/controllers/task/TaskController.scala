@@ -93,7 +93,13 @@ class TaskController(
       dueDate = taskFull.dueDate,
       endDate = taskFull.endDate,
       taskLabels = taskFull.taskLabels.map(l =>
-        FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
+        FindTaskLabelResp(
+          id = l.id,
+          projectId = l.projectId,
+          name = l.name,
+          description = l.description,
+          emoji = l.emoji
+        )
       ),
       archived = taskFull.archived
     )

@@ -104,7 +104,7 @@ class TaskVersionRepoPaginationTest
     )
 
   private def label(name: String, projectId: UUID) =
-    TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", nowAsInstant, nowAsInstant)
+    TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", "🏷️", nowAsInstant, nowAsInstant)
 
   private def page(
     seeded: Seeded,

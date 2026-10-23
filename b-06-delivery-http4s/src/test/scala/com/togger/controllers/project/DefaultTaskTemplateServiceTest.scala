@@ -17,7 +17,7 @@ class DefaultTaskTemplateServiceTest extends AnyWordSpec with Matchers {
   private val accountId = UUID.randomUUID()
 
   private val labels = DefaultTaskLabel.values.map(label =>
-    TaskLabel(UUID.randomUUID(), projectId, label.labelName, label.description, now, now)
+    TaskLabel(UUID.randomUUID(), projectId, label.labelName, label.description, "🏷️", now, now)
   )
 
   "DefaultTaskTemplateService" should {
@@ -44,7 +44,7 @@ class DefaultTaskTemplateServiceTest extends AnyWordSpec with Matchers {
     }
 
     "create nothing for labels without a default template" in {
-      val custom = TaskLabel(UUID.randomUUID(), projectId, "custom", "Custom label", now, now)
+      val custom = TaskLabel(UUID.randomUUID(), projectId, "custom", "Custom label", "🏷️", now, now)
       service.createDefaultTaskTemplates(projectId, accountId, Seq(custom)) shouldBe empty
     }
   }

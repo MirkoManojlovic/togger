@@ -42,7 +42,7 @@ class TaskTemplateServiceTest
     TaskTemplateVersion(UUID.randomUUID(), templateId, name, body, nowAsInstant)
 
   private def label(projectId: UUID = projectId) =
-    TaskLabel(labelId, projectId, "feature", "", nowAsInstant, nowAsInstant)
+    TaskLabel(labelId, projectId, "feature", "", "🏷️", nowAsInstant, nowAsInstant)
 
   testNameFromClassName should {
 

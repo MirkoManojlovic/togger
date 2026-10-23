@@ -108,9 +108,14 @@ case class TaskLabel(
   projectId: UUID,
   name: String,
   description: String,
+  emoji: String,
   createdAt: Instant,
   updatedAt: Instant
-)
+) {
+
+  def toStringWithEmoji: String = s"$emoji $name"
+
+}
 
 case class TaskLabelAssignment(taskId: UUID, taskLabelId: UUID, createdAt: Instant)
 

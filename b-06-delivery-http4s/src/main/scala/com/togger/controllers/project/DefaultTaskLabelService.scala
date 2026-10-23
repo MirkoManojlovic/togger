@@ -15,6 +15,7 @@ class DefaultTaskLabelService(tgClock: TgClock) {
         projectId = projectId,
         name = label.labelName,
         description = label.description,
+        emoji = label.emoji,
         createdAt = now,
         updatedAt = now
       )

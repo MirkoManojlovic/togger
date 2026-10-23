@@ -113,7 +113,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
 
   private def newLabel(projectId: UUID, name: String): ConnectionIO[TaskLabel] =
     taskLabelRepo.insert(
-      TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", nowAsInstant, nowAsInstant)
+      TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", "🏷️", nowAsInstant, nowAsInstant)
     )
 
   private def newTaskVersion(

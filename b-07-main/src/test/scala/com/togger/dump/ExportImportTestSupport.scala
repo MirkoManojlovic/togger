@@ -208,7 +208,7 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
 
   def createTaskLabel(projectId: UUID, name: String = "Label"): ConnectionIO[TaskLabel] =
     taskLabelRepo.insert(
-      TaskLabel(UUID.randomUUID(), projectId, name, "Label description", nowAsInstant, nowAsInstant)
+      TaskLabel(UUID.randomUUID(), projectId, name, "Label description", "🏷️", nowAsInstant, nowAsInstant)
     )
 
   def createMilestoneWithDate(projectId: UUID): ConnectionIO[UUID] =

@@ -22,7 +22,7 @@ class TaskTemplateRepoTest extends BusinessTgDbSpec
   private val labelRepo = new TaskLabelRepoImpl
 
   private def newLabel(projectId: UUID, name: String) =
-    TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", nowAsInstant, nowAsInstant)
+    TaskLabel(UUID.randomUUID(), projectId, name, s"$name description", "🏷️", nowAsInstant, nowAsInstant)
 
   private def newTemplate(projectId: UUID, createdBy: UUID, labelId: Option[UUID]) =
     TaskTemplate(UUID.randomUUID(), projectId, labelId, createdBy, nowAsInstant)

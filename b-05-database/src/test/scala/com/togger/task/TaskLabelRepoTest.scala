@@ -17,6 +17,7 @@ class TaskLabelRepoTest extends BusinessTgDbSpec with TgAccount with TgProject w
     id = UUID.randomUUID(),
     name = "feature",
     description = "New functionality",
+    emoji = "🆕",
     projectId = UUID.randomUUID(),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

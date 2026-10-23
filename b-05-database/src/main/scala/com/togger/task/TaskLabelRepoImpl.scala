@@ -20,14 +20,15 @@ class TaskLabelRepoImpl extends TaskLabelRepo with TgLogging {
     import taskLabel._
     logAroundInfoQuery(
       insertStatement(TASK_LABEL_TABLE_FRAG)(fr"""
-        (name, description ,project_id, created_at, updated_at)
-        values ($name, $description, $projectId ,$createdAt, $updatedAt)
+        (name, description, emoji, project_id, created_at, updated_at)
+        values ($name, $description, $emoji, $projectId, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskLabel](
           "id",
           "project_id",
           "name",
           "description",
+          "emoji",
           "created_at",
           "updated_at"
         )
@@ -54,6 +55,7 @@ class TaskLabelRepoImpl extends TaskLabelRepo with TgLogging {
       updateStatementUUID(TASK_LABEL_TABLE_FRAG)(taskLabel.id)(fr"""
            name = ${taskLabel.name},
            description = ${taskLabel.description},
+           emoji = ${taskLabel.emoji},
            project_id = ${taskLabel.projectId},
            updated_at = $updatedAt
          """).update
@@ -62,6 +64,7 @@ class TaskLabelRepoImpl extends TaskLabelRepo with TgLogging {
           "project_id",
           "name",
           "description",
+          "emoji",
           "created_at",
           "updated_at"
         )
