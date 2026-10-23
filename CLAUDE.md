@@ -26,10 +26,10 @@ known tables before and after each test, so specs in `b-auth-app-core` run with 
 
 The build runs on sbt 2.x (Scala 3 build definition, project code still Scala 2.13). Things that differ from sbt 1:
 `%%` already carries the platform suffix (no `%%%`; JVM-only libraries in a cross project go in `.jvmSettings`),
-`test` only re-runs changed/failed tests (use `testFull`), outputs live under `target/out/`, and the thin client can
-hide output, so use `sbt -Dsbt.client=false -batch "<command>"` for scripted runs (delete a stale
-`project/target/active.json` if the client reports "server connection closed"). Frontend tests need `node` on PATH
-(devenv shell).
+`test` only re-runs changed/failed tests (use `testFull`), outputs live under `target/out/`. Run scripted commands
+through the thin client, `sbt --client "<command>"`, which talks to the sbt server that is already running (delete a
+stale `project/target/active.json` if the client reports "server connection closed"). Frontend tests need `node` on
+PATH (devenv shell).
 
 There is no root/aggregate sbt project or command aliases in `build.sbt` — target individual projects by their
 `lazy val` name (not the `name :=` string), e.g.:
@@ -87,11 +87,11 @@ just desktop-clean          # sbt clean first
 
 ## Rules for using sbt
 
-- The user always has a manually started `sbt ~frontendMain/fastLinkJS` process running. To check that frontend
-  changes compile, find that process's pid and tail its output for errors instead of starting another sbt.
-- To run tests or any other sbt command, start a new sbt client, remember its pid, and kill exactly that pid when
-  the check is done.
-- Never kill all sbt processes (no `pkill -f sbt`): that would also kill the user's watcher.
+- The user always has a manually started `sbt ~frontendMain/fastLinkJS` process running. Do not start another sbt
+  JVM (each one is ~1 GB).
+- To run tests, compile, or any other sbt command, use the thin client against that running server:
+  `sbt --client "<command>"`. To only check that frontend changes compile, you can instead tail the watcher's output.
+- Never kill sbt processes (no `pkill -f sbt`): that would also kill the user's watcher. The client needs no cleanup.
 
 ## Architecture
 
