@@ -437,17 +437,65 @@ class EditTaskComponent(
       onClick.mapToUnit --> (_ => closeDialogOpen.set(true))
     )
 
+  /** The popup that is open: the one that creates a link, or the one that changes the link of a badge. */
+  private val openLinkEditor: Var[Option[Option[TaskLinkComponent]]] = Var(None)
+
+  private def closeLinkEditor(): Unit = openLinkEditor.set(None)
+
+  private def linkEditorFor(link: Option[TaskLinkComponent]): HtmlElement =
+    link.fold(
+      new TaskLinkEditor(
+        TaskLinkFormData(),
+        "Create",
+        data => {
+          linksVar.update(_ :+ new TaskLinkComponent(Some(data)))
+          closeLinkEditor()
+        },
+        () => closeLinkEditor()
+      ).element
+    ) { existing =>
+      new TaskLinkEditor(
+        existing.formState.now(),
+        "Update",
+        data => {
+          existing.formState.update(old => data.copy(id = old.id))
+          closeLinkEditor()
+        },
+        () => closeLinkEditor()
+      ).element
+    }
+
+  private def linkWithEditor(link: Option[TaskLinkComponent], trigger: HtmlElement): HtmlElement =
+    div(
+      cls("relative inline-flex"),
+      trigger,
+      child.maybe <-- openLinkEditor.signal.map(_.contains(link)).distinct.map(Option.when(_)(linkEditorFor(link)))
+    )
+
+  /** The links as badges, each with a pencil that opens the popup to change it, and the badge that opens the popup to
+    * create one in a row of its own. Links are saved with the Update button of the form.
+    */
   private lazy val linksSection: HtmlElement =
     div(
       h4(cls("text-sm font-medium text-heading mb-2"), "Links"),
       child <-- linksVar.signal.map { components =>
-        val (saved, added) = components.partition(_.formState.now().id.isDefined)
         div(
-          Option.when(saved.nonEmpty)(
-            div(cls("flex flex-wrap items-center gap-1.5 mb-2"), saved.map(link => TaskLinkBadges.badge(link.formState.now())))
+          Option.when(components.nonEmpty)(
+            div(
+              cls("flex flex-wrap items-center gap-1.5 mb-2"),
+              components.map { link =>
+                linkWithEditor(
+                  Some(link),
+                  span(
+                    child <-- link.formState.signal.map(data =>
+                      TaskLinkBadges.badge(data, () => openLinkEditor.set(Some(Some(link))))
+                    )
+                  )
+                )
+              }
+            )
           ),
-          div(cls("flex items-center mb-2"), addNewLink),
-          added.map(_.htmlElement)
+          div(cls("flex items-center mb-2"), linkWithEditor(None, addNewLink))
         )
       }
     )
@@ -457,11 +505,10 @@ class EditTaskComponent(
       .amend(
         role("button"),
         tabIndex(0),
-        onClick --> (_ => addLink()),
-        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addLink())
+        onClick --> (_ => openLinkEditor.set(Some(None))),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault -->
+          (_ => openLinkEditor.set(Some(None)))
       )
-
-  private def addLink(): Unit = linksVar.update(state => state :+ new TaskLinkComponent())
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -532,3 +579,4 @@ class EditTaskComponent(
     )
 
 }
+
