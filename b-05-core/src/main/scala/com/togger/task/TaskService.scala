@@ -149,13 +149,23 @@ class TaskService(
       .transact(transactor)
   }
 
+  /** Only links of this task are deleted, the id of a link of another task is ignored. */
+  private def deleteLinksOfTask(taskId: UUID, linkIds: Seq[UUID]): ConnectionIO[Unit] =
+    if (linkIds.isEmpty) ().pure[ConnectionIO]
+    else
+      linkRepo.findByTaskId(taskId).flatMap { links =>
+        val ownIds = links.map(_.id).toSet
+        linkIds.filter(ownIds.contains).toList.traverse_(linkRepo.deleteById)
+      }
+
   def updateTask(
     taskId: UUID,
     newVersionContent: TaskVersion,
     linkVersionUpdates: Seq[LinkVersion],
     newLinks: Seq[LinkWithOneVersion],
     labelIds: Seq[UUID] = Seq.empty,
-    archived: Boolean = false
+    archived: Boolean = false,
+    linksToDelete: Seq[UUID] = Seq.empty
   ): IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] = {
     logger.info(s"Updating task ${sp(taskId)}, with ${sp(newVersionContent)} and ${sp(linkVersionUpdates)}")
     (for {
@@ -181,6 +191,7 @@ class TaskService(
         } yield LinkWithOneVersion(link, savedVersion)
       }
       savedNewLinks <- insertLinksWithVersions(taskId, newLinks)
+      _ <- deleteLinksOfTask(taskId, linksToDelete)
       _ <- taskLabelAssignmentRepo.deleteAllByTaskId(taskId)
       _ <- labelIds.toList.traverse(labelId =>
         taskLabelAssignmentRepo.insert(TaskLabelAssignment(taskId, labelId, newVersionContent.updatedAt))

@@ -187,6 +187,26 @@ class TaskServiceTest
         .unsafeToFuture()
     }
 
+    "delete the links that were asked to be deleted and only those of the task" in {
+      val foreignLinkId = UUID.randomUUID()
+
+      (taskRepo.findById _).expects(task.id).returns(task.pure[ConnectionIO])
+      (taskVersionRepo.findLatestByTaskId _).expects(task.id).returns(firstVersion.pure[ConnectionIO])
+      (linkRepo.findByTaskId _).expects(task.id).returns(List(link1, link2).pure[ConnectionIO])
+      (linkRepo.deleteById _).expects(link1.id).returns(1.pure[ConnectionIO])
+      (taskLabelAssignmentRepo.deleteAllByTaskId _).expects(task.id).returns(0.pure[ConnectionIO])
+
+      taskService
+        .updateTask(task.id, firstVersion, Seq.empty, Seq.empty, linksToDelete = Seq(link1.id, foreignLinkId))
+        .map { case (_, updatedLinks, createdLinks) =>
+          val cp = new Checkpoint
+          cp(updatedLinks shouldBe empty)
+          cp.reportAll()
+          createdLinks shouldBe empty
+        }
+        .unsafeToFuture()
+    }
+
     "not insert a new link version when link content is unchanged" in {
       val sameContentLinkVersion =
         version1.copy(version = UUID.randomUUID(), createdAt = nowAsInstant, updatedAt = nowAsInstant)

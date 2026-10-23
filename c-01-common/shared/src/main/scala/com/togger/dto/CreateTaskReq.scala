@@ -109,7 +109,12 @@ case class CreateTaskAndLinksReq(task: CreateTaskReq, links: Seq[CreateLinkReq])
 /** Tasks created together, in list order, all or nothing. */
 case class CreateTasksBulkReq(tasks: Seq[CreateTaskAndLinksReq])
 
-case class UpdateTaskReq(task: UpdateTaskReq1, linksForUpdate: Seq[UpdateLinkReq], linksToCreate: Seq[CreateLinkReq])
+case class UpdateTaskReq(
+  task: UpdateTaskReq1,
+  linksForUpdate: Seq[UpdateLinkReq],
+  linksToCreate: Seq[CreateLinkReq],
+  linksToDelete: Seq[UUID]
+)
 
 case class FindLinkResp(
   id: UUID,

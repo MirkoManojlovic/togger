@@ -66,6 +66,7 @@ object ShowAllTasksBulkMapping {
         archived = dto.archived
       ),
       linksForUpdate = Seq.empty,
-      linksToCreate = Seq.empty
+      linksToCreate = Seq.empty,
+      linksToDelete = Seq.empty
     )
 }

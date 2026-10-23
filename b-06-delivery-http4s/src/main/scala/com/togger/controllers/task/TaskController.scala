@@ -282,7 +282,8 @@ class TaskController(
                   linkVersionUpdates,
                   newLinks,
                   taskDto.taskLabelIds,
-                  taskDto.archived
+                  taskDto.archived,
+                  dto.linksToDelete
                 )
                 .map { case (savedTask, updatedLinks, savedLinks) =>
                   val savedDto = FindTaskResp(
