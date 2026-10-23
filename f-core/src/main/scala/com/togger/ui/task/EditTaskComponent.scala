@@ -663,6 +663,7 @@ class EditTaskComponent(
       }),
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
       child.maybe <-- slackerVar.signal,
+      
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         editTaskCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0")),
@@ -686,10 +687,25 @@ class EditTaskComponent(
     * stays where it is; a click on a day of the calendar scrolls the pane to the entry of that day.
     */
   private def logEntriesCard(state: LogEntryPanelState): HtmlElement = {
+    // the card that was clicked is already in view, the pane only scrolls for a day clicked in the calendar
+    var scrollOnSelect = true
+    def selectFromCard(day: LocalDate): Unit =
+      if (!calendarSelectedDay.now().contains(day)) {
+        scrollOnSelect = false
+        calendarSelectedDay.set(Some(day))
+      }
     val pane = div(
       cls("max-h-[70vh] overflow-y-auto scroll-smooth pe-2"),
       if (state.logEntryComponents.isEmpty) p(cls("text-sm text-body-subtle"), "No log entries yet")
-      else state.logEntryComponents.map { case (day, entry) => div(logDateAttr := day.toString, entry.element) }
+      else
+        state.logEntryComponents.map { case (day, entry) =>
+          div(
+            logDateAttr := day.toString,
+            cls("cursor-pointer"),
+            onClick.mapToUnit --> (_ => selectFromCard(day)),
+            entry.element
+          )
+        }
     )
     // a click on the day that is already selected clears it, the day that was clicked is then the one before
     val clickedDays: EventStream[LocalDate] =
@@ -701,7 +717,10 @@ class EditTaskComponent(
         .collect { case (Some(day), _) => day }
     div(
       cls("w-full bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"),
-      clickedDays --> Observer[LocalDate](day => scrollToDay(pane.ref, day)),
+      clickedDays --> Observer[LocalDate] { day =>
+        if (scrollOnSelect) scrollToDay(pane.ref, day)
+        scrollOnSelect = true
+      },
       div(
         cls("flex items-start gap-6"),
         div(cls("min-w-0 flex-1"), h4(cls("text-lg font-semibold text-heading mb-2"), "Log entries"), pane),
