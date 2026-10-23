@@ -283,7 +283,9 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   accountService,
                   projectId,
-                  listParams
+                  listParams,
+                  toast,
+                  modalFactory
                 ).element
               case EditTaskStatusPage(projectId: UUID, taskStatusId: UUID) =>
                 new EditTaskStatusComponent(

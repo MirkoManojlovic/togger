@@ -5,13 +5,23 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.routes.Pages.{CreateTaskStatusPage, EditTaskStatusPage, ShowAllTaskStatusesPage}
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
+import com.togger.task.DefaultTaskStatus
+import com.togger.toast.ToastMessages
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.{
+  headerIconButtonCls,
+  iconButton,
+  rowButtonMarginCls,
+  rowIconButtonCls,
+  rowIconButtonDangerCls
+}
+import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
@@ -29,10 +39,12 @@ class ShowAllTaskStatusesComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   projectId: UUID,
-  params: ListParams
+  params: ListParams,
+  val toast: Toast,
+  modalFactory: ModalFactory
 )(implicit
   ioRuntime: IORuntime
-) {
+) extends ToastMessages {
 
   val stateFormVar = Var(Seq.empty[TaskStatusFormState])
 
@@ -64,6 +76,25 @@ class ShowAllTaskStatusesComponent(
           paginationVar.set(Some(PaginationState.fromResponse(response)))
         }
     }
+
+  private def deleteTaskStatus(state: TaskStatusFormState): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete task status '${state.name}'?"),
+      title = "Delete task status",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(taskStatusService.deleteTaskStatusById(state.id))
+        .toastMessageCodeBlock("Task status deleted successfully") {
+          spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
+        }
+        .unsafeRunAndForget()
+      close()
+    }
+
+  private def isDone(state: TaskStatusFormState): Boolean = state.name == DefaultTaskStatus.Done.statusName
 
   spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
@@ -124,6 +155,15 @@ class ShowAllTaskStatusesComponent(
                                   rowIconButtonCls,
                                   rowButtonMarginCls,
                                   onClick.mapToUnit --> (_ => router.route(EditTaskStatusPage(dto.projectId, dto.id)))
+                                ),
+                                Option.unless(isDone(dto))(
+                                  iconButton(
+                                    "Delete",
+                                    TgIcons.trashIcon(className = "w-4 h-4"),
+                                    rowIconButtonDangerCls,
+                                    rowButtonMarginCls,
+                                    onClick.mapToUnit --> (_ => deleteTaskStatus(dto))
+                                  )
                                 )
                               )
                             )
