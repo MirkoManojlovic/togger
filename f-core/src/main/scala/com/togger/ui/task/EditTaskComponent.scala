@@ -437,6 +437,19 @@ class EditTaskComponent(
       onClick.mapToUnit --> (_ => closeDialogOpen.set(true))
     )
 
+  private lazy val linksSection: HtmlElement =
+    div(
+      h4(cls("text-sm font-medium text-heading mb-2"), "Links"),
+      child <-- linksVar.signal.map { components =>
+        val (saved, added) = components.partition(_.formState.now().id.isDefined)
+        div(
+          div(cls("flex flex-wrap items-center gap-1.5 mb-2"), saved.map(link => TaskLinkBadges.badge(link.formState.now()))),
+          addNewLink,
+          added.map(_.htmlElement)
+        )
+      }
+    )
+
   lazy val addNewLink =
     TgHtmlButton
       .extraSmall("+")
@@ -473,10 +486,8 @@ class EditTaskComponent(
                 child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
                 nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 badges.element.amend(cls("mb-4")),
+                linksSection.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                child <-- linksVar.signal.map(taskLinkComponent =>
-                  div(addNewLink, taskLinkComponent.map(_.htmlElement))
-                ),
                 div(cls("flex justify-end gap-2"), archiveButton, closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
               )
             )
