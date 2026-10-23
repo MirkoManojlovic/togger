@@ -267,7 +267,7 @@ class CreateTaskComponent(
           )
         )
         .element
-        .amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0"))
+        .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
     )
 
 }
