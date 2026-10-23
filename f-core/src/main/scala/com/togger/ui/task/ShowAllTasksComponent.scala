@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.Pages._
+import com.togger.task.DefaultTaskStatus.{Backlog, Done, Todo, WontDo}
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -80,7 +81,14 @@ class ShowAllTasksComponent(
   private def showList(newParams: TaskListParams): Unit =
     router.route(ShowAllTasksPage(projectId, newParams))
 
-  private val browser = new TaskListBrowser(taskService, lookups, projectId, paramsVar, showList)
+  private val browser = new TaskListBrowser(
+    taskService,
+    lookups,
+    projectId,
+    paramsVar,
+    showList,
+    defaultDeselectedStatuses = Set(Todo, Backlog, Done, WontDo)
+  )
 
   val stateFormVar = browser.rowsVar
   private val visibleRowsSignal = browser.visibleRowsSignal

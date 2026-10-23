@@ -7,6 +7,7 @@ import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
 import com.togger.routes.TaskListParams
+import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -36,7 +37,8 @@ class TaskListBrowser(
   projectId: UUID,
   paramsVar: Var[TaskListParams],
   navigate: TaskListParams => Unit,
-  searchPlaceholder: String = "Search all tasks by name, description"
+  searchPlaceholder: String = "Search all tasks by name, description",
+  defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Done, WontDo, Backlog)
 )(implicit ioRuntime: IORuntime) {
 
   import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
@@ -45,7 +47,7 @@ class TaskListBrowser(
 
   private val paginationVar = Var(Option.empty[PaginationState])
   private val showArchivedVar = Var(false)
-  private val defaultDeselectedStatusNames = Set(Done, WontDo, Backlog).map(_.statusName)
+  private val defaultDeselectedStatusNames = defaultDeselectedStatuses.map(_.toStringWithEmoji)
 
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
