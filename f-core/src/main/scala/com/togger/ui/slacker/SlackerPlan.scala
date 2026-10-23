@@ -38,6 +38,7 @@ object SlackerPlan {
       taskId = task.id,
       name = task.name,
       statusName = task.taskStatus.name,
+      statusEmoji = task.taskStatus.emoji,
       missingDays = SlackerMissingDays.of(
         task.logEntries.map(e => GanttLogStatus.toLocalDate(e.createdAt)),
         task.startDate,
@@ -68,7 +69,7 @@ object SlackerPlan {
       .sortBy { case (rank, _) => rank.getOrElse(Int.MaxValue) }
       .map { case (_, sameStatus) =>
         val sorted = sameStatus.sortBy(_.name)
-        TeamDailyStatusGroup(sorted.head.statusName, sorted)
+        TeamDailyStatusGroup(sorted.head.statusName, sorted, sorted.head.statusEmoji)
       }
 
   def daysOf(task: TeamDailyTaskPlan, pastFirst: Set[UUID]): Seq[LocalDate] =

@@ -463,7 +463,7 @@ class TeamDailyComponent(
   private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
     div(
       cls("mb-2 ms-3"),
-      h5(cls("mb-1 text-sm font-medium text-body"), s"${group.statusName} (${group.tasks.size})"),
+      h5(cls("mb-1 text-sm font-medium text-body"), s"${group.statusLabel} (${group.tasks.size})"),
       group.tasks.map(taskRow)
     )
 
@@ -561,7 +561,7 @@ class TeamDailyComponent(
       ),
       badgeRow(
         TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+
-          BadgeSpec(task.statusName, TaskStatusBadgeColor.of(task.statusName))
+          BadgeSpec(task.statusLabel, TaskStatusBadgeColor.of(task.statusName))
       ),
       badgeRow(
         TeamDailyTaskBadges.dates(task, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)

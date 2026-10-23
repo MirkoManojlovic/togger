@@ -20,8 +20,11 @@ case class TeamDailyTaskPlan(
   startDate: LocalDate,
   dueDate: LocalDate,
   logEntries: Seq[LogEntryDto] = Seq.empty,
-  description: String = ""
+  description: String = "",
+  statusEmoji: String = ""
 ) {
+
+  def statusLabel: String = s"$statusEmoji $statusName".trim
 
   /** The newest log entry, shown while filling in today's so the user sees what was said last. */
   def latestEntry: Option[LogEntryDto] = logEntries.maxByOption(_.createdAt)
@@ -30,7 +33,10 @@ case class TeamDailyTaskPlan(
 case class TeamDailyMemberPlan(member: SearchAccountDto, tasks: Seq[TeamDailyTaskPlan])
 
 /** The tasks of one member that have one status. */
-case class TeamDailyStatusGroup(statusName: String, tasks: Seq[TeamDailyTaskPlan])
+case class TeamDailyStatusGroup(statusName: String, tasks: Seq[TeamDailyTaskPlan], statusEmoji: String = "") {
+
+  def statusLabel: String = s"$statusEmoji $statusName".trim
+}
 
 sealed trait TeamDailyPosition
 object TeamDailyPosition {
@@ -65,6 +71,7 @@ object TeamDailyPlan {
       taskId = task.id,
       name = task.name,
       statusName = task.taskStatus.name,
+      statusEmoji = task.taskStatus.emoji,
       missingDays = MissingLogDays.of(task.logEntries.map(e => GanttLogStatus.toLocalDate(e.createdAt)), today),
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
@@ -95,7 +102,7 @@ object TeamDailyPlan {
       .sortBy { case (rank, _) => rank.getOrElse(Int.MaxValue) }
       .map { case (_, sameStatus) =>
         val sorted = sameStatus.sortBy(_.name)
-        TeamDailyStatusGroup(sorted.head.statusName, sorted)
+        TeamDailyStatusGroup(sorted.head.statusName, sorted, sorted.head.statusEmoji)
       }
 
   /** Every place Next walks through: choosing members, choosing tasks, each task of each member, then the review. */
