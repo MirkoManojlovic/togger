@@ -66,7 +66,7 @@ class CreateDataExportConfigComponent(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               exportPathInput.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )

@@ -152,7 +152,7 @@ class CreateOrganizationComponent(
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               findAccountsComponent.element.amend(width.px(500)),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )

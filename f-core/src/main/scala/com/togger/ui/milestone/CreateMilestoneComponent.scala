@@ -162,7 +162,7 @@ class CreateMilestoneComponent(
                   )
                 )
               ),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )

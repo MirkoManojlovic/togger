@@ -272,7 +272,7 @@ class CreateTaskComponent(
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
-                TgHtmlButton.create(EventStream.fromValue(false))
+                div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
               )
             )
           )

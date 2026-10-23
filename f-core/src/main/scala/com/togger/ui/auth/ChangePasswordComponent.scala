@@ -104,7 +104,7 @@ class ChangePasswordComponent(
                 oldPasswordInput.htmlElement.amend(cls("mb-4")),
                 newPasswordInput.htmlElement.amend(cls("mb-4")),
                 confirmNewPasswordInput.htmlElement.amend(cls("mb-4")),
-                TgHtmlButton.update(formState.signal.changes.map(_.hasErrors))
+                div(cls("flex justify-end"), TgHtmlButton.updateSmall(formState.signal.changes.map(_.hasErrors)))
               )
             )
           )

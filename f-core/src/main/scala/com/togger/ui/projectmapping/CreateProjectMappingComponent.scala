@@ -67,7 +67,7 @@ class CreateProjectMappingComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               projectIdDumpInput.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.create(formState.signal.changes.map(_.hasErrors))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(formState.signal.changes.map(_.hasErrors)))
             )
           )
         )

@@ -127,7 +127,7 @@ class EditTaskTemplateComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               div(cls("mb-4"), child <-- TaskTemplateFormSupport.labelPicker(selectableLabelsVar.signal, formState)),
               bodyEditor.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.update(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             ),
             historyPanel
           )

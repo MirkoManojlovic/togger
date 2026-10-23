@@ -96,7 +96,7 @@ class CreateProjectLabelComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionInput.htmlElement.amend(cls("mb-4")),
                 categorySelect.htmlElement.amend(cls("mb-4")),
-                TgHtmlButton.create(EventStream.fromValue(false))
+                div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
               )
             )
           )

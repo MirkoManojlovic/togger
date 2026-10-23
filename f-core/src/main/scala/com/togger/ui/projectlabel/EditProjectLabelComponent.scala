@@ -110,7 +110,7 @@ class EditProjectLabelComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 descriptionInput.htmlElement.amend(cls("mb-4")),
                 categorySelect.htmlElement.amend(cls("mb-4")),
-                TgHtmlButton.update(EventStream.fromValue(false))
+                div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
               )
             )
           )

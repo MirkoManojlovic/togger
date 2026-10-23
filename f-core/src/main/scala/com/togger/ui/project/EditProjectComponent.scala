@@ -210,7 +210,7 @@ class EditProjectComponent(
               workDaysSelect.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
-              TgHtmlButton.update(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
         )

@@ -66,7 +66,7 @@ class CreateDataImportConfigComponent(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               importPathInput.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )

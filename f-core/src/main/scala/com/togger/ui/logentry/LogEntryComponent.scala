@@ -412,7 +412,10 @@ class LogEntryComponent(
               div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(memberName)),
               textExternalEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 mb-4 text-xs text-body-subtle"), "@ date  $ status"),
-              div(TgHtmlButton.primary(buttonLabel))
+              div(
+                cls("flex justify-end"),
+                button(cls(TgHtmlButton.tailwindSmallButton), buttonLabel)
+              )
             )
           )
         )

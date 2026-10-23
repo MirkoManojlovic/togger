@@ -233,7 +233,7 @@ class EditMilestoneComponent(
                   _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
                 )
               ),
-              TgHtmlButton.update(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
         )

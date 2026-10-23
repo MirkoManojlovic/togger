@@ -56,13 +56,7 @@ object TgHtmlButton {
         float.right
       )
 
-  def update(
-    disabledEvents: EventStream[Boolean],
-    debounceTimeInMillis: Int = debounceTimeInMillisDefault
-  ): HtmlButton =
-    generic(disabledEvents, "Update", debounceTimeInMillis)
-
-  /** The submit button without the full width of [[update]], for a form that aligns it to a corner. */
+  /** The submit button for a form that aligns it to the bottom right corner. */
   def updateSmall(
     disabledEvents: EventStream[Boolean],
     debounceTimeInMillis: Int = debounceTimeInMillisDefault
@@ -71,13 +65,7 @@ object TgHtmlButton {
       .withError(disabledEvents, debounceTimeInMillis)
       .amend(cls(tailwindSmallButton), "Update", typ("submit"))
 
-  def create(
-    disabledEvents: EventStream[Boolean],
-    debounceTimeInMillis: Int = debounceTimeInMillisDefault
-  ): HtmlButton =
-    generic(disabledEvents, "Create", debounceTimeInMillis)
-
-  /** The submit button without the full width of [[create]], for a form that lays its buttons out in a row. */
+  /** The submit button for a form that aligns it to the bottom right corner or lays its buttons out in a row. */
   def createSmall(
     disabledEvents: EventStream[Boolean],
     debounceTimeInMillis: Int = debounceTimeInMillisDefault

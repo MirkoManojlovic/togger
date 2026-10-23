@@ -86,7 +86,7 @@ class CreateTaskTemplateComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               div(cls("mb-4"), child <-- TaskTemplateFormSupport.labelPicker(selectableLabelsVar.signal, formState)),
               bodyEditor.htmlElement.amend(cls("mb-4")),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )

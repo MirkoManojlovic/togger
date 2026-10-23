@@ -214,7 +214,7 @@ class CreateProjectComponent(
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
               findAccountsComponent.element.amend(width.px(500)),
-              TgHtmlButton.create(EventStream.fromValue(false))
+              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )
