@@ -471,7 +471,7 @@ class EditTaskComponent(
                 onSubmit.preventDefault
                   .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
                 child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
-                nameInput.htmlElement.amend(cls("mb-4")),
+                nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 badges.element.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
