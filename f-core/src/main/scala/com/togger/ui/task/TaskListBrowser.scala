@@ -10,6 +10,7 @@ import com.togger.routes.TaskListParams
 import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.auth.TgCheckbox
 import com.togger.ui.components.{
@@ -99,7 +100,7 @@ class TaskListBrowser(
 
   private val statusFilter = new FilterSpec[TaskStatusesState](
     source = statusesVar,
-    optionsOf = _.taskStatusesSorted.map(status => status.id.toString -> status.name),
+    optionsOf = _.taskStatusesSorted.map(status => status.id.toString -> status.badgeText),
     defaultSelectedOf = _.collect { case (id, name) if !defaultDeselectedStatusNames.contains(name) => id }.toSet,
     chosenIn = _.statuses,
     withChosen = (listParams, chosen) => listParams.copy(statuses = chosen)
