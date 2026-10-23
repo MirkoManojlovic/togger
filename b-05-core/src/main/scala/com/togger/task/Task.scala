@@ -97,7 +97,11 @@ case class TaskStatus(
   emoji: String,
   createdAt: Instant,
   updatedAt: Instant
-)
+) {
+
+  def toStringWithEmoji: String = s"$emoji $name"
+
+}
 
 case class TaskLabel(
   id: UUID,
