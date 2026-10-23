@@ -176,11 +176,6 @@ class LogEntryComponent(
                 .headerNoFooter(
                   header = TgCard.CardHeader.html(
                     div(
-                      cls("flex flex-col"),
-                      div(
-                        cls("flex justify-end mb-2"),
-                        toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3"))
-                      ),
                       div(
                         // a badge never breaks its text; those that do not fit the row go on the lines below
                         cls("flex flex-wrap items-center gap-2 [&>*]:whitespace-nowrap"),
@@ -196,7 +191,10 @@ class LogEntryComponent(
                     TgCard.CardHeaderSize.H3
                   ),
                   body = TgCard.HtmlCardContent(
-                    div(tgMarkdown.toLaminarDiv(state.textExternal))
+                    div(
+                      tgMarkdown.toLaminarDiv(state.textExternal),
+                      div(cls("flex justify-end mt-2"), toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3")))
+                    )
                   )
                 )
                 .element
