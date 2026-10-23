@@ -15,6 +15,14 @@ trait TgRouter[PAGE <: FrontendPage] {
   /** Re-renders the current page without adding a history entry. */
   def refresh(): Unit
 
+  /** Lets the page on screen hold up a navigation: every navigation away from it is handed to the guard together with
+    * what carries it out, and happens only if the guard calls it. Only one guard is kept, the latest.
+    */
+  def setLeaveGuard(guard: (() => Unit) => Unit): Unit
+
+  /** Takes the guard away if it still is the one that is set, so the page that took over keeps its own. */
+  def clearLeaveGuard(guard: (() => Unit) => Unit): Unit
+
   val currentPageSignal: StrictSignal[PAGE]
 
   def absoluteUrlForPage(page: PAGE): String
@@ -58,14 +66,23 @@ class TgRouterImpl(
     )
   }
 
+  private var leaveGuard: Option[(() => Unit) => Unit] = None
+
+  override def setLeaveGuard(guard: (() => Unit) => Unit): Unit = leaveGuard = Some(guard)
+
+  override def clearLeaveGuard(guard: (() => Unit) => Unit): Unit =
+    if (leaveGuard.contains(guard)) leaveGuard = None
+
+  private def guarded(navigate: () => Unit): Unit = leaveGuard.fold(navigate())(_(navigate))
+
   override def route(page: FrontendPage): Unit =
-    router.pushState(page)
+    guarded(() => router.pushState(page))
 
   override def forcePage(page: FrontendPage): Unit =
-    router.forcePage(page)
+    guarded(() => router.forcePage(page))
 
   override def refresh(): Unit =
-    router.replaceState(router.currentPageSignal.now())
+    guarded(() => router.replaceState(router.currentPageSignal.now()))
 
   override val currentPageSignal: StrictSignal[FrontendPage] =
     router.currentPageSignal

@@ -459,7 +459,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                       onClose,
                       scope = Some(scope),
                       onSubmitted = onSubmitted
-                    ).element
+                    ).element,
+                  modalFactory
                 ).element
               case CreateProjectPage(organizationId) =>
                 new CreateProjectComponent(

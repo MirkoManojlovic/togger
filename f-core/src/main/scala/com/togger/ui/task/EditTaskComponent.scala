@@ -18,7 +18,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.components._
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.modal.ModalStyles
+import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.slacker.{SlackerMissingDays, SlackerScope}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.task.bulk.BulkTask
@@ -61,7 +61,8 @@ class EditTaskComponent(
   router: TgRouter[FrontendPage],
   val toast: Toast,
   tgMarkdown: TgMarkdown,
-  createSlacker: (SlackerScope, () => Unit, () => Unit) => HtmlElement
+  createSlacker: (SlackerScope, () => Unit, () => Unit) => HtmlElement,
+  modalFactory: ModalFactory
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -295,19 +296,18 @@ class EditTaskComponent(
     )
   }
 
-  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], BulkTask)] {
-    case (form, linkComponents, edited) =>
-      val dto = updateRequest(
-        form,
-        linkComponents,
-        edited,
-        edited.statusId.get,
-        if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
-      )
-      spinnerService
-        .runWithSpinner(sendUpdate(dto))
-        .toastMessageJustMessage("Task updated successfully")
-        .unsafeRunAndForget()
+  val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], BulkTask)] { case (form, linkComponents, edited) =>
+    val dto = updateRequest(
+      form,
+      linkComponents,
+      edited,
+      edited.statusId.get,
+      if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
+    )
+    spinnerService
+      .runWithSpinner(sendUpdate(dto))
+      .toastMessageJustMessage("Task updated successfully")
+      .unsafeRunAndForget()
   }
 
   // ---- close
@@ -373,7 +373,9 @@ class EditTaskComponent(
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
         input(
           typ("date"),
-          cls("bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base block w-full px-3 py-2.5"),
+          cls(
+            "bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base block w-full px-3 py-2.5"
+          ),
           controlled(value <-- closeEndDate.signal, onInput.mapToValue --> closeEndDate)
         ),
         children <-- closeEndDateErrors.map(_.map(error => p(cls("mt-2 text-sm text-danger"), error))),
@@ -398,7 +400,8 @@ class EditTaskComponent(
       )
     )
 
-  /** An update call that only flips the archived flag; the rest of the form goes along as the Update button sends it. */
+  /** An update call that only flips the archived flag; the rest of the form goes along as the Update button sends it.
+    */
   private def setArchived(archived: Boolean): Unit = {
     val form = formState.now()
     val edited = badges.taskVar.now()
@@ -425,6 +428,18 @@ class EditTaskComponent(
   private val currentDetails: Signal[(String, String, BulkTask)] =
     formState.signal.combineWith(badges.taskVar.signal).map { case (form, task) => (form.name, form.description, task) }
 
+  private def detailsDiffer(saved: Option[(String, String, BulkTask)], current: (String, String, BulkTask)): Boolean =
+    saved.exists(_ != current)
+
+  private def linksDiffer(saved: Option[Seq[TaskLinkFormData]], current: Seq[TaskLinkFormData]): Boolean =
+    saved.exists(_ != current)
+
+  private def hasUnsavedChanges(): Boolean = {
+    val form = formState.now()
+    detailsDiffer(savedDetails.now(), (form.name, form.description, badges.taskVar.now())) ||
+    linksDiffer(savedLinks.now(), linksVar.now().map(_.formState.now()))
+  }
+
   private val currentLinks: Signal[Seq[TaskLinkFormData]] =
     linksVar.signal.flatMapSwitch(components =>
       if (components.isEmpty) Val(Seq.empty) else Signal.sequence(components.map(_.formState.signal))
@@ -447,15 +462,32 @@ class EditTaskComponent(
       )
     )
 
+  /** Held against every navigation away from the page: asks first when there is something that was not saved. */
+  private val leaveGuard: (() => Unit) => Unit = proceed =>
+    if (hasUnsavedChanges())
+      modalFactory.plainModal(
+        message = PlainTextModalMessage("You have unsaved changes. Leave this page without pressing Update?"),
+        title = "Unsaved changes",
+        variant = PlainModalVariant.Danger,
+        confirmButtonMsg = "Leave without saving",
+        cancelButtonMsg = "Stay"
+      ) { close =>
+        close()
+        proceed()
+      }
+    else proceed()
+
   private val unsavedNotes: HtmlElement =
     div(
       child.maybe <-- changedNote(
         "The task details have changed. Press Update to save them.",
-        savedDetails.signal.combineWith(currentDetails).map { case (saved, name, description, task) => saved.exists(_ != ((name, description, task))) }
+        savedDetails.signal.combineWith(currentDetails).map { case (saved, name, description, task) =>
+          detailsDiffer(saved, (name, description, task))
+        }
       ),
       child.maybe <-- changedNote(
         "The links have changed. Press Update to save them.",
-        savedLinks.signal.combineWith(currentLinks).map { case (saved, current) => saved.exists(_ != current) }
+        savedLinks.signal.combineWith(currentLinks).map { case (saved, current) => linksDiffer(saved, current) }
       )
     )
 
@@ -594,6 +626,12 @@ class EditTaskComponent(
       display.flex,
       flexDirection.column,
       alignItems.center,
+      onMountUnmountCallback(_ => router.setLeaveGuard(leaveGuard), _ => router.clearLeaveGuard(leaveGuard)),
+      // the browser asks by itself when the tab is closed or reloaded
+      windowEvents(_.onBeforeUnload).filter(_ => hasUnsavedChanges()) --> (event => {
+        event.preventDefault()
+        event.returnValue = ""
+      }),
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
       child.maybe <-- slackerVar.signal,
       TgCard
@@ -610,7 +648,12 @@ class EditTaskComponent(
                 badges.element.amend(cls("mb-4")),
                 linksSection.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                div(cls("flex justify-end gap-2"), archiveButton, closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+                div(
+                  cls("flex justify-end gap-2"),
+                  archiveButton,
+                  closeButton,
+                  TgHtmlButton.updateSmall(EventStream.fromValue(false))
+                )
               )
             )
           )
@@ -646,5 +689,3 @@ class EditTaskComponent(
     )
 
 }
-
-
