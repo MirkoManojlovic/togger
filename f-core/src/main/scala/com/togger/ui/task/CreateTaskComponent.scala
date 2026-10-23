@@ -132,8 +132,8 @@ class CreateTaskComponent(
     selectedTemplateVar.set(choice.map(_.id))
   }
 
-  val firstLink = new TaskLinkComponent()
-  val linksVar = Var(Seq(firstLink))
+  private val linksSection = new TaskLinksSection
+  val linksVar: Var[Seq[TaskLinkComponent]] = linksSection.linksVar
 
   spinnerService
     .runWithSpinner {
@@ -192,15 +192,6 @@ class CreateTaskComponent(
       )
     )
   }
-
-  lazy val addNewLink =
-    TgHtmlButton
-      .extraSmall("+")
-      .amend(
-        typ("button"),
-        cls("mb-4"),
-        onClick --> (_ => linksVar.update(state => state :+ new TaskLinkComponent()))
-      )
 
   lazy val submitter = Observer[(CreateTaskForm, Seq[TaskLinkComponent], BulkTask)] {
     case (form, linkComponents, created) =>
@@ -262,22 +253,21 @@ class CreateTaskComponent(
                 onSubmit.preventDefault
                   .mapTo(formState.now() -> linksVar.now())
                   .compose(_.withCurrentValueOf(badges.taskVar.signal)) --> submitter,
-                nameInput.htmlElement.amend(cls("mb-4")),
+                nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 badges.element.amend(cls("mb-4")),
+                linksSection.element.amend(cls("mb-4")),
                 div(
                   cls("mb-4"),
                   child <-- TaskTemplatePicker(templatesVar.signal, selectedTemplateVar.signal, onTemplatePicked)
                 ),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                child <-- linksVar.signal.map(taskLinkComponent =>
-                  div(addNewLink, taskLinkComponent.map(_.htmlElement))
-                ),
-                div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
+                div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
               )
             )
           )
         )
         .element
+        .amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0"))
     )
 
 }
