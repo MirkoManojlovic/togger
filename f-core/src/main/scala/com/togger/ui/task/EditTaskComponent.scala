@@ -289,7 +289,8 @@ class EditTaskComponent(
           name = linkForm.name,
           url = linkForm.url
         )
-      }
+      },
+      linksToDelete = linksToDelete.now().toSeq
     )
   }
 
@@ -303,7 +304,7 @@ class EditTaskComponent(
         if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
       )
       spinnerService
-        .runWithSpinner(taskService.updateTask(dto))
+        .runWithSpinner(sendUpdate(dto))
         .toastMessageJustMessage("Task updated successfully")
         .unsafeRunAndForget()
   }
@@ -323,7 +324,7 @@ class EditTaskComponent(
     TaskClose.doneStatus(badges.lookupsNow().statuses).fold(toast.error("This project has no Done status")) { done =>
       val dto = updateRequest(formState.now(), linksVar.now(), badges.taskVar.now(), done.id, Some(endDate))
       spinnerService
-        .runWithSpinner(taskService.updateTask(dto))
+        .runWithSpinner(sendUpdate(dto))
         .toastMessageCodeBlock("Task closed")(router.refresh())
         .unsafeRunAndForget()
     }
@@ -408,7 +409,7 @@ class EditTaskComponent(
       Option.when(form.endDate.nonEmpty)(LocalDate.parse(form.endDate))
     )
     spinnerService
-      .runWithSpinner(taskService.updateTask(dto))
+      .runWithSpinner(sendUpdate(dto))
       .toastMessageCodeBlock(if (archived) "Task archived" else "Task unarchived")(
         formState.update(_.copy(archived = archived))
       )
@@ -439,6 +440,19 @@ class EditTaskComponent(
 
   /** The popup that is open: the one that creates a link, or the one that changes the link of a badge. */
   private val openLinkEditor: Var[Option[Option[TaskLinkComponent]]] = Var(None)
+
+  /** Saved links that were removed, deleted by the backend with the next update of the task. */
+  private val linksToDelete = Var(Set.empty[UUID])
+
+  private def removeLink(link: TaskLinkComponent): Unit = {
+    closeLinkEditor()
+    link.formState.now().id.foreach(id => linksToDelete.update(_ + id))
+    linksVar.update(_.filterNot(_ eq link))
+  }
+
+  /** The update call; what it was told to delete is gone once it went through. */
+  private def sendUpdate(dto: UpdateTaskReq): IO[TgResponseTypes.TgResp[FindTaskResp]] =
+    taskService.updateTask(dto).flatTap(response => IO(if (response.isRight) linksToDelete.set(Set.empty)))
 
   private def closeLinkEditor(): Unit = openLinkEditor.set(None)
 
@@ -488,7 +502,7 @@ class EditTaskComponent(
                   Some(link),
                   span(
                     child <-- link.formState.signal.map(data =>
-                      TaskLinkBadges.badge(data, () => openLinkEditor.set(Some(Some(link))))
+                      TaskLinkBadges.badge(data, () => openLinkEditor.set(Some(Some(link))), () => removeLink(link))
                     )
                   )
                 )
