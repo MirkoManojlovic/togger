@@ -14,15 +14,15 @@ import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components._
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
-import com.togger.ui.slacker.{SlackerMissingDays, SlackerScope}
 import com.togger.ui.project.ProjectService
-import com.togger.ui.task.bulk.BulkTask
+import com.togger.ui.slacker.{SlackerMissingDays, SlackerScope}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.BulkTask
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -208,7 +208,8 @@ class EditTaskComponent(
                             workDaysVar.now()
                           )
 
-                        calendarSelectedDay.set(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries, workDaysVar.now()))
+                        calendarSelectedDay
+                          .set(LogEntryCalendarComponent.lastCalendarDay(dto.logEntries, workDaysVar.now()))
                         val calendarComponent = new LogEntryCalendarComponent(
                           dto.logEntries,
                           tgDateFormater,
@@ -663,7 +664,6 @@ class EditTaskComponent(
       }),
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
       child.maybe <-- slackerVar.signal,
-      
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         editTaskCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0")),
@@ -695,13 +695,17 @@ class EditTaskComponent(
         calendarSelectedDay.set(Some(day))
       }
     val pane = div(
-      cls("max-h-[70vh] overflow-y-auto scroll-smooth pe-2"),
+      // room around the cards for the ring of the selected one, which the scrolling pane would cut
+      cls("max-h-[70vh] overflow-y-auto scroll-smooth p-1 pe-2"),
       if (state.logEntryComponents.isEmpty) p(cls("text-sm text-body-subtle"), "No log entries yet")
       else
         state.logEntryComponents.map { case (day, entry) =>
           div(
             logDateAttr := day.toString,
-            cls("cursor-pointer"),
+            cls("cursor-pointer rounded-base"),
+            cls <-- calendarSelectedDay.signal.map(selected =>
+              if (selected.contains(day)) "ring-2 ring-blue-400" else ""
+            ),
             onClick.mapToUnit --> (_ => selectFromCard(day)),
             entry.element
           )
