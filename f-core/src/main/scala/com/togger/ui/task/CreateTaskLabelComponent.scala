@@ -15,6 +15,8 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.pagination.PaginatedLoader
+import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
+import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
@@ -25,7 +27,8 @@ import java.util.UUID
 case class CreateTaskLabelForm(
   projectId: UUID = UUID.randomUUID(),
   name: String = "",
-  description: String = ""
+  description: String = "",
+  emoji: String = ""
 )
 
 class CreateTaskLabelComponent(
@@ -34,6 +37,7 @@ class CreateTaskLabelComponent(
   tgClock: TgClock,
   accountService: AccountService,
   projectId: UUID,
+  localStorage: LocalStorage,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -44,7 +48,8 @@ class CreateTaskLabelComponent(
     val dto = CreateTaskLabelReq(
       projectId = form.projectId,
       name = form.name,
-      description = form.description
+      description = form.description,
+      emoji = form.emoji
     )
     spinnerService
       .runWithSpinner(taskLabelService.createTaskLabel(dto))
@@ -66,6 +71,13 @@ class CreateTaskLabelComponent(
     tgInputType = TgInputType.Text
   )
 
+  private val emojiInput = formState.tgEmojiPicker(
+    inputAndUpdater = selectorAndUpdaterMacro(_.emoji),
+    errors = EventStream.empty,
+    labelValue = "Label emoji",
+    localStorage = localStorage
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -76,6 +88,7 @@ class CreateTaskLabelComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
+              emojiInput.htmlElement.amend(cls("mb-4")),
               descriptionInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.create(EventStream.fromValue(false))
             )

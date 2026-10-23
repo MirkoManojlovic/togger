@@ -305,6 +305,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgClock,
                   accountService,
                   projectId,
+                  localStorage,
                   toast
                 ).element
               case ShowAllTaskLabelsPage(projectId, listParams) =>
@@ -324,6 +325,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectId,
                   taskLabelId,
+                  localStorage,
                   toast
                 ).element
               case CreateTaskTemplatePage(projectId: UUID) =>
