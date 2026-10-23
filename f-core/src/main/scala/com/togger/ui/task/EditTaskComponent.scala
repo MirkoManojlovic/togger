@@ -13,7 +13,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgCheckbox, TgInputType}
+import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components._
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
@@ -71,6 +71,13 @@ class EditTaskComponent(
   val workDaysVar = Var(Set.empty[DayOfWeek])
 
   private val tgDateFormater = new TgDateFormater
+
+  private val ArchiveButtonCls =
+    "text-fg-warning bg-warning-soft border border-warning-subtle hover:bg-warning-medium focus:ring-4 " +
+      "focus:ring-warning-subtle font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
+  private val UnarchiveButtonCls =
+    "text-white bg-brand border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium " +
+      "font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
 
   private val badges = new TaskFormBadges(
     BulkTask(
@@ -389,6 +396,39 @@ class EditTaskComponent(
       )
     )
 
+  /** An update call that only flips the archived flag; the rest of the form goes along as the Update button sends it. */
+  private def setArchived(archived: Boolean): Unit = {
+    val form = formState.now()
+    val edited = badges.taskVar.now()
+    val dto = updateRequest(
+      form.copy(archived = archived),
+      linksVar.now(),
+      edited,
+      edited.statusId.get,
+      Option.when(form.endDate.nonEmpty)(LocalDate.parse(form.endDate))
+    )
+    spinnerService
+      .runWithSpinner(taskService.updateTask(dto))
+      .toastMessageCodeBlock(if (archived) "Task archived" else "Task unarchived")(
+        formState.update(_.copy(archived = archived))
+      )
+      .unsafeRunAndForget()
+  }
+
+  private val archivedNote =
+    div(
+      cls("p-4 mb-4 border-s-4 rounded-base bg-warning-soft border-warning-subtle text-fg-warning text-sm"),
+      "This task is archived."
+    )
+
+  private val archiveButton =
+    button(
+      typ("button"),
+      child.text <-- formState.signal.map(_.archived).distinct.map(if (_) "Unarchive" else "Archive"),
+      cls <-- formState.signal.map(_.archived).distinct.map(if (_) UnarchiveButtonCls else ArchiveButtonCls),
+      onClick.mapToUnit --> (_ => setArchived(!formState.now().archived))
+    )
+
   private val closeButton =
     button(
       typ("button"),
@@ -415,12 +455,6 @@ class EditTaskComponent(
     placeholderValue = "Describe the task"
   )
 
-  private val archivedCheckbox = TgCheckbox.checkBox(
-    inputSignal = formState.signal.map(_.archived),
-    inputStateUpdater = formState.updater[Boolean]((form, archived) => form.copy(archived = archived)),
-    labelValue = "Archived"
-  )
-
   val element =
     div(
       display.flex,
@@ -436,14 +470,14 @@ class EditTaskComponent(
               form(
                 onSubmit.preventDefault
                   .mapTo((formState.now(), linksVar.now(), badges.taskVar.now())) --> submitter,
+                child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
                 nameInput.htmlElement.amend(cls("mb-4")),
                 badges.element.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                archivedCheckbox.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
-                div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+                div(cls("flex justify-end gap-2"), archiveButton, closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
               )
             )
           )
