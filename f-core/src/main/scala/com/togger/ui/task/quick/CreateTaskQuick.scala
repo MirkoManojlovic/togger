@@ -740,15 +740,15 @@ class CreateTaskQuick(
           button(
             `type`("button"),
             cls(
-              "text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium font-medium rounded-base text-sm px-4 py-2.5 cursor-pointer"
+              "text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium font-medium rounded-base text-xs px-3 py-1.5 cursor-pointer"
             ),
             "Cancel",
             onClick.mapToUnit --> (_ => onClose())
           ),
           button(
             `type`("button"),
-            cls(TgHtmlButton.tailwindStandardButton),
-            "Create task",
+            cls(TgHtmlButton.tailwindSmallButton),
+            "Create",
             onClick.mapToUnit --> (_ => submit())
           )
         )
