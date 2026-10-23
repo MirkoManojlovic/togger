@@ -7,7 +7,7 @@ import com.raquo.laminar.api.L._
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.dto.organization.OrganizationProjectResp
-import com.togger.dto.{FindMilestoneResp, LogEntryDto}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
@@ -104,7 +104,9 @@ class SlackerComponent(
   localStorage: LocalStorage,
   toast: Toast,
   onClose: () => Unit,
-  stepsPerArrowClick: Int = TeamDailyComponent.DefaultStepsPerArrowClick
+  stepsPerArrowClick: Int = TeamDailyComponent.DefaultStepsPerArrowClick,
+  scope: Option[SlackerScope] = None,
+  onSubmitted: () => Unit = () => ()
 )(implicit ioRuntime: IORuntime) {
 
   private val DraftSaveDebounce = 300.millis
@@ -112,7 +114,7 @@ class SlackerComponent(
     "overflow-x-auto [&_ol]:w-max [&_ol]:min-w-full [&_li]:shrink-0 [&_li]:whitespace-nowrap"
   private val ProcessSteps = Seq("Choose tasks", "Fill in the status", "Review changes")
 
-  private val state = Var(SlackerState(projectId = currentProjectId))
+  private val state = Var(SlackerState(projectId = scope.map(_.projectId).orElse(currentProjectId)))
 
   private val currentAccountId: Option[UUID] = accountService.get.map(_.id)
   private val currentAccountName: String = accountService.get.map(LogEntryMemberBadge.nameOf).getOrElse("")
@@ -120,8 +122,10 @@ class SlackerComponent(
   private def draftStore(projectId: UUID): Option[SlackerDraftStore] =
     currentAccountId.map(new SlackerDraftStore(localStorage, _, projectId))
 
-  /** Off once the draft is discarded or submitted, so a save still waiting can't bring the draft back. */
-  private val persisting = Var(true)
+  /** Off once the draft is discarded or submitted, so a save still waiting can't bring the draft back. A scoped slacker
+    * never keeps a draft, it would replace the one of the project.
+    */
+  private val persisting = Var(scope.isEmpty)
 
   private def saveDraft(): Unit =
     if (persisting.now()) {
@@ -175,17 +179,17 @@ class SlackerComponent(
                   projectId,
                   projects,
                   milestones.toOption.flatMap(_.body).getOrElse(Seq.empty),
-                  SlackerPlan.build(
-                    found.body.getOrElse(Seq.empty),
-                    currentAccountId.get,
-                    workDaysOf(projects, projectId),
-                    tgClock.currentDate()
-                  )
+                  planOf(found.body.getOrElse(Seq.empty), workDaysOf(projects, projectId))
                 )
             }
         )
       }
       .unsafeRunAndForget()
+
+  private def planOf(tasks: Seq[FindTaskRespFull], workDays: Set[DayOfWeek]): Seq[TeamDailyTaskPlan] =
+    scope.fold(SlackerPlan.build(tasks, currentAccountId.get, workDays, tgClock.currentDate()))(
+      SlackerPlan.buildFor(tasks, _, workDays)
+    )
 
   private def applyPlan(
     projectId: UUID,
@@ -193,7 +197,7 @@ class SlackerComponent(
     milestones: Seq[FindMilestoneResp],
     plan: Seq[TeamDailyTaskPlan]
   ): Unit = {
-    val restored = draftStore(projectId).flatMap(_.load())
+    val restored = if (scope.isDefined) None else draftStore(projectId).flatMap(_.load())
     val ids = SlackerPlan.taskIds(plan)
     // a day that was logged in the meantime is no longer missing, so its draft is dropped
     val stillMissing = plan.flatMap(task => task.missingDays.map(SlackerEntryKey(task.taskId, _))).toSet
@@ -211,6 +215,7 @@ class SlackerComponent(
         position = SlackerPosition.ChooseTasks
       )
     )
+    if (scope.isDefined) jumpTo(_.isInstanceOf[SlackerPosition.Fill])
     if (restored.isDefined) toast.success("Restored your unfinished slacker")
   }
 
@@ -281,6 +286,7 @@ class SlackerComponent(
             if (failed.isEmpty) {
               toast.success(s"${results.size} log entries saved")
               closeDiscardingDraft()
+              onSubmitted()
             } else {
               val saved = results.collect { case (key, true) => key }.toSet
               state.update(current => current.copy(entries = current.entries -- saved))
@@ -452,7 +458,7 @@ class SlackerComponent(
 
   private val chooseTasks: HtmlElement =
     div(
-      div(cls("mb-4 max-w-sm"), child <-- projectPicker),
+      Option.when(scope.isEmpty)(div(cls("mb-4 max-w-sm"), child <-- projectPicker)),
       label(cls(labelCls), "Which tasks do you want to add missing statuses for?"),
       div(
         cls("flex gap-2 mb-2"),

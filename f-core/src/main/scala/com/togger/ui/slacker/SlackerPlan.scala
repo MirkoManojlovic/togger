@@ -17,6 +17,9 @@ object SlackerPosition {
 
 case class SlackerEntryKey(taskId: UUID, date: LocalDate)
 
+/** Narrows the slacker to one task of a project and to the days up to `until`, as when a task is being closed. */
+case class SlackerScope(taskId: UUID, projectId: UUID, until: LocalDate)
+
 /** What the slacker asks for: the open tasks of the user, in status order, with every day still to log. */
 object SlackerPlan {
 
@@ -32,6 +35,14 @@ object SlackerPlan {
       .sortBy { case (rank, task) => (rank, task.name) }
       .map { case (_, task) => taskPlan(task, workDays, today) }
       .filter(_.missingDays.nonEmpty)
+
+  /** The one task of a scope, whoever it is assigned to and whatever its status, if it misses a day up to `until`. */
+  def buildFor(tasks: Seq[FindTaskRespFull], scope: SlackerScope, workDays: Set[DayOfWeek]): Seq[TeamDailyTaskPlan] =
+    tasks
+      .find(_.id == scope.taskId)
+      .map(taskPlan(_, workDays, scope.until))
+      .filter(_.missingDays.nonEmpty)
+      .toSeq
 
   private def taskPlan(task: FindTaskRespFull, workDays: Set[DayOfWeek], today: LocalDate): TeamDailyTaskPlan =
     TeamDailyTaskPlan(
