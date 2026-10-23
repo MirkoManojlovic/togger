@@ -19,6 +19,7 @@ class TaskStatusRepoTest extends BusinessTgDbSpec with TgAccount with TgProject 
     id = UUID.randomUUID(),
     name = "In progress",
     description = "Doing things",
+    emoji = "🛠️",
     projectId = UUID.randomUUID(),
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant

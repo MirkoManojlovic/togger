@@ -21,14 +21,15 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
     import taskStatus._
     logAroundInfoQuery(
       insertStatement(TASK_STATUS_TABLE_FRAG)(fr"""
-        (name, description ,project_id, created_at, updated_at)
-        values ($name, $description, $projectId ,$createdAt, $updatedAt)
+        (name, description, emoji, project_id, created_at, updated_at)
+        values ($name, $description, $emoji, $projectId, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskStatus](
           "id",
           "project_id",
           "name",
           "description",
+          "emoji",
           "created_at",
           "updated_at"
         )
@@ -55,6 +56,7 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
       updateStatementUUID(TASK_STATUS_TABLE_FRAG)(taskStatus.id)(fr"""
            name = ${taskStatus.name},
            description = ${taskStatus.description},
+           emoji = ${taskStatus.emoji},
            project_id = ${taskStatus.projectId},
            updated_at = $updatedAt
          """).update
@@ -63,6 +65,7 @@ class TaskStatusRepoImpl extends TaskStatusRepo with TgLogging {
           "project_id",
           "name",
           "description",
+          "emoji",
           "created_at",
           "updated_at"
         )

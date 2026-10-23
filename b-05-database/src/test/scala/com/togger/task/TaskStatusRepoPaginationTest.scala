@@ -26,6 +26,7 @@ class TaskStatusRepoPaginationTest extends BusinessTgDbSpec with TgAccount with 
       projectId = projectId,
       name = name,
       description = s"$name description",
+      emoji = "📌",
       createdAt = nowAsInstant,
       updatedAt = nowAsInstant
     )

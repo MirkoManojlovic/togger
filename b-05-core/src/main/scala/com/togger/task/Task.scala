@@ -94,6 +94,7 @@ case class TaskStatus(
   projectId: UUID,
   name: String,
   description: String,
+  emoji: String,
   createdAt: Instant,
   updatedAt: Instant
 )

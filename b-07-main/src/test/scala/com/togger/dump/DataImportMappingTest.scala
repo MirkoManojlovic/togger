@@ -121,7 +121,7 @@ class DataImportMappingTest extends ExportImportTestSupport {
 
     "remap the project id and reconcile task statuses by name and description across a mapping" in { transactor =>
       def status(projectId: UUID, name: String, description: String) =
-        TaskStatus(UUID.randomUUID(), projectId, name, description, nowAsInstant, nowAsInstant)
+        TaskStatus(UUID.randomUUID(), projectId, name, description, "📌", nowAsInstant, nowAsInstant)
 
       val setup = for {
         projectData <- createExportableProject(newExportPath())

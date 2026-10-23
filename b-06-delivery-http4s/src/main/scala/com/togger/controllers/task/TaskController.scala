@@ -79,7 +79,8 @@ class TaskController(
         id = taskFull.taskStatus.id,
         projectId = taskFull.projectId,
         name = taskFull.taskStatus.name,
-        description = taskFull.taskStatus.description
+        description = taskFull.taskStatus.description,
+        emoji = taskFull.taskStatus.emoji
       ),
       priority = taskFull.priority,
       createdAt = taskFull.createdAt,

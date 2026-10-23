@@ -21,6 +21,7 @@ trait TgTaskStatus { self: TimeHelpers =>
     projectId = UUID.randomUUID(),
     name = "In progress",
     description = "Task in progress",
+    emoji = "▶️",
     createdAt = nowAsInstant,
     updatedAt = nowAsInstant
   )

@@ -25,7 +25,8 @@ class TaskStatusController(
               id = taskStatus.id,
               projectId = taskStatus.projectId,
               name = taskStatus.name,
-              description = taskStatus.description
+              description = taskStatus.description,
+          emoji = taskStatus.emoji
             )
           )
         }
@@ -44,7 +45,8 @@ class TaskStatusController(
                   id = taskStatus.id,
                   projectId = taskStatus.projectId,
                   name = taskStatus.name,
-                  description = taskStatus.description
+                  description = taskStatus.description,
+                  emoji = taskStatus.emoji
                 )
               )
             )
@@ -60,6 +62,7 @@ class TaskStatusController(
       projectId = dto.projectId,
       name = dto.name,
       description = dto.description,
+      emoji = dto.emoji,
       createdAt = now,
       updatedAt = now
     )
@@ -69,7 +72,8 @@ class TaskStatusController(
         id = taskStatus.id,
         projectId = taskStatus.projectId,
         name = taskStatus.name,
-        description = dto.description
+        description = dto.description,
+        emoji = taskStatus.emoji
       )
       TgJsonSuccess.justBodyRight(respDto)
     }
@@ -83,6 +87,7 @@ class TaskStatusController(
       projectId = dto.projectId,
       name = dto.name,
       description = dto.description,
+      emoji = dto.emoji,
       createdAt = now,
       updatedAt = now
     )
@@ -93,7 +98,8 @@ class TaskStatusController(
           id = taskStatus.id,
           projectId = taskStatus.projectId,
           name = taskStatus.name,
-          description = taskStatus.description
+          description = taskStatus.description,
+              emoji = taskStatus.emoji
         )
       )
     }

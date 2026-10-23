@@ -15,6 +15,7 @@ class DefaultTaskStatusService(tgClock: TgClock) {
         projectId = projectId,
         name = status.statusName,
         description = status.description,
+        emoji = status.emoji,
         createdAt = now,
         updatedAt = now
       )
