@@ -62,7 +62,8 @@ object ShowAllTasksBulkMapping {
         startDate = Some(dto.startDate),
         dueDate = Some(dto.dueDate),
         endDate = dto.endDate,
-        taskLabelIds = dto.taskLabels.map(_.id)
+        taskLabelIds = dto.taskLabels.map(_.id),
+        archived = dto.archived
       ),
       linksForUpdate = Seq.empty,
       linksToCreate = Seq.empty

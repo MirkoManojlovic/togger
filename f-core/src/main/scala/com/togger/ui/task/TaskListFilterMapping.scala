@@ -33,7 +33,8 @@ object TaskListFilterMapping {
     labels: FilterSelection,
     assignees: FilterSelection,
     milestones: FilterSelection,
-    search: String
+    search: String,
+    includeArchived: Boolean = false
   ): TaskFilter =
     TaskFilter(
       statusIds = uuids(statuses.idsToFilterBy),
@@ -41,7 +42,8 @@ object TaskListFilterMapping {
       labelIds = uuids(labels.idsToFilterBy),
       assigneeIds = uuids(assignees.idsToFilterBy),
       milestoneIds = uuids(milestones.idsToFilterBy.map(noMilestoneAsUuid)),
-      search = Option(search.trim).filter(_.nonEmpty)
+      search = Option(search.trim).filter(_.nonEmpty),
+      includeArchived = includeArchived
     )
 
   /** What goes into the URL for a widget: nothing while it still has the selection the screen starts with. */

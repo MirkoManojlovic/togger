@@ -13,7 +13,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.auth.{AccountService, TgCard, TgCheckbox, TgInputType}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components._
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
@@ -40,7 +40,8 @@ case class EditTaskForm(
   name: String = "",
   description: String = "",
   createBy: UUID = TgIds.UNASSIGNED_UUID,
-  endDate: String = ""
+  endDate: String = "",
+  archived: Boolean = false
 )
 
 class EditTaskComponent(
@@ -128,7 +129,8 @@ class EditTaskComponent(
                             name = dto.task.name,
                             description = dto.task.description,
                             createBy = dto.task.createdBy,
-                            endDate = dto.task.endDate.map(_.toString).getOrElse("")
+                            endDate = dto.task.endDate.map(_.toString).getOrElse(""),
+                            archived = dto.task.archived
                           )
                         )
                         badges.taskVar.set(
@@ -255,7 +257,8 @@ class EditTaskComponent(
           startDate = Some(edited.startDate),
           dueDate = Some(edited.dueDate),
           endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate)),
-          taskLabelIds = edited.labelIds.toSeq
+          taskLabelIds = edited.labelIds.toSeq,
+          archived = form.archived
         ),
         linksForUpdate = linksToUpdate.map { linkComponent =>
           val linkForm = linkComponent.formState.now()
@@ -309,6 +312,12 @@ class EditTaskComponent(
     orderError ++ weekendError
   }
 
+  private val archivedCheckbox = TgCheckbox.checkBox(
+    inputSignal = formState.signal.map(_.archived),
+    inputStateUpdater = formState.updater[Boolean]((form, archived) => form.copy(archived = archived)),
+    labelValue = "Archived"
+  )
+
   private val endDateInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
     errors = endDateErrors,
@@ -334,6 +343,7 @@ class EditTaskComponent(
                 badges.element.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 endDateInput.htmlElement.amend(cls("mb-4"), width("280px")),
+                archivedCheckbox.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),

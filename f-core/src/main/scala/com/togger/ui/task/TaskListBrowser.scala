@@ -1,14 +1,16 @@
 package com.togger.ui.task
 
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
 import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
 import com.togger.routes.TaskListParams
-import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
+import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
 import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.auth.TgCheckbox
 import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
@@ -33,14 +35,15 @@ class TaskListBrowser(
   paramsVar: Var[TaskListParams],
   navigate: TaskListParams => Unit,
   searchPlaceholder: String = "Search all tasks by name, description"
-) {
+)(implicit ioRuntime: IORuntime) {
 
   import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
 
   val rowsVar = Var(Seq.empty[FindTaskRespFull])
 
   private val paginationVar = Var(Option.empty[PaginationState])
-  private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
+  private val showArchivedVar = Var(false)
+  private val defaultDeselectedStatusNames = Set(Done, WontDo, Backlog).map(_.statusName)
 
   private val unassignedDto = SearchAccountDto(
     id = TgIds.UNASSIGNED_UUID,
@@ -168,7 +171,8 @@ class TaskListBrowser(
       labels = labelFilter.selection,
       assignees = assigneeFilter.selection,
       milestones = milestoneFilter.selection,
-      search = params.search
+      search = params.search,
+      includeArchived = showArchivedVar.now()
     )
 
   /** Reads the page the params ask for. A page past the end (its tasks were deleted) steps back to the last page. */
@@ -202,7 +206,11 @@ class TaskListBrowser(
       new TableFilterComponent(priorityFilter.itemsSignal, label = "Priority", priorityFilter.selectedIdsVar).element,
       new TableFilterComponent(labelFilter.itemsSignal, label = "Labels", labelFilter.selectedIdsVar).element,
       new TableFilterComponent(assigneeFilter.itemsSignal, label = "Assignee", assigneeFilter.selectedIdsVar).element,
-      new TableFilterComponent(milestoneFilter.itemsSignal, label = "Milestone", milestoneFilter.selectedIdsVar).element
+      new TableFilterComponent(milestoneFilter.itemsSignal, label = "Milestone", milestoneFilter.selectedIdsVar).element,
+      TgCheckbox
+        .checkBox(showArchivedVar.signal, showArchivedVar.writer, "Show archived")
+        .htmlElement
+        .amend(cls("!w-auto whitespace-nowrap"))
     )
 
   /** Put these on an element of the screen: they turn a filter change into a navigation. */
@@ -211,7 +219,8 @@ class TaskListBrowser(
     priorityFilter.navigateOnChange,
     labelFilter.navigateOnChange,
     assigneeFilter.navigateOnChange,
-    milestoneFilter.navigateOnChange
+    milestoneFilter.navigateOnChange,
+    showArchivedVar.signal.changes --> Observer[Boolean](_ => loadPage().unsafeRunAndForget())
   )
 
   def pagination =

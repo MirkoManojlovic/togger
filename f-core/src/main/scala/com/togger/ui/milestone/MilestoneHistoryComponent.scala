@@ -572,8 +572,7 @@ class MilestoneHistoryComponent(
     DefaultTaskStatus.Todo -> "todo",
     DefaultTaskStatus.Backlog -> "blog",
     DefaultTaskStatus.Done -> "done",
-    DefaultTaskStatus.WontDo -> "wontdo",
-    DefaultTaskStatus.Archived -> "archive"
+    DefaultTaskStatus.WontDo -> "wontdo"
   )
 
   private def taskStatusBadge(task: FindTaskRespFull): Option[TaskStatusBadge] =

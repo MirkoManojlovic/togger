@@ -12,7 +12,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
-import com.togger.task.DefaultTaskStatus.{Archived, Backlog, Done, WontDo}
+import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
@@ -56,7 +56,7 @@ class ShowAllProjectsStatusComponent(
   private val currentWeekEnd: LocalDate = currentWeekStart.plusDays(6L)
   private val lastTwoWeeksStart: LocalDate = currentWeekStart.minusDays(7L)
   private val lastTwoWeeksEnd: LocalDate = currentWeekEnd
-  private val defaultDeselectedStatusNames = Set(Done, WontDo, Archived, Backlog).map(_.statusName)
+  private val defaultDeselectedStatusNames = Set(Done, WontDo, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map { state =>
       state.info
