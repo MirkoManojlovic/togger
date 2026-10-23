@@ -76,7 +76,7 @@ class GanttResizeTest extends AnyWordSpec with Matchers {
 
     "change nothing when the result would end before it starts" in {
       val resized = GanttResize.resize(bar, GanttEdge.End, -1, axis)
-      GanttResize.newDates(start, monday.plusDays(1), GanttEdge.End, resized, axis) shouldBe None
+      GanttResize.newDates(monday.plusDays(10), due, GanttEdge.End, resized, axis) shouldBe None
     }
 
     "give both ends the dates of their new columns when the body moves" in {

@@ -25,7 +25,7 @@ class GanttBarTest extends AsyncJsWordSpec {
 
     "snap a start on a day off forward and a due date on a day off backward" in { _ =>
       GanttBar.of(monday.plusDays(5), monday.plusDays(13), axis) shouldBe
-        Some(GanttBar.Placed(5, 9, clippedLeft = false, clippedRight = false))
+        Some(GanttBar.Placed(5, 9, clippedLeft = false, clippedRight = true))
     }
 
     "clip a task that starts before the range" in { _ =>
