@@ -183,11 +183,11 @@ class LogEntryComponent(
                           typ("button"),
                           cls(
                             "text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white " +
-                              "focus:ring-4 focus:ring-brand-subtle rounded-base p-1 focus:outline-none"
+                              "focus:ring-4 focus:ring-brand-subtle rounded-base p-0.5 focus:outline-none"
                           ),
                           aria.label("Edit"),
                           title("Edit"),
-                          TgIcons.editIcon("w-3.5 h-3.5"),
+                          TgIcons.editIcon("w-3 h-3"),
                           onClick.mapToUnit --> { _ =>
                             displayAsEditVar.update(displayAsEdit => !displayAsEdit)
                           }
