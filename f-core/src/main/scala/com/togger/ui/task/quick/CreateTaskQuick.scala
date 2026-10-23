@@ -520,7 +520,7 @@ class CreateTaskQuick(
         statusDto.map(dto =>
           badge(
             TaskStatusDropdown,
-            dto.name,
+            dto.badgeText,
             current.statusId.map(_ => () => state.update(_.copy(statusId = None))),
             Some(dto.badgeColor)
           )
@@ -695,7 +695,7 @@ class CreateTaskQuick(
       state.signal.map(_.projectId).distinct --> (projectId => loadProjectData(projectId)),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("w-full max-w-2xl"),
+        cls("w-full max-w-[80rem]"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Quick task"),
