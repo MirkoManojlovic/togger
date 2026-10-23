@@ -105,8 +105,8 @@ class EditTaskStatusComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
-              descriptionInput.htmlElement.amend(cls("mb-4")),
               emojiInput.htmlElement.amend(cls("mb-4")),
+              descriptionInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.update(EventStream.fromValue(false))
             )
           )
