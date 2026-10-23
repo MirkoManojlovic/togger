@@ -665,9 +665,9 @@ class EditTaskComponent(
       child.maybe <-- slackerVar.signal,
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
-        editTaskCard.amend(cls("min-w-0 lg:flex-1")),
+        editTaskCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0")),
         div(
-          cls("flex w-full shrink-0 flex-col gap-8 lg:w-[42rem]"),
+          cls("flex w-full min-w-0 flex-col gap-8 lg:flex-1 lg:basis-[48rem]"),
           child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element)),
           child <-- logEntryPanelVar.signal.map(logEntriesCard)
         )
