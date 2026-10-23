@@ -194,7 +194,8 @@ class LogEntryComponent(
                         )
                       ),
                       div(
-                        cls("flex items-center gap-2"),
+                        // a badge never breaks its text; those that do not fit the row go on the lines below
+                        cls("flex flex-wrap items-center gap-2 [&>*]:whitespace-nowrap"),
                         TgBadge(
                           text = tgDateFormater.asAmericanDateWithDayAbrv(date),
                           bordered = true,
