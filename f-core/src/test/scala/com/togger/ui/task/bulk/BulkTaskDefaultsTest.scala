@@ -16,7 +16,7 @@ class BulkTaskDefaultsTest extends AnyWordSpec with Matchers {
   private val projectId = UUID.randomUUID()
 
   private def status(defaultStatus: DefaultTaskStatus) =
-    FindTaskStatusResp(UUID.randomUUID(), projectId, defaultStatus.statusName, defaultStatus.description)
+    FindTaskStatusResp(UUID.randomUUID(), projectId, defaultStatus.statusName, defaultStatus.description, "")
 
   private val todo = status(DefaultTaskStatus.Todo)
   private val backlog = status(DefaultTaskStatus.Backlog)

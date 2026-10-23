@@ -12,7 +12,7 @@ class GanttRowOrderTest extends AnyWordSpec with Matchers {
 
   private val projectId = UUID.randomUUID()
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
-  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
+  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
 
   private def task(name: String, assignee: Option[SearchAccountDto] = None) = FindTaskRespFull(
     id = UUID.randomUUID(),

@@ -25,7 +25,7 @@ class TimeboxReviewStatsTest extends AnyWordSpec with Matchers {
     assignedTo = assignee,
     createdBy = ada,
     closedBy = None,
-    taskStatus = FindTaskStatusResp(UUID.randomUUID(), projectId, status, ""),
+    taskStatus = FindTaskStatusResp(UUID.randomUUID(), projectId, status, "", ""),
     priority = TaskPriority.Medium,
     createdAt = Instant.EPOCH,
     updatedAt = Instant.EPOCH,

@@ -16,8 +16,8 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
   private val workDays = WorkDayCalendar.DefaultWorkDays
   private val monday = LocalDate.of(2026, 10, 12)
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
-  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
-  private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "")
+  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
+  private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "", "")
   private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, "bug", "")
   private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "")
 

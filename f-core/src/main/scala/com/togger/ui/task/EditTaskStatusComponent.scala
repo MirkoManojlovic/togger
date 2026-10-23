@@ -8,6 +8,8 @@ import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
+import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.raquo.laminar.api.L._
@@ -19,7 +21,8 @@ case class EditTaskStatusForm(
   projectId: UUID = UUID.randomUUID(),
   taskStatusId: UUID = UUID.randomUUID(),
   name: String = "",
-  description: String = ""
+  description: String = "",
+  emoji: String = ""
 )
 
 class EditTaskStatusComponent(
@@ -29,6 +32,7 @@ class EditTaskStatusComponent(
   accountService: AccountService,
   projectId: UUID,
   taskStatusId: UUID,
+  localStorage: LocalStorage,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -47,7 +51,8 @@ class EditTaskStatusComponent(
               projectId = dto.projectId,
               taskStatusId = dto.id,
               name = dto.name,
-              description = dto.description
+              description = dto.description,
+              emoji = dto.emoji
             )
           )
         }
@@ -60,7 +65,8 @@ class EditTaskStatusComponent(
       projectId = form.projectId,
       id = form.taskStatusId,
       name = form.name,
-      description = form.description
+      description = form.description,
+      emoji = form.emoji
     )
     spinnerService
       .runWithSpinner(taskStatusService.updateTaskStatus(dto))
@@ -82,6 +88,13 @@ class EditTaskStatusComponent(
     tgInputType = TgInputType.Text
   )
 
+  private val emojiInput = formState.tgEmojiPicker(
+    inputAndUpdater = selectorAndUpdaterMacro(_.emoji),
+    errors = EventStream.empty,
+    labelValue = "Status emoji",
+    localStorage = localStorage
+  )
+
   val element = div(
     justifyCenterFlex,
     TgCard
@@ -93,6 +106,7 @@ class EditTaskStatusComponent(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4")),
               descriptionInput.htmlElement.amend(cls("mb-4")),
+              emojiInput.htmlElement.amend(cls("mb-4")),
               TgHtmlButton.update(EventStream.fromValue(false))
             )
           )

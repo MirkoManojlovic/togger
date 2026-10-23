@@ -16,8 +16,8 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
   private val projectId = UUID.randomUUID()
   private val monday = LocalDate.of(2026, 10, 12)
 
-  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
-  private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "")
+  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
+  private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "", "")
   private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, DefaultTaskLabel.Bug.labelName, "")
   private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, DefaultTaskLabel.Feature.labelName, "")
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())

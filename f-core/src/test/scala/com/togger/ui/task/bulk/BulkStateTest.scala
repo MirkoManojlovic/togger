@@ -15,7 +15,7 @@ class BulkStateTest extends AnyWordSpec with Matchers {
   private val today = LocalDate.of(2026, 10, 7)
   private val projectId = UUID.randomUUID()
   private val project = OrganizationProjectResp(projectId, "P", "", "🚀", Set(1, 2, 3, 4, 5))
-  private val status = FindTaskStatusResp(UUID.randomUUID(), projectId, "📚 Backlog", "")
+  private val status = FindTaskStatusResp(UUID.randomUUID(), projectId, "📚 Backlog", "", "")
   private val loaded = TaskProjectData(statuses = Seq(status))
 
   private val unloaded = BulkState(today, projectId = Some(projectId))

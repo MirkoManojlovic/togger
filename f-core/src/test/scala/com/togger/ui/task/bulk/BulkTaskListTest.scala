@@ -99,7 +99,7 @@ class BulkTaskListTest extends AnyWordSpec with Matchers {
 
   "BulkTaskList.sanitize" should {
     val projectId = UUID.randomUUID()
-    val status = FindTaskStatusResp(UUID.randomUUID(), projectId, "📚 Backlog", "")
+    val status = FindTaskStatusResp(UUID.randomUUID(), projectId, "📚 Backlog", "", "")
     val label = FindTaskLabelResp(UUID.randomUUID(), projectId, "🐞 bug", "")
     val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
     val milestone = FindMilestoneResp(

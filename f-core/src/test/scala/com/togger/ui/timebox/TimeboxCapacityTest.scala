@@ -18,7 +18,7 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
   private val week = (monday, friday)
   private val ada = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
   private val bob = SearchAccountDto(UUID.randomUUID(), "Bob", "Builder", "bob@example.com", UUID.randomUUID())
-  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
+  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
 
   /** A task of `days` work days, starting on the Monday of the timebox week. */
   private def task(days: Int, assignee: Option[SearchAccountDto] = None, start: LocalDate = monday) = FindTaskRespFull(

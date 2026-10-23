@@ -14,7 +14,7 @@ class TimeboxStagingStoreTest extends AnyWordSpec with Matchers {
   private val projectId = UUID.randomUUID()
   private val monday = LocalDate.of(2026, 10, 12)
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
-  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "")
+  private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
 
   private def task(name: String) = FindTaskRespFull(
     id = UUID.randomUUID(),
