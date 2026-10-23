@@ -92,7 +92,8 @@ class TgBreadcrumbs(
           TgIcons.arrowRightIcon(iconCls),
           canGoForward.signal,
           () => dom.window.history.forward()
-        )
+        ),
+        historyButton("Refresh", TgIcons.refreshIcon(iconCls), Val(true), () => dom.window.location.reload())
       ),
       ol(cls(listCls), items.zipWithIndex.map { case (item, index) => crumb(item, index) })
     )
