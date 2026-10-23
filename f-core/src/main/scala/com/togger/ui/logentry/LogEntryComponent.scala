@@ -212,6 +212,8 @@ class LogEntryComponent(
                   )
                 )
                 .element
+                // tighter than the card default, so the badges of the header fit in a narrow column
+                .amend(cls("p-3!"))
             }
           )
         }
