@@ -247,7 +247,7 @@ class CreateTaskQuick(
           .map(status =>
             QuickOption(
               status.id.toString,
-              status.name,
+              status.badgeText,
               status.description,
               current.effectiveStatusId.contains(status.id)
             )

@@ -60,10 +60,16 @@ class ShowAllProjectsStatusComponent(
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map { state =>
       state.info
-        .flatMap(_.tasks.map(_.taskStatus.name))
-        .distinct
-        .sortBy(name => DefaultTaskStatus.values.find(_.statusName == name).map(_.i).getOrElse(Int.MaxValue))
-        .map(name => MultiSelectItem(id = name, name = name, isSelected = !defaultDeselectedStatusNames.contains(name)))
+        .flatMap(_.tasks.map(_.taskStatus))
+        .distinctBy(_.name)
+        .sortBy(status => DefaultTaskStatus.values.find(_.statusName == status.name).map(_.i).getOrElse(Int.MaxValue))
+        .map(status =>
+          MultiSelectItem(
+            id = status.name,
+            name = status.badgeText,
+            isSelected = !defaultDeselectedStatusNames.contains(status.name)
+          )
+        )
     }
   private val statusFilter = new TableFilterComponent(statusFilterItemsSignal, label = "Filter by status")
   private val filteredStateSignal: Signal[ShowAllProjectsState] =

@@ -155,7 +155,7 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
         .map(status =>
           QuickOption(
             status.id.toString,
-            status.name,
+            status.badgeText,
             status.description,
             shared(current)(_.statusId).contains(Some(status.id)),
             Some(status.badgeColor)

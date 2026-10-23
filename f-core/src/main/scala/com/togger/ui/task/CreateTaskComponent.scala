@@ -18,6 +18,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.MultiSelectItem
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -41,7 +42,7 @@ case class TaskStatusesState(
   taskStatuses: Seq[FindTaskStatusResp] = Seq.empty
 ) {
   lazy val asTaskStatusSelect =
-    taskStatusesSorted.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
+    taskStatusesSorted.map(dto => TaskStatusSelect(id = dto.id, name = dto.badgeText))
 
   /** Statuses can be renamed, so a name that is not a default one sorts after the default ones, alphabetically. */
   private def orderOf(status: FindTaskStatusResp): Int =

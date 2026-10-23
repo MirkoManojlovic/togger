@@ -161,7 +161,7 @@ class MilestoneHistoryComponent(
       _.map(_.taskStatus)
         .distinctBy(_.id)
         .sortBy(s => statusOrder(s.name))
-        .map(s => MultiSelectItem(id = s.id.toString, name = s.name, isSelected = params.taskStatuses.forall(_.contains(s.id.toString))))
+        .map(s => MultiSelectItem(id = s.id.toString, name = s.badgeText, isSelected = params.taskStatuses.forall(_.contains(s.id.toString))))
     )
 
   private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
