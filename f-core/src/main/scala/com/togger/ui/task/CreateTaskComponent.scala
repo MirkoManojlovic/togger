@@ -42,16 +42,15 @@ case class TaskStatusesState(
   lazy val asTaskStatusSelect =
     taskStatusesSorted.map(dto => TaskStatusSelect(id = dto.id, name = dto.name))
 
+  /** Statuses can be renamed, so a name that is not a default one sorts after the default ones, alphabetically. */
+  private def orderOf(status: FindTaskStatusResp): Int =
+    DefaultTaskStatus.values.find(_.statusName == status.name).map(_.i).getOrElse(DefaultTaskStatus.values.size)
+
   lazy val idToOrder: Map[UUID, Int] =
-    taskStatuses.map(dto => dto.id -> DefaultTaskStatus.values.find(_.statusName == dto.name).get.i).toMap
+    taskStatuses.map(dto => dto.id -> orderOf(dto)).toMap
 
   lazy val taskStatusesSorted: Seq[FindTaskStatusResp] =
-    taskStatuses
-      .map(taskStatusResp =>
-        DefaultTaskStatus.values.find(enum1 => enum1.statusName == taskStatusResp.name).get -> taskStatusResp
-      )
-      .sortBy { case (enum, _) => enum.i }
-      .map(_._2)
+    taskStatuses.sortBy(status => (orderOf(status), status.name))
 
 }
 
