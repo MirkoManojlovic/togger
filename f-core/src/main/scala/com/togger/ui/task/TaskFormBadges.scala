@@ -41,7 +41,7 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlE
       .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
     val status = task.statusId
       .flatMap(id => lookups.statuses.find(_.id == id))
-      .map(found => BadgeSpec(found.name, found.badgeColor, Some(BulkEditKind.Status)))
+      .map(found => BadgeSpec(found.badgeText, found.badgeColor, Some(BulkEditKind.Status)))
       .getOrElse(BadgeSpec(EmojiPrefix.Fallback, TgBadgeColor.Gray, Some(BulkEditKind.Status)))
     val assignee = task.assigneeId
       .flatMap(id => lookups.members.find(_.id == id))

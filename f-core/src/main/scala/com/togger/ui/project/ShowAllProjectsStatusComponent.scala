@@ -237,7 +237,7 @@ class ShowAllProjectsStatusComponent(
                       div(
                         cls("flex", "items-center"),
                         TgBadge(
-                          text = task.taskStatus.name,
+                          text = task.taskStatus.badgeText,
                           color = task.taskStatus.badgeColor,
                           bordered = true
                         ).element,

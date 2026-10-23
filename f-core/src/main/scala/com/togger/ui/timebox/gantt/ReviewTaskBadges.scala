@@ -27,7 +27,7 @@ object ReviewTaskBadges {
         .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
         .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray)),
       BadgeSpec(task.priority.shortCode, task.priority.badgeColor),
-      BadgeSpec(task.taskStatus.name, task.taskStatus.badgeColor),
+      BadgeSpec(task.taskStatus.badgeText, task.taskStatus.badgeColor),
       task.assignedTo
         .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray))
         .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray))
