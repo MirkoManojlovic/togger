@@ -154,10 +154,10 @@ case class LogEntryVersionDto(
   updatedAt: Instant
 )
 
-case class CreateTaskStatusReq(projectId: UUID, name: String, description: String)
-case class CreateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
-case class FindTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
-case class UpdateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String)
+case class CreateTaskStatusReq(projectId: UUID, name: String, description: String, emoji: String)
+case class CreateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String, emoji: String)
+case class FindTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String, emoji: String)
+case class UpdateTaskStatusResp(id: UUID, projectId: UUID, name: String, description: String, emoji: String)
 
 case class CreateTaskLabelReq(projectId: UUID, name: String, description: String)
 case class CreateTaskLabelResp(id: UUID, projectId: UUID, name: String, description: String)
