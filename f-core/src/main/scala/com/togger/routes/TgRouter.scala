@@ -12,6 +12,9 @@ trait TgRouter[PAGE <: FrontendPage] {
 
   def forcePage(page: PAGE): Unit
 
+  /** Re-renders the current page without adding a history entry. */
+  def refresh(): Unit
+
   val currentPageSignal: StrictSignal[PAGE]
 
   def absoluteUrlForPage(page: PAGE): String
@@ -60,6 +63,9 @@ class TgRouterImpl(
 
   override def forcePage(page: FrontendPage): Unit =
     router.forcePage(page)
+
+  override def refresh(): Unit =
+    router.replaceState(router.currentPageSignal.now())
 
   override val currentPageSignal: StrictSignal[FrontendPage] =
     router.currentPageSignal
