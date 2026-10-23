@@ -42,12 +42,28 @@ trait TgDbSpec
   val dropTablesQuery: ConnectionIO[Seq[Int]]
 
   override val resource: Resource[IO, HikariTransactor[IO]] =
-    new HikariConfig()
-      .tap { hikariConfig =>
-        hikariConfig.setDataSource(pgConfig)
-        hikariConfig.setMinimumIdle(0)
-        hikariConfig.setInitializationFailTimeout(-1)
-      }
-      .pipe(hikariConfig => HikariTransactor.fromHikariConfig(hikariConfig, None))
+    Resource.pure(SharedTgTestTransactor.transactor)
 
+}
+
+/** One Hikari pool per JVM, shared by all specs, so tests don't exhaust postgres' connection limit. */
+object SharedTgTestTransactor extends TgTestTransactor {
+  import cats.effect.unsafe.implicits.global
+
+  lazy val transactor: HikariTransactor[IO] = {
+    val (transactor, release) = HikariTransactor
+      .fromHikariConfig[IO](
+        new HikariConfig().tap { hikariConfig =>
+          hikariConfig.setDataSource(pgConfig)
+          hikariConfig.setMinimumIdle(0)
+          hikariConfig.setMaximumPoolSize(4)
+          hikariConfig.setInitializationFailTimeout(-1)
+        },
+        None
+      )
+      .allocated
+      .unsafeRunSync()
+    sys.addShutdownHook(release.unsafeRunSync())
+    transactor
+  }
 }
