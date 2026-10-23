@@ -9,6 +9,7 @@ import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, Sea
 import com.togger.routes.TaskListParams
 import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.task.TaskPriority
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.auth.TgCheckbox
 import com.togger.ui.components.{
@@ -114,7 +115,7 @@ class TaskListBrowser(
 
   private val labelFilter = new FilterSpec[TaskLabelsState](
     source = taskLabelsVar,
-    optionsOf = _.taskLabels.sortBy(_.name).map(label => label.id.toString -> label.name),
+    optionsOf = _.taskLabels.sortBy(_.name).map(label => label.id.toString -> label.badgeText),
     defaultSelectedOf = allOptions,
     chosenIn = _.labels,
     withChosen = (listParams, chosen) => listParams.copy(labels = chosen)

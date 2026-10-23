@@ -17,6 +17,7 @@ import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.MultiSelectItem
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -63,7 +64,7 @@ case class TaskStatusSelect(id: UUID, name: String) {
   */
 case class TaskLabelsState(taskLabels: Seq[FindTaskLabelResp] = Seq.empty) {
   lazy val asMultiSelectItems: Seq[MultiSelectItem] =
-    taskLabels.sortBy(_.name).map(dto => MultiSelectItem(id = dto.id.toString, name = dto.name, isSelected = false))
+    taskLabels.sortBy(_.name).map(dto => MultiSelectItem(id = dto.id.toString, name = dto.badgeText, isSelected = false))
 }
 
 class CreateTaskComponent(

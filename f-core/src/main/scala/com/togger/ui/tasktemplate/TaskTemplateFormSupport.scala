@@ -3,6 +3,7 @@ package com.togger.ui.tasktemplate
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindTaskLabelResp, FindTaskTemplateResp}
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
 
 import java.util.UUID
@@ -41,7 +42,7 @@ object TaskTemplateFormSupport {
         labelValue = "Task label",
         options = TgSelectDropdownOption(NoLabelValue, DropdownMeta("No label", ""), () => span("No label")) +:
           labels.map(label =>
-            TgSelectDropdownOption(label.id.toString, DropdownMeta(label.name, ""), () => span(label.name))
+            TgSelectDropdownOption(label.id.toString, DropdownMeta(label.badgeText, ""), () => span(label.badgeText))
           ),
         placeholder = "No label"
       ).htmlElement

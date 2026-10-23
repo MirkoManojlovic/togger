@@ -215,7 +215,7 @@ class CreateTaskQuick(
           .filter(label => matches(token.query, label.name))
           .sortBy(_.name)
           .map(label =>
-            QuickOption(label.id.toString, label.name, label.description, current.labelIds.contains(label.id))
+            QuickOption(label.id.toString, label.badgeText, label.description, current.labelIds.contains(label.id))
           )
       case PriorityDropdown =>
         TaskPriority.values
@@ -578,7 +578,7 @@ class CreateTaskQuick(
       selected.map { label =>
         badge(
           LabelsDropdown,
-          label.name,
+          label.badgeText,
           Some(() => state.update(current => current.copy(labelIds = current.labelIds - label.id))),
           Some(label.badgeColor)
         )

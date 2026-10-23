@@ -225,7 +225,7 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
         )
     )
     QuickOptionsPopup(
-      options = projectLabels.map(l => QuickOption(l.id.toString, l.name, "", isSelected = false, Some(l.badgeColor))),
+      options = projectLabels.map(l => QuickOption(l.id.toString, l.badgeText, "", isSelected = false, Some(l.badgeColor))),
       onChoose = option => {
         val id = UUID.fromString(option.id)
         chosen.update(labels => if (labels.contains(id)) labels - id else labels + id)
