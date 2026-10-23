@@ -18,6 +18,8 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.components._
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.modal.ModalStyles
+import com.togger.ui.slacker.{SlackerMissingDays, SlackerScope}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.task.bulk.BulkTask
 import com.togger.ui.spinner.SpinnerService
@@ -27,6 +29,7 @@ import org.scalajs.dom
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
+import scala.util.Try
 
 case class LogEntryPanelState(
   newEntryComponent: Option[LogEntryComponent] = None,
@@ -58,7 +61,8 @@ class EditTaskComponent(
   router: TgRouter[FrontendPage],
   dateRangeValidation: DateRangeValidation,
   val toast: Toast,
-  tgMarkdown: TgMarkdown
+  tgMarkdown: TgMarkdown,
+  createSlacker: (SlackerScope, () => Unit, () => Unit) => HtmlElement
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -235,52 +239,164 @@ class EditTaskComponent(
     }
     .unsafeRunAndForget()
 
+  private def updateRequest(
+    form: EditTaskForm,
+    linkComponents: Seq[TaskLinkComponent],
+    edited: BulkTask,
+    statusId: UUID,
+    endDate: Option[LocalDate]
+  ): UpdateTaskReq = {
+    val now = tgClock.currentInstant
+
+    val (linksToCreate, linksToUpdate) = linkComponents.partition(_.formState.now().id.isEmpty)
+
+    UpdateTaskReq(
+      task = UpdateTaskReq1(
+        id = form.taskId,
+        projectId = form.projectId,
+        name = form.name,
+        description = form.description,
+        assignedTo = edited.assigneeId,
+        createdBy = form.createBy,
+        taskStatusId = statusId,
+        createdAt = now,
+        updatedAt = now,
+        priority = edited.priority,
+        milestone = edited.milestoneId,
+        startDate = Some(edited.startDate),
+        dueDate = Some(edited.dueDate),
+        endDate = endDate,
+        taskLabelIds = edited.labelIds.toSeq,
+        archived = form.archived
+      ),
+      linksForUpdate = linksToUpdate.map { linkComponent =>
+        val linkForm = linkComponent.formState.now()
+        UpdateLinkReq(
+          id = linkForm.id.get,
+          name = linkForm.name,
+          url = linkForm.url
+        )
+      },
+      linksToCreate = linksToCreate.map { linkComponent =>
+        val linkForm = linkComponent.formState.now()
+        CreateLinkReq(
+          name = linkForm.name,
+          url = linkForm.url
+        )
+      }
+    )
+  }
+
   val submitter = Observer[(EditTaskForm, Seq[TaskLinkComponent], BulkTask)] {
     case (form, linkComponents, edited) =>
-      val now = tgClock.currentInstant
-
-      val (linksToCreate, linksToUpdate) = linkComponents.partition(_.formState.now().id.isEmpty)
-
-      val dto = UpdateTaskReq(
-        task = UpdateTaskReq1(
-          id = form.taskId,
-          projectId = form.projectId,
-          name = form.name,
-          description = form.description,
-          assignedTo = edited.assigneeId,
-          createdBy = form.createBy,
-          taskStatusId = edited.statusId.get,
-          createdAt = now,
-          updatedAt = now,
-          priority = edited.priority,
-          milestone = edited.milestoneId,
-          startDate = Some(edited.startDate),
-          dueDate = Some(edited.dueDate),
-          endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate)),
-          taskLabelIds = edited.labelIds.toSeq,
-          archived = form.archived
-        ),
-        linksForUpdate = linksToUpdate.map { linkComponent =>
-          val linkForm = linkComponent.formState.now()
-          UpdateLinkReq(
-            id = linkForm.id.get,
-            name = linkForm.name,
-            url = linkForm.url
-          )
-        },
-        linksToCreate = linksToCreate.map { linkComponent =>
-          val linkForm = linkComponent.formState.now()
-          CreateLinkReq(
-            name = linkForm.name,
-            url = linkForm.url
-          )
-        }
+      val dto = updateRequest(
+        form,
+        linkComponents,
+        edited,
+        edited.statusId.get,
+        if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
       )
       spinnerService
         .runWithSpinner(taskService.updateTask(dto))
         .toastMessageJustMessage("Task updated successfully")
         .unsafeRunAndForget()
   }
+
+  // ---- close
+
+  private val closeDialogOpen = Var(false)
+  private val closeEndDate = Var(tgClock.currentDate().toString)
+  private val slackerVar: Var[Option[HtmlElement]] = Var(None)
+
+  private def closeEndDateErrors: Signal[Seq[String]] =
+    closeEndDate.signal.combineWith(badges.taskVar.signal, workDaysVar.signal).map { case (picked, task, workDays) =>
+      TaskClose.endDateErrors(Try(LocalDate.parse(picked)).toOption, task.startDate, workDays)
+    }
+
+  private def closeTask(endDate: LocalDate): Unit =
+    TaskClose.doneStatus(badges.lookupsNow().statuses).fold(toast.error("This project has no Done status")) { done =>
+      val dto = updateRequest(formState.now(), linksVar.now(), badges.taskVar.now(), done.id, Some(endDate))
+      spinnerService
+        .runWithSpinner(taskService.updateTask(dto))
+        .toastMessageCodeBlock("Task closed")(router.refresh())
+        .unsafeRunAndForget()
+    }
+
+  private def openSlacker(endDate: LocalDate): Unit = {
+    val close = () => slackerVar.set(None)
+    slackerVar.set(
+      Some(createSlacker(SlackerScope(taskId, projectId, endDate), close, () => closeTask(endDate)))
+    )
+  }
+
+  /** Closes the task at once when every work day up to the end date has a log entry, else lets the user fill in the
+    * missing ones in the slacker first.
+    */
+  private def requestClose(endDate: LocalDate): Unit =
+    spinnerService
+      .runWithSpinner(taskService.findTaskById(taskId))
+      .flatMap(
+        _.fold(
+          error => IO(toast.error(error)),
+          success =>
+            IO {
+              val task = success.body.get
+              val missing = SlackerMissingDays.of(
+                task.logEntries.map(_.createdAt.toLocalDate()),
+                task.task.startDate,
+                endDate,
+                workDaysVar.now()
+              )
+              closeDialogOpen.set(false)
+              if (missing.isEmpty) closeTask(endDate) else openSlacker(endDate)
+            }
+        )
+      )
+      .unsafeRunAndForget()
+
+  private val closeDialog: HtmlElement =
+    div(
+      cls(ModalStyles.wrapperCls),
+      ModalStyles.closeOnBackdropOrEscape(Observer(_ => closeDialogOpen.set(false))),
+      div(
+        cls(ModalStyles.contentBoxCls),
+        cls("w-full max-w-sm"),
+        h3(cls(ModalStyles.titleCls), cls("mb-4"), "Close task"),
+        label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
+        input(
+          typ("date"),
+          cls("bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base block w-full px-3 py-2.5"),
+          controlled(value <-- closeEndDate.signal, onInput.mapToValue --> closeEndDate)
+        ),
+        children <-- closeEndDateErrors.map(_.map(error => p(cls("mt-2 text-sm text-danger"), error))),
+        div(
+          cls(ModalStyles.footerCls),
+          cls("justify-end"),
+          button(
+            typ("button"),
+            cls(ModalStyles.secondaryButtonCls),
+            "Cancel",
+            onClick.mapToUnit --> (_ => closeDialogOpen.set(false))
+          ),
+          button(
+            typ("button"),
+            cls(ModalStyles.primaryButtonCls),
+            cls("disabled:opacity-50 disabled:cursor-not-allowed"),
+            disabled <-- closeEndDateErrors.map(_.nonEmpty),
+            "Close task",
+            onClick.mapToUnit --> (_ => Try(LocalDate.parse(closeEndDate.now())).foreach(requestClose))
+          )
+        )
+      )
+    )
+
+  private val closeButton =
+    button(
+      typ("button"),
+      cls(TgHtmlButton.tailwindExtraSmallButton),
+      "Close",
+      onClick.mapToUnit --> (_ => closeDialogOpen.set(true))
+    )
 
   lazy val addNewLink =
     TgHtmlButton
@@ -331,6 +447,8 @@ class EditTaskComponent(
       display.flex,
       flexDirection.column,
       alignItems.center,
+      child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
+      child.maybe <-- slackerVar.signal,
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Edit task", TgCard.CardHeaderSize.H3),
@@ -347,7 +465,7 @@ class EditTaskComponent(
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
-                div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+                div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
               )
             )
           )

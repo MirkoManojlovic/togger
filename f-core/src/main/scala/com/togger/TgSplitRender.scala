@@ -443,7 +443,24 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   dateRangeValidation,
                   toast,
-                  tgMarkdown
+                  tgMarkdown,
+                  (scope, onClose, onSubmitted) =>
+                    new SlackerComponent(
+                      taskService,
+                      taskProjectDataLoader,
+                      milestoneService,
+                      spinnerService,
+                      accountService,
+                      tgClock,
+                      tgDateFormater,
+                      tgMarkdown,
+                      Some(scope.projectId),
+                      localStorage,
+                      toast,
+                      onClose,
+                      scope = Some(scope),
+                      onSubmitted = onSubmitted
+                    ).element
                 ).element
               case CreateProjectPage(organizationId) =>
                 new CreateProjectComponent(
