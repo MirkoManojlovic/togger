@@ -18,7 +18,7 @@ object ReviewTaskBadges {
 
   private def labelSpecs(task: FindTaskRespFull): Seq[BadgeSpec] =
     if (task.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray))
-    else task.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor))
+    else task.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
 
   private def primarySpecs(task: FindTaskRespFull, milestones: Seq[FindMilestoneResp]): Seq[BadgeSpec] =
     Seq(

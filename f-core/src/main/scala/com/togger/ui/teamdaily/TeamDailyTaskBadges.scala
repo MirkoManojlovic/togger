@@ -15,7 +15,7 @@ import java.time.{DayOfWeek, LocalDate}
 object TeamDailyTaskBadges {
 
   def labels(task: TeamDailyTaskPlan): Seq[BadgeSpec] =
-    task.labels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor))
+    task.labels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
 
   def milestoneAndPriority(task: TeamDailyTaskPlan, milestones: Seq[FindMilestoneResp]): Seq[BadgeSpec] =
     task.milestoneId

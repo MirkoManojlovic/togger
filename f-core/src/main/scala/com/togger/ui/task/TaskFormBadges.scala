@@ -49,7 +49,7 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlE
       .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
     val labels = lookups.labels.filter(found => task.labelIds.contains(found.id)).sortBy(_.name) match {
       case Seq() => Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
-      case found => found.map(label => BadgeSpec(label.name, label.badgeColor, Some(BulkEditKind.Labels)))
+      case found => found.map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
     }
     Seq(
       milestone,

@@ -302,7 +302,7 @@ class TimeboxFormComponent(
 
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
-    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor, Some(BulkEditKind.Labels)))
+    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
   private def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(

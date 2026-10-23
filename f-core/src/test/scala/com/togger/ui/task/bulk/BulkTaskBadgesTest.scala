@@ -23,8 +23,15 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
     "",
     DefaultTaskStatus.Backlog.emoji
   )
-  private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, DefaultTaskLabel.Bug.labelName, "")
-  private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, DefaultTaskLabel.Feature.labelName, "")
+  private val bug =
+    FindTaskLabelResp(UUID.randomUUID(), projectId, DefaultTaskLabel.Bug.labelName, "", DefaultTaskLabel.Bug.emoji)
+  private val feature = FindTaskLabelResp(
+    UUID.randomUUID(),
+    projectId,
+    DefaultTaskLabel.Feature.labelName,
+    "",
+    DefaultTaskLabel.Feature.emoji
+  )
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
   private val milestone = FindMilestoneResp(
     UUID.randomUUID(),
@@ -79,7 +86,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
       )
       val rows = BulkTaskBadges.of(full, lookups)
       (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(3).text) shouldBe
-        ("Release 1", Seq("🆕", "🐞"), "Ada Lovelace")
+        ("Release 1", Seq("🐞", "🆕"), "Ada Lovelace")
     }
 
     "put the assignee after the status in the first of two rows, and the labels apart from them" in {

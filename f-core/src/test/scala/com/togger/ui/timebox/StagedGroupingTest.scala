@@ -17,8 +17,8 @@ class StagedGroupingTest extends AnyWordSpec with Matchers {
   private val bob = SearchAccountDto(UUID.randomUUID(), "Bob", "Builder", "bob@example.com", UUID.randomUUID())
   private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
   private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "", "")
-  private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, "bug", "")
-  private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "")
+  private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, "bug", "", "")
+  private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "", "")
 
   private def task(name: String) = FindTaskRespFull(
     id = UUID.randomUUID(),

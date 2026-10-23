@@ -96,7 +96,7 @@ object BulkTaskBadges {
     val specs = lookups.labels
       .filter(label => task.labelIds.contains(label.id))
       .sortBy(_.name)
-      .map(label => BadgeSpec(EmojiPrefix.of(label.name), label.badgeColor, Some(BulkEditKind.Labels)))
+      .map(label => BadgeSpec(label.emoji, label.badgeColor, Some(BulkEditKind.Labels)))
     if (specs.isEmpty) Seq(BadgeSpec(EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels))) else specs
   }
 

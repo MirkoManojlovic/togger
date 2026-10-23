@@ -13,6 +13,9 @@ object TaskLabelBadgeColor {
   /** Lets callers write `taskLabel.badgeColor` instead of `TaskLabelBadgeColor.of(taskLabel.name)`. */
   implicit class TaskLabelBadgeColorOps(private val taskLabel: FindTaskLabelResp) extends AnyVal {
     def badgeColor: TgBadgeColor = of(taskLabel.name)
+
+    /** The label name with its emoji in front, as badges show it. */
+    def badgeText: String = s"${taskLabel.emoji} ${taskLabel.name}".trim
   }
 
 }

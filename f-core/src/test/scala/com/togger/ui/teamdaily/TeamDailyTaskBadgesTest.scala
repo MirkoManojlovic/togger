@@ -27,7 +27,7 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
     Instant.EPOCH
   )
 
-  private def label(name: String) = FindTaskLabelResp(UUID.randomUUID(), UUID.randomUUID(), name, "")
+  private def label(name: String) = FindTaskLabelResp(UUID.randomUUID(), UUID.randomUUID(), name, "", "")
 
   private def task(milestoneId: Option[UUID], labels: Seq[FindTaskLabelResp]) =
     TeamDailyTaskPlan(

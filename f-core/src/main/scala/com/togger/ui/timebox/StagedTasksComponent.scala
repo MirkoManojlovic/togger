@@ -66,7 +66,7 @@ class StagedTasksComponent(
     TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
 
   private def labelBadge(label: FindTaskLabelResp, count: Int): HtmlElement =
-    TgBadge(s"${label.name} × $count", label.badgeColor).element
+    TgBadge(s"${label.badgeText} × $count", label.badgeColor).element
 
   private def statusBadge(status: FindTaskStatusResp, count: Int): HtmlElement =
     TgBadge(s"${status.badgeText} × $count", status.badgeColor).element

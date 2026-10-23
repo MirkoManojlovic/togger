@@ -18,8 +18,8 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
   private val member = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
   private val backlog = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Backlog.statusName, "", "")
   private val done = FindTaskStatusResp(UUID.randomUUID(), projectId, DefaultTaskStatus.Done.statusName, "", "")
-  private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, "bug", "")
-  private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "")
+  private val bug = FindTaskLabelResp(UUID.randomUUID(), projectId, "bug", "", "")
+  private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "", "")
 
   private def milestone(name: String) = FindMilestoneResp(
     UUID.randomUUID(), projectId, Instant.EPOCH, UUID.randomUUID(), name, "", MilestoneStatus.InProgress, monday,

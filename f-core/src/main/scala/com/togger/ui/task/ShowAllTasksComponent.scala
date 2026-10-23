@@ -95,7 +95,7 @@ class ShowAllTasksComponent(
     def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
       else
-        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.name, label.badgeColor, Some(BulkEditKind.Labels)))
+        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
     def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(

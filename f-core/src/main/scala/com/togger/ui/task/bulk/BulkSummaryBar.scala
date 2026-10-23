@@ -83,7 +83,7 @@ object BulkSummaryBar {
     summary.byLabel
       .flatMap { case (labelId, count) => lookups.labels.find(_.id == labelId).map(_ -> count) }
       .sortBy { case (label, count) => (-count, label.name) }
-      .map { case (label, count) => BadgeSpec(s"${label.name} × $count", label.badgeColor) }
+      .map { case (label, count) => BadgeSpec(s"${label.badgeText} × $count", label.badgeColor) }
 
   private def milestoneBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byMilestone
