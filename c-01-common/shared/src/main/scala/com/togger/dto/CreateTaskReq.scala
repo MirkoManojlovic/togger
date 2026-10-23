@@ -37,7 +37,8 @@ case class UpdateTaskReq1(
   startDate: Option[LocalDate] = None,
   dueDate: Option[LocalDate] = None,
   endDate: Option[LocalDate] = None,
-  taskLabelIds: Seq[UUID] = Seq.empty
+  taskLabelIds: Seq[UUID] = Seq.empty,
+  archived: Boolean = false
 )
 
 case class FindTaskResp1(
@@ -56,7 +57,8 @@ case class FindTaskResp1(
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
-  taskLabelIds: Seq[UUID] = Seq.empty
+  taskLabelIds: Seq[UUID] = Seq.empty,
+  archived: Boolean = false
 )
 
 case class FindTaskRespFull(
@@ -78,7 +80,8 @@ case class FindTaskRespFull(
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
-  taskLabels: Seq[FindTaskLabelResp] = Seq.empty
+  taskLabels: Seq[FindTaskLabelResp] = Seq.empty,
+  archived: Boolean = false
 )
 
 case class TaskVersionDto(

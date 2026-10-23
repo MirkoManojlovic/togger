@@ -14,7 +14,6 @@ object DefaultTaskStatus extends Enum[DefaultTaskStatus] {
   case object Backlog extends DefaultTaskStatus(5, "📚 Backlog", "This is not yet planned")
   case object Done extends DefaultTaskStatus(6, "✅ Done", "This has been completed")
   case object WontDo extends DefaultTaskStatus(7, "🗑️ Won't do", "This will not be done")
-  case object Archived extends DefaultTaskStatus(8, "📦 Archived", "This has been archived")
 
   override def values: IndexedSeq[DefaultTaskStatus] = findValues
 

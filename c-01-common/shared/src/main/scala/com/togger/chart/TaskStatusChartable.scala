@@ -17,7 +17,6 @@ object TaskStatusTodoChartable extends TaskStatusChartable(DefaultTaskStatus.Tod
 object TaskStatusBacklogChartable extends TaskStatusChartable(DefaultTaskStatus.Backlog, ChartColor.Gray)
 object TaskStatusDoneChartable extends TaskStatusChartable(DefaultTaskStatus.Done, ChartColor.Green)
 object TaskStatusWontDoChartable extends TaskStatusChartable(DefaultTaskStatus.WontDo, ChartColor.Dark)
-object TaskStatusArchivedChartable extends TaskStatusChartable(DefaultTaskStatus.Archived, ChartColor.Dark)
 
 /** A project's task statuses are free-form rows rather than [[DefaultTaskStatus]], so a status is matched to its
   * [[Chartable]] by name; a name that matches none is gray.
@@ -32,8 +31,7 @@ object TaskStatusChartable {
     TaskStatusTodoChartable,
     TaskStatusBacklogChartable,
     TaskStatusDoneChartable,
-    TaskStatusWontDoChartable,
-    TaskStatusArchivedChartable
+    TaskStatusWontDoChartable
   )
 
   def of(statusName: String): Chartable =

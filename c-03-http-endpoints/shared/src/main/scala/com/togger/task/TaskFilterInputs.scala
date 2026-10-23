@@ -6,11 +6,12 @@ import sttp.tapir._
 import java.util.UUID
 
 /** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId`
-  * a single `search` and a single `timeboxId`.
+  * a single `search`, a single `timeboxId` and
+  * the `includeArchived` flag.
   */
 object TaskFilterInputs {
 
-  private type FilterParams = (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID])
+  private type FilterParams = (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID], Boolean)
 
   val taskFilterQuery: EndpointInput[TaskFilter] =
     query[List[UUID]]("statusId")
@@ -20,10 +21,11 @@ object TaskFilterInputs {
       .and(query[List[UUID]]("milestoneId"))
       .and(query[Option[String]]("search"))
       .and(query[Option[UUID]]("timeboxId"))
+      .and(query[Boolean]("includeArchived").default(false))
       .mapDecode(toFilter)(toParams)
 
   private def toFilter(params: FilterParams): DecodeResult[TaskFilter] = {
-    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId) = params
+    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId, includeArchived) = params
     val priorities = priorityValues.map(TaskPriority.withValueOpt)
     if (priorities.exists(_.isEmpty))
       DecodeResult.Error(priorityValues.mkString(","), new IllegalArgumentException("Unknown task priority"))
@@ -36,7 +38,8 @@ object TaskFilterInputs {
           assigneeIds,
           milestoneIds,
           search.filter(_.trim.nonEmpty),
-          timeboxId
+          timeboxId,
+          includeArchived
         )
       )
   }
@@ -49,6 +52,7 @@ object TaskFilterInputs {
       filter.assigneeIds,
       filter.milestoneIds,
       filter.search,
-      filter.timeboxId
+      filter.timeboxId,
+      filter.includeArchived
     )
 }
