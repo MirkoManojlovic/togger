@@ -441,7 +441,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   projectService,
                   router,
-                  dateRangeValidation,
                   toast,
                   tgMarkdown,
                   (scope, onClose, onSubmitted) =>

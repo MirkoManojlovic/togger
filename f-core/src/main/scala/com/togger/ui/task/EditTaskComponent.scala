@@ -59,7 +59,6 @@ class EditTaskComponent(
   accountService: AccountService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
-  dateRangeValidation: DateRangeValidation,
   val toast: Toast,
   tgMarkdown: TgMarkdown,
   createSlacker: (SlackerScope, () => Unit, () => Unit) => HtmlElement
@@ -416,30 +415,10 @@ class EditTaskComponent(
     placeholderValue = "Describe the task"
   )
 
-  private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    val orderError =
-      if (form.endDate.nonEmpty && LocalDate.parse(form.endDate).isBefore(badges.taskVar.now().startDate))
-        Seq("End date must be on or after start date")
-      else Seq.empty
-    val weekendError =
-      if (form.endDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.endDate), workDaysVar.now()))
-        Seq("End date must be one of this project's configured work days")
-      else Seq.empty
-    orderError ++ weekendError
-  }
-
   private val archivedCheckbox = TgCheckbox.checkBox(
     inputSignal = formState.signal.map(_.archived),
     inputStateUpdater = formState.updater[Boolean]((form, archived) => form.copy(archived = archived)),
     labelValue = "Archived"
-  )
-
-  private val endDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
-    errors = endDateErrors,
-    labelValue = "End date",
-    tgInputType = TgInputType.Date,
-    isRequired = false
   )
 
   val element =
@@ -460,7 +439,6 @@ class EditTaskComponent(
                 nameInput.htmlElement.amend(cls("mb-4")),
                 badges.element.amend(cls("mb-4")),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
-                endDateInput.htmlElement.amend(cls("mb-4"), width("280px")),
                 archivedCheckbox.htmlElement.amend(cls("mb-4")),
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
