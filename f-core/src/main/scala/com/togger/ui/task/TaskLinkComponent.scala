@@ -46,7 +46,7 @@ class TaskLinkComponent(linkData: Option[TaskLinkFormData] = None) {
   val htmlElement: ReactiveHtmlElement[HTMLDivElement] =
     div(
       cls("flex mb-4"),
-      linkNameInput.htmlElement.amend(cls("mr-2 grow-4")),
+      linkNameInput.htmlElement.amend(cls("mr-2 grow-4 max-w-[60ch]")),
       urlInput.htmlElement.amend(cls("grow-6"))
     )
 
