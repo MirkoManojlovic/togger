@@ -37,13 +37,11 @@ class DataExportServiceTest extends ExportImportTestSupport {
         projectData <- createExportableProject(exportPath)
         (savedAccount, savedProject) = projectData
         activeStatus <- createTaskStatus(savedProject.id)
-        archivedStatus <- taskStatusRepo.insert(
-          taskStatus.copy(projectId = savedProject.id, name = com.togger.task.DefaultTaskStatus.Archived.statusName)
-        )
         label <- createTaskLabel(savedProject.id)
         milestoneId <- createMilestoneWithDate(savedProject.id)
         activeTask <- createTaskWithFullHistory(savedProject.id, savedAccount.id, activeStatus.id, Some(milestoneId))
-        archivedTask <- createTaskWithFullHistory(savedProject.id, savedAccount.id, archivedStatus.id)
+        archivedTask <- createTaskWithFullHistory(savedProject.id, savedAccount.id, activeStatus.id)
+        _ <- taskRepo.updateArchived(archivedTask, archived = true)
       } yield (savedAccount, savedProject, activeStatus, label, milestoneId, activeTask, archivedTask)
 
       for {

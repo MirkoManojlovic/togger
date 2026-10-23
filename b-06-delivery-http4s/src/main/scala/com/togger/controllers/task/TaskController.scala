@@ -93,7 +93,8 @@ class TaskController(
       endDate = taskFull.endDate,
       taskLabels = taskFull.taskLabels.map(l =>
         FindTaskLabelResp(id = l.id, projectId = l.projectId, name = l.name, description = l.description)
-      )
+      ),
+      archived = taskFull.archived
     )
   }
 
@@ -268,7 +269,14 @@ class TaskController(
                 }
 
               taskService
-                .updateTask(taskDto.id, newVersionContent, linkVersionUpdates, newLinks, taskDto.taskLabelIds)
+                .updateTask(
+                  taskDto.id,
+                  newVersionContent,
+                  linkVersionUpdates,
+                  newLinks,
+                  taskDto.taskLabelIds,
+                  taskDto.archived
+                )
                 .map { case (savedTask, updatedLinks, savedLinks) =>
                   val savedDto = FindTaskResp(
                     task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),

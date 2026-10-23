@@ -1504,3 +1504,39 @@ databaseChangeLog:
               alter index idx_task_load_config_project_id_id rename to idx_data_import_config_project_id_id;
               alter table data_import_config rename constraint fk_task_load_config_project to fk_data_import_config_project;
               alter table data_import_config rename constraint fk_task_load_config_account to fk_data_import_config_account
+  - changeSet:
+      id: 9
+      author: mirko
+      labels: task-archive
+      comment: Archiving is a flag of the task instead of the "Archived" task status
+      changes:
+        - addColumn:
+            tableName: task
+            columns:
+              - column:
+                  name: archived
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              update task set archived = true
+              where id in (
+                select tv.task_id from task_version tv
+                join task_status ts on ts.id = tv.task_status_id
+                where ts.name = U&'\+01F4E6 Archived'
+              )
+        - sql:
+            sql: >
+              update task_version tv set task_status_id = done.id
+              from task_status archived_status, task_status done
+              where tv.task_status_id = archived_status.id
+                and archived_status.name = U&'\+01F4E6 Archived'
+                and done.project_id = archived_status.project_id
+                and done.name = U&'\+002705 Done'
+        - sql:
+            sql: >
+              delete from task_status ts
+              where ts.name = U&'\+01F4E6 Archived'
+                and not exists (select 1 from task_version tv where tv.task_status_id = ts.id)

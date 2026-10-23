@@ -154,11 +154,15 @@ class TaskService(
     newVersionContent: TaskVersion,
     linkVersionUpdates: Seq[LinkVersion],
     newLinks: Seq[LinkWithOneVersion],
-    labelIds: Seq[UUID] = Seq.empty
+    labelIds: Seq[UUID] = Seq.empty,
+    archived: Boolean = false
   ): IO[(TaskWithOneVersion, List[LinkWithOneVersion], List[LinkWithOneVersion])] = {
     logger.info(s"Updating task ${sp(taskId)}, with ${sp(newVersionContent)} and ${sp(linkVersionUpdates)}")
     (for {
-      task <- taskRepo.findById(taskId)
+      existingTask <- taskRepo.findById(taskId)
+      task <-
+        if (existingTask.archived == archived) existingTask.pure[ConnectionIO]
+        else taskRepo.updateArchived(taskId, archived).as(existingTask.copy(archived = archived))
       currentVersion <- taskVersionRepo.findLatestByTaskId(taskId)
       savedVersion <-
         if (currentVersion.hasSameContentAs(newVersionContent))

@@ -17,10 +17,10 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     import task._
     logAroundInfoQuery(
       insertStatement(TASK_TABLE_FRAG)(fr"""
-        (project_id, created_by, created_at)
-        values ($projectId, $createdBy, $createdAt)
+        (project_id, created_by, created_at, archived)
+        values ($projectId, $createdBy, $createdAt, $archived)
       """).update
-        .withUniqueGeneratedKeys[Task]("id", "project_id", "created_by", "created_at")
+        .withUniqueGeneratedKeys[Task]("id", "project_id", "created_by", "created_at", "archived")
     )(
       s"Inserting ${sp(task)}",
       task => s"Task inserted ${sp(task)}"
@@ -31,10 +31,10 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     import task._
     logAroundInfoQuery(
       insertStatement(TASK_TABLE_FRAG)(fr"""
-        (id, project_id, created_by, created_at)
-        values ($id, $projectId, $createdBy, $createdAt)
+        (id, project_id, created_by, created_at, archived)
+        values ($id, $projectId, $createdBy, $createdAt, $archived)
       """).update
-        .withUniqueGeneratedKeys[Task]("id", "project_id", "created_by", "created_at")
+        .withUniqueGeneratedKeys[Task]("id", "project_id", "created_by", "created_at", "archived")
     )(
       s"Inserting ${sp(task)} with existing id",
       task => s"Task inserted with existing id ${sp(task)}"
@@ -45,6 +45,14 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
     logAroundInfoQuery(findByIdStatementUUID(TASK_TABLE_FRAG)(id).query[Task].unique)(
       s"Finding task with ${sp(id)}",
       task => s"Task found ${sp(task)}"
+    )
+
+  override def updateArchived(id: UUID, archived: Boolean): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      (fr"update" ++ TASK_TABLE_FRAG ++ fr"set archived = $archived where id = $id").update.run
+    )(
+      s"Setting ${sp(archived)} on task with ${sp(id)}",
+      _ => s"Task with ${sp(id)} set to ${sp(archived)}"
     )
 
   override def deleteById(id: UUID): ConnectionIO[Int] =

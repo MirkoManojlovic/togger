@@ -62,7 +62,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       endDate = version.endDate,
       createdAt = task.createdAt,
       updatedAt = version.updatedAt,
-      latestVersion = version.version
+      latestVersion = version.version,
+      archived = task.archived
     )
   }
 
@@ -250,7 +251,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         NonEmptyList.fromList(filter.assigneeIds).map(inOrNull(fr"tv.assigned_to", _, TgIds.UNASSIGNED_UUID)),
         NonEmptyList.fromList(filter.milestoneIds).map(inOrNull(fr"tv.milestone_id", _, TgIds.NO_MILESTONE_UUID)),
         filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText),
-        filter.timeboxId.map(inLatestTimeboxVersion)
+        filter.timeboxId.map(inLatestTimeboxVersion),
+        Option.unless(filter.includeArchived)(fr"not task.archived")
       )
 
   private def inLatestTimeboxVersion(timeboxId: UUID): Fragment =

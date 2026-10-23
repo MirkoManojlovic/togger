@@ -24,7 +24,8 @@ object TaskDtoMapper {
       startDate = version.startDate,
       dueDate = version.dueDate,
       endDate = version.endDate,
-      taskLabelIds = taskLabelIds
+      taskLabelIds = taskLabelIds,
+      archived = task.archived
     )
 
   def toVersionDto(version: TaskVersion): TaskVersionDto =

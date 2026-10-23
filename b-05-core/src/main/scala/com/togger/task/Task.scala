@@ -5,7 +5,7 @@ import com.togger.account.Account
 import java.time.{Instant, LocalDate}
 import java.util.UUID
 
-case class Task(id: UUID, projectId: UUID, createdBy: UUID, createdAt: Instant)
+case class Task(id: UUID, projectId: UUID, createdBy: UUID, createdAt: Instant, archived: Boolean = false)
 
 case class TaskVersion(
   version: UUID,
@@ -85,7 +85,8 @@ case class TaskFull(
   endDate: Option[LocalDate] = None,
   createdAt: Instant,
   updatedAt: Instant,
-  latestVersion: UUID
+  latestVersion: UUID,
+  archived: Boolean = false
 )
 
 case class TaskStatus(

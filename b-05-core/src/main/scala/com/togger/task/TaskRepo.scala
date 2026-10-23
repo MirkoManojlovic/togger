@@ -15,6 +15,8 @@ trait TaskRepo {
 
   def insertWithId(task: Task): ConnectionIO[Task]
 
+  def updateArchived(id: UUID, archived: Boolean): ConnectionIO[Int]
+
   def deleteById(id: UUID): ConnectionIO[Int]
 
 }
