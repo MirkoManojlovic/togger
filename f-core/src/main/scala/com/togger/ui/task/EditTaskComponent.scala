@@ -347,7 +347,7 @@ class EditTaskComponent(
                 child <-- linksVar.signal.map(taskLinkComponent =>
                   div(addNewLink, taskLinkComponent.map(_.htmlElement))
                 ),
-                TgHtmlButton.update(EventStream.fromValue(false))
+                div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
               )
             )
           )
