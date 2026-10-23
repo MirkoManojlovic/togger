@@ -151,6 +151,7 @@ lazy val backendMain = (project in file("b-07-main"))
   .settings(
     name := "backend-main",
     Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
+    Test / executeTests := Def.uncached((Test / executeTests).dependsOn(backendDatabase / Test / executeTests).value), // run backendDatabase tests first, never concurrently, same shared postgres
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Http4s
@@ -182,6 +183,7 @@ lazy val backendMain = (project in file("b-07-main"))
 lazy val backendDiskSync = (project in file("b-05-disk-sync"))
   .settings(
     name := "backend-disk-sync",
+    Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Postgres
