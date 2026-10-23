@@ -427,6 +427,25 @@ object TgIcons {
       )
     )
 
+  def eyeIcon(className: String) =
+    svg.svg(
+      svg.className(className),
+      svg.width("24"),
+      svg.height("24"),
+      svg.fill("none"),
+      svg.viewBox("0 0 24 24"),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeWidth("2"),
+        svg.d("M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6Z")
+      ),
+      svg.path(
+        svg.stroke("currentColor"),
+        svg.strokeWidth("2"),
+        svg.d("M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z")
+      )
+    )
+
   def refreshIcon(className: String) =
     svg.svg(
       svg.className(className),

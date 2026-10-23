@@ -179,19 +179,7 @@ class LogEntryComponent(
                       cls("flex flex-col"),
                       div(
                         cls("flex justify-end mb-2"),
-                        button(
-                          typ("button"),
-                          cls(
-                            "text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white " +
-                              "focus:ring-4 focus:ring-brand-subtle rounded-base p-0.5 focus:outline-none"
-                          ),
-                          aria.label("Edit"),
-                          title("Edit"),
-                          TgIcons.editIcon("w-3 h-3"),
-                          onClick.mapToUnit --> { _ =>
-                            displayAsEditVar.update(displayAsEdit => !displayAsEdit)
-                          }
-                        )
+                        toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3"))
                       ),
                       div(
                         // a badge never breaks its text; those that do not fit the row go on the lines below
@@ -220,6 +208,22 @@ class LogEntryComponent(
       }
     )
   )
+
+  /** The small icon button that switches an entry between its display and its edit form. */
+  private def toggleEditButton(name: String, icon: SvgElement): HtmlElement =
+    button(
+      typ("button"),
+      cls(
+        "text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white " +
+          "focus:ring-4 focus:ring-brand-subtle rounded-full w-6 h-6 inline-flex items-center justify-center focus:outline-none"
+      ),
+      aria.label(name),
+      title(name),
+      icon,
+      onClick.mapToUnit --> { _ =>
+        displayAsEditVar.update(displayAsEdit => !displayAsEdit)
+      }
+    )
 
   private def asDisplayEl(submitter: Observer[LogEntryForm], buttonLabel: String, addShowToggle: Boolean) = {
 
@@ -396,13 +400,7 @@ class LogEntryComponent(
             justifyContent.spaceBetween, // TODO: fix this
             div("Status for the day"),
             if (addShowToggle) {
-              TgHtmlButton
-                .extraSmall("Show")
-                .amend(
-                  onClick.mapToUnit --> { _ =>
-                    displayAsEditVar.update(displayAsEdit => !displayAsEdit)
-                  }
-                )
+              toggleEditButton("Show", TgIcons.eyeIcon("w-3 h-3"))
             } else div()
           ),
           TgCard.CardHeaderSize.H3
