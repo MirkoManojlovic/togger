@@ -19,6 +19,7 @@ case class TaskStatusFormState(
   id: UUID,
   projectId: UUID,
   name: String,
+  emoji: String,
   description: String
 )
 
@@ -55,6 +56,7 @@ class ShowAllTaskStatusesComponent(
                 id = dto.id,
                 projectId = dto.projectId,
                 name = dto.name,
+                emoji = dto.emoji,
                 description = dto.description
               )
             )
@@ -112,7 +114,7 @@ class ShowAllTaskStatusesComponent(
                             cls(rowCls),
                             //                textAlign.center,
                             createTd(dto.id.toString),
-                            createTd(dto.name),
+                            createTd(s"${dto.emoji} ${dto.name}".trim),
                             createTd(dto.description),
                             createTd(
                               div(
