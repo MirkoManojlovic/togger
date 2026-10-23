@@ -264,6 +264,7 @@ class BulkAddTasks(
         `type`("button"),
         cls(primaryButtonCls),
         "Close, keep draft",
+        onMountCallback(ctx => ctx.thisNode.ref.focus()),
         onClick.mapToUnit --> (_ => closeKeepingDraft())
       )
     )
