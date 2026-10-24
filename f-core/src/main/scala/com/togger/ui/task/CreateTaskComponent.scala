@@ -331,6 +331,13 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   ): TgRespIO[Seq[LogEntryDto]] =
     PaginatedLoader.loadAll(findLogEntriesByProjectId(projectId, filter, _))
 
+  def findLogEntriesByTaskId(taskId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[LogEntryDto]] =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.findByTaskId)((taskId, page))
+
+  /** Every log entry of the task; see [[PaginatedLoader]] for the bound. */
+  def findAllLogEntriesByTaskId(taskId: UUID): TgRespIO[Seq[LogEntryDto]] =
+    PaginatedLoader.loadAll(findLogEntriesByTaskId(taskId, _))
+
   def findTaskById(id: UUID): TgRespIO[FindTaskResp] =
     protectedBackendClient.protectedHttpCall(taskEndpoints.findByIdEndpoint)(id)
 
