@@ -660,6 +660,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   tgDateFormater,
+                  tgMarkdown,
                   projectId,
                   listParams
                 ).element

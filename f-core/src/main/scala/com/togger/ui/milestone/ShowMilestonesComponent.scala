@@ -5,6 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.dto.{FindMilestoneResp, FindProjectResp}
+import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, MilestoneListParams, TgRouter}
@@ -15,6 +16,8 @@ import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
   TableSearchComponent,
+  TgBadge,
+  TgBadgeColor,
   TgHtmlTable,
   TgPaginationComponent
 }
@@ -32,6 +35,7 @@ class ShowMilestonesComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   projectId: UUID,
   params: MilestoneListParams
 )(implicit
@@ -145,7 +149,19 @@ class ShowMilestonesComponent(
                 )
               )
             ),
-            body = TgCard.HtmlCardContent(div(projectResp.description))
+            body = TgCard.HtmlCardContent(
+              div(
+                tgMarkdown.toLaminarDiv(projectResp.description),
+                Option.when(projectResp.projectLabels.nonEmpty)(
+                  div(
+                    cls("flex flex-wrap gap-1 mt-2"),
+                    projectResp.projectLabels
+                      .sortBy(_.name)
+                      .map(label => TgBadge(text = label.name, color = TgBadgeColor.Indigo, bordered = true).element)
+                  )
+                )
+              )
+            )
           )
           .element
           .amend(cls("mb-4"))
