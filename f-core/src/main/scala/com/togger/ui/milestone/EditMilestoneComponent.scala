@@ -8,6 +8,7 @@ import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -114,7 +115,8 @@ class EditMilestoneComponent(
     .map(
       _.fold(
         error => println(error),
-        success => milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_, milestoneStartDate, tgClock)))
+        success =>
+          milestoneDatesVar.set(success.body.get.map(new EditMilestoneDateComponent(_, milestoneStartDate, tgClock)))
       )
     )
     .unsafeRunAndForget()
@@ -269,7 +271,7 @@ class EditMilestoneComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Milestone description",
-    minWidthRem = 0
+    placeholderValue = "Describe the milestone"
   )
 
   private val statusMenuOpen = Var(false)
@@ -313,7 +315,9 @@ class EditMilestoneComponent(
           .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
           .mapToUnit --> (_ => statusMenuOpen.set(false))
       },
-      onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => statusMenuOpen.set(false)))
+      onMountBind(_ =>
+        documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => statusMenuOpen.set(false))
+      )
     )
 
   private lazy val editMilestoneCard: HtmlElement =
@@ -350,17 +354,13 @@ class EditMilestoneComponent(
         )
       )
       .element
+      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
 
   val element =
     div(
-      display.flex,
-      flexDirection.column,
-      alignItems.center,
+      justifyCenterFlex,
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
-      div(
-        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
-        editMilestoneCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0"))
-      )
+      editMilestoneCard
     )
 
 }
