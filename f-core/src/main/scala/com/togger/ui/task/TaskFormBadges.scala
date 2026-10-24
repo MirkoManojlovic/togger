@@ -67,7 +67,7 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlE
         Some(BulkEditKind.StartDate)
       ),
       BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate))
-    ) ++ task.endDate.map(endBadge) :+ daysLeft(task, lookups)
+    ) ++ task.endDate.fold(Seq(daysLeft(task, lookups)))(date => Seq(endBadge(date)))
 
   /** The end date is set by closing the task, so its badge has no popup of its own. */
   private def endBadge(date: LocalDate): BadgeSpec =
