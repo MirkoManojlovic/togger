@@ -8,12 +8,14 @@ import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor}
+import com.togger.ui.modal.ModalStyles
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -22,6 +24,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 import scala.collection.immutable.ListMap
+import scala.util.Try
 
 case class EditMilestoneForm(
   id: UUID = UUID.randomUUID(),
@@ -142,25 +145,112 @@ class EditMilestoneComponent(
       .sequence
       .void
 
+  private def save(
+    form: EditMilestoneForm,
+    dateComponents: Seq[EditMilestoneDateComponent],
+    newDateComponents: Seq[CreateMilestoneDateComponent],
+    successMessage: String
+  ): Unit = {
+    val dto = UpdateMilestoneReq(
+      id = form.id,
+      name = form.name,
+      description = form.description,
+      status = Some(MilestoneStatus.withValue(form.status.toInt)),
+      startDate = Some(LocalDate.parse(form.startDate)),
+      dueDate = Some(LocalDate.parse(form.dueDate)),
+      endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
+    )
+    spinnerService
+      .runWithSpinner(milestoneService.updateMilestone(dto))
+      .toastMessageDto(_ => successMessage)(_ =>
+        updateMilestoneDates(dateComponents) >> createNewMilestoneDates(newDateComponents)
+      )
+      .unsafeRunAndForget()
+  }
+
   lazy val submitter =
     Observer[(EditMilestoneForm, Seq[EditMilestoneDateComponent], Seq[CreateMilestoneDateComponent])] {
       case (form, dateComponents, newDateComponents) =>
-        val dto = UpdateMilestoneReq(
-          id = form.id,
-          name = form.name,
-          description = form.description,
-          status = Some(MilestoneStatus.withValue(form.status.toInt)),
-          startDate = Some(LocalDate.parse(form.startDate)),
-          dueDate = Some(LocalDate.parse(form.dueDate)),
-          endDate = if (form.endDate.isEmpty) None else Some(LocalDate.parse(form.endDate))
-        )
-        spinnerService
-          .runWithSpinner(milestoneService.updateMilestone(dto))
-          .toastMessageDto(_ => "Milestone updated successfully")(_ =>
-            updateMilestoneDates(dateComponents) >> createNewMilestoneDates(newDateComponents)
-          )
-          .unsafeRunAndForget()
+        save(form, dateComponents, newDateComponents, "Milestone updated successfully")
     }
+
+  // ---- close
+
+  private val closeDialogOpen = Var(false)
+  private val closeEndDate = Var(tgClock.currentDate())
+  private val closePickerOpen = Var(false)
+  private val tgDateFormater = new TgDateFormater
+
+  private def closeMilestone(): Unit = {
+    val closed =
+      formState.now().copy(status = MilestoneStatus.Done.value.toString, endDate = closeEndDate.now().toString)
+    closeDialogOpen.set(false)
+    closePickerOpen.set(false)
+    formState.set(closed)
+    save(closed, milestoneDatesVar.now(), newMilestoneDatesVar.now(), "Milestone closed")
+  }
+
+  private def closePicker: HtmlElement =
+    CalendarPickerPopup(
+      initialMonth = closeEndDate.now(),
+      today = tgClock.currentDate(),
+      tgDateFormater = tgDateFormater,
+      selected = Some(closeEndDate.now()),
+      minDate = Try(LocalDate.parse(formState.now().startDate)).toOption,
+      isDisabled = day => !workDaysVar.now().contains(day.getDayOfWeek),
+      onPick = day => closeEndDate.set(day),
+      onClose = () => closePickerOpen.set(false)
+    ).element
+
+  private val closeEndDateField: HtmlElement =
+    div(
+      cls("relative"),
+      TgBadge(text = "", color = TgBadgeColor.Gray, bordered = true).element
+        .amend(
+          cls("cursor-pointer"),
+          child.text <-- closeEndDate.signal.map(tgDateFormater.asAmericanDateWithDayAbrv),
+          // stopPropagation keeps this click from reaching the popup's own outside-click listener
+          onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))
+        ),
+      child.maybe <-- closePickerOpen.signal.map(Option.when(_)(closePicker))
+    )
+
+  private val closeDialog: HtmlElement =
+    div(
+      cls(ModalStyles.wrapperCls),
+      ModalStyles.closeOnBackdropOrEscape(Observer(_ => closeDialogOpen.set(false))),
+      div(
+        cls(ModalStyles.contentBoxCls),
+        cls("w-full max-w-sm"),
+        h3(cls(ModalStyles.titleCls), cls("mb-4"), "Close milestone"),
+        label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
+        closeEndDateField,
+        div(
+          cls(ModalStyles.footerCls),
+          cls("justify-end mt-72"),
+          button(
+            typ("button"),
+            cls(ModalStyles.secondaryButtonCls),
+            "Cancel",
+            onClick.mapToUnit --> (_ => closeDialogOpen.set(false))
+          ),
+          button(
+            typ("button"),
+            cls(ModalStyles.primaryButtonCls),
+            "Close milestone",
+            onClick.mapToUnit --> (_ => closeMilestone())
+          )
+        )
+      )
+    )
+
+  private val closeButton =
+    button(
+      typ("button"),
+      cls(TgHtmlButton.tailwindExtraSmallButton),
+      "Close",
+      onClick.mapToUnit --> (_ => closeDialogOpen.set(true))
+    )
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -182,47 +272,25 @@ class EditMilestoneComponent(
       ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.toStringWithEmoji))
   )
 
-  private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>
-    val orderError =
-      if (
-        form.startDate.nonEmpty && form.endDate.nonEmpty &&
-        LocalDate.parse(form.endDate).isBefore(LocalDate.parse(form.startDate))
-      )
-        Seq("End date must be on or after start date")
-      else Seq.empty
-    val weekendError =
-      if (form.endDate.nonEmpty && dateRangeValidation.isWeekend(LocalDate.parse(form.endDate), workDaysVar.now()))
-        Seq("End date must be one of this project's configured work days")
-      else Seq.empty
-    orderError ++ weekendError
-  }
-
-  private val endDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
-    errors = endDateErrors,
-    labelValue = "End date",
-    tgInputType = TgInputType.Date,
-    isRequired = false
-  )
-
-  val element = div(
-    justifyCenterFlex,
+  private lazy val editMilestoneCard: HtmlElement =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Edit a milestone", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Edit milestone", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
               onSubmit.preventDefault.mapTo(
                 (formState.now(), milestoneDatesVar.now(), newMilestoneDatesVar.now())
               ) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               dateBadges.element.amend(cls("mb-4")),
-              descriptionEditor.htmlElement.amend(cls("mb-4")),
               statusSelect.htmlElement.amend(cls("mb-4")),
-              endDateInput.htmlElement.amend(cls("mb-4")),
-              addNewMilestoneDate,
-              h5(cls("text-heading mb-2"), "Additional Milestone dates"),
+              descriptionEditor.htmlElement.amend(cls("mb-4")),
+              div(
+                cls("mb-2 flex items-center justify-between"),
+                h5(cls("text-heading"), "Additional Milestone dates"),
+                addNewMilestoneDate.amend(cls("!mb-0"))
+              ),
               children <-- milestoneDatesVar.signal.map(dateComponents =>
                 dateComponents.map(
                   _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
@@ -233,12 +301,23 @@ class EditMilestoneComponent(
                   _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
                 )
               ),
-              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+              div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
         )
       )
       .element
-  )
+
+  val element =
+    div(
+      display.flex,
+      flexDirection.column,
+      alignItems.center,
+      child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
+      div(
+        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
+        editMilestoneCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0"))
+      )
+    )
 
 }
