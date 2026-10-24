@@ -135,7 +135,7 @@ class TimeboxReviewComponent(
           div(
             p(
               cls("mb-4 font-medium text-heading"),
-              s"${tgDateFormater.asEuropeanDate(version.startDate)} - ${tgDateFormater.asEuropeanDate(version.endDate)}"
+              s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}"
             ),
             version.description.map[HtmlElement](tgMarkdown.toLaminarDiv).getOrElse(p(cls("text-body"), "No description"))
           )

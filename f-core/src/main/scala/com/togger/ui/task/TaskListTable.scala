@@ -129,7 +129,7 @@ class TaskListTable(
           Some(BulkEditKind.DueDate)
         ),
         daysLeft(dto)
-      ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asEuropeanDate(date)}", TgBadgeColor.Gray))
+      ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asAmericanDate(date)}", TgBadgeColor.Gray))
   }
 
   private def daysLeft(dto: FindTaskRespFull): BadgeSpec = {

@@ -77,8 +77,8 @@ class ShowTimeboxesComponent(
   private def deleteTimebox(dto: FindTimeboxResp): Unit =
     modalFactory.plainModal(
       message = PlainTextModalMessage(
-        s"Delete the timebox ${tgDateFormater.asEuropeanDate(dto.latestVersion.startDate)} - " +
-          s"${tgDateFormater.asEuropeanDate(dto.latestVersion.endDate)} and all of its versions?"
+        s"Delete the timebox ${tgDateFormater.asAmericanDate(dto.latestVersion.startDate)} - " +
+          s"${tgDateFormater.asAmericanDate(dto.latestVersion.endDate)} and all of its versions?"
       ),
       title = "Delete timebox",
       variant = PlainModalVariant.Danger,
@@ -121,8 +121,8 @@ class ShowTimeboxesComponent(
                 timeboxes.map { dto =>
                   val version = dto.latestVersion
                   Seq(
-                    createTd(tgDateFormater.asEuropeanDate(version.startDate)),
-                    createTd(tgDateFormater.asEuropeanDate(version.endDate)),
+                    createTd(tgDateFormater.asAmericanDate(version.startDate)),
+                    createTd(tgDateFormater.asAmericanDate(version.endDate)),
                     createTdOverflow(version.description.getOrElse("-")),
                     createTd(version.tasks.size.toString),
                     createTd(version.createdAt.toString),

@@ -41,7 +41,7 @@ class TimeboxHistoryComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText(
-          s"${tgDateFormater.asEuropeanDate(dto.startDate)} - ${tgDateFormater.asEuropeanDate(dto.endDate)}" +
+          s"${tgDateFormater.asAmericanDate(dto.startDate)} - ${tgDateFormater.asAmericanDate(dto.endDate)}" +
             s" (saved ${dto.createdAt}${if (isLatest) ", latest" else ""})",
           TgCard.CardHeaderSize.H4
         ),
@@ -53,8 +53,8 @@ class TimeboxHistoryComponent(
                 Seq(
                   createTd(task.name),
                   createTd(task.description),
-                  createTd(tgDateFormater.asEuropeanDate(task.startDate)),
-                  createTd(tgDateFormater.asEuropeanDate(task.dueDate))
+                  createTd(tgDateFormater.asAmericanDate(task.startDate)),
+                  createTd(tgDateFormater.asAmericanDate(task.dueDate))
                 )
               }
             )

@@ -18,7 +18,7 @@ class MemberContributionSection(
 
   // `team` is who the member shares the work with: the members of the project, or those of the milestone.
   private def contributions(stats: MemberContributionDto, team: Seq[MemberContributionDto]): HtmlElement =
-    ScopeCharts.forMember(stats, team, isDark, tgDateFormater.asEuropeanDate)
+    ScopeCharts.forMember(stats, team, isDark, tgDateFormater.asAmericanDate)
 
   private val milestoneSection: Option[HtmlElement] =
     Option.when(milestones.nonEmpty)(

@@ -1,15 +1,12 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.{AmericanDashes, DayOnlyFormat, EuropeanDots, LogEntryFormat, MonthNameFormat, YearMonthDayTimeFormat}
+import com.togger.ui.task.TgDateFormat.{AmericanDashes, DayOnlyFormat, LogEntryFormat, MonthNameFormat, YearMonthDayTimeFormat}
 import enumeratum.{Enum, EnumEntry}
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDate, ZoneOffset}
 
 class TgDateFormater {
-  def asEuropeanDate(date: LocalDate): String =
-    EuropeanDots.formater.format(date)
-
   def asAmericanDate(date: LocalDate): String =
     AmericanDashes.formater.format(date)
 
@@ -42,8 +39,6 @@ sealed abstract class TgDateFormat(val formater: DateTimeFormatter) extends Enum
 object TgDateFormat extends Enum[TgDateFormat] {
 
   override def values: IndexedSeq[TgDateFormat] = findValues
-
-  case object EuropeanDots extends TgDateFormat(DateTimeFormatter.ofPattern("dd.MM.YYYY"))
 
   case object AmericanDashes extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
 

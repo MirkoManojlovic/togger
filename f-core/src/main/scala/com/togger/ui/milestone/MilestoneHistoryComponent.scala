@@ -464,7 +464,7 @@ class MilestoneHistoryComponent(
                                 rowEnd = rowEnd,
                                 colIndex = idx + 1,
                                 tooltipText =
-                                  s"$milestoneName — due date: ${tgDateFormater.asEuropeanDate(milestone.dueDate)}"
+                                  s"$milestoneName — due date: ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
                               )
                             )
                         }
@@ -483,7 +483,7 @@ class MilestoneHistoryComponent(
                                     rowEnd = rowEnd,
                                     colIndex = idx + 1,
                                     tooltipText =
-                                      s"$milestoneName — ${milestoneDate.name}: ${tgDateFormater.asEuropeanDate(date)}"
+                                      s"$milestoneName — ${milestoneDate.name}: ${tgDateFormater.asAmericanDate(date)}"
                                   )
                                 )
                             }

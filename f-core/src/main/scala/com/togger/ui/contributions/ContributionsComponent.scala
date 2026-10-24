@@ -81,7 +81,7 @@ class ContributionsComponent(
   )
 
   private def generalSection(contributions: ContributionsDto): HtmlElement =
-    ScopeCharts.forTeam(contributions.general, contributions.generalTasks, isDark, tgDateFormater.asEuropeanDate)
+    ScopeCharts.forTeam(contributions.general, contributions.generalTasks, isDark, tgDateFormater.asAmericanDate)
 
   private def milestoneTabId(milestone: MilestoneContributionsDto): String =
     milestone.milestoneId.fold("no-milestone")(id => s"milestone-$id")

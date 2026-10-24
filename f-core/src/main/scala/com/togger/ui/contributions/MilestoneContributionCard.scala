@@ -66,7 +66,7 @@ class MilestoneContributionCard(
     div(
       cls("flex flex-col gap-4"),
       progress,
-      ScopeCharts.forTeam(milestone.members, milestone.tasks, isDark, tgDateFormater.asEuropeanDate)
+      ScopeCharts.forTeam(milestone.members, milestone.tasks, isDark, tgDateFormater.asAmericanDate)
     )
 
   val element: HtmlElement =
