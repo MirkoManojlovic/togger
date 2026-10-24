@@ -2,6 +2,7 @@ package com.togger.ui.task
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages._
 import com.togger.task.DefaultTaskStatus.{Backlog, Done, Todo, WontDo}
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
@@ -33,6 +34,7 @@ class ShowAllTasksComponent(
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
+  tgMarkdown: TgMarkdown,
   projectId: UUID,
   params: TaskListParams,
   val toast: Toast,
@@ -112,7 +114,7 @@ class ShowAllTasksComponent(
             ),
             body = TgCard.HtmlCardContent(
               div(
-                div(projectResp.description),
+                tgMarkdown.toLaminarDiv(projectResp.description),
                 Option.when(projectResp.projectLabels.nonEmpty)(
                   div(
                     cls("flex flex-wrap gap-1 mt-2"),
