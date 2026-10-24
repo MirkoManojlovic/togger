@@ -277,7 +277,6 @@ class MilestoneHistoryComponent(
     monthHeaders: Seq[MonthHeader],
     milestoneBoxes: Seq[MilestoneBox],
     hasAnyLogEntries: Boolean,
-    latestStatusColorByTask: Map[UUID, String],
     milestoneDateMarkers: Seq[MilestoneDateMarker]
   )
 
@@ -361,13 +360,6 @@ class MilestoneHistoryComponent(
 
           val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
             logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
-
-          val latestStatusColorByTask: Map[UUID, String] =
-            allLogEntries
-              .groupBy(_.taskId)
-              .view
-              .mapValues(_.sortBy(_.createdAt).last.status.color)
-              .toMap
 
           val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
           val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
@@ -511,7 +503,6 @@ class MilestoneHistoryComponent(
             monthHeaders,
             milestoneBoxes,
             hasAnyLogEntries = allLogEntries.nonEmpty,
-            latestStatusColorByTask,
             milestoneDateMarkers
           )
       }
@@ -578,48 +569,28 @@ class MilestoneHistoryComponent(
     )
   }
 
-  private case class TaskStatusBadge(text: String, color: TgBadgeColor)
-
-  private val taskStatusAbbreviation: Map[DefaultTaskStatus, String] = Map(
-    DefaultTaskStatus.InProgress -> "progress",
-    DefaultTaskStatus.Testing -> "test",
-    DefaultTaskStatus.Waiting -> "wait",
-    DefaultTaskStatus.Blocked -> "block",
-    DefaultTaskStatus.Todo -> "todo",
-    DefaultTaskStatus.Backlog -> "blog",
-    DefaultTaskStatus.Done -> "done",
-    DefaultTaskStatus.WontDo -> "wontdo"
-  )
-
-  private def taskStatusBadge(task: FindTaskRespFull): Option[TaskStatusBadge] =
-    DefaultTaskStatus.values
-      .find(_.statusName == task.taskStatus.name)
-      .flatMap(status => taskStatusAbbreviation.get(status).map(TaskStatusBadge(_, task.taskStatus.badgeColor)))
-
-  private def taskStatusBadgeElement(badge: TaskStatusBadge) =
-    div(
-      title(badge.text),
-      cls(
-        "flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-3.5 text-[8px] font-semibold leading-none"
-      ),
-      cls(badge.color.bgCls),
-      cls(badge.color.textCls),
-      badge.text
+  /** The emoji of the task status in a badge of the status color; a status without an emoji has no badge. */
+  private def taskStatusBadgeElement(task: FindTaskRespFull): Option[HtmlElement] = {
+    val status = task.taskStatus
+    val color = status.badgeColor
+    Option.when(status.emoji.nonEmpty)(
+      div(
+        title(status.name),
+        cls("flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-4 text-[10px] leading-none"),
+        cls(color.bgCls),
+        cls(color.textCls),
+        status.emoji
+      )
     )
+  }
 
-  private def taskNameCell(task: FindTaskRespFull, rowIndex: Int, statusColor: Option[String]) =
+  private def taskNameCell(task: FindTaskRespFull, rowIndex: Int) =
     div(
       cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2 bg-neutral-primary-soft"),
       styleAttr := gridCellPlacement(1, rowIndex),
       onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
       onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
-      statusColor.map { color =>
-        div(
-          cls("w-2 h-2 rounded-full shrink-0 mr-1.5"),
-          styleAttr := s"background-color: $color;"
-        )
-      },
-      taskStatusBadge(task).map(taskStatusBadgeElement),
+      taskStatusBadgeElement(task),
       task.name,
       onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
     )
@@ -666,7 +637,7 @@ class MilestoneHistoryComponent(
         div(styleAttr := gridPlacement(2, 3, 1, 3)),
         layout.milestoneBoxes.map(milestoneNameCell),
         layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
-          taskNameCell(task, taskIdx + 3, layout.latestStatusColorByTask.get(task.id))
+          taskNameCell(task, taskIdx + 3)
         },
         taskNameResizeHandle(rowStart = 3, rowEnd = layout.orderedTasks.size + 3),
         child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => leftRowHoverOverlay(rowIndex)))
