@@ -147,6 +147,8 @@ class MilestoneReviewComponent(
         ),
         body = TgCard.HtmlCardContent(
           div(
+            // the card header leaves 1.5rem below it, which is more than the badges need
+            cls("-mt-3"),
             child.maybe <-- milestoneVar.signal
               .combineWith(lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)))
               .map { case (milestone, workDays) => milestone.map(summary(_, workDays)) }
