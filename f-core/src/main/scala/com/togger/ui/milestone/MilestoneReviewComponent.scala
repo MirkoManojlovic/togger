@@ -2,7 +2,7 @@ package com.togger.ui.milestone
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.markdown.TgMarkdown
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
@@ -34,6 +34,7 @@ import com.togger.ui.task.{
 import com.togger.ui.timebox.TimeboxReviewStats
 import com.togger.ui.toast.Toast
 
+import java.time.DayOfWeek
 import java.util.UUID
 
 /** A milestone with all of its tasks, in the same table the task list shows. */
@@ -103,7 +104,16 @@ class MilestoneReviewComponent(
   private def dateBadge(label: String, date: java.time.LocalDate, color: TgBadgeColor = TgBadgeColor.Gray) =
     TgBadge(text = s"$label ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", color = color, bordered = true).element
 
-  private def summary(milestone: FindMilestoneResp): HtmlElement =
+  /** The work days left until the due date, or "Overdue" once it has passed. */
+  private def daysLeftBadge(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement = {
+    val today = tgClock.currentDate()
+    val (text, color) =
+      if (milestone.dueDate.isBefore(today)) ("Overdue", TgBadgeColor.Red)
+      else (s"${WorkDayCalendar.countWorkDays(today, milestone.dueDate, workDays)} days left", TgBadgeColor.Gray)
+    TgBadge(text = text, color = color, bordered = true).element
+  }
+
+  private def summary(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement =
     div(
       div(
         cls("flex flex-wrap items-center gap-1.5 mb-2"),
@@ -114,7 +124,7 @@ class MilestoneReviewComponent(
         ).element,
         dateBadge("Start", milestone.startDate),
         dateBadge("Due", milestone.dueDate),
-        milestone.endDate.map(dateBadge("End", _, TgBadgeColor.Success))
+        milestone.endDate.fold(daysLeftBadge(milestone, workDays))(dateBadge("End", _, TgBadgeColor.Success))
       ),
       Option.when(milestone.description.nonEmpty)(tgMarkdown.toLaminarDiv(milestone.description))
     )
@@ -135,7 +145,13 @@ class MilestoneReviewComponent(
             )
           )
         ),
-        body = TgCard.HtmlCardContent(div(child.maybe <-- milestoneVar.signal.map(_.map(summary))))
+        body = TgCard.HtmlCardContent(
+          div(
+            child.maybe <-- milestoneVar.signal
+              .combineWith(lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)))
+              .map { case (milestone, workDays) => milestone.map(summary(_, workDays)) }
+          )
+        )
       )
       .element
       .amend(cls("mb-4"))
