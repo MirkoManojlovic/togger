@@ -71,15 +71,16 @@ class EditMilestoneComponent(
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
 
-  lazy val addNewMilestoneDate =
-    TgHtmlButton
-      .extraSmall("+")
+  private def addNewDate(): Unit =
+    newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
+
+  lazy val addNewMilestoneDate: HtmlElement =
+    TgBadge(text = "+ Add additional date", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
       .amend(
-        typ("button"),
-        cls("mb-4"),
-        onClick --> (_ =>
-          newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
-        )
+        role("button"),
+        tabIndex(0),
+        onClick --> (_ => addNewDate()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addNewDate())
       )
 
   spinnerService
@@ -334,19 +335,19 @@ class EditMilestoneComponent(
               div(cls("mb-4 flex flex-wrap items-center gap-1.5"), statusBadge, dateBadges.element),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               div(
-                cls("mb-2 flex items-center justify-between"),
-                h5(cls("text-heading"), "Additional Milestone dates"),
-                addNewMilestoneDate.amend(cls("!mb-0"))
-              ),
-              children <-- milestoneDatesVar.signal.map(dateComponents =>
-                dateComponents.map(
-                  _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
-                )
-              ),
-              children <-- newMilestoneDatesVar.signal.map(dateComponents =>
-                dateComponents.map(
-                  _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
-                )
+                cls("mb-4"),
+                h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
+                children <-- milestoneDatesVar.signal.map(dateComponents =>
+                  dateComponents.map(
+                    _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+                  )
+                ),
+                children <-- newMilestoneDatesVar.signal.map(dateComponents =>
+                  dateComponents.map(
+                    _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+                  )
+                ),
+                addNewMilestoneDate
               ),
               div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
