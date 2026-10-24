@@ -1,0 +1,605 @@
+package com.togger.ui.milestone
+
+import cats.effect.IO
+import cats.syntax.parallel._
+import com.raquo.laminar.api.L._
+import com.togger.common.TgClock
+import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
+import com.togger.routes.Pages._
+import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TgRouter}
+import com.togger.task.DefaultTaskStatus
+import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableSearchComponent, TgTooltip}
+import com.togger.ui.project.ProjectService
+import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import org.scalajs.dom
+import org.scalajs.dom.MouseEvent
+
+import java.time.temporal.TemporalAdjusters
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
+import java.util.UUID
+
+/** The Gantt chart of the log entries of the tasks of one milestone, built like [[MilestoneHistoryComponent]]. It reads
+  * only that milestone, its tasks, their log entries and its dates, and keeps its filters off the URL, so it can sit
+  * inside another page. The caller runs `load()`, so a page can load all of its parts under one spinner.
+  */
+class SingleMilestoneHistoryComponent(
+  taskService: TaskFeService,
+  milestoneService: MilestoneFeService,
+  milestoneDateService: MilestoneDateFeService,
+  projectService: ProjectService,
+  router: TgRouter[FrontendPage],
+  tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
+  projectId: UUID,
+  milestoneId: UUID
+) {
+
+  private val projectVar: Var[FindProjectResp] = Var(
+    FindProjectResp(
+      id = UUID.randomUUID(),
+      organizationId = UUID.randomUUID(),
+      name = "",
+      description = "",
+      icon = "",
+      workDays = Set.empty,
+      members = Seq.empty
+    )
+  )
+  private val tasksVar = Var(Seq.empty[FindTaskRespFull])
+  private val logEntriesVar = Var(Seq.empty[LogEntryDto])
+  private val milestonesVar = Var(Seq.empty[FindMilestoneResp])
+  private val milestoneDatesVar = Var(Seq.empty[FindMilestoneDateResp])
+
+  private val params = MilestoneHistoryParams.default
+
+  private def logEntriesOf(task: FindTaskRespFull): IO[Seq[LogEntryDto]] =
+    taskService
+      .findAllLogEntriesByTaskId(task.id)
+      .map(_.fold(e => { println(e); Seq.empty[LogEntryDto] }, _.body.get))
+
+  /** Reads only what the chart of the milestone needs. */
+  def load(): IO[Unit] = {
+    val projectCall =
+      projectService.findById(projectId).map(_.fold(e => println(e), success => projectVar.set(success.body.get)))
+    val milestoneCall =
+      milestoneService
+        .findMilestoneById(milestoneId)
+        .map(_.fold(e => println(e), success => milestonesVar.set(success.body.toSeq)))
+    val milestoneDatesCall =
+      milestoneDateService
+        .findAllByMilestoneId(milestoneId)
+        .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
+    // The log entries are read per task of the milestone, so the entries of the rest of the project are never loaded.
+    val tasksAndLogEntriesCall =
+      taskService.findAllByMilestone(projectId, milestoneId).flatMap {
+        case Left(e) => IO(println(e))
+        case Right(success) =>
+          val tasks = success.body.get
+          tasksVar.set(tasks)
+          tasks.toList.parTraverse(logEntriesOf).map(entries => logEntriesVar.set(entries.flatten))
+      }
+
+    projectCall >> milestoneCall >> milestoneDatesCall >> tasksAndLogEntriesCall
+  }
+
+  private def toLocalDate(instant: Instant): LocalDate =
+    instant.atOffset(ZoneOffset.UTC).toLocalDate
+
+  private def isWeekend(date: LocalDate, workDays: Set[DayOfWeek]): Boolean =
+    !workDays.contains(date.getDayOfWeek)
+
+  private def weekStart(date: LocalDate): LocalDate =
+    date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+  private def statusOrder(statusName: String): Int =
+    DefaultTaskStatus.values.find(_.statusName == statusName).map(_.i).getOrElse(Int.MaxValue)
+
+  private def taskStatusOrder(task: FindTaskRespFull): Int =
+    statusOrder(task.taskStatus.name)
+
+  private def dayPasses(day: LocalDate, filter: ActiveDateFilter): Boolean =
+    filter match {
+      case ActiveDateFilter.ByMonth(selected) =>
+        selected.isEmpty || selected.contains((day.getYear, day.getMonthValue))
+      case ActiveDateFilter.ByRange(start, end) =>
+        start.forall(!day.isBefore(_)) && end.forall(!day.isAfter(_))
+    }
+
+  private val monthOptionsSignal: Signal[Seq[MonthOption]] =
+    logEntriesVar.signal.map { entries =>
+      entries
+        .map(e => toLocalDate(e.createdAt))
+        .map(d => (d.getYear, d.getMonthValue))
+        .distinct
+        .sortBy(identity)
+        .map { case (year, month) => MonthOption(year, month) }
+    }
+
+  private val currentParamsVar = Var(params)
+
+  private def showHistory(change: MilestoneHistoryParams => MilestoneHistoryParams): Unit =
+    currentParamsVar.update(change)
+
+  /** Keeps the params in step when the user changes a multi-select widget. Picking exactly the widget's default is spelled by
+    * leaving it out of the URL.
+    */
+  private def navigateOnSelection(
+    selectedIds: Signal[Set[String]],
+    itemsSignal: Signal[Seq[MultiSelectItem]],
+    defaultIds: Seq[MultiSelectItem] => Set[String]
+  )(withSelection: (MilestoneHistoryParams, Option[Set[String]]) => MilestoneHistoryParams): Modifier[HtmlElement] =
+    selectedIds.changes.withCurrentValueOf(itemsSignal) --> Observer[(Set[String], Seq[MultiSelectItem])] {
+      case (picked, items) =>
+        showHistory(withSelection(_, Option.when(picked != defaultIds(items))(picked)))
+    }
+
+  private def allIds(items: Seq[MultiSelectItem]): Set[String] = items.map(_.id).toSet
+
+  private val dateFilterComponent = new DateFilterComponent(
+    monthOptionsSignal,
+    tgDateFormater,
+    tgClock,
+    initialMode = if (params.byRange) DateFilterMode.Range else DateFilterMode.Month,
+    initialMonths = params.months,
+    initialStart = params.start,
+    initialStop = params.stop
+  )
+
+  private val searchTermVar = Var(params.search)
+  private val searchBox = TableSearchComponent(
+    inputSignal = searchTermVar.signal,
+    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
+    placeholderValue = "Search by name, description"
+  )
+
+  private val navigateOnChange: Seq[Modifier[HtmlElement]] = Seq(
+    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)((current, selection) =>
+      current.copy(months = selection)
+    ),
+    dateFilterComponent.modeSignal.changes --> Observer[DateFilterMode](mode =>
+      showHistory(_.copy(byRange = mode == DateFilterMode.Range))
+    ),
+    dateFilterComponent.rangeSignal.changes --> Observer[(Option[LocalDate], Option[LocalDate])] {
+      case (start, stop) => showHistory(_.copy(start = start, stop = stop))
+    },
+    searchTermVar.signal.changes --> Observer[String](term => showHistory(_.copy(search = term.trim)))
+  )
+
+  private val taskColWidthPxVar: Var[Double] = Var(192.0) // 12rem at default root font size
+  private val dragStateVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
+  private val hoveredRowIndexVar: Var[Option[Int]] = Var(None)
+
+  private def startDrag(ev: MouseEvent): Unit = {
+    ev.preventDefault()
+    dragStateVar.set(Some((ev.clientX, taskColWidthPxVar.now())))
+    dom.document.body.style.cursor = "col-resize"
+    dom.document.body.style.setProperty("user-select", "none")
+  }
+
+  private def onDragMove(ev: MouseEvent): Unit =
+    dragStateVar.now().foreach { case (startX, startWidth) =>
+      taskColWidthPxVar.set(math.max(0.0, startWidth + (ev.clientX - startX)))
+    }
+
+  private def endDrag(): Unit = {
+    dragStateVar.set(None)
+    dom.document.body.style.cursor = ""
+    dom.document.body.style.setProperty("user-select", "")
+  }
+
+  private val weekBackgrounds: Seq[String] = Seq("bg-neutral-tertiary-medium", "bg-neutral-primary")
+
+  private case class MilestoneBox(name: String, rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int, color: String)
+
+  private case class MonthHeader(name: String, monthNumber: Int, colStart: Int, colEnd: Int)
+
+  private case class MilestoneDateMarker(
+    rowStart: Int,
+    rowEnd: Int,
+    colIndex: Int,
+    tooltipText: String
+  )
+
+  private case class HistoryLayout(
+    orderedTasks: Seq[FindTaskRespFull],
+    entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]],
+    days: Seq[LocalDate],
+    weekIndexByDay: Map[LocalDate, Int],
+    monthHeaders: Seq[MonthHeader],
+    milestoneBoxes: Seq[MilestoneBox],
+    hasAnyLogEntries: Boolean,
+    milestoneDateMarkers: Seq[MilestoneDateMarker]
+  )
+
+  // Row order: one contiguous block per milestone (alphabetical by milestone name, tasks sorted by name within
+  // the block), followed by a trailing block of tasks with no milestone. Contiguous blocks are what let a
+  // milestone's red box be a single rectangle spanning exactly its own tasks' rows.
+  private val historySignal: Signal[HistoryLayout] =
+    tasksVar.signal
+      .combineWith(
+        logEntriesVar.signal,
+        milestonesVar.signal,
+        milestoneDatesVar.signal,
+        dateFilterComponent.activeFilter,
+        searchBox.inputSignal
+      )
+      .combineWith(projectVar.signal)
+      .map {
+        case (
+              allTasks,
+              allLogEntries,
+              milestones,
+              milestoneDates,
+              activeFilter,
+              searchTerm,
+              project
+            ) =>
+          val workDays = project.workDays.map(DayOfWeek.of)
+          val needle = searchTerm.trim.toLowerCase
+          val tasks: Seq[FindTaskRespFull] =
+            if (needle.isEmpty) allTasks
+            else
+              allTasks.filter(t =>
+                t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle)
+              )
+
+          val allDays: Seq[LocalDate] =
+            if (allLogEntries.isEmpty) Seq.empty
+            else {
+              val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
+              val minDate = dates.min
+              val maxDate = dates.max
+              Iterator
+                .iterate(minDate)(_.plusDays(1))
+                .takeWhile(!_.isAfter(maxDate))
+                .filterNot(isWeekend(_, workDays))
+                .toSeq
+            }
+          val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
+
+          val logEntries: Seq[LogEntryDto] =
+            allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
+          val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
+
+          val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
+            logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
+
+          val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
+          val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
+
+          // days is chronologically ordered, so days sharing a (year, month) are always contiguous —
+          // a simple fold groups them into runs without needing a stable groupBy.
+          val monthHeaders: Seq[MonthHeader] = days.zipWithIndex
+            .foldLeft(Vector.empty[(LocalDate, Int, Int)]) { case (acc, (day, idx)) =>
+              acc.lastOption match {
+                case Some((repDay, startIdx, _)) if repDay.getYear == day.getYear && repDay.getMonth == day.getMonth =>
+                  acc.init :+ (repDay, startIdx, idx)
+                case _ =>
+                  acc :+ (day, idx, idx)
+              }
+            }
+            .map { case (repDay, startIdx, endIdx) =>
+              MonthHeader(
+                tgDateFormater.monthName(repDay),
+                monthNumber = repDay.getMonthValue,
+                colStart = startIdx + 1,
+                colEnd = endIdx + 2
+              )
+            }
+
+          val milestoneNamesById: Map[UUID, String] = milestones.map(m => m.id -> m.name).toMap
+          val milestonesById: Map[UUID, FindMilestoneResp] = milestones.map(m => m.id -> m).toMap
+          val milestoneDatesByMilestoneId: Map[UUID, Seq[FindMilestoneDateResp]] = milestoneDates.groupBy(_.milestoneId)
+          val visibleTasks: Seq[FindTaskRespFull] = tasks.filter(t => taskIdsWithVisibleEntries.contains(t.id))
+          val tasksByMilestone: Map[UUID, Seq[FindTaskRespFull]] =
+            visibleTasks.filter(_.milestone.isDefined).groupBy(_.milestone.get)
+          val unassignedTasks: Seq[FindTaskRespFull] =
+            visibleTasks.filter(_.milestone.isEmpty).sortBy(t => (taskStatusOrder(t), t.name))
+
+          val orderedMilestoneIds: Seq[UUID] =
+            tasksByMilestone.keys.toSeq.sortBy(id => milestoneNamesById.getOrElse(id, id.toString))
+
+          val orderedGroups: Seq[(Option[UUID], Seq[FindTaskRespFull])] =
+            orderedMilestoneIds.map(id =>
+              Some(id) -> tasksByMilestone(id).sortBy(t => (taskStatusOrder(t), t.name))
+            ) :+ (None -> unassignedTasks)
+
+          val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
+
+          var rowCursor = 0
+          val (milestoneBoxes, milestoneDateMarkers)
+            : (Seq[MilestoneBox], Seq[MilestoneDateMarker]) =
+            orderedGroups.foldLeft((Seq.empty[MilestoneBox], Seq.empty[MilestoneDateMarker])) {
+              case ((boxAcc, markerAcc), (milestoneIdOpt, groupTasks)) =>
+                val rowStart = rowCursor + 3
+                rowCursor += groupTasks.size
+                val rowEnd = rowCursor + 3
+
+                milestoneIdOpt match {
+                  case Some(milestoneId) if groupTasks.nonEmpty =>
+                    milestonesById.get(milestoneId) match {
+                      case Some(milestone) =>
+                        val milestoneName = milestoneNamesById.getOrElse(milestoneId, "Milestone")
+                        val startDate = milestone.startDate
+                        // The box's end column tracks the milestone's actual progress, so it's driven by the
+                        // last logged activity on the milestone's own tasks (ignoring active filters, so the
+                        // box doesn't shrink/grow as the user filters the view) rather than the milestone's
+                        // estimated/actual end date fields.
+                        val groupTaskIds: Set[UUID] = groupTasks.map(_.id).toSet
+                        val lastLogEntryDate: Option[LocalDate] =
+                          allLogEntries
+                            .filter(e => groupTaskIds.contains(e.taskId))
+                            .map(e => toLocalDate(e.createdAt))
+                            .maxOption
+                        val endDate = lastLogEntryDate.getOrElse(startDate)
+                        // Milestone dates are always work days, but may fall outside the currently visible
+                        // `days` (e.g. before the earliest logged day, or excluded by the active date filter).
+                        // Clip the box to the nearest visible column on each side, and drop it entirely if the
+                        // milestone's own range doesn't overlap the visible days at all.
+                        val minIdxOpt = days.indexWhere(!_.isBefore(startDate)) match {
+                          case -1  => None
+                          case idx => Some(idx)
+                        }
+                        val maxIdxOpt = days.lastIndexWhere(!_.isAfter(endDate)) match {
+                          case -1  => None
+                          case idx => Some(idx)
+                        }
+                        val newBoxes = (minIdxOpt, maxIdxOpt) match {
+                          case (Some(minIdx), Some(maxIdx)) if minIdx <= maxIdx =>
+                            Seq(
+                              MilestoneBox(
+                                name = milestoneName,
+                                rowStart = rowStart,
+                                rowEnd = rowEnd,
+                                colStart = minIdx + 1,
+                                colEnd = maxIdx + 2,
+                                color = milestone.status.color
+                              )
+                            )
+                          case _ => Seq.empty
+                        }
+                        val dueDateMarker = days.indexOf(milestone.dueDate) match {
+                          case -1 => Seq.empty
+                          case idx =>
+                            Seq(
+                              MilestoneDateMarker(
+                                rowStart = rowStart,
+                                rowEnd = rowEnd,
+                                colIndex = idx + 1,
+                                tooltipText =
+                                  s"$milestoneName — due date: ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
+                              )
+                            )
+                        }
+                        // Custom, user-defined dates attached to this milestone (distinct from its own
+                        // startDate/dueDate/endDate fields) — each gets its own marker when its
+                        // day is currently visible.
+                        val customDateMarkers = milestoneDatesByMilestoneId.getOrElse(milestoneId, Seq.empty).flatMap {
+                          milestoneDate =>
+                            val date = toLocalDate(milestoneDate.date)
+                            days.indexOf(date) match {
+                              case -1 => None
+                              case idx =>
+                                Some(
+                                  MilestoneDateMarker(
+                                    rowStart = rowStart,
+                                    rowEnd = rowEnd,
+                                    colIndex = idx + 1,
+                                    tooltipText =
+                                      s"$milestoneName — ${milestoneDate.name}: ${tgDateFormater.asAmericanDate(date)}"
+                                  )
+                                )
+                            }
+                        }
+                        (boxAcc ++ newBoxes, markerAcc ++ dueDateMarker ++ customDateMarkers)
+                      case None => (boxAcc, markerAcc)
+                    }
+                  case _ => (boxAcc, markerAcc)
+                }
+            }
+
+          HistoryLayout(
+            orderedTasks,
+            entriesByTaskAndDay,
+            days,
+            weekIndexByDay,
+            monthHeaders,
+            milestoneBoxes,
+            hasAnyLogEntries = allLogEntries.nonEmpty,
+            milestoneDateMarkers
+          )
+      }
+
+  private def gridPlacement(colStart: Int, colEnd: Int, rowStart: Int, rowEnd: Int): String =
+    s"grid-column: $colStart / $colEnd; grid-row: $rowStart / $rowEnd;"
+
+  private def gridCellPlacement(col: Int, row: Int): String =
+    gridPlacement(col, col + 1, row, row + 1)
+
+  private def milestoneBoxElement(box: MilestoneBox) =
+    div(
+      cls("border rounded-sm pointer-events-none"),
+      styleAttr :=
+        s"${gridPlacement(box.colStart, box.colEnd, box.rowStart, box.rowEnd)} " +
+          s"background-color: ${box.color}47; border-color: ${box.color}66;"
+    )
+
+  private def milestoneDateMarkerElement(marker: MilestoneDateMarker) = {
+    val trigger = div(cls("w-full h-full border-2 border-black dark:border-default-strong rounded-sm hover:bg-black dark:hover:bg-neutral-quaternary-medium"))
+    TgTooltip(trigger = trigger, text = marker.tooltipText).element.amend(
+      styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
+    )
+  }
+
+  private def milestoneNameCell(box: MilestoneBox) =
+    div(
+      cls(
+        "flex items-center justify-center text-[10px] font-semibold text-body whitespace-nowrap overflow-hidden [writing-mode:vertical-rl]"
+      ),
+      styleAttr := gridPlacement(2, 3, box.rowStart, box.rowEnd),
+      box.name
+    )
+
+  private def monthHeaderCell(month: MonthHeader) = {
+    val colorCls =
+      if (month.monthNumber % 2 == 1) " border-default-strong border-x-8 border-y-2 text-heading"
+      else " border-default-strong border-y-2 border-x-8 text-heading"
+    div(
+      cls("flex items-center justify-center text-xs font-semibold rounded-md"),
+      cls(colorCls),
+      styleAttr := gridPlacement(month.colStart, month.colEnd, 1, 2),
+      month.name
+    )
+  }
+
+  private def dayHeaderCell(day: LocalDate, colIndex: Int, weekIndex: Int) =
+    div(
+      cls("flex flex-col items-center justify-center text-xs text-center text-body leading-tight font-semibold"),
+      cls(weekBackgrounds(weekIndex % weekBackgrounds.size)),
+      styleAttr := gridCellPlacement(colIndex, 2),
+      div(tgDateFormater.dayOfWeekAbbrev(day)),
+      div(tgDateFormater.dayOnly(day))
+    )
+
+  private def dayCell(entries: Seq[LogEntryDto], colIndex: Int, rowIndex: Int) = {
+    val latest = entries.sortBy(_.createdAt).lastOption
+    div(
+      cls("flex items-center justify-center"),
+      styleAttr := gridCellPlacement(colIndex, rowIndex),
+      onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
+      onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
+      LogEntryStatusSquare(latest.map(_.status))
+    )
+  }
+
+  /** The emoji of the task status in a badge of the status color; a status without an emoji has no badge. */
+  private def taskStatusBadgeElement(task: FindTaskRespFull): Option[HtmlElement] = {
+    val status = task.taskStatus
+    val color = status.badgeColor
+    Option.when(status.emoji.nonEmpty)(
+      div(
+        title(status.name),
+        cls("flex items-center justify-center rounded-sm shrink-0 mr-1.5 px-0.5 h-4 text-[10px] leading-none"),
+        cls(color.bgCls),
+        cls(color.textCls),
+        status.emoji
+      )
+    )
+  }
+
+  private def taskNameCell(task: FindTaskRespFull, rowIndex: Int) =
+    div(
+      cls("flex items-center cursor-pointer text-fg-brand hover:underline truncate pr-2 bg-neutral-primary-soft"),
+      styleAttr := gridCellPlacement(1, rowIndex),
+      onMouseEnter --> (_ => hoveredRowIndexVar.set(Some(rowIndex))),
+      onMouseLeave --> (_ => hoveredRowIndexVar.set(None)),
+      taskStatusBadgeElement(task),
+      task.name,
+      onClick.mapToUnit --> (_ => router.route(EditTaskPage(projectId, task.id)))
+    )
+
+  private def taskNameResizeHandle(rowStart: Int, rowEnd: Int) =
+    div(
+      cls("pointer-events-none flex items-center justify-end"),
+      styleAttr := s"grid-column: 1 / 2; grid-row: $rowStart / $rowEnd;",
+      div(
+        cls("w-2 h-20 bg-neutral-quaternary-medium hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
+        cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
+        onMouseDown --> (ev => startDrag(ev))
+      )
+    )
+
+  // A CSS Grid item's containing block for `position: sticky` purposes is its own grid area, not the
+  // whole grid — so a sticky first-column cell inside one big scrolling grid can only stay pinned while
+  // that narrow column's own track is still scrolled into view, and disappears once the user scrolls past
+  // it. To keep the task-name column visible for the entire horizontal scroll range, it lives in its own
+  // non-scrolling grid, laid out side by side with a second, independently horizontally-scrolling grid that
+  // holds only the day columns.
+  private def leftRowHoverOverlay(rowIndex: Int) =
+    div(
+      cls("pointer-events-none rounded-l-md border-2 border-y-indigo-500"),
+      styleAttr := gridPlacement(1, 3, rowIndex, rowIndex + 1)
+    )
+
+  private def rightRowHoverOverlay(rowIndex: Int, colEnd: Int) =
+    div(
+      cls("pointer-events-none rounded-r-md border-2 border-y-indigo-500"),
+      styleAttr := gridPlacement(1, colEnd, rowIndex, rowIndex + 1)
+    )
+
+  private def renderGrid(layout: HistoryLayout) = {
+    val rowsTemplate = "grid-template-rows: 1.75rem 3.25rem; grid-auto-rows: 2.25rem;"
+    div(
+      cls("flex items-start"),
+      div(
+        cls("shrink-0"),
+        styleAttr <-- taskColWidthPxVar.signal.map(width =>
+          s"display: grid; grid-template-columns: ${width}px 2rem; $rowsTemplate"
+        ),
+        div(cls("bg-neutral-primary-soft"), styleAttr := gridPlacement(1, 2, 1, 3)),
+        div(styleAttr := gridPlacement(2, 3, 1, 3)),
+        layout.milestoneBoxes.map(milestoneNameCell),
+        layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
+          taskNameCell(task, taskIdx + 3)
+        },
+        taskNameResizeHandle(rowStart = 3, rowEnd = layout.orderedTasks.size + 3),
+        child.maybe <-- hoveredRowIndexVar.signal.map(_.map(rowIndex => leftRowHoverOverlay(rowIndex)))
+      ),
+      div(
+        cls("overflow-x-auto"),
+        div(
+          styleAttr := s"display: grid; grid-template-columns: repeat(${layout.days.size}, 2rem); $rowsTemplate",
+          layout.milestoneBoxes.map(milestoneBoxElement),
+          layout.monthHeaders.map(monthHeaderCell),
+          layout.days.zipWithIndex.map { case (day, idx) =>
+            dayHeaderCell(day, idx + 1, layout.weekIndexByDay.getOrElse(day, 0))
+          },
+          layout.orderedTasks.zipWithIndex.map { case (task, taskIdx) =>
+            val rowIndex = taskIdx + 3
+            layout.days.zipWithIndex.map { case (day, idx) =>
+              dayCell(layout.entriesByTaskAndDay.getOrElse((task.id, day), Seq.empty), idx + 1, rowIndex)
+            }
+          },
+          layout.milestoneDateMarkers.map(milestoneDateMarkerElement),
+          child.maybe <-- hoveredRowIndexVar.signal.map(
+            _.map(rowIndex => rightRowHoverOverlay(rowIndex, layout.days.size + 1))
+          )
+        )
+      )
+    )
+  }
+
+  val element = {
+    div(
+      windowEvents(_.onMouseMove) --> (ev => onDragMove(ev)),
+      windowEvents(_.onMouseUp) --> (_ => endDrag()),
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),
+          body = TgCard.HtmlCardContent(
+            div(
+              navigateOnChange,
+              historySignal --> (_ => hoveredRowIndexVar.set(None)),
+              div(
+                cls("flex justify-between items-start mb-4"),
+                searchBox.element,
+                div(
+                  cls("flex flex-wrap items-start gap-3"),
+                  dateFilterComponent.element
+                )
+              ),
+              child <-- historySignal.map { layout =>
+                if (!layout.hasAnyLogEntries) div("No log entries yet for this milestone.")
+                else if (layout.days.isEmpty) div("No log entries match the selected filter.")
+                else renderGrid(layout)
+              }
+            )
+          )
+        )
+        .element
+    )
+  }
+
+}
