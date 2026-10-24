@@ -12,13 +12,22 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
-import com.togger.ui.components.{CalendarPickerPopup, ChartColorBadgeColor, TgBadge, TgBadgeColor}
+import com.togger.ui.components.{
+  CalendarPickerPopup,
+  ChartColorBadgeColor,
+  QuickOption,
+  QuickOptionsPopup,
+  TgBadge,
+  TgBadgeColor
+}
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+
+import org.scalajs.dom
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
@@ -273,7 +282,7 @@ class EditMilestoneComponent(
         TgBadge(text = status.toStringWithEmoji, color = ChartColorBadgeColor.of(status), bordered = true).element
           .amend(
             cls("cursor-pointer"),
-            cls("ring-2 ring-blue-400") <-- statusMenuOpen.signal,
+            cls("ring-2 ring-blue-500") <-- statusMenuOpen.signal,
             // stopPropagation keeps this click from reaching the menu's own outside-click listener
             onClick.stopPropagation.mapToUnit --> (_ => statusMenuOpen.update(!_))
           )
@@ -282,20 +291,29 @@ class EditMilestoneComponent(
     )
 
   private def statusMenu: HtmlElement =
-    div(
-      cls("absolute z-10 mt-1 w-44 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg p-1"),
-      documentEvents(_.onClick).mapToUnit --> (_ => statusMenuOpen.set(false)),
-      MilestoneStatus.values.map { status =>
-        button(
-          typ("button"),
-          cls("block w-full text-left text-sm text-heading rounded-base px-3 py-1.5 hover:bg-neutral-tertiary-medium"),
+    QuickOptionsPopup(
+      options = MilestoneStatus.values.map(status =>
+        QuickOption(
+          status.value.toString,
           status.toStringWithEmoji,
-          onClick.mapToUnit --> { _ =>
-            formState.update(_.copy(status = status.value.toString))
-            statusMenuOpen.set(false)
-          }
+          status.description,
+          formState.now().status == status.value.toString,
+          Some(ChartColorBadgeColor.of(status))
         )
-      }
+      ),
+      onChoose = option => {
+        formState.update(_.copy(status = option.id))
+        statusMenuOpen.set(false)
+      },
+      widthCls = "w-64"
+    ).element.amend(
+      onMountBind { ctx =>
+        val rootNode = ctx.thisNode.ref
+        documentEvents(_.onClick)
+          .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
+          .mapToUnit --> (_ => statusMenuOpen.set(false))
+      },
+      onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> (_ => statusMenuOpen.set(false)))
     )
 
   private lazy val editMilestoneCard: HtmlElement =
