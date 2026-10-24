@@ -71,7 +71,8 @@ class TaskListTable(
   val toast: Toast,
   modalFactory: ModalFactory,
   defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Todo, Backlog, Done, WontDo),
-  lockedMilestoneId: Option[UUID] = None
+  lockedMilestoneId: Option[UUID] = None,
+  loadOnCreate: Boolean = true
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -284,9 +285,10 @@ class TaskListTable(
   private val selectionArea: HtmlElement =
     div(cls("mb-4 flex min-h-8 items-center"), selectionBar, noSelectionHint)
 
-  spinnerService
-    .runWithSpinner(lookups.load().flatMap(_ => loadPage()))
-    .unsafeRunAndForget()
+  /** The lookups and the first page, for a screen that runs the loads of all its parts under one spinner. */
+  def load(): IO[Unit] = lookups.load().flatMap(_ => loadPage())
+
+  if (loadOnCreate) spinnerService.runWithSpinner(load()).unsafeRunAndForget()
 
   private def deleteTask(dto: FindTaskRespFull): Unit =
     modalFactory.plainModal(

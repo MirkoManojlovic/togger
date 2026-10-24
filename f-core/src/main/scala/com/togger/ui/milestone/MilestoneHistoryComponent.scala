@@ -37,7 +37,8 @@ class MilestoneHistoryComponent(
   tgClock: TgClock,
   projectId: UUID,
   params: MilestoneHistoryParams,
-  lockedMilestoneId: Option[UUID] = None
+  lockedMilestoneId: Option[UUID] = None,
+  loadOnCreate: Boolean = true
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -58,43 +59,44 @@ class MilestoneHistoryComponent(
   private val milestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val milestoneDatesVar = Var(Seq.empty[FindMilestoneDateResp])
 
-  spinnerService
-    .runWithSpinner {
-      val projectCall =
-        projectService.findById(projectId).map(_.fold(e => println(e), success => projectVar.set(success.body.get)))
-      // The history charts every task and log entry of the project, so all pages are read (bounded by PaginatedLoader).
-      val tasksCall =
-        lockedMilestoneId
-          .fold(taskService.findAllByProjectId(projectId))(taskService.findAllByMilestone(projectId, _))
-          .map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
-      val logEntriesCall =
-        taskService
-          .findAllLogEntriesByProjectId(projectId)
-          .map(_.fold(e => println(e), success => logEntriesVar.set(success.body.get)))
-      // The history charts every milestone of the project, so all pages are read (bounded by PaginatedLoader).
-      val milestonesCall =
-        milestoneService
-          .findAllByProjectId(projectId)
-          .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get.filter(isCharted))))
-      val milestoneDatesCall =
-        lockedMilestoneId
-          .fold(milestoneDateService.findAllByProjectId(projectId))(milestoneDateService.findAllByMilestoneId)
-          .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
+  /** Reads everything the chart needs, for a screen that runs the loads of all its parts under one spinner. */
+  def load(): IO[Unit] = {
+    val projectCall =
+      projectService.findById(projectId).map(_.fold(e => println(e), success => projectVar.set(success.body.get)))
+    // The history charts every task and log entry of the project, so all pages are read (bounded by PaginatedLoader).
+    val tasksCall =
+      lockedMilestoneId
+        .fold(taskService.findAllByProjectId(projectId))(taskService.findAllByMilestone(projectId, _))
+        .map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
+    val logEntriesCall =
+      taskService
+        .findAllLogEntriesByProjectId(projectId)
+        .map(_.fold(e => println(e), success => logEntriesVar.set(success.body.get)))
+    // The history charts every milestone of the project, so all pages are read (bounded by PaginatedLoader).
+    val milestonesCall =
+      milestoneService
+        .findAllByProjectId(projectId)
+        .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get.filter(isCharted))))
+    val milestoneDatesCall =
+      lockedMilestoneId
+        .fold(milestoneDateService.findAllByProjectId(projectId))(milestoneDateService.findAllByMilestoneId)
+        .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
 
-      for {
-        _ <- projectCall
-        _ <- tasksCall
-        _ <- logEntriesCall
-        _ <- milestonesCall
-        _ <- milestoneDatesCall
-        // the log entries of the project, of which only those of the charted tasks are kept
-        _ <- IO(lockedMilestoneId.foreach { _ =>
-          val taskIds = tasksVar.now().map(_.id).toSet
-          logEntriesVar.update(_.filter(entry => taskIds.contains(entry.taskId)))
-        })
-      } yield ()
-    }
-    .unsafeRunAndForget()
+    for {
+      _ <- projectCall
+      _ <- tasksCall
+      _ <- logEntriesCall
+      _ <- milestonesCall
+      _ <- milestoneDatesCall
+      // the log entries of the project, of which only those of the charted tasks are kept
+      _ <- IO(lockedMilestoneId.foreach { _ =>
+        val taskIds = tasksVar.now().map(_.id).toSet
+        logEntriesVar.update(_.filter(entry => taskIds.contains(entry.taskId)))
+      })
+    } yield ()
+  }
+
+  if (loadOnCreate) spinnerService.runWithSpinner(load()).unsafeRunAndForget()
 
   private def isCharted(milestone: FindMilestoneResp): Boolean = lockedMilestoneId.forall(_ == milestone.id)
 

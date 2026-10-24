@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
@@ -58,21 +59,18 @@ class MilestoneReviewComponent(
 
   private val milestoneVar = Var(Option.empty[FindMilestoneResp])
 
-  spinnerService
-    .runWithSpinner(milestoneService.findMilestoneById(milestoneId))
-    .map(_.fold(error => println(error), success => milestoneVar.set(success.body)))
-    .unsafeRunAndForget()
-
   private val tasksVar = Var(Seq.empty[FindTaskRespFull])
 
-  // The table is paged, so the stats read every task of the milestone on their own (bounded by PaginatedLoader).
-  private def loadTasks(): Unit =
-    spinnerService
-      .runWithSpinner(taskService.findAllByMilestone(projectId, milestoneId))
-      .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
-      .unsafeRunAndForget()
+  private def loadMilestone(): IO[Unit] =
+    milestoneService
+      .findMilestoneById(milestoneId)
+      .map(_.fold(error => println(error), success => milestoneVar.set(success.body)))
 
-  loadTasks()
+  // The table is paged, so the stats read every task of the milestone on their own (bounded by PaginatedLoader).
+  private def loadTasks(): IO[Unit] =
+    taskService
+      .findAllByMilestone(projectId, milestoneId)
+      .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
 
   private val lookups =
     new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
@@ -98,7 +96,8 @@ class MilestoneReviewComponent(
     toast,
     modalFactory,
     defaultDeselectedStatuses = Set.empty,
-    lockedMilestoneId = Some(milestoneId)
+    lockedMilestoneId = Some(milestoneId),
+    loadOnCreate = false
   )
 
   private def dateBadge(label: String, date: java.time.LocalDate, color: TgBadgeColor = TgBadgeColor.Gray) =
@@ -169,8 +168,21 @@ class MilestoneReviewComponent(
     tgClock,
     projectId,
     MilestoneHistoryParams.default,
-    lockedMilestoneId = Some(milestoneId)
+    lockedMilestoneId = Some(milestoneId),
+    loadOnCreate = false
   )
+
+  // One spinner for the whole page, so it stays until the last part is loaded.
+  spinnerService
+    .runWithSpinner(
+      for {
+        _ <- loadMilestone()
+        _ <- loadTasks()
+        _ <- table.load()
+        _ <- history.load()
+      } yield ()
+    )
+    .unsafeRunAndForget()
 
   private def progressBar(value: Int, max: Int, title: String): HtmlElement =
     TgProgressComponent(
