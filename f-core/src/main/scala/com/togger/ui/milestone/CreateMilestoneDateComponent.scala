@@ -60,7 +60,7 @@ class CreateMilestoneDateComponent(milestoneStartDate: Signal[String], tgClock: 
     div(
       cls("mb-4"),
       milestoneStartDate --> startDateVar,
-      nameInput.htmlElement.amend(cls("mb-4")),
+      nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
       dateBadge.element.amend(cls("mb-4")),
       descriptionEditor.htmlElement
     )
