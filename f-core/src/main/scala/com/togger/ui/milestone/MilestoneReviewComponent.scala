@@ -8,7 +8,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.routes.Pages.EditMilestonePage
-import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TaskListParams, TgRouter}
+import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{
   ChartColorBadgeColor,
@@ -157,19 +157,16 @@ class MilestoneReviewComponent(
       .element
       .amend(cls("mb-4"))
 
-  private val history = new MilestoneHistoryComponent(
+  private val history = new SingleMilestoneHistoryComponent(
     taskService,
     milestoneService,
     milestoneDateService,
     projectService,
     router,
-    spinnerService,
     tgDateFormater,
     tgClock,
     projectId,
-    MilestoneHistoryParams.default,
-    lockedMilestoneId = Some(milestoneId),
-    loadOnCreate = false
+    milestoneId
   )
 
   // One spinner for the whole page, so it stays until the last part is loaded.
