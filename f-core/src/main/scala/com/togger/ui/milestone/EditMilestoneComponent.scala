@@ -179,7 +179,7 @@ class EditMilestoneComponent(
     inputAndUpdater = selectorAndUpdaterMacro(_.status),
     labelValue = "Status",
     valuesAndDisplays =
-      ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.statusName))
+      ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.toStringWithEmoji))
   )
 
   private val endDateErrors: EventStream[Seq[String]] = formState.signal.changes.map { form =>

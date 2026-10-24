@@ -61,7 +61,7 @@ class ShowMilestonesComponent(
     MilestoneStatus.values.map(status =>
       MultiSelectItem(
         id = status.value.toString,
-        name = status.statusName,
+        name = status.toStringWithEmoji,
         isSelected = params.selectedStatuses.contains(status.value.toString)
       )
     )
@@ -192,7 +192,7 @@ class ShowMilestonesComponent(
                           createTd(dto.id.toString),
                           createTd(dto.name),
                           createTdOverflow(dto.description),
-                          createTd(dto.status.toString),
+                          createTd(dto.status.toStringWithEmoji),
                           createTd(tgDateFormater.asEuropeanDate(dto.startDate)),
                           createTd(tgDateFormater.asEuropeanDate(dto.dueDate)),
                           createTd(dto.endDate.fold("-")(date => tgDateFormater.asEuropeanDate(date))),
