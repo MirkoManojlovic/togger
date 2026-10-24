@@ -9,7 +9,7 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.bulk._
 
-import java.time.DayOfWeek
+import java.time.{DayOfWeek, LocalDate}
 
 /** The attributes of the task a form edits, as badges that open the same popups the task list uses; the form reads the
   * edited task from [[taskVar]] when it is submitted.
@@ -66,9 +66,12 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlE
         TgBadgeColor.Gray,
         Some(BulkEditKind.StartDate)
       ),
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
-      daysLeft(task, lookups)
-    )
+      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(task.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate))
+    ) ++ task.endDate.map(endBadge) :+ daysLeft(task, lookups)
+
+  /** The end date is set by closing the task, so its badge has no popup of its own. */
+  private def endBadge(date: LocalDate): BadgeSpec =
+    BadgeSpec(s"End ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", TgBadgeColor.Success)
 
   private def daysLeft(task: BulkTask, lookups: BulkLookups): BadgeSpec = {
     val today = tgClock.currentDate()
