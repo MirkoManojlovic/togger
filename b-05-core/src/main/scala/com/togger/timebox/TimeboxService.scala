@@ -6,7 +6,7 @@ import cats.implicits._
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
 import com.togger.task.{TaskRepo, TaskVersion, TaskVersionRepo}
-import com.togger.timebox.TimeboxError.{TaskNotFound, TaskNotInProject, TimeboxError, TimeboxNotFound}
+import com.togger.timebox.TimeboxError.{TaskNotFound, TaskNotInProject, TimeboxError, TimeboxNotFound, TimeboxOverlaps}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
@@ -35,6 +35,7 @@ class TimeboxService(
   ): IO[Either[TimeboxError, TimeboxWithOneVersion]] = {
     logger.info(s"Creating a timebox for ${sp(projectId)} with ${sp(taskIds)}")
     (for {
+      _ <- ensureNoOverlap(projectId, startDate, endDate, None)
       taskVersions <- resolveTaskVersions(projectId, taskIds)
       timebox <- lift(timeboxRepo.insert(Timebox(UUID.randomUUID(), projectId, now)))
       saved <- lift(insertVersion(timebox.id, startDate, endDate, description, "", taskVersions, now))
@@ -52,6 +53,7 @@ class TimeboxService(
   ): IO[Either[TimeboxError, TimeboxWithOneVersion]] =
     (for {
       timebox <- findTimebox(timeboxId)
+      _ <- ensureNoOverlap(timebox.projectId, startDate, endDate, Some(timeboxId))
       taskVersions <- resolveTaskVersions(timebox.projectId, taskIds)
       saved <- lift(insertVersion(timeboxId, startDate, endDate, description, changeComment, taskVersions, now))
     } yield TimeboxWithOneVersion(timebox, saved)).value.transact(transactor)
@@ -105,6 +107,18 @@ class TimeboxService(
     timeboxVersionRepo.findPlannedTasks(version.version).map(TimeboxVersionWithTasks(version, _))
 
   private def lift[A](io: ConnectionIO[A]): Result[A] = EitherT.liftF(io)
+
+  private def ensureNoOverlap(
+    projectId: UUID,
+    startDate: LocalDate,
+    endDate: LocalDate,
+    excludedTimeboxId: Option[UUID]
+  ): Result[Unit] =
+    EitherT(
+      timeboxVersionRepo
+        .existsOverlappingLatest(projectId, startDate, endDate, excludedTimeboxId)
+        .map(overlaps => Either.cond(!overlaps, (), TimeboxOverlaps: TimeboxError))
+    )
 
   private def findTimebox(timeboxId: UUID): Result[Timebox] =
     EitherT(timeboxRepo.findById(timeboxId).attempt.map {

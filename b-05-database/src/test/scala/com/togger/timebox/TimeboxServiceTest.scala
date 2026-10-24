@@ -6,7 +6,7 @@ import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
 import com.togger.dto.TaskFilter
 import com.togger.organization.{TgProject, TgTaskStatus}
 import com.togger.task._
-import com.togger.timebox.TimeboxError.{TaskNotFound, TimeboxError, TimeboxNotFound}
+import com.togger.timebox.TimeboxError.{TaskNotFound, TimeboxError, TimeboxNotFound, TimeboxOverlaps}
 import doobie.Transactor
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -155,6 +155,55 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         versions shouldBe empty
         found.items shouldBe empty
       }
+    }
+ 
+    "reject timeboxes whose dates overlap another timebox of the project" in { transactor =>
+      val service = serviceFor(transactor)
+      for {
+        project <- (for {
+          _ <- createAccount
+          orgAndProject <- createOrgAndProject
+        } yield orgAndProject._2).transact(transactor)
+        first <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
+        overlapping <- service.createTimebox(project.id, end, end.plusDays(5), None, Seq.empty, nowAsInstant)
+        adjacent <- service.createTimebox(project.id, end.plusDays(1), end.plusDays(5), None, Seq.empty, nowAsInstant)
+        second <- right(service.createTimebox(project.id, end.plusDays(10), end.plusDays(12), None, Seq.empty, nowAsInstant))
+        moved <- service.saveNewVersion(second.timebox.id, start, start, None, "move", Seq.empty, nowAsInstant)
+        resaved <- service.saveNewVersion(first.timebox.id, start, end, None, "same", Seq.empty, nowAsInstant)
+      } yield {
+        overlapping shouldBe Left(TimeboxOverlaps)
+        adjacent.isRight shouldBe true
+        moved shouldBe Left(TimeboxOverlaps)
+        resaved.isRight shouldBe true
+      }
+    }
+ 
+    "allow the same dates in different projects" in { transactor =>
+      val service = serviceFor(transactor)
+      for {
+        projects <- (for {
+          _ <- createAccount
+          orgAndProject <- createOrgAndProject
+          otherProject <- projectRepo.insert(
+            orgAndProject._2.copy(id = UUID.randomUUID(), name = "Other project")
+          )
+        } yield (orgAndProject._2, otherProject)).transact(transactor)
+        _ <- right(service.createTimebox(projects._1.id, start, end, None, Seq.empty, nowAsInstant))
+        other <- service.createTimebox(projects._2.id, start, end, None, Seq.empty, nowAsInstant)
+      } yield other.isRight shouldBe true
+    }
+
+    "free the old dates once a new version moves the timebox away" in { transactor =>
+      val service = serviceFor(transactor)
+      for {
+        project <- (for {
+          _ <- createAccount
+          orgAndProject <- createOrgAndProject
+        } yield orgAndProject._2).transact(transactor)
+        first <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
+        _ <- right(service.saveNewVersion(first.timebox.id, end.plusDays(10), end.plusDays(12), None, "move", Seq.empty, nowAsInstant))
+        reuse <- service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant)
+      } yield reuse.isRight shouldBe true
     }
   }
 }

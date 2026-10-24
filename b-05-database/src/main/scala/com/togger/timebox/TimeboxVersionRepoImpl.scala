@@ -5,12 +5,14 @@ import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.task.TaskVersion
 import com.togger.task.TaskVersionRepoImpl.{taskPriorityCodec, TASK_VERSION_TABLE_FRAG}
+import com.togger.timebox.TimeboxRepoImpl.TIMEBOX_TABLE_FRAG
 import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment, Update}
 
+import java.time.LocalDate
 import java.util.UUID
 
 class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
@@ -86,6 +88,25 @@ class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
       s"Finding latest timebox version for ${sp(timeboxId)}",
       found => s"Latest timebox version found ${sp(found)}"
     )
+
+  override def existsOverlappingLatest(
+    projectId: UUID,
+    startDate: LocalDate,
+    endDate: LocalDate,
+    excludedTimeboxId: Option[UUID]
+  ): ConnectionIO[Boolean] = {
+    val notExcluded = excludedTimeboxId.fold(Fragment.empty)(id => fr"and timebox.id <> $id")
+    logAroundInfoQuery(
+      (fr"select exists (select 1 from" ++ TIMEBOX_TABLE_FRAG ++
+        fr"join lateral (select start_date, end_date from" ++ TIMEBOX_VERSION_TABLE_FRAG ++
+        fr"where timebox_id = timebox.id order by version desc limit 1) latest on true" ++
+        fr"where timebox.project_id = $projectId and latest.start_date <= $endDate and latest.end_date >= $startDate" ++
+        notExcluded ++ fr")").query[Boolean].unique
+    )(
+      s"Checking timebox overlap in ${sp(projectId)} for ${sp(startDate)} - ${sp(endDate)}",
+      overlaps => s"Timebox overlap check ${sp(overlaps)}"
+    )
+  }
 
   override def findPlannedTasks(timeboxVersion: UUID): ConnectionIO[List[TaskVersion]] =
     logAroundInfoQuery(

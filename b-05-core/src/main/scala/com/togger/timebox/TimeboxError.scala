@@ -22,4 +22,8 @@ object TimeboxError {
   case class TaskNotInProject(taskId: UUID) extends TimeboxError {
     override def message: String = s"Task $taskId does not belong to the project of the timebox"
   }
+
+  case object TimeboxOverlaps extends TimeboxError {
+    override def message: String = "Timebox dates must not overlap with another timebox of the project"
+  }
 }
