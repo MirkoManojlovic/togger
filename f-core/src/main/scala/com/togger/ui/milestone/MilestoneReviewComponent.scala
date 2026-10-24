@@ -3,7 +3,8 @@ package com.togger.ui.milestone
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.routes.Pages.EditMilestonePage
 import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
@@ -176,11 +177,14 @@ class MilestoneReviewComponent(
       TgBadge(text = label, color = color, bordered = true).element
     )
 
-  private def statsRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
+  private def statsRow(
+    milestone: FindMilestoneResp,
+    tasks: Seq[FindTaskRespFull],
+    statuses: Seq[FindTaskStatusResp]
+  ): HtmlElement = {
     val today = tgClock.currentDate()
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, today)
     val progress = TimeboxReviewStats.tasksProgress(tasks)
-    val open = tasks.filterNot(TimeboxReviewStats.isDone)
     div(
       cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
       statCard(
@@ -194,12 +198,17 @@ class MilestoneReviewComponent(
       statCard(
         "Tasks",
         div(
-          cls("flex flex-wrap items-start justify-around gap-4"),
-          stat("Total", tasks.size),
-          stat("Done", progress.done, TgBadgeColor.Success),
-          stat("Open", open.size, TgBadgeColor.Blue),
-          stat("Overdue", open.count(_.dueDate.isBefore(today)), TgBadgeColor.Red),
-          stat("Unassigned", open.count(_.assignedTo.isEmpty))
+          cls("flex flex-col gap-4"),
+          div(
+            cls("flex flex-wrap items-start justify-around gap-4"),
+            stat("Total", tasks.size),
+            stat("Done", progress.done, TgBadgeColor.Success),
+            stat("Left", progress.left, TgBadgeColor.Blue)
+          ),
+          div(
+            cls("flex flex-wrap items-start justify-around gap-4"),
+            statuses.map(status => stat(status.badgeText, tasks.count(_.taskStatus.id == status.id), status.badgeColor))
+          )
         )
       )
     )
@@ -209,9 +218,9 @@ class MilestoneReviewComponent(
     div(
       table.bindings,
       summaryCard,
-      child.maybe <-- milestoneVar.signal.combineWith(tasksVar.signal).map { case (milestone, tasks) =>
-        milestone.map(statsRow(_, tasks))
-      },
+      child.maybe <-- milestoneVar.signal
+        .combineWith(tasksVar.signal, lookups.statusesVar.signal.map(_.taskStatusesSorted))
+        .map { case (milestone, tasks, statuses) => milestone.map(statsRow(_, tasks, statuses)) },
       history.element.amend(cls("mb-4")),
       TgCard
         .headerNoFooter(
