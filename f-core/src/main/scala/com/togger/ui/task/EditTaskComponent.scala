@@ -12,7 +12,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -366,6 +366,41 @@ class EditTaskComponent(
       )
       .unsafeRunAndForget()
 
+  private val closePickerOpen = Var(false)
+
+  private def closePicker: HtmlElement = {
+    val picked = Try(LocalDate.parse(closeEndDate.now())).getOrElse(tgClock.currentDate())
+    CalendarPickerPopup(
+      initialMonth = picked,
+      today = tgClock.currentDate(),
+      tgDateFormater = tgDateFormater,
+      selected = Some(picked),
+      minDate = Some(badges.taskVar.now().startDate),
+      isDisabled = day => !workDaysVar.now().contains(day.getDayOfWeek),
+      onPick = day => closeEndDate.set(day.toString),
+      onClose = () => closePickerOpen.set(false)
+    ).element
+  }
+
+  private val closeEndDateField: HtmlElement =
+    div(
+      cls("relative"),
+      input(
+        typ("text"),
+        readOnly(true),
+        cls(tgInputStyle),
+        cls("cursor-pointer"),
+        cls("ring-2 ring-blue-500") <-- closePickerOpen.signal,
+        aria.label("End date"),
+        value <-- closeEndDate.signal.map(raw =>
+          Try(LocalDate.parse(raw)).toOption.fold(raw)(tgDateFormater.asAmericanDate)
+        ),
+        // stopPropagation keeps this click from reaching the popup's own outside-click listener
+        onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))
+      ),
+      child.maybe <-- closePickerOpen.signal.map(Option.when(_)(closePicker))
+    )
+
   private val closeDialog: HtmlElement =
     div(
       cls(ModalStyles.wrapperCls),
@@ -375,17 +410,11 @@ class EditTaskComponent(
         cls("w-full max-w-sm"),
         h3(cls(ModalStyles.titleCls), cls("mb-4"), "Close task"),
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
-        input(
-          typ("date"),
-          cls(
-            "bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base block w-full px-3 py-2.5"
-          ),
-          controlled(value <-- closeEndDate.signal, onInput.mapToValue --> closeEndDate)
-        ),
+        closeEndDateField,
         children <-- closeEndDateErrors.map(_.map(error => p(cls("mt-2 text-sm text-danger"), error))),
         div(
           cls(ModalStyles.footerCls),
-          cls("justify-end"),
+          cls("justify-end mt-72"),
           button(
             typ("button"),
             cls(ModalStyles.secondaryButtonCls),
