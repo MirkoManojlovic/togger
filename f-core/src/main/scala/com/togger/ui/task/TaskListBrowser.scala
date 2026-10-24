@@ -30,6 +30,8 @@ import java.util.UUID
   * The page, the filters and the search term live in `paramsVar`. A change is not applied by the browser itself: it is
   * handed to `navigate`, which stores the new params in `paramsVar` (a screen that keeps them in the URL routes there,
   * and the page is rebuilt) and reads the page again.
+  *
+  * With a `lockedMilestoneId` the list only has the tasks of that milestone and offers no milestone filter.
   */
 class TaskListBrowser(
   taskService: TaskFeService,
@@ -38,7 +40,8 @@ class TaskListBrowser(
   paramsVar: Var[TaskListParams],
   navigate: TaskListParams => Unit,
   searchPlaceholder: String = "Search all tasks by name, description",
-  defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Done, WontDo, Backlog)
+  defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Done, WontDo, Backlog),
+  lockedMilestoneId: Option[UUID] = None
 )(implicit ioRuntime: IORuntime) {
 
   import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
@@ -168,8 +171,8 @@ class TaskListBrowser(
       rows.filter(matchesLocalFilter(_, term))
     }
 
-  private def currentFilter(): TaskFilter =
-    TaskListFilterMapping.toTaskFilter(
+  private def currentFilter(): TaskFilter = {
+    val filter = TaskListFilterMapping.toTaskFilter(
       statuses = statusFilter.selection,
       priorities = priorityFilter.selection,
       labels = labelFilter.selection,
@@ -178,6 +181,8 @@ class TaskListBrowser(
       search = params.search,
       includeArchived = showArchivedVar.now()
     )
+    lockedMilestoneId.fold(filter)(locked => filter.copy(milestoneIds = List(locked)))
+  }
 
   /** Reads the page the params ask for. A page past the end (its tasks were deleted) steps back to the last page. */
   def loadPage(): IO[Unit] =
@@ -210,7 +215,11 @@ class TaskListBrowser(
       new TableFilterComponent(priorityFilter.itemsSignal, label = "Priority", priorityFilter.selectedIdsVar).element,
       new TableFilterComponent(labelFilter.itemsSignal, label = "Labels", labelFilter.selectedIdsVar).element,
       new TableFilterComponent(assigneeFilter.itemsSignal, label = "Assignee", assigneeFilter.selectedIdsVar).element,
-      new TableFilterComponent(milestoneFilter.itemsSignal, label = "Milestone", milestoneFilter.selectedIdsVar).element,
+      Option
+        .when(lockedMilestoneId.isEmpty)(
+          new TableFilterComponent(milestoneFilter.itemsSignal, label = "Milestone", milestoneFilter.selectedIdsVar).element
+        )
+        .toSeq,
       TgCheckbox
         .checkBox(showArchivedVar.signal, showArchivedVar.writer, "Show archived")
         .htmlElement
