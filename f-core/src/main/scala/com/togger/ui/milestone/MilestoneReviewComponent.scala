@@ -116,7 +116,7 @@ class MilestoneReviewComponent(
   private def summary(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement =
     div(
       div(
-        cls("flex flex-wrap items-center gap-1.5 mb-2"),
+        cls("flex flex-wrap items-center gap-1.5 mb-4"),
         TgBadge(
           text = milestone.status.toStringWithEmoji,
           color = ChartColorBadgeColor.of(milestone.status),
