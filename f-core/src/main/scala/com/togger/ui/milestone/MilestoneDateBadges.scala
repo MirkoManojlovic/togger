@@ -1,7 +1,7 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
@@ -20,7 +20,8 @@ class MilestoneDateBadges(
   currentWorkDays: () => Set[DayOfWeek],
   onDates: (LocalDate, LocalDate) => Unit,
   tgClock: TgClock,
-  endDate: Signal[String] = Val("")
+  endDate: Signal[String] = Val(""),
+  daysLeftWorkDays: Option[Signal[Set[DayOfWeek]]] = None
 ) {
 
   private val key = UUID.randomUUID()
@@ -58,16 +59,26 @@ class MilestoneDateBadges(
   private def endBadge(date: LocalDate): BadgeSpec =
     BadgeSpec(s"End ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", TgBadgeColor.Success)
 
+  private def daysLeft(due: Option[LocalDate], workDays: Set[DayOfWeek]): Option[BadgeSpec] =
+    due.map { dueDate =>
+      val today = tgClock.currentDate()
+      if (dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
+      else BadgeSpec(s"${WorkDayCalendar.countWorkDays(today, dueDate, workDays)} days left", TgBadgeColor.Gray)
+    }
+
   val element: HtmlElement =
     div(
       cls("flex flex-wrap items-center gap-1.5"),
-      children <-- dates.combineWith(endDate).map { case (start, due, end) =>
+      children <-- dates.combineWith(endDate, daysLeftWorkDays.getOrElse(Val(Set.empty[DayOfWeek]))).map {
+        case (start, due, end, workDays) =>
         BulkTaskCard.row(
           key,
           Seq(
             badge(parse(start), "Start", BulkEditKind.StartDate),
             badge(parse(due), "Due", BulkEditKind.DueDate)
-          ) ++ parse(end).map(endBadge),
+          ) ++ parse(end).map(endBadge) ++ Option
+            .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
+            .flatten,
           popups
         )
       }
