@@ -23,6 +23,7 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.components.pagination.PaginatedLoader
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.spinner.SpinnerService
@@ -79,18 +80,18 @@ class CreateMilestoneComponent(
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)
 
-  val firstMilestoneDate = new CreateMilestoneDateComponent(milestoneStartDate, tgClock)
-  val milestoneDatesVar = Var(Seq(firstMilestoneDate))
+  val milestoneDatesVar = Var(Seq.empty[CreateMilestoneDateComponent])
 
-  lazy val addNewMilestoneDate =
-    TgHtmlButton
-      .extraSmall("+")
+  private def addNewDate(): Unit =
+    milestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
+
+  lazy val addNewMilestoneDate: HtmlElement =
+    TgBadge(text = "+ Add additional date", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
       .amend(
-        typ("button"),
-        cls("mb-4"),
-        onClick --> (_ =>
-          milestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
-        )
+        role("button"),
+        tabIndex(0),
+        onClick --> (_ => addNewDate()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addNewDate())
       )
 
   private def createMilestoneDates(
@@ -138,7 +139,7 @@ class CreateMilestoneComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Milestone description",
-    minWidthRem = 0
+    placeholderValue = "Describe the milestone"
   )
 
   val element = div(
@@ -150,24 +151,26 @@ class CreateMilestoneComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               dateBadges.element.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
-              h5(cls("text-heading mb-2"), "Additional Milestone dates"),
-              addNewMilestoneDate,
-              child <-- milestoneDatesVar.signal.map(dateComponents =>
-                div(
+              div(
+                cls("mb-4"),
+                h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
+                children <-- milestoneDatesVar.signal.map(dateComponents =>
                   dateComponents.map(
                     _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
                   )
-                )
+                ),
+                addNewMilestoneDate
               ),
-              div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
+              div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )
       )
       .element
+      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
   )
 
 }
