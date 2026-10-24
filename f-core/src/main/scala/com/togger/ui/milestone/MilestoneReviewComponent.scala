@@ -3,11 +3,19 @@ package com.togger.ui.milestone
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.FindMilestoneResp
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
 import com.togger.routes.Pages.EditMilestonePage
 import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
+import com.togger.ui.components.{
+  ChartColorBadgeColor,
+  TgBadge,
+  TgBadgeColor,
+  TgProgressColor,
+  TgProgressComponent,
+  TgProgressLabel,
+  TgProgressSize
+}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
@@ -21,6 +29,7 @@ import com.togger.ui.task.{
   TaskStatusFeService,
   TgDateFormater
 }
+import com.togger.ui.timebox.TimeboxReviewStats
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
@@ -49,6 +58,17 @@ class MilestoneReviewComponent(
     .runWithSpinner(milestoneService.findMilestoneById(milestoneId))
     .map(_.fold(error => println(error), success => milestoneVar.set(success.body)))
     .unsafeRunAndForget()
+
+  private val tasksVar = Var(Seq.empty[FindTaskRespFull])
+
+  // The table is paged, so the stats read every task of the milestone on their own (bounded by PaginatedLoader).
+  private def loadTasks(): Unit =
+    spinnerService
+      .runWithSpinner(taskService.findAllByMilestone(projectId, milestoneId))
+      .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
+      .unsafeRunAndForget()
+
+  loadTasks()
 
   private val lookups =
     new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
@@ -131,10 +151,67 @@ class MilestoneReviewComponent(
     lockedMilestoneId = Some(milestoneId)
   )
 
+  private def progressBar(value: Int, max: Int, title: String): HtmlElement =
+    TgProgressComponent(
+      value = value,
+      max = max.max(1),
+      color = TgProgressColor.Success,
+      size = TgProgressSize.Large,
+      label = TgProgressLabel.Outside(title)
+    ).element
+
+  private def statCard(title: String, content: HtmlElement): HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText(title, TgCard.CardHeaderSize.H4),
+        body = TgCard.HtmlCardContent(content)
+      )
+      .element
+      .amend(cls("w-full"))
+
+  private def stat(label: String, value: Int, color: TgBadgeColor = TgBadgeColor.Gray): HtmlElement =
+    div(
+      cls("flex flex-col items-center gap-1 min-w-20"),
+      span(cls("text-2xl font-semibold text-heading"), value.toString),
+      TgBadge(text = label, color = color, bordered = true).element
+    )
+
+  private def statsRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
+    val today = tgClock.currentDate()
+    val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, today)
+    val progress = TimeboxReviewStats.tasksProgress(tasks)
+    val open = tasks.filterNot(TimeboxReviewStats.isDone)
+    div(
+      cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
+      statCard(
+        "Progress",
+        div(
+          cls("flex flex-col gap-4"),
+          progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
+          progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left until the due date")
+        )
+      ),
+      statCard(
+        "Tasks",
+        div(
+          cls("flex flex-wrap items-start justify-around gap-4"),
+          stat("Total", tasks.size),
+          stat("Done", progress.done, TgBadgeColor.Success),
+          stat("Open", open.size, TgBadgeColor.Blue),
+          stat("Overdue", open.count(_.dueDate.isBefore(today)), TgBadgeColor.Red),
+          stat("Unassigned", open.count(_.assignedTo.isEmpty))
+        )
+      )
+    )
+  }
+
   val element: HtmlElement =
     div(
       table.bindings,
       summaryCard,
+      child.maybe <-- milestoneVar.signal.combineWith(tasksVar.signal).map { case (milestone, tasks) =>
+        milestone.map(statsRow(_, tasks))
+      },
       history.element.amend(cls("mb-4")),
       TgCard
         .headerNoFooter(
