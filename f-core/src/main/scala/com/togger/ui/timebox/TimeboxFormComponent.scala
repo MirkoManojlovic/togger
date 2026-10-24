@@ -296,17 +296,17 @@ class TimeboxFormComponent(
     )
 
   private val presetButtons = div(
-    cls("mb-4 flex flex-wrap gap-2"),
+    cls("mb-4 flex flex-wrap items-center gap-1.5"),
     presets.map { preset =>
-      TgHtmlButton
-        .extraSmall(preset.label)
-        .amend(
-          typ("button"),
-          title(s"${preset.startDate} - ${preset.endDate}"),
-          onClick --> (_ =>
-            formState.update(_.copy(startDate = preset.startDate.toString, endDate = preset.endDate.toString))
-          )
+      button(
+        typ("button"),
+        cls("rounded-base cursor-pointer hover:ring-2 hover:ring-blue-300"),
+        title(s"${preset.startDate} - ${preset.endDate}"),
+        TgBadge(text = preset.label, color = TgBadgeColor.Brand).element,
+        onClick --> (_ =>
+          formState.update(_.copy(startDate = preset.startDate.toString, endDate = preset.endDate.toString))
         )
+      )
     }
   )
 
@@ -551,8 +551,8 @@ class TimeboxFormComponent(
           form(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
+            div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
             presetButtons,
-            div(cls("mb-4 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
             child.maybe <-- endBeforeStartError.map(
               _.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))
             ),
