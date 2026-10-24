@@ -203,7 +203,7 @@ class ShowMilestonesComponent(
                                 TgIcons.editIcon(className = "w-4 h-4"),
                                 rowIconButtonCls,
                                 rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => router.route(EditMilestonePage(dto.id)))
+                                onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, dto.id)))
                               )
                             )
                           )

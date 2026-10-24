@@ -113,7 +113,7 @@ object Pages {
 
   case class CreateMilestonePage(projectId: UUID) extends PrivatePage
 
-  case class EditMilestonePage(id: UUID) extends PrivatePage
+  case class EditMilestonePage(projectId: UUID, id: UUID) extends PrivatePage
 
   case class ShowMilestonesPage(projectId: UUID, list: MilestoneListParams = MilestoneListParams.default)
       extends PrivatePage

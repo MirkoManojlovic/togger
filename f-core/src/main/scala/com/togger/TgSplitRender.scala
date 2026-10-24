@@ -624,7 +624,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case EditMilestonePage(id: UUID) =>
+              case EditMilestonePage(_, id: UUID) =>
                 new EditMilestoneComponent(
                   milestoneService,
                   milestoneDateService,

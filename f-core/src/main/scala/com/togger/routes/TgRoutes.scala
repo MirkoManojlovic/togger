@@ -312,9 +312,12 @@ class TgRoutes {
         pattern = root / "create-milestone" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditMilestonePage) => page.id.toString,
-        decode = (id: String) => EditMilestonePage(UUID.fromString(id)),
-        pattern = root / "edit-milestone" / segment[String] / endOfSegments
+        encode = (page: EditMilestonePage) => page.projectId.toString -> page.id.toString,
+        decode = { (projectIdAndMilestoneId: (String, String)) =>
+          EditMilestonePage(UUID.fromString(projectIdAndMilestoneId._1), UUID.fromString(projectIdAndMilestoneId._2))
+        },
+        pattern =
+          root / "edit-milestone" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
       ),
       Route.withQuery[ShowMilestonesPage, String, MilestoneListQuery](
         encode = (page: ShowMilestonesPage) =>
