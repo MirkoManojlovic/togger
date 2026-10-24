@@ -9,7 +9,7 @@ import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, MilestoneListParams, TgRouter}
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
+import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{
   MultiSelectItem,
@@ -184,14 +184,13 @@ class ShowMilestonesComponent(
                 navigateOnStatusChange,
                 child <-- stateFormVar.signal.map { milestones =>
                   TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Description", "Status", "Start date", "Due date", "End date", "Action")
+                    Seq("Id", "Name", "Status", "Start date", "Due date", "End date", "Action")
                   )(
                     milestones
                       .map { dto =>
                         Seq(
                           createTd(dto.id.toString),
                           createTd(dto.name),
-                          createTdOverflow(dto.description),
                           createTd(dto.status.toStringWithEmoji),
                           createTd(tgDateFormater.asAmericanDate(dto.startDate)),
                           createTd(tgDateFormater.asAmericanDate(dto.dueDate)),
