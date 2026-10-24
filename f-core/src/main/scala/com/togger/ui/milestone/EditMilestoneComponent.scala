@@ -10,10 +10,9 @@ import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMil
 import com.togger.milestone.MilestoneStatus
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
-import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor}
+import com.togger.ui.components.{CalendarPickerPopup, ChartColorBadgeColor, TgBadge, TgBadgeColor}
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.project.ProjectService
@@ -23,7 +22,6 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
-import scala.collection.immutable.ListMap
 import scala.util.Try
 
 case class EditMilestoneForm(
@@ -265,12 +263,40 @@ class EditMilestoneComponent(
     minWidthRem = 0
   )
 
-  private val statusSelect = formState.tgSelectManualError(
-    inputAndUpdater = selectorAndUpdaterMacro(_.status),
-    labelValue = "Status",
-    valuesAndDisplays =
-      ListMap.from(MilestoneStatus.values.map(status => status.value.toString -> status.toStringWithEmoji))
-  )
+  private val statusMenuOpen = Var(false)
+
+  private val statusBadge: HtmlElement =
+    div(
+      cls("relative"),
+      child <-- formState.signal.map(_.status).distinct.map { value =>
+        val status = MilestoneStatus.withValue(value.toInt)
+        TgBadge(text = status.toStringWithEmoji, color = ChartColorBadgeColor.of(status), bordered = true).element
+          .amend(
+            cls("cursor-pointer"),
+            cls("ring-2 ring-blue-400") <-- statusMenuOpen.signal,
+            // stopPropagation keeps this click from reaching the menu's own outside-click listener
+            onClick.stopPropagation.mapToUnit --> (_ => statusMenuOpen.update(!_))
+          )
+      },
+      child.maybe <-- statusMenuOpen.signal.map(Option.when(_)(statusMenu))
+    )
+
+  private def statusMenu: HtmlElement =
+    div(
+      cls("absolute z-10 mt-1 w-44 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg p-1"),
+      documentEvents(_.onClick).mapToUnit --> (_ => statusMenuOpen.set(false)),
+      MilestoneStatus.values.map { status =>
+        button(
+          typ("button"),
+          cls("block w-full text-left text-sm text-heading rounded-base px-3 py-1.5 hover:bg-neutral-tertiary-medium"),
+          status.toStringWithEmoji,
+          onClick.mapToUnit --> { _ =>
+            formState.update(_.copy(status = status.value.toString))
+            statusMenuOpen.set(false)
+          }
+        )
+      }
+    )
 
   private lazy val editMilestoneCard: HtmlElement =
     TgCard
@@ -283,8 +309,7 @@ class EditMilestoneComponent(
                 (formState.now(), milestoneDatesVar.now(), newMilestoneDatesVar.now())
               ) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-              dateBadges.element.amend(cls("mb-4")),
-              statusSelect.htmlElement.amend(cls("mb-4")),
+              div(cls("mb-4 flex flex-wrap items-center gap-1.5"), statusBadge, dateBadges.element),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               div(
                 cls("mb-2 flex items-center justify-between"),
