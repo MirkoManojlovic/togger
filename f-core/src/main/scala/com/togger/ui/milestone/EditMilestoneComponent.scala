@@ -66,7 +66,8 @@ class EditMilestoneComponent(
     currentDates = () => formState.now().startDate -> formState.now().dueDate,
     currentWorkDays = () => workDaysVar.now(),
     onDates = (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString)),
-    tgClock = tgClock
+    tgClock = tgClock,
+    endDate = formState.signal.map(_.endDate)
   )
 
   private val milestoneStartDate: Signal[String] = formState.signal.map(_.startDate)

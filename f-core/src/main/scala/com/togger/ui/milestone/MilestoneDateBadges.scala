@@ -19,7 +19,8 @@ class MilestoneDateBadges(
   currentDates: () => (String, String),
   currentWorkDays: () => Set[DayOfWeek],
   onDates: (LocalDate, LocalDate) => Unit,
-  tgClock: TgClock
+  tgClock: TgClock,
+  endDate: Signal[String] = Val("")
 ) {
 
   private val key = UUID.randomUUID()
@@ -53,16 +54,20 @@ class MilestoneDateBadges(
       Some(kind)
     )
 
+  /** The end date is set by closing the milestone, so its badge has no popup of its own. */
+  private def endBadge(date: LocalDate): BadgeSpec =
+    BadgeSpec(s"End ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", TgBadgeColor.Success)
+
   val element: HtmlElement =
     div(
       cls("flex flex-wrap items-center gap-1.5"),
-      children <-- dates.map { case (start, due) =>
+      children <-- dates.combineWith(endDate).map { case (start, due, end) =>
         BulkTaskCard.row(
           key,
           Seq(
             badge(parse(start), "Start", BulkEditKind.StartDate),
             badge(parse(due), "Due", BulkEditKind.DueDate)
-          ),
+          ) ++ parse(end).map(endBadge),
           popups
         )
       }
