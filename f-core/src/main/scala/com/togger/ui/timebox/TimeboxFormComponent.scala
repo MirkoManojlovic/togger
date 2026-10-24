@@ -15,13 +15,12 @@ import com.togger.timebox.{TimeboxDefault, TimeboxDefaults}
 import com.togger.toast.ToastMessages
 import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
-import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{CalendarPickerPopup, TgBadgeColor, TgHtmlTable}
+import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -185,7 +184,7 @@ class TimeboxFormComponent(
 
   private def parsedDate(raw: String): Option[LocalDate] = Try(LocalDate.parse(raw)).toOption
 
-  /** A date shown as a button that opens the app's calendar picker, in place of the browser's own date input. */
+  /** A date shown as a gray badge, like the task form's, that opens the app's calendar picker. */
   private def dateField(
     labelValue: String,
     selector: TimeboxForm => String,
@@ -196,14 +195,17 @@ class TimeboxFormComponent(
     val today = tgClock.currentDate()
     div(
       cls("relative"),
-      label(cls("block mb-2.5 text-sm font-medium text-heading"), labelValue),
       button(
         typ("button"),
-        cls(tgInputStyle),
-        cls("cursor-pointer text-left"),
-        child.text <-- formState.signal
-          .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
-          .distinct,
+        cls("rounded-base cursor-pointer hover:ring-2 hover:ring-blue-300"),
+        child <-- formState.signal
+          .map(form =>
+            parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv)
+          )
+          .distinct
+          .map(date =>
+            TgBadge(text = s"$labelValue: $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
+          ),
         // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
         // listening synchronously within this same click when the picker opens
         onClick.stopPropagation.mapToUnit --> (_ => isOpen.update(!_))
@@ -233,6 +235,20 @@ class TimeboxFormComponent(
     (form, value) => form.copy(endDate = value),
     parsedDate(formState.now().startDate)
   )
+
+  /** Like the task form's: work days from today to the end date, or "Overdue" once that date has passed. */
+  private val daysLeftBadge: Signal[Option[HtmlElement]] = formState.signal.map { form =>
+    parsedDate(form.endDate).map { end =>
+      val today = tgClock.currentDate()
+      val (text, color) =
+        if (end.isBefore(today)) ("Overdue", TgBadgeColor.Red)
+        else {
+          val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
+          (s"${WorkDayCalendar.countWorkDays(today, end, workDays)} days left", TgBadgeColor.Gray)
+        }
+      TgBadge(text = text, color = color, extraCls = if (color == TgBadgeColor.Gray) "dark:text-body" else "").element
+    }
+  }
 
   private val endBeforeStartError: Signal[Option[String]] = formState.signal.map { form =>
     val ends = for {
@@ -536,8 +552,7 @@ class TimeboxFormComponent(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
             presetButtons,
-            startDateInput.amend(cls("mb-4")),
-            endDateInput.amend(cls("mb-4")),
+            div(cls("mb-4 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
             child.maybe <-- endBeforeStartError.map(
               _.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))
             ),
