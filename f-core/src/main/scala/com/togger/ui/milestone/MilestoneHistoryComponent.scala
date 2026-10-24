@@ -522,7 +522,7 @@ class MilestoneHistoryComponent(
     )
 
   private def milestoneDateMarkerElement(marker: MilestoneDateMarker) = {
-    val trigger = div(cls("w-full h-full border-2 border-default-strong rounded-sm hover:bg-neutral-quaternary-medium"))
+    val trigger = div(cls("w-full h-full border-2 border-black dark:border-default-strong rounded-sm hover:bg-black dark:hover:bg-neutral-quaternary-medium"))
     TgTooltip(trigger = trigger, text = marker.tooltipText).element.amend(
       styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
     )
