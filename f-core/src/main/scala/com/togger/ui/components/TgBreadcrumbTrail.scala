@@ -107,6 +107,7 @@ object TgBreadcrumbTrail {
     case ShowMilestoneHistoryPage(projectId, _) => underMilestones(projectId, "Milestone history")
     case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")
     case EditMilestonePage(projectId, _)     => underMilestones(projectId, "Edit milestone")
+    case MilestoneReviewPage(projectId, _)   => underMilestones(projectId, "Milestone review")
   }
 
 }

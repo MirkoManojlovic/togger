@@ -352,6 +352,7 @@ object Sidebar {
     case CreateMilestonePage(projectId)      => Some(projectId)
     case ShowMilestonesPage(projectId, _)    => Some(projectId)
     case ShowMilestoneHistoryPage(projectId, _) => Some(projectId)
+    case MilestoneReviewPage(projectId, _)   => Some(projectId)
     case ShowTimeboxesPage(projectId, _)     => Some(projectId)
     case CreateTimeboxPage(projectId)        => Some(projectId)
     case EditTimeboxPage(projectId, _)       => Some(projectId)
