@@ -193,9 +193,9 @@ class ShowMilestonesComponent(
                           createTd(dto.name),
                           createTdOverflow(dto.description),
                           createTd(dto.status.toStringWithEmoji),
-                          createTd(tgDateFormater.asEuropeanDate(dto.startDate)),
-                          createTd(tgDateFormater.asEuropeanDate(dto.dueDate)),
-                          createTd(dto.endDate.fold("-")(date => tgDateFormater.asEuropeanDate(date))),
+                          createTd(tgDateFormater.asAmericanDate(dto.startDate)),
+                          createTd(tgDateFormater.asAmericanDate(dto.dueDate)),
+                          createTd(dto.endDate.fold("-")(date => tgDateFormater.asAmericanDate(date))),
                           createTd(
                             div(
                               iconButton(
