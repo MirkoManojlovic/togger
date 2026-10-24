@@ -3,6 +3,7 @@ package com.togger.ui.milestone
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
+import com.togger.markdown.TgMarkdown
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.routes.Pages.EditMilestonePage
@@ -46,6 +47,7 @@ class MilestoneReviewComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   projectId: UUID,
   milestoneId: UUID,
@@ -114,7 +116,7 @@ class MilestoneReviewComponent(
         dateBadge("Due", milestone.dueDate),
         milestone.endDate.map(dateBadge("End", _, TgBadgeColor.Success))
       ),
-      Option.when(milestone.description.nonEmpty)(div(cls("text-sm text-body"), milestone.description))
+      Option.when(milestone.description.nonEmpty)(tgMarkdown.toLaminarDiv(milestone.description))
     )
 
   private val summaryCard: HtmlElement =
