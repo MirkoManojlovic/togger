@@ -10,7 +10,7 @@ import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMil
 import com.togger.milestone.MilestoneStatus
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.components.{
@@ -215,13 +215,17 @@ class EditMilestoneComponent(
   private val closeEndDateField: HtmlElement =
     div(
       cls("relative"),
-      TgBadge(text = "", color = TgBadgeColor.Gray, bordered = true).element
-        .amend(
-          cls("cursor-pointer"),
-          child.text <-- closeEndDate.signal.map(tgDateFormater.asAmericanDateWithDayAbrv),
-          // stopPropagation keeps this click from reaching the popup's own outside-click listener
-          onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))
-        ),
+      input(
+        typ("text"),
+        readOnly(true),
+        cls(tgInputStyle),
+        cls("cursor-pointer"),
+        cls("ring-2 ring-blue-500") <-- closePickerOpen.signal,
+        aria.label("End date"),
+        value <-- closeEndDate.signal.map(tgDateFormater.asAmericanDate),
+        // stopPropagation keeps this click from reaching the popup's own outside-click listener
+        onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))
+      ),
       child.maybe <-- closePickerOpen.signal.map(Option.when(_)(closePicker))
     )
 
