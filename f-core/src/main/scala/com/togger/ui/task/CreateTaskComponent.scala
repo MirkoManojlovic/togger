@@ -311,6 +311,10 @@ class TaskFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: Pr
   def findAllByTimebox(projectId: UUID, timeboxId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
     PaginatedLoader.loadAll(findByProjectId(projectId, TaskFilter(timeboxId = Some(timeboxId)), _))
 
+  /** Every task of the milestone; see [[PaginatedLoader]] for the bound. */
+  def findAllByMilestone(projectId: UUID, milestoneId: UUID): TgRespIO[Seq[FindTaskRespFull]] =
+    PaginatedLoader.loadAll(findByProjectId(projectId, TaskFilter(milestoneIds = List(milestoneId)), _))
+
   def findLogEntriesByProjectId(
     projectId: UUID,
     filter: LogEntryFilter,

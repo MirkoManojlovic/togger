@@ -638,6 +638,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case MilestoneReviewPage(projectId: UUID, milestoneId: UUID) =>
                 new MilestoneReviewComponent(
                   milestoneService,
+                  milestoneDateService,
                   taskService,
                   taskStatusService,
                   taskLabelService,

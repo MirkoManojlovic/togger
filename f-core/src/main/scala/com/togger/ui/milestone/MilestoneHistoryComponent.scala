@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
@@ -21,6 +22,10 @@ import java.time.temporal.TemporalAdjusters
 import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
+/** The Gantt chart of the log entries of the tasks of the project's milestones. With a `lockedMilestoneId` it charts
+  * only the tasks of that milestone, has no project card or milestone filters and keeps its filters off the URL, so it
+  * can sit inside another page.
+  */
 class MilestoneHistoryComponent(
   taskService: TaskFeService,
   milestoneService: MilestoneFeService,
@@ -31,7 +36,8 @@ class MilestoneHistoryComponent(
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
   projectId: UUID,
-  params: MilestoneHistoryParams
+  params: MilestoneHistoryParams,
+  lockedMilestoneId: Option[UUID] = None
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -58,7 +64,9 @@ class MilestoneHistoryComponent(
         projectService.findById(projectId).map(_.fold(e => println(e), success => projectVar.set(success.body.get)))
       // The history charts every task and log entry of the project, so all pages are read (bounded by PaginatedLoader).
       val tasksCall =
-        taskService.findAllByProjectId(projectId).map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
+        lockedMilestoneId
+          .fold(taskService.findAllByProjectId(projectId))(taskService.findAllByMilestone(projectId, _))
+          .map(_.fold(e => println(e), success => tasksVar.set(success.body.get)))
       val logEntriesCall =
         taskService
           .findAllLogEntriesByProjectId(projectId)
@@ -67,10 +75,10 @@ class MilestoneHistoryComponent(
       val milestonesCall =
         milestoneService
           .findAllByProjectId(projectId)
-          .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get)))
+          .map(_.fold(e => println(e), success => milestonesVar.set(success.body.get.filter(isCharted))))
       val milestoneDatesCall =
-        milestoneDateService
-          .findAllByProjectId(projectId)
+        lockedMilestoneId
+          .fold(milestoneDateService.findAllByProjectId(projectId))(milestoneDateService.findAllByMilestoneId)
           .map(_.fold(e => println(e), success => milestoneDatesVar.set(success.body.get)))
 
       for {
@@ -79,9 +87,16 @@ class MilestoneHistoryComponent(
         _ <- logEntriesCall
         _ <- milestonesCall
         _ <- milestoneDatesCall
+        // the log entries of the project, of which only those of the charted tasks are kept
+        _ <- IO(lockedMilestoneId.foreach { _ =>
+          val taskIds = tasksVar.now().map(_.id).toSet
+          logEntriesVar.update(_.filter(entry => taskIds.contains(entry.taskId)))
+        })
       } yield ()
     }
     .unsafeRunAndForget()
+
+  private def isCharted(milestone: FindMilestoneResp): Boolean = lockedMilestoneId.forall(_ == milestone.id)
 
   private def toLocalDate(instant: Instant): LocalDate =
     instant.atOffset(ZoneOffset.UTC).toLocalDate
@@ -123,11 +138,12 @@ class MilestoneHistoryComponent(
     val newParams = change(currentParamsVar.now())
     if (newParams != currentParamsVar.now()) {
       currentParamsVar.set(newParams)
-      dom.window.history.replaceState(
-        null,
-        "",
-        router.absoluteUrlForPage(ShowMilestoneHistoryPage(projectId, newParams))
-      )
+      if (lockedMilestoneId.isEmpty)
+        dom.window.history.replaceState(
+          null,
+          "",
+          router.absoluteUrlForPage(ShowMilestoneHistoryPage(projectId, newParams))
+        )
     }
   }
 
@@ -308,7 +324,7 @@ class MilestoneHistoryComponent(
           val milestoneStatusById: Map[UUID, MilestoneStatus] = milestones.map(m => m.id -> m.status).toMap
 
           val byMilestoneStatus: Seq[FindTaskRespFull] =
-            if (selectedMilestoneStatusIds.isEmpty) byMilestone
+            if (selectedMilestoneStatusIds.isEmpty || lockedMilestoneId.isDefined) byMilestone
             else
               byMilestone.filter(t =>
                 t.milestone.flatMap(milestoneStatusById.get) match {
@@ -683,14 +699,16 @@ class MilestoneHistoryComponent(
     div(
       windowEvents(_.onMouseMove) --> (ev => onDragMove(ev)),
       windowEvents(_.onMouseUp) --> (_ => endDrag()),
-      child <-- projectVar.signal.map(projectResp =>
-        TgCard
-          .headerNoFooter(
-            header = TgCard.CardHeader.html(div(projectResp.name)),
-            body = TgCard.HtmlCardContent(div(projectResp.description))
-          )
-          .element
-          .amend(cls("mb-4"))
+      Option.when(lockedMilestoneId.isEmpty)(
+        child <-- projectVar.signal.map(projectResp =>
+          TgCard
+            .headerNoFooter(
+              header = TgCard.CardHeader.html(div(projectResp.name)),
+              body = TgCard.HtmlCardContent(div(projectResp.description))
+            )
+            .element
+            .amend(cls("mb-4"))
+        )
       ),
       TgCard
         .headerNoFooter(
@@ -706,8 +724,8 @@ class MilestoneHistoryComponent(
                   cls("flex flex-wrap items-start gap-3"),
                   dateFilterComponent.element,
                   taskStatusFilter.element,
-                  milestoneFilter.element,
-                  milestoneStatusFilter.element
+                  Option.when(lockedMilestoneId.isEmpty)(milestoneFilter.element),
+                  Option.when(lockedMilestoneId.isEmpty)(milestoneStatusFilter.element)
                 )
               ),
               child <-- historySignal.map { layout =>

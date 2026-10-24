@@ -5,7 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
 import com.togger.routes.Pages.EditMilestonePage
-import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
 import com.togger.ui.modal.ModalFactory
@@ -28,6 +28,7 @@ import java.util.UUID
 /** A milestone with all of its tasks, in the same table the task list shows. */
 class MilestoneReviewComponent(
   milestoneService: MilestoneFeService,
+  milestoneDateService: MilestoneDateFeService,
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
@@ -116,10 +117,25 @@ class MilestoneReviewComponent(
       .element
       .amend(cls("mb-4"))
 
+  private val history = new MilestoneHistoryComponent(
+    taskService,
+    milestoneService,
+    milestoneDateService,
+    projectService,
+    router,
+    spinnerService,
+    tgDateFormater,
+    tgClock,
+    projectId,
+    MilestoneHistoryParams.default,
+    lockedMilestoneId = Some(milestoneId)
+  )
+
   val element: HtmlElement =
     div(
       table.bindings,
       summaryCard,
+      history.element.amend(cls("mb-4")),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H3),
