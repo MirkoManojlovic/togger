@@ -47,7 +47,7 @@ class ActiveTasksComponent(
 
   private def taskItem(task: FindTaskRespFull): HtmlElement =
     li(
-      cls("mb-1"),
+      cls("mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft"),
       div(
         cls("flex items-start gap-2 mb-1"),
         div(
