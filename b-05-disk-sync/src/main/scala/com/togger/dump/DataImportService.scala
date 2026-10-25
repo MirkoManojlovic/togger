@@ -69,14 +69,15 @@ class DataImportService(
             .flatMap { prepared =>
               val remap = new Remapper(projectId, accountIdMap, prepared.ids)
               for {
+                state <- dataImportRepo.loadImportState(projectId).transact(transactor)
                 milestones <- mergeAll[MilestoneDumpData](read, DataExportEntityType.Milestone)(
                   m => dataImportRepo.mergeMilestone(remap.milestone(m))
                 )
                 tasks <- mergeAll[TaskDumpData](read, DataExportEntityType.Task)(
-                  t => dataImportRepo.mergeTask(remap.task(t))
+                  t => dataImportRepo.mergeTask(remap.task(t), state)
                 )
                 logEntries <- mergeAll[LogEntryDumpData](read, DataExportEntityType.LogEntry)(
-                  le => dataImportRepo.mergeLogEntry(remap.logEntry(le))
+                  le => dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
                 )
                 templates <- mergeAll[TaskTemplateDumpData](read, DataExportEntityType.TaskTemplate)(
                   t => dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))

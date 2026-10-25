@@ -258,6 +258,38 @@ class DataImportRepo(
       }
     } yield (folded._4, folded._5.reverse)
 
+  /** What the project already holds of the entities that dominate an import, read once instead of probing the database
+    * for every task, link, log entry and version.
+    */
+  case class ProjectImportState(
+    taskIds: Set[UUID],
+    taskVersions: Set[UUID],
+    linkIds: Set[UUID],
+    linkVersions: Set[UUID],
+    logEntryIds: Set[UUID],
+    logEntryVersions: Set[UUID],
+    labelIdsByTask: Map[UUID, Set[UUID]]
+  )
+
+  def loadImportState(projectId: UUID): ConnectionIO[ProjectImportState] =
+    for {
+      tasks <- taskRepo.findAllByProjectId(projectId)
+      taskVersions <- taskVersionRepo.findAllByProjectId(projectId)
+      links <- linkRepo.findAllByProjectId(projectId)
+      linkVersions <- linkVersionRepo.findAllByProjectId(projectId)
+      logEntries <- logEntryRepo.findAllByProjectId(projectId)
+      logEntryVersions <- logEntryVersionRepo.findAllByProjectId(projectId)
+      labels <- taskLabelAssignmentRepo.findLabelsByProjectId(projectId)
+    } yield ProjectImportState(
+      tasks.map(_.id).toSet,
+      taskVersions.map(_.version).toSet,
+      links.map(_.id).toSet,
+      linkVersions.map(_.version).toSet,
+      logEntries.map(_.id).toSet,
+      logEntryVersions.map(_.version).toSet,
+      labels.view.mapValues(_.map(_.id).toSet).toMap
+    )
+
   private def exists[A](io: ConnectionIO[A]): ConnectionIO[Boolean] = io.attempt.map(_.isRight)
 
   /** Inserts the versions the database does not know yet and returns how many were added. */
@@ -266,6 +298,13 @@ class DataImportRepo(
     insert: V => ConnectionIO[_]
   ): ConnectionIO[Int] =
     versions.traverse(v => isKnown(v).flatMap(known => if (known) false.pure[ConnectionIO] else insert(v).as(true))).map(_.count(identity))
+
+  /** Inserts the versions that are not known yet and returns how many were added. */
+  private def insertUnknown[V](versions: List[V])(
+    isKnown: V => Boolean,
+    insert: V => ConnectionIO[_]
+  ): ConnectionIO[Int] =
+    versions.filterNot(isKnown).traverse(v => insert(v).void).map(_.size)
 
   def mergeMembers(projectIdDb: UUID, accountIds: List[UUID]): ConnectionIO[DataImportEntityResult] =
     for {
@@ -285,16 +324,16 @@ class DataImportRepo(
       childrenAdded = added.count(identity)
     )
 
-  def mergeTask(diskData: TaskDumpData): ConnectionIO[DataImportEntityResult] =
+  def mergeTask(diskData: TaskDumpData, state: ProjectImportState): ConnectionIO[DataImportEntityResult] =
     for {
-      taskExists <- exists(taskRepo.findById(diskData.task.id))
+      taskExists <- state.taskIds.contains(diskData.task.id).pure[ConnectionIO]
       _ <- if (taskExists) ().pure[ConnectionIO] else taskRepo.insertWithId(diskData.task).void
-      taskVersionsAdded <- insertMissing(diskData.taskVersions)(
-        v => exists(taskVersionRepo.findByVersion(v.version)),
+      taskVersionsAdded <- insertUnknown(diskData.taskVersions)(
+        v => state.taskVersions.contains(v.version),
         taskVersionRepo.insertWithId
       )
-      linkOutcomes <- diskData.links.traverse(mergeLink)
-      assignedLabels <- taskLabelAssignmentRepo.findLabelsByTaskId(diskData.task.id).map(_.map(_.id).toSet)
+      linkOutcomes <- diskData.links.traverse(mergeLink(_, state))
+      assignedLabels = state.labelIdsByTask.getOrElse(diskData.task.id, Set.empty[UUID])
       now = tgClock.currentInstant
       labelsAdded <- diskData.labelIds.distinct.filterNot(assignedLabels.contains).traverse { labelId =>
         taskLabelAssignmentRepo.insert(TaskLabelAssignment(diskData.task.id, labelId, now))
@@ -308,34 +347,34 @@ class DataImportRepo(
       childrenAdded = linkOutcomes.count(_.rootInserted) + labelsAdded.size
     )
 
-  private def mergeLink(linkDump: LinkDumpData): ConnectionIO[ChildMergeOutcome] =
-    exists(linkRepo.findById(linkDump.link.id)).flatMap { linkExists =>
-      for {
-        _ <- if (linkExists) ().pure[ConnectionIO] else linkRepo.insertWithId(linkDump.link).void
-        added <- insertMissing(linkDump.versions)(
-          v => exists(linkVersionRepo.findByVersion(v.version)),
-          linkVersionRepo.insertWithId
-        )
-      } yield ChildMergeOutcome(rootInserted = !linkExists, versionsAdded = added)
-    }
-
-  def mergeLogEntry(logEntryDump: LogEntryDumpData): ConnectionIO[DataImportEntityResult] =
-    exists(logEntryRepo.findById(logEntryDump.logEntry.id)).flatMap { logEntryExists =>
-      for {
-        _ <- if (logEntryExists) ().pure[ConnectionIO] else logEntryRepo.insertWithId(logEntryDump.logEntry).void
-        added <- insertMissing(logEntryDump.versions)(
-          v => exists(logEntryVersionRepo.findByVersion(v.version)),
-          logEntryVersionRepo.insertWithId
-        )
-      } yield DataImportEntityResult.merged(
-        DataExportEntityType.LogEntry,
-        logEntryDump.logEntry.id,
-        None,
-        rootInserted = !logEntryExists,
-        versionsAdded = added,
-        childrenAdded = 0
+  private def mergeLink(linkDump: LinkDumpData, state: ProjectImportState): ConnectionIO[ChildMergeOutcome] = {
+    val linkExists = state.linkIds.contains(linkDump.link.id)
+    for {
+      _ <- if (linkExists) ().pure[ConnectionIO] else linkRepo.insertWithId(linkDump.link).void
+      added <- insertUnknown(linkDump.versions)(
+        v => state.linkVersions.contains(v.version),
+        linkVersionRepo.insertWithId
       )
-    }
+    } yield ChildMergeOutcome(rootInserted = !linkExists, versionsAdded = added)
+  }
+
+  def mergeLogEntry(logEntryDump: LogEntryDumpData, state: ProjectImportState): ConnectionIO[DataImportEntityResult] = {
+    val logEntryExists = state.logEntryIds.contains(logEntryDump.logEntry.id)
+    for {
+      _ <- if (logEntryExists) ().pure[ConnectionIO] else logEntryRepo.insertWithId(logEntryDump.logEntry).void
+      added <- insertUnknown(logEntryDump.versions)(
+        v => state.logEntryVersions.contains(v.version),
+        logEntryVersionRepo.insertWithId
+      )
+    } yield DataImportEntityResult.merged(
+      DataExportEntityType.LogEntry,
+      logEntryDump.logEntry.id,
+      None,
+      rootInserted = !logEntryExists,
+      versionsAdded = added,
+      childrenAdded = 0
+    )
+  }
 
   def mergeMilestone(milestoneDump: MilestoneDumpData): ConnectionIO[DataImportEntityResult] =
     exists(milestoneRepo.findById(milestoneDump.milestone.id)).flatMap { milestoneExists =>
