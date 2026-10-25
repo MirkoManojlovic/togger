@@ -9,7 +9,7 @@ class TaskConfigListRouteTest extends AsyncJsWordSpec {
 
   private val projectId = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val path = s"/task-config/project/$projectId"
+  private val path = s"/sync-config/project/$projectId"
 
   private val routes = new TgRoutes().routes("")
 

@@ -274,7 +274,7 @@ class TgRoutes {
             TaskConfigListParams.fromQuery(exportPage, exportSize, importPage, importSize)
           )
         },
-        pattern = (root / "task-config" / "project" / segment[String] / endOfSegments) ? (
+        pattern = (root / "sync-config" / "project" / segment[String] / endOfSegments) ? (
           param[String]("exportPage").? &
             param[String]("exportSize").? &
             param[String]("importPage").? &
