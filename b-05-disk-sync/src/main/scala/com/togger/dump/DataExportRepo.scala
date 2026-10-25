@@ -68,9 +68,8 @@ class DataExportRepo(
       taskLabels <- TgPages.readAll(taskLabelRepo.findPaginatedByProjectId(projectId, _))
       projectLabels <- readProjectLabels(projectId)
       milestones <- readMilestones(projectId)
-      taskIds <- taskVersionRepo.findAllByProjectIdWithLatest(projectId).map(_.map(_.id))
-      tasks <- taskIds.traverse(readTask)
-      logEntries <- taskIds.flatTraverse(readLogEntries)
+      tasks <- readTasks(projectId)
+      logEntries <- readLogEntries(projectId)
       taskTemplates <- readTaskTemplates(projectId)
       timeboxes <- readTimeboxes(projectId)
       members <- TgPages.readAll(projectAccountRepo.findPaginatedMembers(projectId, _))
@@ -115,31 +114,41 @@ class DataExportRepo(
       }
     } yield dumped
 
-  private def readTask(taskId: UUID): ConnectionIO[TaskDumpData] =
+  /** Reads the tasks with a handful of project-wide queries, not a set of queries per task. */
+  private def readTasks(projectId: UUID): ConnectionIO[List[TaskDumpData]] =
     for {
-      task <- taskRepo.findById(taskId)
-      taskVersions <- taskVersionRepo.findByTaskId(taskId)
-      links <- linkRepo.findByTaskId(taskId)
-      linksDump <- links.traverse(link =>
-        linkVersionRepo.findByLinkId(link.id).map(versions => LinkDumpData(link, versions.sortBy(_.version)))
-      )
-      labels <- taskLabelAssignmentRepo.findLabelsByTaskId(taskId)
-    } yield TaskDumpData(
-      task,
-      taskVersions.sortBy(_.version),
-      linksDump.sortBy(_.link.id),
-      labels.map(_.id).sorted
-    )
+      tasks <- taskRepo.findAllByProjectId(projectId)
+      taskVersions <- taskVersionRepo.findAllByProjectId(projectId)
+      links <- linkRepo.findAllByProjectId(projectId)
+      linkVersions <- linkVersionRepo.findAllByProjectId(projectId)
+      labels <- taskLabelAssignmentRepo.findLabelsByProjectId(projectId)
+    } yield {
+      val versionsByTask = taskVersions.groupBy(_.taskId)
+      val linkVersionsByLink = linkVersions.groupBy(_.linkId)
+      val linksByTask = links.groupBy(_.taskId)
+      tasks.map { task =>
+        TaskDumpData(
+          task,
+          versionsByTask.getOrElse(task.id, Nil).sortBy(_.version),
+          linksByTask
+            .getOrElse(task.id, Nil)
+            .map(link => LinkDumpData(link, linkVersionsByLink.getOrElse(link.id, Nil).sortBy(_.version)))
+            .sortBy(_.link.id),
+          labels.getOrElse(task.id, Nil).map(_.id).sorted
+        )
+      }
+    }
 
-  private def readLogEntries(taskId: UUID): ConnectionIO[List[LogEntryDumpData]] =
+  private def readLogEntries(projectId: UUID): ConnectionIO[List[LogEntryDumpData]] =
     for {
-      logEntries <- logEntryRepo.findByTaskId(taskId)
-      dumped <- logEntries.traverse(logEntry =>
-        logEntryVersionRepo
-          .findByLogEntryId(logEntry.id)
-          .map(versions => LogEntryDumpData(logEntry, versions.sortBy(_.version)))
+      logEntries <- logEntryRepo.findAllByProjectId(projectId)
+      versions <- logEntryVersionRepo.findAllByProjectId(projectId)
+    } yield {
+      val versionsByLogEntry = versions.groupBy(_.logEntryId)
+      logEntries.map(logEntry =>
+        LogEntryDumpData(logEntry, versionsByLogEntry.getOrElse(logEntry.id, Nil).sortBy(_.version))
       )
-    } yield dumped
+    }
 
   private def readTaskTemplates(projectId: UUID): ConnectionIO[List[TaskTemplateDumpData]] =
     for {
