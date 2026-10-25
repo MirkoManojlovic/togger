@@ -25,7 +25,6 @@ case class SidebarLink(
   link: Binder[HtmlElement],
   collapsed: Signal[Boolean],
   onExportClick: Option[() => Unit] = None,
-  onConfigClick: Option[() => Unit] = None,
   onImportClick: Option[() => Unit] = None,
   onTasksClick: Option[() => Unit] = None,
   onMilestonesClick: Option[() => Unit] = None,
@@ -140,16 +139,6 @@ case class SidebarLink(
               "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
             onClick.mapToUnit --> (_ => importAction())
-          )
-        ),
-        onConfigClick.map(configAction =>
-          button(
-            `type`("button"),
-            TgIcons.editIcon("w-3.5 h-3.5"),
-            cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => configAction())
           )
         )
       )
@@ -347,7 +336,6 @@ class Sidebar(
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
                               onExportClick = Some(() => dumpProject(project.id)),
-                              onConfigClick = Some(() => router.route(SyncConfigPage(project.id))),
                               onImportClick = Some(() => importAllForProject(project.id)),
                               icon = project.icon
                             )
