@@ -6,6 +6,7 @@ import com.togger.db.Util._
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskLabelRepoImpl.TASK_LABEL_TABLE_FRAG
+import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -68,6 +69,20 @@ class TaskLabelAssignmentRepoImpl extends TaskLabelAssignmentRepo with TgLogging
           labelsByTaskId => s"Task labels found ${sp(labelsByTaskId)}"
         )
     }
+  override def findLabelsByProjectId(projectId: UUID): ConnectionIO[Map[UUID, List[TaskLabel]]] =
+    logAroundInfoQuery(
+      (selectAllStatement(TASK_LABEL_ASSIGNMENT_TABLE_FRAG) ++
+        innerJoin(TASK_LABEL_TABLE_FRAG)(fr"task_label_assignment.task_label_id = task_label.id") ++
+        innerJoin(TASK_TABLE_FRAG)(fr"task_label_assignment.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(TaskLabelAssignment, TaskLabel, Task)]
+        .to[List]
+        .map(_.groupMap(_._1.taskId)(_._2))
+    )(
+      s"Finding all task labels of ${sp(projectId)}",
+      labelsByTaskId => s"Task labels found for ${sp(labelsByTaskId.size)} tasks of ${sp(projectId)}"
+    )
+
 }
 
 object TaskLabelAssignmentRepoImpl {

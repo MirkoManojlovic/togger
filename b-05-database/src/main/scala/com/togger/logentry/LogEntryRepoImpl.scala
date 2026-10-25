@@ -5,6 +5,7 @@ import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
+import com.togger.task.Task
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
@@ -60,6 +61,19 @@ class LogEntryRepoImpl extends LogEntryRepo {
       logEntries => s"Log entries found ${sp(logEntries)} for ${sp(taskId)}"
     )
   }
+
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]] =
+    logAroundInfoQuery(
+      (selectAllStatement(LOG_ENTRY_TABLE_FRAG) ++
+        innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(LogEntry, Task)]
+        .map(_._1)
+        .to[List]
+    )(
+      s"Finding all log entries of ${sp(projectId)}",
+      logEntries => s"Log entries found ${sp(logEntries.size)} for ${sp(projectId)}"
+    )
 
   override def findPaginatedByTaskId(
     taskId: UUID,

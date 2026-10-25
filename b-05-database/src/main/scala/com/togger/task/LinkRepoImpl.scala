@@ -3,6 +3,7 @@ package com.togger.task
 import com.togger.db.Util._
 import com.togger.logging.TgLogging
 import com.togger.task.LinkRepoImpl.LINK_TABLE_FRAG
+import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -80,6 +81,19 @@ class LinkRepoImpl extends LinkRepo with TgLogging {
     )(
       s"Finding links for ${sp(taskId)}",
       links => s"Links found ${sp(links)} for ${sp(taskId)}"
+    )
+
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[Link]] =
+    logAroundInfoQuery(
+      (selectAllStatement(LINK_TABLE_FRAG) ++
+        innerJoin(TASK_TABLE_FRAG)(fr"link.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(Link, Task)]
+        .map(_._1)
+        .to[List]
+    )(
+      s"Finding all links of ${sp(projectId)}",
+      links => s"Links found ${sp(links.size)} for ${sp(projectId)}"
     )
 
   override def deleteByTaskId(taskId: UUID): ConnectionIO[Int] = {

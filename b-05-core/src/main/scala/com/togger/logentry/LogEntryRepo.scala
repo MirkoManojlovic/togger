@@ -21,6 +21,9 @@ trait LogEntryRepo {
     */
   def findByTaskId(taskId: UUID): ConnectionIO[List[LogEntry]]
 
+  /** Every log entry of the project's tasks, unbounded: only for whole-project jobs such as the disk dump. */
+  def findAllByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]]
+
   def findPaginatedByTaskId(taskId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[LogEntry]]
 
   /** One page of the project's log entries, newest first. */

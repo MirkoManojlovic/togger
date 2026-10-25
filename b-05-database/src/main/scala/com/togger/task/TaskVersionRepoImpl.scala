@@ -109,6 +109,19 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       taskVersions => s"Task versions found ${sp(taskVersions)} for ${sp(taskId)}"
     )
 
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[TaskVersion]] =
+    logAroundInfoQuery(
+      (selectAllStatement(TASK_VERSION_TABLE_FRAG) ++
+        innerJoin(TASK_TABLE_FRAG)(fr"task_version.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(TaskVersion, Task)]
+        .map(_._1)
+        .to[List]
+    )(
+      s"Finding all task versions of ${sp(projectId)}",
+      taskVersions => s"Task versions found ${sp(taskVersions.size)} for ${sp(projectId)}"
+    )
+
   override def findPaginatedByTaskId(
     taskId: UUID,
     page: DbPageRequest

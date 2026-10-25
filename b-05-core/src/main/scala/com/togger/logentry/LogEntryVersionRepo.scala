@@ -18,6 +18,9 @@ trait LogEntryVersionRepo {
     */
   def findByLogEntryId(logEntryId: UUID): ConnectionIO[List[LogEntryVersion]]
 
+  /** Every log entry version of the project's tasks, unbounded: only for whole-project jobs such as the disk dump. */
+  def findAllByProjectId(projectId: UUID): ConnectionIO[List[LogEntryVersion]]
+
   def findPaginatedByLogEntryId(logEntryId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[LogEntryVersion]]
 
   def findLatestByLogEntryId(logEntryId: UUID): ConnectionIO[LogEntryVersion]

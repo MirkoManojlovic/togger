@@ -55,6 +55,14 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
       _ => s"Task with ${sp(id)} set to ${sp(archived)}"
     )
 
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[Task]] =
+    logAroundInfoQuery(
+      (selectAllStatement(TASK_TABLE_FRAG) ++ fr"where project_id = $projectId").query[Task].to[List]
+    )(
+      s"Finding all tasks of ${sp(projectId)}",
+      tasks => s"Tasks found ${sp(tasks.size)} for ${sp(projectId)}"
+    )
+
   override def deleteById(id: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(deleteByIdStatementUUID(TASK_TABLE_FRAG)(id).update.run)(
       s"Deleting task with ${sp(id)}",

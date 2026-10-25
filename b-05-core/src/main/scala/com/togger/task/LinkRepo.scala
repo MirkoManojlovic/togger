@@ -19,6 +19,9 @@ trait LinkRepo {
   /** Bounded by caller: the links of one task, loaded with that task. Decided to stay unpaginated. */
   def findByTaskId(taskId: UUID): ConnectionIO[List[Link]]
 
+  /** Every link of the project's tasks, unbounded: only for whole-project jobs such as the disk dump. */
+  def findAllByProjectId(projectId: UUID): ConnectionIO[List[Link]]
+
   def deleteByTaskId(taskId: UUID): ConnectionIO[Int]
 
 }

@@ -11,6 +11,9 @@ trait TaskRepo {
 
   def findById(id: UUID): ConnectionIO[Task]
 
+  /** Every task of the project, unbounded: only for whole-project jobs such as the disk dump, never for an endpoint. */
+  def findAllByProjectId(projectId: UUID): ConnectionIO[List[Task]]
+
   def insert(task: Task): ConnectionIO[Task]
 
   def insertWithId(task: Task): ConnectionIO[Task]
@@ -33,6 +36,9 @@ trait TaskVersionRepo {
     * [[findPaginatedByTaskId]], newest version first.
     */
   def findByTaskId(taskId: UUID): ConnectionIO[List[TaskVersion]]
+
+  /** Every version of every task of the project, unbounded: only for whole-project jobs such as the disk dump. */
+  def findAllByProjectId(projectId: UUID): ConnectionIO[List[TaskVersion]]
 
   def findPaginatedByTaskId(taskId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[TaskVersion]]
 
@@ -99,5 +105,8 @@ trait TaskLabelAssignmentRepo {
 
   /** Bounded by caller (the ids come from a page of tasks): the labels assigned to each of them. */
   def findLabelsByTaskIds(taskIds: Seq[UUID]): ConnectionIO[Map[UUID, List[TaskLabel]]]
+
+  /** The labels assigned to each task of the project, unbounded: only for whole-project jobs such as the disk dump. */
+  def findLabelsByProjectId(projectId: UUID): ConnectionIO[Map[UUID, List[TaskLabel]]]
 
 }

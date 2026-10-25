@@ -3,7 +3,10 @@ package com.togger.logentry
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
+import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
 import com.togger.logentry.LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE_FRAG
+import com.togger.task.Task
+import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -65,6 +68,20 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
     )(
       s"Finding log entry versions for ${sp(logEntryId)}",
       logEntryVersions => s"Log entry versions found ${sp(logEntryVersions)} for ${sp(logEntryId)}"
+    )
+
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[LogEntryVersion]] =
+    logAroundInfoQuery(
+      (selectAllStatement(LOG_ENTRY_VERSION_TABLE_FRAG) ++
+        innerJoin(LOG_ENTRY_TABLE_FRAG)(fr"log_entry_version.log_entry_id = log_entry.id") ++
+        innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(LogEntryVersion, LogEntry, Task)]
+        .map(_._1)
+        .to[List]
+    )(
+      s"Finding all log entry versions of ${sp(projectId)}",
+      logEntryVersions => s"Log entry versions found ${sp(logEntryVersions.size)} for ${sp(projectId)}"
     )
 
   override def findPaginatedByLogEntryId(

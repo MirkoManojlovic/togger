@@ -1,7 +1,9 @@
 package com.togger.task
 
 import com.togger.db.Util._
+import com.togger.task.LinkRepoImpl.LINK_TABLE_FRAG
 import com.togger.task.LinkVersionRepoImpl.LINK_VERSION_TABLE_FRAG
+import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -60,6 +62,20 @@ class LinkVersionRepoImpl extends LinkVersionRepo {
     )(
       s"Finding link versions for ${sp(linkId)}",
       linkVersions => s"Link versions found ${sp(linkVersions)} for ${sp(linkId)}"
+    )
+
+  override def findAllByProjectId(projectId: UUID): ConnectionIO[List[LinkVersion]] =
+    logAroundInfoQuery(
+      (selectAllStatement(LINK_VERSION_TABLE_FRAG) ++
+        innerJoin(LINK_TABLE_FRAG)(fr"link_version.link_id = link.id") ++
+        innerJoin(TASK_TABLE_FRAG)(fr"link.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(LinkVersion, Link, Task)]
+        .map(_._1)
+        .to[List]
+    )(
+      s"Finding all link versions of ${sp(projectId)}",
+      linkVersions => s"Link versions found ${sp(linkVersions.size)} for ${sp(projectId)}"
     )
 
   override def findLatestByLinkId(linkId: UUID): ConnectionIO[LinkVersion] =
