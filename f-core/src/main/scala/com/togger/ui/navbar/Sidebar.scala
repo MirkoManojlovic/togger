@@ -110,13 +110,15 @@ case class SidebarLink(
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
         span(
+          cls("whitespace-nowrap"),
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
         ),
         link
       ),
       div(
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+        // no wrapping while the sidebar widens, or the rows grow taller and the ones below are pushed down
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq("flex", "shrink-0")),
         onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
         onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
         onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
@@ -167,6 +169,7 @@ case class SidebarLink(
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
         span(
+          cls("whitespace-nowrap"),
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
         ),
@@ -298,7 +301,7 @@ class Sidebar(
 //        aria-label="Sidebar"
 
         div(
-          cls("h-full px-3 py-4 pb-24 overflow-y-auto bg-neutral-primary-soft border-e border-default"),
+          cls("h-full px-3 py-4 pb-24 overflow-y-auto overflow-x-hidden bg-neutral-primary-soft border-e border-default"),
           div(
             cls("flex items-center mb-5"),
             cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq("justify-end")),
