@@ -129,4 +129,22 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
       ProjectHomeStats.taskBadges(assigned, Seq.empty, showAssignee = false, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) should not contain ada.fullName
     }
   }
+
+  "ProjectHomeStats.memberRows" should {
+    "put the tasks of each member in the column of their status, the unassigned last" in {
+      val inProgress = status("In progress")
+      val blocked = status("Blocked")
+      val bob = ada.copy(id = UUID.randomUUID(), firstName = "Bob", lastName = "Baker")
+      val adas = task("a", inProgress).copy(assignedTo = Some(ada))
+      val bobs = task("b", blocked).copy(assignedTo = Some(bob))
+      val nobodys = task("n", inProgress)
+      val rows = ProjectHomeStats.memberRows(Seq(inProgress -> Seq(nobodys, adas), blocked -> Seq(bobs)))
+      rows.map(_._1) shouldBe Seq(Some(ada), Some(bob), None)
+      rows.map(_._2) shouldBe Seq(
+        Seq(Seq(adas), Seq.empty, Seq.empty, Seq.empty),
+        Seq(Seq.empty, Seq.empty, Seq.empty, Seq(bobs)),
+        Seq(Seq(nobodys), Seq.empty, Seq.empty, Seq.empty)
+      )
+    }
+  }
 }

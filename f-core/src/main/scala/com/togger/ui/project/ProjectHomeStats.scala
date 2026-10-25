@@ -94,4 +94,23 @@ object ProjectHomeStats {
         BadgeSpec(formatDate(task.dueDate), TgBadgeColor.Gray),
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
+
+  /** A row for each assignee of the tasks, by name, the unassigned tasks last; a row has the tasks of the assignee for
+    * each of the statuses of the daily, in its order.
+    */
+  def memberRows(
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
+  ): Seq[(Option[SearchAccountDto], Seq[Seq[FindTaskRespFull]])] = {
+    val ranked = inFlight.flatMap { case (_, tasks) =>
+      tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))
+    }
+    val columns = 0 until TeamDailyStatusOrder.StatusCount
+    ranked
+      .groupBy(_._2.assignedTo)
+      .toSeq
+      .sortBy { case (assignee, _) => (assignee.isEmpty, assignee.map(_.fullName)) }
+      .map { case (assignee, group) =>
+        assignee -> columns.map(column => group.collect { case (rank, task) if rank == column => task }.sortBy(_.name))
+      }
+  }
 }

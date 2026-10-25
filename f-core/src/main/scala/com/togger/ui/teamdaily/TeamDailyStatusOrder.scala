@@ -10,6 +10,8 @@ object TeamDailyStatusOrder {
   private val Ordered: Seq[DefaultTaskStatus] =
     Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
 
+  val StatusCount: Int = Ordered.size
+
   def normalise(name: String): String =
     name.dropWhile(!_.isLetter).trim.toLowerCase
 

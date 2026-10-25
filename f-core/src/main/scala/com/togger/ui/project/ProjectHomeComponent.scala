@@ -18,7 +18,6 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
@@ -214,8 +213,25 @@ class ProjectHomeComponent(
       .filter(_.nonEmpty)
       .getOrElse(WorkDayCalendar.DefaultWorkDays)
 
-  private def inFlightGroup(status: FindTaskStatusResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
-    taskGroup(status, tasks, showAssignee = true)
+  private def taskItem(task: FindTaskRespFull, showAssignee: Boolean): HtmlElement =
+    li(
+      cls("mb-1"),
+      div(
+        cls("flex flex-wrap items-center gap-2"),
+        pageLink(task.name, EditTaskPage(projectId, task.id)),
+        BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
+      ),
+      BulkTaskCard.readOnlyRow(
+        ProjectHomeStats.taskBadges(
+          task,
+          allMilestonesVar.now(),
+          showAssignee,
+          tgClock.currentDate(),
+          workDays,
+          tgDateFormater.asAmericanDate
+        )
+      )
+    )
 
   private def taskGroup(
     status: FindTaskStatusResp,
@@ -228,28 +244,7 @@ class ProjectHomeComponent(
         cls("mb-1"),
         TgBadge(text = s"${status.emoji} ${status.name} (${tasks.size})".trim, color = TgBadgeColor.Gray, bordered = true).element
       ),
-      ul(
-        tasks.map(task =>
-          li(
-            cls("mb-1"),
-            div(
-              cls("flex flex-wrap items-center gap-2"),
-              pageLink(task.name, EditTaskPage(projectId, task.id)),
-              BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
-            ),
-            BulkTaskCard.readOnlyRow(
-              ProjectHomeStats.taskBadges(
-                task,
-                allMilestonesVar.now(),
-                showAssignee,
-                tgClock.currentDate(),
-                workDays,
-                tgDateFormater.asAmericanDate
-              )
-            )
-          )
-        )
-      )
+      ul(tasks.map(taskItem(_, showAssignee)))
     )
 
   private val selectedTabVar = Var(ProjectHomeComponent.GeneralTabId)
@@ -264,23 +259,32 @@ class ProjectHomeComponent(
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
 
-  /** One column for each of the statuses of the daily, in its order, also when no task is in it. */
-  private def statusColumns(inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]): HtmlElement =
-    div(
-      cls("grid grid-cols-1 gap-4 lg:grid-cols-4"),
-      ProjectHomeComponent.ColumnStatuses.map { columnStatus =>
-        inFlight
-          .find { case (status, _) =>
-            TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(columnStatus.statusName)
+  private val rowCellCls = "border-t border-default pt-2"
+
+  /** A row for each member with tasks in flight, the tasks of the member in the column of their status; the tasks
+    * without an assignee are in the last row. The columns are the statuses of the daily, in its order, also when no
+    * task is in one.
+    */
+  private def statusColumns(inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]): HtmlElement = {
+    val rows = ProjectHomeStats.memberRows(inFlight)
+    val columnCounts = ProjectHomeComponent.ColumnStatuses.indices.map(column => rows.map(_._2(column).size).sum)
+    if (rows.isEmpty) emptyNote("No tasks in progress, testing, waiting or blocked.")
+    else
+      div(
+        cls("overflow-x-auto"),
+        div(
+          cls("grid grid-cols-[auto_repeat(4,minmax(0,1fr))] gap-4 min-w-[48rem]"),
+          div(cls("font-semibold text-heading"), "Member"),
+          ProjectHomeComponent.ColumnStatuses.zip(columnCounts).map { case (columnStatus, count) =>
+            div(TgBadge(text = s"${columnStatus.toStringWithEmoji} ($count)", color = TgBadgeColor.Gray, bordered = true).element)
+          },
+          rows.flatMap { case (member, cells) =>
+            div(cls(rowCellCls), cls("font-medium text-heading whitespace-nowrap"), member.fold("Unassigned")(_.fullName)) +:
+              cells.map(tasks => div(cls(rowCellCls), ul(tasks.map(taskItem(_, showAssignee = false)))))
           }
-          .fold[HtmlElement](
-            div(
-              cls("mb-4"),
-              TgBadge(text = columnStatus.toStringWithEmoji, color = TgBadgeColor.Gray, bordered = true).element
-            )
-          ) { case (status, tasks) => inFlightGroup(status, tasks) }
-      }
-    )
+        )
+      )
+  }
 
   private def generalSection[A](title: String, items: Seq[A], empty: String)(render: A => HtmlElement): HtmlElement =
     div(
