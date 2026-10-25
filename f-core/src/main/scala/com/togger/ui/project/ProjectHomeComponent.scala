@@ -219,9 +219,6 @@ class ProjectHomeComponent(
       )
     )
 
-  private def listOrEmpty[A](items: Signal[Seq[A]], empty: String)(render: A => HtmlElement): Modifier[HtmlElement] =
-    children <-- items.map(values => if (values.isEmpty) Seq(emptyNote(empty)) else values.map(render))
-
   private val selectedTabVar = Var(ProjectHomeComponent.GeneralTabId)
 
   private def groupsOrEmpty(
@@ -234,9 +231,24 @@ class ProjectHomeComponent(
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
 
-  private def generalPanel(milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])]): HtmlElement =
+  private def generalSection[A](title: String, items: Seq[A], empty: String)(render: A => HtmlElement): HtmlElement =
     div(
-      if (milestones.isEmpty) Seq(emptyNote("No active milestones.")) else milestones.map((milestoneRow _).tupled)
+      cls("mb-4"),
+      sectionTitle(title),
+      if (items.isEmpty) Seq(emptyNote(empty)) else items.map(render)
+    )
+
+  private def generalPanel(
+    milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])],
+    timeboxes: Seq[(FindTimeboxResp, Seq[FindTaskRespFull])],
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
+  ): HtmlElement =
+    div(
+      generalSection("Tasks in flight", inFlight, "No tasks in progress, testing, waiting or blocked.")(
+        (inFlightGroup _).tupled
+      ),
+      generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
+      generalSection("Active milestones", milestones, "No active milestones.")((milestoneRow _).tupled)
     )
 
   private def memberPanel(
@@ -275,10 +287,11 @@ class ProjectHomeComponent(
   private def activityTabs(
     members: Seq[SearchAccountDto],
     milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])],
+    timeboxes: Seq[(FindTimeboxResp, Seq[FindTaskRespFull])],
     inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
   ): HtmlElement = {
     val memberTabList =
-      TgTab(ProjectHomeComponent.GeneralTabId, "General", generalPanel(milestones)) +:
+      TgTab(ProjectHomeComponent.GeneralTabId, "General", generalPanel(milestones, timeboxes, inFlight)) +:
         members.sortBy(_.fullName).map { member =>
           TgTab(
             memberTabId(member),
@@ -311,19 +324,11 @@ class ProjectHomeComponent(
         "Active milestones",
         div(
           child <-- projectVar.signal
-            .combineWith(milestonesVar.signal, inFlightVar.signal)
-            .map { case (project, milestones, inFlight) =>
-              activityTabs(project.map(_.members).getOrElse(Seq.empty), milestones, inFlight)
+            .combineWith(milestonesVar.signal, timeboxesVar.signal, inFlightVar.signal)
+            .map { case (project, milestones, timeboxes, inFlight) =>
+              activityTabs(project.map(_.members).getOrElse(Seq.empty), milestones, timeboxes, inFlight)
             }
         )
-      ),
-      card(
-        "Active timeboxes",
-        div(listOrEmpty(timeboxesVar.signal, "No active timeboxes.")((timeboxRow _).tupled))
-      ),
-      card(
-        "Tasks in flight",
-        div(listOrEmpty(inFlightVar.signal, "No tasks in progress, testing, waiting or blocked.")((inFlightGroup _).tupled))
       )
     )
 }
