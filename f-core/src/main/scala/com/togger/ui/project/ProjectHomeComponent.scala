@@ -154,36 +154,6 @@ class ProjectHomeComponent(
       )
     )
 
-  private def navigationGroup(title: String, links: HtmlElement*): HtmlElement =
-    div(cls("min-w-40"), div(cls("font-semibold text-heading mb-1"), title), div(cls("flex flex-col gap-1"), links))
-
-  private val navigationCard: HtmlElement =
-    card(
-      "Navigation",
-      div(
-        cls("flex flex-wrap gap-8"),
-        navigationGroup(
-          "Tasks",
-          pageLink("Tasks", ShowAllTasksPage(projectId)),
-          pageLink("Create task", CreateTaskPage(projectId)),
-          pageLink("Task statuses", ShowAllTaskStatusesPage(projectId)),
-          pageLink("Task labels", ShowAllTaskLabelsPage(projectId)),
-          pageLink("Task templates", ShowAllTaskTemplatesPage(projectId))
-        ),
-        navigationGroup(
-          "Milestones",
-          pageLink("Milestones", ShowMilestonesPage(projectId)),
-          pageLink("Create milestone", CreateMilestonePage(projectId)),
-          pageLink("Milestone history", ShowMilestoneHistoryPage(projectId))
-        ),
-        navigationGroup(
-          "Timeboxes",
-          pageLink("Timeboxes", ShowTimeboxesPage(projectId)),
-          pageLink("Create timebox", CreateTimeboxPage(projectId))
-        )
-      )
-    )
-
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     div(
@@ -247,7 +217,6 @@ class ProjectHomeComponent(
   val element: HtmlElement =
     div(
       child.maybe <-- projectVar.signal.map(_.map(projectCard)),
-      navigationCard,
       card(
         "Active milestones",
         div(listOrEmpty(milestonesVar.signal, "No active milestones.")((milestoneRow _).tupled))
