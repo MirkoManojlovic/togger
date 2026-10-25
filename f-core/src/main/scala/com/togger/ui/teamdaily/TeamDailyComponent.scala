@@ -54,7 +54,7 @@ case class TeamDailyState(
   def plan: Seq[TeamDailyMemberPlan] = TeamDailyPlan.chosen(candidates, selectedTasks)
 
   def isFilled(memberId: UUID, task: TeamDailyTaskPlan): Boolean =
-    task.missingDays.forall(date => entries.contains(TeamDailyEntryKey(memberId, task.taskId, date)))
+    task.todayEntry.nonEmpty || task.missingDays.forall(date => entries.contains(TeamDailyEntryKey(memberId, task.taskId, date)))
 
   def isFilled(member: TeamDailyMemberPlan): Boolean = member.tasks.forall(isFilled(member.member.id, _))
 
@@ -217,11 +217,11 @@ class TeamDailyComponent(
   // ---- editing
 
   private def defaultEntry(key: TeamDailyEntryKey): TeamDailyEntryDraft = {
-    val previous = state.now().plan
-      .flatMap(_.tasks)
-      .find(_.taskId == key.taskId)
-      .fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus)
-    TeamDailyEntryDraft(previous, "")
+    val task = state.now().plan.flatMap(_.tasks).find(_.taskId == key.taskId)
+    task.flatMap(_.todayEntry) match {
+      case Some(existing) => TeamDailyEntryDraft(existing.status, existing.textExternal)
+      case None           => TeamDailyEntryDraft(task.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus), "")
+    }
   }
 
   private def edit(key: TeamDailyEntryKey)(change: TeamDailyEntryDraft => TeamDailyEntryDraft): Unit =
@@ -235,6 +235,18 @@ class TeamDailyComponent(
   // ---- submit
 
   private def logEntryOf(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft): LogEntryDto = {
+    val existing = state.now().plan.flatMap(_.tasks).find(_.taskId == key.taskId).flatMap(_.todayEntry)
+    existing.fold(newLogEntryOf(key, draft))(entry =>
+      entry.copy(
+        latestVersion = UUID.randomUUID(),
+        textExternal = draft.textExternal,
+        status = draft.status,
+        updatedAt = tgClock.currentInstant
+      )
+    )
+  }
+
+  private def newLogEntryOf(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft): LogEntryDto = {
     val today = tgClock.currentDate()
     val createdAt =
       if (key.date == today) tgClock.currentInstant else tgClock.instantFrom(key.date, LocalTime.NOON, ZoneOffset.UTC)
@@ -259,7 +271,10 @@ class TeamDailyComponent(
       spinnerService
         .runWithSpinner(
           toSave.toList.traverse { case (key, draft) =>
-            taskService.saveLogEntry(logEntryOf(key, draft)).map(result => key -> result.isRight)
+            val dto = logEntryOf(key, draft)
+            val isUpdate = state.now().plan.flatMap(_.tasks).exists(t => t.taskId == key.taskId && t.todayEntry.nonEmpty)
+            (if (isUpdate) taskService.updateLogEntry(dto).map(_.isRight) else taskService.saveLogEntry(dto).map(_.isRight))
+              .map(ok => key -> ok)
           }
         )
         .flatMap { results =>
@@ -454,7 +469,7 @@ class TeamDailyComponent(
           TaskProgressComponent
             .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
             .element,
-          span(cls("text-body-subtle"), "Not logged today")
+          span(cls("text-body-subtle"), if (task.todayEntry.isEmpty) "Not logged today" else "Logged today")
         ),
         badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones))
       )
@@ -511,7 +526,7 @@ class TeamDailyComponent(
         cls("rounded-base border border-default-medium p-3"),
         child.maybe <-- state.signal.map(_.candidates).distinct.map(candidates =>
           Option.when(candidates.isEmpty)(
-            p(cls("text-sm text-body"), "The chosen members have no open tasks without a log entry today.")
+            p(cls("text-sm text-body"), "The chosen members have no open tasks.")
           )
         ),
         children <-- state.signal.map(_.candidates).distinct.map(_.map(memberGroup))
@@ -527,7 +542,7 @@ class TeamDailyComponent(
     val latest = task.flatMap(_.latestEntry)
     // the repeat button gets the focus when it is the quick way to fill in a day nobody has touched yet
     val canRepeat = latest.exists(entry => isRepeatable(task, entry))
-    val focusRepeat = canRepeat && !state.now().entries.contains(key)
+    val focusRepeat = canRepeat && !state.now().entries.contains(key) && task.forall(_.todayEntry.isEmpty)
     // one box per task, so the entry to fill in is clearly the one of the task above it
     div(
       cls("rounded-base border border-default-medium p-4"),
@@ -688,7 +703,7 @@ class TeamDailyComponent(
 
   private def reviewView(s: TeamDailyState): HtmlElement = {
     val toSave = s.toSave.toMap
-    if (s.plan.isEmpty) div(cls("text-sm text-body"), "Nothing to fill in: the chosen members have no open tasks without a log entry today.")
+    if (s.plan.isEmpty) div(cls("text-sm text-body"), "Nothing to fill in: the chosen members have no open tasks.")
     else
       div(
         s.plan.map { member =>

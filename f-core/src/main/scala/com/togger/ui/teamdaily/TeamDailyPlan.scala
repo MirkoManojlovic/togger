@@ -21,13 +21,15 @@ case class TeamDailyTaskPlan(
   dueDate: LocalDate,
   logEntries: Seq[LogEntryDto] = Seq.empty,
   description: String = "",
-  statusEmoji: String = ""
+  statusEmoji: String = "",
+  todayEntry: Option[LogEntryDto] = None
 ) {
 
   def statusLabel: String = s"$statusEmoji $statusName".trim
 
-  /** The newest log entry, shown while filling in today's so the user sees what was said last. */
-  def latestEntry: Option[LogEntryDto] = logEntries.maxByOption(_.createdAt)
+  /** The newest log entry before today, shown while filling in today's so the user sees what was said last. */
+  def latestEntry: Option[LogEntryDto] =
+    logEntries.filterNot(entry => todayEntry.exists(_.id == entry.id)).maxByOption(_.createdAt)
 }
 
 case class TeamDailyMemberPlan(member: SearchAccountDto, tasks: Seq[TeamDailyTaskPlan])
@@ -61,7 +63,6 @@ object TeamDailyPlan {
         .flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(rank => rank -> task))
         .sortBy { case (rank, task) => (rank, task.name) }
         .map { case (_, task) => taskPlan(task, today) }
-        .filter(_.missingDays.nonEmpty)
       Option.when(memberTasks.nonEmpty)(TeamDailyMemberPlan(member, memberTasks))
     }
 
@@ -72,7 +73,10 @@ object TeamDailyPlan {
       name = task.name,
       statusName = task.taskStatus.name,
       statusEmoji = task.taskStatus.emoji,
-      missingDays = MissingLogDays.of(task.logEntries.map(e => GanttLogStatus.toLocalDate(e.createdAt)), today),
+      missingDays = MissingLogDays.of(today),
+      todayEntry = task.logEntries
+        .filter(e => GanttLogStatus.toLocalDate(e.createdAt) == today)
+        .maxByOption(_.createdAt),
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
