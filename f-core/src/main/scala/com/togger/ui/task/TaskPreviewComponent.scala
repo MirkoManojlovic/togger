@@ -136,7 +136,12 @@ class TaskPreviewComponent(
       }
     )
 
-  private def weekRangeStatus(logEntries: Seq[LogEntryDto], start: LocalDate, end: LocalDate) = {
+  private def weekRangeStatus(
+    logEntries: Seq[LogEntryDto],
+    start: LocalDate,
+    end: LocalDate,
+    selectedDayVar: Var[Option[LocalDate]]
+  ) = {
     val entriesByDate = logEntries
       .filter { entry =>
         val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
@@ -150,7 +155,9 @@ class TaskPreviewComponent(
       else
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
           div(
-            cls("mb-2"),
+            cls("mb-2 p-2 border rounded-base"),
+            cls.toggle("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
+            cls.toggle("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
             dayEntries
               .sortBy(_.createdAt)
               .map(entry =>
@@ -185,17 +192,17 @@ class TaskPreviewComponent(
       TgTab(
         id = "last-week",
         label = "Last week",
-        content = weekRangeStatus(logEntries, currentWeekStart, currentWeekEnd)
+        content = weekRangeStatus(logEntries, currentWeekStart, currentWeekEnd, selectedDayVar)
       ),
       TgTab(
         id = "last-2-weeks",
         label = "Last 2 weeks",
-        content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd)
+        content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd, selectedDayVar)
       ),
       TgTab(
         id = "everything",
         label = "Everything",
-        content = weekRangeStatus(logEntries, LocalDate.MIN, LocalDate.MAX)
+        content = weekRangeStatus(logEntries, LocalDate.MIN, LocalDate.MAX, selectedDayVar)
       )
     )
     new TgTabs(tabs, selectedTabVar).element
