@@ -214,6 +214,7 @@ class MilestoneReviewComponent(
     val today = tgClock.currentDate()
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, today)
     val progress = TimeboxReviewStats.tasksProgress(tasks)
+    val perMember = TimeboxReviewStats.taskCountPerMember(tasks)
     div(
       cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
       statCard(
@@ -230,13 +231,17 @@ class MilestoneReviewComponent(
           cls("flex flex-col gap-4"),
           div(
             cls("flex flex-wrap items-start justify-around gap-4"),
-            stat("Total", tasks.size),
-            stat("Done", progress.done, TgBadgeColor.Success),
-            stat("Left", progress.left, TgBadgeColor.Blue)
+            stat("Total", tasks.size)
           ),
           div(
             cls("flex flex-wrap items-start justify-around gap-4"),
             statuses.map(status => stat(status.badgeText, tasks.count(_.taskStatus.id == status.id), status.badgeColor))
+          ),
+          Option.when(perMember.nonEmpty)(
+            div(
+              cls("flex flex-wrap items-start justify-around gap-4"),
+              perMember.map { case (member, count) => stat(member.fold("Unassigned")(_.fullName), count) }
+            )
           )
         )
       )

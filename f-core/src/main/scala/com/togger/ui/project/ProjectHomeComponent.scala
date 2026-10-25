@@ -184,6 +184,7 @@ class ProjectHomeComponent(
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
       .map(status => status -> tasks.count(_.taskStatus.id == status.id))
       .filter(_._2 > 0)
+    val perMember = TimeboxReviewStats.taskCountPerMember(tasks)
     div(
       cls("mb-4 p-4 border border-default-medium rounded-base"),
       div(
@@ -206,14 +207,18 @@ class ProjectHomeComponent(
           cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
           div(
             cls("flex flex-wrap items-start justify-around gap-3"),
-            stat("Total", tasks.size),
-            stat("Done", progress.done, TgBadgeColor.Success),
-            stat("Left", progress.left, TgBadgeColor.Blue)
+            stat("Total", tasks.size)
           ),
           Option.when(statuses.nonEmpty)(
             div(
               cls("flex flex-wrap items-start justify-around gap-3"),
               statuses.map { case (status, count) => stat(status.badgeText, count, status.badgeColor) }
+            )
+          ),
+          Option.when(perMember.nonEmpty)(
+            div(
+              cls("flex flex-wrap items-start justify-around gap-3"),
+              perMember.map { case (member, count) => stat(member.fold("Unassigned")(_.fullName), count) }
             )
           )
         )
