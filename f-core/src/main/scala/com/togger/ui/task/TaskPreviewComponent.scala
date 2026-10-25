@@ -117,7 +117,7 @@ class TaskPreviewComponent(
             if (dayEntries.isEmpty)
               div(
                 div(cls("flex items-center gap-2 mb-2"), dateBadge()),
-                p("No status update")
+                p(cls("text-body"), "No status update")
               )
             else
               dayEntries.map(entry =>
@@ -146,7 +146,7 @@ class TaskPreviewComponent(
 
     div(
       cls("mb-4"),
-      if (entriesByDate.isEmpty) p("No status update")
+      if (entriesByDate.isEmpty) p(cls("text-body"), "No status update")
       else
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
           div(
