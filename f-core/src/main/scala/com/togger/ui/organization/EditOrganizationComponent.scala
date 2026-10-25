@@ -1,23 +1,23 @@
 package com.togger.ui.organization
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.UpdateOrganizationReq
 import com.togger.routes.Pages.EditOrganizationPage
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
-import com.togger.ui.navbar.SidebarRefresh
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
@@ -141,14 +141,14 @@ class EditOrganizationComponent(
               nameInput.htmlElement.amend(cls("mb-4")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
-              findAccountsComponent.element.amend(width.px(500)),
+//              findAccountsComponent.element.amend(width.px(500)),
               div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
         )
       )
       .element
-      .amend(heightAndWidthFitContent, cls("mr-4"))
+      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
   )
 
 }
