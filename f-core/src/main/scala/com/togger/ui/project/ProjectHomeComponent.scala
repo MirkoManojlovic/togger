@@ -16,7 +16,9 @@ import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
+import com.togger.task.DefaultTaskStatus
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
@@ -258,6 +260,24 @@ class ProjectHomeComponent(
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
 
+  /** One column for each of the statuses of the daily, in its order, also when no task is in it. */
+  private def statusColumns(inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]): HtmlElement =
+    div(
+      cls("grid grid-cols-1 gap-4 lg:grid-cols-4"),
+      ProjectHomeComponent.ColumnStatuses.map { columnStatus =>
+        inFlight
+          .find { case (status, _) =>
+            TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(columnStatus.statusName)
+          }
+          .fold[HtmlElement](
+            div(
+              cls("mb-4"),
+              TgBadge(text = columnStatus.toStringWithEmoji, color = TgBadgeColor.Gray, bordered = true).element
+            )
+          ) { case (status, tasks) => inFlightGroup(status, tasks) }
+      }
+    )
+
   private def generalSection[A](title: String, items: Seq[A], empty: String)(render: A => HtmlElement): HtmlElement =
     div(
       cls("mb-4"),
@@ -271,9 +291,7 @@ class ProjectHomeComponent(
     inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
   ): HtmlElement =
     div(
-      generalSection("Tasks", inFlight, "No tasks in progress, testing, waiting or blocked.")(
-        (inFlightGroup _).tupled
-      ),
+      div(cls("mb-4"), sectionTitle("Tasks"), statusColumns(inFlight)),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
       generalSection("Active milestones", milestones, "No active milestones.")((milestoneRow _).tupled)
     )
@@ -362,4 +380,7 @@ class ProjectHomeComponent(
 
 object ProjectHomeComponent {
   val GeneralTabId = "general"
+
+  val ColumnStatuses: Seq[DefaultTaskStatus] =
+    Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
 }
