@@ -486,6 +486,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   accountService,
+                  tgMarkdown,
                   organizationId,
                   listParams
                 ).element
