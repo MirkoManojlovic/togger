@@ -82,10 +82,13 @@ class ShowAllProjectsTableComponent(
         header = TgCard.CardHeader.html(
           div(
             cls("flex items-center justify-between"),
-            a(
-              cls("mr-2 font-medium text-fg-brand hover:underline"),
-              router.navigateTo(ProjectHomePage(dto.id)),
-              s"${dto.icon} ${dto.name}"
+            ProjectLabelBadges.nameWithLabels(
+              a(
+                cls("font-medium text-fg-brand hover:underline"),
+                router.navigateTo(ProjectHomePage(dto.id)),
+                s"${dto.icon} ${dto.name}"
+              ),
+              dto.projectLabels
             ),
             div(
               iconButton(
@@ -102,10 +105,6 @@ class ShowAllProjectsTableComponent(
         body = TgCard.HtmlCardContent(
           div(
             tgMarkdown.toLaminarDiv(dto.description),
-            badgeSection(
-              "Project labels",
-              dto.projectLabels.map(label => TgBadge(text = label.name, color = TgBadgeColor.Indigo, bordered = true).element)
-            ),
             badgeSection(
               "Members",
               dto.members.map(member => TgBadge(text = member.fullName, color = TgBadgeColor.Gray, bordered = true).element)

@@ -11,7 +11,7 @@ import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadgeColor, TgTooltip}
-import com.togger.ui.project.ProjectService
+import com.togger.ui.project.{ProjectLabelBadges, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import org.scalajs.dom
@@ -656,7 +656,7 @@ class MilestoneHistoryComponent(
       child <-- projectVar.signal.map(projectResp =>
         TgCard
           .headerNoFooter(
-            header = TgCard.CardHeader.html(div(projectResp.name)),
+            header = TgCard.CardHeader.html(ProjectLabelBadges.nameWithLabels(projectResp.name, projectResp.projectLabels)),
             body = TgCard.HtmlCardContent(div(projectResp.description))
           )
           .element

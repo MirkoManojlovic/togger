@@ -121,11 +121,11 @@ class ProjectHomeComponent(
     .unsafeRunAndForget()
 
   private def card(title: String, content: HtmlElement): HtmlElement =
+    card(TgCard.CardHeader.plainText(title, TgCard.CardHeaderSize.H3), content)
+
+  private def card(header: TgCard.CardHeader, content: HtmlElement): HtmlElement =
     TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.plainText(title, TgCard.CardHeaderSize.H3),
-        body = TgCard.HtmlCardContent(content)
-      )
+      .headerNoFooter(header = header, body = TgCard.HtmlCardContent(content))
       .element
       .amend(cls("mb-4"))
 
@@ -136,17 +136,12 @@ class ProjectHomeComponent(
 
   private def projectCard(project: FindProjectResp): HtmlElement =
     card(
-      project.name,
+      TgCard.CardHeader.html(
+        ProjectLabelBadges.nameWithLabels(project.name, project.projectLabels),
+        TgCard.CardHeaderSize.H3
+      ),
       div(
         tgMarkdown.toLaminarDiv(project.description),
-        Option.when(project.projectLabels.nonEmpty)(
-          div(
-            cls("flex flex-wrap gap-1 mt-2"),
-            project.projectLabels
-              .sortBy(_.name)
-              .map(label => TgBadge(text = label.name, color = TgBadgeColor.Indigo, bordered = true).element)
-          )
-        ),
         Option.when(project.members.nonEmpty)(
           div(
             cls("mt-4"),

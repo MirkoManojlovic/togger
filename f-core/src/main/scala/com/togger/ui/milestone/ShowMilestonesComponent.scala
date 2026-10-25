@@ -22,7 +22,7 @@ import com.togger.ui.components.{
   TgPaginationComponent
 }
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.ProjectService
+import com.togger.ui.project.{ProjectLabelBadges, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.TgDateFormater
@@ -136,7 +136,7 @@ class ShowMilestonesComponent(
               div(
                 div(
                   cls("flex items-center justify-between"),
-                  div(cls("mr-2"), projectResp.name),
+                  ProjectLabelBadges.nameWithLabels(projectResp.name, projectResp.projectLabels),
                   div(
                     iconButton(
                       "Edit Project",
@@ -151,15 +151,7 @@ class ShowMilestonesComponent(
             ),
             body = TgCard.HtmlCardContent(
               div(
-                tgMarkdown.toLaminarDiv(projectResp.description),
-                Option.when(projectResp.projectLabels.nonEmpty)(
-                  div(
-                    cls("flex flex-wrap gap-1 mt-2"),
-                    projectResp.projectLabels
-                      .sortBy(_.name)
-                      .map(label => TgBadge(text = label.name, color = TgBadgeColor.Indigo, bordered = true).element)
-                  )
-                )
+                tgMarkdown.toLaminarDiv(projectResp.description)
               )
             )
           )
