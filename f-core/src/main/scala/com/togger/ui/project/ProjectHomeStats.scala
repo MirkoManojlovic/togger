@@ -1,10 +1,14 @@
 package com.togger.ui.project
 
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto}
-import com.togger.ui.teamdaily.TeamDailyStatusOrder
+import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
+import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.teamdaily.{TeamDailyStatusOrder, TeamDailyTaskBadges}
 import com.togger.ui.timebox.TimeboxReviewStats
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 /** What the project home picks out of the project, kept apart from the screen so it can be tested without a DOM. */
@@ -64,4 +68,27 @@ object ProjectHomeStats {
     inFlight.flatMap { case (status, tasks) =>
       Some(TimeboxReviewStats.tasksOf(member, tasks)).filter(_.nonEmpty).map(status -> _)
     }
+
+  /** The milestone, the priority, the assignee, the due date with the work days left and the labels of a task; a task
+    * without a milestone, an assignee or labels has no badge for them.
+    */
+  def taskBadges(
+    task: FindTaskRespFull,
+    milestones: Seq[FindMilestoneResp],
+    showAssignee: Boolean,
+    today: LocalDate,
+    workDays: Set[DayOfWeek],
+    formatDate: LocalDate => String
+  ): Seq[BadgeSpec] =
+    task.milestone
+      .flatMap(id => milestones.find(_.id == id))
+      .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
+      .toSeq ++
+      Seq(BadgeSpec(task.priority.shortCode, task.priority.badgeColor)) ++
+      Option.when(showAssignee)(task.assignedTo).flatten.map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray)) ++
+      Seq(
+        BadgeSpec(formatDate(task.dueDate), TgBadgeColor.Gray),
+        TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
+      ) ++
+      task.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
 }

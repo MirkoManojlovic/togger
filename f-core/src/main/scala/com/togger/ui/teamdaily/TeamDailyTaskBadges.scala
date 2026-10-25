@@ -31,7 +31,7 @@ object TeamDailyTaskBadges {
       daysLeft(task.dueDate, today, workDays)
     )
 
-  private def daysLeft(dueDate: LocalDate, today: LocalDate, workDays: Set[DayOfWeek]): BadgeSpec =
+  def daysLeft(dueDate: LocalDate, today: LocalDate, workDays: Set[DayOfWeek]): BadgeSpec =
     if (dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
     else BadgeSpec(s"${WorkDayCalendar.countWorkDays(today, dueDate, workDays)} days left", TgBadgeColor.Gray)
 }

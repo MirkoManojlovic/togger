@@ -1,6 +1,7 @@
 package com.togger.ui.project
 
 import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
+import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -13,6 +14,7 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
   private val projectId = UUID.randomUUID()
   private val monday = LocalDate.of(2026, 10, 12)
   private val friday = monday.plusDays(4)
+  private val today = monday
   private val ada = SearchAccountDto(UUID.randomUUID(), "Ada", "Lovelace", "ada@example.com", UUID.randomUUID())
 
   private def status(name: String) = FindTaskStatusResp(UUID.randomUUID(), projectId, name, "", "")
@@ -104,6 +106,19 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
       val mine = task("mine", inProgress).copy(assignedTo = Some(ada))
       val groups = Seq(inProgress -> Seq(mine, task("other", inProgress)), testing -> Seq(task("t", testing)))
       ProjectHomeStats.inFlightOf(ada, groups) shouldBe Seq(inProgress -> Seq(mine))
+    }
+  }
+
+  "ProjectHomeStats.taskBadges" should {
+    "give a task without milestone, assignee and labels its priority, due date and days left" in {
+      ProjectHomeStats.taskBadges(task("t", status("Testing")), Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) shouldBe
+        Seq(TaskPriority.Medium.shortCode, friday.toString, "5 days left")
+    }
+
+    "add the assignee only when asked to" in {
+      val assigned = task("t", status("Testing")).copy(assignedTo = Some(ada))
+      ProjectHomeStats.taskBadges(assigned, Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) should contain(ada.fullName)
+      ProjectHomeStats.taskBadges(assigned, Seq.empty, showAssignee = false, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) should not contain ada.fullName
     }
   }
 }

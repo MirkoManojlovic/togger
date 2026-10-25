@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
+import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
 import com.togger.markdown.TgMarkdown
@@ -17,10 +17,12 @@ import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgres
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
 import com.togger.dto.{MilestoneFilter, TaskFilter}
 
+import java.time.DayOfWeek
 import java.util.UUID
 
 class ProjectHomeComponent(
@@ -41,6 +43,7 @@ class ProjectHomeComponent(
 
   private val projectVar = Var(Option.empty[FindProjectResp])
   private val milestonesVar = Var(Seq.empty[(FindMilestoneResp, Seq[FindTaskRespFull])])
+  private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
   private val inFlightVar = Var(Seq.empty[(FindTaskStatusResp, Seq[FindTaskRespFull])])
 
@@ -66,6 +69,13 @@ class ProjectHomeComponent(
             taskService.findAllByMilestone(projectId, milestone.id)
           ).map(milestonesVar.set)
       }
+
+  /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
+  private def loadAllMilestones(): IO[Unit] =
+    PaginatedLoader.loadAll(milestoneService.findByProjectId(projectId, MilestoneFilter.empty, _)).flatMap {
+      case Left(failure)  => IO.println(failure)
+      case Right(success) => IO(allMilestonesVar.set(success.body.getOrElse(Seq.empty)))
+    }
 
   private def loadTimeboxes(): IO[Unit] =
     PaginatedLoader.loadAll(timeboxService.findByProjectId(projectId, _)).flatMap {
@@ -97,6 +107,7 @@ class ProjectHomeComponent(
     .runWithSpinner(
       for {
         _ <- loaded(projectService.findById(projectId))(project => projectVar.set(Some(project)))
+        _ <- loadAllMilestones()
         _ <- loadMilestones()
         _ <- loadTimeboxes()
         _ <- loadInFlightTasks()
@@ -194,6 +205,13 @@ class ProjectHomeComponent(
     )
   }
 
+  private def workDays: Set[DayOfWeek] =
+    projectVar
+      .now()
+      .map(_.workDays.map(DayOfWeek.of))
+      .filter(_.nonEmpty)
+      .getOrElse(WorkDayCalendar.DefaultWorkDays)
+
   private def inFlightGroup(status: FindTaskStatusResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
     taskGroup(status, tasks, showAssignee = true)
 
@@ -211,9 +229,18 @@ class ProjectHomeComponent(
       ul(
         tasks.map(task =>
           li(
-            cls("flex flex-wrap items-center gap-2"),
+            cls("mb-1"),
             pageLink(task.name, EditTaskPage(projectId, task.id)),
-            Option.when(showAssignee)(task.assignedTo).flatten.map(assignee => span(cls("text-body"), assignee.fullName))
+            BulkTaskCard.readOnlyRow(
+              ProjectHomeStats.taskBadges(
+                task,
+                allMilestonesVar.now(),
+                showAssignee,
+                tgClock.currentDate(),
+                workDays,
+                tgDateFormater.asAmericanDate
+              )
+            )
           )
         )
       )
@@ -244,7 +271,7 @@ class ProjectHomeComponent(
     inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
   ): HtmlElement =
     div(
-      generalSection("Tasks in flight", inFlight, "No tasks in progress, testing, waiting or blocked.")(
+      generalSection("Tasks", inFlight, "No tasks in progress, testing, waiting or blocked.")(
         (inFlightGroup _).tupled
       ),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
@@ -324,8 +351,8 @@ class ProjectHomeComponent(
         "Active milestones",
         div(
           child <-- projectVar.signal
-            .combineWith(milestonesVar.signal, timeboxesVar.signal, inFlightVar.signal)
-            .map { case (project, milestones, timeboxes, inFlight) =>
+            .combineWith(milestonesVar.signal, timeboxesVar.signal, inFlightVar.signal, allMilestonesVar.signal)
+            .map { case (project, milestones, timeboxes, inFlight, _) =>
               activityTabs(project.map(_.members).getOrElse(Seq.empty), milestones, timeboxes, inFlight)
             }
         )
