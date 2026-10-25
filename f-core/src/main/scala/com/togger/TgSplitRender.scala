@@ -500,6 +500,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   tgDateFormater,
                   tgMarkdown,
+                  tgClock,
                   organizationId
                 ).element
 
@@ -666,6 +667,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgDateFormater,
                   tgMarkdown,
                   tgClock,
+                  modalFactory,
                   projectId
                 ).element
               case ShowMilestonesPage(projectId: UUID, listParams) =>

@@ -15,9 +15,10 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
 import com.togger.dto.{MilestoneFilter, TaskFilter}
 
@@ -35,6 +36,7 @@ class ProjectHomeComponent(
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
+  modalFactory: ModalFactory,
   projectId: UUID
 )(implicit
   ioRuntime: IORuntime
@@ -213,6 +215,12 @@ class ProjectHomeComponent(
 
   private val selectedTabVar = Var(ProjectHomeComponent.GeneralTabId)
 
+  private def previewTask(task: FindTaskRespFull): Unit =
+    modalFactory.previewModal(
+      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true).element,
+      title = "Task preview"
+    )
+
   private def activeTasks(tasks: Seq[FindTaskRespFull], config: ActiveTasksConfig): HtmlElement =
     new ActiveTasksComponent(
       router,
@@ -222,7 +230,8 @@ class ProjectHomeComponent(
       allMilestonesVar.now(),
       workDays,
       tasks,
-      config
+      config,
+      previewTask
     ).element
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)

@@ -11,6 +11,9 @@ class ModalFactory(val parentElementForModal: HtmlElement) {
   def formModal(message: FormForModal, onClose: (() => Unit) => Unit, title: String = "Attention"): Unit =
     show(ModalForForm(title, message, onClose))
 
+  def previewModal(content: HtmlElement, title: String = "Preview"): Unit =
+    show(PreviewModal(title, content))
+
   def plainModal(
     message: ModalMessage,
     title: String = "Attention",

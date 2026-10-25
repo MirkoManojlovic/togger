@@ -4,25 +4,23 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits.toTraverseOps
 import com.raquo.laminar.api.L._
-import com.togger.ui.logentry.LogEntryMemberBadge
-import com.togger.common.TgIds
+import com.togger.common.{TgClock, TgIds}
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.dto.{FindProjectResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
+import com.togger.dto.{FindProjectResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages.{EditOrganizationPage, EditProjectPage, EditTaskPage, ShowAllTasksPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
-import com.togger.ui.task.{TaskFeService, TaskProgressComponent, TgDateFormater}
+import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TaskProgressComponent, TgDateFormater}
 
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
 import java.util.UUID
 
 case class ShowAllProjectsState(
@@ -43,19 +41,13 @@ class ShowAllProjectsStatusComponent(
   accountService: AccountService,
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
+  tgClock: TgClock,
   organizationId: UUID
 )(implicit
   ioRuntime: IORuntime
 ) {
 
   val stateFormVar = Var(ShowAllProjectsState())
-  private val currentWeekStart: LocalDate = {
-    val today = LocalDate.now(ZoneOffset.UTC)
-    today.minusDays(today.getDayOfWeek.getValue - 1L)
-  }
-  private val currentWeekEnd: LocalDate = currentWeekStart.plusDays(6L)
-  private val lastTwoWeeksStart: LocalDate = currentWeekStart.minusDays(7L)
-  private val lastTwoWeeksEnd: LocalDate = currentWeekEnd
   private val defaultDeselectedStatusNames = Set(Done, WontDo, Backlog).map(_.statusName)
   private val statusFilterItemsSignal: Signal[Seq[MultiSelectItem]] =
     stateFormVar.signal.map { state =>
@@ -234,8 +226,6 @@ class ShowAllProjectsStatusComponent(
           tasks
             .sortBy(_.taskStatus.id)
             .map { task =>
-              val selectedDayVar: Var[Option[LocalDate]] =
-                Var(LogEntryCalendarComponent.lastCalendarDay(task.logEntries, workDays))
               val taskCard = TgCard
                 .headerNoFooter(
                   header = TgCard.CardHeader
@@ -263,18 +253,7 @@ class ShowAllProjectsStatusComponent(
                       TgCard.CardHeaderSize.H3
                     ),
                   body = TgCard.HtmlCardContent(
-                    div(
-                      cls("flex flex-col md:flex-row gap-4 items-start"),
-                      div(
-                        cls("flex-1 min-w-0"),
-                        tgMarkdown.toLaminarDiv(task.description)
-                      ),
-                      div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
-                      div(
-                        cls("w-fit"),
-                        new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
-                      )
-                    )
+                    new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock).element
                   )
                 )
               taskCard.element.amend(cls("mb-4"))
@@ -285,111 +264,6 @@ class ShowAllProjectsStatusComponent(
     }.toSeq
 
     div(elements)
-  }
-
-  private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
-    div(
-      child <-- selectedDayVar.signal.map {
-        case None => emptyNode
-        case Some(day) =>
-          val dayEntries = logEntries
-            .filter(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate == day)
-            .sortBy(_.createdAt)
-
-          def dateBadge() =
-            TgBadge(
-              text = tgDateFormater.asAmericanDateWithDayAbrv(day),
-              bordered = true,
-              color = TgBadgeColor.Gray
-            ).element
-
-          div(
-            cls("mb-4"),
-            if (dayEntries.isEmpty)
-              div(
-                div(cls("flex items-center gap-2 mb-2"), dateBadge()),
-                p("No status update")
-              )
-            else
-              dayEntries.map(entry =>
-                div(
-                  cls("mb-2"),
-                  div(
-                    cls("flex items-center gap-2 mb-2"),
-                    dateBadge(),
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
-                    LogEntryMemberBadge(entry.createdByName)
-                  ),
-                  tgMarkdown.toLaminarDiv(entry.textExternal)
-                )
-              )
-          )
-      }
-    )
-
-  private def weekRangeStatus(logEntries: Seq[LogEntryDto], start: LocalDate, end: LocalDate) = {
-    val entriesByDate = logEntries
-      .filter { entry =>
-        val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
-        !day.isBefore(start) && !day.isAfter(end)
-      }
-      .groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
-
-    div(
-      cls("mb-4"),
-      if (entriesByDate.isEmpty) p("No status update")
-      else
-        entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
-          div(
-            cls("mb-2"),
-            dayEntries
-              .sortBy(_.createdAt)
-              .map(entry =>
-                div(
-                  cls("mb-2"),
-                  div(
-                    cls("flex items-center gap-2 mb-2"),
-                    TgBadge(
-                      text = tgDateFormater.asAmericanDateWithDayAbrv(day),
-                      bordered = true,
-                      color = TgBadgeColor.Gray
-                    ).element,
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
-                    LogEntryMemberBadge(entry.createdByName)
-                  ),
-                  tgMarkdown.toLaminarDiv(entry.textExternal)
-                )
-              )
-          )
-        }
-    )
-  }
-
-  private def weekRangeStatusTabs(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]): HtmlElement = {
-    val selectedTabVar = Var("single-day")
-    val tabs = Seq(
-      TgTab(
-        id = "single-day",
-        label = "Single day",
-        content = selectedDayStatus(logEntries, selectedDayVar)
-      ),
-      TgTab(
-        id = "last-week",
-        label = "Last week",
-        content = weekRangeStatus(logEntries, currentWeekStart, currentWeekEnd)
-      ),
-      TgTab(
-        id = "last-2-weeks",
-        label = "Last 2 weeks",
-        content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd)
-      ),
-      TgTab(
-        id = "everything",
-        label = "Everything",
-        content = weekRangeStatus(logEntries, LocalDate.MIN, LocalDate.MAX)
-      )
-    )
-    new TgTabs(tabs, selectedTabVar).element
   }
 
 }
