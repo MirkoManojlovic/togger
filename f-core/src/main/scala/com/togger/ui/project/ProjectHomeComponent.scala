@@ -213,7 +213,7 @@ class ProjectHomeComponent(
       .filter(_.nonEmpty)
       .getOrElse(WorkDayCalendar.DefaultWorkDays)
 
-  private def taskItem(task: FindTaskRespFull, showAssignee: Boolean): HtmlElement =
+  private def taskItem(task: FindTaskRespFull, showAssignee: Boolean, showMilestone: Boolean = true): HtmlElement =
     li(
       cls("mb-1"),
       div(
@@ -224,7 +224,7 @@ class ProjectHomeComponent(
       BulkTaskCard.readOnlyRow(
         ProjectHomeStats.taskBadges(
           task,
-          allMilestonesVar.now(),
+          if (showMilestone) allMilestonesVar.now() else Seq.empty,
           showAssignee,
           tgClock.currentDate(),
           workDays,
@@ -265,10 +265,14 @@ class ProjectHomeComponent(
     * without an assignee are in the last row. The columns are the statuses of the daily, in its order, also when no
     * task is in one.
     */
-  private def statusColumns(inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]): HtmlElement = {
+  private def statusColumns(
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])],
+    empty: String,
+    showMilestone: Boolean = true
+  ): HtmlElement = {
     val rows = ProjectHomeStats.memberRows(inFlight)
     val columnCounts = ProjectHomeComponent.ColumnStatuses.indices.map(column => rows.map(_._2(column).size).sum)
-    if (rows.isEmpty) emptyNote("No tasks in progress, testing, waiting or blocked.")
+    if (rows.isEmpty) emptyNote(empty)
     else
       div(
         cls("overflow-x-auto"),
@@ -280,7 +284,7 @@ class ProjectHomeComponent(
           },
           rows.flatMap { case (member, cells) =>
             div(cls(rowCellCls), cls("font-medium text-heading whitespace-nowrap"), member.fold("Unassigned")(_.fullName)) +:
-              cells.map(tasks => div(cls(rowCellCls), ul(tasks.map(taskItem(_, showAssignee = false)))))
+              cells.map(tasks => div(cls(rowCellCls), ul(tasks.map(taskItem(_, showAssignee = false, showMilestone)))))
           }
         )
       )
@@ -299,7 +303,7 @@ class ProjectHomeComponent(
     inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
   ): HtmlElement =
     div(
-      div(cls("mb-4"), sectionTitle("Tasks"), statusColumns(inFlight)),
+      div(cls("mb-4"), sectionTitle("Tasks"), statusColumns(inFlight, "No tasks in progress, testing, waiting or blocked.")),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
       generalSection("Active milestones", milestones, "No active milestones.")((milestoneRow _).tupled)
     )
@@ -326,9 +330,12 @@ class ProjectHomeComponent(
 
   private def milestonePanel(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
     div(
-      milestoneRow(milestone, tasks),
       sectionTitle("Active tasks"),
-      groupsOrEmpty(ProjectHomeStats.activeTasksByStatus(tasks), "No active tasks.", showAssignee = true)
+      div(
+        cls("mb-4"),
+        statusColumns(ProjectHomeStats.activeTasksByStatus(tasks), "No active tasks.", showMilestone = false)
+      ),
+      milestoneRow(milestone, tasks)
     )
 
   private def memberTabId(member: SearchAccountDto): String = s"member-${member.id}"
