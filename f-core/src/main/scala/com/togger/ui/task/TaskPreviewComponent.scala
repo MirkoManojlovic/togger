@@ -2,13 +2,17 @@ package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindTaskRespFull, LogEntryDto}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages.EditTaskPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.logentry.LogEntryMemberBadge
+import com.togger.ui.project.ProjectHomeStats
+import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
+import com.togger.ui.timebox.gantt.ReviewTaskBadges
 
 import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 
@@ -16,7 +20,10 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * day selected in the calendar or by a range of weeks, and the calendar of the log entries on the right.
   *
   * @param showName
-  *   the name of the task, linked to its page, over the description; left out where the name is shown by the caller
+  *   the name of the task, linked to its page, with its labels beside it and the other badges of the task under it, over the description; left out
+  *   where the name is shown by the caller
+  * @param milestones
+  *   to name the milestone of the task in its badges
   */
 class TaskPreviewComponent(
   task: FindTaskRespFull,
@@ -25,7 +32,8 @@ class TaskPreviewComponent(
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
-  showName: Boolean = false
+  showName: Boolean = false,
+  milestones: Seq[FindMilestoneResp] = Seq.empty
 ) {
 
   private val currentWeekStart: LocalDate = {
@@ -39,13 +47,31 @@ class TaskPreviewComponent(
   private val selectedDayVar: Var[Option[LocalDate]] =
     Var(LogEntryCalendarComponent.lastCalendarDay(task.logEntries, workDays))
 
-  private def nameLink: HtmlElement =
-    h3(
-      cls("mb-2 text-lg font-medium"),
-      a(
-        cls("text-fg-brand hover:underline"),
-        task.name,
-        router.navigateTo(EditTaskPage(task.projectId, task.id))
+  private def nameWithLabels: HtmlElement =
+    div(
+      cls("mb-2 flex flex-wrap items-center gap-2"),
+      h3(
+        cls("text-lg font-medium"),
+        a(
+          cls("text-fg-brand hover:underline"),
+          task.name,
+          router.navigateTo(EditTaskPage(task.projectId, task.id))
+        )
+      ),
+      BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
+    )
+
+  /** The milestone, priority, status and assignee, and the dates with the work days left, in a row each. */
+  private def badges: HtmlElement =
+    div(
+      cls("mb-3 flex flex-col gap-1.5"),
+      ReviewTaskBadges.primary(task, milestones),
+      BulkTaskCard.readOnlyRow(
+        Seq(
+          BadgeSpec(tgDateFormater.asAmericanDate(task.startDate), TgBadgeColor.Gray),
+          BadgeSpec(tgDateFormater.asAmericanDate(task.dueDate), TgBadgeColor.Gray),
+          TeamDailyTaskBadges.daysLeft(task.dueDate, tgClock.currentDate(), workDays)
+        )
       )
     )
 
@@ -54,7 +80,8 @@ class TaskPreviewComponent(
       cls("flex flex-col md:flex-row gap-4 items-start"),
       div(
         cls("flex-1 min-w-0"),
-        Option.when(showName)(nameLink),
+        Option.when(showName)(nameWithLabels),
+        Option.when(showName)(badges),
         tgMarkdown.toLaminarDiv(task.description)
       ),
       // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.

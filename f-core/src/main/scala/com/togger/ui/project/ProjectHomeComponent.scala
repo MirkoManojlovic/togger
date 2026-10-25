@@ -217,7 +217,7 @@ class ProjectHomeComponent(
 
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
-      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true).element,
+      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now()).element,
       title = "Task preview"
     )
 
