@@ -43,6 +43,8 @@ class NavbarComponent(
 
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
+  private lazy val projectNavMenu = new ProjectNavMenu(router)
+
   private val userMenuOpen: Var[Boolean] = Var(false)
 
   private val closeUserMenu = Observer[Unit](_ => userMenuOpen.set(false))
@@ -144,6 +146,7 @@ class NavbarComponent(
             ),
             div(
               cls("flex items-center"),
+              projectNavMenu.element,
               ul(
                 cls("flex items-center font-medium"),
                 children <-- router.currentPageSignal.map(page =>
