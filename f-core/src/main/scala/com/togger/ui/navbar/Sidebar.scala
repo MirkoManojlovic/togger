@@ -3,7 +3,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.raquo.laminar.nodes.{ReactiveHtmlElement, ReactiveSvgElement}
 import com.togger.dto.DataImportResp
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.routes.Pages._
@@ -15,7 +15,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
 import com.togger.ui.dataimportconfig.DataImportConfigFeService
 import com.togger.ui.toast.Toast
-import org.scalajs.dom.HTMLLIElement
+import org.scalajs.dom.{HTMLLIElement, SVGSVGElement}
 
 import java.util.UUID
 
@@ -26,8 +26,23 @@ case class SidebarLink(
   onExportClick: Option[() => Unit] = None,
   onConfigClick: Option[() => Unit] = None,
   onImportClick: Option[() => Unit] = None,
+  onTasksClick: Option[() => Unit] = None,
+  onMilestonesClick: Option[() => Unit] = None,
+  onTimeboxesClick: Option[() => Unit] = None,
   icon: String = ""
 ) {
+
+  private val navButtonStyle =
+    "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer mr-1"
+
+  private def navButton(label: String, glyph: ReactiveSvgElement[SVGSVGElement], action: () => Unit) =
+    button(
+      `type`("button"),
+      title(label),
+      glyph,
+      cls(navButtonStyle),
+      onClick.mapToUnit --> (_ => action())
+    )
 
   private def initials: String = linkName.trim.headOption.map(_.toUpper.toString).getOrElse("")
 
@@ -54,6 +69,9 @@ case class SidebarLink(
       ),
       div(
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+        onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
+        onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
+        onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
         onExportClick.map(exportAction =>
           button(
             `type`("button"),
@@ -272,6 +290,9 @@ class Sidebar(
                               linkName = project.name,
                               link = router.navigateTo(ProjectHomePage(project.id)),
                               collapsed = collapsed,
+                              onTasksClick = Some(() => router.route(ShowAllTasksPage(project.id))),
+                              onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
+                              onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
                               onExportClick = Some(() => dumpProject(project.id)),
                               onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
                               onImportClick = Some(() => importAllForProject(project.id)),
