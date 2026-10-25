@@ -117,15 +117,13 @@ class ShowTimeboxesComponent(
         body = TgCard.HtmlCardContent(
           div(
             child <-- timeboxesVar.signal.map { timeboxes =>
-              TgHtmlTable.tableElement(Seq("Start date", "End date", "Description", "Tasks", "Last saved", "Action"))(
+              TgHtmlTable.tableElement(Seq("Start date", "End date", "Tasks", "Action"))(
                 timeboxes.map { dto =>
                   val version = dto.latestVersion
                   Seq(
                     createTd(tgDateFormater.asAmericanDate(version.startDate)),
                     createTd(tgDateFormater.asAmericanDate(version.endDate)),
-                    createTdOverflow(version.description.getOrElse("-")),
                     createTd(version.tasks.size.toString),
-                    createTd(version.createdAt.toString),
                     createTd(
                       div(
                         iconButton(
@@ -135,13 +133,13 @@ class ShowTimeboxesComponent(
                           rowButtonMarginCls,
                           onClick.mapToUnit --> (_ => router.route(EditTimeboxPage(projectId, dto.id)))
                         ),
-                        iconButton(
-                          "History",
-                          TgIcons.statusIcon(className = "w-4 h-4"),
-                          rowIconButtonCls,
-                          rowButtonMarginCls,
-                          onClick.mapToUnit --> (_ => router.route(TimeboxHistoryPage(projectId, dto.id)))
-                        ),
+//                        iconButton(
+//                          "History",
+//                          TgIcons.statusIcon(className = "w-4 h-4"),
+//                          rowIconButtonCls,
+//                          rowButtonMarginCls,
+//                          onClick.mapToUnit --> (_ => router.route(TimeboxHistoryPage(projectId, dto.id)))
+//                        ),
                         iconButton(
                           "Review",
                           TgIcons.checkIcon(className = "w-4 h-4"),
