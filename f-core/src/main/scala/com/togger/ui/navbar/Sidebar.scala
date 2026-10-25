@@ -270,7 +270,7 @@ class Sidebar(
                           .map { project =>
                             val projectLink = SidebarLink(
                               linkName = project.name,
-                              link = router.navigateTo(ShowAllTasksPage(project.id)),
+                              link = router.navigateTo(ProjectHomePage(project.id)),
                               collapsed = collapsed,
                               onExportClick = Some(() => dumpProject(project.id)),
                               onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
@@ -332,6 +332,7 @@ class Sidebar(
 
 object Sidebar {
   def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
+    case ProjectHomePage(projectId)          => Some(projectId)
     case CreateTaskPage(projectId)           => Some(projectId)
     case CreateTaskStatusPage(projectId)     => Some(projectId)
     case EditTaskStatusPage(projectId, _)    => Some(projectId)
@@ -351,6 +352,7 @@ object Sidebar {
     case CreateProjectMappingPage(projectId) => Some(projectId)
     case CreateMilestonePage(projectId)      => Some(projectId)
     case ShowMilestonesPage(projectId, _)    => Some(projectId)
+    case EditMilestonePage(projectId, _)     => Some(projectId)
     case ShowMilestoneHistoryPage(projectId, _) => Some(projectId)
     case MilestoneReviewPage(projectId, _)   => Some(projectId)
     case ShowTimeboxesPage(projectId, _)     => Some(projectId)

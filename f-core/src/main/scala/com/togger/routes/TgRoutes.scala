@@ -64,6 +64,11 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route(
+        encode = (page: ProjectHomePage) => page.projectId.toString,
+        decode = (projectId: String) => ProjectHomePage(UUID.fromString(projectId)),
+        pattern = root / "project-home" / segment[String] / endOfSegments
+      ),
+      Route(
         encode = (page: CreateTaskStatusPage) => page.projectId.toString,
         decode = (projectId: String) => CreateTaskStatusPage(UUID.fromString(projectId)),
         pattern = root / "create-task-status" / segment[String] / endOfSegments
