@@ -657,7 +657,7 @@ class MilestoneHistoryComponent(
     div(
       windowEvents(_.onMouseMove) --> (ev => onDragMove(ev)),
       windowEvents(_.onMouseUp) --> (_ => endDrag()),
-      child <-- projectVar.signal.map(projectInfoCard.element),
+      child <-- projectVar.signal.map(projectInfoCard.element(_)),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),

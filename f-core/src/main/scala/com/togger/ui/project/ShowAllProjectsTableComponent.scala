@@ -124,7 +124,7 @@ class ShowAllProjectsTableComponent(
           body = TgCard.HtmlCardContent(
             div(
               child <-- stateFormVar.signal.map(dtos =>
-                div(cls("flex flex-col gap-4"), dtos.map(projectInfoCard.element))
+                div(cls("flex flex-col gap-4"), dtos.map(projectInfoCard.element(_)))
               ),
               TgPaginationComponent(
                 paginationVar.signal,

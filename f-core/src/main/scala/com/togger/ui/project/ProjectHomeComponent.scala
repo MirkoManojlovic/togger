@@ -312,7 +312,7 @@ class ProjectHomeComponent(
 
   val element: HtmlElement =
     div(
-      child.maybe <-- projectVar.signal.map(_.map(projectInfoCard.element)),
+      child.maybe <-- projectVar.signal.map(_.map(projectInfoCard.element(_, ProjectTitle.PlainText))),
       card(
         "Active milestones",
         div(

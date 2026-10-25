@@ -10,30 +10,37 @@ import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 
+sealed trait ProjectTitle
+
+object ProjectTitle {
+
+  /** Links to the project home. */
+  case object Link extends ProjectTitle
+
+  /** For pages where a link to the project home makes no sense. */
+  case object PlainText extends ProjectTitle
+}
+
 /** The card every page uses to show a project: name (linking to the project home) and labels in the header, the
   * markdown description and the members in the body.
   */
 class ProjectInfoCard(router: TgRouter[FrontendPage], tgMarkdown: TgMarkdown) {
 
-  def element(project: FindProjectResp): HtmlElement =
+  def element(project: FindProjectResp, title: ProjectTitle = ProjectTitle.Link): HtmlElement =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.html(header(project), TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.html(header(project, title), TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(body(project))
       )
       .element
       .amend(cls("mb-4"))
 
-  private def header(project: FindProjectResp): HtmlElement =
+  private def header(project: FindProjectResp, title: ProjectTitle): HtmlElement =
     div(
       cls("flex items-center justify-between"),
       div(
         cls("mr-2 flex flex-wrap items-center gap-2"),
-        a(
-          cls("font-medium text-fg-brand hover:underline"),
-          router.navigateTo(ProjectHomePage(project.id)),
-          s"${project.icon} ${project.name}".trim
-        ),
+        titleElement(project, title),
         Option.when(project.projectLabels.nonEmpty)(
           badges(project.projectLabels.map(_.name).sorted, TgBadgeColor.Indigo)
         )
@@ -46,6 +53,15 @@ class ProjectInfoCard(router: TgRouter[FrontendPage], tgMarkdown: TgMarkdown) {
         onClick.mapToUnit --> (_ => router.route(EditProjectPage(project.id)))
       )
     )
+
+  private def titleElement(project: FindProjectResp, title: ProjectTitle): HtmlElement = {
+    val text = s"${project.icon} ${project.name}".trim
+    title match {
+      case ProjectTitle.Link =>
+        a(cls("font-medium text-fg-brand hover:underline"), router.navigateTo(ProjectHomePage(project.id)), text)
+      case ProjectTitle.PlainText => span(text)
+    }
+  }
 
   private def body(project: FindProjectResp): HtmlElement =
     div(

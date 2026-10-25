@@ -71,7 +71,7 @@ class ShowAllTasksComponent(
   val element = {
     div(
       table.bindings,
-      child <-- projectVar.signal.map(projectInfoCard.element),
+      child <-- projectVar.signal.map(projectInfoCard.element(_)),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(

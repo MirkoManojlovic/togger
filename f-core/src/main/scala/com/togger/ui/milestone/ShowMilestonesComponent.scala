@@ -129,7 +129,7 @@ class ShowMilestonesComponent(
 
   val element = {
     div(
-      child <-- projectVar.signal.map(projectInfoCard.element),
+      child <-- projectVar.signal.map(projectInfoCard.element(_)),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(
