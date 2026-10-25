@@ -13,11 +13,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{
   ChartColorBadgeColor,
   TgBadge,
-  TgBadgeColor,
-  TgProgressColor,
-  TgProgressComponent,
-  TgProgressLabel,
-  TgProgressSize
+  TgBadgeColor
 }
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
@@ -181,50 +177,19 @@ class MilestoneReviewComponent(
     )
     .unsafeRunAndForget()
 
-  private def progressBar(value: Int, max: Int, title: String): HtmlElement =
-    TgProgressComponent(
-      value = value,
-      max = max.max(1),
-      color = TgProgressColor.Success,
-      size = TgProgressSize.Large,
-      label = TgProgressLabel.Outside(title)
-    ).element
-
-  private def statCard(title: String, content: HtmlElement): HtmlElement =
-    TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.plainText(title, TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(content)
-      )
-      .element
-      .amend(cls("w-full"))
-
-  private def statsRow(
+  private def statsCard(
     milestone: FindMilestoneResp,
     tasks: Seq[FindTaskRespFull],
     statuses: Seq[FindTaskStatusResp]
   ): HtmlElement = {
-    val today = tgClock.currentDate()
-    val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, today)
-    val progress = TimeboxReviewStats.tasksProgress(tasks)
-    div(
-      cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
-      statCard(
-        "Progress",
-        div(
-          cls("flex flex-col gap-4"),
-          progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
-          progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left until the due date")
-        )
-      ),
-      statCard(
-        "Tasks",
-        div(
-          cls("flex flex-col gap-4"),
-          MilestoneTaskColumns(tasks, statuses)
-        )
+    val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
+        body = TgCard.HtmlCardContent(MilestoneTaskRows(tasks, statuses, days))
       )
-    )
+      .element
+      .amend(cls("w-full mb-4"))
   }
 
   val element: HtmlElement =
@@ -233,7 +198,7 @@ class MilestoneReviewComponent(
       summaryCard,
       child.maybe <-- milestoneVar.signal
         .combineWith(tasksVar.signal, lookups.statusesVar.signal.map(_.taskStatusesSorted))
-        .map { case (milestone, tasks, statuses) => milestone.map(statsRow(_, tasks, statuses)) },
+        .map { case (milestone, tasks, statuses) => milestone.map(statsCard(_, tasks, statuses)) },
       history.element.amend(cls("mb-4")),
       TgCard
         .headerNoFooter(

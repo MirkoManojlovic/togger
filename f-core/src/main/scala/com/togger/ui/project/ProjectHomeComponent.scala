@@ -14,8 +14,8 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneTaskColumns}
+import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor}
+import com.togger.ui.milestone.{MilestoneFeService, MilestoneTaskRows}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -129,15 +129,6 @@ class ProjectHomeComponent(
       .element
       .amend(cls("mb-4"))
 
-  private def progressBar(value: Int, max: Int, title: String): HtmlElement =
-    TgProgressComponent(
-      value = value,
-      max = max.max(1),
-      color = TgProgressColor.Success,
-      size = TgProgressSize.Large,
-      label = TgProgressLabel.Outside(title)
-    ).element
-
   private def pageLink(text: String, page: FrontendPage): HtmlElement =
     a(cls("text-fg-brand hover:underline cursor-pointer"), text, router.navigateTo(page))
 
@@ -172,7 +163,6 @@ class ProjectHomeComponent(
     )
 
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
-    val progress = TimeboxReviewStats.tasksProgress(tasks)
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
     div(
@@ -186,18 +176,7 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
-      div(
-        cls("flex flex-col md:flex-row md:items-center gap-4"),
-        div(
-          cls("flex flex-col gap-4 md:w-1/2 p-3 border border-default rounded-base"),
-          progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
-          progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left until the due date")
-        ),
-        div(
-          cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
-          MilestoneTaskColumns(tasks, statuses)
-        )
-      )
+      MilestoneTaskRows(tasks, statuses, days)
     )
   }
 
