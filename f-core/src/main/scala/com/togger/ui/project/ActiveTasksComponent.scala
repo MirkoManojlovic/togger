@@ -49,7 +49,7 @@ class ActiveTasksComponent(
     li(
       cls("mb-1"),
       div(
-        cls("flex items-start gap-2"),
+        cls("flex items-start gap-2 mb-1"),
         div(
           cls("flex flex-wrap items-center gap-2 min-w-0 flex-1"),
           a(
