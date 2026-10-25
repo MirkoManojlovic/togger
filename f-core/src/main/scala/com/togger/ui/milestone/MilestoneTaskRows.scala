@@ -33,10 +33,9 @@ object MilestoneTaskRows {
       span(cls("text-lg font-semibold text-heading"), count.toString)
     )
 
-  private def column(title: String, tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp]): HtmlElement =
+  private def counts(tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp]): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-3 p-3 border border-default rounded-base"),
-      div(cls("font-semibold text-heading"), title),
+      cls("flex flex-col items-center gap-3 sm:pr-4 sm:border-r border-default"),
       totalStat(tasks),
       div(
         cls("flex flex-col gap-2 w-full"),
@@ -55,22 +54,34 @@ object MilestoneTaskRows {
       trackCls = "text-green-200 dark:text-green-900"
     ).element
 
+  /** One card for the tasks of the total or of a member: the counts beside the rings they add up to. The days left
+    * belong to the milestone, so only the total shows them.
+    */
   private def row(
     title: String,
     tasks: Seq[FindTaskRespFull],
     statuses: Seq[FindTaskStatusResp],
-    days: DaysProgress
+    days: Option[DaysProgress]
   ): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     div(
-      cls("flex flex-col md:flex-row md:items-start gap-4"),
-      div(cls("md:w-1/2"), column(title, tasks, statuses).amend(cls("w-fit"))),
+      cls("p-3 border border-default rounded-base"),
+      div(cls("font-semibold text-heading mb-3"), title),
       div(
-        cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
-        progressRing(TaskProgress(progress.done, progress.total), p => s"${p.total - p.checked} of ${p.total} tasks left to do"),
-        progressRing(
-          TaskProgress(days.elapsed, days.total),
-          p => s"${p.total - p.checked} of ${p.total} days left until the due date"
+        cls("flex flex-col sm:flex-row sm:items-start gap-4"),
+        counts(tasks, statuses),
+        div(
+          cls("flex flex-col gap-3"),
+          progressRing(
+            TaskProgress(progress.done, progress.total),
+            p => s"${p.total - p.checked} of ${p.total} tasks left to do"
+          ),
+          days.map(d =>
+            progressRing(
+              TaskProgress(d.elapsed, d.total),
+              p => s"${p.total - p.checked} of ${p.total} days left until the due date"
+            )
+          )
         )
       )
     )
@@ -79,11 +90,11 @@ object MilestoneTaskRows {
   def apply(tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp], days: DaysProgress): HtmlElement = {
     val memberRows: Seq[HtmlElement] =
       TimeboxReviewStats.tasksPerMember(tasks).map { case (member, memberTasks) =>
-        row(member.fold("Unassigned")(_.fullName), memberTasks, statuses, days)
+        row(member.fold("Unassigned")(_.fullName), memberTasks, statuses, None)
       }
     div(
       cls("flex flex-col gap-4"),
-      row("Total", tasks, statuses, days),
+      row("Total", tasks, statuses, Some(days)),
       memberRows
     )
   }
