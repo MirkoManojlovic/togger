@@ -16,8 +16,8 @@ object MilestoneTaskRows {
   private def stat(label: String, value: String, color: TgBadgeColor = TgBadgeColor.Gray): HtmlElement =
     div(
       cls("flex flex-col items-center gap-1 min-w-16"),
-      span(cls("text-xl font-semibold text-heading"), value),
-      TgBadge(text = label, color = color, bordered = true).element
+      TgBadge(text = label, color = color, bordered = true).element,
+      span(cls("text-xl font-semibold text-heading"), value)
     )
 
   /** The tasks and how many of them are done, e.g. "12/5". */
