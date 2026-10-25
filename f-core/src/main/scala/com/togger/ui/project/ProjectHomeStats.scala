@@ -40,17 +40,6 @@ object ProjectHomeStats {
     statuses.flatMap(status => byStatusId.get(status.id).map(status -> _.sortBy(_.name)))
   }
 
-  /** The tasks being worked on, grouped by their status in the order of the daily; no group is empty. */
-  def activeTasksByStatus(tasks: Seq[FindTaskRespFull]): Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])] =
-    tasks
-      .flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(rank => (rank, task)))
-      .groupBy(_._2.taskStatus.id)
-      .values
-      .map(group => (group.head._1, group.head._2.taskStatus, group.map(_._2).sortBy(_.name)))
-      .toSeq
-      .sortBy(_._1)
-      .map { case (_, status, tasks) => status -> tasks }
-
   /** The milestones the member has tasks in, each with only the tasks of the member. */
   def milestonesOf(
     member: SearchAccountDto,
@@ -95,22 +84,23 @@ object ProjectHomeStats {
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
 
+  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left
+    * out.
+    */
+  def byColumn(tasks: Seq[FindTaskRespFull]): Seq[Seq[FindTaskRespFull]] = {
+    val ranked = tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))
+    (0 until TeamDailyStatusOrder.StatusCount).map(column =>
+      ranked.collect { case (rank, task) if rank == column => task }.sortBy(_.name)
+    )
+  }
+
   /** A row for each assignee of the tasks, by name, the unassigned tasks last; a row has the tasks of the assignee for
     * each of the statuses of the daily, in its order.
     */
-  def memberRows(
-    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
-  ): Seq[(Option[SearchAccountDto], Seq[Seq[FindTaskRespFull]])] = {
-    val ranked = inFlight.flatMap { case (_, tasks) =>
-      tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))
-    }
-    val columns = 0 until TeamDailyStatusOrder.StatusCount
-    ranked
-      .groupBy(_._2.assignedTo)
+  def memberRows(tasks: Seq[FindTaskRespFull]): Seq[(Option[SearchAccountDto], Seq[Seq[FindTaskRespFull]])] =
+    tasks
+      .groupBy(_.assignedTo)
       .toSeq
       .sortBy { case (assignee, _) => (assignee.isEmpty, assignee.map(_.fullName)) }
-      .map { case (assignee, group) =>
-        assignee -> columns.map(column => group.collect { case (rank, task) if rank == column => task }.sortBy(_.name))
-      }
-  }
+      .map { case (assignee, group) => assignee -> byColumn(group) }
 }

@@ -16,9 +16,7 @@ import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
-import com.togger.task.DefaultTaskStatus
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
 import com.togger.dto.{MilestoneFilter, TaskFilter}
@@ -213,82 +211,21 @@ class ProjectHomeComponent(
       .filter(_.nonEmpty)
       .getOrElse(WorkDayCalendar.DefaultWorkDays)
 
-  private def taskItem(task: FindTaskRespFull, showAssignee: Boolean, showMilestone: Boolean = true): HtmlElement =
-    li(
-      cls("mb-1"),
-      div(
-        cls("flex flex-wrap items-center gap-2"),
-        pageLink(task.name, EditTaskPage(projectId, task.id)),
-        BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
-      ),
-      BulkTaskCard.readOnlyRow(
-        ProjectHomeStats.taskBadges(
-          task,
-          if (showMilestone) allMilestonesVar.now() else Seq.empty,
-          showAssignee,
-          tgClock.currentDate(),
-          workDays,
-          tgDateFormater.asAmericanDate
-        )
-      )
-    )
-
-  private def taskGroup(
-    status: FindTaskStatusResp,
-    tasks: Seq[FindTaskRespFull],
-    showAssignee: Boolean
-  ): HtmlElement =
-    div(
-      cls("mb-4"),
-      div(
-        cls("mb-1"),
-        TgBadge(text = s"${status.emoji} ${status.name} (${tasks.size})".trim, color = TgBadgeColor.Gray, bordered = true).element
-      ),
-      ul(tasks.map(taskItem(_, showAssignee)))
-    )
-
   private val selectedTabVar = Var(ProjectHomeComponent.GeneralTabId)
 
-  private def groupsOrEmpty(
-    groups: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])],
-    empty: String,
-    showAssignee: Boolean
-  ): Seq[HtmlElement] =
-    if (groups.isEmpty) Seq(emptyNote(empty))
-    else groups.map { case (status, tasks) => taskGroup(status, tasks, showAssignee) }
+  private def activeTasks(tasks: Seq[FindTaskRespFull], config: ActiveTasksConfig): HtmlElement =
+    new ActiveTasksComponent(
+      router,
+      tgDateFormater,
+      tgClock,
+      projectId,
+      allMilestonesVar.now(),
+      workDays,
+      tasks,
+      config
+    ).element
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
-
-  private val rowCellCls = "border-t border-default pt-2"
-
-  /** A row for each member with tasks in flight, the tasks of the member in the column of their status; the tasks
-    * without an assignee are in the last row. The columns are the statuses of the daily, in its order, also when no
-    * task is in one.
-    */
-  private def statusColumns(
-    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])],
-    empty: String,
-    showMilestone: Boolean = true
-  ): HtmlElement = {
-    val rows = ProjectHomeStats.memberRows(inFlight)
-    val columnCounts = ProjectHomeComponent.ColumnStatuses.indices.map(column => rows.map(_._2(column).size).sum)
-    if (rows.isEmpty) emptyNote(empty)
-    else
-      div(
-        cls("overflow-x-auto"),
-        div(
-          cls("grid grid-cols-[auto_repeat(4,minmax(0,1fr))] gap-4 min-w-[48rem]"),
-          div(cls("font-semibold text-heading"), "Member"),
-          ProjectHomeComponent.ColumnStatuses.zip(columnCounts).map { case (columnStatus, count) =>
-            div(TgBadge(text = s"${columnStatus.toStringWithEmoji} ($count)", color = TgBadgeColor.Gray, bordered = true).element)
-          },
-          rows.flatMap { case (member, cells) =>
-            div(cls(rowCellCls), cls("font-medium text-heading whitespace-nowrap"), member.fold("Unassigned")(_.fullName)) +:
-              cells.map(tasks => div(cls(rowCellCls), ul(tasks.map(taskItem(_, showAssignee = false, showMilestone)))))
-          }
-        )
-      )
-  }
 
   private def generalSection[A](title: String, items: Seq[A], empty: String)(render: A => HtmlElement): HtmlElement =
     div(
@@ -303,7 +240,14 @@ class ProjectHomeComponent(
     inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
   ): HtmlElement =
     div(
-      div(cls("mb-4"), sectionTitle("Tasks"), statusColumns(inFlight, "No tasks in progress, testing, waiting or blocked.")),
+      div(
+        cls("mb-4"),
+        sectionTitle("Tasks"),
+        activeTasks(
+          inFlight.flatMap(_._2),
+          ActiveTasksConfig("No tasks in progress, testing, waiting or blocked.")
+        )
+      ),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
       generalSection("Active milestones", milestones, "No active milestones.")((milestoneRow _).tupled)
     )
@@ -318,7 +262,10 @@ class ProjectHomeComponent(
       sectionTitle("Working on"),
       div(
         cls("mb-4"),
-        groupsOrEmpty(ProjectHomeStats.inFlightOf(member, inFlight), "Not working on any task.", showAssignee = false)
+        activeTasks(
+          ProjectHomeStats.inFlightOf(member, inFlight).flatMap(_._2),
+          ActiveTasksConfig("Not working on any task.", showMember = false)
+        )
       ),
       sectionTitle("Active milestones"),
       div(
@@ -333,7 +280,7 @@ class ProjectHomeComponent(
       sectionTitle("Active tasks"),
       div(
         cls("mb-4"),
-        statusColumns(ProjectHomeStats.activeTasksByStatus(tasks), "No active tasks.", showMilestone = false)
+        activeTasks(tasks, ActiveTasksConfig("No active tasks.", showMilestone = false))
       ),
       milestoneRow(milestone, tasks)
     )
@@ -395,7 +342,4 @@ class ProjectHomeComponent(
 
 object ProjectHomeComponent {
   val GeneralTabId = "general"
-
-  val ColumnStatuses: Seq[DefaultTaskStatus] =
-    Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
 }

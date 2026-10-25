@@ -86,16 +86,15 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
     }
   }
 
-  "ProjectHomeStats.activeTasksByStatus" should {
-    "group the tasks being worked on by status in the order of the daily and leave out the others" in {
+  "ProjectHomeStats.byColumn" should {
+    "put the tasks being worked on in the column of their status by name and leave out the others" in {
       val blocked = status("Blocked")
       val inProgress = status("In progress")
       val done = status("Done")
-      val groups = ProjectHomeStats.activeTasksByStatus(
+      val columns = ProjectHomeStats.byColumn(
         Seq(task("b", blocked), task("z", inProgress), task("a", inProgress), task("c", done))
       )
-      groups.map(_._1) shouldBe Seq(inProgress, blocked)
-      groups.head._2.map(_.name) shouldBe Seq("a", "z")
+      columns.map(_.map(_.name)) shouldBe Seq(Seq("a", "z"), Seq.empty, Seq.empty, Seq("b"))
     }
   }
 
@@ -138,7 +137,7 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
       val adas = task("a", inProgress).copy(assignedTo = Some(ada))
       val bobs = task("b", blocked).copy(assignedTo = Some(bob))
       val nobodys = task("n", inProgress)
-      val rows = ProjectHomeStats.memberRows(Seq(inProgress -> Seq(nobodys, adas), blocked -> Seq(bobs)))
+      val rows = ProjectHomeStats.memberRows(Seq(nobodys, adas, bobs))
       rows.map(_._1) shouldBe Seq(Some(ada), Some(bob), None)
       rows.map(_._2) shouldBe Seq(
         Seq(Seq(adas), Seq.empty, Seq.empty, Seq.empty),
