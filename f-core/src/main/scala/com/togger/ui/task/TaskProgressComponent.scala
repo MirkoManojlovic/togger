@@ -17,13 +17,16 @@ object TaskProgressVariant {
 /** Renders a task's checkbox progress, in whichever shape `variant` asks for.
   *
   * Nothing renders when the description has no task list (`TaskProgress.total == 0`) — that is "no progress to
-  * show", not "0%". `ringSizeCls` and `textSizeCls` size the ring and the "n of m tasks" label.
+  * show", not "0%". `ringSizeCls` and `textSizeCls` size the ring and the label, "n of m tasks" unless `labelOf` says otherwise.
   */
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
   variant: TaskProgressVariant = TaskProgressVariant.Doughnut,
   ringSizeCls: String = "w-8 h-8",
-  textSizeCls: String = "text-sm"
+  textSizeCls: String = "text-sm",
+  labelOf: TaskProgress => String = progress => s"${progress.checked} of ${progress.total} tasks",
+  fillCls: String = "text-fg-brand",
+  trackCls: String = "text-blue-200 dark:text-blue-900"
 ) {
 
   val element: HtmlDiv =
@@ -39,7 +42,7 @@ case class TaskProgressComponent(
         case TaskProgressVariant.Doughnut =>
           Seq(
             doughnutRing(progress.percent),
-            span(cls(textSizeCls, "text-body whitespace-nowrap"), s"${progress.checked} of ${progress.total} tasks")
+            span(cls(textSizeCls, "text-body whitespace-nowrap"), labelOf(progress))
           )
       }
 
@@ -57,7 +60,7 @@ case class TaskProgressComponent(
         svg.r("15.9155"),
         svg.fill("none"),
         svg.stroke("currentColor"),
-        svg.className("text-blue-200 dark:text-blue-900"),
+        svg.className(trackCls),
         svg.strokeWidth("5")
       ),
       svg.circle(
@@ -66,7 +69,7 @@ case class TaskProgressComponent(
         svg.r("15.9155"),
         svg.fill("none"),
         svg.stroke("currentColor"),
-        svg.className("text-fg-brand"),
+        svg.className(fillCls),
         svg.strokeWidth("5"),
         svg.strokeLineCap("round"),
         svg.strokeDashArray(s"$percent 100")

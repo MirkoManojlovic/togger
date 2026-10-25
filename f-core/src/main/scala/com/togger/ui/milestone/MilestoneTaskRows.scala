@@ -3,14 +3,9 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{
-  TgBadge,
-  TgBadgeColor,
-  TgProgressColor,
-  TgProgressComponent,
-  TgProgressLabel,
-  TgProgressSize
-}
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.markdown.TaskProgress
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.timebox.{DaysProgress, TimeboxReviewStats}
 
 /** The task counts of a milestone with their progress bars: a row for the total first, then one for each team member;
@@ -28,7 +23,7 @@ object MilestoneTaskRows {
   /** The tasks and how many of them are done, e.g. "12/5". */
   private def totalStat(tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
-    stat("Total / Done", s"${progress.total}/${progress.done}")
+    stat("Total / Done", s"${progress.total} / ${progress.done}")
   }
 
   private def statusRow(status: FindTaskStatusResp, count: Int): HtmlElement =
@@ -51,13 +46,13 @@ object MilestoneTaskRows {
       )
     )
 
-  private def progressBar(value: Int, max: Int, title: String): HtmlElement =
-    TgProgressComponent(
-      value = value,
-      max = max.max(1),
-      color = TgProgressColor.Success,
-      size = TgProgressSize.Large,
-      label = TgProgressLabel.Outside(title)
+  private def progressRing(progress: TaskProgress, label: TaskProgress => String): HtmlElement =
+    TaskProgressComponent(
+      Val(progress),
+      ringSizeCls = "w-12 h-12",
+      labelOf = label,
+      fillCls = "text-green-500",
+      trackCls = "text-green-200 dark:text-green-900"
     ).element
 
   private def row(
@@ -71,9 +66,12 @@ object MilestoneTaskRows {
       cls("flex flex-col md:flex-row md:items-start gap-4"),
       div(cls("md:w-1/2"), column(title, tasks, statuses).amend(cls("w-fit"))),
       div(
-        cls("flex flex-col gap-4 md:w-1/2 p-3 border border-default rounded-base"),
-        progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
-        progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left until the due date")
+        cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
+        progressRing(TaskProgress(progress.done, progress.total), p => s"${p.total - p.checked} of ${p.total} tasks left to do"),
+        progressRing(
+          TaskProgress(days.elapsed, days.total),
+          p => s"${p.total - p.checked} of ${p.total} days left until the due date"
+        )
       )
     )
   }
