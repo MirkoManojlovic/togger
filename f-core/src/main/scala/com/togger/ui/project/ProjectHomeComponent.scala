@@ -20,6 +20,7 @@ import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskStatusesState, TaskFeService, TaskPreviewComponent, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.timebox.gantt.TimeboxReviewGanttComponent
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
 import com.togger.dto.{MilestoneFilter, TaskFilter}
 
@@ -222,23 +223,29 @@ class ProjectHomeComponent(
 
   private def timeboxRow(timebox: FindTimeboxResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val version = timebox.latestVersion
-    val days = TimeboxReviewStats.daysProgress(version.startDate, version.endDate, tgClock.currentDate())
-    val progress = TimeboxReviewStats.tasksProgress(tasks)
+    val gantt = new TimeboxReviewGanttComponent(
+      Val(tasks),
+      Val(workDays),
+      Val(Some((version.startDate, version.endDate))),
+      Val(projectVar.now().map(_.members.map(_.id)).getOrElse(Seq.empty)),
+      Val(allMilestonesVar.now()),
+      tgDateFormater,
+      tgMarkdown,
+      router,
+      tgClock
+    )
     div(
-      cls("mb-4"),
+      cls("mb-4 p-4 border border-default-medium rounded-base"),
       div(
-        cls("flex flex-wrap items-center gap-2 mb-1"),
+        cls("mb-3"),
         pageLink(
           s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
-        version.description.filter(_.nonEmpty).map(description => span(cls("text-body"), description))
+        version.description.filter(_.nonEmpty).map(description => tgMarkdown.toLaminarDiv(description).amend(cls("mt-1")))
       ),
-      div(
-        cls("flex flex-col gap-4"),
-        progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
-        progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left")
-      )
+      gantt.element,
+      gantt.detailElement
     )
   }
 
