@@ -64,15 +64,25 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
       )
     )
 
-  private def contributionsLink(projectId: UUID, page: FrontendPage): HtmlElement = {
-    val selected = page match {
+  private def directLink(label: String, page: FrontendPage, selected: Boolean): HtmlElement =
+    a(
+      cls(if (selected) NavbarComponent.selectedNavLinkClass else NavbarComponent.navLinkClass),
+      label,
+      router.navigateTo(page)
+    )
+
+  private def directLinks(projectId: UUID, current: FrontendPage): Seq[HtmlElement] = {
+    val contributionsSelected = current match {
       case ShowContributionsPage(id, _) => id == projectId
       case _                            => false
     }
-    a(
-      cls(if (selected) NavbarComponent.selectedNavLinkClass else NavbarComponent.navLinkClass),
-      "Contributions",
-      router.navigateTo(ShowContributionsPage(projectId))
+    val syncSelected = current match {
+      case SyncConfigPage(id, _) => id == projectId
+      case _                     => false
+    }
+    Seq(
+      directLink("Contributions", ShowContributionsPage(projectId), contributionsSelected),
+      directLink("Sync", SyncConfigPage(projectId), syncSelected)
     )
   }
 
@@ -93,7 +103,7 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
       cls("hidden md:flex items-center gap-1"),
       children <-- router.currentPageSignal.combineWith(projectSignal).map { case (page, project) =>
         project.toSeq.map(projectPrefix) ++
-          Sidebar.projectIdForPage(page).toSeq.flatMap(id => groupsOf(id).map(groupMenu) :+ contributionsLink(id, page))
+          Sidebar.projectIdForPage(page).toSeq.flatMap(id => groupsOf(id).map(groupMenu) ++ directLinks(id, page))
       }
     )
 }
