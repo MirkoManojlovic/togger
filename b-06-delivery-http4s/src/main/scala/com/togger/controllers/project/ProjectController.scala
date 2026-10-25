@@ -1,6 +1,7 @@
 package com.togger.controllers.project
 
 import cats.effect.IO
+import cats.syntax.apply._
 import com.togger.common.TgError._
 import com.togger.common.{TgClock, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
@@ -115,18 +116,17 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       projectService
         .findPaginatedByOrganizationIdAndAccountId(organizationId, auth.body.get.id, page)
         .flatMap { projectsPage =>
-          projectService.findProjectLabelsByProjectIds(projectsPage.items.map(_.id)).map { projectLabelsByProjectId =>
+          val projectIds = projectsPage.items.map(_.id)
+          (
+            projectService.findProjectLabelsByProjectIds(projectIds),
+            projectService.findMembersByProjectIds(projectIds)
+          ).mapN { (projectLabelsByProjectId, membersByProjectId) =>
             TgJsonSuccess.justBodyRight(
               projectsPage.mapItem(project =>
-                FindProjectResp(
-                  id = project.id,
-                  organizationId = project.organizationId,
-                  name = project.name,
-                  description = project.description,
-                  icon = project.icon,
-                  workDays = project.workDays.map(_.getValue),
-                  members = Seq.empty,
-                  projectLabels = projectLabelsByProjectId.getOrElse(project.id, List.empty).map(toProjectLabelDto)
+                toFindProjectResp(
+                  project,
+                  membersByProjectId.getOrElse(project.id, Seq.empty),
+                  projectLabelsByProjectId.getOrElse(project.id, List.empty)
                 )
               )
             )

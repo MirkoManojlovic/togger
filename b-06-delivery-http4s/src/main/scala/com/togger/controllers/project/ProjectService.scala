@@ -163,6 +163,9 @@ class ProjectService(
   def findPaginatedMembers(projectId: UUID, page: DbPageRequest): IO[PaginatedResponse[Account]] =
     projectAccountRepo.findPaginatedMembers(projectId, page).transact(transactor)
 
+  def findMembersByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, Seq[Account]]] =
+    projectAccountRepo.findAllMembersByProjectIds(projectIds).transact(transactor)
+
   def findProjectLabelsByProjectIds(projectIds: Seq[UUID]): IO[Map[UUID, List[ProjectLabel]]] =
     projectLabelAssignmentRepo.findProjectLabelsByProjectIds(projectIds).transact(transactor)
 
