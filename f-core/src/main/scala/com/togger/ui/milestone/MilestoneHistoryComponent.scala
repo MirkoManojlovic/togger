@@ -11,7 +11,8 @@ import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableFilterComponent, TableSearchComponent, TgBadgeColor, TgTooltip}
-import com.togger.ui.project.{ProjectLabelBadges, ProjectService}
+import com.togger.markdown.TgMarkdown
+import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TgDateFormater}
 import org.scalajs.dom
@@ -27,6 +28,7 @@ class MilestoneHistoryComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
   projectService: ProjectService,
+  tgMarkdown: TgMarkdown,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
@@ -649,19 +651,13 @@ class MilestoneHistoryComponent(
     )
   }
 
+  private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
+
   val element = {
     div(
       windowEvents(_.onMouseMove) --> (ev => onDragMove(ev)),
       windowEvents(_.onMouseUp) --> (_ => endDrag()),
-      child <-- projectVar.signal.map(projectResp =>
-        TgCard
-          .headerNoFooter(
-            header = TgCard.CardHeader.html(ProjectLabelBadges.nameWithLabels(projectResp.name, projectResp.projectLabels)),
-            body = TgCard.HtmlCardContent(div(projectResp.description))
-          )
-          .element
-          .amend(cls("mb-4"))
-      ),
+      child <-- projectVar.signal.map(projectInfoCard.element),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(div("Milestone history"), TgCard.CardHeaderSize.H3),

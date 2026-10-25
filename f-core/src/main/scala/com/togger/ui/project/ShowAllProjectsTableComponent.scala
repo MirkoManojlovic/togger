@@ -10,7 +10,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -76,50 +76,7 @@ class ShowAllProjectsTableComponent(
     }
     .unsafeRunAndForget()
 
-  private def projectCard(dto: FindProjectResp) =
-    TgCard
-      .headerNoFooter(
-        header = TgCard.CardHeader.html(
-          div(
-            cls("flex items-center justify-between"),
-            ProjectLabelBadges.nameWithLabels(
-              a(
-                cls("font-medium text-fg-brand hover:underline"),
-                router.navigateTo(ProjectHomePage(dto.id)),
-                s"${dto.icon} ${dto.name}"
-              ),
-              dto.projectLabels
-            ),
-            div(
-              iconButton(
-                "Edit",
-                TgIcons.editIcon(className = "w-4 h-4"),
-                rowIconButtonCls,
-                rowButtonMarginCls,
-                onClick.mapToUnit --> (_ => router.route(EditProjectPage(dto.id)))
-              )
-            )
-          ),
-          TgCard.CardHeaderSize.H3
-        ),
-        body = TgCard.HtmlCardContent(
-          div(
-            tgMarkdown.toLaminarDiv(dto.description),
-            badgeSection(
-              "Members",
-              dto.members.map(member => TgBadge(text = member.fullName, color = TgBadgeColor.Gray, bordered = true).element)
-            )
-          )
-        )
-      )
-      .element
-
-  private def badgeSection(title: String, badges: Seq[HtmlElement]) =
-    div(
-      cls("mt-3"),
-      div(cls("mb-1 text-sm font-medium text-body"), title),
-      if (badges.isEmpty) div(cls("text-sm text-body"), "None") else div(cls("flex flex-wrap gap-1"), badges)
-    )
+  private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
 
   val element = {
     div(
@@ -167,7 +124,7 @@ class ShowAllProjectsTableComponent(
           body = TgCard.HtmlCardContent(
             div(
               child <-- stateFormVar.signal.map(dtos =>
-                div(cls("flex flex-col gap-4"), dtos.map(projectCard))
+                div(cls("flex flex-col gap-4"), dtos.map(projectInfoCard.element))
               ),
               TgPaginationComponent(
                 paginationVar.signal,

@@ -8,11 +8,10 @@ import com.togger.task.DefaultTaskStatus.{Backlog, Done, Todo, WontDo}
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.{ProjectLabelBadges, ProjectService}
+import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.toast.Toast
@@ -67,38 +66,12 @@ class ShowAllTasksComponent(
     defaultDeselectedStatuses = Set(Todo, Backlog, Done, WontDo)
   )
 
+  private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
+
   val element = {
     div(
       table.bindings,
-      child <-- projectVar.signal.map(projectResp =>
-        TgCard
-          .headerNoFooter(
-            header = TgCard.CardHeader.html(
-              div(
-                div(
-                  cls("flex items-center justify-between"),
-                  ProjectLabelBadges.nameWithLabels(projectResp.name, projectResp.projectLabels),
-                  div(
-                    iconButton(
-                      "Edit Project",
-                      TgIcons.editIcon(className = "w-4 h-4"),
-                      rowIconButtonCls,
-                      rowButtonMarginCls,
-                      onClick.mapToUnit --> (_ => router.route(EditProjectPage(projectResp.id)))
-                    )
-                  )
-                )
-              )
-            ),
-            body = TgCard.HtmlCardContent(
-              div(
-                tgMarkdown.toLaminarDiv(projectResp.description)
-              )
-            )
-          )
-          .element
-          .amend(cls("mb-4"))
-      ),
+      child <-- projectVar.signal.map(projectInfoCard.element),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(

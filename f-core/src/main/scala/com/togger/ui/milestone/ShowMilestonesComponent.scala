@@ -16,13 +16,11 @@ import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
   TableSearchComponent,
-  TgBadge,
-  TgBadgeColor,
   TgHtmlTable,
   TgPaginationComponent
 }
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.{ProjectLabelBadges, ProjectService}
+import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.TgDateFormater
@@ -127,37 +125,11 @@ class ShowMilestonesComponent(
     }
     .unsafeRunAndForget()
 
+  private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
+
   val element = {
     div(
-      child <-- projectVar.signal.map(projectResp =>
-        TgCard
-          .headerNoFooter(
-            header = TgCard.CardHeader.html(
-              div(
-                div(
-                  cls("flex items-center justify-between"),
-                  ProjectLabelBadges.nameWithLabels(projectResp.name, projectResp.projectLabels),
-                  div(
-                    iconButton(
-                      "Edit Project",
-                      TgIcons.editIcon(className = "w-4 h-4"),
-                      rowIconButtonCls,
-                      rowButtonMarginCls,
-                      onClick.mapToUnit --> (_ => router.route(EditProjectPage(projectResp.id)))
-                    )
-                  )
-                )
-              )
-            ),
-            body = TgCard.HtmlCardContent(
-              div(
-                tgMarkdown.toLaminarDiv(projectResp.description)
-              )
-            )
-          )
-          .element
-          .amend(cls("mb-4"))
-      ),
+      child <-- projectVar.signal.map(projectInfoCard.element),
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(

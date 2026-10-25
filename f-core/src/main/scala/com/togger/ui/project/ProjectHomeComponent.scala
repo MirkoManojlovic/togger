@@ -120,6 +120,8 @@ class ProjectHomeComponent(
     )
     .unsafeRunAndForget()
 
+  private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
+
   private def card(title: String, content: HtmlElement): HtmlElement =
     card(TgCard.CardHeader.plainText(title, TgCard.CardHeaderSize.H3), content)
 
@@ -134,28 +136,6 @@ class ProjectHomeComponent(
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
-  private def projectCard(project: FindProjectResp): HtmlElement =
-    card(
-      TgCard.CardHeader.html(
-        ProjectLabelBadges.nameWithLabels(project.name, project.projectLabels),
-        TgCard.CardHeaderSize.H3
-      ),
-      div(
-        tgMarkdown.toLaminarDiv(project.description),
-        Option.when(project.members.nonEmpty)(
-          div(
-            cls("mt-4"),
-            div(cls("font-semibold text-heading mb-1"), "Members"),
-            div(
-              cls("flex flex-wrap gap-1"),
-              project.members
-                .sortBy(_.fullName)
-                .map(member => TgBadge(text = member.fullName, color = TgBadgeColor.Gray, bordered = true).element)
-            )
-          )
-        )
-      )
-    )
 
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
@@ -332,7 +312,7 @@ class ProjectHomeComponent(
 
   val element: HtmlElement =
     div(
-      child.maybe <-- projectVar.signal.map(_.map(projectCard)),
+      child.maybe <-- projectVar.signal.map(_.map(projectInfoCard.element)),
       card(
         "Active milestones",
         div(
