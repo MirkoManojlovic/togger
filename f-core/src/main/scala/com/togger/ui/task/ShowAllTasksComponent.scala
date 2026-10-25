@@ -14,12 +14,7 @@ import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{
-  headerIconButtonCls,
-  iconButton,
-  rowButtonMarginCls,
-  rowIconButtonCls
-}
+import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
@@ -72,23 +67,6 @@ class ShowAllTasksComponent(
     defaultDeselectedStatuses = Set(Todo, Backlog, Done, WontDo)
   )
 
-  private def headerEmojiButton(label: String, emoji: String, page: FrontendPage) =
-    iconButton(
-      label,
-      span(cls("text-base leading-none"), emoji),
-      headerIconButtonCls,
-      "",
-      router.navigateTo(page)
-    )
-
-  /** Related header buttons side by side under a small caption, so the toolbar reads as a few labelled clusters. */
-  private def headerGroup(caption: String, buttons: HtmlElement*) =
-    div(
-      cls("flex flex-col items-center gap-0.5"),
-      div(cls("text-[10px] uppercase tracking-wide text-body font-normal text-center"), caption),
-      div(cls("flex gap-1"), buttons)
-    )
-
   val element = {
     div(
       table.bindings,
@@ -132,27 +110,7 @@ class ShowAllTasksComponent(
           header = TgCard.CardHeader.html(
             div(
               cls("flex justify-between"),
-              div("Tasks"),
-              div(
-                cls("flex flex-wrap items-center gap-3"),
-                headerGroup(
-                  "Create",
-                  headerEmojiButton("Create task", "📝", CreateTaskPage(projectId)),
-                  headerEmojiButton("Create milestone", "🏁", CreateMilestonePage(projectId))
-                ),
-                headerGroup(
-                  "Configure",
-                  headerEmojiButton("Task statuses", "🚦", ShowAllTaskStatusesPage(projectId)),
-                  headerEmojiButton("Task labels", "🏷️", ShowAllTaskLabelsPage(projectId)),
-                  headerEmojiButton("Task templates", "📋", ShowAllTaskTemplatesPage(projectId))
-                ),
-                headerGroup(
-                  "Plan & review",
-                  headerEmojiButton("Milestones", "🚩", ShowMilestonesPage(projectId)),
-                  headerEmojiButton("Timeboxes", "⏱️", ShowTimeboxesPage(projectId)),
-                  headerEmojiButton("Contributions", "👥", ShowContributionsPage(projectId))
-                )
-              )
+              div("Tasks")
             ),
             TgCard.CardHeaderSize.H3
           ),
