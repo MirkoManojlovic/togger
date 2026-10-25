@@ -13,12 +13,13 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.task.{TaskStatusesState, TaskFeService, TaskPreviewComponent, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
 import com.togger.dto.{MilestoneFilter, TaskFilter}
 
@@ -46,6 +47,7 @@ class ProjectHomeComponent(
   private val milestonesVar = Var(Seq.empty[(FindMilestoneResp, Seq[FindTaskRespFull])])
   private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
+  private val allStatusesVar = Var(Seq.empty[FindTaskStatusResp])
   private val inFlightVar = Var(Seq.empty[(FindTaskStatusResp, Seq[FindTaskRespFull])])
 
   private def loaded[A](call: TgRespIO[A])(onSuccess: A => Unit): IO[Unit] =
@@ -91,6 +93,7 @@ class ProjectHomeComponent(
     taskStatusService.findAllByProjectId(projectId).flatMap {
       case Left(failure) => IO.println(failure)
       case Right(success) =>
+        allStatusesVar.set(success.body.getOrElse(Seq.empty))
         val statuses = ProjectHomeStats.inFlightStatuses(success.body.getOrElse(Seq.empty))
         if (statuses.isEmpty) IO.unit
         else
@@ -167,12 +170,23 @@ class ProjectHomeComponent(
       )
     )
 
+  private def stat(label: String, value: Int, color: TgBadgeColor = TgBadgeColor.Gray): HtmlElement =
+    div(
+      cls("flex flex-col items-center gap-1 min-w-16"),
+      span(cls("text-xl font-semibold text-heading"), value.toString),
+      TgBadge(text = label, color = color, bordered = true).element
+    )
+
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
+    val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
+    val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
+      .map(status => status -> tasks.count(_.taskStatus.id == status.id))
+      .filter(_._2 > 0)
     div(
-      cls("mb-4"),
+      cls("mb-4 p-4 border border-default-medium rounded-base"),
       div(
-        cls("flex flex-wrap items-center gap-2 mb-1"),
+        cls("flex flex-wrap items-center gap-2 mb-3"),
         pageLink(milestone.name, MilestoneReviewPage(projectId, milestone.id)),
         TgBadge(
           text = s"Due ${tgDateFormater.asAmericanDateWithDayAbrv(milestone.dueDate)}",
@@ -180,7 +194,29 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
-      progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do")
+      div(
+        cls("flex flex-col md:flex-row md:items-center gap-4"),
+        div(
+          cls("flex flex-col gap-4 md:w-1/2 p-3 border border-default rounded-base"),
+          progressBar(progress.done, progress.total, s"${progress.left} of ${progress.total} tasks left to do"),
+          progressBar(days.elapsed, days.total, s"${days.left} of ${days.total} days left until the due date")
+        ),
+        div(
+          cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
+          div(
+            cls("flex flex-wrap items-start justify-around gap-3"),
+            stat("Total", tasks.size),
+            stat("Done", progress.done, TgBadgeColor.Success),
+            stat("Left", progress.left, TgBadgeColor.Blue)
+          ),
+          Option.when(statuses.nonEmpty)(
+            div(
+              cls("flex flex-wrap items-start justify-around gap-3"),
+              statuses.map { case (status, count) => stat(status.badgeText, count, status.badgeColor) }
+            )
+          )
+        )
+      )
     )
   }
 
@@ -340,8 +376,14 @@ class ProjectHomeComponent(
         "Active milestones",
         div(
           child <-- projectVar.signal
-            .combineWith(milestonesVar.signal, timeboxesVar.signal, inFlightVar.signal, allMilestonesVar.signal)
-            .map { case (project, milestones, timeboxes, inFlight, _) =>
+            .combineWith(
+              milestonesVar.signal,
+              timeboxesVar.signal,
+              inFlightVar.signal,
+              allMilestonesVar.signal,
+              allStatusesVar.signal
+            )
+            .map { case (project, milestones, timeboxes, inFlight, _, _) =>
               activityTabs(project.map(_.members).getOrElse(Seq.empty), milestones, timeboxes, inFlight)
             }
         )
