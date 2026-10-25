@@ -68,7 +68,7 @@ class TaskPreviewComponent(
   /** The milestone, priority, status and assignee, and the dates with the work days left, in a row each. */
   private def badges: HtmlElement =
     div(
-      cls("mb-3 flex flex-col gap-1.5"),
+      cls("flex flex-col gap-1.5"),
       ReviewTaskBadges.primary(task, milestones),
       BulkTaskCard.readOnlyRow(
         Seq(
@@ -84,8 +84,13 @@ class TaskPreviewComponent(
       cls("flex flex-col md:flex-row gap-4 items-start"),
       div(
         cls("flex-1 min-w-0"),
-        Option.when(showName)(nameWithLabels),
-        Option.when(showName)(badges),
+        Option.when(showName)(
+          div(
+            cls("mb-3 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+            nameWithLabels,
+            badges
+          )
+        ),
         tgMarkdown.toLaminarDiv(task.description)
       ),
       // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
