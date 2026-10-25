@@ -57,7 +57,12 @@ class TaskPreviewComponent(
         Option.when(showName)(nameLink),
         tgMarkdown.toLaminarDiv(task.description)
       ),
-      div(cls("flex-1 min-w-0"), weekRangeStatusTabs(task.logEntries, selectedDayVar)),
+      // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
+      div(
+        cls("flex-1 min-w-0 md:min-w-min"),
+        cls("[&_[role=tablist]]:flex-nowrap [&_[role=tab]]:whitespace-nowrap"),
+        weekRangeStatusTabs(task.logEntries, selectedDayVar)
+      ),
       div(
         cls("w-fit"),
         new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
