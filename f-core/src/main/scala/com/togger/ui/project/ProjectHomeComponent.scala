@@ -6,15 +6,16 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
+import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
+import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
@@ -194,6 +195,13 @@ class ProjectHomeComponent(
   }
 
   private def inFlightGroup(status: FindTaskStatusResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
+    taskGroup(status, tasks, showAssignee = true)
+
+  private def taskGroup(
+    status: FindTaskStatusResp,
+    tasks: Seq[FindTaskRespFull],
+    showAssignee: Boolean
+  ): HtmlElement =
     div(
       cls("mb-4"),
       div(
@@ -205,7 +213,7 @@ class ProjectHomeComponent(
           li(
             cls("flex flex-wrap items-center gap-2"),
             pageLink(task.name, EditTaskPage(projectId, task.id)),
-            task.assignedTo.map(assignee => span(cls("text-body"), assignee.fullName))
+            Option.when(showAssignee)(task.assignedTo).flatten.map(assignee => span(cls("text-body"), assignee.fullName))
           )
         )
       )
@@ -214,12 +222,100 @@ class ProjectHomeComponent(
   private def listOrEmpty[A](items: Signal[Seq[A]], empty: String)(render: A => HtmlElement): Modifier[HtmlElement] =
     children <-- items.map(values => if (values.isEmpty) Seq(emptyNote(empty)) else values.map(render))
 
+  private val selectedTabVar = Var(ProjectHomeComponent.GeneralTabId)
+
+  private def groupsOrEmpty(
+    groups: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])],
+    empty: String,
+    showAssignee: Boolean
+  ): Seq[HtmlElement] =
+    if (groups.isEmpty) Seq(emptyNote(empty))
+    else groups.map { case (status, tasks) => taskGroup(status, tasks, showAssignee) }
+
+  private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
+
+  private def generalPanel(milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])]): HtmlElement =
+    div(
+      if (milestones.isEmpty) Seq(emptyNote("No active milestones.")) else milestones.map((milestoneRow _).tupled)
+    )
+
+  private def memberPanel(
+    member: SearchAccountDto,
+    milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])],
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
+  ): HtmlElement = {
+    val memberMilestones = ProjectHomeStats.milestonesOf(member, milestones)
+    div(
+      sectionTitle("Working on"),
+      div(
+        cls("mb-4"),
+        groupsOrEmpty(ProjectHomeStats.inFlightOf(member, inFlight), "Not working on any task.", showAssignee = false)
+      ),
+      sectionTitle("Active milestones"),
+      div(
+        if (memberMilestones.isEmpty) Seq(emptyNote("Not part of any active milestone."))
+        else memberMilestones.map((milestoneRow _).tupled)
+      )
+    )
+  }
+
+  private def milestonePanel(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
+    div(
+      milestoneRow(milestone, tasks),
+      sectionTitle("Active tasks"),
+      groupsOrEmpty(ProjectHomeStats.activeTasksByStatus(tasks), "No active tasks.", showAssignee = true)
+    )
+
+  private def memberTabId(member: SearchAccountDto): String = s"member-${member.id}"
+
+  private def milestoneTabId(milestone: FindMilestoneResp): String = s"milestone-${milestone.id}"
+
+  // The general and the member tabs in one row, the milestones under them; both rows share the selection, so it is
+  // put back on the general tab when a reload takes the selected tab away.
+  private def activityTabs(
+    members: Seq[SearchAccountDto],
+    milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])],
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
+  ): HtmlElement = {
+    val memberTabList =
+      TgTab(ProjectHomeComponent.GeneralTabId, "General", generalPanel(milestones)) +:
+        members.sortBy(_.fullName).map { member =>
+          TgTab(
+            memberTabId(member),
+            member.fullName,
+            memberPanel(member, milestones, inFlight),
+            icon = Some(TgIcons.userIcon)
+          )
+        }
+    val milestoneTabList = milestones.map { case (milestone, tasks) =>
+      TgTab(milestoneTabId(milestone), milestone.name, milestonePanel(milestone, tasks))
+    }
+    val memberTabs = new TgTabs(memberTabList, selectedTabVar)
+    val milestoneRowTabs = Option.when(milestoneTabList.nonEmpty)(new TgTabs(milestoneTabList, selectedTabVar))
+    val selectableIds = (memberTabList ++ milestoneTabList).map(_.id).toSet
+    div(
+      onMountCallback(_ =>
+        if (!selectableIds.contains(selectedTabVar.now())) selectedTabVar.set(ProjectHomeComponent.GeneralTabId)
+      ),
+      memberTabs.tabBar,
+      milestoneRowTabs.map(row => div(div(cls("mt-3 mb-1 text-sm text-body"), "Milestones"), row.tabBar)),
+      memberTabs.panels,
+      milestoneRowTabs.toSeq.flatMap(_.panels)
+    )
+  }
+
   val element: HtmlElement =
     div(
       child.maybe <-- projectVar.signal.map(_.map(projectCard)),
       card(
         "Active milestones",
-        div(listOrEmpty(milestonesVar.signal, "No active milestones.")((milestoneRow _).tupled))
+        div(
+          child <-- projectVar.signal
+            .combineWith(milestonesVar.signal, inFlightVar.signal)
+            .map { case (project, milestones, inFlight) =>
+              activityTabs(project.map(_.members).getOrElse(Seq.empty), milestones, inFlight)
+            }
+        )
       ),
       card(
         "Active timeboxes",
@@ -230,4 +326,8 @@ class ProjectHomeComponent(
         div(listOrEmpty(inFlightVar.signal, "No tasks in progress, testing, waiting or blocked.")((inFlightGroup _).tupled))
       )
     )
+}
+
+object ProjectHomeComponent {
+  val GeneralTabId = "general"
 }

@@ -1,7 +1,8 @@
 package com.togger.ui.project
 
-import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto}
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
+import com.togger.ui.timebox.TimeboxReviewStats
 
 import java.time.LocalDate
 import java.util.UUID
@@ -34,4 +35,33 @@ object ProjectHomeStats {
     val byStatusId: Map[UUID, Seq[FindTaskRespFull]] = tasks.groupBy(_.taskStatus.id)
     statuses.flatMap(status => byStatusId.get(status.id).map(status -> _.sortBy(_.name)))
   }
+
+  /** The tasks being worked on, grouped by their status in the order of the daily; no group is empty. */
+  def activeTasksByStatus(tasks: Seq[FindTaskRespFull]): Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])] =
+    tasks
+      .flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(rank => (rank, task)))
+      .groupBy(_._2.taskStatus.id)
+      .values
+      .map(group => (group.head._1, group.head._2.taskStatus, group.map(_._2).sortBy(_.name)))
+      .toSeq
+      .sortBy(_._1)
+      .map { case (_, status, tasks) => status -> tasks }
+
+  /** The milestones the member has tasks in, each with only the tasks of the member. */
+  def milestonesOf(
+    member: SearchAccountDto,
+    milestones: Seq[(FindMilestoneResp, Seq[FindTaskRespFull])]
+  ): Seq[(FindMilestoneResp, Seq[FindTaskRespFull])] =
+    milestones.flatMap { case (milestone, tasks) =>
+      Some(TimeboxReviewStats.tasksOf(member, tasks)).filter(_.nonEmpty).map(milestone -> _)
+    }
+
+  /** The groups of tasks in flight, with the tasks of the member only; no group is empty. */
+  def inFlightOf(
+    member: SearchAccountDto,
+    inFlight: Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])]
+  ): Seq[(FindTaskStatusResp, Seq[FindTaskRespFull])] =
+    inFlight.flatMap { case (status, tasks) =>
+      Some(TimeboxReviewStats.tasksOf(member, tasks)).filter(_.nonEmpty).map(status -> _)
+    }
 }

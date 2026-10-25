@@ -83,4 +83,27 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
         Seq(inProgress -> Seq(a, c), testing -> Seq(b))
     }
   }
+
+  "ProjectHomeStats.activeTasksByStatus" should {
+    "group the tasks being worked on by status in the order of the daily and leave out the others" in {
+      val blocked = status("Blocked")
+      val inProgress = status("In progress")
+      val done = status("Done")
+      val groups = ProjectHomeStats.activeTasksByStatus(
+        Seq(task("b", blocked), task("z", inProgress), task("a", inProgress), task("c", done))
+      )
+      groups.map(_._1) shouldBe Seq(inProgress, blocked)
+      groups.head._2.map(_.name) shouldBe Seq("a", "z")
+    }
+  }
+
+  "ProjectHomeStats.inFlightOf" should {
+    "keep only the tasks of the member and drop the groups left empty" in {
+      val inProgress = status("In progress")
+      val testing = status("Testing")
+      val mine = task("mine", inProgress).copy(assignedTo = Some(ada))
+      val groups = Seq(inProgress -> Seq(mine, task("other", inProgress)), testing -> Seq(task("t", testing)))
+      ProjectHomeStats.inFlightOf(ada, groups) shouldBe Seq(inProgress -> Seq(mine))
+    }
+  }
 }
