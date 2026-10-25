@@ -1,6 +1,7 @@
 package com.togger.ui.project
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
@@ -9,22 +10,21 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.project.ProjectEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.auth._
-import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.components.pagination.PaginatedLoader
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.organization.OrganizationServiceFe
-import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.projectlabel.ProjectLabelFeService
+import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
@@ -213,14 +213,14 @@ class CreateProjectComponent(
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
-              findAccountsComponent.element.amend(width.px(500)),
+//              findAccountsComponent.element.amend(width.px(500)),
               div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
+      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
   )
 
 }
