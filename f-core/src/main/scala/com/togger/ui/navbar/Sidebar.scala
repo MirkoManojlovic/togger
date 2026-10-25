@@ -15,6 +15,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
 import com.togger.ui.dataimportconfig.DataImportConfigFeService
 import com.togger.ui.toast.Toast
+import org.scalajs.dom
 import org.scalajs.dom.{HTMLLIElement, SVGSVGElement}
 
 import java.util.UUID
@@ -44,6 +45,48 @@ case class SidebarLink(
       onClick.mapToUnit --> (_ => action())
     )
 
+  /** Where the right-click menu of a collapsed sidebar opens, in viewport coordinates; none while it is closed. */
+  private val menuPosition: Var[Option[(Double, Double)]] = Var(None)
+
+  private val closeMenu = Observer[Unit](_ => menuPosition.set(None))
+
+  private val openMenuAtRow = Observer[dom.MouseEvent] { event =>
+    event.preventDefault()
+    val row = event.currentTarget.asInstanceOf[dom.Element].getBoundingClientRect()
+    menuPosition.set(Some((row.right + 4, row.top)))
+  }
+
+  /** The icons of the tasks, milestones and timeboxes buttons, right of the row; it is closed by any click outside of
+    * it, a pick or Escape.
+    */
+  private def contextMenu(x: Double, y: Double): HtmlElement =
+    div(
+      cls(
+        "fixed z-50 flex items-center p-1.5 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg"
+      ),
+      onMountCallback { ctx =>
+        val menu = ctx.thisNode.ref
+        menu.style.left = s"${x}px"
+        menu.style.top = s"${y}px"
+        // a transformed ancestor makes `fixed` relative to itself, so move by the difference found
+        val placed = menu.getBoundingClientRect()
+        menu.style.left = s"${x - (placed.left - x)}px"
+        menu.style.top = s"${y - (placed.top - y)}px"
+      },
+      onMountBind { ctx =>
+        val menu = ctx.thisNode.ref
+
+        documentEvents(_.onClick)
+          .filter(event => !menu.contains(event.target.asInstanceOf[dom.Node]))
+          .mapToUnit --> closeMenu
+      },
+      onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> closeMenu),
+      onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
+      onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
+      onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
+      onClick.mapToUnit --> closeMenu
+    )
+
   private def initials: String = linkName.trim.headOption.map(_.toUpper.toString).getOrElse("")
 
   private def glyph: String = if (icon.nonEmpty) icon else initials
@@ -51,6 +94,11 @@ case class SidebarLink(
   private def linkElementProject =
     div(
       cls("flex items-center justify-between"),
+      onContextMenu.compose(_.withCurrentValueOf(collapsed).collect { case (event, true) => event }) --> openMenuAtRow,
+      child.maybe <-- menuPosition.signal.combineWith(collapsed).map {
+        case (Some((x, y)), true) => Some(contextMenu(x, y))
+        case _                    => None
+      },
       a(
         cls("inline-flex items-center"),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
