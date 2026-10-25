@@ -8,7 +8,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.{TaskProgressComponent, TgDateFormater}
 import com.togger.ui.task.bulk.BulkTaskCard
 
 import java.time.DayOfWeek
@@ -57,7 +57,11 @@ class ActiveTasksComponent(
             task.name,
             router.navigateTo(EditTaskPage(projectId, task.id))
           ),
-          BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
+          BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task)),
+          TaskProgressComponent
+            .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+            .element
+            .amend(cls("self-center leading-none"))
         ),
         button(
           `type`("button"),

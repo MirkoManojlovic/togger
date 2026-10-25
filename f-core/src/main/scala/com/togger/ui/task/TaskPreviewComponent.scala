@@ -58,7 +58,11 @@ class TaskPreviewComponent(
           router.navigateTo(EditTaskPage(task.projectId, task.id))
         )
       ),
-      BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
+      BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task)),
+      TaskProgressComponent
+        .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+        .element
+        .amend(cls("self-center leading-none"))
     )
 
   /** The milestone, priority, status and assignee, and the dates with the work days left, in a row each. */
