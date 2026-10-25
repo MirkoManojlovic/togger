@@ -51,8 +51,11 @@ case class SidebarLink(
 
   private val openMenuAtRow = Observer[dom.MouseEvent] { event =>
     event.preventDefault()
-    val row = event.currentTarget.asInstanceOf[dom.Element].getBoundingClientRect()
-    menuPosition.set(Some((row.right + 4, row.top)))
+    if (menuPosition.now().isDefined) menuPosition.set(None)
+    else {
+      val row = event.currentTarget.asInstanceOf[dom.Element].getBoundingClientRect()
+      menuPosition.set(Some((row.right + 4, row.top)))
+    }
   }
 
   /** The icons of the tasks, milestones, timeboxes, export and import buttons, right of the row; it is closed by any click outside of
