@@ -64,6 +64,18 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
       )
     )
 
+  private def contributionsLink(projectId: UUID, page: FrontendPage): HtmlElement = {
+    val selected = page match {
+      case ShowContributionsPage(id, _) => id == projectId
+      case _                            => false
+    }
+    a(
+      cls(if (selected) NavbarComponent.selectedNavLinkClass else NavbarComponent.navLinkClass),
+      "Contributions",
+      router.navigateTo(ShowContributionsPage(projectId))
+    )
+  }
+
   private val projectSignal: Signal[Option[OrganizationProjectResp]] =
     router.currentPageSignal.combineWith(organizations).map { case (page, orgs) =>
       Sidebar.projectIdForPage(page).flatMap(id => orgs.flatMap(_.projects).find(_.id == id))
@@ -81,7 +93,7 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
       cls("hidden md:flex items-center gap-1"),
       children <-- router.currentPageSignal.combineWith(projectSignal).map { case (page, project) =>
         project.toSeq.map(projectPrefix) ++
-          Sidebar.projectIdForPage(page).toSeq.flatMap(groupsOf).map(groupMenu)
+          Sidebar.projectIdForPage(page).toSeq.flatMap(id => groupsOf(id).map(groupMenu) :+ contributionsLink(id, page))
       }
     )
 }
