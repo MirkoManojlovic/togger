@@ -69,8 +69,12 @@ object ProjectHomeStats {
       Some(TimeboxReviewStats.tasksOf(member, tasks)).filter(_.nonEmpty).map(status -> _)
     }
 
-  /** The milestone, the priority, the assignee, the due date with the work days left and the labels of a task; a task
-    * without a milestone, an assignee or labels has no badge for them.
+  /** The labels of a task, sorted by name, to go beside its name. */
+  def labelBadges(task: FindTaskRespFull): Seq[BadgeSpec] =
+    task.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
+
+  /** The milestone, the priority, the assignee and the due date with the work days left of a task; a task without a
+    * milestone or an assignee has no badge for them.
     */
   def taskBadges(
     task: FindTaskRespFull,
@@ -89,6 +93,5 @@ object ProjectHomeStats {
       Seq(
         BadgeSpec(formatDate(task.dueDate), TgBadgeColor.Gray),
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
-      ) ++
-      task.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
+      )
 }

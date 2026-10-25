@@ -1,6 +1,6 @@
 package com.togger.ui.project
 
-import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
+import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
 import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
@@ -106,6 +106,14 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
       val mine = task("mine", inProgress).copy(assignedTo = Some(ada))
       val groups = Seq(inProgress -> Seq(mine, task("other", inProgress)), testing -> Seq(task("t", testing)))
       ProjectHomeStats.inFlightOf(ada, groups) shouldBe Seq(inProgress -> Seq(mine))
+    }
+  }
+
+  "ProjectHomeStats.labelBadges" should {
+    "list the labels of a task by name" in {
+      def label(name: String) = FindTaskLabelResp(UUID.randomUUID(), projectId, name, "", "")
+      val labelled = task("t", status("Testing")).copy(taskLabels = Seq(label("b"), label("a")))
+      ProjectHomeStats.labelBadges(labelled).map(_.text) shouldBe Seq("a", "b")
     }
   }
 

@@ -232,7 +232,11 @@ class ProjectHomeComponent(
         tasks.map(task =>
           li(
             cls("mb-1"),
-            pageLink(task.name, EditTaskPage(projectId, task.id)),
+            div(
+              cls("flex flex-wrap items-center gap-2"),
+              pageLink(task.name, EditTaskPage(projectId, task.id)),
+              BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task))
+            ),
             BulkTaskCard.readOnlyRow(
               ProjectHomeStats.taskBadges(
                 task,
