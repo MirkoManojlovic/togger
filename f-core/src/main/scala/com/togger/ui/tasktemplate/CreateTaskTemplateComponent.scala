@@ -92,6 +92,7 @@ class CreateTaskTemplateComponent(
         )
       )
       .element
+      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
   )
 
 }
