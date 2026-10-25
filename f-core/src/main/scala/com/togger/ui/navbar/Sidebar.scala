@@ -255,7 +255,6 @@ class Sidebar(
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)
     case ShowProjectsForOrganizationIdTable(id, _) => Some(id)
-    case ShowProjectsForOrganizationIdStatus(id)   => Some(id)
     case EditOrganizationPage(id)                  => Some(id)
     case _                                         => None
   }
@@ -323,7 +322,7 @@ class Sidebar(
                     organization =>
                       val orgLink = SidebarLink(
                         linkName = organization.name,
-                        link = router.navigateTo(ShowProjectsForOrganizationIdStatus(organization.id)),
+                        link = router.navigateTo(ShowProjectsForOrganizationIdTable(organization.id)),
                         collapsed = collapsed,
                         icon = organization.icon
                       )

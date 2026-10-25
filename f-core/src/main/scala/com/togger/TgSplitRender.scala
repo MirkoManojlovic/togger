@@ -490,20 +490,6 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   listParams
                 ).element
 
-              case ShowProjectsForOrganizationIdStatus(organizationId) =>
-                new ShowAllProjectsStatusComponent(
-                  projectService,
-                  organizationService,
-                  taskService,
-                  router,
-                  spinnerService,
-                  accountService,
-                  tgDateFormater,
-                  tgMarkdown,
-                  tgClock,
-                  organizationId
-                ).element
-
               case CreateOrganizationPage =>
                 new CreateOrganizationComponent(
                   findAccountServiceImpl,

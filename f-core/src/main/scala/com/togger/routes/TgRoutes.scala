@@ -196,12 +196,6 @@ class TgRoutes {
           ShowProjectsForOrganizationIdTable(UUID.fromString(args.path), listFromQuery(args.params)),
         pattern = (root / "project" / "table" / "organization" / segment[String] / endOfSegments) ? listQueryParams
       ),
-      Route(
-        encode = (page: ShowProjectsForOrganizationIdStatus) => page.id.toString,
-        decode = (id: String) => ShowProjectsForOrganizationIdStatus(UUID.fromString(id)),
-        pattern = root / "project" / "status" / "organization" / segment[String] / endOfSegments
-        //        basePath = basePath
-      ),
       Route.static(
         SearchProjectsByLabelPage,
         root / "project" / "search" / endOfSegments

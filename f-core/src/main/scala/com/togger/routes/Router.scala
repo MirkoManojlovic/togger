@@ -91,8 +91,6 @@ object Pages {
 
   case class ShowProjectsForOrganizationIdTable(id: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
-  case class ShowProjectsForOrganizationIdStatus(id: UUID) extends PrivatePage
-
   case class EditProjectPage(id: UUID) extends PrivatePage
 
   case object SearchProjectsByLabelPage extends PrivatePage

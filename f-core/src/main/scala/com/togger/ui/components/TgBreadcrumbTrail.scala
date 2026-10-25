@@ -56,10 +56,10 @@ object TgBreadcrumbTrail {
     case ShowAllOrganizationsPage(_) => Seq(organizations.copy(page = None))
     case CreateOrganizationPage      => underOrganizations(current("Create organization"))
     case EditOrganizationPage(_)     => underOrganizations(current("Edit organization"))
-    case ShowProjectsForOrganizationIdTable(_, _) | ShowProjectsForOrganizationIdStatus(_) =>
+    case ShowProjectsForOrganizationIdTable(_, _) =>
       underOrganizations(current("Projects"))
     case CreateProjectPage(organizationId) =>
-      val projects = link("Projects", ShowProjectsForOrganizationIdStatus(organizationId))
+      val projects = link("Projects", ShowProjectsForOrganizationIdTable(organizationId))
       underOrganizations(projects, current("Create project"))
     case EditProjectPage(_)        => underOrganizations(current("Edit project"))
     case SearchProjectsByLabelPage => underOrganizations(current("Search projects"))
