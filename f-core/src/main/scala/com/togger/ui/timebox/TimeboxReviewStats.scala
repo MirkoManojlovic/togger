@@ -50,13 +50,12 @@ object TimeboxReviewStats {
   def tasksOf(member: SearchAccountDto, tasks: Seq[FindTaskRespFull]): Seq[FindTaskRespFull] =
     tasks.filter(_.assignedTo.exists(_.id == member.id))
 
-  /** The number of tasks of each assignee, by name, the unassigned tasks last. */
-  def taskCountPerMember(tasks: Seq[FindTaskRespFull]): Seq[(Option[SearchAccountDto], Int)] =
+  /** The tasks of each assignee, by name, the unassigned tasks last. */
+  def tasksPerMember(tasks: Seq[FindTaskRespFull]): Seq[(Option[SearchAccountDto], Seq[FindTaskRespFull])] =
     tasks
       .groupBy(_.assignedTo)
       .toSeq
       .sortBy { case (assignee, _) => (assignee.isEmpty, assignee.map(_.fullName)) }
-      .map { case (assignee, group) => assignee -> group.size }
 
   def pies(
     groupings: Seq[StagedGrouping],

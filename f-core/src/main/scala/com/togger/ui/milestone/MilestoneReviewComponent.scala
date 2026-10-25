@@ -199,13 +199,6 @@ class MilestoneReviewComponent(
       .element
       .amend(cls("w-full"))
 
-  private def stat(label: String, value: Int, color: TgBadgeColor = TgBadgeColor.Gray): HtmlElement =
-    div(
-      cls("flex flex-col items-center gap-1 min-w-20"),
-      span(cls("text-2xl font-semibold text-heading"), value.toString),
-      TgBadge(text = label, color = color, bordered = true).element
-    )
-
   private def statsRow(
     milestone: FindMilestoneResp,
     tasks: Seq[FindTaskRespFull],
@@ -214,7 +207,6 @@ class MilestoneReviewComponent(
     val today = tgClock.currentDate()
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, today)
     val progress = TimeboxReviewStats.tasksProgress(tasks)
-    val perMember = TimeboxReviewStats.taskCountPerMember(tasks)
     div(
       cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
       statCard(
@@ -229,20 +221,7 @@ class MilestoneReviewComponent(
         "Tasks",
         div(
           cls("flex flex-col gap-4"),
-          div(
-            cls("flex flex-wrap items-start justify-around gap-4"),
-            stat("Total", tasks.size)
-          ),
-          div(
-            cls("flex flex-wrap items-start justify-around gap-4"),
-            statuses.map(status => stat(status.badgeText, tasks.count(_.taskStatus.id == status.id), status.badgeColor))
-          ),
-          Option.when(perMember.nonEmpty)(
-            div(
-              cls("flex flex-wrap items-start justify-around gap-4"),
-              perMember.map { case (member, count) => stat(member.fold("Unassigned")(_.fullName), count) }
-            )
-          )
+          MilestoneTaskColumns(tasks, statuses)
         )
       )
     )

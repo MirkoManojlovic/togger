@@ -15,7 +15,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor, TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
-import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.{MilestoneFeService, MilestoneTaskColumns}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -171,20 +171,10 @@ class ProjectHomeComponent(
       )
     )
 
-  private def stat(label: String, value: Int, color: TgBadgeColor = TgBadgeColor.Gray): HtmlElement =
-    div(
-      cls("flex flex-col items-center gap-1 min-w-16"),
-      span(cls("text-xl font-semibold text-heading"), value.toString),
-      TgBadge(text = label, color = color, bordered = true).element
-    )
-
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
-      .map(status => status -> tasks.count(_.taskStatus.id == status.id))
-      .filter(_._2 > 0)
-    val perMember = TimeboxReviewStats.taskCountPerMember(tasks)
     div(
       cls("mb-4 p-4 border border-default-medium rounded-base"),
       div(
@@ -205,22 +195,7 @@ class ProjectHomeComponent(
         ),
         div(
           cls("flex flex-col gap-3 md:w-1/2 p-3 border border-default rounded-base"),
-          div(
-            cls("flex flex-wrap items-start justify-around gap-3"),
-            stat("Total", tasks.size)
-          ),
-          Option.when(statuses.nonEmpty)(
-            div(
-              cls("flex flex-wrap items-start justify-around gap-3"),
-              statuses.map { case (status, count) => stat(status.badgeText, count, status.badgeColor) }
-            )
-          ),
-          Option.when(perMember.nonEmpty)(
-            div(
-              cls("flex flex-wrap items-start justify-around gap-3"),
-              perMember.map { case (member, count) => stat(member.fold("Unassigned")(_.fullName), count) }
-            )
-          )
+          MilestoneTaskColumns(tasks, statuses)
         )
       )
     )
