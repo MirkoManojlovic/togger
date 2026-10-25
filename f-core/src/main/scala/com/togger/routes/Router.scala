@@ -97,7 +97,7 @@ object Pages {
 
   case object SearchProjectsByLabelPage extends PrivatePage
 
-  case class ShowAllTaskConfigsPage(projectId: UUID, list: TaskConfigListParams = TaskConfigListParams.default)
+  case class SyncConfigPage(projectId: UUID, list: TaskConfigListParams = TaskConfigListParams.default)
       extends PrivatePage
 
   case class CreateDataExportConfigPage(projectId: UUID) extends PrivatePage

@@ -25,7 +25,7 @@ import com.togger.ui.project._
 import com.togger.ui.projectmapping._
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
-import com.togger.ui.taskconfig._
+import com.togger.ui.syncconfig._
 import com.togger.ui.tasktemplate._
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
@@ -366,8 +366,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   taskTemplateId,
                   toast
                 ).element
-              case ShowAllTaskConfigsPage(projectId: UUID, listParams) =>
-                new ShowAllTaskConfigsComponent(
+              case SyncConfigPage(projectId: UUID, listParams) =>
+                new SyncConfigComponent(
                   dataExportConfigService,
                   dataExportService,
                   dataImportConfigService,

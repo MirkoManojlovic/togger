@@ -1,8 +1,8 @@
-package com.togger.ui.taskconfig
+package com.togger.ui.syncconfig
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.routes.Pages.ShowAllTaskConfigsPage
+import com.togger.routes.Pages.SyncConfigPage
 import com.togger.routes.{FrontendPage, TaskConfigListParams, TgRouter}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{DataExportFeService, TgDateFormater}
@@ -12,7 +12,7 @@ import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
-class ShowAllTaskConfigsComponent(
+class SyncConfigComponent(
   dataExportConfigService: DataExportConfigFeService,
   dataExportService: DataExportFeService,
   dataImportConfigService: DataImportConfigFeService,
@@ -27,7 +27,7 @@ class ShowAllTaskConfigsComponent(
 ) {
 
   private def showLists(newParams: TaskConfigListParams): Unit =
-    router.route(ShowAllTaskConfigsPage(projectId, newParams))
+    router.route(SyncConfigPage(projectId, newParams))
 
   val element = {
     div(

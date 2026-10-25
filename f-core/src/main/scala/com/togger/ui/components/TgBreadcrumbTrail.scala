@@ -42,7 +42,7 @@ object TgBreadcrumbTrail {
     underTasks(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
 
   private def underConfigs(projectId: UUID, label: String) =
-    underTasks(projectId, link("Task configs", ShowAllTaskConfigsPage(projectId)), current(label))
+    underTasks(projectId, link("Sync config", SyncConfigPage(projectId)), current(label))
 
   private def underMilestones(projectId: UUID, label: String) =
     underTasks(projectId, link("Milestones", ShowMilestonesPage(projectId)), current(label))
@@ -90,7 +90,7 @@ object TgBreadcrumbTrail {
     case CreateTaskTemplatePage(projectId)      => underTaskTemplates(projectId, "Create template")
     case EditTaskTemplatePage(projectId, _)     => underTaskTemplates(projectId, "Edit template")
 
-    case ShowAllTaskConfigsPage(projectId, _) => underTasks(projectId, current("Task configs"))
+    case SyncConfigPage(projectId, _) => underTasks(projectId, current("Sync config"))
     case DataExportStatusPage(projectId)       => underTasks(projectId, current("Export data status"))
     case CreateDataExportConfigPage(projectId) => underConfigs(projectId, "Create export data config")
     case CreateDataImportConfigPage(projectId) => underConfigs(projectId, "Create import data config")

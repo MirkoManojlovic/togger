@@ -347,7 +347,7 @@ class Sidebar(
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
                               onExportClick = Some(() => dumpProject(project.id)),
-                              onConfigClick = Some(() => router.route(ShowAllTaskConfigsPage(project.id))),
+                              onConfigClick = Some(() => router.route(SyncConfigPage(project.id))),
                               onImportClick = Some(() => importAllForProject(project.id)),
                               icon = project.icon
                             )
@@ -419,7 +419,7 @@ object Sidebar {
     case EditTaskTemplatePage(projectId, _)    => Some(projectId)
     case ShowAllTaskTemplatesPage(projectId, _) => Some(projectId)
     case EditTaskPage(projectId, _)          => Some(projectId)
-    case ShowAllTaskConfigsPage(projectId, _) => Some(projectId)
+    case SyncConfigPage(projectId, _) => Some(projectId)
     case CreateDataExportConfigPage(projectId) => Some(projectId)
     case DataExportStatusPage(projectId)       => Some(projectId)
     case CreateDataImportConfigPage(projectId) => Some(projectId)

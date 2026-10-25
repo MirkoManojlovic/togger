@@ -177,7 +177,7 @@ class ShowAllProjectsTableComponent(
                                   TgIcons.downloadIcon(className = "w-4 h-4"),
                                   rowIconButtonCls,
                                   rowButtonMarginCls,
-                                  onClick.mapToUnit --> (_ => router.route(ShowAllTaskConfigsPage(dto.id)))
+                                  onClick.mapToUnit --> (_ => router.route(SyncConfigPage(dto.id)))
                                 )
                               )
                             )

@@ -256,8 +256,8 @@ class TgRoutes {
         decode = (id: String) => EditProjectLabelCategoryPage(UUID.fromString(id)),
         pattern = root / "settings" / "project-label-category" / "edit" / segment[String] / endOfSegments
       ),
-      Route.withQuery[ShowAllTaskConfigsPage, String, TaskConfigListQuery](
-        encode = (page: ShowAllTaskConfigsPage) =>
+      Route.withQuery[SyncConfigPage, String, TaskConfigListQuery](
+        encode = (page: SyncConfigPage) =>
           PatternArgs(
             path = page.projectId.toString,
             params = (
@@ -269,7 +269,7 @@ class TgRoutes {
           ),
         decode = { (args: PatternArgs[String, TaskConfigListQuery]) =>
           val (exportPage, exportSize, importPage, importSize) = args.params
-          ShowAllTaskConfigsPage(
+          SyncConfigPage(
             UUID.fromString(args.path),
             TaskConfigListParams.fromQuery(exportPage, exportSize, importPage, importSize)
           )

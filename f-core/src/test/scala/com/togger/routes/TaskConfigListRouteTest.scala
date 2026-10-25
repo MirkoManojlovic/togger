@@ -1,7 +1,7 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.ShowAllTaskConfigsPage
+import com.togger.routes.Pages.SyncConfigPage
 
 import java.util.UUID
 
@@ -13,24 +13,24 @@ class TaskConfigListRouteTest extends AsyncJsWordSpec {
 
   private val routes = new TgRoutes().routes("")
 
-  private def urlOf(page: ShowAllTaskConfigsPage): String =
+  private def urlOf(page: SyncConfigPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head
 
-  private def pageOf(url: String): Option[ShowAllTaskConfigsPage] =
-    routes.flatMap(_.pageForRelativeUrl(origin, url)).collectFirst { case page: ShowAllTaskConfigsPage => page }
+  private def pageOf(url: String): Option[SyncConfigPage] =
+    routes.flatMap(_.pageForRelativeUrl(origin, url)).collectFirst { case page: SyncConfigPage => page }
 
   testNameFromClassName should {
 
     "add no params to the path for the default lists" in { _ =>
-      urlOf(ShowAllTaskConfigsPage(projectId)).stripSuffix("?") shouldBe path
+      urlOf(SyncConfigPage(projectId)).stripSuffix("?") shouldBe path
     }
 
     "read the default lists from the plain path" in { _ =>
-      pageOf(path) shouldBe Some(ShowAllTaskConfigsPage(projectId))
+      pageOf(path) shouldBe Some(SyncConfigPage(projectId))
     }
 
     "round trip the page and size of both lists apart from each other" in { _ =>
-      val page = ShowAllTaskConfigsPage(
+      val page = SyncConfigPage(
         projectId,
         TaskConfigListParams(export = ListParams(page = 3, size = 50), importData = ListParams(page = 2, size = 10))
       )

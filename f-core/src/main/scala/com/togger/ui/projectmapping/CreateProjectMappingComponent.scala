@@ -4,7 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.projectmapping.CreateProjectMappingReq
-import com.togger.routes.Pages.ShowAllTaskConfigsPage
+import com.togger.routes.Pages.SyncConfigPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -45,7 +45,7 @@ class CreateProjectMappingComponent(
     )
     spinnerService
       .runWithSpinner(projectMappingService.create(request))
-      .toastMessageFn("Project mapping created successfully")(_ => router.route(ShowAllTaskConfigsPage(projectIdDb)))
+      .toastMessageFn("Project mapping created successfully")(_ => router.route(SyncConfigPage(projectIdDb)))
       .unsafeRunAndForget()
   }
 
