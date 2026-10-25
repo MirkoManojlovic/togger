@@ -275,6 +275,8 @@ class Sidebar(
 
   private val organizationState: Var[Seq[OrganizationWithProjects]] = Var(Seq.empty)
 
+  val organizations: Signal[Seq[OrganizationWithProjects]] = organizationState.signal
+
   // The sidebar lists every organization with all of its projects, read page by page.
   private def reloadOrganizations(): Unit =
     organizationProjectsLoader

@@ -813,9 +813,8 @@ case class NavigationSelection(
     loginRepo.authenticatedSignal.map(returnedAuthAccount =>
       returnedAuthAccount
         .map(_ =>
-          div(
-            new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore).element,
-            new Sidebar(
+          {
+            val sidebar = new Sidebar(
               router,
               organizationProjectsLoader,
               accountService,
@@ -829,8 +828,12 @@ case class NavigationSelection(
               onTeamDaily,
               onSlacker,
               toast
-            ).element
-          )
+            )
+            div(
+              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current).element,
+              sidebar.element
+            )
+          }
         )
         .getOrElse(div())
     )

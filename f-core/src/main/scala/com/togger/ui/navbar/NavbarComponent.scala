@@ -6,7 +6,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
-import com.togger.ui.organization.TgIcons
+import com.togger.ui.organization.{OrganizationWithProjects, TgIcons}
 import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
@@ -38,12 +38,14 @@ class NavbarComponent(
   router: TgRouter[FrontendPage],
   logout: Logout[FrontendPage],
   loginRepo: LoginRepo,
-  themeStore: ThemeStore
+  themeStore: ThemeStore,
+  organizations: Signal[Seq[OrganizationWithProjects]],
+  collapsed: Signal[Boolean]
 ) {
 
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
-  private lazy val projectNavMenu = new ProjectNavMenu(router)
+  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations)
 
   private val userMenuOpen: Var[Boolean] = Var(false)
 
@@ -136,17 +138,25 @@ class NavbarComponent(
             cls("flex items-center justify-between h-14"),
             div(
               cls("flex items-center justify-start rtl:justify-end"),
-              mobileSidebarButton,
-              a(
-                cls("flex items-center ms-2 md:me-24"),
-                TgSvgIcons.tgIconLogo,
-                span(cls("self-center ms-3 text-lg text-heading font-semibold whitespace-nowrap"), "Togger"),
-                router.navigateTo(HomePage)
-              )
+              div(
+                cls("flex items-center sm:shrink-0 sm:overflow-hidden whitespace-nowrap transition-[width] duration-200"),
+                cls <-- collapsed.map(isCollapsed => if (isCollapsed) "sm:w-16" else "sm:w-64"),
+                mobileSidebarButton,
+                a(
+                  cls("flex items-center ms-2"),
+                  TgSvgIcons.tgIconLogo,
+                  span(
+                    cls("self-center ms-3 text-lg text-heading font-semibold whitespace-nowrap"),
+                    cls <-- collapsed.map(isCollapsed => if (isCollapsed) "sm:hidden" else ""),
+                    "Togger"
+                  ),
+                  router.navigateTo(HomePage)
+                )
+              ),
+              projectNavMenu.element
             ),
             div(
               cls("flex items-center"),
-              projectNavMenu.element,
               ul(
                 cls("flex items-center font-medium"),
                 children <-- router.currentPageSignal.map(page =>

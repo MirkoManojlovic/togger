@@ -1,16 +1,20 @@
 package com.togger.ui.navbar
 
 import com.raquo.laminar.api.L._
+import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.ui.organization.OrganizationWithProjects
 import org.scalajs.dom
 
 import java.util.UUID
 
 case class ProjectNavGroup(title: String, links: Seq[(String, FrontendPage)])
 
-/** The links of a project, grouped by topic, as dropdowns in the navbar; shown while a page of a project is open. */
-class ProjectNavMenu(router: TgRouter[FrontendPage]) {
+/** The name and icon of a project followed by its links, grouped by topic, as dropdowns in the navbar; shown while a
+  * page of a project is open.
+  */
+class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[OrganizationWithProjects]]) {
 
   private val openGroup: Var[Option[String]] = Var(None)
 
@@ -60,11 +64,24 @@ class ProjectNavMenu(router: TgRouter[FrontendPage]) {
       )
     )
 
+  private val projectSignal: Signal[Option[OrganizationProjectResp]] =
+    router.currentPageSignal.combineWith(organizations).map { case (page, orgs) =>
+      Sidebar.projectIdForPage(page).flatMap(id => orgs.flatMap(_.projects).find(_.id == id))
+    }
+
+  private def projectPrefix(project: OrganizationProjectResp): HtmlElement =
+    div(
+      cls("flex items-center gap-2 me-2"),
+      span(cls("text-base"), project.icon),
+      span(cls("text-sm font-semibold text-heading whitespace-nowrap"), project.name)
+    )
+
   val element: HtmlElement =
     div(
       cls("hidden md:flex items-center gap-1"),
-      children <-- router.currentPageSignal.map { page =>
-        Sidebar.projectIdForPage(page).toSeq.flatMap(groupsOf).map(groupMenu)
+      children <-- router.currentPageSignal.combineWith(projectSignal).map { case (page, project) =>
+        project.toSeq.map(projectPrefix) ++
+          Sidebar.projectIdForPage(page).toSeq.flatMap(groupsOf).map(groupMenu)
       }
     )
 }
