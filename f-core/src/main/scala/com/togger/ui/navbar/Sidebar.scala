@@ -55,7 +55,7 @@ case class SidebarLink(
     menuPosition.set(Some((row.right + 4, row.top)))
   }
 
-  /** The icons of the tasks, milestones and timeboxes buttons, right of the row; it is closed by any click outside of
+  /** The icons of the tasks, milestones, timeboxes, export and import buttons, right of the row; it is closed by any click outside of
     * it, a pick or Escape.
     */
   private def contextMenu(x: Double, y: Double): HtmlElement =
@@ -83,6 +83,8 @@ case class SidebarLink(
       onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
       onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
       onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
+      onExportClick.map(navButton("Export all", TgIcons.downloadIcon("w-3.5 h-3.5"), _)),
+      onImportClick.map(navButton("Import all", TgIcons.uploadIcon("w-3.5 h-3.5"), _)),
       onClick.mapToUnit --> closeMenu
     )
 
