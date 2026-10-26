@@ -38,7 +38,6 @@ class ShowAllDataExportConfigsComponent(
   import TaskConfigTableSupport._
 
   private val stateFormVar = Var(Seq.empty[DataExportConfigResp])
-  private val statusResultVar = Var(Seq.empty[DataExportPathStatusResp])
 
   private val paginationVar = Var(Option.empty[PaginationState])
 
@@ -64,18 +63,10 @@ class ShowAllDataExportConfigsComponent(
   private def runAction[A](io: IO[A])(handle: IO[A] => IO[Unit]): Unit =
     handle(spinnerService.runWithSpinner(io)).unsafeRunAndForget()
 
-  private def statusPanel(pathStatus: DataExportPathStatusResp) =
-    exportPathStatusCard(pathStatus, s"Export status: ${pathStatus.exportPath}")
-
   private val exportCheckFlow = new ExportCheckFlow(spinnerService, modalFactory, toast)
 
   private def exportAll(): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
-
-  private def checkAllStatuses(): Unit =
-    runAction(dataExportService.checkStatus(projectId)) {
-      _.toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
-    }
 
   private def deleteConfig(dto: DataExportConfigResp): Unit =
     modalFactory.plainModal(
@@ -98,11 +89,6 @@ class ShowAllDataExportConfigsComponent(
       dataExportService.checkStatusByConfig(dto.id),
       dataExportService.exportByConfig(dto.id)
     )
-
-  private def checkStatusByConfig(dto: DataExportConfigResp): Unit =
-    runAction(dataExportService.checkStatusByConfig(dto.id)) {
-      _.toastJustErrorsUnit(resp => statusResultVar.set(resp.pathStatuses))
-    }
 
   private def configRow(dto: DataExportConfigResp) =
     tr(
@@ -130,16 +116,9 @@ class ShowAllDataExportConfigsComponent(
             "Export",
             TgIcons.downloadIcon(className = "w-4 h-4"),
             rowIconButtonCls,
-            rowButtonMarginCls,
+            lastRowButtonMarginCls,
             onClick.mapToUnit --> (_ => exportByConfig(dto))
           ),
-          iconButton(
-            "Check status",
-            TgIcons.checkIcon(className = "w-4 h-4"),
-            rowIconButtonCls,
-            lastRowButtonMarginCls,
-            onClick.mapToUnit --> (_ => checkStatusByConfig(dto))
-          )
         )
       )
     )
@@ -159,13 +138,6 @@ class ShowAllDataExportConfigsComponent(
                   headerIconButtonCls,
                   headerButtonMarginCls,
                   onClick.mapToUnit --> (_ => exportAll())
-                ),
-                iconButton(
-                  "Check all statuses",
-                  TgIcons.checkIcon(className = "w-4 h-4"),
-                  headerIconButtonCls,
-                  headerButtonMarginCls,
-                  onClick.mapToUnit --> (_ => checkAllStatuses())
                 ),
                 iconButton(
                   "Create",
@@ -197,9 +169,7 @@ class ShowAllDataExportConfigsComponent(
             )
           )
         )
-        .element,
-      div(cls("mt-4")),
-      children <-- statusResultVar.signal.map(_.map(statusPanel))
+        .element
     )
   }
 
