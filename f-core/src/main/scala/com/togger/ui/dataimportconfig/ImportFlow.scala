@@ -5,8 +5,9 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJsonFailure
-import com.togger.dto.DataImportResp
+import com.togger.dto.{DataExportPathStatusResp, DataExportSyncStatusResp, DataImportResp}
 import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.dataexportconfig.ExportCheckComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
@@ -24,21 +25,57 @@ class ImportFlow(
 )(implicit ioRuntime: IORuntime) {
 
   def importFrom(projectId: UUID, importPath: String): Unit =
-    run(projectId, IO.pure(List(importPath).asRight[TgJsonFailure]))
+    check(projectId, IO.pure(List(importPath).asRight[TgJsonFailure]))
 
   /** Loads from every import config of the project, not only the ones on the page on screen. */
   def importAll(projectId: UUID): Unit =
-    run(projectId, dataImportConfigService.findAllByProjectId(projectId).map(_.map(_.body.get.map(_.importPath).distinct.toList)))
+    check(projectId, dataImportConfigService.findAllByProjectId(projectId).map(_.map(_.body.get.map(_.importPath).distinct.toList)))
 
-  private def run(projectId: UUID, paths: IO[Either[TgJsonFailure, List[String]]]): Unit = {
-    val program: IO[(List[String], List[(String, Either[TgJsonFailure, DataImportResp])])] =
-      paths.flatMap {
-        case Left(failure) => IO.pure((Nil, List(("", failure.asLeft[DataImportResp]))))
-        case Right(importPaths) =>
-          importPaths
-            .traverse(path => dataExportService.importData(projectId, path).map(resp => path -> resp.map(_.body.get)))
-            .map(importPaths -> _)
+  /** Every import starts with a look at what it would bring in; only the paths that have something new are imported. */
+  private def check(projectId: UUID, paths: IO[Either[TgJsonFailure, List[String]]]): Unit = {
+    val program: IO[Either[TgJsonFailure, List[Either[TgJsonFailure, DataExportPathStatusResp]]]] =
+      paths.flatMap(
+        _.traverse(
+          _.traverse(path => dataExportService.checkImportStatus(projectId, path).map(_.map(_.body.get.pathStatuses.head)))
+        )
+      )
+
+    spinnerService
+      .runWithSpinner(program)
+      .map {
+        case Left(failure) =>
+          toast.error(failure)
+          modalFactory.previewModal(div(cls("p-4 text-body"), "Could not load the import paths of this project"), "Import check")
+        case Right(outcomes) =>
+          outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
+          val statuses = outcomes.collect { case Right(status) => status }
+          modalFactory.previewModal(checkContent(projectId, outcomes.size, statuses), "Import check")
       }
+      .unsafeRunAndForget()
+  }
+
+  private def needsImport(status: DataExportSyncStatusResp): Boolean =
+    status == DataExportSyncStatusResp.MissingFromDb || status == DataExportSyncStatusResp.OutOfSync
+
+  private def checkContent(projectId: UUID, pathCount: Int, statuses: List[DataExportPathStatusResp]): HtmlElement =
+    if (pathCount == 0) div(cls("p-4 text-body"), "No import paths configured for this project")
+    else if (statuses.isEmpty) div(cls("p-4 text-body"), "None of the import paths could be checked")
+    else {
+      val pathsToImport = statuses.filter(_.entityStatuses.exists(e => needsImport(e.status))).map(_.exportPath)
+      new ExportCheckComponent(
+        statuses,
+        () => run(projectId, pathsToImport),
+        actionLabel = "Import",
+        statusTitle = "Import status",
+        needsAction = needsImport(_)
+      ).element
+    }
+
+  private def run(projectId: UUID, importPaths: List[String]): Unit = {
+    val program: IO[(List[String], List[(String, Either[TgJsonFailure, DataImportResp])])] =
+      importPaths
+        .traverse(path => dataExportService.importData(projectId, path).map(resp => path -> resp.map(_.body.get)))
+        .map(importPaths -> _)
 
     spinnerService
       .runWithSpinner(program)

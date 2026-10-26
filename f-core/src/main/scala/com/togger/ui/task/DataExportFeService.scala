@@ -25,4 +25,9 @@ class DataExportFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
 
   def importData(projectId: UUID, importPath: String): TgRespIO[DataImportResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.importEndpoint)((projectId, DataImportReq(importPath)))
+
+  def checkImportStatus(projectId: UUID, importPath: String): TgRespIO[DataExportStatusResp] =
+    protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkImportStatusEndpoint)(
+      (projectId, DataImportReq(importPath))
+    )
 }

@@ -7,28 +7,35 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport
 
 /** What an export would change, one tab for each export path, with the export button in the top right corner. The
-  * button is enabled only while some entity is not in sync with the disk.
+  * button is enabled only while some entity is not in sync with the disk. An import check reuses it with its own
+  * button label and its own idea of which entities still need the action.
   */
-class ExportCheckComponent(pathStatuses: Seq[DataExportPathStatusResp], onExport: () => Unit) {
+class ExportCheckComponent(
+  pathStatuses: Seq[DataExportPathStatusResp],
+  onExport: () => Unit,
+  actionLabel: String = "Export",
+  statusTitle: String = "Export status",
+  needsAction: DataExportSyncStatusResp => Boolean = _ != DataExportSyncStatusResp.InSync
+) {
 
   import TaskConfigTableSupport._
 
   private val needsExport: Boolean =
-    pathStatuses.exists(_.entityStatuses.exists(_.status != DataExportSyncStatusResp.InSync))
+    pathStatuses.exists(_.entityStatuses.exists(entity => needsAction(entity.status)))
 
   private def tabId(index: Int): String = s"export-path-$index"
 
   private def pathTab(pathStatus: DataExportPathStatusResp, index: Int) =
-    TgTab(tabId(index), pathStatus.exportPath, exportPathStatusCard(pathStatus, s"Export status: ${pathStatus.exportPath}"))
+    TgTab(tabId(index), pathStatus.exportPath, exportPathStatusCard(pathStatus, s"$statusTitle: ${pathStatus.exportPath}"))
 
   private val selectedTabVar = Var(tabId(0))
 
   private val exportButton =
     button(
       `type`("button"),
-      title(if (needsExport) "Export" else "Everything is in sync"),
+      title(if (needsExport) actionLabel else "Everything is in sync"),
       TgIcons.downloadIcon(className = "w-4 h-4 me-2"),
-      "Export",
+      actionLabel,
       cls(
         "inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-brand " +
           "hover:bg-brand-strong rounded-base focus:ring-4 focus:ring-brand-medium focus:outline-none " +
@@ -41,7 +48,7 @@ class ExportCheckComponent(pathStatuses: Seq[DataExportPathStatusResp], onExport
   private val paths: HtmlElement =
     pathStatuses match {
       case Seq()       => div(cls("text-body"), "No export paths configured for this project")
-      case Seq(single) => exportPathStatusCard(single, s"Export status: ${single.exportPath}")
+      case Seq(single) => exportPathStatusCard(single, s"$statusTitle: ${single.exportPath}")
       case several     => new TgTabs(several.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
     }
 
