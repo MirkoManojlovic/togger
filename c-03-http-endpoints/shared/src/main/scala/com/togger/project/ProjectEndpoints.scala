@@ -1,8 +1,9 @@
 package com.togger.project
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
 import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, SearchProjectsByLabelsReq, UpdateProjectReq}
 import io.circe.generic.auto._
@@ -36,6 +37,12 @@ class ProjectEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath)
       .in(jsonBody[UpdateProjectReq])
       .out(jsonBody[TgJsonSuccess[FindProjectResp]])
+
+  /** Deletes the project with all of its data (tasks, timeboxes, milestones, ...). */
+  val deleteByIdEndpoint: TgSecuredEndpointEmptyBody[UUID] =
+    securedEndpoint.endpoint.delete
+      .in(basePath / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
 
   val findByOrganizationIdAndAccountIdEndpoint
     : TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[FindProjectResp]] =
