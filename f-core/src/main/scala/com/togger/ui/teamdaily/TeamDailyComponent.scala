@@ -547,17 +547,23 @@ class TeamDailyComponent(
     div(
       cls("rounded-base border border-default-medium p-4"),
       task.map(taskHeader(_, headingCls = "text-base font-medium text-heading")),
-      latest.map(lastStatus(key, task, _, canRepeat, focusRepeat)),
-      new TeamDailyEntryForm(
-        taskId,
-        date,
-        current,
-        tgDateFormater,
-        draft => edit(key)(_ => draft),
-        focusEditor = !focusRepeat,
-        authorName = currentAccountName,
-        title = s"Today's status for ${task.fold("the task")(_.name)}"
-      ).element
+      div(
+        cls("flex flex-col gap-4 lg:flex-row"),
+        div(
+          cls("min-w-0 flex-1"),
+          new TeamDailyEntryForm(
+            taskId,
+            date,
+            current,
+            tgDateFormater,
+            draft => edit(key)(_ => draft),
+            focusEditor = !focusRepeat,
+            authorName = currentAccountName,
+            title = s"Today's status for ${task.fold("the task")(_.name)}"
+          ).element
+        ),
+        latest.map(entry => div(cls("lg:w-[26rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
+      )
     )
   }
 
@@ -618,7 +624,7 @@ class TeamDailyComponent(
     val dayEntries = (day: LocalDate) =>
       task.fold(Seq.empty[LogEntryDto])(_.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt))
     div(
-      cls("mb-3 flex items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
+      cls("flex flex-col items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
         cls("min-w-0 flex-1"),
         div(
@@ -647,7 +653,7 @@ class TeamDailyComponent(
           startDate = Some(t.startDate),
           dueDate = Some(t.dueDate)
         ).tinyElement
-          .amend(cls("shrink-0"))
+          .amend(cls("order-first shrink-0"))
       )
     )
   }
@@ -830,7 +836,7 @@ class TeamDailyComponent(
         (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("flex w-full max-w-4xl flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
+        cls("flex w-full max-w-[96rem] flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Team daily"),

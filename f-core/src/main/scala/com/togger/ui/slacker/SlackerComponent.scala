@@ -585,7 +585,7 @@ class SlackerComponent(
     val dayEntries = (day: LocalDate) =>
       task.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
     div(
-      cls("mb-3 flex items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
+      cls("flex flex-col items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
         cls("min-w-0 flex-1"),
         div(
@@ -615,7 +615,7 @@ class SlackerComponent(
         pendingStatuses = state.signal.map(_.pendingStatuses(task.taskId)).distinct,
         onMissingDayClick = Some(day => jumpTo(_ == SlackerPosition.Fill(task.taskId, day)))
       ).tinyElement
-        .amend(cls("shrink-0"))
+        .amend(cls("order-first shrink-0"))
     )
   }
 
@@ -629,17 +629,23 @@ class SlackerComponent(
       div(
         cls("rounded-base border border-default-medium p-4"),
         taskHeader(task, headingCls = "text-base font-medium text-heading", trailing = Some(directionTabs(taskId))),
-        latest.map(lastStatus(key, task, _, canRepeat, focusRepeat)),
-        new TeamDailyEntryForm(
-          taskId,
-          date,
-          current,
-          tgDateFormater,
-          draft => edit(key)(_ => draft),
-          focusEditor = !focusRepeat,
-          authorName = currentAccountName,
-          title = s"Status for ${task.name}"
-        ).element
+        div(
+          cls("flex flex-col gap-4 lg:flex-row"),
+          div(
+            cls("min-w-0 flex-1"),
+            new TeamDailyEntryForm(
+              taskId,
+              date,
+              current,
+              tgDateFormater,
+              draft => edit(key)(_ => draft),
+              focusEditor = !focusRepeat,
+              authorName = currentAccountName,
+              title = s"Status for ${task.name}"
+            ).element
+          ),
+          latest.map(entry => div(cls("lg:w-[26rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
+        )
       )
     }
   }
@@ -759,7 +765,7 @@ class SlackerComponent(
         (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("flex w-full max-w-4xl flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
+        cls("flex w-full max-w-[96rem] flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Slacker"),
