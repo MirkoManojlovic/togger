@@ -11,6 +11,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
 import com.togger.ui.dataexportconfig.ExportCheckFlow
+import com.togger.ui.dataimportconfig.ImportFlow
 import com.togger.ui.dataimportconfig.ImportResultsComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
@@ -236,31 +237,9 @@ class Sidebar(
   private def dumpProject(projectId: UUID): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
 
-  private def importAllForProject(projectId: UUID): Unit = {
-    val program: IO[Unit] = dataImportConfigService.findAllByProjectId(projectId).flatMap {
-      _.fold(
-        error => IO(toast.error(error)),
-        success => {
-          val paths = success.body.get.map(_.importPath).distinct.toList
-          if (paths.isEmpty) IO(toast.error("No import paths configured for this project"))
-          else
-            paths
-              .traverse(path => dataExportService.importData(projectId, path).map(_.map(_.body.get)))
-              .map { (outcomes: List[Either[com.togger.common.TgJsonFailure, DataImportResp]]) =>
-                val successes = outcomes.collect { case Right(dto) => dto }
-                outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
-                val totalEntities = successes.map(_.results.size).sum
-                val failedCount = outcomes.count(_.isLeft)
-                if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalEntities entity(ies) total")
-                else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
-                if (successes.nonEmpty)
-                  showResultsModal("Import results")(new ImportResultsComponent(successes.flatMap(_.results)).element)
-              }
-        }
-      )
-    }
-    spinnerService.runWithSpinner(program).unsafeRunAndForget()
-  }
+  private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
+
+  private def importAllForProject(projectId: UUID): Unit = importFlow.importAll(projectId)
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)

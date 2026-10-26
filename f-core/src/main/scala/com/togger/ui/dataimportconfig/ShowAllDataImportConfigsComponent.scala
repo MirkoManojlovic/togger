@@ -39,7 +39,6 @@ class ShowAllDataImportConfigsComponent(
   import TaskConfigTableSupport._
 
   private val stateFormVar = Var(Seq.empty[DataImportConfigResp])
-  private val resultsVar = Var(Seq.empty[DataImportEntityResultResp])
 
   private val paginationVar = Var(Option.empty[PaginationState])
 
@@ -62,49 +61,11 @@ class ShowAllDataImportConfigsComponent(
 
   reload()
 
-  private def summaryMessage(dto: DataImportResp): String = {
-    val counts = dto.results.groupBy(_.status).view.mapValues(_.size).toMap
-    s"Imported ${dto.results.size} entity(ies): " +
-      s"${counts.getOrElse(DataImportStatusResp.Inserted, 0)} inserted, " +
-      s"${counts.getOrElse(DataImportStatusResp.Merged, 0)} merged, " +
-      s"${counts.getOrElse(DataImportStatusResp.Unchanged, 0)} unchanged, " +
-      s"${counts.getOrElse(DataImportStatusResp.Malformed, 0) + counts.getOrElse(DataImportStatusResp.Failed, 0)} failed"
-  }
+  private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
 
-  private def handleImportResponse(dto: DataImportResp): Unit = {
-    resultsVar.set(dto.results)
-    toast.success(summaryMessage(dto))
-  }
+  private def importFrom(importPath: String): Unit = importFlow.importFrom(projectId, importPath)
 
-  private def importFrom(importPath: String): Unit =
-    spinnerService
-      .runWithSpinner(dataExportService.importData(projectId, importPath))
-      .toastJustErrors(())(handleImportResponse)
-      .unsafeRunAndForget()
-
-  /** "Import all" loads from every config of the project, not only the ones on the page on screen. */
-  private def loadAll(): Unit = {
-    val program: IO[List[Either[com.togger.common.TgJsonFailure, DataImportResp]]] =
-      dataImportConfigService.findAllByProjectId(projectId).flatMap {
-        case Left(failure) => IO.pure(List(failure.asLeft[DataImportResp]))
-        case Right(success) =>
-          val paths = success.body.get.map(_.importPath).distinct.toList
-          paths.traverse(path => dataExportService.importData(projectId, path).map(_.map(_.body.get)))
-      }
-
-    spinnerService
-      .runWithSpinner(program)
-      .map { outcomes =>
-        val successes = outcomes.collect { case Right(dto) => dto }
-        resultsVar.set(successes.flatMap(_.results))
-        outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
-        val totalEntities = successes.map(_.results.size).sum
-        val failedCount = outcomes.count(_.isLeft)
-        if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalEntities entity(ies) total")
-        else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
-      }
-      .unsafeRunAndForget()
-  }
+  private def loadAll(): Unit = importFlow.importAll(projectId)
 
   private def deleteConfig(dto: DataImportConfigResp): Unit =
     modalFactory.plainModal(
@@ -202,11 +163,7 @@ class ShowAllDataImportConfigsComponent(
             )
           )
         )
-        .element,
-      div(
-        cls("mt-4"),
-        child.maybe <-- resultsVar.signal.map(results => if (results.isEmpty) None else Some(new ImportResultsComponent(results).element))
-      )
+        .element
     )
   }
 
