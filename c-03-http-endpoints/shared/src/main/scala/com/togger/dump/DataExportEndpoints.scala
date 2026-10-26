@@ -41,4 +41,10 @@ class DataExportEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[DataImportReq])
       .out(jsonBody[TgJsonSuccess[DataImportResp]])
 
+  val checkImportStatusEndpoint: TgSecuredEndpoint[(UUID, DataImportReq), DataExportStatusResp] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "import" / "status" / path[UUID]("project-id"))
+      .in(jsonBody[DataImportReq])
+      .out(jsonBody[TgJsonSuccess[DataExportStatusResp]])
+
 }
