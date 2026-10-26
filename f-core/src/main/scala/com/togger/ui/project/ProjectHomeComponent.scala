@@ -235,7 +235,7 @@ class ProjectHomeComponent(
         )
       ),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
-      generalSection("Active milestones", milestones, "No active milestones.")((milestoneRow _).tupled)
+      generalSection("Current work", milestones, "No current work.")((milestoneRow _).tupled)
     )
 
   private def memberPanel(
@@ -253,7 +253,7 @@ class ProjectHomeComponent(
           ActiveTasksConfig("Not working on any task.", showMember = false)
         )
       ),
-      sectionTitle("Active milestones"),
+      sectionTitle("Current work"),
       div(
         if (memberMilestones.isEmpty) Seq(emptyNote("Not part of any active milestone."))
         else memberMilestones.map((milestoneRow _).tupled)
@@ -314,7 +314,7 @@ class ProjectHomeComponent(
     div(
       child.maybe <-- projectVar.signal.map(_.map(projectInfoCard.element(_, ProjectTitle.PlainText))),
       card(
-        "Active milestones",
+        "Current work",
         div(
           child <-- projectVar.signal
             .combineWith(
