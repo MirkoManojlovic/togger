@@ -269,12 +269,14 @@ class TimeboxFormComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Description (optional)",
+    minHeightRem = 18,
     minWidthRem = 0
   )
 
   private val changeCommentEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.changeComment),
     labelValue = "Change comment",
+    minHeightRem = 18,
     minWidthRem = 0
   )
 
