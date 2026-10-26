@@ -645,7 +645,7 @@ class SlackerComponent(
               title = s"Status for ${task.name}"
             ).element
           ),
-          latest.map(entry => div(cls("lg:w-[26rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
+          latest.map(entry => div(cls("lg:w-[34rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
         )
       )
     }
