@@ -3,7 +3,7 @@ package com.togger.dump
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.TgSecuredEndpoint
 import com.togger.common.TgJsonSuccess
-import com.togger.dto.{DataExportResp, DataExportStatusResp, DataImportReq, DataImportResp}
+import com.togger.dto.{DataExportResp, DataExportStatusResp, DataImportReq, DataImportResp, DataSyncPendingResp}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -46,5 +46,16 @@ class DataExportEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "import" / "status" / path[UUID]("project-id"))
       .in(jsonBody[DataImportReq])
       .out(jsonBody[TgJsonSuccess[DataExportStatusResp]])
+
+  // polled by the frontend
+  val exportPendingEndpoint: TgSecuredEndpoint[UUID, DataSyncPendingResp] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "pending" / path[UUID]("project-id"))
+      .out(jsonBody[TgJsonSuccess[DataSyncPendingResp]])
+
+  val importPendingEndpoint: TgSecuredEndpoint[UUID, DataSyncPendingResp] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "import" / "pending" / path[UUID]("project-id"))
+      .out(jsonBody[TgJsonSuccess[DataSyncPendingResp]])
 
 }
