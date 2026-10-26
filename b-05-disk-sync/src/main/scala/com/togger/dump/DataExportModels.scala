@@ -110,5 +110,9 @@ case class DataExportEntityStatus(
   status: DataExportSyncStatus,
   differences: List[String]
 )
-case class DataExportPathStatus(exportPath: String, entityStatuses: List[DataExportEntityStatus])
+case class DataExportPathStatus(
+  exportPath: String,
+  entityStatuses: List[DataExportEntityStatus],
+  exportConfigId: Option[UUID] = None
+)
 case class DataExportStatusResult(pathStatuses: List[DataExportPathStatus])

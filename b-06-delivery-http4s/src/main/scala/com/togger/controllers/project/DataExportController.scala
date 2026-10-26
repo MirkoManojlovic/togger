@@ -50,7 +50,7 @@ class DataExportController(
       .map {
         case Right(result) =>
           val pathStatuses =
-            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp)))
+            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId))
           TgJsonSuccess.justBodyRight(DataExportStatusResp(projectId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
@@ -71,7 +71,7 @@ class DataExportController(
       .map {
         case Right(result) =>
           val pathStatuses =
-            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp)))
+            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId))
           TgJsonSuccess.justBodyRight(DataExportStatusResp(exportConfigId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
@@ -98,7 +98,7 @@ class DataExportController(
         .map {
           case Right(p) =>
             TgJsonSuccess.justBodyRight(
-              DataExportStatusResp(projectId, List(DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp))))
+              DataExportStatusResp(projectId, List(DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId)))
             )
           case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
         }

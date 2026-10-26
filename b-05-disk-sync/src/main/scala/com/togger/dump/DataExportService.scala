@@ -115,7 +115,7 @@ class DataExportService(
               Left(NoExportPathConfigured)
             else
               Right(
-                DataExportStatusResult(configs.map(config => buildPathStatus(config.exportPath, data)))
+                DataExportStatusResult(configs.map(config => buildPathStatus(config, data)))
               )
           }
       }
@@ -146,11 +146,12 @@ class DataExportService(
     }
   }
 
-  private def buildPathStatus(exportPath: String, data: ExportData): DataExportPathStatus = {
-    val folderPath = dataExportTreeStore.projectFolder(exportPath, data.project).toString
+  private def buildPathStatus(config: DataExportConfig, data: ExportData): DataExportPathStatus = {
+    val folderPath = dataExportTreeStore.projectFolder(config.exportPath, data.project).toString
     DataExportPathStatus(
-      exportPath,
-      entityStatuses(data, folderPath, dataExportTreeStore.readIndex(exportPath, data.project))
+      config.exportPath,
+      entityStatuses(data, folderPath, dataExportTreeStore.readIndex(config.exportPath, data.project)),
+      Some(config.id)
     )
   }
 
