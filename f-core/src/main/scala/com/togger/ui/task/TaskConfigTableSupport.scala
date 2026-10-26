@@ -3,10 +3,12 @@ package com.togger.ui.task
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common.PageRequest
 import com.togger.dto.{DataExportEntityStatusResp, DataExportPathStatusResp, DataExportSyncStatusResp}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
 import org.scalajs.dom.HTMLButtonElement
 
 object TaskConfigTableSupport {
@@ -54,38 +56,87 @@ object TaskConfigTableSupport {
     case DataExportSyncStatusResp.Malformed       => TgBadgeColor.Red
   }
 
-  def exportPathStatusCard(pathStatus: DataExportPathStatusResp, header: String) =
+  /** One export path with its entities: a summary of the statuses that doubles as a filter, then the entity rows a
+    * page at a time.
+    */
+  def exportPathStatusCard(pathStatus: DataExportPathStatusResp, header: String) = {
+    val allStatuses = pathStatus.entityStatuses.sortBy(s => (s.entityType.entryName, s.entityId))
+    val pageVar = Var((PageRequest.DefaultPage, PageRequest.DefaultSize))
+    val statusFilterVar = Var(Option.empty[DataExportSyncStatusResp])
+
+    val pageSignal: Signal[(PaginationState, Seq[DataExportEntityStatusResp])] =
+      pageVar.signal.combineWith(statusFilterVar.signal).map { case (page, size, statusFilter) =>
+        val statuses = statusFilter.fold(allStatuses)(status => allStatuses.filter(_.status == status))
+        val totalPages = math.max(1, (statuses.size + size - 1) / size)
+        val current = math.min(page, totalPages)
+        val slice = statuses.slice((current - 1) * size, current * size)
+        (PaginationState(current, size, statuses.size.toLong, totalPages, slice.size), slice)
+      }
+
+    def toggleStatusFilter(status: DataExportSyncStatusResp): Unit = {
+      statusFilterVar.update(current => if (current.contains(status)) None else Some(status))
+      pageVar.update { case (_, size) => (PageRequest.DefaultPage, size) }
+    }
+
+    val counts = allStatuses.groupBy(_.status).view.mapValues(_.size).toMap
+
+    def summary(activeFilter: Option[DataExportSyncStatusResp]) =
+      div(
+        cls("flex flex-wrap items-center gap-2 mb-4 text-sm text-body"),
+        span(cls("font-semibold text-heading"), s"Total rows: ${allStatuses.size}"),
+        DataExportSyncStatusResp.values.map { status =>
+          val isActive = activeFilter.contains(status)
+          button(
+            typ("button"),
+            cls(
+              "inline-flex items-center gap-1 px-1 rounded-base focus:outline-none focus:ring-2 focus:ring-brand " +
+                (if (isActive) "ring-2 ring-brand" else "opacity-80 hover:opacity-100")
+            ),
+            aria.pressed(isActive.toString),
+            title(if (isActive) "Click to show all results" else s"Show only ${status.entryName} results"),
+            exportSyncStatusBadge(status),
+            counts.getOrElse(status, 0).toString,
+            onClick --> (_ => toggleStatusFilter(status))
+          )
+        }
+      )
+
+    def entityRow(entityStatus: DataExportEntityStatusResp) =
+      tr(
+        cls(rowCls),
+        createTd(entityStatus.entityType.entryName),
+        createTd(entityStatus.entityId.toString),
+        createTd(entityStatus.entityName.getOrElse("-"): String),
+        createTd(exportSyncStatusBadge(entityStatus.status)),
+        createTd(entityStatus.differences.mkString(", "))
+      )
+
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.html(div(header), TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
-            cls(tableWrapperCls),
-            table(
-              cls(tableCls),
-              thead(
-                cls(theadCls),
-                tr(Seq("type", "id", "name", "status", "details").map(createTh))
-              ),
-              tbody(
-                pathStatus.entityStatuses
-                  .sortBy(s => (s.entityType.entryName, s.entityId))
-                  .map { (entityStatus: DataExportEntityStatusResp) =>
-                    tr(
-                      cls(rowCls),
-                      createTd(entityStatus.entityType.entryName),
-                      createTd(entityStatus.entityId.toString),
-                      createTd(entityStatus.entityName.getOrElse("-"): String),
-                      createTd(exportSyncStatusBadge(entityStatus.status)),
-                      createTd(entityStatus.differences.mkString(", "))
-                    )
-                  }
+            child <-- statusFilterVar.signal.map(summary),
+            div(
+              cls(tableWrapperCls),
+              table(
+                cls(tableCls),
+                thead(
+                  cls(theadCls),
+                  tr(Seq("type", "id", "name", "status", "details").map(createTh))
+                ),
+                tbody(children <-- pageSignal.map { case (_, slice) => slice.map(entityRow) })
               )
+            ),
+            TgPaginationComponent(
+              pageSignal.map { case (state, _) => Some(state) },
+              (page, size) => pageVar.set((page, size))
             )
           )
         )
       )
       .element
+  }
 
   private def exportSyncStatusBadge(status: DataExportSyncStatusResp) =
     TgBadge(status.entryName, exportSyncStatusBadgeColor(status)).element
