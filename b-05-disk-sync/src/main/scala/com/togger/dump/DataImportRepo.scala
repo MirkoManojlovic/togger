@@ -12,7 +12,7 @@ import com.togger.project.{ProjectAccount, ProjectAccountRepo, ProjectLabelAssig
 import com.togger.projectlabel.{ProjectLabelCategoryRepo, ProjectLabelRepo}
 import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepo}
 import com.togger.task._
-import com.togger.tasktemplate.{TaskTemplateRepo, TaskTemplateVersionRepo}
+import com.togger.tasktemplate.{TaskTemplate, TaskTemplateRepo, TaskTemplateVersion, TaskTemplateVersionRepo}
 import com.togger.timebox.{TimeboxRepo, TimeboxVersionRepo}
 import doobie.ConnectionIO
 
@@ -406,23 +406,43 @@ class DataImportRepo(
       } yield ChildMergeOutcome(rootInserted = !dateExists, versionsAdded = added)
     }
 
+  /** A label has at most one template, so a template whose label already has another one (e.g. a project's default
+    * template) is merged into that one: its versions are added to it instead of inserting a second template.
+    */
   def mergeTaskTemplate(templateDump: TaskTemplateDumpData): ConnectionIO[DataImportEntityResult] =
-    exists(taskTemplateRepo.findById(templateDump.template.id)).flatMap { templateExists =>
-      for {
-        _ <- if (templateExists) ().pure[ConnectionIO] else taskTemplateRepo.insertWithId(templateDump.template).void
-        added <- insertMissing(templateDump.versions)(
-          v => exists(taskTemplateVersionRepo.findByVersion(v.version)),
-          taskTemplateVersionRepo.insertWithId
-        )
-      } yield DataImportEntityResult.merged(
-        DataExportEntityType.TaskTemplate,
-        templateDump.template.id,
-        templateDump.versions.lastOption.map(_.name),
-        rootInserted = !templateExists,
-        versionsAdded = added,
-        childrenAdded = 0
+    for {
+      templateExists <- exists(taskTemplateRepo.findById(templateDump.template.id))
+      labelTemplate <-
+        if (templateExists) Option.empty[TaskTemplate].pure[ConnectionIO]
+        else templateDump.template.taskLabelId.flatTraverse(taskTemplateRepo.findByLabelId)
+      target = labelTemplate.getOrElse(templateDump.template)
+      _ <- if (templateExists || labelTemplate.isDefined) ().pure[ConnectionIO] else taskTemplateRepo.insertWithId(target).void
+      versions <- labelTemplate.fold(templateDump.versions.pure[ConnectionIO])(existing =>
+        withoutRepeatedContent(existing, templateDump.versions.map(_.copy(taskTemplateId = existing.id)))
       )
-    }
+      added <- insertMissing(versions)(
+        v => exists(taskTemplateVersionRepo.findByVersion(v.version)),
+        taskTemplateVersionRepo.insertWithId
+      )
+    } yield DataImportEntityResult.merged(
+      DataExportEntityType.TaskTemplate,
+      templateDump.template.id,
+      templateDump.versions.lastOption.map(_.name),
+      rootInserted = !templateExists && labelTemplate.isEmpty,
+      versionsAdded = added,
+      childrenAdded = 0
+    )
+
+  /** The versions that differ from the latest one of the template, so merging identical default templates adds
+    * nothing.
+    */
+  private def withoutRepeatedContent(
+    template: TaskTemplate,
+    versions: List[TaskTemplateVersion]
+  ): ConnectionIO[List[TaskTemplateVersion]] =
+    taskTemplateVersionRepo
+      .findLatestByTemplateId(template.id)
+      .map(latest => versions.filterNot(_.hasSameContentAs(latest)))
 
   def mergeTimebox(timeboxDump: TimeboxDumpData): ConnectionIO[DataImportEntityResult] =
     exists(timeboxRepo.findById(timeboxDump.timebox.id)).flatMap { timeboxExists =>

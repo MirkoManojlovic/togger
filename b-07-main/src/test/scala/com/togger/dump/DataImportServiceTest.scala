@@ -221,6 +221,46 @@ class DataImportServiceTest extends ExportImportTestSupport {
         }
     }
 
+    "merge a template into the one its label already has in the target project" in { transactor =>
+      val setupTarget = (sourceProjectId: UUID, accountId: UUID) =>
+        for {
+          sourceProject <- projectRepo.findById(sourceProjectId)
+          targetProject <- createSecondProject(sourceProject.organizationId)
+          _ <- projectAccountRepo.insert(ProjectAccount(targetProject.id, accountId, nowAsInstant))
+          label <- createTaskLabel(targetProject.id)
+          defaultTemplate <- taskTemplateRepo.insert(
+            TaskTemplate(UUID.randomUUID(), targetProject.id, Some(label.id), accountId, nowAsInstant)
+          )
+          _ <- taskTemplateVersionRepo.insert(
+            TaskTemplateVersion(UUID.randomUUID(), defaultTemplate.id, "Default", "Default body", nowAsInstant)
+          )
+        } yield (targetProject, label, defaultTemplate)
+
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
+        target <- setupTarget(fixture.projectId, fixture.accountId).transact(transactor)
+        (targetProject, targetLabel, defaultTemplate) = target
+        first <- newImportService(transactor).importProject(targetProject.id, fixture.accountId, root.toString)
+        second <- newImportService(transactor).importProject(targetProject.id, fixture.accountId, root.toString)
+        merged <- taskTemplateRepo.findFullByLabelId(targetLabel.id).transact(transactor)
+        versions <- taskTemplateVersionRepo
+          .findPaginatedByTemplateId(defaultTemplate.id, com.togger.common.DbPageRequest.default)
+          .transact(transactor)
+      } yield {
+        val cp = new Checkpoint
+        val templateResult = resultOf(first.toOption.get, DataExportEntityType.TaskTemplate).head
+        cp(first.toOption.get.results.filter(_.error.isDefined) shouldBe empty)
+        cp(templateResult.status shouldBe DataImportStatus.Merged)
+        cp(templateResult.versionsAdded shouldBe 1)
+        cp(merged.map(_.template.id) shouldBe Some(defaultTemplate.id))
+        cp(versions.items.map(_.name).toSet shouldBe Set("Default", "Template"))
+        cp(resultOf(second.toOption.get, DataExportEntityType.TaskTemplate).map(_.status) shouldBe List(DataImportStatus.Unchanged))
+        cp.reportAll()
+      }
+    }
+
     "report a task with nothing new in the tree as unchanged" in { transactor =>
       val setup = for {
         projectData <- createExportableProject(newExportPath())
