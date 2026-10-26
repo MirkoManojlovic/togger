@@ -195,7 +195,7 @@ object LogEntryCalendarComponent {
   private case class DateMark(letter: String, title: String, colorCls: String)
 
   /** How many weeks the tiny calendar shows. */
-  val TinyWeeks = 3
+  val TinyWeeks = 4
 
   def isWorkDay(day: LocalDate, workDays: Set[DayOfWeek]): Boolean = workDays.contains(day.getDayOfWeek)
 
