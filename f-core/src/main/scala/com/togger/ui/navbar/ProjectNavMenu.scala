@@ -92,10 +92,11 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
     }
 
   private def projectPrefix(project: OrganizationProjectResp): HtmlElement =
-    div(
-      cls("flex items-center gap-2 me-2"),
+    a(
+      cls("flex items-center gap-2 me-2 rounded-base hover:text-fg-brand"),
       span(cls("text-base"), project.icon),
-      span(cls("text-sm font-semibold text-heading whitespace-nowrap"), project.name)
+      span(cls("text-sm font-semibold text-heading whitespace-nowrap"), project.name),
+      router.navigateTo(ProjectHomePage(project.id))
     )
 
   val element: HtmlElement =
