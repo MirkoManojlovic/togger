@@ -14,7 +14,6 @@ object BackendApp extends IOApp with TgLogging {
   override def run(args: List[String]): IO[ExitCode] = {
     logger.info(s"Raw app input arguments: $args")
 
-    val appTransactor = TgTransactor.desktopTransactor
     val liquibaseTransactor = TgTransactor.liquibaseTransactor
 //    val transactor = TgTransactor.dockerTransactor
 
@@ -22,12 +21,14 @@ object BackendApp extends IOApp with TgLogging {
     logger.info(s"Running App in [env=$appEnv]")
     val appConfigBe = new AppEnvSelector(appEnv).appConfig
 
-    for {
-      _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath)
-      _ <- setupScribeLogging
-      _ <- archiveLogs(appEnv)
-      exitCode <- runServer(appTransactor, appConfigBe)
-    } yield exitCode
+    TgTransactor.desktopTransactor.use { appTransactor =>
+      for {
+        _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath)
+        _ <- setupScribeLogging
+        _ <- archiveLogs(appEnv)
+        exitCode <- runServer(appTransactor, appConfigBe)
+      } yield exitCode
+    }
   }
 
   private def setupScribeLogging: IO[Logger] =

@@ -1,28 +1,33 @@
 package com.togger
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
+import com.zaxxer.hikari.HikariConfig
 import doobie.Transactor
+import doobie.hikari.HikariTransactor
 
 object TgTransactor {
 
-  def desktopTransactor: Transactor[IO] =
-    Transactor.fromDriverManager[IO](
-      driver = "org.postgresql.Driver",
-      url = s"jdbc:postgresql:$DB_NAME",
-      user = DB_USERNAME,
-      password = DB_PASSWORD,
-      logHandler = None
-    )
+  private val PoolSize = 10
 
-  def dockerTransactor: Transactor[IO] =
-    Transactor.fromDriverManager[IO](
-      driver = "org.postgresql.Driver",
-      url = s"jdbc:postgresql://postgres-docker/$DB_NAME",
-      user = DB_USERNAME,
-      password = DB_PASSWORD,
-      logHandler = None
-    )
+  /** Pooled, so a transaction reuses an open connection instead of paying for a new one each time. */
+  def desktopTransactor: Resource[IO, Transactor[IO]] =
+    pooledTransactor(s"jdbc:postgresql:$DB_NAME")
+
+  def dockerTransactor: Resource[IO, Transactor[IO]] =
+    pooledTransactor(s"jdbc:postgresql://postgres-docker/$DB_NAME")
+
+  private def pooledTransactor(url: String): Resource[IO, Transactor[IO]] = {
+    val config = new HikariConfig()
+    config.setDriverClassName("org.postgresql.Driver")
+    config.setJdbcUrl(url)
+    config.setUsername(DB_USERNAME)
+    config.setPassword(DB_PASSWORD)
+    config.setMaximumPoolSize(PoolSize)
+    config.setMinimumIdle(1)
+    config.setInitializationFailTimeout(-1) // the pool is built before setupDb has created the database on a first run
+    HikariTransactor.fromHikariConfig[IO](config, None)
+  }
 
   val liquibaseTransactor: Transactor[IO] =
     Transactor.fromDriverManager[IO](
