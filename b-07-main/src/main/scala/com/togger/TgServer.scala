@@ -167,6 +167,7 @@ object TgServer {
             dataExportController.exportByConfig,
             dataExportController.checkStatusByConfig,
             dataExportController.importData,
+            dataExportController.checkImportStatus,
             dataExportConfigController.findById,
             dataExportConfigController.save,
             dataExportConfigController.update,

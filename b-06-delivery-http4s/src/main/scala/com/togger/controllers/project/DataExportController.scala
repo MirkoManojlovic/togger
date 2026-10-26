@@ -91,6 +91,20 @@ class DataExportController(
     }
   }
 
+  val checkImportStatus = dataExportEndpoints.checkImportStatusEndpoint.serverLogic { auth =>
+    { case (projectId, req) =>
+      dataExportService
+        .checkImportStatus(projectId, auth.body.get.id, req.importPath)
+        .map {
+          case Right(p) =>
+            TgJsonSuccess.justBodyRight(
+              DataExportStatusResp(projectId, List(DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp))))
+            )
+          case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
+        }
+    }
+  }
+
   private def toResp(id: UUID, result: DataExportResult): DataExportResp =
     DataExportResp(
       id,

@@ -7,7 +7,7 @@ import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
-import com.togger.project.ProjectError.{NoExportPathConfigured, NotAssignedToProject, ProjectError}
+import com.togger.project.ProjectError.{DumpManifestMissing, NoExportPathConfigured, NotAssignedToProject, ProjectError}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -121,11 +121,48 @@ class DataExportService(
       }
   }
 
-  /** Compares the hashes of the database entities with the index of the tree, without reading the entity files. */
+  /** Compares the tree at an import path with the database: what is on disk but not in the database, or differs, is
+    * what an import would bring in.
+    */
+  def checkImportStatus(
+    projectId: UUID,
+    accountId: UUID,
+    importPath: String
+  ): IO[Either[ProjectError, DataExportPathStatus]] = {
+    logger.info(s"Checking import status for ${sp(projectId)} from ${sp(importPath)} requested by ${sp(accountId)}")
+    getExportData(projectId, accountId).transact(transactor).map {
+      case Left(error) => Left(error)
+      case Right(data) =>
+        dataExportTreeStore.resolveImportFolder(importPath) match {
+          case None => Left(DumpManifestMissing)
+          case Some(folderPath) =>
+            Right(
+              DataExportPathStatus(
+                importPath,
+                entityStatuses(data, folderPath, dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_)))
+              )
+            )
+        }
+    }
+  }
+
   private def buildPathStatus(exportPath: String, data: ExportData): DataExportPathStatus = {
+    val folderPath = dataExportTreeStore.projectFolder(exportPath, data.project).toString
+    DataExportPathStatus(
+      exportPath,
+      entityStatuses(data, folderPath, dataExportTreeStore.readIndex(exportPath, data.project))
+    )
+  }
+
+  /** Compares the hashes of the database entities with the index of the tree, without reading the entity files. */
+  private def entityStatuses(
+    data: ExportData,
+    folderPath: String,
+    indexResult: Either[String, Option[ExportIndex]]
+  ): List[DataExportEntityStatus] = {
     val dbEntities = data.entities.map(e => (e.entityType, e.id) -> e).toMap
 
-    val statuses = dataExportTreeStore.readIndex(exportPath, data.project) match {
+    indexResult match {
       case Left(error) =>
         DataExportEntityStatus(
           DataExportEntityType.Project,
@@ -137,7 +174,6 @@ class DataExportService(
       case Right(None) =>
         data.entities.map(e => status(e.entityType, e.id, e.name, DataExportSyncStatus.MissingFromExport))
       case Right(Some(index)) =>
-        val folderPath = dataExportTreeStore.projectFolder(exportPath, data.project).toString
         DataExportEntityType.all.flatMap { entityType =>
           val indexed = index.entriesOf(entityType)
           val db = dbEntities.collect { case ((`entityType`, id), entity) => id -> entity }
@@ -158,7 +194,6 @@ class DataExportService(
           common ++ missingFromExport ++ missingFromDb
         }
     }
-    DataExportPathStatus(exportPath, statuses)
   }
 
   private def status(
