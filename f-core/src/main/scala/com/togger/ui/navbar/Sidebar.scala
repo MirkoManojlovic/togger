@@ -10,6 +10,9 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
+import com.togger.ui.dataexportconfig.ExportResultsComponent
+import com.togger.ui.dataimportconfig.ImportResultsComponent
+import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
@@ -208,6 +211,7 @@ class Sidebar(
   dataExportService: DataExportFeService,
   dataImportConfigService: DataImportConfigFeService,
   spinnerService: SpinnerService,
+  modalFactory: ModalFactory,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
   onQuickCreate: () => Unit,
@@ -220,12 +224,19 @@ class Sidebar(
 
   private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
 
+  /** The results modal; an error building it would be lost in the IO that runs it, so it is shown as a toast. */
+  private def showResultsModal(title: String)(content: => HtmlElement): Unit =
+    scala.util.Try(modalFactory.previewModal(content, title)).failed.foreach { error =>
+      dom.console.error(error.toString)
+      toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
+    }
+
   private def dumpProject(projectId: UUID): Unit =
     spinnerService
       .runWithSpinner(dataExportService.exportData(projectId))
       .toastMessageDto(dto =>
         s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
-      )(_ => IO.unit)
+      )(dto => IO(showResultsModal("Export results")(new ExportResultsComponent(dto).element)))
       .unsafeRunAndForget()
 
   private def importAllForProject(projectId: UUID): Unit = {
@@ -245,6 +256,8 @@ class Sidebar(
                 val failedCount = outcomes.count(_.isLeft)
                 if (failedCount == 0) toast.success(s"Imported from ${successes.size} path(s), $totalEntities entity(ies) total")
                 else toast.error(s"Imported from ${successes.size}/${outcomes.size} path(s); $failedCount failed")
+                if (successes.nonEmpty)
+                  showResultsModal("Import results")(new ImportResultsComponent(successes.flatMap(_.results)).element)
               }
         }
       )
