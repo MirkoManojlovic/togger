@@ -624,7 +624,7 @@ class TeamDailyComponent(
     val dayEntries = (day: LocalDate) =>
       task.fold(Seq.empty[LogEntryDto])(_.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt))
     div(
-      cls("flex flex-col items-start gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
+      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
         cls("min-w-0 flex-1"),
         div(
