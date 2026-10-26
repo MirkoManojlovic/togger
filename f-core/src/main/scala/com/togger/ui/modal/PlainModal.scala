@@ -30,8 +30,14 @@ final case class PlainModal(
   onClose: (() => Unit) => Unit,
   confirmButtonMsg: String = "Confirm",
   cancelButtonMsg: String = "Cancel",
-  variant: PlainModalVariant = PlainModalVariant.Info
+  variant: PlainModalVariant = PlainModalVariant.Info,
+  confirmationText: Option[String] = None
 ) extends TgModal {
+
+  // With a confirmation text, the confirm button stays disabled until the user has typed exactly that text.
+  private val typedTextVar = Var("")
+  private val confirmDisabledSignal: Signal[Boolean] =
+    typedTextVar.signal.map(typed => confirmationText.exists(_ != typed.trim))
 
   private val modalClickedBus = new EventBus[ModalResult]
   private val modalClickedWriter = modalClickedBus.writer
@@ -82,11 +88,33 @@ final case class PlainModal(
                 case HtmlModalMessage(htmlElement) => htmlElement
               }
             ),
+            confirmationText.map(text =>
+              div(
+                cls("mb-5 text-left"),
+                label(
+                  cls("block mb-2 text-sm font-medium text-heading"),
+                  "Type ",
+                  b(text),
+                  " to confirm"
+                ),
+                input(
+                  `type`("text"),
+                  cls(
+                    "bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base " +
+                      "focus:ring-brand focus:border-brand block w-full px-3 py-2.5"
+                  ),
+                  aria.label(s"Type $text to confirm"),
+                  controlled(value <-- typedTextVar.signal, onInput.mapToValue --> typedTextVar.writer)
+                )
+              )
+            ),
             div(
               cls(ModalStyles.popupFooterCls),
               button(
                 `type`("button"),
                 cls(confirmButtonCls),
+                cls("disabled:opacity-50 disabled:cursor-not-allowed"),
+                disabled <-- confirmDisabledSignal,
                 confirmButtonMsg,
                 onClick --> okayObserver
               ),

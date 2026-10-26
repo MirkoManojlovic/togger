@@ -155,7 +155,8 @@ class EditProjectComponent(
       title = "Delete project",
       variant = PlainModalVariant.Danger,
       confirmButtonMsg = "Yes, delete it",
-      cancelButtonMsg = "Cancel"
+      cancelButtonMsg = "Cancel",
+      confirmationText = Some(formState.now().name)
     ) { close =>
       spinnerService
         .runWithSpinner(projectService.deleteProject(projectId))

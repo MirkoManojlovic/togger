@@ -19,9 +19,10 @@ class ModalFactory(val parentElementForModal: HtmlElement) {
     title: String = "Attention",
     variant: PlainModalVariant = PlainModalVariant.Info,
     confirmButtonMsg: String = "Confirm",
-    cancelButtonMsg: String = "Cancel"
+    cancelButtonMsg: String = "Cancel",
+    confirmationText: Option[String] = None
   )(onClose: (() => Unit) => Unit): Unit =
-    show(PlainModal(title, message, onClose, confirmButtonMsg, cancelButtonMsg, variant))
+    show(PlainModal(title, message, onClose, confirmButtonMsg, cancelButtonMsg, variant, confirmationText))
 
   private def show(modal: TgModal): Unit = {
     currentModalVar.set(Some(modal.element))
