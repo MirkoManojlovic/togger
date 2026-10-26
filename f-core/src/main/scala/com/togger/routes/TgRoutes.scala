@@ -223,6 +223,10 @@ class TgRoutes {
         //        basePath = basePath
       ),
       Route.static(
+        SyncCheckSettingsPage,
+        root / "settings" / "sync-check"
+      ),
+      Route.static(
         CreateProjectLabelPage,
         root / "settings" / "project-label" / "create"
       ),

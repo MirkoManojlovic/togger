@@ -3,7 +3,7 @@ package com.togger.ui.task
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{DataExportResp, DataExportStatusResp, DataImportReq, DataImportResp}
+import com.togger.dto.{DataExportResp, DataExportStatusResp, DataImportReq, DataImportResp, DataSyncPendingResp}
 import com.togger.dump.DataExportEndpoints
 
 import java.util.UUID
@@ -30,4 +30,10 @@ class DataExportFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkImportStatusEndpoint)(
       (projectId, DataImportReq(importPath))
     )
+
+  def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
+    protectedBackendClient.protectedHttpCall(dataExportEndpoints.exportPendingEndpoint)(projectId)
+
+  def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
+    protectedBackendClient.protectedHttpCall(dataExportEndpoints.importPendingEndpoint)(projectId)
 }

@@ -16,7 +16,8 @@ class ExportCheckFlow(
   dataExportService: DataExportFeService,
   spinnerService: SpinnerService,
   modalFactory: ModalFactory,
-  toast: Toast
+  toast: Toast,
+  onFinished: () => Unit = () => ()
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -53,6 +54,7 @@ class ExportCheckFlow(
           error => IO(toast.error(error)),
           success =>
             IO {
+              onFinished()
               val dto = success.body.get
               toast.success(s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)")
               showModal("Export results")(new ExportResultsComponent(dto).element)

@@ -16,6 +16,7 @@ import com.togger.ui.dataimportconfig.ImportResultsComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.synccheck.{SyncPendingDot, SyncPendingStore}
 import com.togger.ui.task.DataExportFeService
 import com.togger.ui.dataimportconfig.DataImportConfigFeService
 import com.togger.ui.toast.Toast
@@ -33,18 +34,26 @@ case class SidebarLink(
   onTasksClick: Option[() => Unit] = None,
   onMilestonesClick: Option[() => Unit] = None,
   onTimeboxesClick: Option[() => Unit] = None,
+  exportPending: Signal[Boolean] = Val(false),
+  importPending: Signal[Boolean] = Val(false),
   icon: String = ""
 ) {
 
   private val navButtonStyle =
     "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer mr-1"
 
-  private def navButton(label: String, glyph: ReactiveSvgElement[SVGSVGElement], action: () => Unit) =
+  private def navButton(
+    label: String,
+    glyph: ReactiveSvgElement[SVGSVGElement],
+    action: () => Unit,
+    pending: Signal[Boolean] = Val(false)
+  ) =
     button(
       `type`("button"),
       title(label),
       glyph,
-      cls(navButtonStyle),
+      cls(navButtonStyle, "relative"),
+      SyncPendingDot(pending, s"$label: there is something to do"),
       onClick.mapToUnit --> (_ => action())
     )
 
@@ -90,8 +99,8 @@ case class SidebarLink(
       onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
       onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
       onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
-      onExportClick.map(navButton("Export all", TgIcons.downloadIcon("w-3.5 h-3.5"), _)),
-      onImportClick.map(navButton("Import all", TgIcons.uploadIcon("w-3.5 h-3.5"), _)),
+      onExportClick.map(navButton("Export all", TgIcons.downloadIcon("w-3.5 h-3.5"), _, exportPending)),
+      onImportClick.map(navButton("Import all", TgIcons.uploadIcon("w-3.5 h-3.5"), _, importPending)),
       onClick.mapToUnit --> closeMenu
     )
 
@@ -134,8 +143,9 @@ case class SidebarLink(
           button(
             `type`("button"),
             TgIcons.downloadIcon("w-3.5 h-3.5"),
+            SyncPendingDot(exportPending, "There is something to export"),
             cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
+              "relative inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
             ),
             onClick.mapToUnit --> (_ => exportAction())
           )
@@ -144,8 +154,9 @@ case class SidebarLink(
           button(
             `type`("button"),
             TgIcons.uploadIcon("w-3.5 h-3.5"),
+            SyncPendingDot(importPending, "There is something to import"),
             cls(
-              "inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
+              "relative inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
             ),
             onClick.mapToUnit --> (_ => importAction())
           )
@@ -215,6 +226,7 @@ class Sidebar(
   modalFactory: ModalFactory,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
+  syncPendingStore: SyncPendingStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
   onTeamDaily: () => Unit,
@@ -232,12 +244,19 @@ class Sidebar(
       toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
     }
 
-  private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast)
+  private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast, () => syncPendingStore.refresh())
 
   def exportProject(projectId: UUID): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
 
-  private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
+  private val importFlow = new ImportFlow(
+    dataExportService,
+    dataImportConfigService,
+    spinnerService,
+    modalFactory,
+    toast,
+    () => syncPendingStore.refresh()
+  )
 
   def importProject(projectId: UUID): Unit = importFlow.importAll(projectId)
 
@@ -276,6 +295,7 @@ class Sidebar(
   val element = {
     div(
       sidebarRefresh.requests --> (_ => reloadOrganizations()),
+      syncPendingStore.binder(organizationState.signal.map(_.flatMap(_.projects.map(_.id)))),
       asideTag(
         idAttr("logo-sidebar"),
         cls(
@@ -328,6 +348,8 @@ class Sidebar(
                               onTasksClick = Some(() => router.route(ShowAllTasksPage(project.id))),
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
+                              exportPending = syncPendingStore.exportPending(project.id),
+                              importPending = syncPendingStore.importPending(project.id),
                               onExportClick = Some(() => exportProject(project.id)),
                               onImportClick = Some(() => importProject(project.id)),
                               icon = project.icon

@@ -7,6 +7,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.organization.{OrganizationWithProjects, TgIcons}
+import com.togger.ui.synccheck.SyncPendingStore
 import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
@@ -44,12 +45,13 @@ class NavbarComponent(
   organizations: Signal[Seq[OrganizationWithProjects]],
   collapsed: Signal[Boolean],
   onExport: UUID => Unit,
-  onImport: UUID => Unit
+  onImport: UUID => Unit,
+  syncPendingStore: SyncPendingStore
 ) {
 
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
-  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations, onExport, onImport)
+  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations, onExport, onImport, syncPendingStore)
 
   private val userMenuOpen: Var[Boolean] = Var(false)
 
@@ -68,7 +70,49 @@ class NavbarComponent(
 
   private val searchProjectsMenuLink = MenuLink("Search Projects", router.navigateTo(SearchProjectsByLabelPage))
 
-  private val settingsMenuLink = MenuLink("Settings", router.navigateTo(ShowAllProjectLabelsPage()))
+  private val settingsMenuOpen: Var[Boolean] = Var(false)
+
+  private val closeSettingsMenu = Observer[Unit](_ => settingsMenuOpen.set(false))
+
+  private def settingsMenuItem(selected: Boolean): ReactiveHtmlElement[HTMLLIElement] =
+    li(
+      cls("relative"),
+      button(
+        `type`("button"),
+        cls(if (selected) NavbarComponent.selectedNavLinkClass else NavbarComponent.navLinkClass, "cursor-pointer"),
+        aria.expanded <-- settingsMenuOpen.signal,
+        "Settings",
+        onClick.stopPropagation.mapToUnit --> (_ => settingsMenuOpen.update(isOpen => !isOpen))
+      ),
+      child <-- settingsMenuOpen.signal.map(isOpen => if (isOpen) settingsMenuPopover else emptyNode)
+    )
+
+  private def settingsMenuPopover =
+    div(
+      cls(NavbarComponent.dropdownPanelClass),
+      onMountBind { ctx =>
+        val rootNode = ctx.thisNode.ref
+
+        documentEvents(_.onClick)
+          .filter(event => !rootNode.contains(event.target.asInstanceOf[dom.Node]))
+          .mapToUnit --> closeSettingsMenu
+      },
+      onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> closeSettingsMenu),
+      ul(
+        cls("p-2 text-sm text-body font-medium"),
+        Seq("Project labels" -> ShowAllProjectLabelsPage(), "Import / export check" -> SyncCheckSettingsPage).map {
+          case (label, page) =>
+            li(
+              a(
+                cls(NavbarComponent.dropdownItemClass),
+                label,
+                router.navigateTo(page),
+                onClick.mapToUnit --> closeSettingsMenu
+              )
+            )
+        }
+      )
+    )
 
   private val passwordMenuLink =
     MenuLink(
@@ -102,7 +146,7 @@ class NavbarComponent(
           NavbarItems.organizationSelected
         case SearchProjectsByLabelPage =>
           NavbarItems.searchProjectsSelected
-        case CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
+        case CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) | SyncCheckSettingsPage =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }
@@ -114,7 +158,7 @@ class NavbarComponent(
       NavbarItems(
         organization = organizationMenuLink.deselected,
         searchProjects = searchProjectsMenuLink.deselected,
-        settings = settingsMenuLink.deselected,
+        settings = settingsMenuItem(selected = false),
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
       )
@@ -129,7 +173,7 @@ class NavbarComponent(
       NavbarItems.allDeselected.copy(searchProjects = searchProjectsMenuLink.selected)
 
     lazy val settingsSelected: NavbarItems =
-      NavbarItems.allDeselected.copy(settings = settingsMenuLink.selected)
+      NavbarItems.allDeselected.copy(settings = settingsMenuItem(selected = true))
   }
 
   val element =

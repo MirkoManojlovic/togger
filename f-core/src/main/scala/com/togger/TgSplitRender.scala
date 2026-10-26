@@ -19,6 +19,7 @@ import com.togger.ui.milestone._
 import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
+import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
 import com.togger.ui.organization._
 import com.togger.ui.project._
@@ -145,6 +146,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val sidebarRefresh = new SidebarRefresh
   lazy val themeStore = new ThemeStore(localStorage)
+  lazy val syncCheckSettingsStore = new SyncCheckSettingsStore(localStorage)
+  lazy val syncPendingStore = new SyncPendingStore(dataExportService, syncCheckSettingsStore)
   lazy val timeboxStagingStore = new TimeboxStagingStore(localStorage)
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
@@ -168,6 +171,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       sidebarCollapseStore,
       sidebarRefresh,
       themeStore,
+      syncPendingStore,
       () => quickCreateHost.open(),
       () => bulkCreateHost.open(),
       () => teamDailyHost.open(),
@@ -254,6 +258,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case LoginPage => new LoginComponent(router, loginService, spinnerService).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
+              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>
                 new CreateTaskComponent(
@@ -794,6 +799,7 @@ case class NavigationSelection(
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
   themeStore: ThemeStore,
+  syncPendingStore: SyncPendingStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
   onTeamDaily: () => Unit,
@@ -816,6 +822,7 @@ case class NavigationSelection(
               modalFactory,
               sidebarCollapseStore,
               sidebarRefresh,
+              syncPendingStore,
               onQuickCreate,
               onBulkCreate,
               onTeamDaily,
@@ -823,7 +830,7 @@ case class NavigationSelection(
               toast
             )
             div(
-              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject).element,
+              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject, syncPendingStore).element,
               sidebar.element
             )
           }

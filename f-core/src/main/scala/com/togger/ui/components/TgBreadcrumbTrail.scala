@@ -65,6 +65,7 @@ object TgBreadcrumbTrail {
     case SearchProjectsByLabelPage => underOrganizations(current("Search projects"))
     case ChangePasswordPage        => underOrganizations(current("Change password"))
     case ApexChartDemoPage         => underOrganizations(current("Chart demo"))
+    case SyncCheckSettingsPage     => underOrganizations(current("Import / export check"))
 
     case ShowAllProjectLabelsPage(_)       => underOrganizations(current("Project labels"))
     case CreateProjectLabelPage            => underProjectLabels("Create project label")

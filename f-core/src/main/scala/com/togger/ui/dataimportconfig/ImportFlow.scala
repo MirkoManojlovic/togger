@@ -21,7 +21,8 @@ class ImportFlow(
   dataImportConfigService: DataImportConfigFeService,
   spinnerService: SpinnerService,
   modalFactory: ModalFactory,
-  toast: Toast
+  toast: Toast,
+  onFinished: () => Unit = () => ()
 )(implicit ioRuntime: IORuntime) {
 
   def importFrom(projectId: UUID, importPath: String): Unit =
@@ -83,6 +84,7 @@ class ImportFlow(
         val successes = outcomes.collect { case (_, Right(dto)) => dto }
         val failures = outcomes.collect { case (_, Left(failure)) => failure }
         failures.foreach(toast.error)
+        onFinished()
         if (failures.isEmpty && successes.nonEmpty)
           toast.success(s"Imported from ${successes.size} path(s), ${successes.map(_.results.size).sum} entity(ies) total")
         else if (failures.nonEmpty && successes.nonEmpty)

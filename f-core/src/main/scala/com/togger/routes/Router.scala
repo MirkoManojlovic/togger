@@ -75,6 +75,8 @@ object Pages {
 
   case class EditOrganizationPage(id: UUID) extends PrivatePage
 
+  case object SyncCheckSettingsPage extends PrivatePage
+
   case object CreateProjectLabelPage extends PrivatePage
 
   case class ShowAllProjectLabelsPage(list: ListParams = ListParams.default) extends PrivatePage
