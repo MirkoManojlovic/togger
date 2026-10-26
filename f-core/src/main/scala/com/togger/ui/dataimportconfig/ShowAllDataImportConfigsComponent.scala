@@ -136,7 +136,7 @@ class ShowAllDataImportConfigsComponent(
             TgIcons.editIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditDataImportConfigPage(dto.id)))
+            onClick.mapToUnit --> (_ => router.route(EditDataImportConfigPage(projectId, dto.id)))
           ),
           iconButton(
             "Delete",

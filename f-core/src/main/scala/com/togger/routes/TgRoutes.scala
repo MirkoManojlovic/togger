@@ -281,9 +281,12 @@ class TgRoutes {
         pattern = root / "data-export-config" / "create" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditDataExportConfigPage) => page.id.toString,
-        decode = (id: String) => EditDataExportConfigPage(UUID.fromString(id)),
-        pattern = root / "data-export-config" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditDataExportConfigPage) => page.projectId.toString -> page.id.toString,
+        decode = { (projectIdAndId: (String, String)) =>
+          EditDataExportConfigPage(UUID.fromString(projectIdAndId._1), UUID.fromString(projectIdAndId._2))
+        },
+        pattern =
+          root / "data-export-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: DataExportStatusPage) => page.projectId.toString,
@@ -296,9 +299,12 @@ class TgRoutes {
         pattern = root / "data-import-config" / "create" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditDataImportConfigPage) => page.id.toString,
-        decode = (id: String) => EditDataImportConfigPage(UUID.fromString(id)),
-        pattern = root / "data-import-config" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditDataImportConfigPage) => page.projectId.toString -> page.id.toString,
+        decode = { (projectIdAndId: (String, String)) =>
+          EditDataImportConfigPage(UUID.fromString(projectIdAndId._1), UUID.fromString(projectIdAndId._2))
+        },
+        pattern =
+          root / "data-import-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: CreateProjectMappingPage) => page.projectId.toString,

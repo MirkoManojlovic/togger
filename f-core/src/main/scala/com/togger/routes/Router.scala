@@ -100,13 +100,13 @@ object Pages {
 
   case class CreateDataExportConfigPage(projectId: UUID) extends PrivatePage
 
-  case class EditDataExportConfigPage(id: UUID) extends PrivatePage
+  case class EditDataExportConfigPage(projectId: UUID, id: UUID) extends PrivatePage
 
   case class DataExportStatusPage(projectId: UUID) extends PrivatePage
 
   case class CreateDataImportConfigPage(projectId: UUID) extends PrivatePage
 
-  case class EditDataImportConfigPage(id: UUID) extends PrivatePage
+  case class EditDataImportConfigPage(projectId: UUID, id: UUID) extends PrivatePage
 
   case class CreateProjectMappingPage(projectId: UUID) extends PrivatePage
 

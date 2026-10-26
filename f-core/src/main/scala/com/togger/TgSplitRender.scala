@@ -394,7 +394,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case EditDataExportConfigPage(id: UUID) =>
+              case EditDataExportConfigPage(_, id: UUID) =>
                 new EditDataExportConfigComponent(
                   id,
                   dataExportConfigService,
@@ -409,7 +409,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   projectId,
                   toast
                 ).element
-              case EditDataImportConfigPage(id: UUID) =>
+              case EditDataImportConfigPage(_, id: UUID) =>
                 new EditDataImportConfigComponent(
                   id,
                   dataImportConfigService,

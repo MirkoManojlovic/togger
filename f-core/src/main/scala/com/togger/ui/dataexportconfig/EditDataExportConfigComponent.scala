@@ -70,7 +70,7 @@ class EditDataExportConfigComponent(
 
     spinnerService
       .runWithSpinner(dataExportConfigService.update(dto))
-      .toastMessageFn("Export data config updated successfully")(_ => router.route(EditDataExportConfigPage(id)))
+      .toastMessageFn("Export data config updated successfully")(_ => router.route(EditDataExportConfigPage(state.projectId, id)))
       .unsafeRunAndForget()
   }
 

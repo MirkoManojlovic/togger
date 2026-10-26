@@ -123,7 +123,7 @@ class ShowAllDataExportConfigsComponent(
             TgIcons.editIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditDataExportConfigPage(dto.id)))
+            onClick.mapToUnit --> (_ => router.route(EditDataExportConfigPage(projectId, dto.id)))
           ),
           iconButton(
             "Delete",

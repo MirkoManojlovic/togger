@@ -70,7 +70,7 @@ class EditDataImportConfigComponent(
 
     spinnerService
       .runWithSpinner(dataImportConfigService.update(dto))
-      .toastMessageFn("Import data config updated successfully")(_ => router.route(EditDataImportConfigPage(id)))
+      .toastMessageFn("Import data config updated successfully")(_ => router.route(EditDataImportConfigPage(state.projectId, id)))
       .unsafeRunAndForget()
   }
 
