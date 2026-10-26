@@ -12,6 +12,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment, Fragments}
 
+import java.time.Instant
 import java.util.UUID
 
 class LogEntryRepoImpl extends LogEntryRepo {
@@ -45,6 +46,15 @@ class LogEntryRepoImpl extends LogEntryRepo {
     logAroundInfoQuery(findByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].unique)(
       s"Finding log entry with ${sp(id)}",
       logEntry => s"log entry found ${sp(logEntry)}"
+    )
+
+  override def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean] =
+    logAroundInfoQuery(
+      (fr"select exists (select 1 from" ++ LOG_ENTRY_TABLE_FRAG ++
+        fr"where task_id = $taskId and created_at >= $from and created_at < $to)").query[Boolean].unique
+    )(
+      s"Checking log entries of ${sp(taskId)} between ${sp(from)} and ${sp(to)}",
+      exists => s"Log entry exists ${sp(exists)} for ${sp(taskId)}"
     )
 
   override def deleteById(id: UUID): ConnectionIO[Int] =

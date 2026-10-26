@@ -5,7 +5,7 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds, TimeHelpers}
 import com.togger.db.MockedTransactor
-import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion}
+import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryAlreadyExistsForDay}
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -14,6 +14,7 @@ import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class LogEntryServiceTest
@@ -75,6 +76,38 @@ class LogEntryServiceTest
         cp.reportAll()
         savedVersion.logEntryId shouldBe savedEntry.id
       }).unsafeToFuture()
+    }
+
+    "create a log entry when the task has none for that day" in {
+      val logEntry = newLogEntry()
+      val version = newVersion("v1").copy(logEntryId = logEntry.id)
+      val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
+
+      (logEntryRepo.existsByTaskIdCreatedBetween _)
+        .expects(taskId, dayStart, dayStart.plus(1, ChronoUnit.DAYS))
+        .returns(false.pure[ConnectionIO])
+      (logEntryRepo.insert _).expects(logEntry).returns(logEntry.pure[ConnectionIO])
+      (logEntryVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
+
+      service
+        .createLogEntryOncePerDay(logEntry, version)
+        .map(_ shouldBe Right(LogEntryWithOneVersion(logEntry, version)))
+        .unsafeToFuture()
+    }
+
+    "reject a second log entry for the same task on the same day" in {
+      val logEntry = newLogEntry()
+      val version = newVersion("v1").copy(logEntryId = logEntry.id)
+      val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
+
+      (logEntryRepo.existsByTaskIdCreatedBetween _)
+        .expects(taskId, dayStart, dayStart.plus(1, ChronoUnit.DAYS))
+        .returns(true.pure[ConnectionIO])
+
+      service
+        .createLogEntryOncePerDay(logEntry, version)
+        .map(_ shouldBe Left(LogEntryAlreadyExistsForDay))
+        .unsafeToFuture()
     }
 
     "save a new version on every save, keeping old ones and moving the latest" in {

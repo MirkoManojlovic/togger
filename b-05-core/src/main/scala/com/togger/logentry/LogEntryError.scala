@@ -20,6 +20,8 @@ object LogEntryError {
   case object CannotDeleteLastVersion extends LogEntryError {
     override def message: String = "Cannot delete the only remaining version of a log entry"
   }
+
+  case object LogEntryAlreadyExistsForDay extends LogEntryError {
+    override def message: String = "The task already has a log entry for that day"
+  }
 }
-
-

@@ -36,12 +36,14 @@ class LogEntryController(
     )
 
     logEntryService
-      .createLogEntry(logEntry, firstVersion)
-      .flatMap(result =>
-        accountNameLookup
-          .namesByIds(Set(result.logEntry.createdBy))
-          .map(names => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version, names)))
-      )
+      .createLogEntryOncePerDay(logEntry, firstVersion)
+      .flatMap {
+        case Right(result) =>
+          accountNameLookup
+            .namesByIds(Set(result.logEntry.createdBy))
+            .map(names => TgJsonSuccess.justBodyRight(toDto(result.logEntry, result.version, names)))
+        case Left(error) => IO.pure(error.toBadRequestLeft[LogEntryDto])
+      }
   }
 
   val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { auth => request =>

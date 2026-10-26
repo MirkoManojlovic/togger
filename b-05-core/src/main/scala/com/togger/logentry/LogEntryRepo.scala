@@ -4,6 +4,7 @@ import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.dto.LogEntryFilter
 import doobie.ConnectionIO
 
+import java.time.Instant
 import java.util.UUID
 
 trait LogEntryRepo {
@@ -13,6 +14,9 @@ trait LogEntryRepo {
   def insertWithId(logEntry: LogEntry): ConnectionIO[LogEntry]
 
   def findById(id: UUID): ConnectionIO[LogEntry]
+
+  /** Whether the task has a log entry created in `[from, to)`. */
+  def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean]
 
   def deleteById(id: UUID): ConnectionIO[Int]
 

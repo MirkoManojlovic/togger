@@ -4,13 +4,14 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.dto.LogEntryFilter
-import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryError, LogEntryNotFound, VersionNotFound}
+import com.togger.logentry.LogEntryError.{LogEntryAlreadyExistsForDay, CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryError, LogEntryNotFound, VersionNotFound}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class LogEntryService(
@@ -28,6 +29,24 @@ class LogEntryService(
       logger.info(s"Log entry created successfully ${sp(savedEntry)} with ${sp(savedVersion)}")
       LogEntryWithOneVersion(savedEntry, savedVersion)
     }).transact(transactor)
+  }
+
+  /** Like [[createLogEntry]], but rejects a second log entry for the same task on the same (UTC) day. */
+  def createLogEntryOncePerDay(
+    logEntry: LogEntry,
+    firstVersion: LogEntryVersion
+  ): IO[Either[LogEntryError, LogEntryWithOneVersion]] = {
+    val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
+    val dayEnd = dayStart.plus(1, ChronoUnit.DAYS)
+    logEntryRepo
+      .existsByTaskIdCreatedBetween(logEntry.taskId, dayStart, dayEnd)
+      .transact(transactor)
+      .flatMap { exists =>
+        if (exists) {
+          logger.warn(s"Rejecting ${sp(logEntry)}: the task already has a log entry for that day")
+          IO.pure(Left(LogEntryAlreadyExistsForDay))
+        } else createLogEntry(logEntry, firstVersion).map(Right(_))
+      }
   }
 
   def saveNewVersion(
