@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.organization.OrganizationWithProjects
+import com.togger.ui.organization.{OrganizationWithProjects, TgIcons}
 import org.scalajs.dom
 
 import java.util.UUID
@@ -14,7 +14,12 @@ case class ProjectNavGroup(title: String, links: Seq[(String, FrontendPage)])
 /** The name and icon of a project followed by its links, grouped by topic, as dropdowns in the navbar; shown while a
   * page of a project is open.
   */
-class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[OrganizationWithProjects]]) {
+class ProjectNavMenu(
+  router: TgRouter[FrontendPage],
+  organizations: Signal[Seq[OrganizationWithProjects]],
+  onExport: UUID => Unit,
+  onImport: UUID => Unit
+) {
 
   private val openGroup: Var[Option[String]] = Var(None)
 
@@ -71,6 +76,16 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
       router.navigateTo(page)
     )
 
+  private def actionButton(label: String, icon: Modifier[HtmlElement], action: () => Unit): HtmlElement =
+    button(
+      `type`("button"),
+      cls(NavbarComponent.navLinkClass, "cursor-pointer"),
+      title(label),
+      aria.label(label),
+      icon,
+      onClick.mapToUnit --> (_ => action())
+    )
+
   private def directLinks(projectId: UUID, current: FrontendPage): Seq[HtmlElement] = {
     val contributionsSelected = current match {
       case ShowContributionsPage(id, _) => id == projectId
@@ -82,7 +97,9 @@ class ProjectNavMenu(router: TgRouter[FrontendPage], organizations: Signal[Seq[O
     }
     Seq(
       directLink("Contributions", ShowContributionsPage(projectId), contributionsSelected),
-      directLink("Sync", SyncConfigPage(projectId), syncSelected)
+      directLink("Sync", SyncConfigPage(projectId), syncSelected),
+      actionButton("Import", TgIcons.uploadIcon("w-4 h-4"), () => onImport(projectId)),
+      actionButton("Export", TgIcons.downloadIcon("w-4 h-4"), () => onExport(projectId))
     )
   }
 

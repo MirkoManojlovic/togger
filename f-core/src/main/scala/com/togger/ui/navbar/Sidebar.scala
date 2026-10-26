@@ -234,12 +234,12 @@ class Sidebar(
 
   private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast)
 
-  private def dumpProject(projectId: UUID): Unit =
+  def exportProject(projectId: UUID): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
 
   private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
 
-  private def importAllForProject(projectId: UUID): Unit = importFlow.importAll(projectId)
+  def importProject(projectId: UUID): Unit = importFlow.importAll(projectId)
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)
@@ -328,8 +328,8 @@ class Sidebar(
                               onTasksClick = Some(() => router.route(ShowAllTasksPage(project.id))),
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
-                              onExportClick = Some(() => dumpProject(project.id)),
-                              onImportClick = Some(() => importAllForProject(project.id)),
+                              onExportClick = Some(() => exportProject(project.id)),
+                              onImportClick = Some(() => importProject(project.id)),
                               icon = project.icon
                             )
                             if (isProjectSelected(project, page)) projectLink.selectedProject

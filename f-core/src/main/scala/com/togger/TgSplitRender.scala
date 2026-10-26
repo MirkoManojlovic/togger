@@ -823,7 +823,7 @@ case class NavigationSelection(
               toast
             )
             div(
-              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current).element,
+              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject).element,
               sidebar.element
             )
           }

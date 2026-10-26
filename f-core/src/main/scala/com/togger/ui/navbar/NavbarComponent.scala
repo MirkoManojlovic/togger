@@ -11,6 +11,8 @@ import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
 
+import java.util.UUID
+
 case class MenuLink(
   linkName: String,
   link: Binder[HtmlElement],
@@ -40,12 +42,14 @@ class NavbarComponent(
   loginRepo: LoginRepo,
   themeStore: ThemeStore,
   organizations: Signal[Seq[OrganizationWithProjects]],
-  collapsed: Signal[Boolean]
+  collapsed: Signal[Boolean],
+  onExport: UUID => Unit,
+  onImport: UUID => Unit
 ) {
 
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
-  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations)
+  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations, onExport, onImport)
 
   private val userMenuOpen: Var[Boolean] = Var(false)
 
