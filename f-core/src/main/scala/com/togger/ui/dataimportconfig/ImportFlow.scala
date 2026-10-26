@@ -6,6 +6,7 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJsonFailure
 import com.togger.dto.DataImportResp
+import com.togger.ui.components.{TgTab, TgTabs}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
@@ -30,36 +31,48 @@ class ImportFlow(
     run(projectId, dataImportConfigService.findAllByProjectId(projectId).map(_.map(_.body.get.map(_.importPath).distinct.toList)))
 
   private def run(projectId: UUID, paths: IO[Either[TgJsonFailure, List[String]]]): Unit = {
-    val program: IO[(Int, List[DataImportResp], List[TgJsonFailure])] =
+    val program: IO[(List[String], List[(String, Either[TgJsonFailure, DataImportResp])])] =
       paths.flatMap {
-        case Left(failure) => IO.pure((0, Nil, List(failure)))
+        case Left(failure) => IO.pure((Nil, List(("", failure.asLeft[DataImportResp]))))
         case Right(importPaths) =>
           importPaths
-            .traverse(path => dataExportService.importData(projectId, path).map(_.map(_.body.get)))
-            .map(outcomes => (outcomes.size, outcomes.collect { case Right(dto) => dto }, outcomes.collect { case Left(f) => f }))
+            .traverse(path => dataExportService.importData(projectId, path).map(resp => path -> resp.map(_.body.get)))
+            .map(importPaths -> _)
       }
 
     spinnerService
       .runWithSpinner(program)
-      .map { case (pathCount, successes, failures) =>
+      .map { case (importPaths, outcomes) =>
+        val successes = outcomes.collect { case (_, Right(dto)) => dto }
+        val failures = outcomes.collect { case (_, Left(failure)) => failure }
         failures.foreach(toast.error)
         if (failures.isEmpty && successes.nonEmpty)
           toast.success(s"Imported from ${successes.size} path(s), ${successes.map(_.results.size).sum} entity(ies) total")
         else if (failures.nonEmpty && successes.nonEmpty)
-          toast.error(s"Imported from ${successes.size}/$pathCount path(s); ${failures.size} failed")
-        modalFactory.previewModal(content(pathCount, successes.flatMap(_.results.toList), failures.size), "Import results")
+          toast.error(s"Imported from ${successes.size}/${importPaths.size} path(s); ${failures.size} failed")
+        modalFactory.previewModal(content(importPaths, outcomes), "Import results")
       }
       .unsafeRunAndForget()
   }
 
-  private def content(pathCount: Int, results: List[com.togger.dto.DataImportEntityResultResp], failedCount: Int) =
-    if (results.nonEmpty) div(cls("p-4"), new ImportResultsComponent(results).element)
-    else
-      div(
-        cls("p-4 text-body"),
-        if (failedCount > 0) s"Nothing was imported: $failedCount of $pathCount import path(s) failed"
-        else if (pathCount == 0) "No import paths configured for this project"
-        else "Nothing to import from the configured path(s)"
-      )
+  private def pathPanel(outcome: Either[TgJsonFailure, DataImportResp]): HtmlElement =
+    outcome.fold(
+      _ => div(cls("text-body"), "Importing from this path failed"),
+      dto =>
+        if (dto.results.isEmpty) div(cls("text-body"), "Nothing to import from this path")
+        else new ImportResultsComponent(dto.results).element
+    )
+
+  private def content(importPaths: List[String], outcomes: List[(String, Either[TgJsonFailure, DataImportResp])]) =
+    outcomes match {
+      case Nil                        => div(cls("p-4 text-body"), "No import paths configured for this project")
+      case ("", _) :: Nil             => div(cls("p-4 text-body"), "Could not load the import paths of this project")
+      case (_, outcome) :: Nil        => div(cls("p-4"), pathPanel(outcome))
+      case several =>
+        val tabs = several.zipWithIndex.map { case ((path, outcome), index) =>
+          TgTab(s"import-path-$index", path, pathPanel(outcome))
+        }
+        div(cls("p-4"), new TgTabs(tabs, Var(tabs.head.id)).element)
+    }
 
 }
