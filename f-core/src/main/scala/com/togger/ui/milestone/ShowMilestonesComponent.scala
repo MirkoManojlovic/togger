@@ -172,7 +172,7 @@ class ShowMilestonesComponent(
                             div(
                               iconButton(
                                 "Review",
-                                TgIcons.statusIcon(className = "w-4 h-4"),
+                                TgIcons.eyeIcon(className = "w-4 h-4"),
                                 rowIconButtonCls,
                                 rowButtonMarginCls,
                                 onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))

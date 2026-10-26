@@ -142,7 +142,7 @@ class ShowTimeboxesComponent(
 //                        ),
                         iconButton(
                           "Review",
-                          TgIcons.checkIcon(className = "w-4 h-4"),
+                          TgIcons.eyeIcon(className = "w-4 h-4"),
                           rowIconButtonCls,
                           rowButtonMarginCls,
                           onClick.mapToUnit --> (_ => router.route(TimeboxReviewPage(projectId, dto.id)))
