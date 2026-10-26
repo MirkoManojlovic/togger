@@ -67,12 +67,10 @@ class ShowAllDataExportConfigsComponent(
   private def statusPanel(pathStatus: DataExportPathStatusResp) =
     exportPathStatusCard(pathStatus, s"Export status: ${pathStatus.exportPath}")
 
+  private val exportCheckFlow = new ExportCheckFlow(spinnerService, modalFactory, toast)
+
   private def exportAll(): Unit =
-    runAction(dataExportService.exportData(projectId)) {
-      _.toastMessageDto(dto =>
-        s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
-      )(_ => IO.unit)
-    }
+    exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
 
   private def checkAllStatuses(): Unit =
     runAction(dataExportService.checkStatus(projectId)) {
@@ -96,14 +94,10 @@ class ShowAllDataExportConfigsComponent(
     }
 
   private def exportByConfig(dto: DataExportConfigResp): Unit =
-    runAction(dataExportService.exportByConfig(dto.id)) {
-      _.toastJustErrorsUnit { resp =>
-        resp.results.headOption.flatMap(_.error) match {
-          case Some(err) => toast.error(s"Export to ${dto.exportPath} failed: $err")
-          case None      => toast.success(s"Exported ${resp.entityCounts.map(_.count).sum} entities to ${dto.exportPath}")
-        }
-      }
-    }
+    exportCheckFlow.start(
+      dataExportService.checkStatusByConfig(dto.id),
+      dataExportService.exportByConfig(dto.id)
+    )
 
   private def checkStatusByConfig(dto: DataExportConfigResp): Unit =
     runAction(dataExportService.checkStatusByConfig(dto.id)) {

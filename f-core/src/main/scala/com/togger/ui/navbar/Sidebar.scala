@@ -10,7 +10,7 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
-import com.togger.ui.dataexportconfig.ExportResultsComponent
+import com.togger.ui.dataexportconfig.ExportCheckFlow
 import com.togger.ui.dataimportconfig.ImportResultsComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
@@ -231,13 +231,10 @@ class Sidebar(
       toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
     }
 
+  private val exportCheckFlow = new ExportCheckFlow(spinnerService, modalFactory, toast)
+
   private def dumpProject(projectId: UUID): Unit =
-    spinnerService
-      .runWithSpinner(dataExportService.exportData(projectId))
-      .toastMessageDto(dto =>
-        s"Data exported to ${dto.results.count(_.success)}/${dto.results.size} configured path(s)"
-      )(dto => IO(showResultsModal("Export results")(new ExportResultsComponent(dto).element)))
-      .unsafeRunAndForget()
+    exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
 
   private def importAllForProject(projectId: UUID): Unit = {
     val program: IO[Unit] = dataImportConfigService.findAllByProjectId(projectId).flatMap {
