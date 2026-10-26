@@ -168,6 +168,8 @@ object TgServer {
             dataExportController.checkStatusByConfig,
             dataExportController.importData,
             dataExportController.checkImportStatus,
+            dataExportController.exportPending,
+            dataExportController.importPending,
             dataExportConfigController.findById,
             dataExportConfigController.save,
             dataExportConfigController.update,
@@ -436,7 +438,13 @@ class DependenciesModule(
       timeboxVersionRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
+  lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)
   lazy val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
-  lazy val dataExportController = new DataExportController(dataExportEndpoints, dataExportService, dataImportService)
+  lazy val dataExportController = new DataExportController(
+      dataExportEndpoints,
+      dataExportService,
+      dataImportService,
+      dataSyncPendingService
+    )
 
 }
