@@ -25,10 +25,18 @@ class DataImportService(
 
   def importProject(projectId: UUID, accountId: UUID, projectFolderPath: String): IO[Either[ProjectError, DataImportResult]] = {
     logger.info(s"Importing project ${sp(projectId)} from ${sp(projectFolderPath)} requested by ${sp(accountId)}")
-    dataExportRepo.isAssigned(projectId, accountId).transact(transactor).flatMap { assigned =>
+    timed("import total", projectId)(importProjectSteps(projectId, accountId, projectFolderPath))
+  }
+
+  private def importProjectSteps(
+    projectId: UUID,
+    accountId: UUID,
+    projectFolderPath: String
+  ): IO[Either[ProjectError, DataImportResult]] =
+    timed("check assignment", projectId)(dataExportRepo.isAssigned(projectId, accountId).transact(transactor)).flatMap { assigned =>
       if (!assigned) IO.pure(Left(NotAssignedToProject))
       else
-        (for {
+        timedNow("read index and project file", projectId)(for {
           importPath <- dataExportTreeStore.resolveImportFolder(projectFolderPath)
           index <- dataExportTreeStore.readIndexAtPath(importPath).toOption
           projectDump <- dataExportTreeStore
@@ -41,7 +49,20 @@ class DataImportService(
             importFromTree(projectId, importPath, index, projectDump)
         }
     }
+
+  /** Logs how long a step of the import took, so a slow import can be traced to the step responsible. */
+  private def timed[A](step: String, projectId: UUID)(io: IO[A]): IO[A] =
+    io.timed.flatMap { case (duration, result) => IO(logStep(step, projectId, duration.toMillis)).as(result) }
+
+  private def timedNow[A](step: String, projectId: UUID)(block: => A): A = {
+    val start = System.nanoTime()
+    val result = block
+    logStep(step, projectId, (System.nanoTime() - start) / 1000000)
+    result
   }
+
+  private def logStep(step: String, projectId: UUID, millis: Long): Unit =
+    logger.info(s"Import step ${sp(step)} of ${sp(projectId)} took ${sp(millis)} ms")
 
   private def firstId(index: ExportIndex, entityType: DataExportEntityType): UUID =
     index.entriesOf(entityType).keys.headOption.getOrElse(new UUID(0L, 0L))
@@ -53,36 +74,42 @@ class DataImportService(
     projectDump: ProjectDumpData
   ): IO[Either[ProjectError, DataImportResult]] = {
     val read = new TreeReader(importPath, index)
-    val (statusesMalformed, statuses) = read.all[TaskStatus](DataExportEntityType.TaskStatus)
-    val (labelsMalformed, labels) = read.all[TaskLabel](DataExportEntityType.TaskLabel)
-    val (projectLabelsMalformed, projectLabels) = read.all[ProjectLabelDumpData](DataExportEntityType.ProjectLabel)
+    val (statusesMalformed, statuses, labelsMalformed, labels, projectLabelsMalformed, projectLabels) =
+      timedNow("read statuses and labels", projectId) {
+        val (statusesMalformed, statuses) = read.all[TaskStatus](DataExportEntityType.TaskStatus)
+        val (labelsMalformed, labels) = read.all[TaskLabel](DataExportEntityType.TaskLabel)
+        val (projectLabelsMalformed, projectLabels) = read.all[ProjectLabelDumpData](DataExportEntityType.ProjectLabel)
+        (statusesMalformed, statuses, labelsMalformed, labels, projectLabelsMalformed, projectLabels)
+      }
 
-    dataImportRepo
-      .resolveAccountMappings(index.exportedBy :: projectDump.referencedAccounts)
-      .transact(transactor)
-      .flatMap {
+    timed("resolve account mappings", projectId)(
+      dataImportRepo
+        .resolveAccountMappings(index.exportedBy :: projectDump.referencedAccounts)
+        .transact(transactor)
+    ).flatMap {
         case Left(error) => IO.pure(Left(error))
         case Right(accountIdMap) =>
-          dataImportRepo
-            .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
-            .transact(transactor)
-            .flatMap { prepared =>
+          timed("reconcile statuses and labels", projectId)(
+            dataImportRepo
+              .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
+              .transact(transactor)
+          ).flatMap { prepared =>
               val remap = new Remapper(projectId, accountIdMap, prepared.ids)
               for {
-                state <- dataImportRepo.loadImportState(projectId).transact(transactor)
-                milestones <- mergeAll[MilestoneDumpData](read, DataExportEntityType.Milestone)(
+                state <- timed("load existing project state", projectId)(dataImportRepo.loadImportState(projectId).transact(transactor))
+                milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(
                   m => dataImportRepo.mergeMilestone(remap.milestone(m))
                 )
-                tasks <- mergeAll[TaskDumpData](read, DataExportEntityType.Task)(
+                tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(
                   t => dataImportRepo.mergeTask(remap.task(t), state)
                 )
-                logEntries <- mergeAll[LogEntryDumpData](read, DataExportEntityType.LogEntry)(
+                logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(
                   le => dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
                 )
-                templates <- mergeAll[TaskTemplateDumpData](read, DataExportEntityType.TaskTemplate)(
+                templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(
                   t => dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
                 )
-                timeboxes <- mergeAll[TimeboxDumpData](read, DataExportEntityType.Timebox)(
+                timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(
                   t => dataImportRepo.mergeTimebox(remap.timebox(t))
                 )
                 members <- readMembers(read).fold(
@@ -109,16 +136,34 @@ class DataImportService(
   private def readMembers(read: TreeReader): Maybe[MembersDumpData] =
     read.one[MembersDumpData](DataExportEntityType.Members, firstId(read.index, DataExportEntityType.Members))
 
-  private def mergeAll[A: Decoder](read: TreeReader, entityType: DataExportEntityType)(
+  /** Merges the entities of one type one by one, and logs how long reading their files took against merging them. */
+  private def mergeAll[A: Decoder](projectId: UUID, read: TreeReader, entityType: DataExportEntityType)(
     merge: A => doobie.ConnectionIO[DataImportEntityResult]
   ): IO[List[DataImportEntityResult]] =
-    read.index.entriesOf(entityType).keys.toList.sorted.traverse { id =>
-      read.one[A](entityType, id) match {
-        case Left(malformed) => IO.pure(malformed)
-        case Right(data) =>
-          merge(data).transact(transactor).attempt.map(_.fold(e => failed(entityType, id, e), identity))
+    read.index.entriesOf(entityType).keys.toList.sorted
+      .traverse { id =>
+        for {
+          readStart <- IO(System.nanoTime())
+          readResult = read.one[A](entityType, id)
+          mergeStart <- IO(System.nanoTime())
+          result <- readResult match {
+            case Left(malformed) => IO.pure(malformed)
+            case Right(data) =>
+              merge(data).transact(transactor).attempt.map(_.fold(e => failed(entityType, id, e), identity))
+          }
+          mergeEnd <- IO(System.nanoTime())
+        } yield (result, mergeStart - readStart, mergeEnd - mergeStart)
       }
-    }
+      .flatMap { timedResults =>
+        val readMillis = timedResults.map(_._2).sum / 1000000
+        val mergeMillis = timedResults.map(_._3).sum / 1000000
+        IO(
+          logger.info(
+            s"Import step ${sp(s"merge ${entityType.folder}")} of ${sp(projectId)}: ${sp(timedResults.size)} entities, " +
+              s"reading files took ${sp(readMillis)} ms, merging took ${sp(mergeMillis)} ms"
+          )
+        ).as(timedResults.map(_._1))
+      }
 
   private def failed(entityType: DataExportEntityType, id: UUID, e: Throwable) =
     DataImportEntityResult.failed(entityType, id, DataImportStatus.Failed, String.valueOf(e.getMessage))
