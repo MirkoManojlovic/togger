@@ -53,6 +53,7 @@ class OrganizationProjectsLoaderTest extends AsyncJsWordSpec {
     }
     override def createProject(dto: CreateProjectReq) = ???
     override def updateProject(dto: UpdateProjectReq) = ???
+    override def deleteProject(id: UUID) = ???
     override def findById(id: UUID) = ???
     override def findMembers(projectId: UUID, page: PageRequest) = ???
     override def searchByLabels(projectLabelIds: Seq[UUID], page: PageRequest) = ???

@@ -5,6 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -42,6 +43,8 @@ trait ProjectService {
   def createProject(dto: CreateProjectReq): TgRespIO[FindProjectResp]
 
   def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp]
+
+  def deleteProject(id: UUID): TgRespIO[TgEmptyBody]
 
   def findByOrganizationId(organizationId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindProjectResp]]
 
@@ -85,6 +88,9 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
 
   override def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.updateEndpoint)(dto)
+
+  override def deleteProject(id: UUID): TgRespIO[TgEmptyBody] =
+    protectedBackendClient.protectedHttpCall(projectEndpoints.deleteByIdEndpoint)(id)
 
   override def findMembers(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)((projectId, page))

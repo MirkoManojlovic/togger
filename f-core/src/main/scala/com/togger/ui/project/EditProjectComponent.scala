@@ -5,7 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.EditProjectPage
+import com.togger.routes.Pages.{EditProjectPage, HomePage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
@@ -17,6 +17,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.projectlabel.ProjectLabelFeService
@@ -49,7 +50,8 @@ class EditProjectComponent(
   localStorage: LocalStorage,
   sidebarRefresh: SidebarRefresh,
   projectId: UUID,
-  val toast: Toast
+  val toast: Toast,
+  modalFactory: ModalFactory
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -144,6 +146,27 @@ class EditProjectComponent(
     }
   }
 
+  private def deleteProject(): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(
+        s"Delete project '${formState.now().name}'? All of its data (tasks, log entries, timeboxes, milestones, " +
+          "statuses, labels and configurations) is deleted too. This cannot be undone."
+      ),
+      title = "Delete project",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(projectService.deleteProject(projectId))
+        .toastMessageFn("Project deleted successfully") { _ =>
+          sidebarRefresh.request()
+          router.route(HomePage)
+        }
+        .unsafeRunAndForget()
+      close()
+    }
+
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
     errors = EventStream.empty,
@@ -216,7 +239,20 @@ class EditProjectComponent(
               workDaysSelect.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),
 //              findAccountsComponent.element.amend(width.px(500)),
-              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+              div(
+                cls("flex justify-between"),
+                button(
+                  typ("button"),
+                  cls(
+                    "text-white bg-danger box-border border border-transparent hover:bg-danger-strong " +
+                      "focus:ring-4 focus:ring-danger-medium shadow-xs font-medium leading-5 rounded-base " +
+                      "text-xs px-3 py-1.5 focus:outline-none"
+                  ),
+                  "Delete project",
+                  onClick.mapToUnit --> (_ => deleteProject())
+                ),
+                TgHtmlButton.updateSmall(EventStream.fromValue(false))
+              )
             )
           )
         )

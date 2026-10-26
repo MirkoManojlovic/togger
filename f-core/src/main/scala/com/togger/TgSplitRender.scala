@@ -586,7 +586,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   localStorage,
                   sidebarRefresh,
                   projectId,
-                  toast
+                  toast,
+                  modalFactory
                 ).element
               case SearchProjectsByLabelPage =>
                 new SearchProjectsByLabelComponent(
