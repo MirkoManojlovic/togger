@@ -374,6 +374,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   dataImportConfigService,
                   tgDateFormater,
                   router,
+                  modalFactory,
                   spinnerService,
                   toast,
                   projectId,

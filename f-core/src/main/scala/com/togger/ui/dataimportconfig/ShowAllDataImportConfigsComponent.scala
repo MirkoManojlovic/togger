@@ -13,6 +13,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService, TgDateFormater}
@@ -25,6 +26,7 @@ class ShowAllDataImportConfigsComponent(
   dataExportService: DataExportFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID,
@@ -104,6 +106,23 @@ class ShowAllDataImportConfigsComponent(
       .unsafeRunAndForget()
   }
 
+  private def deleteConfig(dto: DataImportConfigResp): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete data import config '${dto.name}'?"),
+      title = "Delete data import config",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(dataImportConfigService.deleteById(dto.id))
+        .toastBackendMessageCodeBlock {
+          reload()
+        }
+        .unsafeRunAndForget()
+      close()
+    }
+
   private def configRow(dto: DataImportConfigResp) =
     tr(
       cls(rowCls),
@@ -124,14 +143,7 @@ class ShowAllDataImportConfigsComponent(
             TgIcons.trashIcon(className = "w-4 h-4"),
             rowIconButtonDangerCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ =>
-              spinnerService
-                .runWithSpinner(dataImportConfigService.deleteById(dto.id))
-                .toastBackendMessageCodeBlock {
-                  reload()
-                }
-                .unsafeRunAndForget()
-            )
+            onClick.mapToUnit --> (_ => deleteConfig(dto))
           ),
           iconButton(
             "Import",

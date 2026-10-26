@@ -12,6 +12,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService, TgDateFormater}
@@ -24,6 +25,7 @@ class ShowAllDataExportConfigsComponent(
   dataExportService: DataExportFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID,
@@ -78,10 +80,19 @@ class ShowAllDataExportConfigsComponent(
     }
 
   private def deleteConfig(dto: DataExportConfigResp): Unit =
-    runAction(dataExportConfigService.deleteById(dto.id)) {
-      _.toastBackendMessageCodeBlock {
-        reload()
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete data export config '${dto.name}'?"),
+      title = "Delete data export config",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      runAction(dataExportConfigService.deleteById(dto.id)) {
+        _.toastBackendMessageCodeBlock {
+          reload()
+        }
       }
+      close()
     }
 
   private def exportByConfig(dto: DataExportConfigResp): Unit =

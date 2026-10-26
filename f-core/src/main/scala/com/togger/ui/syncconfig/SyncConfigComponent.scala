@@ -4,6 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.routes.Pages.SyncConfigPage
 import com.togger.routes.{FrontendPage, TaskConfigListParams, TgRouter}
+import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{DataExportFeService, TgDateFormater}
 import com.togger.ui.dataexportconfig.{ShowAllDataExportConfigsComponent, DataExportConfigFeService}
@@ -18,6 +19,7 @@ class SyncConfigComponent(
   dataImportConfigService: DataImportConfigFeService,
   tgDateFormater: TgDateFormater,
   router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   spinnerService: SpinnerService,
   toast: Toast,
   projectId: UUID,
@@ -36,6 +38,7 @@ class SyncConfigComponent(
         dataExportService,
         tgDateFormater,
         router,
+        modalFactory,
         spinnerService,
         toast,
         projectId,
@@ -48,6 +51,7 @@ class SyncConfigComponent(
         dataExportService,
         tgDateFormater,
         router,
+        modalFactory,
         spinnerService,
         toast,
         projectId,

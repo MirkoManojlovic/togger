@@ -8,6 +8,7 @@ import com.togger.routes.Pages.CreateProjectMappingPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -17,6 +18,7 @@ import java.util.UUID
 class ShowProjectMappingComponent(
   projectMappingService: ProjectMappingFeService,
   router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   spinnerService: SpinnerService,
   val toast: Toast,
   projectId: UUID
@@ -42,17 +44,27 @@ class ShowProjectMappingComponent(
       cls(
         "inline-flex items-center text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 focus:ring-red-300 shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
       ),
-      onClick.mapToUnit --> (_ =>
-        spinnerService
-          .runWithSpinner(projectMappingService.deleteByIds(mapping.projectIdDb, mapping.projectIdDump))
-          .toastBackendMessageCodeBlock {
-            stateVar.update(
-              _.filterNot(m => m.projectIdDb == mapping.projectIdDb && m.projectIdDump == mapping.projectIdDump)
-            )
-          }
-          .unsafeRunAndForget()
-      )
+      onClick.mapToUnit --> (_ => confirmDelete(mapping))
     )
+
+  private def confirmDelete(mapping: ProjectMappingResp): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage("Delete this project mapping?"),
+      title = "Delete project mapping",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(projectMappingService.deleteByIds(mapping.projectIdDb, mapping.projectIdDump))
+        .toastBackendMessageCodeBlock {
+          stateVar.update(
+            _.filterNot(m => m.projectIdDb == mapping.projectIdDb && m.projectIdDump == mapping.projectIdDump)
+          )
+        }
+        .unsafeRunAndForget()
+      close()
+    }
 
   private def mappingDetails(mapping: ProjectMappingResp) =
     div(
