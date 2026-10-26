@@ -1,6 +1,6 @@
 package com.togger.controllers.project
 import cats.effect.IO
-import cats.implicits.toTraverseOps
+import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps, toTraverseOps}
 import com.togger.account.Account
 import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
 import com.togger.logging.TgLogging
@@ -143,6 +143,13 @@ class ProjectService(
       (updatedProject, members, projectLabels)
     }).transact(transactor)
   }
+
+  /** Deletes the project and all of its data, if the account is a member of it; false when it is not. */
+  def deleteWithAllData(projectId: UUID, accountId: UUID): IO[Boolean] =
+    (projectAccountRepo.isMember(projectId, accountId).flatMap {
+      case false => false.pure[ConnectionIO]
+      case true  => projectRepo.deleteWithAllData(projectId).as(true)
+    }).transact(transactor)
 
   def findPaginatedByOrganizationIdAndAccountId(
     organizationId: UUID,

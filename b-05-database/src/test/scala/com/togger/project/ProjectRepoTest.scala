@@ -3,7 +3,9 @@ package com.togger.project
 import cats.implicits._
 import com.togger.account.TgAccount
 import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
-import com.togger.organization.TgOrganization
+import com.togger.organization.{TgOrganization, TgTaskStatus}
+import com.togger.task.{Task, TaskRepoImpl}
+import com.togger.task.TaskStatus
 import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -11,7 +13,9 @@ import doobie.postgres.implicits._
 import java.time.DayOfWeek
 import java.util.UUID
 
-class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganization with TimeHelpers {
+class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganization with TgTaskStatus with TimeHelpers {
+
+  val taskRepo = new TaskRepoImpl
 
   val projectRepo = new ProjectRepoImpl
   val projectAccountRepo = new ProjectAccountRepoImpl
@@ -56,6 +60,48 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
         cp(updatedProject shouldBe foundProject2)
         cp.reportAll()
         foundProject3.isLeft shouldBe true
+      }
+
+      res.transact(transactor)
+    }
+
+    "delete a project with all of its data and keep the other projects" in { transactor =>
+      def count(table: String, projectId: UUID) =
+        (fr"select count(*) from" ++ doobie.Fragment.const(table) ++ fr"where project_id = $projectId")
+          .query[Long]
+          .unique
+
+      val res = for {
+        savedAccount <- createAccount
+        savedOrganization <- createOrganization
+        doomed <- projectRepo.insert(project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id))
+        kept <- projectRepo.insert(
+          project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = "Kept")
+        )
+        _ <- List(doomed, kept).traverse(saved =>
+          projectAccountRepo.insert(ProjectAccount(saved.id, savedAccount.id, nowAsInstant))
+        )
+        _ <- List(doomed, kept).traverse(saved =>
+          taskStatusRepo.insert(
+            TaskStatus(UUID.randomUUID(), saved.id, "Todo", "", "", nowAsInstant, nowAsInstant)
+          )
+        )
+        _ <- List(doomed, kept).traverse(saved =>
+          taskRepo.insert(Task(UUID.randomUUID(), saved.id, savedAccount.id, nowAsInstant))
+        )
+        deleted <- projectRepo.deleteWithAllData(doomed.id)
+        doomedFound <- projectRepo.findById(doomed.id).attempt
+        keptFound <- projectRepo.findById(kept.id)
+        doomedCounts <- List("task", "task_status", "project_account").traverse(count(_, doomed.id))
+        keptCounts <- List("task", "task_status", "project_account").traverse(count(_, kept.id))
+      } yield {
+        val cp = new Checkpoint
+        cp(deleted shouldBe 1)
+        cp(doomedFound.isLeft shouldBe true)
+        cp(keptFound shouldBe kept)
+        cp(doomedCounts shouldBe List(0L, 0L, 0L))
+        cp(keptCounts shouldBe List(1L, 1L, 1L))
+        cp.reportAll()
       }
 
       res.transact(transactor)

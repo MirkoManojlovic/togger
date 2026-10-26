@@ -1,5 +1,6 @@
 package com.togger.project
 import cats.data.NonEmptyList
+import cats.implicits.toFoldableOps
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
@@ -56,6 +57,22 @@ class ProjectRepoImpl extends ProjectRepo {
       s"Deleting project with ${sp(id)}",
       _ => s"Project with ${sp(id)} deleted"
     )
+
+  override def deleteWithAllData(id: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      for {
+        _ <- ProjectRepoImpl.TABLES_DELETED_BEFORE_PROJECT.traverse_(deleteByProjectId(_, id))
+        deleted <- deleteByIdStatementUUID(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).update.run
+      } yield deleted
+    )(
+      s"Deleting project with all its data ${sp(id)}",
+      _ => s"Project with all its data ${sp(id)} deleted"
+    )
+
+  private def deleteByProjectId(projectIdColumnAndTable: (String, String), projectId: UUID): ConnectionIO[Int] = {
+    val (table, column) = projectIdColumnAndTable
+    (deleteStatement(Fragment.const(table)) ++ fr"where" ++ Fragment.const(column) ++ fr"= $projectId").update.run
+  }
 
   override def update(project: Project, updatedAt: Instant): ConnectionIO[Project] = {
     logAroundInfoQuery(
@@ -137,6 +154,24 @@ class ProjectRepoImpl extends ProjectRepo {
 object ProjectRepoImpl {
   val PROJECT_TABLE: String = "project"
   val PROJECT_TABLE_FRAG: Fragment = Fragment.const(PROJECT_TABLE)
+
+  /** (table, project id column) in the order that satisfies the foreign keys: the versions, links, log entries and label
+    * assignments of a task, timebox or milestone go with it by cascade, but task versions reference statuses and
+    * milestones, so tasks go before those, and task templates before the labels they may point to.
+    */
+  val TABLES_DELETED_BEFORE_PROJECT: List[(String, String)] = List(
+    "task" -> "project_id",
+    "timebox" -> "project_id",
+    "milestone" -> "project_id",
+    "task_template" -> "project_id",
+    "task_status" -> "project_id",
+    "task_label" -> "project_id",
+    "data_export_config" -> "project_id",
+    "data_import_config" -> "project_id",
+    "project_mapping" -> "project_id_db",
+    "project_account" -> "project_id",
+    "project_label_assignment" -> "project_id"
+  )
 
   def encodeWorkDays(days: Set[DayOfWeek]): Int =
     days.foldLeft(0)((acc, day) => acc | (1 << (day.getValue - 1)))

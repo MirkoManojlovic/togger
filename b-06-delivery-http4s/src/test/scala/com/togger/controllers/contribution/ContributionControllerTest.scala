@@ -64,6 +64,7 @@ class ContributionControllerTest extends AnyWordSpec with Matchers {
     override def findById(id: UUID): ConnectionIO[Project] = pure(project)
     override def insert(project: Project) = ???
     override def deleteById(id: UUID) = ???
+    override def deleteWithAllData(id: UUID) = ???
     override def update(project: Project, updatedAt: Instant) = ???
     override def findPaginatedByOrganizationIdAndAccountId(
       organizationId: UUID,

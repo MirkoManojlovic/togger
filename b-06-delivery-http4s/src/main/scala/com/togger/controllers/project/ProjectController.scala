@@ -3,7 +3,7 @@ package com.togger.controllers.project
 import cats.effect.IO
 import cats.syntax.apply._
 import com.togger.common.TgError._
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.{Forbidden, TgClock, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.account.Account
 import com.togger.dto.{FindProjectResp, FindProjectLabelResp, SearchAccountDto}
@@ -107,6 +107,13 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
         .map { case (project, members, projectLabels) =>
           TgJsonSuccess.justBodyRight(toFindProjectResp(project, members, projectLabels))
         }
+    }
+  }
+
+  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+    projectService.deleteWithAllData(id, auth.body.get.id).map {
+      case false => Left(Forbidden)
+      case true  => TgJsonSuccess.justMessageRight("Project deleted successfully")
     }
   }
 

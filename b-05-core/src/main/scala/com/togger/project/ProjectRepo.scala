@@ -13,6 +13,12 @@ trait ProjectRepo {
 
   def deleteById(id: UUID): ConnectionIO[Int]
 
+  /** Deletes the project together with everything that belongs to it: tasks (and their versions, links, log entries and
+    * label assignments), timeboxes, milestones, task templates, statuses, labels, import/export configs, mappings and
+    * memberships.
+    */
+  def deleteWithAllData(id: UUID): ConnectionIO[Int]
+
   def update(project: Project, updatedAt: Instant): ConnectionIO[Project]
 
   /** One page of the organization's projects the account is a member of, by name. */

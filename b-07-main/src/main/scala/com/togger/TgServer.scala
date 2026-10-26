@@ -102,6 +102,7 @@ object TgServer {
             linkController.deleteVersion,
             projectController.findByid,
             projectController.update,
+            projectController.delete,
             projectController.save,
             projectController.findByOrganizationIdAndAccountId,
             projectController.findAllMembers,
