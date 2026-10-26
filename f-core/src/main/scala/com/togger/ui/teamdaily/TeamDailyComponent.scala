@@ -681,6 +681,7 @@ class TeamDailyComponent(
   /** One log entry: its date, its status, and the text. */
   private def entryView(entry: LogEntryDto): HtmlElement =
     div(
+      cls("mb-2 rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10"),
       div(
         cls("flex items-center gap-2 mb-2"),
         TgBadge(
