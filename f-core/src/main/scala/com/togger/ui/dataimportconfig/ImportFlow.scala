@@ -61,10 +61,10 @@ class ImportFlow(
     if (pathCount == 0) div(cls("p-4 text-body"), "No import paths configured for this project")
     else if (statuses.isEmpty) div(cls("p-4 text-body"), "None of the import paths could be checked")
     else {
-      val pathsToImport = statuses.filter(_.entityStatuses.exists(e => needsImport(e.status))).map(_.exportPath)
       new ExportCheckComponent(
         statuses,
-        () => run(projectId, pathsToImport),
+        onAll = pathsToImport => run(projectId, pathsToImport.map(_.exportPath)),
+        onPath = path => run(projectId, List(path.exportPath)),
         actionLabel = "Import",
         statusTitle = "Import status",
         needsAction = needsImport(_)

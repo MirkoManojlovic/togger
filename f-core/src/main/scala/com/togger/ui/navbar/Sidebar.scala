@@ -232,7 +232,7 @@ class Sidebar(
       toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
     }
 
-  private val exportCheckFlow = new ExportCheckFlow(spinnerService, modalFactory, toast)
+  private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast)
 
   private def dumpProject(projectId: UUID): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))

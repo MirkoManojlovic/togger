@@ -63,7 +63,7 @@ class ShowAllDataExportConfigsComponent(
   private def runAction[A](io: IO[A])(handle: IO[A] => IO[Unit]): Unit =
     handle(spinnerService.runWithSpinner(io)).unsafeRunAndForget()
 
-  private val exportCheckFlow = new ExportCheckFlow(spinnerService, modalFactory, toast)
+  private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast)
 
   private def exportAll(): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
