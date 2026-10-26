@@ -615,7 +615,7 @@ class SlackerComponent(
         pendingStatuses = state.signal.map(_.pendingStatuses(task.taskId)).distinct,
         onMissingDayClick = Some(day => jumpTo(_ == SlackerPosition.Fill(task.taskId, day)))
       ).tinyElement
-        .amend(cls("order-first shrink-0"))
+        .amend(cls("order-first shrink-0 self-center"))
     )
   }
 

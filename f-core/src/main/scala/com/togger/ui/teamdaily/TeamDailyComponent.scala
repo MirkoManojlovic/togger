@@ -653,7 +653,7 @@ class TeamDailyComponent(
           startDate = Some(t.startDate),
           dueDate = Some(t.dueDate)
         ).tinyElement
-          .amend(cls("order-first shrink-0"))
+          .amend(cls("order-first shrink-0 self-center"))
       )
     )
   }
