@@ -44,7 +44,7 @@ class MilestoneSummaryFormComponent(
     inputAndUpdater = selectorAndUpdaterMacro(_.summary),
     labelValue = "Summary",
     placeholderValue = "Summarize the period",
-    minHeightRem = 8,
+    minHeightRem = 18,
     minWidthRem = 0
   )
 
