@@ -4,7 +4,7 @@ import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.dto.LogEntryFilter
 import doobie.ConnectionIO
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 trait LogEntryRepo {
@@ -36,6 +36,16 @@ trait LogEntryRepo {
     filter: LogEntryFilter,
     page: DbPageRequest
   ): ConnectionIO[PaginatedResponse[LogEntry]]
+
+  /** Bounded by caller (`limit`): the latest version of every log entry of the milestone's tasks created on a UTC day
+    * in `[from, to]` (both inclusive), oldest first.
+    */
+  def findLatestByMilestoneIdBetween(
+    milestoneId: UUID,
+    from: LocalDate,
+    to: LocalDate,
+    limit: Int
+  ): ConnectionIO[List[LogEntryWithOneVersion]]
 
   def deleteByTaskId(taskId: UUID): ConnectionIO[Int]
 

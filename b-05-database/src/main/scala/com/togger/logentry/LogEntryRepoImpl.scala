@@ -5,14 +5,16 @@ import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
+import com.togger.logentry.LogEntryVersionRepoImpl.{LOG_ENTRY_VERSION_TABLE_FRAG, logEntryStatusCodec}
 import com.togger.task.Task
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Fragment, Fragments}
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 class LogEntryRepoImpl extends LogEntryRepo {
@@ -71,6 +73,33 @@ class LogEntryRepoImpl extends LogEntryRepo {
       logEntries => s"Log entries found ${sp(logEntries)} for ${sp(taskId)}"
     )
   }
+
+  override def findLatestByMilestoneIdBetween(
+    milestoneId: UUID,
+    from: LocalDate,
+    to: LocalDate,
+    limit: Int
+  ): ConnectionIO[List[LogEntryWithOneVersion]] =
+    logAroundInfoQuery(
+      (fr"""select log_entry.id, log_entry.task_id, log_entry.created_by, log_entry.created_at,
+              latest_entry.version, latest_entry.log_entry_id, latest_entry.text_internal, latest_entry.text_external,
+              latest_entry.status, latest_entry.created_by, latest_entry.created_at, latest_entry.updated_at
+            from""" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
+        latestVersionLateral ++
+        fr"join lateral (select * from" ++ LOG_ENTRY_VERSION_TABLE_FRAG ++
+        fr"""where log_entry_id = log_entry.id order by version desc limit 1) latest_entry on true
+            where tv.milestone_id = $milestoneId
+              and (log_entry.created_at at time zone 'UTC')::date >= $from
+              and (log_entry.created_at at time zone 'UTC')::date <= $to
+            order by log_entry.created_at, log_entry.id
+            limit $limit""")
+        .query[(LogEntry, LogEntryVersion)]
+        .to[List]
+        .map(_.map { case (logEntry, version) => LogEntryWithOneVersion(logEntry, version) })
+    )(
+      s"Finding latest log entries of ${sp(milestoneId)} between ${sp(from)} and ${sp(to)}, limit ${sp(limit)}",
+      found => s"Latest log entries found ${sp(found.size)} for ${sp(milestoneId)}"
+    )
 
   override def findAllByProjectId(projectId: UUID): ConnectionIO[List[LogEntry]] =
     logAroundInfoQuery(
