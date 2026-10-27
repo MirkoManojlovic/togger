@@ -16,6 +16,7 @@ import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
+  TableSearchComponent,
   TableServerSearchComponent,
   TgHtmlTable,
   TgPaginationComponent
@@ -56,6 +57,24 @@ class ShowMilestonesComponent(
     placeholderValue = "Search by name, description",
     onSearch = term => if (term.trim != params.search) showList(params.copy(search = term.trim).firstPage)
   )
+
+  /** Narrows the milestones already shown on this page; no request is made. */
+  private val localFilterVar = Var("")
+  private val localFilterBox = TableSearchComponent(
+    inputSignal = localFilterVar.signal,
+    inputStateUpdater = localFilterVar.writer,
+    placeholderValue = "Filter shown milestones"
+  )
+
+  private def matchesLocalFilter(dto: FindMilestoneResp, term: String): Boolean = {
+    val needle = term.trim.toLowerCase
+    needle.isEmpty || dto.name.toLowerCase.contains(needle) || dto.description.toLowerCase.contains(needle)
+  }
+
+  private val visibleRowsSignal: Signal[Seq[FindMilestoneResp]] =
+    stateFormVar.signal.combineWith(localFilterVar.signal).map { case (rows, term) =>
+      rows.filter(matchesLocalFilter(_, term))
+    }
 
   private val statusFilterItems =
     MilestoneStatus.values.map(status =>
@@ -165,13 +184,6 @@ class ShowMilestonesComponent(
             rowIconButtonCls,
             rowButtonMarginCls,
             onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))
-          ),
-          iconButton(
-            "Edit",
-            TgIcons.editIcon(className = "w-4 h-4"),
-            rowIconButtonCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, dto.id)))
           )
         )
       )
@@ -202,7 +214,7 @@ class ShowMilestonesComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("mb-4 flex flex-wrap items-center justify-between gap-3"), searchBox.element),
+                div(cls("mb-4 flex flex-wrap items-center justify-between gap-3"), searchBox.element, localFilterBox.element),
                 navigateOnStatusChange,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
@@ -218,7 +230,7 @@ class ShowMilestonesComponent(
                   ),
                   striped = false
                 )(
-                  stateFormVar.signal.map(milestones => if (milestones.isEmpty) Seq(noMilestonesRow) else milestones.map(row))
+                  visibleRowsSignal.map(milestones => if (milestones.isEmpty) Seq(noMilestonesRow) else milestones.map(row))
                 ),
                 TgPaginationComponent(
                   paginationVar.signal,
