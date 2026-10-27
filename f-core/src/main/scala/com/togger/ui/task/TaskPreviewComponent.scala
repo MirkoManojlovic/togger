@@ -82,6 +82,8 @@ class TaskPreviewComponent(
       )
     )
 
+  private val sectionCls = "border border-default rounded-base p-4"
+
   private val nameBlock: Option[HtmlElement] =
     Option.when(showName)(
       div(
@@ -95,6 +97,7 @@ class TaskPreviewComponent(
   private val logEntriesColumn: HtmlElement =
     div(
       cls("flex-1 min-w-0 md:min-w-min"),
+      cls(sectionCls),
       cls("[&_[role=tablist]]:flex-nowrap [&_[role=tab]]:whitespace-nowrap"),
       weekRangeStatusTabs(task.logEntries, selectedDayVar)
     )
@@ -102,6 +105,7 @@ class TaskPreviewComponent(
   private val calendarColumn: HtmlElement =
     div(
       cls("w-fit"),
+      cls(sectionCls),
       new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
     )
 
@@ -109,13 +113,17 @@ class TaskPreviewComponent(
     if (descriptionOnTop)
       div(
         nameBlock,
-        tgMarkdown.toLaminarDiv(task.description).amend(cls("mb-4")),
+        tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls), cls("mb-4")),
         div(cls("flex flex-col md:flex-row gap-4 items-start"), logEntriesColumn, calendarColumn)
       )
     else
       div(
         cls("flex flex-col md:flex-row gap-4 items-start"),
-        div(cls("flex-1 min-w-0"), nameBlock, tgMarkdown.toLaminarDiv(task.description)),
+        div(
+          cls("flex-1 min-w-0"),
+          nameBlock,
+          tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls))
+        ),
         logEntriesColumn,
         calendarColumn
       )
