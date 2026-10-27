@@ -9,7 +9,11 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
+import com.togger.ui.organization.TgIcons
+import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
+
+import scala.scalajs.js
 
 object TaskConfigTableSupport {
 
@@ -59,6 +63,36 @@ object TaskConfigTableSupport {
   /** One export path with its entities: a summary of the statuses that doubles as a filter, then the entity rows a
     * page at a time.
     */
+  private def copyPathButton(path: String) = {
+    val copiedVar = Var(false)
+    div(
+      cls("relative"),
+      button(
+        typ("button"),
+        cls("text-body hover:text-fg-brand focus:outline-none focus:ring-2 focus:ring-brand rounded-base"),
+        title("Copy the path to the clipboard"),
+        aria.label("Copy the path to the clipboard"),
+        TgIcons.copyIcon("w-6 h-6"),
+        onClick --> { _ =>
+          dom.window.navigator.clipboard.writeText(path)
+          copiedVar.set(true)
+          js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
+        }
+      ),
+      child <-- copiedVar.signal.map { copied =>
+        if (copied)
+          span(
+            cls("absolute right-0 top-full mt-1 text-xs font-normal text-body whitespace-nowrap"),
+            role("status"),
+            "Copied to clipboard"
+          )
+        else emptyNode
+      }
+    )
+  }
+
+  private val CopiedMessageMillis = 2000.0
+
   def exportPathStatusCard(pathStatus: DataExportPathStatusResp, header: String) = {
     val allStatuses = pathStatus.entityStatuses.sortBy(s => (s.entityType.entryName, s.entityId))
     val pageVar = Var((PageRequest.DefaultPage, PageRequest.DefaultSize))
@@ -113,7 +147,10 @@ object TaskConfigTableSupport {
 
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.html(div(header), TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.html(
+          div(cls("flex items-center justify-between gap-2"), span(header), copyPathButton(pathStatus.exportPath)),
+          TgCard.CardHeaderSize.H3
+        ),
         body = TgCard.HtmlCardContent(
           div(
             child <-- statusFilterVar.signal.map(summary),
