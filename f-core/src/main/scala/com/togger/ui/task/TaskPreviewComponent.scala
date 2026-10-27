@@ -24,8 +24,6 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   *   where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
-  * @param descriptionOnTop
-  *   the description over the log entries and the calendar, which then share the row, instead of beside them
   */
 class TaskPreviewComponent(
   task: FindTaskRespFull,
@@ -35,8 +33,7 @@ class TaskPreviewComponent(
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   showName: Boolean = false,
-  milestones: Seq[FindMilestoneResp] = Seq.empty,
-  descriptionOnTop: Boolean = false
+  milestones: Seq[FindMilestoneResp] = Seq.empty
 ) {
 
   private val currentWeekStart: LocalDate = {
@@ -110,23 +107,16 @@ class TaskPreviewComponent(
     )
 
   val element: HtmlElement =
-    if (descriptionOnTop)
+    div(
+      cls("flex flex-col md:flex-row gap-4 items-start"),
       div(
+        cls("flex-1 min-w-0"),
         nameBlock,
-        tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls), cls("mb-4")),
-        div(cls("flex flex-col md:flex-row gap-4 items-start"), logEntriesColumn, calendarColumn)
-      )
-    else
-      div(
-        cls("flex flex-col md:flex-row gap-4 items-start"),
-        div(
-          cls("flex-1 min-w-0"),
-          nameBlock,
-          tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls))
-        ),
-        logEntriesColumn,
-        calendarColumn
-      )
+        tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls))
+      ),
+      logEntriesColumn,
+      calendarColumn
+    )
 
   private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
     div(

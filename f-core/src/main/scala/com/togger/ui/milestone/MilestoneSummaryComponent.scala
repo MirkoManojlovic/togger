@@ -192,8 +192,7 @@ class MilestoneSummaryComponent(
             tgMarkdown,
             tgClock,
             showName = true,
-            milestone.toSeq,
-            descriptionOnTop = true
+            milestone.toSeq
           ).element
         )
       )
@@ -311,7 +310,13 @@ class MilestoneSummaryComponent(
   val element: HtmlElement =
     div(
       cls("w-full"),
-      tasksCard.amend(cls("w-full mb-4")),
+      div(
+        cls("w-full mb-4"),
+        child <-- previewedTaskVar.signal.map {
+          case Some((task, milestone)) => previewCard(task, milestone)
+          case None                    => emptyPreviewCard
+        }
+      ),
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         div(
@@ -319,13 +324,7 @@ class MilestoneSummaryComponent(
           newSummaryCard,
           previousSummariesCard
         ),
-        div(
-          cls("w-full min-w-0 lg:flex-1"),
-          child <-- previewedTaskVar.signal.map {
-            case Some((task, milestone)) => previewCard(task, milestone)
-            case None                    => emptyPreviewCard
-          }
-        )
+        tasksCard.amend(cls("min-w-0 lg:flex-1"))
       )
     )
 }
