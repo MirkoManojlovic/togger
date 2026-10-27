@@ -7,6 +7,7 @@ import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages.{
   CreateOrganizationPage,
   EditOrganizationPage,
+  ShowAllProjectLabelsPage,
   SearchProjectsByLabelPage,
   ShowAllOrganizationsPage,
   ShowProjectsForOrganizationIdTable
@@ -67,6 +68,13 @@ class ShowAllOrganizationsComponent(
                   headerIconButtonCls,
                   "mr-2",
                   router.navigateTo(SearchProjectsByLabelPage)
+                ),
+                iconButton(
+                  "Project Labels",
+                  TgIcons.tagIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(ShowAllProjectLabelsPage())
                 ),
                 iconButton(
                   "Create Organization",

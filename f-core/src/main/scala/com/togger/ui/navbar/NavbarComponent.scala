@@ -98,7 +98,7 @@ class NavbarComponent(
       onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> closeSettingsMenu),
       ul(
         cls("p-2 text-sm text-body font-medium"),
-        Seq("Project labels" -> ShowAllProjectLabelsPage(), "Import / export check" -> SyncCheckSettingsPage).map {
+        Seq("Import / export check" -> SyncCheckSettingsPage).map {
           case (label, page) =>
             li(
               a(
@@ -139,9 +139,10 @@ class NavbarComponent(
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
         case ChangePasswordPage => NavbarItems.changePasswordSelected
-        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage =>
+        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
+            CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.organizationSelected
-        case CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) | SyncCheckSettingsPage =>
+        case SyncCheckSettingsPage =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }

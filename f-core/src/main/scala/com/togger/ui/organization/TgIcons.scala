@@ -516,6 +516,9 @@ object TgIcons {
       )
     )
 
+  def tagIcon(className: String) =
+    strokeIcon(className, "M7 7h.01M3 5v5.17a2 2 0 0 0 .59 1.42l8.82 8.82a2 2 0 0 0 2.83 0l5.17-5.17a2 2 0 0 0 0-2.83l-8.82-8.82A2 2 0 0 0 10.17 3H5a2 2 0 0 0-2 2Z")
+
   def boldIcon(className: String) =
     strokeIcon(className, "M8 5h4.5a3.5 3.5 0 1 1 0 7H8V5Zm0 7h5.5a3.5 3.5 0 1 1 0 7H8v-7Z")
 
