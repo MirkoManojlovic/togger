@@ -21,11 +21,16 @@ class TaskLinkEditor(
 
   private val formState = Var(initial)
 
-  private val isValid: Signal[Boolean] = formState.signal.map(form => TaskLinkBadges.safeHref(form.url).isDefined)
+  private def isFormValid(form: TaskLinkFormData): Boolean =
+    form.name.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isDefined
+
+  private val isValid: Signal[Boolean] = formState.signal.map(isFormValid)
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
-    errors = EventStream.empty,
+    errors = formState.signal.changes.map { form =>
+      if (form.name.trim.isEmpty && form.url.trim.nonEmpty) Seq("Link name can't be empty") else Seq.empty
+    },
     labelValue = "Link name",
     tgInputType = TgInputType.Text,
     isRequired = false
@@ -34,7 +39,8 @@ class TaskLinkEditor(
   private val urlInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.url),
     errors = formState.signal.changes.map { form =>
-      if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty) Seq("Use a web address")
+      if (form.url.trim.isEmpty && form.name.trim.nonEmpty) Seq("Link value can't be empty")
+      else if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty) Seq("Use a web address")
       else Seq.empty
     },
     labelValue = "Url",
@@ -42,7 +48,7 @@ class TaskLinkEditor(
     isRequired = false
   )
 
-  private def submit(): Unit = if (TaskLinkBadges.safeHref(formState.now().url).isDefined) onSubmit(formState.now())
+  private def submit(): Unit = if (isFormValid(formState.now())) onSubmit(formState.now())
 
   val element: HtmlElement =
     div(
