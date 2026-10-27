@@ -42,7 +42,11 @@ object TgBreadcrumbTrail {
     underTasks(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
 
   private def underConfigs(projectId: UUID, label: String) =
-    underTasks(projectId, link("Sync config", SyncConfigPage(projectId)), current(label))
+    underOrganizations(
+      link("Project", ProjectHomePage(projectId)),
+      link("Sync config", SyncConfigPage(projectId)),
+      current(label)
+    )
 
   private def underMilestones(projectId: UUID, label: String) =
     underTasks(projectId, link("Milestones", ShowMilestonesPage(projectId)), current(label))
