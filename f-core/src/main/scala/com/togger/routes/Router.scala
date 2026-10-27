@@ -83,6 +83,12 @@ object Pages {
 
   case class EditProjectLabelPage(id: UUID) extends PrivatePage
 
+  case object CreateTgPromptPage extends PrivatePage
+
+  case class ShowAllTgPromptsPage(list: ListParams = ListParams.default) extends PrivatePage
+
+  case class EditTgPromptPage(id: UUID) extends PrivatePage
+
   case object CreateProjectLabelCategoryPage extends PrivatePage
 
   case class ShowAllProjectLabelCategoriesPage(list: ListParams = ListParams.default) extends PrivatePage

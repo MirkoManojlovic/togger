@@ -34,6 +34,9 @@ object TgBreadcrumbTrail {
   private def underProjectLabels(label: String) =
     underOrganizations(link("Project labels", ShowAllProjectLabelsPage()), current(label))
 
+  private def underPrompts(label: String) =
+    underOrganizations(link("Prompts", ShowAllTgPromptsPage()), current(label))
+
   private def underCategories(label: String) =
     underOrganizations(link("Project label categories", ShowAllProjectLabelCategoriesPage()), current(label))
 
@@ -75,6 +78,10 @@ object TgBreadcrumbTrail {
     case ChangePasswordPage        => underOrganizations(current("Change password"))
     case ApexChartDemoPage         => underOrganizations(current("Chart demo"))
     case SyncCheckSettingsPage     => underOrganizations(current("Import / export check"))
+
+    case ShowAllTgPromptsPage(_) => underOrganizations(current("Prompts"))
+    case CreateTgPromptPage      => underPrompts("Create prompt")
+    case EditTgPromptPage(_)     => underPrompts("Edit prompt")
 
     case ShowAllProjectLabelsPage(_)       => underOrganizations(current("Project labels"))
     case CreateProjectLabelPage            => underProjectLabels("Create project label")

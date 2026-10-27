@@ -28,6 +28,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.syncconfig._
 import com.togger.ui.tasktemplate._
+import com.togger.ui.tgprompt._
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
 import com.togger.ui.dataimportconfig._
@@ -184,6 +185,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
+  lazy val tgPromptService = new TgPromptFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelService = new ProjectLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
@@ -555,6 +557,28 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgClock,
                   accountService,
                   projectLabelId,
+                  toast
+                ).element
+              case CreateTgPromptPage =>
+                new CreateTgPromptComponent(tgPromptService, spinnerService, toast).element
+              case ShowAllTgPromptsPage(listParams) =>
+                new ShowAllTgPromptsComponent(
+                  tgPromptService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  listParams,
+                  toast
+                ).element
+              case EditTgPromptPage(tgPromptId) =>
+                new EditTgPromptComponent(
+                  tgPromptService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  modalFactory,
+                  tgPromptId,
                   toast
                 ).element
               case CreateProjectLabelCategoryPage =>

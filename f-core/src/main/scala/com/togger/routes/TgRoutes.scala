@@ -241,6 +241,20 @@ class TgRoutes {
         pattern = root / "settings" / "project-label" / "edit" / segment[String] / endOfSegments
       ),
       Route.static(
+        CreateTgPromptPage,
+        root / "settings" / "prompt" / "create"
+      ),
+      Route.withQuery[ShowAllTgPromptsPage, Unit, ListQuery](
+        encode = (page: ShowAllTgPromptsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllTgPromptsPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "prompt" / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: EditTgPromptPage) => page.id.toString,
+        decode = (id: String) => EditTgPromptPage(UUID.fromString(id)),
+        pattern = root / "settings" / "prompt" / "edit" / segment[String] / endOfSegments
+      ),
+      Route.static(
         CreateProjectLabelCategoryPage,
         root / "settings" / "project-label-category" / "create"
       ),
