@@ -3,6 +3,7 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv, HtmlLi, HtmlUl}
+import com.togger.ui.synccheck.SyncPendingDot
 import org.scalajs.dom.{KeyboardEvent, SVGSVGElement}
 
 import scala.annotation.tailrec
@@ -17,6 +18,8 @@ import scala.annotation.tailrec
   *   optional leading icon, as a `className => svg` function (e.g. `Some(TgIcons.briefcaseIcon)`)
   * @param badge
   *   optional trailing count, rendered only while the value is greater than zero
+  * @param pendingLabel
+  *   when set, a small circle with this label is shown on the right corner of the tab
   */
 case class TgTab(
   id: String,
@@ -25,7 +28,8 @@ case class TgTab(
   icon: Option[String => ReactiveSvgElement[SVGSVGElement]] = None,
   badge: Option[Signal[Int]] = None,
   disabled: Boolean = false,
-  tooltip: Option[String] = None
+  tooltip: Option[String] = None,
+  pendingLabel: Option[String] = None
 )
 
 /** Flowbite "tabs with underline" for Laminar.
@@ -93,12 +97,14 @@ class TgTabs(
       aria.selected <-- isSelected(tab),
       tabIndex <-- rovingTabIndex(tab),
       cls(tabBaseCls),
+      cls.toggle("relative") := tab.pendingLabel.isDefined,
       cls <-- tabCls(tab),
       onClick.mapToUnit --> (_ => select(tab.id)),
       tab.icon.map(mkIcon => mkIcon(iconCls)),
       tab.tooltip.map(title(_)),
       span(tab.label),
-      tab.badge.map(badgeSignal => child <-- badgeSignal.map(renderBadge))
+      tab.badge.map(badgeSignal => child <-- badgeSignal.map(renderBadge)),
+      tab.pendingLabel.map(label => SyncPendingDot(Val(true), label))
     )
 
   private def renderBadge(count: Int) =

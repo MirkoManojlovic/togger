@@ -34,7 +34,8 @@ class ExportCheckComponent(
       tabId(index),
       pathStatus.name.getOrElse(pathStatus.exportPath),
       exportPathStatusCard(pathStatus, s"$statusTitle: ${pathStatus.exportPath}"),
-      tooltip = pathStatus.name.map(_ => pathStatus.exportPath)
+      tooltip = pathStatus.name.map(_ => pathStatus.exportPath),
+      pendingLabel = Option.when(pathNeedsAction(pathStatus))(s"There is something to ${actionLabel.toLowerCase}")
     )
 
   private val selectedTabVar = Var(tabId(0))
