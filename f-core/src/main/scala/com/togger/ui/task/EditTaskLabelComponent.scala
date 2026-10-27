@@ -104,9 +104,9 @@ class EditTaskLabelComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
               emojiInput.htmlElement.amend(cls("mb-4")),
-              descriptionInput.htmlElement.amend(cls("mb-4")),
+              descriptionInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
