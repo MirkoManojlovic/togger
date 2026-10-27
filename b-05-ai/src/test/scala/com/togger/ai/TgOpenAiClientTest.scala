@@ -88,6 +88,21 @@ class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
     }
   }
 
+  "TgOpenAiClient with a custom base uri" should {
+    "call the chat completions path of that server" in {
+      val requestedUri = new java.util.concurrent.atomic.AtomicReference[String]()
+      val stub: StreamBackend[IO, Fs2Streams[IO]] =
+        StreamBackendStub[IO, Fs2Streams[IO]](new CatsMonadAsyncError[IO]).whenAnyRequest
+          .thenRespondF { request =>
+            IO { requestedUri.set(request.uri.toString); sttp.client4.testing.ResponseStub.adjust(completionJson("hi")) }
+          }
+      new TgOpenAiClient(stub, TgOllama.BaseUri)
+        .chat(TgOllama.ApiKey, request)
+        .map(result => (result.isRight, requestedUri.get()) shouldBe (true, "http://localhost:11434/v1/chat/completions"))
+        .unsafeToFuture()
+    }
+  }
+
   "TgOpenAiClient.chatAs" should {
     "decode a structured response" in {
       clientReplying(StatusCode.Ok, completionJson("""{"text":"hello"}"""))

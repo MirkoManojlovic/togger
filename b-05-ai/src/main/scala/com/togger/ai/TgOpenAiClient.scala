@@ -6,7 +6,7 @@ import com.togger.ai.TgAiError._
 import com.togger.logging.TgLogging
 import io.circe.Decoder
 import io.circe.parser.{decode => decodeJson}
-import sttp.ai.openai.OpenAI
+import sttp.ai.openai.{OpenAI, OpenAIUris}
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException._
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
@@ -15,9 +15,18 @@ import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
 import sttp.ai.openai.streaming.fs2._
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client4.StreamBackend
+import sttp.model.Uri
 import sttp.tapir.Schema
 
-class TgOpenAiClient(backend: StreamBackend[IO, Fs2Streams[IO]]) extends TgAiClient with TgLogging {
+import scala.concurrent.duration.Duration
+
+/** Talks to OpenAI, or to any OpenAI compatible server such as Ollama through `baseUri`. */
+class TgOpenAiClient(
+  backend: StreamBackend[IO, Fs2Streams[IO]],
+  baseUri: Uri = OpenAIUris.OpenAIBaseUri,
+  timeout: Duration = Duration.Inf
+) extends TgAiClient
+    with TgLogging {
 
   override def chat(apiKey: TgAiApiKey, request: TgAiChatRequest): IO[Either[TgAiError, TgAiChatResult]] =
     sendChat(apiKey, toChatBody(request)).map(_.flatMap(toChatResult))
@@ -32,7 +41,7 @@ class TgOpenAiClient(backend: StreamBackend[IO, Fs2Streams[IO]]) extends TgAiCli
       apiKey: TgAiApiKey,
       request: TgAiChatRequest
   ): IO[Either[TgAiError, fs2.Stream[IO, TgAiChunk]]] =
-    new OpenAI(apiKey.value)
+    openAI(apiKey)
       .createStreamedChatCompletion[IO](toChatBody(request))
       .send(backend)
       .map(_.body.leftMap(toTgAiError).map(_.map(_.choices.flatMap(_.delta.content).mkString).filter(_.nonEmpty).map(TgAiChunk)))
@@ -40,12 +49,14 @@ class TgOpenAiClient(backend: StreamBackend[IO, Fs2Streams[IO]]) extends TgAiCli
       .flatTap(logOutcome("chatStream"))
 
   private def sendChat(apiKey: TgAiApiKey, body: ChatBody): IO[Either[TgAiError, ChatResponse]] =
-    new OpenAI(apiKey.value)
+    openAI(apiKey)
       .createChatCompletion(body)
       .send(backend)
       .map(_.body.leftMap(toTgAiError))
       .handleError(unavailable)
       .flatTap(logOutcome("chat"))
+
+  private def openAI(apiKey: TgAiApiKey): OpenAI = new OpenAI(apiKey.value, baseUri = baseUri, timeout = timeout)
 
   private def toChatBody(request: TgAiChatRequest): ChatBody =
     ChatBody(
