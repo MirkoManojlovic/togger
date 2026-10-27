@@ -677,8 +677,8 @@ class MilestoneHistoryComponent(
                 )
               ),
               child <-- historySignal.map { layout =>
-                if (!layout.hasAnyLogEntries) div("No log entries yet for this project.")
-                else if (layout.days.isEmpty) div("No log entries match the selected filter.")
+                if (!layout.hasAnyLogEntries) div(cls("text-body"), "No log entries yet for this project.")
+                else if (layout.days.isEmpty) div(cls("text-body"), "No log entries match the selected filter.")
                 else renderGrid(layout)
               }
             )
