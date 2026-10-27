@@ -311,7 +311,8 @@ class EditMilestoneComponent(
         )
       ),
       onChoose = option => {
-        formState.update(_.copy(status = option.id))
+        if (option.id == MilestoneStatus.Done.value.toString) closeDialogOpen.set(true)
+        else formState.update(_.copy(status = option.id))
         statusMenuOpen.set(false)
       },
       widthCls = "w-64"

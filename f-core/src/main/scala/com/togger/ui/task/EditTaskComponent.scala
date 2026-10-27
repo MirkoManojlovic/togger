@@ -101,7 +101,8 @@ class EditTaskComponent(
       TaskProgressComponent
         .fromDescription(formState.signal.map(_.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
         .element
-    )
+    ),
+    onDoneChosen = () => closeDialogOpen.set(true)
   )
 
   spinnerService

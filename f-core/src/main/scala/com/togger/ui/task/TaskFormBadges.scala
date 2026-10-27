@@ -12,9 +12,15 @@ import com.togger.ui.task.bulk._
 import java.time.{DayOfWeek, LocalDate}
 
 /** The attributes of the task a form edits, as badges that open the same popups the task list uses; the form reads the
-  * edited task from [[taskVar]] when it is submitted.
+  * edited task from [[taskVar]] when it is submitted. Choosing the Done status is handed to [[onDoneChosen]] instead of
+  * being applied, as a done task needs an end date.
   */
-class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlElement] = None) {
+class TaskFormBadges(
+  initial: BulkTask,
+  tgClock: TgClock,
+  trailing: Option[HtmlElement] = None,
+  onDoneChosen: () => Unit = () => ()
+) {
 
   val taskVar: Var[BulkTask] = Var(initial)
   private val lookupsVar = Var(BulkLookups(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Set.empty))
@@ -31,8 +37,16 @@ class TaskFormBadges(initial: BulkTask, tgClock: TgClock, trailing: Option[HtmlE
   private val popups = new BulkEditPopups(
     context = _ => BulkEditContext(lookupsVar.now(), Seq(taskVar.now()), tgClock.currentDate()),
     onEdit = (_, edit) =>
-      taskVar.update(task => BulkTaskEditor(Seq(task), Set(task.key), edit, lookupsVar.now().workDays).head)
+      if (choosesDone(edit)) onDoneChosen()
+      else taskVar.update(task => BulkTaskEditor(Seq(task), Set(task.key), edit, lookupsVar.now().workDays).head)
   )
+
+  private def choosesDone(edit: BulkEdit): Boolean =
+    edit match {
+      case BulkEdit.SetStatus(statusId) =>
+        TaskClose.doneStatus(lookupsVar.now().statuses).exists(_.id == statusId)
+      case _ => false
+    }
 
   private def primaryRow(task: BulkTask, lookups: BulkLookups): Seq[BadgeSpec] = {
     val milestone = task.milestoneId
