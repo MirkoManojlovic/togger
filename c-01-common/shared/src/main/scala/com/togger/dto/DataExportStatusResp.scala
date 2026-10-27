@@ -27,7 +27,8 @@ case class DataExportEntityStatusResp(
 case class DataExportPathStatusResp(
   exportPath: String,
   entityStatuses: List[DataExportEntityStatusResp],
-  exportConfigId: Option[UUID] = None
+  exportConfigId: Option[UUID] = None,
+  name: Option[String] = None
 )
 
 case class DataExportStatusResp(
