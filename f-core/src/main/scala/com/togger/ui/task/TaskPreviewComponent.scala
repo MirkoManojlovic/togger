@@ -26,6 +26,8 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   *   where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
+  * @param inTabs
+  *   the description and the log entries with the calendar in a tab each, instead of in columns side by side
   */
 class TaskPreviewComponent(
   task: FindTaskRespFull,
@@ -35,7 +37,8 @@ class TaskPreviewComponent(
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   showName: Boolean = false,
-  milestones: Seq[FindMilestoneResp] = Seq.empty
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
+  inTabs: Boolean = false
 ) {
 
   private val currentWeekStart: LocalDate = {
@@ -133,17 +136,35 @@ class TaskPreviewComponent(
       new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
     )
 
-  val element: HtmlElement =
+  private val description: HtmlElement = tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls))
+
+  private def columns: HtmlElement =
     div(
       cls("flex flex-col md:flex-row gap-4 items-start"),
-      div(
-        cls("flex-1 min-w-0"),
-        nameBlock,
-        tgMarkdown.toLaminarDiv(task.description).amend(cls(sectionCls))
-      ),
+      div(cls("flex-1 min-w-0"), nameBlock, description),
       logEntriesColumn,
       calendarColumn
     )
+
+  // Built only for the layout in use: an element has one parent, so the other layout would take them from it.
+  /** The name over the description and the log entries with the calendar, each in a tab. */
+  private def tabbed: HtmlElement =
+    div(
+      nameBlock,
+      new TgTabs(
+        Seq(
+          TgTab("description", "Description", description),
+          TgTab(
+            "log-entries",
+            "Log entries",
+            div(cls("flex flex-col md:flex-row gap-4 items-start"), logEntriesColumn, calendarColumn)
+          )
+        ),
+        Var("description")
+      ).element
+    )
+
+  val element: HtmlElement = if (inTabs) tabbed else columns
 
   private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
     div(

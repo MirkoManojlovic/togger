@@ -192,7 +192,8 @@ class MilestoneSummaryComponent(
             tgMarkdown,
             tgClock,
             showName = true,
-            milestone.toSeq
+            milestone.toSeq,
+            inTabs = true
           ).element
         )
       )
