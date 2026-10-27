@@ -70,7 +70,9 @@ class EditDataExportConfigComponent(
 
     spinnerService
       .runWithSpinner(dataExportConfigService.update(dto))
-      .toastMessageFn("Export data config updated successfully")(_ => router.route(EditDataExportConfigPage(state.projectId, id)))
+      .toastMessageFn("Export data config updated successfully")(_ =>
+        router.route(EditDataExportConfigPage(state.projectId, id))
+      )
       .unsafeRunAndForget()
   }
 
@@ -97,8 +99,8 @@ class EditDataExportConfigComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
-              exportPathInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 w-[40ch] max-w-full")),
+              exportPathInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
