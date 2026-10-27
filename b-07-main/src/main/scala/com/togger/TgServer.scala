@@ -1,12 +1,13 @@
 package com.togger
 import cats.effect.{IO, Resource}
+import com.togger.ai.{TgAiClient, TgAiService, TgNoApiKeyProvider, TgOpenAiClient}
 import com.togger.account.{AccountEndpoints, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
 import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
-import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneController, MilestoneDateController, MilestoneSummaryController}
 import com.togger.controllers.tgprompt.TgPromptController
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
@@ -57,6 +58,9 @@ import com.togger.projectlabel.{
 }
 import doobie.Transactor
 import org.http4s.server.Server
+import sttp.capabilities.fs2.Fs2Streams
+import sttp.client4.StreamBackend
+import sttp.client4.httpclient.fs2.HttpClientFs2Backend
 
 trait TransactorModule {
   val transactor: Transactor[IO]
@@ -66,7 +70,13 @@ class TransactorModuleApp(val transactor: Transactor[IO]) extends TransactorModu
 
 object TgServer {
 
-  def instance(transactorModule: TransactorModule): Resource[IO, Server] = {
+  def instance(transactorModule: TransactorModule): Resource[IO, Server] =
+    HttpClientFs2Backend.resource[IO]().flatMap(aiBackend => instance(transactorModule, aiBackend))
+
+  private def instance(
+    transactorModule: TransactorModule,
+    aiBackend: StreamBackend[IO, Fs2Streams[IO]]
+  ): Resource[IO, Server] = {
 
     lazy val authDependenciesModule = new AuthDependenciesModule(transactorModule.transactor)
     import authDependenciesModule._
@@ -75,7 +85,8 @@ object TgServer {
       new DependenciesModule(
         transactorModule.transactor,
         securedEndpoint,
-        authDependenciesModule
+        authDependenciesModule,
+        aiBackend
       )
     import dependenciesModule._
 
@@ -150,6 +161,7 @@ object TgServer {
             milestoneSummaryController.listVersions,
             milestoneSummaryController.updateVersion,
             milestoneSummaryController.deleteVersion,
+            milestoneAiSummaryController.summarise,
             organizationController.findAll,
             organizationController.findByAccountId,
             organizationController.save,
@@ -225,7 +237,8 @@ object TgServer {
 class DependenciesModule(
   val transactor: Transactor[IO],
   securedEndpoint: SecuredEndpoint,
-  authDependenciesModule: AuthDependenciesModule
+  authDependenciesModule: AuthDependenciesModule,
+  aiBackend: StreamBackend[IO, Fs2Streams[IO]]
 ) {
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
@@ -378,6 +391,22 @@ class DependenciesModule(
   lazy val tgPromptService = new TgPromptService(tgPromptRepo, tgPromptVersionRepo, transactor)
   lazy val tgPromptEndpoints = new TgPromptEndpoints(securedEndpoint)
   lazy val tgPromptController = new TgPromptController(tgPromptService, tgPromptEndpoints, tgClock)
+
+  // TgAiService is used internally by services such as MilestoneAiSummaryService, it has no endpoints of its own
+  lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend)
+  lazy val tgAiApiKeyProvider = new TgNoApiKeyProvider
+  lazy val tgAiService = new TgAiService(tgAiClient, tgAiApiKeyProvider)
+
+  lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryEndpoints(securedEndpoint)
+  lazy val milestoneAiSummaryService =
+    new MilestoneAiSummaryService(logEntryRepo, tgPromptService, tgAiService, transactor)
+  lazy val milestoneAiSummaryController = new MilestoneAiSummaryController(
+    milestoneAiSummaryEndpoints,
+    milestoneAiSummaryService,
+    milestoneService,
+    dateRangeValidation,
+    contributionService
+  )
 
   lazy val dataExportDiskOps = new DiskOps
   lazy val dataExportRepo =
