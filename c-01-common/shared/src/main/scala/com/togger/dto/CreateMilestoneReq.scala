@@ -74,3 +74,28 @@ case class MilestoneDateVersionDto(
   createdAt: Instant,
   updatedAt: Instant
 )
+
+case class CreateMilestoneSummaryReq(milestoneId: UUID, summary: String, startDate: LocalDate, endDate: LocalDate)
+
+case class UpdateMilestoneSummaryReq(id: UUID, summary: String, startDate: LocalDate, endDate: LocalDate)
+
+case class FindMilestoneSummaryResp(
+  id: UUID,
+  milestoneId: UUID,
+  createdAt: Instant,
+  latestVersion: UUID,
+  summary: String,
+  startDate: LocalDate,
+  endDate: LocalDate,
+  updatedAt: Instant
+)
+
+case class MilestoneSummaryVersionDto(
+  version: UUID,
+  milestoneSummaryId: UUID,
+  summary: String,
+  startDate: LocalDate,
+  endDate: LocalDate,
+  createdAt: Instant,
+  updatedAt: Instant
+)
