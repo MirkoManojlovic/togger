@@ -17,7 +17,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.components.{TgTab, TgTabs}
-import com.togger.ui.project.ProjectService
+import com.togger.ui.project.{ProjectService, TaskListItem}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
 import com.togger.ui.timebox.StagedGrouping
@@ -149,17 +149,33 @@ class MilestoneSummaryComponent(
     )
     .unsafeRunAndForget()
 
-  private def taskPreview(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
-    new TaskPreviewComponent(
-      task,
-      workDaysVar.now(),
+  private def previewTask(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): Unit =
+    modalFactory.previewModal(
+      new TaskPreviewComponent(
+        task,
+        workDaysVar.now(),
+        router,
+        tgDateFormater,
+        tgMarkdown,
+        tgClock,
+        showName = true,
+        milestone.toSeq
+      ).element,
+      title = "Task preview"
+    )
+
+  private def taskList(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement = {
+    val taskItem = new TaskListItem(
       router,
       tgDateFormater,
-      tgMarkdown,
       tgClock,
-      showName = true,
-      milestone.toSeq
-    ).element.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+      milestones = Seq.empty,
+      workDaysVar.now(),
+      showAssignee = true,
+      previewTask(_, milestone)
+    )
+    ul(tasks.sortBy(_.name).map(taskItem(_)))
+  }
 
   private val selectedStatusVar = Var("")
 
@@ -176,7 +192,7 @@ class MilestoneSummaryComponent(
         TgTab(
           id = group.tasks.head.taskStatus.id.toString,
           label = group.title,
-          content = div(group.tasks.map(taskPreview(_, milestone))),
+          content = taskList(group.tasks, milestone),
           badge = Some(Val(group.tasks.size))
         )
       }
