@@ -20,6 +20,7 @@ class MilestoneDateBadges(
   currentWorkDays: () => Set[DayOfWeek],
   onDates: (LocalDate, LocalDate) => Unit,
   tgClock: TgClock,
+  dueLabel: String = "Due",
   endDate: Signal[String] = Val(""),
   daysLeftWorkDays: Option[Signal[Set[DayOfWeek]]] = None
 ) {
@@ -75,7 +76,7 @@ class MilestoneDateBadges(
           key,
           Seq(
             badge(parse(start), "Start", BulkEditKind.StartDate),
-            badge(parse(due), "Due", BulkEditKind.DueDate)
+            badge(parse(due), dueLabel, BulkEditKind.DueDate)
           ) ++ parse(end).map(endBadge) ++ Option
             .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
             .flatten,

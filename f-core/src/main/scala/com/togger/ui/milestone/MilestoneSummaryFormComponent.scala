@@ -4,8 +4,6 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneSummaryResp
-import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.organization.TgIcons
@@ -51,18 +49,16 @@ class MilestoneSummaryFormComponent(
     minWidthRem = 0
   )
 
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = EventStream.empty,
-    labelValue = "Start date",
-    tgInputType = TgInputType.Date
-  )
+  private val workDaysVar = Var(Set.empty[DayOfWeek])
 
-  private val endDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.endDate),
-    errors = EventStream.empty,
-    labelValue = "End date",
-    tgInputType = TgInputType.Date
+  // The dates are the start and "due" of the badges, which are labelled Start and End here.
+  private val dateBadges = new MilestoneDateBadges(
+    dates = formState.signal.map(form => form.startDate -> form.endDate),
+    currentDates = () => formState.now().startDate -> formState.now().endDate,
+    currentWorkDays = () => workDaysVar.now(),
+    onDates = (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString)),
+    tgClock = tgClock,
+    dueLabel = "End"
   )
 
   private def presetBadge(preset: MilestoneSummaryPreset): HtmlElement = {
@@ -83,12 +79,12 @@ class MilestoneSummaryFormComponent(
   val htmlElement: ReactiveHtmlElement[HTMLDivElement] =
     div(
       cls("mb-4"),
+      workDays --> workDaysVar,
       div(
-        cls("mb-2 flex flex-wrap items-end gap-4"),
-        startDateInput.htmlElement,
-        endDateInput.htmlElement,
+        cls("mb-2 flex flex-wrap items-center gap-1.5"),
+        dateBadges.element,
         div(
-          cls("ml-auto pb-1"),
+          cls("ml-auto"),
           iconButton(
             "Delete summary",
             TgIcons.trashIcon(className = "w-4 h-4"),
