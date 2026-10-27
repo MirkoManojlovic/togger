@@ -13,7 +13,12 @@ import java.util.UUID
 class MilestoneDumpDataDecodingTest extends AnyWordSpec with Matchers {
 
   private val dump =
-    MilestoneDumpData(Milestone(UUID.randomUUID(), UUID.randomUUID(), Instant.parse("2026-10-12T10:00:00Z")), Nil, Nil, Nil)
+    MilestoneDumpData(
+      Milestone(UUID.randomUUID(), UUID.randomUUID(), Instant.parse("2026-10-12T10:00:00Z")),
+      Nil,
+      Nil,
+      Nil
+    )
 
   "MilestoneDumpData" should {
 

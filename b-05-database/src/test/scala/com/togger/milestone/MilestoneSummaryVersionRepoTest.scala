@@ -67,9 +67,15 @@ class MilestoneSummaryVersionRepoTest extends BusinessTgDbSpec with TgAccount wi
     "find by milestone summary id, return newest first, and find the latest" in { transactor =>
       val res = for {
         savedMilestoneSummary <- createMilestoneSummary()
-        milestoneSummaryVersion1 <- milestoneSummaryVersionRepo.insert(milestoneSummaryVersion(savedMilestoneSummary.id, v1))
-        milestoneSummaryVersion2 <- milestoneSummaryVersionRepo.insert(milestoneSummaryVersion(savedMilestoneSummary.id, v2))
-        milestoneSummaryVersion3 <- milestoneSummaryVersionRepo.insert(milestoneSummaryVersion(savedMilestoneSummary.id, "v3"))
+        milestoneSummaryVersion1 <- milestoneSummaryVersionRepo.insert(
+          milestoneSummaryVersion(savedMilestoneSummary.id, v1)
+        )
+        milestoneSummaryVersion2 <- milestoneSummaryVersionRepo.insert(
+          milestoneSummaryVersion(savedMilestoneSummary.id, v2)
+        )
+        milestoneSummaryVersion3 <- milestoneSummaryVersionRepo.insert(
+          milestoneSummaryVersion(savedMilestoneSummary.id, "v3")
+        )
         foundVersions <- milestoneSummaryVersionRepo
           .findPaginatedByMilestoneSummaryId(savedMilestoneSummary.id, DbPageRequest.default)
           .map(_.items)

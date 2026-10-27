@@ -47,7 +47,8 @@ class MilestoneSummaryVersionRepoImpl extends MilestoneSummaryVersionRepo {
         .withUniqueGeneratedKeys[MilestoneSummaryVersion](returnFields: _*)
     )(
       s"Inserting ${sp(milestoneSummaryVersion)} with existing version",
-      milestoneSummaryVersion => s"Milestone summary version inserted with existing version ${sp(milestoneSummaryVersion)}"
+      milestoneSummaryVersion =>
+        s"Milestone summary version inserted with existing version ${sp(milestoneSummaryVersion)}"
     )
   }
 
@@ -68,7 +69,9 @@ class MilestoneSummaryVersionRepoImpl extends MilestoneSummaryVersionRepo {
     logAroundInfoQuery(
       TgFindPaginatedQuery[MilestoneSummaryVersion](
         pageQuery = request =>
-          (selectAllStatement(MILESTONE_SUMMARY_VERSION_TABLE_FRAG) ++ fr"where milestone_summary_id = $milestoneSummaryId" ++
+          (selectAllStatement(
+            MILESTONE_SUMMARY_VERSION_TABLE_FRAG
+          ) ++ fr"where milestone_summary_id = $milestoneSummaryId" ++
             PaginationSql.orderBy(fr"version desc") ++
             PaginationSql.limitOffset(request)).query[MilestoneSummaryVersion].to[List],
         countQuery = (fr"select count(*) from" ++ MILESTONE_SUMMARY_VERSION_TABLE_FRAG ++

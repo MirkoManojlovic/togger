@@ -32,7 +32,9 @@ class MilestoneSummaryService(
     logger.info(s"Creating a ${sp(milestoneSummary)}, with ${sp(firstVersion)}")
     (for {
       savedMilestoneSummary <- milestoneSummaryRepo.insert(milestoneSummary)
-      savedVersion <- milestoneSummaryVersionRepo.insert(firstVersion.copy(milestoneSummaryId = savedMilestoneSummary.id))
+      savedVersion <- milestoneSummaryVersionRepo.insert(
+        firstVersion.copy(milestoneSummaryId = savedMilestoneSummary.id)
+      )
     } yield {
       logger.info(s"Milestone summary created successfully ${sp(savedMilestoneSummary)} with ${sp(savedVersion)}")
       MilestoneSummaryWithOneVersion(savedMilestoneSummary, savedVersion)

@@ -114,7 +114,8 @@ class MilestoneSummaryServiceTest
       val milestoneSummary = newMilestoneSummary()
       val firstVersion = newVersion("v1").copy(milestoneSummaryId = milestoneSummary.id)
       val secondVersion = newVersion("v2").copy(milestoneSummaryId = milestoneSummary.id)
-      val editedFirstVersion = firstVersion.withNewContent("old summary edit", LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 16))
+      val editedFirstVersion =
+        firstVersion.withNewContent("old summary edit", LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 16))
 
       (milestoneSummaryRepo.insert _).expects(milestoneSummary).returns(milestoneSummary.pure[ConnectionIO])
       (milestoneSummaryVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
@@ -126,7 +127,9 @@ class MilestoneSummaryServiceTest
       (milestoneSummaryVersionRepo.findLatestByMilestoneSummaryId _)
         .expects(milestoneSummary.id)
         .returns(secondVersion.pure[ConnectionIO])
-      (milestoneSummaryVersionRepo.findByVersion _).expects(firstVersion.version).returns(firstVersion.pure[ConnectionIO])
+      (milestoneSummaryVersionRepo.findByVersion _)
+        .expects(firstVersion.version)
+        .returns(firstVersion.pure[ConnectionIO])
       (milestoneSummaryVersionRepo.findLatestByMilestoneSummaryId _)
         .expects(milestoneSummary.id)
         .returns(secondVersion.pure[ConnectionIO])
@@ -175,18 +178,24 @@ class MilestoneSummaryServiceTest
       (milestoneSummaryVersionRepo.findLatestByMilestoneSummaryId _)
         .expects(milestoneSummary.id)
         .returns(secondVersion.pure[ConnectionIO])
-      (milestoneSummaryVersionRepo.countByMilestoneSummaryId _).expects(milestoneSummary.id).returns(2.pure[ConnectionIO])
+      (milestoneSummaryVersionRepo.countByMilestoneSummaryId _)
+        .expects(milestoneSummary.id)
+        .returns(2.pure[ConnectionIO])
       (milestoneSummaryVersionRepo.deleteByVersion _).expects(secondVersion.version).returns(1.pure[ConnectionIO])
 
       (milestoneSummaryVersionRepo.findLatestByMilestoneSummaryId _)
         .expects(milestoneSummary.id)
         .returns(firstVersion.pure[ConnectionIO])
 
-      (milestoneSummaryVersionRepo.findByVersion _).expects(firstVersion.version).returns(firstVersion.pure[ConnectionIO])
+      (milestoneSummaryVersionRepo.findByVersion _)
+        .expects(firstVersion.version)
+        .returns(firstVersion.pure[ConnectionIO])
       (milestoneSummaryVersionRepo.findLatestByMilestoneSummaryId _)
         .expects(milestoneSummary.id)
         .returns(firstVersion.pure[ConnectionIO])
-      (milestoneSummaryVersionRepo.countByMilestoneSummaryId _).expects(milestoneSummary.id).returns(1.pure[ConnectionIO])
+      (milestoneSummaryVersionRepo.countByMilestoneSummaryId _)
+        .expects(milestoneSummary.id)
+        .returns(1.pure[ConnectionIO])
 
       (for {
         created <- service.createMilestoneSummary(milestoneSummary, firstVersion)
