@@ -11,11 +11,12 @@ import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, MilestoneListParams, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{
   MultiSelectItem,
   TableFilterComponent,
-  TableSearchComponent,
+  TableServerSearchComponent,
   TgHtmlTable,
   TgPaginationComponent
 }
@@ -24,6 +25,9 @@ import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
+import com.raquo.laminar.nodes.ReactiveHtmlElement
+import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
 
@@ -47,17 +51,11 @@ class ShowMilestonesComponent(
   private def showList(newParams: MilestoneListParams): Unit =
     router.route(ShowMilestonesPage(projectId, newParams))
 
-  val searchTermVar = Var(params.search)
-  private val searchBox = TableSearchComponent(
-    inputSignal = searchTermVar.signal,
-    inputStateUpdater = searchTermVar.updater[String]((_, newSearchTerm) => newSearchTerm),
-    placeholderValue = "Search by name, description"
+  private val searchBox = TableServerSearchComponent(
+    initialTerm = params.search,
+    placeholderValue = "Search by name, description",
+    onSearch = term => if (term.trim != params.search) showList(params.copy(search = term.trim).firstPage)
   )
-
-  private val navigateOnSearch: Modifier[HtmlElement] =
-    searchTermVar.signal.changes --> Observer[String] { term =>
-      if (term.trim != params.search) showList(params.copy(search = term.trim).firstPage)
-    }
 
   private val statusFilterItems =
     MilestoneStatus.values.map(status =>
@@ -127,6 +125,58 @@ class ShowMilestonesComponent(
 
   private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
 
+  private def statusColor(status: MilestoneStatus): TgBadgeColor = status match {
+    case MilestoneStatus.InProgress => TgBadgeColor.Blue
+    case MilestoneStatus.Done       => TgBadgeColor.Green
+    case MilestoneStatus.Paused     => TgBadgeColor.Yellow
+    case MilestoneStatus.Abandoned  => TgBadgeColor.Gray
+  }
+
+  private def dateRow(dto: FindMilestoneResp): Seq[BadgeSpec] =
+    Seq(
+      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray),
+      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray)
+    ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asAmericanDate(date)}", TgBadgeColor.Gray))
+
+  /** One tall row spanning every column, so the table keeps its size when no milestone matches. */
+  private def noMilestonesRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
+    Seq(td(colSpan(2), cls("px-6 py-32 text-center text-lg text-body"), "No milestones found"))
+
+  private def row(dto: FindMilestoneResp): Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
+    Seq(
+      createTd(
+        div(
+          cls("flex flex-col gap-1"),
+          a(
+            cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
+            dto.name,
+            router.navigateTo(EditMilestonePage(projectId, dto.id))
+          ),
+          BulkTaskCard.readOnlyRow(Seq(BadgeSpec(dto.status.toStringWithEmoji, statusColor(dto.status)))),
+          BulkTaskCard.readOnlyRow(dateRow(dto))
+        )
+      ),
+      td(
+        cls("!px-2 w-0 whitespace-nowrap"),
+        div(
+          iconButton(
+            "Review",
+            TgIcons.eyeIcon(className = "w-4 h-4"),
+            rowIconButtonCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))
+          ),
+          iconButton(
+            "Edit",
+            TgIcons.editIcon(className = "w-4 h-4"),
+            rowIconButtonCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, dto.id)))
+          )
+        )
+      )
+    )
+
   val element = {
     div(
       child <-- projectVar.signal.map(projectInfoCard.element(_)),
@@ -152,44 +202,24 @@ class ShowMilestonesComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("flex justify-between mb-4"), searchBox.element, statusFilter.element),
-                navigateOnSearch,
+                div(cls("mb-4 flex flex-wrap items-center justify-between gap-3"), searchBox.element),
                 navigateOnStatusChange,
-                child <-- stateFormVar.signal.map { milestones =>
-                  TgHtmlTable.tableElement(
-                    Seq("Id", "Name", "Status", "Start date", "Due date", "End date", "Action")
-                  )(
-                    milestones
-                      .map { dto =>
-                        Seq(
-                          createTd(dto.id.toString),
-                          createTd(dto.name),
-                          createTd(dto.status.toStringWithEmoji),
-                          createTd(tgDateFormater.asAmericanDate(dto.startDate)),
-                          createTd(tgDateFormater.asAmericanDate(dto.dueDate)),
-                          createTd(dto.endDate.fold("-")(date => tgDateFormater.asAmericanDate(date))),
-                          createTd(
-                            div(
-                              iconButton(
-                                "Review",
-                                TgIcons.eyeIcon(className = "w-4 h-4"),
-                                rowIconButtonCls,
-                                rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))
-                              ),
-                              iconButton(
-                                "Edit",
-                                TgIcons.editIcon(className = "w-4 h-4"),
-                                rowIconButtonCls,
-                                rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, dto.id)))
-                              )
-                            )
-                          )
-                        )
-                      }
-                  )
-                },
+                TgHtmlTable.tableElement(
+                  Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                    div(
+                      cls("flex items-center justify-between gap-4"),
+                      "Name",
+                      div(cls("flex items-center justify-end gap-2"), statusFilter.element)
+                    ),
+                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+                      cls("!px-2 w-0 whitespace-nowrap text-center"),
+                      "Action"
+                    )
+                  ),
+                  striped = false
+                )(
+                  stateFormVar.signal.map(milestones => if (milestones.isEmpty) Seq(noMilestonesRow) else milestones.map(row))
+                ),
                 TgPaginationComponent(
                   paginationVar.signal,
                   (newPage, newSize) => showList(params.atPage(newPage, newSize))
