@@ -636,7 +636,13 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case MilestoneSummaryPage(_, id: UUID) =>
                 new MilestoneSummaryComponent(
                   milestoneSummaryService,
+                  milestoneService,
+                  taskService,
+                  projectService,
+                  router,
                   spinnerService,
+                  tgDateFormater,
+                  tgMarkdown,
                   tgClock,
                   id,
                   toast,

@@ -3,20 +3,36 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
-import com.togger.dto.{CreateMilestoneSummaryReq, UpdateMilestoneSummaryReq}
+import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.dto.{
+  CreateMilestoneSummaryReq,
+  FindMilestoneResp,
+  FindTaskRespFull,
+  UpdateMilestoneSummaryReq
+}
+import com.togger.markdown.TgMarkdown
+import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
 import com.togger.ui.toast.Toast
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
+/** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
 class MilestoneSummaryComponent(
   milestoneSummaryService: MilestoneSummaryFeService,
+  milestoneService: MilestoneFeService,
+  taskService: TaskFeService,
+  projectService: ProjectService,
+  router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  tgDateFormater: TgDateFormater,
+  tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   milestoneId: UUID,
   val toast: Toast,
@@ -97,6 +113,68 @@ class MilestoneSummaryComponent(
     )
     .unsafeRunAndForget()
 
+  private val milestoneVar = Var(Option.empty[FindMilestoneResp])
+  private val tasksVar = Var(Seq.empty[FindTaskRespFull])
+  private val workDaysVar = Var(WorkDayCalendar.DefaultWorkDays)
+
+  private def loadTasks(milestone: FindMilestoneResp): IO[Unit] =
+    taskService
+      .findAllByMilestone(milestone.projectId, milestoneId)
+      .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
+
+  private def loadWorkDays(milestone: FindMilestoneResp): IO[Unit] =
+    projectService
+      .findById(milestone.projectId)
+      .map(
+        _.fold(
+          error => println(error),
+          success => Some(success.body.get.workDays.map(DayOfWeek.of)).filter(_.nonEmpty).foreach(workDaysVar.set)
+        )
+      )
+
+  spinnerService
+    .runWithSpinner(milestoneService.findMilestoneById(milestoneId))
+    .flatMap(
+      _.fold(
+        error => IO(println(error)),
+        success => {
+          val milestone = success.body.get
+          milestoneVar.set(Some(milestone))
+          loadWorkDays(milestone) >> loadTasks(milestone)
+        }
+      )
+    )
+    .unsafeRunAndForget()
+
+  private def taskPreview(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
+    new TaskPreviewComponent(
+      task,
+      workDaysVar.now(),
+      router,
+      tgDateFormater,
+      tgMarkdown,
+      tgClock,
+      showName = true,
+      milestone.toSeq
+    ).element.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+
+  private lazy val tasksCard: HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
+        body = TgCard.HtmlCardContent(
+          div(
+            children <-- tasksVar.signal
+              .combineWith(milestoneVar.signal, workDaysVar.signal)
+              .map { case (tasks, milestone, _) => tasks.map(taskPreview(_, milestone)) },
+            child.maybe <-- tasksVar.signal.map(tasks =>
+              Option.when(tasks.isEmpty)(div(cls("text-sm text-body"), "No tasks in this milestone."))
+            )
+          )
+        )
+      )
+      .element
+
   private lazy val newSummaryCard: HtmlElement =
     TgCard
       .headerNoFooter(
@@ -124,5 +202,13 @@ class MilestoneSummaryComponent(
       .element
 
   val element: HtmlElement =
-    div(cls("flex w-full min-w-0 flex-col gap-8"), newSummaryCard, previousSummariesCard)
+    div(
+      cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
+      div(
+        cls("flex w-full min-w-0 flex-col gap-8 lg:w-[40rem] lg:shrink-0"),
+        newSummaryCard,
+        previousSummariesCard
+      ),
+      tasksCard.amend(cls("min-w-0 lg:flex-1"))
+    )
 }
