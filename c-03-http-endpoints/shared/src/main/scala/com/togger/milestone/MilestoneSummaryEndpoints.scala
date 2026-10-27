@@ -5,7 +5,12 @@ import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyB
 import com.togger.common.PaginationInputs.pageQuery
 import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{CreateMilestoneSummaryReq, FindMilestoneSummaryResp, MilestoneSummaryVersionDto, UpdateMilestoneSummaryReq}
+import com.togger.dto.{
+  CreateMilestoneSummaryReq,
+  FindMilestoneSummaryResp,
+  MilestoneSummaryVersionDto,
+  UpdateMilestoneSummaryReq
+}
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
