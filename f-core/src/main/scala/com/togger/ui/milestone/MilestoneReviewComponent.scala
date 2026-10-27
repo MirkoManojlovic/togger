@@ -7,7 +7,7 @@ import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.markdown.TgMarkdown
 import com.togger.dto.{FindMilestoneResp, FindMilestoneSummaryResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.routes.Pages.EditMilestonePage
+import com.togger.routes.Pages.{EditMilestonePage, MilestoneSummaryPage}
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{
@@ -145,12 +145,22 @@ class MilestoneReviewComponent(
           div(
             cls("flex items-center justify-between"),
             div(cls("mr-2"), child.text <-- milestoneVar.signal.map(_.fold("Milestone")(_.name))),
-            iconButton(
-              "Edit milestone",
-              TgIcons.editIcon(className = "w-4 h-4"),
-              rowIconButtonCls,
-              rowButtonMarginCls,
-              onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, milestoneId)))
+            div(
+              cls("flex items-center"),
+              iconButton(
+                "Milestone summaries",
+                TgIcons.documentTextIcon(className = "w-4 h-4"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ => router.route(MilestoneSummaryPage(projectId, milestoneId)))
+              ),
+              iconButton(
+                "Edit milestone",
+                TgIcons.editIcon(className = "w-4 h-4"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ => router.route(EditMilestonePage(projectId, milestoneId)))
+              )
             )
           )
         ),

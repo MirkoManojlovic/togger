@@ -552,6 +552,12 @@ object TgIcons {
   def milestoneIcon(className: String) =
     strokeIcon(className, "M5 21V4m0 0h12l-2.5 4L17 12H5")
 
+  def documentTextIcon(className: String) =
+    strokeIcon(
+      className,
+      "M14 3v4a1 1 0 0 0 1 1h4M5 5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5Zm4 8h6m-6 4h6"
+    )
+
   def timeboxIcon(className: String) =
     strokeIcon(className, "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4l3 2")
 

@@ -55,8 +55,7 @@ class EditMilestoneComponent(
   tgClock: TgClock,
   projectService: ProjectService,
   milestoneId: UUID,
-  val toast: Toast,
-  milestoneSummaryComponent: MilestoneSummaryComponent
+  val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -372,11 +371,7 @@ class EditMilestoneComponent(
       flexDirection.column,
       alignItems.center,
       child.maybe <-- closeDialogOpen.signal.map(Option.when(_)(closeDialog)),
-      div(
-        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
-        editMilestoneCard.amend(cls("min-w-0 lg:w-[64rem] lg:shrink-0")),
-        milestoneSummaryComponent.element.amend(cls("lg:flex-1 lg:basis-[48rem]"))
-      )
+      editMilestoneCard.amend(cls("w-full mb-4"))
     )
 
 }
