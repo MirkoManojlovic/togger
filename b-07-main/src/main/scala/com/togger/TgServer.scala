@@ -266,6 +266,7 @@ class DependenciesModule(
       tgClock,
       dateRangeValidation,
       projectService,
+      taskStatusService,
       accountNameLookup
     )
 

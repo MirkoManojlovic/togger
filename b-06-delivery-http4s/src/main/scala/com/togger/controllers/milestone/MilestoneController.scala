@@ -129,7 +129,11 @@ class MilestoneController(
   val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
     milestoneService.findProjectIdByVersion(dto.version).flatMap { projectId =>
       projectService.findById(projectId).flatMap { case (project, _, _) =>
-        dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays) match {
+        val validation = for {
+          _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
+          _ <- dateRangeValidation.validateEndDateWhenDone(dto.status == MilestoneStatus.Done, dto.endDate)
+        } yield ()
+        validation match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneVersionDto])
           case Right(_) =>
             milestoneService

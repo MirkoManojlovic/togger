@@ -1,6 +1,7 @@
 package com.togger.controllers.task
 
 import cats.effect.IO
+import cats.implicits._
 import com.togger.account.{Account, AccountNameLookup}
 import com.togger.common.TgError._
 import com.togger.common.{DateRangeValidation, TgClock, TgJsonSuccess}
@@ -23,6 +24,7 @@ class TaskController(
   tgClock: TgClock,
   dateRangeValidation: DateRangeValidation,
   projectService: ProjectService,
+  taskStatusService: TaskStatusService,
   accountNameLookup: AccountNameLookup
 ) {
 
@@ -319,8 +321,16 @@ class TaskController(
 
   val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
     taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
-      projectService.findById(projectId).flatMap { case (project, _, _) =>
-        dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays) match {
+      (projectService.findById(projectId), taskStatusService.findById(dto.taskStatusId)).flatMapN {
+        case ((project, _, _), status) =>
+        val validation = for {
+          _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
+          _ <- dateRangeValidation.validateEndDateWhenDone(
+            status.name == DefaultTaskStatus.Done.statusName,
+            dto.endDate
+          )
+        } yield ()
+        validation match {
           case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
           case Right(_) =>
             taskVersionService
