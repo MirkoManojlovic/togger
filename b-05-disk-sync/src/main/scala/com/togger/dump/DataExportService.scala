@@ -228,7 +228,7 @@ class DataExportService(
         (NotAssignedToProject: ProjectError).asLeft[ExportData].pure[ConnectionIO]
       else
         for {
-          snapshot <- dataExportRepo.readSnapshot(projectId)
+          snapshot <- dataExportRepo.readSnapshot(projectId, accountId)
           account <- dataExportRepo.findAccountById(accountId)
           referencedAccounts <- dataExportRepo.findAccounts(DataExportRepo.referencedAccountIds(snapshot))
         } yield ExportData(

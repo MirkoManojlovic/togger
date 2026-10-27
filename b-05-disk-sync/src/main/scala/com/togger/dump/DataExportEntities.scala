@@ -35,7 +35,10 @@ object DataExportEntities {
       snapshot.taskTemplates.map(t =>
         entity(DataExportEntityType.TaskTemplate, t.template.id, t.versions.lastOption.map(_.name), t)
       ) ++
-      snapshot.timeboxes.map(t => entity(DataExportEntityType.Timebox, t.timebox.id, None, t))
+      snapshot.timeboxes.map(t => entity(DataExportEntityType.Timebox, t.timebox.id, None, t)) ++
+      snapshot.tgPrompts.map(p =>
+        entity(DataExportEntityType.TgPrompt, p.tgPrompt.id, p.versions.lastOption.map(_.title), p)
+      )
   }
 
   private def entity[A: Encoder](

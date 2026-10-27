@@ -13,6 +13,7 @@ import com.togger.projectlabel.{ProjectLabelCategoryRepo, ProjectLabelRepo}
 import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepo}
 import com.togger.task._
 import com.togger.tasktemplate.{TaskTemplate, TaskTemplateRepo, TaskTemplateVersion, TaskTemplateVersionRepo}
+import com.togger.tgprompt.{TgPromptRepo, TgPromptVersionRepo}
 import com.togger.timebox.{TimeboxRepo, TimeboxVersionRepo}
 import doobie.ConnectionIO
 
@@ -47,7 +48,9 @@ class DataImportRepo(
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
-  timeboxVersionRepo: TimeboxVersionRepo
+  timeboxVersionRepo: TimeboxVersionRepo,
+  tgPromptRepo: TgPromptRepo,
+  tgPromptVersionRepo: TgPromptVersionRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
@@ -476,6 +479,24 @@ class DataImportRepo(
         timeboxDump.timebox.id,
         None,
         rootInserted = !timeboxExists,
+        versionsAdded = added,
+        childrenAdded = 0
+      )
+    }
+
+  def mergeTgPrompt(promptDump: TgPromptDumpData): ConnectionIO[DataImportEntityResult] =
+    exists(tgPromptRepo.findById(promptDump.tgPrompt.id)).flatMap { promptExists =>
+      for {
+        _ <- if (promptExists) ().pure[ConnectionIO] else tgPromptRepo.insertWithId(promptDump.tgPrompt).void
+        added <- insertMissing(promptDump.versions)(
+          v => exists(tgPromptVersionRepo.findByVersion(v.version)),
+          tgPromptVersionRepo.insertWithId
+        )
+      } yield DataImportEntityResult.merged(
+        DataExportEntityType.TgPrompt,
+        promptDump.tgPrompt.id,
+        promptDump.versions.lastOption.map(_.title),
+        rootInserted = !promptExists,
         versionsAdded = added,
         childrenAdded = 0
       )

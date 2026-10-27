@@ -405,7 +405,9 @@ class DependenciesModule(
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,
-      timeboxVersionRepo
+      timeboxVersionRepo,
+      tgPromptRepo,
+      tgPromptVersionRepo
     )
   lazy val dataExportTreeStore = new DataExportTreeStore(dataExportDiskOps)
 
@@ -476,7 +478,9 @@ class DependenciesModule(
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,
-      timeboxVersionRepo
+      timeboxVersionRepo,
+      tgPromptRepo,
+      tgPromptVersionRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)

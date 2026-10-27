@@ -147,6 +147,7 @@ class DataExportController(
     case DataExportEntityType.LogEntry     => DataExportEntityTypeResp.LogEntry
     case DataExportEntityType.TaskTemplate => DataExportEntityTypeResp.TaskTemplate
     case DataExportEntityType.Timebox      => DataExportEntityTypeResp.Timebox
+    case DataExportEntityType.TgPrompt     => DataExportEntityTypeResp.TgPrompt
   }
 
   private def toResp(r: DataImportEntityResult): DataImportEntityResultResp =

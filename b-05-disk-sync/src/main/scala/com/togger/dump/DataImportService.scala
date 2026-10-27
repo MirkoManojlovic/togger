@@ -46,7 +46,7 @@ class DataImportService(
         } yield (importPath, index, projectDump)) match {
           case None => IO.pure(Left(DumpManifestMissing))
           case Some((importPath, index, projectDump)) =>
-            importFromTree(projectId, importPath, index, projectDump)
+            importFromTree(projectId, accountId, importPath, index, projectDump)
         }
     }
 
@@ -69,6 +69,7 @@ class DataImportService(
 
   private def importFromTree(
     projectId: UUID,
+    accountId: UUID,
     importPath: String,
     index: ExportIndex,
     projectDump: ProjectDumpData
@@ -94,7 +95,7 @@ class DataImportService(
               .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
               .transact(transactor)
           ).flatMap { prepared =>
-              val remap = new Remapper(projectId, accountIdMap, prepared.ids)
+              val remap = new Remapper(projectId, accountId, accountIdMap, prepared.ids)
               for {
                 state <- timed("load existing project state", projectId)(dataImportRepo.loadImportState(projectId).transact(transactor))
                 milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(
@@ -112,6 +113,9 @@ class DataImportService(
                 timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(
                   t => dataImportRepo.mergeTimebox(remap.timebox(t))
                 )
+                prompts <- mergeAll[TgPromptDumpData](projectId, read, DataExportEntityType.TgPrompt)(
+                  p => dataImportRepo.mergeTgPrompt(remap.tgPrompt(p))
+                )
                 members <- readMembers(read).fold(
                   malformed => IO.pure(List(malformed)),
                   members =>
@@ -126,7 +130,7 @@ class DataImportService(
                 DataImportResult(
                   importPath,
                   statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                    milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ members
+                    milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ prompts ++ members
                 )
               )
             }
@@ -187,7 +191,7 @@ class DataImportService(
   }
 
   /** Points exported entities at the target project, the mapped accounts and the reconciled statuses and labels. */
-  private class Remapper(projectIdDb: UUID, accountIdMap: Map[UUID, UUID], ids: DataImportRepo#ReconciledIds) {
+  private class Remapper(projectIdDb: UUID, importingAccountId: UUID, accountIdMap: Map[UUID, UUID], ids: DataImportRepo#ReconciledIds) {
 
     def account(id: UUID): UUID = accountIdMap.getOrElse(id, id)
     private def accountOpt(id: Option[UUID]): Option[UUID] = id.map(account)
@@ -223,6 +227,10 @@ class DataImportService(
           createdBy = account(data.template.createdBy)
         )
       )
+
+    /** Prompts belong to an account, not to the project: they are imported for the account that imports. */
+    def tgPrompt(data: TgPromptDumpData): TgPromptDumpData =
+      data.copy(tgPrompt = data.tgPrompt.copy(createdBy = importingAccountId))
 
     def timebox(data: TimeboxDumpData): TimeboxDumpData =
       data.copy(timebox = data.timebox.copy(projectId = projectIdDb))
