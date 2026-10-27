@@ -15,9 +15,11 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.components.{TgTab, TgTabs}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
+import com.togger.ui.timebox.StagedGrouping
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate}
@@ -158,18 +160,37 @@ class MilestoneSummaryComponent(
       milestone.toSeq
     ).element.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
 
+  private val selectedTaskVar = Var("")
+
+  // A row of tabs per task status, a tab per task of it. The rows share the selection, so it is put on the first task
+  // when a reload takes the selected one away.
+  private def statusTabs(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement =
+    if (tasks.isEmpty) div(cls("text-sm text-body"), "No tasks in this milestone.")
+    else {
+      val rows = StagedGrouping.ByStatus.group(tasks, Seq.empty).map { group =>
+        group.title -> group.tasks.map(task => TgTab(task.id.toString, task.name, taskPreview(task, milestone)))
+      }
+      val tabRows = rows.map { case (title, tabs) => title -> new TgTabs(tabs, selectedTaskVar) }
+      val firstTaskId = rows.flatMap(_._2).map(_.id).head
+      val selectableIds = rows.flatMap(_._2).map(_.id).toSet
+      div(
+        onMountCallback(_ => if (!selectableIds.contains(selectedTaskVar.now())) selectedTaskVar.set(firstTaskId)),
+        tabRows.map { case (title, row) =>
+          div(cls("mb-3"), div(cls("mb-1 text-sm text-body"), title), row.tabBar)
+        },
+        tabRows.flatMap { case (_, row) => row.panels }
+      )
+    }
+
   private lazy val tasksCard: HtmlElement =
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
         body = TgCard.HtmlCardContent(
           div(
-            children <-- tasksVar.signal
+            child <-- tasksVar.signal
               .combineWith(milestoneVar.signal, workDaysVar.signal)
-              .map { case (tasks, milestone, _) => tasks.map(taskPreview(_, milestone)) },
-            child.maybe <-- tasksVar.signal.map(tasks =>
-              Option.when(tasks.isEmpty)(div(cls("text-sm text-body"), "No tasks in this milestone."))
-            )
+              .map { case (tasks, milestone, _) => statusTabs(tasks, milestone) }
           )
         )
       )
