@@ -101,6 +101,14 @@ object Libraries {
     val core = "core"
     val `client3-version` = "3.8.15"
 
+    val `com.softwaremill.sttp.ai` = "com.softwaremill.sttp.ai"
+    val openai = "openai"
+    val `sttp-ai-version` = "0.12.0"
+
+    val `com.softwaremill.sttp.client4` = "com.softwaremill.sttp.client4"
+    val `fs2` = "fs2"
+    val `client4-version` = "4.1.0"
+
     val `com.github.japgolly.scalacss` = "com.github.japgolly.scalacss"
     val `scalacss-version` = "1.0.0"
 
@@ -119,7 +127,7 @@ object Libraries {
     val `tapir-http4s-client` = "tapir-http4s-client"
     val `tapir-json-circe` = "tapir-json-circe"
     val `tapir-sttp-client` = "tapir-sttp-client"
-    val `tapir-version` = "1.5.5"
+    val `tapir-version` = "1.14.0"
 
     val `tapir-swagger-ui-bundle` = "tapir-swagger-ui-bundle"
     val `tapir-redoc-bundle` = "tapir-redoc-bundle"
@@ -129,7 +137,7 @@ object Libraries {
     val `tapir-openapi-docs` = "tapir-openapi-docs"
     val `openapi-circe` = "openapi-circe"
     val `openapi-circe-yaml` = "openapi-circe-yaml"
-    val `openapi-version` = "0.4.0"
+    val `openapi-version` = "0.12.0"
 
     val `com.opentable.components` = "com.opentable.components"
     val `otj-pg-embedded` = "otj-pg-embedded"

@@ -145,6 +145,32 @@ lazy val backendCore = (project in file("b-05-core"))
   )
   .dependsOn(tgCommon.jvm % Cctt)
 
+lazy val backendAi = (project in file("b-05-ai"))
+  .settings(
+    name := "backend-ai",
+    dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
+    libraryDependencies ++= Seq(
+      // sttp-ai (OpenAI)
+      `com.softwaremill.sttp.ai` %% openai % `sttp-ai-version`,
+      `com.softwaremill.sttp.ai` %% `fs2` % `sttp-ai-version`,
+      `com.softwaremill.sttp.client4` %% `fs2` % `client4-version`,
+      // cats
+      `org.typelevel` %% `cats-core` % `cats-version`,
+      `org.typelevel` %% `cats-effect` % `cats-effect-version`,
+      // circe
+      `io.circe` %% `circe-core` % `circe-version`,
+      `io.circe` %% `circe-generic` % `circe-version`,
+      // Logging
+      `com.outr` %% scribe % `scribe-version`,
+      `com.outr` %% `scribe-slf4j` % `scribe-version`,
+      // Tests
+      `org.scalatest` %% scalatest % `scalatest-version` % Test,
+      `org.scalamock` %% scalamock % `scalamock-version` % Test,
+      `org.typelevel` %% `cats-effect-testing-scalatest` % `cats-effect-testing-scalatest-version` % Test
+    )
+  )
+  .dependsOn(backendCore % Cctt)
+
 lazy val backendMain = (project in file("b-07-main"))
   .enablePlugins(JavaServerAppPackaging)
   .enablePlugins(GraalVMNativeImagePlugin)
@@ -179,6 +205,7 @@ lazy val backendMain = (project in file("b-07-main"))
   .dependsOn(backendDatabase % Cctt)
   .dependsOn(backendAuth % Cctt)
   .dependsOn(backendDiskSync % Cctt)
+  .dependsOn(backendAi % Cctt)
 
 lazy val backendDiskSync = (project in file("b-05-disk-sync"))
   .settings(
@@ -277,6 +304,7 @@ lazy val backendDeliveryHttp4s = (project in file("b-06-delivery-http4s"))
   .dependsOn(tgCommon.jvm % Cctt)
   .dependsOn(backendCore % Cctt)
   .dependsOn(backendDiskSync % Cctt)
+  .dependsOn(backendAi % Cctt)
 
 //  .dependsOn(backendCommon % Cctt)
 
