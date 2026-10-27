@@ -67,7 +67,6 @@ class MilestoneSummaryControllerTest extends AnyWordSpec with Matchers {
       new MilestoneSummaryService(null, null, transactor),
       new MilestoneService(new StubMilestoneRepo, null, transactor),
       new DateRangeValidation,
-      null,
       new ContributionService(null: ContributionRepo, null: ProjectRepo, new StubProjectAccountRepo, transactor)
     )
   }

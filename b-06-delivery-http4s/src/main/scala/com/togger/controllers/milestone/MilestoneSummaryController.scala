@@ -8,7 +8,6 @@ import com.togger.common.{DateRangeValidation, Forbidden, TgError, TgJsonFailure
 import com.togger.contribution.ContributionService
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneSummaryDtoMapper.{toDto, toVersionDto}
-import com.togger.controllers.project.ProjectService
 import com.togger.dto.{FindMilestoneSummaryResp, MilestoneSummaryVersionDto}
 import com.togger.milestone.{
   MilestoneService,
@@ -18,7 +17,7 @@ import com.togger.milestone.{
   MilestoneSummaryVersion
 }
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneSummaryController(
@@ -26,41 +25,39 @@ class MilestoneSummaryController(
   milestoneSummaryService: MilestoneSummaryService,
   milestoneService: MilestoneService,
   dateRangeValidation: DateRangeValidation,
-  projectService: ProjectService,
   contributionService: ContributionService
 ) {
 
   val save = milestoneSummaryEndpoints.saveEndpoint.serverLogic { auth => dto =>
     withProjectMember[FindMilestoneSummaryResp](milestoneService.findProjectId(dto.milestoneId).map(_.asRight), auth) {
-      workDays =>
-        validateDates(dto.startDate, dto.endDate, workDays) match {
-          case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneSummaryResp])
-          case Right(_) =>
-            val now = java.time.Instant.now()
-            val milestoneSummary = MilestoneSummary(
-              id = UUID.randomUUID(),
-              milestoneId = dto.milestoneId,
-              createdAt = now
-            )
-            val firstVersion = MilestoneSummaryVersion(
-              version = UUID.randomUUID(),
-              milestoneSummaryId = milestoneSummary.id,
-              summary = dto.summary,
-              startDate = dto.startDate,
-              endDate = dto.endDate,
-              createdAt = now,
-              updatedAt = now
-            )
+      validateDates(dto.startDate, dto.endDate) match {
+        case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneSummaryResp])
+        case Right(_) =>
+          val now = java.time.Instant.now()
+          val milestoneSummary = MilestoneSummary(
+            id = UUID.randomUUID(),
+            milestoneId = dto.milestoneId,
+            createdAt = now
+          )
+          val firstVersion = MilestoneSummaryVersion(
+            version = UUID.randomUUID(),
+            milestoneSummaryId = milestoneSummary.id,
+            summary = dto.summary,
+            startDate = dto.startDate,
+            endDate = dto.endDate,
+            createdAt = now,
+            updatedAt = now
+          )
 
-            milestoneSummaryService
-              .createMilestoneSummary(milestoneSummary, firstVersion)
-              .map(result => TgJsonSuccess.justBodyRight(toDto(result.milestoneSummary, result.version)))
-        }
+          milestoneSummaryService
+            .createMilestoneSummary(milestoneSummary, firstVersion)
+            .map(result => TgJsonSuccess.justBodyRight(toDto(result.milestoneSummary, result.version)))
+      }
     }
   }
 
   val findById = milestoneSummaryEndpoints.findByIdEndpoint.serverLogic { auth => id =>
-    withProjectMember[FindMilestoneSummaryResp](projectIdOfSummary(id), auth) { _ =>
+    withProjectMember[FindMilestoneSummaryResp](projectIdOfSummary(id), auth) {
       milestoneSummaryService
         .getCurrent(id)
         .map {
@@ -72,7 +69,7 @@ class MilestoneSummaryController(
 
   val findByMilestoneId = milestoneSummaryEndpoints.findByMilestoneIdEndpoint.serverLogic { auth => request =>
     val (milestoneId, pageRequest) = request
-    withProjectMember(milestoneService.findProjectId(milestoneId).map(_.asRight), auth) { _ =>
+    withProjectMember(milestoneService.findProjectId(milestoneId).map(_.asRight), auth) {
       PageRequestValidation.withPage(pageRequest) { page =>
         milestoneSummaryService
           .findPaginatedByMilestoneId(milestoneId, page)
@@ -85,7 +82,7 @@ class MilestoneSummaryController(
 
   val findByProjectId = milestoneSummaryEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
     val (projectId, pageRequest) = request
-    withProjectMember(IO.pure(projectId.asRight), auth) { _ =>
+    withProjectMember(IO.pure(projectId.asRight), auth) {
       PageRequestValidation.withPage(pageRequest) { page =>
         milestoneSummaryService
           .findPaginatedByProjectId(projectId, page)
@@ -97,8 +94,8 @@ class MilestoneSummaryController(
   }
 
   val update = milestoneSummaryEndpoints.updateEndpoint.serverLogic { auth => dto =>
-    withProjectMember[FindMilestoneSummaryResp](projectIdOfSummary(dto.id), auth) { workDays =>
-      validateDates(dto.startDate, dto.endDate, workDays) match {
+    withProjectMember[FindMilestoneSummaryResp](projectIdOfSummary(dto.id), auth) {
+      validateDates(dto.startDate, dto.endDate) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneSummaryResp])
         case Right(_) =>
           val now = java.time.Instant.now()
@@ -123,7 +120,7 @@ class MilestoneSummaryController(
   }
 
   val delete = milestoneSummaryEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
-    withProjectMember[TgJsonSuccess.TgEmptyBody](projectIdOfSummary(id), auth) { _ =>
+    withProjectMember[TgJsonSuccess.TgEmptyBody](projectIdOfSummary(id), auth) {
       milestoneSummaryService
         .deleteMilestoneSummary(id)
         .map(_ => TgJsonSuccess.justMessageRight("Milestone summary deleted successfully"))
@@ -132,7 +129,7 @@ class MilestoneSummaryController(
 
   val listVersions = milestoneSummaryEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
     val (milestoneSummaryId, pageRequest) = request
-    withProjectMember(projectIdOfSummary(milestoneSummaryId), auth) { _ =>
+    withProjectMember(projectIdOfSummary(milestoneSummaryId), auth) {
       PageRequestValidation.withPage(pageRequest) { page =>
         milestoneSummaryService
           .listVersions(milestoneSummaryId, page)
@@ -142,8 +139,8 @@ class MilestoneSummaryController(
   }
 
   val updateVersion = milestoneSummaryEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
-    withProjectMember[MilestoneSummaryVersionDto](projectIdOfSummary(dto.milestoneSummaryId), auth) { workDays =>
-      validateDates(dto.startDate, dto.endDate, workDays) match {
+    withProjectMember[MilestoneSummaryVersionDto](projectIdOfSummary(dto.milestoneSummaryId), auth) {
+      validateDates(dto.startDate, dto.endDate) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[MilestoneSummaryVersionDto])
         case Right(_) =>
           milestoneSummaryService
@@ -158,7 +155,7 @@ class MilestoneSummaryController(
 
   val deleteVersion = milestoneSummaryEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
     val projectId = milestoneSummaryService.findMilestoneIdByVersion(version).flatMap(toProjectId)
-    withProjectMember[TgJsonSuccess.TgEmptyBody](projectId, auth) { _ =>
+    withProjectMember[TgJsonSuccess.TgEmptyBody](projectId, auth) {
       milestoneSummaryService
         .deleteVersion(version)
         .map {
@@ -168,8 +165,9 @@ class MilestoneSummaryController(
     }
   }
 
-  private def validateDates(startDate: LocalDate, endDate: LocalDate, workDays: Set[DayOfWeek]) =
-    dateRangeValidation.validate(Some(startDate), None, Some(endDate), workDays)
+  // The summary of a period is not tied to the project's work days (a month ends on any day of the week).
+  private def validateDates(startDate: LocalDate, endDate: LocalDate) =
+    dateRangeValidation.validateOnOrAfterStart("End date", endDate, startDate).toEither.void
 
   private def projectIdOfSummary(milestoneSummaryId: UUID): IO[Either[TgError, UUID]] =
     milestoneSummaryService.findMilestoneId(milestoneSummaryId).flatMap(toProjectId)
@@ -177,16 +175,16 @@ class MilestoneSummaryController(
   private def toProjectId(milestoneId: Either[TgError, UUID]): IO[Either[TgError, UUID]] =
     milestoneId.traverse(milestoneService.findProjectId)
 
-  // Only the members of the project may read or change its summaries; `f` gets the project's work days.
+  // Only the members of the project may read or change its summaries.
   private def withProjectMember[T](projectId: IO[Either[TgError, UUID]], auth: TgAuth)(
-    f: Set[DayOfWeek] => IO[Either[TgJsonFailure, TgJsonSuccess[T]]]
+    f: => IO[Either[TgJsonFailure, TgJsonSuccess[T]]]
   ): IO[Either[TgJsonFailure, TgJsonSuccess[T]]] =
     projectId.flatMap {
       case Left(error) => IO.pure(error.toBadRequestLeft[T])
       case Right(id) =>
         contributionService.isMember(id, auth.body.get.id).flatMap {
           case false => IO.pure(Left(Forbidden))
-          case true  => projectService.findById(id).flatMap { case (project, _, _) => f(project.workDays) }
+          case true  => f
         }
     }
 }

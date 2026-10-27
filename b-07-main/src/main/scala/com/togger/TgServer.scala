@@ -256,7 +256,6 @@ class DependenciesModule(
     milestoneSummaryService,
     milestoneService,
     dateRangeValidation,
-    projectService,
     contributionService
   )
 
