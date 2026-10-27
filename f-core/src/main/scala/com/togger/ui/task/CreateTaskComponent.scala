@@ -14,7 +14,7 @@ import com.togger.dto._
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.routes.Pages.EditTaskPage
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -272,7 +272,8 @@ class CreateTaskComponent(
           )
         )
         .element
-        .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
+        .amend(heightAndWidthFitContent)
+//        .amend(heightAndWidthFitContent)
     )
 
 }

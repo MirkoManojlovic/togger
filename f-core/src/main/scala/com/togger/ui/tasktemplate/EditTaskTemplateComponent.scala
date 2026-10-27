@@ -7,7 +7,7 @@ import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
@@ -134,7 +134,7 @@ class EditTaskTemplateComponent(
         )
       )
       .element
-      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
+      .amend(heightAndWidthFitContent)
   )
 
 }

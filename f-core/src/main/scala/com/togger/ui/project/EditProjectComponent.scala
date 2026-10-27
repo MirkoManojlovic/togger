@@ -7,7 +7,7 @@ import com.togger.dto._
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages.{EditProjectPage, HomePage}
 import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
@@ -259,7 +259,7 @@ class EditProjectComponent(
         )
       )
       .element
-      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
+      .amend(heightAndWidthFitContent)
   )
 
 }

@@ -17,7 +17,7 @@ import com.togger.dto.{
   UpdateMilestoneReq
 }
 import com.togger.milestone.MilestoneEndpoints
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -170,7 +170,7 @@ class CreateMilestoneComponent(
         )
       )
       .element
-      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
+      .amend(heightAndWidthFitContent)
   )
 
 }

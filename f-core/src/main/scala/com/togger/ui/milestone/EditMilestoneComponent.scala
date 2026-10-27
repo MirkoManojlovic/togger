@@ -8,7 +8,7 @@ import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
@@ -361,7 +361,7 @@ class EditMilestoneComponent(
         )
       )
       .element
-      .amend(cls("min-w-0 lg:w-[80rem] lg:shrink-0"))
+      .amend(heightAndWidthFitContent)
 
   val element =
     div(
