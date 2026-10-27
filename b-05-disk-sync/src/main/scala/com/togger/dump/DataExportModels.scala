@@ -113,6 +113,7 @@ case class DataExportEntityStatus(
 case class DataExportPathStatus(
   exportPath: String,
   entityStatuses: List[DataExportEntityStatus],
-  exportConfigId: Option[UUID] = None
+  exportConfigId: Option[UUID] = None,
+  name: Option[String] = None
 )
 case class DataExportStatusResult(pathStatuses: List[DataExportPathStatus])

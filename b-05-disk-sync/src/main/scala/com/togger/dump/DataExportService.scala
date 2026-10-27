@@ -151,7 +151,8 @@ class DataExportService(
     DataExportPathStatus(
       config.exportPath,
       entityStatuses(data, folderPath, dataExportTreeStore.readIndex(config.exportPath, data.project)),
-      Some(config.id)
+      Some(config.id),
+      Some(config.name)
     )
   }
 
