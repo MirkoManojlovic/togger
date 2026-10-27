@@ -22,7 +22,9 @@ import com.togger.ui.project.{ProjectService, TaskListItem}
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
-import com.togger.ui.timebox.StagedGrouping
+import com.togger.task.DefaultTaskStatus
+import com.togger.ui.teamdaily.TeamDailyStatusOrder
+import com.togger.ui.timebox.{StagedGrouping, StagedGroup}
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate, ZoneOffset}
@@ -206,7 +208,8 @@ class MilestoneSummaryComponent(
       milestones = Seq.empty,
       workDaysVar.now(),
       showAssignee = true,
-      previewTask(_, milestone)
+      previewTask(_, milestone),
+      previewOnRowClick = true
     )
     ul(tasks.sortBy(_.name).map(taskItem(_)))
   }
@@ -222,10 +225,10 @@ class MilestoneSummaryComponent(
   ): HtmlElement =
     if (tasks.isEmpty) div(cls("text-sm text-body"), emptyMessage)
     else {
-      val tabs = StagedGrouping.ByStatus.group(tasks, Seq.empty).map { group =>
+      val tabs = MilestoneSummaryComponent.byStatusOrder(StagedGrouping.ByStatus.group(tasks, Seq.empty)).map { group =>
         TgTab(
           id = group.tasks.head.taskStatus.id.toString,
-          label = group.title,
+          label = s"${group.tasks.head.taskStatus.emoji} ${group.title}",
           content = taskList(group.tasks, milestone),
           badge = Some(Val(group.tasks.size))
         )
@@ -312,7 +315,7 @@ class MilestoneSummaryComponent(
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         div(
-          cls("flex w-full min-w-0 flex-col gap-8 lg:w-[40rem] lg:shrink-0"),
+          cls("flex w-full min-w-0 flex-col gap-8 lg:w-[50rem] lg:shrink-0"),
           newSummaryCard,
           previousSummariesCard
         ),
@@ -328,6 +331,17 @@ class MilestoneSummaryComponent(
 }
 
 object MilestoneSummaryComponent {
+
+  private val DefaultStatusRank: Map[String, Int] =
+    DefaultTaskStatus.values.map(status => TeamDailyStatusOrder.normalise(status.statusName) -> status.i).toMap
+
+  /** The groups in the order of the default statuses, from In progress to Won't do; any other status after them, by
+    * name.
+    */
+  def byStatusOrder(groups: Seq[StagedGroup]): Seq[StagedGroup] =
+    groups.sortBy(group =>
+      DefaultStatusRank.getOrElse(TeamDailyStatusOrder.normalise(group.title), DefaultStatusRank.size) -> group.title
+    )
 
   /** The tasks with a log entry created from `startDate` to `endDate`, both included. */
   def withLogEntriesBetween(tasks: Seq[FindTaskRespFull], startDate: LocalDate, endDate: LocalDate): Seq[FindTaskRespFull] =

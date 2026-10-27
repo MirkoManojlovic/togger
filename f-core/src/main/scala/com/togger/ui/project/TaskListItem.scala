@@ -18,6 +18,8 @@ import java.time.DayOfWeek
   *   to name the milestone of the task in its badges; empty where the milestone is already known
   * @param showAssignee
   *   the assignee of the task in its badges, left out where the tasks are of one member
+  * @param previewOnRowClick
+  *   the task is previewed by clicking its row, instead of by a button beside its name
   */
 class TaskListItem(
   router: TgRouter[FrontendPage],
@@ -26,12 +28,15 @@ class TaskListItem(
   milestones: Seq[FindMilestoneResp],
   workDays: Set[DayOfWeek],
   showAssignee: Boolean,
-  onPreview: FindTaskRespFull => Unit
+  onPreview: FindTaskRespFull => Unit,
+  previewOnRowClick: Boolean = false
 ) {
 
   def apply(task: FindTaskRespFull): HtmlElement =
     li(
       cls("mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+      cls.toggle("cursor-pointer hover:bg-neutral-tertiary") := previewOnRowClick,
+      onClick.filter(_ => previewOnRowClick).mapToUnit --> (_ => onPreview(task)),
       div(
         cls("flex items-start gap-2 mb-1"),
         div(
@@ -39,7 +44,9 @@ class TaskListItem(
           a(
             cls("text-fg-brand hover:underline cursor-pointer"),
             task.name,
-            router.navigateTo(EditTaskPage(task.projectId, task.id))
+            router.navigateTo(EditTaskPage(task.projectId, task.id)),
+            // the link goes to the task, not to its preview
+            onClick.filter(_ => previewOnRowClick).stopPropagation.mapToUnit --> Observer.empty
           ),
           BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task)),
           TaskProgressComponent
@@ -47,7 +54,7 @@ class TaskListItem(
             .element
             .amend(cls("self-center leading-none"))
         ),
-        button(
+        Option.unless(previewOnRowClick)(button(
           `type`("button"),
           title("Preview task"),
           cls(
@@ -55,7 +62,7 @@ class TaskListItem(
           ),
           TgIcons.eyeIcon("w-3.5 h-3.5"),
           onClick.mapToUnit --> (_ => onPreview(task))
-        )
+        ))
       ),
       BulkTaskCard.readOnlyRow(
         ProjectHomeStats.taskBadges(
