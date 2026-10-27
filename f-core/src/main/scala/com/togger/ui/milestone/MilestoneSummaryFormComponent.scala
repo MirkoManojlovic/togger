@@ -6,6 +6,7 @@ import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonDangerCls}
@@ -64,16 +65,18 @@ class MilestoneSummaryFormComponent(
     tgInputType = TgInputType.Date
   )
 
-  private def presetButton(preset: MilestoneSummaryPreset): HtmlElement = {
+  private def presetBadge(preset: MilestoneSummaryPreset): HtmlElement = {
     val range = MilestoneSummaryPresets.range(preset, tgClock.currentDate())
+    val isDisabled = workDays.map(days => days.nonEmpty && MilestoneSummaryPresets.misaligned(range, days))
     button(
       typ("button"),
-      cls(MilestoneSummaryFormComponent.presetButtonCls),
-      disabled <-- workDays.map(days => days.nonEmpty && MilestoneSummaryPresets.misaligned(range, days)),
-      preset.label,
-      onClick.mapToUnit --> (_ =>
-        formState.update(_.copy(startDate = range._1.toString, endDate = range._2.toString))
-      )
+      cls("rounded-base"),
+      cls("cursor-pointer hover:ring-2 hover:ring-blue-300") <-- isDisabled.map(!_),
+      cls("opacity-50 cursor-not-allowed") <-- isDisabled,
+      disabled <-- isDisabled,
+      title(s"${range._1} - ${range._2}"),
+      TgBadge(text = preset.label, color = TgBadgeColor.Brand).element,
+      onClick.mapToUnit --> (_ => formState.update(_.copy(startDate = range._1.toString, endDate = range._2.toString)))
     )
   }
 
@@ -81,10 +84,9 @@ class MilestoneSummaryFormComponent(
     div(
       cls("mb-4"),
       div(
-        cls("mb-4 flex flex-wrap items-end gap-4"),
+        cls("mb-2 flex flex-wrap items-end gap-4"),
         startDateInput.htmlElement,
         endDateInput.htmlElement,
-        div(cls("flex gap-1.5 pb-1"), MilestoneSummaryPreset.all.map(presetButton)),
         div(
           cls("ml-auto pb-1"),
           iconButton(
@@ -96,14 +98,9 @@ class MilestoneSummaryFormComponent(
           )
         )
       ),
+      div(cls("mb-4 flex flex-wrap items-center gap-1.5"), MilestoneSummaryPreset.all.map(presetBadge)),
       summaryEditor.htmlElement
     )
 
   override def toString = s"MilestoneSummaryFormComponent(${formState.now()})"
-}
-
-object MilestoneSummaryFormComponent {
-  val presetButtonCls =
-    "px-2.5 py-1 text-xs font-medium rounded-lg border border-default hover:bg-neutral-secondary-soft " +
-      "disabled:opacity-50 disabled:cursor-not-allowed"
 }

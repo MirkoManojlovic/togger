@@ -23,9 +23,9 @@ object MilestoneSummaryPresets {
   def range(preset: MilestoneSummaryPreset, today: LocalDate): (LocalDate, LocalDate) = {
     val monday = today.minusDays((today.getDayOfWeek.getValue - DayOfWeek.MONDAY.getValue).toLong)
     preset match {
-      case OneWeek   => (monday, monday.plusDays(DaysFromMondayToFriday))
-      case TwoWeeks  => (monday, monday.plusDays(DaysFromMondayToNextFriday))
-      case OneMonth  => (today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth))
+      case OneWeek  => (monday, monday.plusDays(DaysFromMondayToFriday))
+      case TwoWeeks => (monday, monday.plusDays(DaysFromMondayToNextFriday))
+      case OneMonth => (today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth))
     }
   }
 
