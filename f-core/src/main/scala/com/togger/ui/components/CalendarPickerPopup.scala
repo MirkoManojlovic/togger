@@ -219,7 +219,7 @@ case class CalendarPickerPopup(
     button(
       `type`("button"),
       aria.label(label),
-      cls("p-1 rounded-base hover:bg-neutral-tertiary-medium cursor-pointer"),
+      cls("p-1 rounded-base text-heading hover:bg-neutral-tertiary-medium cursor-pointer"),
       // kept out of tab order so Tab from the input goes straight to the OK/Cancel buttons instead of
       // walking through month navigation and every day cell first
       tabIndex(-1),
