@@ -99,7 +99,7 @@ object Libraries {
 
     val `com.softwaremill.sttp.client3` = "com.softwaremill.sttp.client3"
     val core = "core"
-    val `client3-version` = "3.8.15"
+    val `client3-version` = "3.11.0"
 
     val `com.softwaremill.sttp.ai` = "com.softwaremill.sttp.ai"
     val openai = "openai"
