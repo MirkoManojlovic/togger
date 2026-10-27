@@ -14,7 +14,7 @@ import com.togger.routes.Pages.{
 }
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.spinner.SpinnerService
@@ -53,6 +53,57 @@ class ShowAllOrganizationsComponent(
 
   spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 
+  private def organizationCard(dto: FindOrganizationResp): HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.html(
+          div(
+            cls("flex items-center justify-between"),
+            a(
+              cls("mr-2 font-medium text-fg-brand hover:underline"),
+              router.navigateTo(ShowProjectsForOrganizationIdTable(dto.id)),
+              s"${dto.icon} ${dto.name}".trim
+            ),
+            div(
+              iconButton(
+                "Edit Organization",
+                TgIcons.editIcon(className = "w-4 h-4"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(dto.id)))
+              ),
+              iconButton(
+                "Projects",
+                TgIcons.briefcaseIcon(className = "w-4 h-4"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ => router.route(ShowProjectsForOrganizationIdTable(dto.id)))
+              )
+            )
+          ),
+          TgCard.CardHeaderSize.H3
+        ),
+        body = TgCard.HtmlCardContent(
+          div(
+            div(dto.description),
+            Option.when(dto.members.nonEmpty)(
+              div(
+                cls("mt-4"),
+                div(cls("font-semibold text-heading mb-1"), "Members"),
+                div(
+                  cls("flex flex-wrap gap-1"),
+                  dto.members
+                    .map(_.fullName)
+                    .sorted
+                    .map(name => TgBadge(text = name, color = TgBadgeColor.Gray, bordered = true).element)
+                )
+              )
+            )
+          )
+        )
+      )
+      .element
+
   val element = {
     div(
       TgCard
@@ -90,56 +141,7 @@ class ShowAllOrganizationsComponent(
           body = TgCard.HtmlCardContent(
             div(
               child <-- stateFormVar.signal.map(dtos =>
-                div(
-                  cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
-                  table(
-                    cls("w-full text-sm text-left rtl:text-right text-body"),
-                    thead(
-                      cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
-                      tr(
-                        createTh("id"),
-                        createTh("Name"),
-                        createTh("Description"),
-                        createTh("Action")
-                      )
-                    ),
-                    tbody(
-                      dtos.zipWithIndex
-                        .map { case (dto, index) =>
-                          val rowCls = if (index % 2 == 0) {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          } else {
-                            "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"
-                          }
-
-                          tr(
-                            cls(rowCls),
-                            createTd(dto.id.toString),
-                            createTd(s"${dto.icon} ${dto.name}"),
-                            createTd(dto.description),
-                            createTd(
-                              div(
-                                iconButton(
-                                  "Edit",
-                                  TgIcons.editIcon(className = "w-4 h-4"),
-                                  rowIconButtonCls,
-                                  rowButtonMarginCls,
-                                  onClick.mapToUnit --> (_ => router.route(EditOrganizationPage(dto.id)))
-                                ),
-                                iconButton(
-                                  "Projects",
-                                  TgIcons.briefcaseIcon(className = "w-4 h-4"),
-                                  rowIconButtonCls,
-                                  rowButtonMarginCls,
-                                  onClick.mapToUnit --> (_ => router.route(ShowProjectsForOrganizationIdTable(dto.id)))
-                                )
-                              )
-                            )
-                          )
-                        }
-                    )
-                  )
-                )
+                div(cls("flex flex-col gap-4"), dtos.map(organizationCard))
               ),
               TgPaginationComponent(
                 paginationVar.signal,
