@@ -287,7 +287,7 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     os.write.over(path, json.spaces2, createFolders = true)
     editIndex(root) { index =>
       val entries = index.entities.getOrElse(entityType.folder, Map.empty) +
-        (id.toString -> ExportIndexEntry(ExportHasher.hashJson(json), name))
+        (id.toString -> ExportIndexEntry(ExportHasher.hashJson(json), name, ExportHasher.latestTimestamp(json)))
       index.copy(entities = index.entities + (entityType.folder -> entries))
     }
   }

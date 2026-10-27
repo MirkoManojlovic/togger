@@ -121,8 +121,9 @@ class DataExportService(
       }
   }
 
-  /** Compares the tree at an import path with the database: what is on disk but not in the database, or differs, is
-    * what an import would bring in.
+  /** Compares the tree at an import path with the database: what is on disk but not in the database, or differs and
+    * is newer on disk, is what an import would bring in. An entity that differs but is newer in the database is
+    * reported as in sync, as there is nothing to import.
     */
   def checkImportStatus(
     projectId: UUID,
@@ -136,14 +137,29 @@ class DataExportService(
         dataExportTreeStore.resolveImportFolder(importPath) match {
           case None => Left(DumpManifestMissing)
           case Some(folderPath) =>
+            val indexResult = dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_))
             Right(
-              DataExportPathStatus(
-                importPath,
-                entityStatuses(data, folderPath, dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_)))
-              )
+              DataExportPathStatus(importPath, entityStatuses(data, folderPath, indexResult).map(withoutOlderDisk(data, indexResult)))
             )
         }
     }
+  }
+
+  /** A differing entity is only importable when the disk holds the newer change; without timestamps to compare, it is. */
+  private def withoutOlderDisk(data: ExportData, indexResult: Either[String, Option[ExportIndex]])(
+    entityStatus: DataExportEntityStatus
+  ): DataExportEntityStatus = {
+    val dbChangedAt = data.entities.find(e => e.entityType == entityStatus.entityType && e.id == entityStatus.entityId).flatMap(_.changedAt)
+    val diskChangedAt = indexResult.toOption.flatten
+      .flatMap(_.entriesOf(entityStatus.entityType).get(entityStatus.entityId))
+      .flatMap(_.changedAt)
+    val diskIsOlder = (diskChangedAt, dbChangedAt) match {
+      case (Some(disk), Some(db)) => !disk.isAfter(db)
+      case _                      => false
+    }
+    if (entityStatus.status == DataExportSyncStatus.OutOfSync && diskIsOlder)
+      entityStatus.copy(status = DataExportSyncStatus.InSync, differences = List("database is newer than the disk"))
+    else entityStatus
   }
 
   private def buildPathStatus(config: DataExportConfig, data: ExportData): DataExportPathStatus = {

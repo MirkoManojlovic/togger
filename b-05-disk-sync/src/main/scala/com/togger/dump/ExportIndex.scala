@@ -6,9 +6,12 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
+import scala.util.Try
 
-/** The hash of one exported entity file; the name only labels the entity in status reports and is not hashed. */
-case class ExportIndexEntry(hash: String, name: Option[String])
+/** The hash of one exported entity file; the name only labels the entity in status reports and is not hashed.
+  * `changedAt` is the newest creation or update time inside the entity, `None` for entities without timestamps.
+  */
+case class ExportIndexEntry(hash: String, name: Option[String], changedAt: Option[Instant])
 
 /** `index.json`: the hash of every entity file by entity folder and id, plus a root hash over all of them. */
 case class ExportIndex(
@@ -34,6 +37,25 @@ object ExportHasher {
       values => Json.fromValues(values.map(canonical)),
       obj => Json.fromFields(obj.toList.sortBy(_._1).map { case (key, value) => key -> canonical(value) })
     )
+
+  private val timestampKeys = Set("createdAt", "updatedAt")
+
+  /** The newest value of any `createdAt`/`updatedAt` field anywhere in the entity's json. */
+  def latestTimestamp(json: Json): Option[Instant] =
+    json.fold(
+      None,
+      _ => None,
+      _ => None,
+      _ => None,
+      values => values.flatMap(latestTimestamp).maxOption,
+      obj =>
+        obj.toList.flatMap {
+          case (key, value) if timestampKeys.contains(key) => value.asString.flatMap(parseInstant)
+          case (_, value)                                  => latestTimestamp(value)
+        }.maxOption
+    )
+
+  private def parseInstant(value: String): Option[Instant] = Try(Instant.parse(value)).toOption
 
   def rootHash(entities: Map[String, Map[String, ExportIndexEntry]]): String =
     sha256(

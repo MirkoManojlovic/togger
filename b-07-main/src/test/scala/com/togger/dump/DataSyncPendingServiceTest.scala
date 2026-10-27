@@ -77,6 +77,25 @@ class DataSyncPendingServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "have something to import only when the differing entity is newer on the disk" in { transactor =>
+      for {
+        setupResult <- createExportableProject(newExportPath()).transact(transactor)
+        (savedAccount, savedProject) = setupResult
+        label <- createTaskLabel(savedProject.id).transact(transactor)
+        exported <- exportToFolder(transactor, savedProject.id, savedAccount.id)
+        _ <- insertImportConfig(savedProject.id, savedAccount.id, exported).transact(transactor)
+        service = pendingService(transactor)
+        _ <- taskLabelRepo.update(label.copy(name = "Changed in db"), nowAsInstant.plusSeconds(3600)).transact(transactor)
+        dbNewer <- service.importPending(savedProject.id, savedAccount.id)
+        _ <- newExportService(transactor).exportProject(savedProject.id, savedAccount.id)
+        _ <- taskLabelRepo.update(label.copy(name = "Changed again"), nowAsInstant.plusSeconds(1800)).transact(transactor)
+        diskNewer <- service.importPending(savedProject.id, savedAccount.id)
+      } yield {
+        dbNewer shouldBe Right(false)
+        diskNewer shouldBe Right(true)
+      }
+    }
+
     "refuse an account that is not assigned to the project" in { transactor =>
       for {
         setupResult <- createExportableProject(newExportPath()).transact(transactor)

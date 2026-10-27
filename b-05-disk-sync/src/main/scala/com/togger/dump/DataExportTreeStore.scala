@@ -15,7 +15,8 @@ import scala.util.Try
 /** One file of the export tree. The hash is taken from the canonical json, so it is the same wherever it is computed. */
 case class ExportEntity(entityType: DataExportEntityType, id: UUID, name: Option[String], json: Json) {
   lazy val hash: String = ExportHasher.hashJson(json)
-  def indexEntry: ExportIndexEntry = ExportIndexEntry(hash, name)
+  lazy val changedAt: Option[Instant] = ExportHasher.latestTimestamp(json)
+  def indexEntry: ExportIndexEntry = ExportIndexEntry(hash, name, changedAt)
 }
 
 case class ExportTreeWriteResult(path: String, written: Int, unchanged: Int, deleted: Int)
