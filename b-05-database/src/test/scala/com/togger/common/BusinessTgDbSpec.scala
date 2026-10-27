@@ -24,6 +24,7 @@ import com.togger.task.{
   TaskVersionRepoImpl
 }
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
+import com.togger.tgprompt.{TgPromptRepoImpl, TgPromptVersionRepoImpl}
 import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
@@ -56,6 +57,8 @@ trait BusinessTgDbSpec extends TgDbSpec {
         MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE,
         MilestoneRepoImpl.MILESTONE_TABLE,
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
+        TgPromptVersionRepoImpl.TG_PROMPT_VERSION_TABLE,
+        TgPromptRepoImpl.TG_PROMPT_TABLE,
         TaskTemplateVersionRepoImpl.TASK_TEMPLATE_VERSION_TABLE,
         TaskTemplateRepoImpl.TASK_TEMPLATE_TABLE,
         TaskLabelRepoImpl.TASK_LABEL_TABLE,
