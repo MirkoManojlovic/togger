@@ -161,10 +161,10 @@ class MilestoneSummaryComponent(
       milestone.toSeq
     ).element.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
 
-  private val selectedTaskVar = Var("")
+  private val selectedStatusVar = Var("")
 
-  // A row of tabs per task status, a tab per task of it. The rows share the selection, so it is put on the first task
-  // when a reload takes the selected one away.
+  // One tab per task status, so a status can be reviewed on its own. The selected tab survives the tasks being
+  // reloaded or limited.
   private def statusTabs(
     tasks: Seq[FindTaskRespFull],
     milestone: Option[FindMilestoneResp],
@@ -172,19 +172,15 @@ class MilestoneSummaryComponent(
   ): HtmlElement =
     if (tasks.isEmpty) div(cls("text-sm text-body"), emptyMessage)
     else {
-      val rows = StagedGrouping.ByStatus.group(tasks, Seq.empty).map { group =>
-        group.title -> group.tasks.map(task => TgTab(task.id.toString, task.name, taskPreview(task, milestone)))
+      val tabs = StagedGrouping.ByStatus.group(tasks, Seq.empty).map { group =>
+        TgTab(
+          id = group.tasks.head.taskStatus.id.toString,
+          label = group.title,
+          content = div(group.tasks.map(taskPreview(_, milestone))),
+          badge = Some(Val(group.tasks.size))
+        )
       }
-      val tabRows = rows.map { case (title, tabs) => title -> new TgTabs(tabs, selectedTaskVar) }
-      val firstTaskId = rows.flatMap(_._2).map(_.id).head
-      val selectableIds = rows.flatMap(_._2).map(_.id).toSet
-      div(
-        onMountCallback(_ => if (!selectableIds.contains(selectedTaskVar.now())) selectedTaskVar.set(firstTaskId)),
-        tabRows.map { case (title, row) =>
-          div(cls("mb-3"), div(cls("mb-1 text-sm text-body"), title), row.tabBar)
-        },
-        tabRows.flatMap { case (_, row) => row.panels }
-      )
+      new TgTabs(tabs, selectedStatusVar).element
     }
 
   // Whether only the tasks with log entries in the period of the new summary are shown.
