@@ -57,6 +57,7 @@ Project-name → directory map (see `build.sbt`):
 | `backendDeliveryHttp4s`| `b-06-delivery-http4s`  |
 | `backendMain`          | `b-07-main`             |
 | `backendAuth`          | `b-auth-app-core`       |
+| `backendAi`            | `b-05-ai`               |
 | `tgMacros`             | `c-00-tg-macros` (cross)|
 | `tgCommon`             | `c-01-common` (cross)   |
 | `httpEndpoints`        | `c-03-http-endpoints` (cross) |
@@ -117,6 +118,11 @@ controller, and the frontend caller/component.
 **No DI framework — manual constructor wiring.** `TgServer.DependenciesModule` (in `b-07-main`) and
 `AuthDependenciesModule` (in `b-auth-app-core`) wire the whole object graph by hand with `lazy val`s; new
 services/controllers get added there and to the endpoint list passed to `HttpModule.createServer`.
+
+**AI (internal only):** `TgAiClient` (trait, models and `TgAiError` in `b-05-core`, package `com.togger.ai`) is
+implemented by `TgOpenAiClient` in `b-05-ai` using sttp-ai (OpenAI) on an fs2 sttp-client4 backend that
+`TgServer.instance` acquires as a `Resource`. `TgAiService` resolves the API key per account through
+`TgAiApiKeyProvider` (currently `TgNoApiKeyProvider`; DB-backed keys come later). No controller or endpoints.
 
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
