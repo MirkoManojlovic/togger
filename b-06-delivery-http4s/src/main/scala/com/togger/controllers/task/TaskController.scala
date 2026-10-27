@@ -169,11 +169,14 @@ class TaskController(
     val taskDto = dto.task
 
     projectService.findById(taskDto.projectId).flatMap { case (project, _, _) =>
-      dateRangeValidation.validate(Some(taskDto.startDate), Some(taskDto.dueDate), None, project.workDays) match {
+      val validation = dateRangeValidation
+        .validate(Some(taskDto.startDate), Some(taskDto.dueDate), None, project.workDays)
+        .flatMap(_ => LinkValidation.validateAll(dto.links, Seq.empty))
+      validation match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
         case Right(_) =>
           val (task, firstVersion) = newTaskOf(taskDto, auth.body.get.id, taskDto.createdAt)
-          val newLinks = newLinksOf(dto.links, tgClock.currentInstant)
+          val newLinks = newLinksOf(LinkValidation.withoutBlankLinks(dto.links), tgClock.currentInstant)
 
           taskService
             .createTask(task, firstVersion, newLinks, taskDto.taskLabelIds)
@@ -190,14 +193,16 @@ class TaskController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[Seq[FindTaskResp]])
       case Right(_) =>
         projectService.findById(dto.tasks.head.task.projectId).flatMap { case (project, _, _) =>
-          BulkTaskValidation.validateDates(dto, project.workDays, dateRangeValidation) match {
+          BulkTaskValidation
+            .validateDates(dto, project.workDays, dateRangeValidation)
+            .flatMap(_ => BulkTaskValidation.validateLinks(dto)) match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[Seq[FindTaskResp]])
             case Right(_) =>
               val now = tgClock.currentInstant
               val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
                 val (task, firstVersion) =
                   newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
-                NewTask(task, firstVersion, newLinksOf(taskAndLinks.links, now), taskAndLinks.task.taskLabelIds)
+                NewTask(task, firstVersion, newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now), taskAndLinks.task.taskLabelIds)
               }
 
               taskService.createTasks(newTasks).map { saved =>
@@ -213,7 +218,7 @@ class TaskController(
   val update = updateEndpoint.serverLogic { auth => dto =>
     val taskDto = dto.task
     val linksForUpdate = dto.linksForUpdate
-    val linksToCreate = dto.linksToCreate
+    val linksToCreate = LinkValidation.withoutBlankLinks(dto.linksToCreate)
 
     taskService.findProjectId(taskDto.id).flatMap { projectId =>
       projectService.findById(projectId).flatMap { case (project, _, _) =>
@@ -222,12 +227,9 @@ class TaskController(
           val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
           val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
 
-          dateRangeValidation.validate(
-            Some(effectiveStartDate),
-            Some(effectiveDueDate),
-            effectiveEndDate,
-            project.workDays
-          ) match {
+          dateRangeValidation
+            .validate(Some(effectiveStartDate), Some(effectiveDueDate), effectiveEndDate, project.workDays)
+            .flatMap(_ => LinkValidation.validateAll(linksToCreate, linksForUpdate)) match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
             case Right(_) =>
               val newUpdatedAt = tgClock.currentInstant
