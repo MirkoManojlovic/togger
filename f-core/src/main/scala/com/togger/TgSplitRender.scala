@@ -626,14 +626,20 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new EditMilestoneComponent(
                   milestoneService,
                   milestoneDateService,
-                  milestoneSummaryService,
                   spinnerService,
                   dateRangeValidation,
                   tgClock,
                   projectService,
                   id,
                   toast,
-                  modalFactory
+                  new MilestoneSummaryComponent(
+                    milestoneSummaryService,
+                    spinnerService,
+                    tgClock,
+                    id,
+                    toast,
+                    modalFactory
+                  )
                 ).element
               case MilestoneReviewPage(projectId: UUID, milestoneId: UUID) =>
                 new MilestoneReviewComponent(
