@@ -24,7 +24,12 @@ object TgBreadcrumbTrail {
 
   private def underOrganizations(crumbs: TgBreadcrumb*) = organizations +: crumbs
 
-  private def underTasks(projectId: UUID, crumbs: TgBreadcrumb*) = underOrganizations(tasks(projectId) +: crumbs: _*)
+  private def project(projectId: UUID) = link("Project", ProjectHomePage(projectId))
+
+  private def underProject(projectId: UUID, crumbs: TgBreadcrumb*) =
+    underOrganizations(project(projectId) +: crumbs: _*)
+
+  private def underTasks(projectId: UUID, crumbs: TgBreadcrumb*) = underProject(projectId, tasks(projectId) +: crumbs: _*)
 
   private def underProjectLabels(label: String) =
     underOrganizations(link("Project labels", ShowAllProjectLabelsPage()), current(label))
@@ -33,13 +38,13 @@ object TgBreadcrumbTrail {
     underOrganizations(link("Project label categories", ShowAllProjectLabelCategoriesPage()), current(label))
 
   private def underStatuses(projectId: UUID, label: String) =
-    underTasks(projectId, link("Task statuses", ShowAllTaskStatusesPage(projectId)), current(label))
+    underProject(projectId, link("Task statuses", ShowAllTaskStatusesPage(projectId)), current(label))
 
   private def underTaskLabels(projectId: UUID, label: String) =
-    underTasks(projectId, link("Task labels", ShowAllTaskLabelsPage(projectId)), current(label))
+    underProject(projectId, link("Task labels", ShowAllTaskLabelsPage(projectId)), current(label))
 
   private def underTaskTemplates(projectId: UUID, label: String) =
-    underTasks(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
+    underProject(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
 
   private def underConfigs(projectId: UUID, label: String) =
     underOrganizations(
@@ -49,10 +54,10 @@ object TgBreadcrumbTrail {
     )
 
   private def underMilestones(projectId: UUID, label: String) =
-    underTasks(projectId, link("Milestones", ShowMilestonesPage(projectId)), current(label))
+    underProject(projectId, link("Milestones", ShowMilestonesPage(projectId)), current(label))
 
   private def underTimeboxes(projectId: UUID, label: String) =
-    underTasks(projectId, link("Timeboxes", ShowTimeboxesPage(projectId)), current(label))
+    underProject(projectId, link("Timeboxes", ShowTimeboxesPage(projectId)), current(label))
 
   def forPage(page: FrontendPage): Seq[TgBreadcrumb] = page match {
     case HomePage | LoginPage | NotFoundPage(_) => Seq.empty
@@ -78,38 +83,38 @@ object TgBreadcrumbTrail {
     case CreateProjectLabelCategoryPage    => underCategories("Create category")
     case EditProjectLabelCategoryPage(_)   => underCategories("Edit category")
 
-    case ProjectHomePage(_)         => underOrganizations(current("Project home"))
-    case ShowAllTasksPage(_, _)     => underOrganizations(current("Tasks"))
+    case ProjectHomePage(_)         => underOrganizations(current("Project"))
+    case ShowAllTasksPage(projectId, _) => underProject(projectId, current("Tasks"))
     case CreateTaskPage(projectId)  => underTasks(projectId, current("Create task"))
     case EditTaskPage(projectId, _) => underTasks(projectId, current("Edit task"))
 
-    case ShowAllTaskStatusesPage(projectId, _) => underTasks(projectId, current("Task statuses"))
+    case ShowAllTaskStatusesPage(projectId, _) => underProject(projectId, current("Task statuses"))
     case CreateTaskStatusPage(projectId)    => underStatuses(projectId, "Create status")
     case EditTaskStatusPage(projectId, _)   => underStatuses(projectId, "Edit status")
 
-    case ShowAllTaskLabelsPage(projectId, _) => underTasks(projectId, current("Task labels"))
+    case ShowAllTaskLabelsPage(projectId, _) => underProject(projectId, current("Task labels"))
     case CreateTaskLabelPage(projectId)   => underTaskLabels(projectId, "Create label")
     case EditTaskLabelPage(projectId, _)  => underTaskLabels(projectId, "Edit label")
 
-    case ShowAllTaskTemplatesPage(projectId, _) => underTasks(projectId, current("Task templates"))
+    case ShowAllTaskTemplatesPage(projectId, _) => underProject(projectId, current("Task templates"))
     case CreateTaskTemplatePage(projectId)      => underTaskTemplates(projectId, "Create template")
     case EditTaskTemplatePage(projectId, _)     => underTaskTemplates(projectId, "Edit template")
 
-    case SyncConfigPage(projectId, _) => underTasks(projectId, current("Sync config"))
-    case DataExportStatusPage(projectId)       => underTasks(projectId, current("Export data status"))
+    case SyncConfigPage(projectId, _) => underProject(projectId, current("Sync config"))
+    case DataExportStatusPage(projectId)       => underProject(projectId, current("Export data status"))
     case CreateDataExportConfigPage(projectId) => underConfigs(projectId, "Create export data config")
     case CreateDataImportConfigPage(projectId) => underConfigs(projectId, "Create import data config")
     case CreateProjectMappingPage(projectId) => underConfigs(projectId, "Create project mapping")
     case EditDataExportConfigPage(projectId, _) => underConfigs(projectId, "Edit export data config")
     case EditDataImportConfigPage(projectId, _) => underConfigs(projectId, "Edit import data config")
 
-    case ShowTimeboxesPage(projectId, _)     => underTasks(projectId, current("Timeboxes"))
+    case ShowTimeboxesPage(projectId, _)     => underProject(projectId, current("Timeboxes"))
     case CreateTimeboxPage(projectId)        => underTimeboxes(projectId, "Create timebox")
     case EditTimeboxPage(projectId, _)       => underTimeboxes(projectId, "Save new timebox version")
     case TimeboxHistoryPage(projectId, _)    => underTimeboxes(projectId, "Timebox history")
     case TimeboxReviewPage(projectId, _)     => underTimeboxes(projectId, "Timebox review")
-    case ShowContributionsPage(projectId, _) => underTasks(projectId, current("Contributions"))
-    case ShowMilestonesPage(projectId, _)    => underTasks(projectId, current("Milestones"))
+    case ShowContributionsPage(projectId, _) => underProject(projectId, current("Contributions"))
+    case ShowMilestonesPage(projectId, _)    => underProject(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId, _) => underMilestones(projectId, "Milestone history")
     case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")
     case EditMilestonePage(projectId, _)     => underMilestones(projectId, "Edit milestone")
