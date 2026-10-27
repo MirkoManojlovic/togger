@@ -63,6 +63,13 @@ class ShowAllOrganizationsComponent(
               div("Organizations"),
               div(
                 iconButton(
+                  "Create Organization",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(CreateOrganizationPage)
+                ),
+                iconButton(
                   "Search Projects",
                   TgIcons.eyeIcon(className = "w-4 h-4"),
                   headerIconButtonCls,
@@ -75,13 +82,6 @@ class ShowAllOrganizationsComponent(
                   headerIconButtonCls,
                   "mr-2",
                   router.navigateTo(ShowAllProjectLabelsPage())
-                ),
-                iconButton(
-                  "Create Organization",
-                  TgIcons.plusIcon(className = "w-4 h-4"),
-                  headerIconButtonCls,
-                  "mr-2",
-                  router.navigateTo(CreateOrganizationPage)
                 )
               )
             ),
