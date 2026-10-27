@@ -77,18 +77,8 @@ class ExportCheckComponent(
 
   private val paths: HtmlElement =
     pathStatuses match {
-      case Seq()       => div(cls("text-body"), "No export paths configured for this project")
-      case Seq(single) =>
-        div(
-          cls("flex flex-col gap-3"),
-          p(
-            cls("text-base font-semibold text-heading"),
-            single.name.map(_ => title(single.exportPath)),
-            single.name.fold(single.exportPath)(identity): String
-          ),
-          exportPathStatusCard(single, s"$statusTitle: ${single.exportPath}")
-        )
-      case several     => new TgTabs(several.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
+      case Seq() => div(cls("text-body"), "No export paths configured for this project")
+      case _ => new TgTabs(pathStatuses.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
     }
 
   val element =
