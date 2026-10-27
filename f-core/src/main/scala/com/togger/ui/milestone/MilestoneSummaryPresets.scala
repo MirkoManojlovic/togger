@@ -29,12 +29,4 @@ object MilestoneSummaryPresets {
     }
   }
 
-  /** The project has not configured the first or the last day of the range as a work day. */
-  def misaligned(range: (LocalDate, LocalDate), workDays: Set[DayOfWeek]): Boolean =
-    !workDays.contains(range._1.getDayOfWeek) || !workDays.contains(range._2.getDayOfWeek)
-
-  def misalignedPresets(today: LocalDate, workDays: Set[DayOfWeek]): Seq[MilestoneSummaryPreset] =
-    if (workDays.isEmpty) Seq.empty
-    else MilestoneSummaryPreset.all.filter(preset => misaligned(range(preset, today), workDays))
-
 }

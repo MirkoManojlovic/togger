@@ -96,14 +96,10 @@ class EditMilestoneComponent(
       )
 
   private def newSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
-    new MilestoneSummaryFormComponent(form, workDaysVar.signal, tgClock, removeSummary)
-
-  private def noPresetFits(): Boolean =
-    MilestoneSummaryPresets.misalignedPresets(tgClock.currentDate(), workDaysVar.now()).size ==
-      MilestoneSummaryPreset.all.size
+    new MilestoneSummaryFormComponent(form, tgClock, removeSummary)
 
   private def addNewSummary(): Unit =
-    if (!noPresetFits()) milestoneSummariesVar.update(_ :+ newSummaryForm(MilestoneSummaryForm()))
+    milestoneSummariesVar.update(_ :+ newSummaryForm(MilestoneSummaryForm()))
 
   private def removeSummaryFromPage(component: MilestoneSummaryFormComponent): Unit =
     milestoneSummariesVar.update(_.filterNot(_ eq component))
@@ -128,12 +124,6 @@ class EditMilestoneComponent(
           close()
         }
     }
-
-  private val misalignedPresets: Signal[Seq[MilestoneSummaryPreset]] =
-    workDaysVar.signal.map(MilestoneSummaryPresets.misalignedPresets(tgClock.currentDate(), _))
-
-  private val noPresetFitsWorkDays: Signal[Boolean] =
-    misalignedPresets.map(_.size == MilestoneSummaryPreset.all.size)
 
   private def saveSummaries(components: Seq[MilestoneSummaryFormComponent]): IO[Unit] =
     components.toList.traverse_ { component =>
@@ -421,7 +411,6 @@ class EditMilestoneComponent(
       .amend(
         role("button"),
         tabIndex(0),
-        cls("opacity-50 cursor-not-allowed") <-- noPresetFitsWorkDays,
         onClick --> (_ => addNewSummary()),
         onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addNewSummary())
       )
@@ -430,18 +419,6 @@ class EditMilestoneComponent(
     div(
       cls("mb-4"),
       h4(cls("text-sm font-medium text-heading mb-2"), "Summaries"),
-      child.maybe <-- misalignedPresets.map(presets =>
-        Option.when(presets.nonEmpty)(
-          div(
-            cls("mb-4 p-3 text-sm rounded-lg border border-yellow-400 bg-yellow-50 text-yellow-800"),
-            role("alert"),
-            s"The project's work days do not fit the preset(s) ${presets.map(_.label).mkString(", ")}: " +
-              "their first or last day is not a work day. " +
-              (if (presets.size == MilestoneSummaryPreset.all.size) "A summary can not be created."
-               else "Those presets are disabled.")
-          )
-        )
-      ),
       children <-- milestoneSummariesVar.signal.map(components =>
         components.map(
           _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))

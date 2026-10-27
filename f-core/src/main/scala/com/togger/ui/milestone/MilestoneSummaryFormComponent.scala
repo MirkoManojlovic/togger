@@ -35,7 +35,6 @@ object MilestoneSummaryForm {
 /** The form of one summary, shared by the saved and the not yet saved ones. */
 class MilestoneSummaryFormComponent(
   initial: MilestoneSummaryForm,
-  workDays: Signal[Set[DayOfWeek]],
   tgClock: TgClock,
   onRemove: MilestoneSummaryFormComponent => Unit
 ) {
@@ -49,13 +48,13 @@ class MilestoneSummaryFormComponent(
     minWidthRem = 0
   )
 
-  private val workDaysVar = Var(Set.empty[DayOfWeek])
+  private val everyDay = DayOfWeek.values.toSet
 
   // The dates are the start and "due" of the badges, which are labelled Start and End here.
   private val dateBadges = new MilestoneDateBadges(
     dates = formState.signal.map(form => form.startDate -> form.endDate),
     currentDates = () => formState.now().startDate -> formState.now().endDate,
-    currentWorkDays = () => workDaysVar.now(),
+    currentWorkDays = () => everyDay,
     onDates = (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString)),
     tgClock = tgClock,
     dueLabel = "End"
@@ -63,13 +62,9 @@ class MilestoneSummaryFormComponent(
 
   private def presetBadge(preset: MilestoneSummaryPreset): HtmlElement = {
     val range = MilestoneSummaryPresets.range(preset, tgClock.currentDate())
-    val isDisabled = workDays.map(days => days.nonEmpty && MilestoneSummaryPresets.misaligned(range, days))
     button(
       typ("button"),
-      cls("rounded-base"),
-      cls("cursor-pointer hover:ring-2 hover:ring-blue-300") <-- isDisabled.map(!_),
-      cls("opacity-50 cursor-not-allowed") <-- isDisabled,
-      disabled <-- isDisabled,
+      cls("rounded-base cursor-pointer hover:ring-2 hover:ring-blue-300"),
       title(s"${range._1} - ${range._2}"),
       TgBadge(text = preset.label, color = TgBadgeColor.Brand).element,
       onClick.mapToUnit --> (_ => formState.update(_.copy(startDate = range._1.toString, endDate = range._2.toString)))
@@ -79,7 +74,6 @@ class MilestoneSummaryFormComponent(
   val htmlElement: ReactiveHtmlElement[HTMLDivElement] =
     div(
       cls("mb-4"),
-      workDays --> workDaysVar,
       div(
         cls("mb-2 flex flex-wrap items-center gap-1.5"),
         dateBadges.element,
