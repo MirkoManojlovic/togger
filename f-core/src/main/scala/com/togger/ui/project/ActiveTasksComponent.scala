@@ -3,13 +3,10 @@ package com.togger.ui.project
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
-import com.togger.routes.Pages.EditTaskPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
-import com.togger.ui.organization.TgIcons
-import com.togger.ui.task.{TaskProgressComponent, TgDateFormater}
-import com.togger.ui.task.bulk.BulkTaskCard
+import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -45,48 +42,18 @@ class ActiveTasksComponent(
 
   private val columnStatuses = ActiveTasksComponent.ColumnStatuses
 
-  private def taskItem(task: FindTaskRespFull): HtmlElement =
-    li(
-      cls("mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft"),
-      div(
-        cls("flex items-start gap-2 mb-1"),
-        div(
-          cls("flex flex-wrap items-center gap-2 min-w-0 flex-1"),
-          a(
-            cls("text-fg-brand hover:underline cursor-pointer"),
-            task.name,
-            router.navigateTo(EditTaskPage(projectId, task.id))
-          ),
-          BulkTaskCard.readOnlyRow(ProjectHomeStats.labelBadges(task)),
-          TaskProgressComponent
-            .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
-            .element
-            .amend(cls("self-center leading-none"))
-        ),
-        button(
-          `type`("button"),
-          title("Preview task"),
-          cls(
-            "inline-flex items-center justify-center w-5 h-5 shrink-0 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
-          ),
-          TgIcons.eyeIcon("w-3.5 h-3.5"),
-          onClick.mapToUnit --> (_ => onPreview(task))
-        )
-      ),
-      BulkTaskCard.readOnlyRow(
-        ProjectHomeStats.taskBadges(
-          task,
-          if (config.showMilestone) milestones else Seq.empty,
-          showAssignee = false,
-          tgClock.currentDate(),
-          workDays,
-          tgDateFormater.asAmericanDate
-        )
-      )
-    )
+  private val taskItem = new TaskListItem(
+    router,
+    tgDateFormater,
+    tgClock,
+    if (config.showMilestone) milestones else Seq.empty,
+    workDays,
+    showAssignee = false,
+    onPreview
+  )
 
   private def cell(columnTasks: Seq[FindTaskRespFull]): HtmlElement =
-    div(cls(cellCls), ul(columnTasks.map(taskItem)))
+    div(cls(cellCls), ul(columnTasks.map(taskItem(_))))
 
   private def header(counts: Seq[Int]): Seq[HtmlElement] =
     columnStatuses.zip(counts).map { case (columnStatus, count) =>
