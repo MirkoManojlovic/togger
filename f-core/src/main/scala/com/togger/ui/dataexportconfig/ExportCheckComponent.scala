@@ -30,7 +30,12 @@ class ExportCheckComponent(
   private def tabId(index: Int): String = s"export-path-$index"
 
   private def pathTab(pathStatus: DataExportPathStatusResp, index: Int) =
-    TgTab(tabId(index), pathStatus.exportPath, exportPathStatusCard(pathStatus, s"$statusTitle: ${pathStatus.exportPath}"))
+    TgTab(
+      tabId(index),
+      pathStatus.name.getOrElse(pathStatus.exportPath),
+      exportPathStatusCard(pathStatus, s"$statusTitle: ${pathStatus.exportPath}"),
+      tooltip = pathStatus.name.map(_ => pathStatus.exportPath)
+    )
 
   private val selectedTabVar = Var(tabId(0))
 
@@ -63,7 +68,7 @@ class ExportCheckComponent(
       `type`("button"),
       title <-- selectedPath.map(_.fold(actionLabel)(path => s"$actionLabel ${path.exportPath}")),
       TgIcons.downloadIcon(className = "w-4 h-4 me-2"),
-      s"$actionLabel this path",
+      child.text <-- selectedPath.map(path => s"$actionLabel ${path.flatMap(_.name).getOrElse("this path")}"),
       cls(buttonCls),
       disabled <-- selectedPath.map(!_.exists(pathNeedsAction)),
       onClick.compose(_.sample(selectedPath).collect { case Some(path) => path }) --> onPath
@@ -72,7 +77,16 @@ class ExportCheckComponent(
   private val paths: HtmlElement =
     pathStatuses match {
       case Seq()       => div(cls("text-body"), "No export paths configured for this project")
-      case Seq(single) => exportPathStatusCard(single, s"$statusTitle: ${single.exportPath}")
+      case Seq(single) =>
+        div(
+          cls("flex flex-col gap-3"),
+          p(
+            cls("text-base font-semibold text-heading"),
+            single.name.map(_ => title(single.exportPath)),
+            single.name.fold(single.exportPath)(identity): String
+          ),
+          exportPathStatusCard(single, s"$statusTitle: ${single.exportPath}")
+        )
       case several     => new TgTabs(several.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
     }
 

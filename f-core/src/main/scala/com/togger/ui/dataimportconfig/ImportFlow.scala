@@ -25,19 +25,27 @@ class ImportFlow(
   onFinished: () => Unit = () => ()
 )(implicit ioRuntime: IORuntime) {
 
-  def importFrom(projectId: UUID, importPath: String): Unit =
-    check(projectId, IO.pure(List(importPath).asRight[TgJsonFailure]))
+  def importFrom(projectId: UUID, importPath: String, name: Option[String] = None): Unit =
+    check(projectId, IO.pure(List(importPath -> name).asRight[TgJsonFailure]))
 
   /** Loads from every import config of the project, not only the ones on the page on screen. */
   def importAll(projectId: UUID): Unit =
-    check(projectId, dataImportConfigService.findAllByProjectId(projectId).map(_.map(_.body.get.map(_.importPath).distinct.toList)))
+    check(projectId, 
+      dataImportConfigService
+        .findAllByProjectId(projectId)
+        .map(_.map(_.body.get.toList.distinctBy(_.importPath).map(config => config.importPath -> Some(config.name))))
+    )
 
   /** Every import starts with a look at what it would bring in; only the paths that have something new are imported. */
-  private def check(projectId: UUID, paths: IO[Either[TgJsonFailure, List[String]]]): Unit = {
+  private def check(projectId: UUID, paths: IO[Either[TgJsonFailure, List[(String, Option[String])]]]): Unit = {
     val program: IO[Either[TgJsonFailure, List[Either[TgJsonFailure, DataExportPathStatusResp]]]] =
       paths.flatMap(
         _.traverse(
-          _.traverse(path => dataExportService.checkImportStatus(projectId, path).map(_.map(_.body.get.pathStatuses.head)))
+          _.traverse { case (path, name) =>
+            dataExportService
+              .checkImportStatus(projectId, path)
+              .map(_.map(_.body.get.pathStatuses.head.copy(name = name)))
+          }
         )
       )
 

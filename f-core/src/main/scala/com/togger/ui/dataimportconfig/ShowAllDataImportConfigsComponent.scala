@@ -63,7 +63,7 @@ class ShowAllDataImportConfigsComponent(
 
   private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
 
-  private def importFrom(importPath: String): Unit = importFlow.importFrom(projectId, importPath)
+  private def importFrom(importPath: String, name: String): Unit = importFlow.importFrom(projectId, importPath, Some(name))
 
   private def loadAll(): Unit = importFlow.importAll(projectId)
 
@@ -111,7 +111,7 @@ class ShowAllDataImportConfigsComponent(
             TgIcons.uploadIcon(className = "w-4 h-4"),
             rowIconButtonCls,
             lastRowButtonMarginCls,
-            onClick.mapToUnit --> (_ => importFrom(dto.importPath))
+            onClick.mapToUnit --> (_ => importFrom(dto.importPath, dto.name))
           )
         )
       )

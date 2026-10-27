@@ -24,7 +24,8 @@ case class TgTab(
   content: HtmlElement,
   icon: Option[String => ReactiveSvgElement[SVGSVGElement]] = None,
   badge: Option[Signal[Int]] = None,
-  disabled: Boolean = false
+  disabled: Boolean = false,
+  tooltip: Option[String] = None
 )
 
 /** Flowbite "tabs with underline" for Laminar.
@@ -95,6 +96,7 @@ class TgTabs(
       cls <-- tabCls(tab),
       onClick.mapToUnit --> (_ => select(tab.id)),
       tab.icon.map(mkIcon => mkIcon(iconCls)),
+      tab.tooltip.map(title(_)),
       span(tab.label),
       tab.badge.map(badgeSignal => child <-- badgeSignal.map(renderBadge))
     )
