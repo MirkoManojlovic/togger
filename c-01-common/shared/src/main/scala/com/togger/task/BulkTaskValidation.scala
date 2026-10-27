@@ -53,4 +53,13 @@ object BulkTaskValidation {
         .leftMap(_.map[TgError](error => InvalidTask(index + 1, newTask.task.name, error.message)))
         .toValidated
     }.toEither
+
+  /** Every link of every task, with each problem saying which task it is about. */
+  def validateLinks(req: CreateTasksBulkReq): EitherNec[TgError, Unit] =
+    req.tasks.toList.zipWithIndex.traverse_ { case (newTask, index) =>
+      LinkValidation
+        .validateAll(newTask.links, Seq.empty)
+        .leftMap(_.map[TgError](error => InvalidTask(index + 1, newTask.task.name, error.message)))
+        .toValidated
+    }.toEither
 }
