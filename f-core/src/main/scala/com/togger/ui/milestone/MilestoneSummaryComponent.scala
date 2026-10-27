@@ -163,7 +163,7 @@ class MilestoneSummaryComponent(
         body = TgCard.HtmlCardContent(div(cls("text-sm text-body"), "Press the eye icon of a task to preview it here."))
       )
       .element
-      .amend(cls("w-full mb-4"))
+      .amend(cls("w-full"))
 
   private def previewCard(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
     TgCard
@@ -195,7 +195,7 @@ class MilestoneSummaryComponent(
         )
       )
       .element
-      .amend(cls("w-full mb-4"))
+      .amend(cls("w-full"))
 
   private def taskList(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement = {
     val taskItem = new TaskListItem(
@@ -307,10 +307,7 @@ class MilestoneSummaryComponent(
   val element: HtmlElement =
     div(
       cls("w-full"),
-      child <-- previewedTaskVar.signal.map {
-        case Some((task, milestone)) => previewCard(task, milestone)
-        case None                    => emptyPreviewCard
-      },
+      tasksCard.amend(cls("w-full mb-4")),
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         div(
@@ -318,7 +315,13 @@ class MilestoneSummaryComponent(
           newSummaryCard,
           previousSummariesCard
         ),
-        tasksCard.amend(cls("min-w-0 lg:flex-1"))
+        div(
+          cls("w-full min-w-0 lg:flex-1"),
+          child <-- previewedTaskVar.signal.map {
+            case Some((task, milestone)) => previewCard(task, milestone)
+            case None                    => emptyPreviewCard
+          }
+        )
       )
     )
 }
