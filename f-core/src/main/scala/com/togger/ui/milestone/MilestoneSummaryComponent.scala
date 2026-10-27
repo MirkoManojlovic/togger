@@ -156,6 +156,15 @@ class MilestoneSummaryComponent(
   private def previewTask(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): Unit =
     previewedTaskVar.set(Some(task -> milestone))
 
+  private lazy val emptyPreviewCard: HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Task preview", TgCard.CardHeaderSize.H4),
+        body = TgCard.HtmlCardContent(div(cls("text-sm text-body"), "Press the eye icon of a task to preview it here."))
+      )
+      .element
+      .amend(cls("w-full mb-4"))
+
   private def previewCard(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
     TgCard
       .headerNoFooter(
@@ -298,7 +307,10 @@ class MilestoneSummaryComponent(
   val element: HtmlElement =
     div(
       cls("w-full"),
-      child.maybe <-- previewedTaskVar.signal.map(_.map { case (task, milestone) => previewCard(task, milestone) }),
+      child <-- previewedTaskVar.signal.map {
+        case Some((task, milestone)) => previewCard(task, milestone)
+        case None                    => emptyPreviewCard
+      },
       div(
         cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
         div(
