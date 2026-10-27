@@ -1,6 +1,6 @@
 package com.togger.common
 
-import cats.data.{EitherNec, ValidatedNec}
+import cats.data.{EitherNec, NonEmptyChain, ValidatedNec}
 import cats.implicits._
 
 import java.time.{DayOfWeek, LocalDate}
@@ -39,6 +39,9 @@ class DateRangeValidation {
       case _                  => date.validNec
     }
 
+  def validateEndDateWhenDone(isDone: Boolean, endDate: Option[LocalDate]): EitherNec[TgError, Unit] =
+    Either.cond(!isDone || endDate.isDefined, (), NonEmptyChain.one(DateRangeValidation.EndDateRequiredWhenDone))
+
   def validate(
     startDate: Option[LocalDate],
     dueDate: Option[LocalDate],
@@ -62,6 +65,10 @@ object DateRangeValidation {
   case class WeekendDateNotAllowed(fieldName: String, date: LocalDate) extends DateRangeError {
     override def message: String =
       s"$fieldName must be one of this project's configured work days (was $date, a ${date.getDayOfWeek})"
+  }
+
+  case object EndDateRequiredWhenDone extends DateRangeError {
+    override def message: String = "End date is required when the status is Done"
   }
 
   case class DateBeforeStartDate(fieldName: String, date: LocalDate, startDate: LocalDate) extends DateRangeError {

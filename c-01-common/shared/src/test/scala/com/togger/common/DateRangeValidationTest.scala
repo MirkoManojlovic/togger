@@ -1,6 +1,6 @@
 package com.togger.common
 
-import com.togger.common.DateRangeValidation.{DateBeforeStartDate, WeekendDateNotAllowed}
+import com.togger.common.DateRangeValidation.{DateBeforeStartDate, EndDateRequiredWhenDone, WeekendDateNotAllowed}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -140,6 +140,24 @@ class DateRangeValidationTest
         .left
         .value
         .asList should contain only WeekendDateNotAllowed("Due date", nextWednesday)
+    }
+  }
+
+  "DateRangeValidation.validateEndDateWhenDone" should {
+    "reject a done entity without an end date" in {
+      dateRangeValidation
+        .validateEndDateWhenDone(isDone = true, None)
+        .left
+        .value
+        .asList should contain only EndDateRequiredWhenDone
+    }
+
+    "accept a done entity with an end date" in {
+      dateRangeValidation.validateEndDateWhenDone(isDone = true, Some(monday)).value shouldBe (())
+    }
+
+    "accept an entity that is not done without an end date" in {
+      dateRangeValidation.validateEndDateWhenDone(isDone = false, None).value shouldBe (())
     }
   }
 
