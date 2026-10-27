@@ -192,6 +192,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
   lazy val contributionsService = new ContributionsFeService(securedEndpoint, protectedBackendClient)
+  lazy val milestoneSummaryService = new MilestoneSummaryFeService(securedEndpoint, protectedBackendClient)
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
   lazy val dateRangeValidation = new DateRangeValidation
 
@@ -625,17 +626,20 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new EditMilestoneComponent(
                   milestoneService,
                   milestoneDateService,
+                  milestoneSummaryService,
                   spinnerService,
                   dateRangeValidation,
                   tgClock,
                   projectService,
                   id,
-                  toast
+                  toast,
+                  modalFactory
                 ).element
               case MilestoneReviewPage(projectId: UUID, milestoneId: UUID) =>
                 new MilestoneReviewComponent(
                   milestoneService,
                   milestoneDateService,
+                  milestoneSummaryService,
                   taskService,
                   taskStatusService,
                   taskLabelService,

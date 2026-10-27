@@ -6,7 +6,13 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
+import com.togger.dto.{
+  CreateMilestoneDateReq,
+  CreateMilestoneSummaryReq,
+  UpdateMilestoneDateReq,
+  UpdateMilestoneReq,
+  UpdateMilestoneSummaryReq
+}
 import com.togger.milestone.MilestoneStatus
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -21,7 +27,7 @@ import com.togger.ui.components.{
   TgBadge,
   TgBadgeColor
 }
-import com.togger.ui.modal.ModalStyles
+import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -47,12 +53,14 @@ case class EditMilestoneForm(
 class EditMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
+  milestoneSummaryService: MilestoneSummaryFeService,
   spinnerService: SpinnerService,
   dateRangeValidation: DateRangeValidation,
   tgClock: TgClock,
   projectService: ProjectService,
   milestoneId: UUID,
-  val toast: Toast
+  val toast: Toast,
+  modalFactory: ModalFactory
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -60,6 +68,8 @@ class EditMilestoneComponent(
   val milestoneDatesVar = Var(Seq.empty[EditMilestoneDateComponent])
   val newMilestoneDatesVar = Var(Seq.empty[CreateMilestoneDateComponent])
   val workDaysVar = Var(Set.empty[DayOfWeek])
+  // The saved summaries and the ones added on this page but not saved yet, told apart by `formState.id`.
+  val milestoneSummariesVar = Var(Seq.empty[MilestoneSummaryFormComponent])
 
   private val dateBadges = new MilestoneDateBadges(
     dates = formState.signal.map(form => form.startDate -> form.dueDate),
@@ -84,6 +94,83 @@ class EditMilestoneComponent(
         onClick --> (_ => addNewDate()),
         onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addNewDate())
       )
+
+  private def newSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
+    new MilestoneSummaryFormComponent(form, workDaysVar.signal, tgClock, removeSummary)
+
+  private def noPresetFits(): Boolean =
+    MilestoneSummaryPresets.misalignedPresets(tgClock.currentDate(), workDaysVar.now()).size ==
+      MilestoneSummaryPreset.all.size
+
+  private def addNewSummary(): Unit =
+    if (!noPresetFits()) milestoneSummariesVar.update(_ :+ newSummaryForm(MilestoneSummaryForm()))
+
+  private def removeSummaryFromPage(component: MilestoneSummaryFormComponent): Unit =
+    milestoneSummariesVar.update(_.filterNot(_ eq component))
+
+  private def removeSummary(component: MilestoneSummaryFormComponent): Unit =
+    component.formState.now().id match {
+      case None => removeSummaryFromPage(component)
+      case Some(id) =>
+        modalFactory.plainModal(
+          message = PlainTextModalMessage("Delete this summary and all of its versions?"),
+          title = "Delete summary",
+          variant = PlainModalVariant.Danger,
+          confirmButtonMsg = "Yes, delete it",
+          cancelButtonMsg = "Cancel"
+        ) { close =>
+          spinnerService
+            .runWithSpinner(milestoneSummaryService.deleteMilestoneSummary(id))
+            .toastBackendMessageCodeBlock {
+              removeSummaryFromPage(component)
+            }
+            .unsafeRunAndForget()
+          close()
+        }
+    }
+
+  private val misalignedPresets: Signal[Seq[MilestoneSummaryPreset]] =
+    workDaysVar.signal.map(MilestoneSummaryPresets.misalignedPresets(tgClock.currentDate(), _))
+
+  private val noPresetFitsWorkDays: Signal[Boolean] =
+    misalignedPresets.map(_.size == MilestoneSummaryPreset.all.size)
+
+  private def saveSummaries(components: Seq[MilestoneSummaryFormComponent]): IO[Unit] =
+    components.toList.traverse_ { component =>
+      val form = component.formState.now()
+      form.id match {
+        case Some(id) =>
+          val dto = UpdateMilestoneSummaryReq(
+            id = id,
+            summary = form.summary,
+            startDate = LocalDate.parse(form.startDate),
+            endDate = LocalDate.parse(form.endDate)
+          )
+          milestoneSummaryService.updateMilestoneSummary(dto).toastJustErrorsUnit(_ => ())
+        case None if form.startDate.nonEmpty && form.endDate.nonEmpty =>
+          val dto = CreateMilestoneSummaryReq(
+            milestoneId = milestoneId,
+            summary = form.summary,
+            startDate = LocalDate.parse(form.startDate),
+            endDate = LocalDate.parse(form.endDate)
+          )
+          milestoneSummaryService
+            .createMilestoneSummary(dto)
+            .toastJustErrorsUnit(created => component.formState.update(_.copy(id = Some(created.id))))
+        case None => IO.unit
+      }
+    }
+
+  spinnerService
+    .runWithSpinner(milestoneSummaryService.findAllByMilestoneId(milestoneId))
+    .map(
+      _.fold(
+        error => println(error),
+        success =>
+          milestoneSummariesVar.set(success.body.get.map(dto => newSummaryForm(MilestoneSummaryForm.fromDto(dto))))
+      )
+    )
+    .unsafeRunAndForget()
 
   spinnerService
     .runWithSpinner(milestoneService.findMilestoneById(milestoneId))
@@ -175,7 +262,8 @@ class EditMilestoneComponent(
     spinnerService
       .runWithSpinner(milestoneService.updateMilestone(dto))
       .toastMessageDto(_ => successMessage)(_ =>
-        updateMilestoneDates(dateComponents) >> createNewMilestoneDates(newDateComponents)
+        updateMilestoneDates(dateComponents) >> createNewMilestoneDates(newDateComponents) >>
+          saveSummaries(milestoneSummariesVar.now())
       )
       .unsafeRunAndForget()
   }
@@ -328,6 +416,40 @@ class EditMilestoneComponent(
       )
     )
 
+  private lazy val addNewMilestoneSummary: HtmlElement =
+    TgBadge(text = "+ Add summary", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
+      .amend(
+        role("button"),
+        tabIndex(0),
+        cls("opacity-50 cursor-not-allowed") <-- noPresetFitsWorkDays,
+        onClick --> (_ => addNewSummary()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addNewSummary())
+      )
+
+  private lazy val summariesBlock: HtmlElement =
+    div(
+      cls("mb-4"),
+      h4(cls("text-sm font-medium text-heading mb-2"), "Summaries"),
+      child.maybe <-- misalignedPresets.map(presets =>
+        Option.when(presets.nonEmpty)(
+          div(
+            cls("mb-4 p-3 text-sm rounded-lg border border-yellow-400 bg-yellow-50 text-yellow-800"),
+            role("alert"),
+            s"The project's work days do not fit the preset(s) ${presets.map(_.label).mkString(", ")}: " +
+              "their first or last day is not a work day. " +
+              (if (presets.size == MilestoneSummaryPreset.all.size) "A summary can not be created."
+               else "Those presets are disabled.")
+          )
+        )
+      ),
+      children <-- milestoneSummariesVar.signal.map(components =>
+        components.map(
+          _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+        )
+      ),
+      addNewMilestoneSummary
+    )
+
   private lazy val editMilestoneCard: HtmlElement =
     TgCard
       .headerNoFooter(
@@ -356,6 +478,7 @@ class EditMilestoneComponent(
                 ),
                 addNewMilestoneDate
               ),
+              summariesBlock,
               div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )

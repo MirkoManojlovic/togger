@@ -5,7 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.markdown.TgMarkdown
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.{FindMilestoneResp, FindMilestoneSummaryResp, FindTaskRespFull, FindTaskStatusResp}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.routes.Pages.EditMilestonePage
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
@@ -38,6 +38,7 @@ import java.util.UUID
 class MilestoneReviewComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
+  milestoneSummaryService: MilestoneSummaryFeService,
   taskService: TaskFeService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
@@ -56,6 +57,19 @@ class MilestoneReviewComponent(
   private val milestoneVar = Var(Option.empty[FindMilestoneResp])
 
   private val tasksVar = Var(Seq.empty[FindTaskRespFull])
+
+  private val summariesVar = Var(Seq.empty[FindMilestoneSummaryResp])
+
+  // Newest period first.
+  private def loadSummaries(): IO[Unit] =
+    milestoneSummaryService
+      .findAllByMilestoneId(milestoneId)
+      .map(
+        _.fold(
+          error => println(error),
+          success => summariesVar.set(success.body.get.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse))
+        )
+      )
 
   private def loadMilestone(): IO[Unit] =
     milestoneService
@@ -153,6 +167,33 @@ class MilestoneReviewComponent(
       .element
       .amend(cls("mb-4"))
 
+  private def summaryRow(summary: FindMilestoneSummaryResp): HtmlElement =
+    div(
+      cls("mb-4 pb-4 border-b border-default last:border-b-0 last:pb-0 last:mb-0"),
+      div(
+        cls("flex flex-wrap items-center gap-1.5 mb-2"),
+        dateBadge("Start", summary.startDate),
+        dateBadge("End", summary.endDate)
+      ),
+      Option.when(summary.summary.nonEmpty)(tgMarkdown.toLaminarDiv(summary.summary))
+    )
+
+  private val summariesCard: HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.plainText("Summaries", TgCard.CardHeaderSize.H4),
+        body = TgCard.HtmlCardContent(
+          div(
+            children <-- summariesVar.signal.map(_.map(summaryRow)),
+            child.maybe <-- summariesVar.signal.map(summaries =>
+              Option.when(summaries.isEmpty)(div(cls("text-sm text-body"), "No summaries yet."))
+            )
+          )
+        )
+      )
+      .element
+      .amend(cls("w-full mb-4"))
+
   private val history = new SingleMilestoneHistoryComponent(
     taskService,
     milestoneService,
@@ -171,6 +212,7 @@ class MilestoneReviewComponent(
       for {
         _ <- loadMilestone()
         _ <- loadTasks()
+        _ <- loadSummaries()
         _ <- table.load()
         _ <- history.load()
       } yield ()
@@ -196,6 +238,7 @@ class MilestoneReviewComponent(
     div(
       table.bindings,
       summaryCard,
+      summariesCard,
       child.maybe <-- milestoneVar.signal
         .combineWith(tasksVar.signal, lookups.statusesVar.signal.map(_.taskStatusesSorted))
         .map { case (milestone, tasks, statuses) => milestone.map(statsCard(_, tasks, statuses)) },
