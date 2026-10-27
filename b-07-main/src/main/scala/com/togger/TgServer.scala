@@ -1,6 +1,6 @@
 package com.togger
 import cats.effect.{IO, Resource}
-import com.togger.ai.{TgAiClient, TgAiService, TgNoApiKeyProvider, TgOpenAiClient}
+import com.togger.ai.{TgAiClient, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
 import com.togger.account.{AccountEndpoints, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
@@ -393,8 +393,8 @@ class DependenciesModule(
   lazy val tgPromptController = new TgPromptController(tgPromptService, tgPromptEndpoints, tgClock)
 
   // TgAiService is used internally by services such as MilestoneAiSummaryService, it has no endpoints of its own
-  lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend)
-  lazy val tgAiApiKeyProvider = new TgNoApiKeyProvider
+  lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend, TgOllama.BaseUri, TgOllama.ReadTimeout)
+  lazy val tgAiApiKeyProvider = new TgStaticApiKeyProvider(TgOllama.ApiKey)
   lazy val tgAiService = new TgAiService(tgAiClient, tgAiApiKeyProvider)
 
   lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryEndpoints(securedEndpoint)
