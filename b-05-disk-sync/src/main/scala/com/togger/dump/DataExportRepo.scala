@@ -48,6 +48,8 @@ class DataExportRepo(
   milestoneVersionRepo: MilestoneVersionRepo,
   milestoneDateRepo: MilestoneDateRepo,
   milestoneDateVersionRepo: MilestoneDateVersionRepo,
+  milestoneSummaryRepo: MilestoneSummaryRepo,
+  milestoneSummaryVersionRepo: MilestoneSummaryVersionRepo,
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
@@ -110,7 +112,18 @@ class DataExportRepo(
               .readAll(milestoneDateVersionRepo.findPaginatedByMilestoneDateId(date.id, _))
               .map(dateVersions => MilestoneDateDumpData(date, dateVersions.sortBy(_.version)))
           }
-        } yield MilestoneDumpData(milestone, versions.sortBy(_.version), datesDump.sortBy(_.milestoneDate.id))
+          summaries <- TgPages.readAll(milestoneSummaryRepo.findPaginatedByMilestoneId(milestone.id, _))
+          summariesDump <- summaries.traverse { summary =>
+            TgPages
+              .readAll(milestoneSummaryVersionRepo.findPaginatedByMilestoneSummaryId(summary.id, _))
+              .map(summaryVersions => MilestoneSummaryDumpData(summary, summaryVersions.sortBy(_.version)))
+          }
+        } yield MilestoneDumpData(
+          milestone,
+          versions.sortBy(_.version),
+          datesDump.sortBy(_.milestoneDate.id),
+          summariesDump.sortBy(_.milestoneSummary.id)
+        )
       }
     } yield dumped
 

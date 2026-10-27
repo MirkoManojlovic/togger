@@ -2,7 +2,14 @@ package com.togger.dump
 
 import com.togger.account.Account
 import com.togger.logentry.{LogEntry, LogEntryVersion}
-import com.togger.milestone.{Milestone, MilestoneDate, MilestoneDateVersion, MilestoneVersion}
+import com.togger.milestone.{
+  Milestone,
+  MilestoneDate,
+  MilestoneDateVersion,
+  MilestoneSummary,
+  MilestoneSummaryVersion,
+  MilestoneVersion
+}
 import com.togger.project.Project
 import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory}
 import com.togger.task._
@@ -57,12 +64,29 @@ case class ProjectLabelDumpData(label: ProjectLabel, category: ProjectLabelCateg
 
 case class MilestoneDateDumpData(milestoneDate: MilestoneDate, versions: List[MilestoneDateVersion])
 
+case class MilestoneSummaryDumpData(milestoneSummary: MilestoneSummary, versions: List[MilestoneSummaryVersion])
+
 /** `milestones/<id>.json` */
 case class MilestoneDumpData(
   milestone: Milestone,
   versions: List[MilestoneVersion],
-  dates: List[MilestoneDateDumpData]
+  dates: List[MilestoneDateDumpData],
+  summaries: List[MilestoneSummaryDumpData]
 )
+
+object MilestoneDumpData {
+  import io.circe.generic.auto._
+
+  // Dumps written before milestone summaries existed have no `summaries` field.
+  implicit val milestoneDumpDataDecoder: Decoder[MilestoneDumpData] = Decoder.instance { cursor =>
+    for {
+      milestone <- cursor.get[Milestone]("milestone")
+      versions <- cursor.get[List[MilestoneVersion]]("versions")
+      dates <- cursor.get[List[MilestoneDateDumpData]]("dates")
+      summaries <- cursor.getOrElse[List[MilestoneSummaryDumpData]]("summaries")(Nil)
+    } yield MilestoneDumpData(milestone, versions, dates, summaries)
+  }
+}
 
 /** `tasktemplates/<id>.json` */
 case class TaskTemplateDumpData(template: TaskTemplate, versions: List[TaskTemplateVersion])

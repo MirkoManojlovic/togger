@@ -6,7 +6,7 @@ import com.togger.controllers.account.AccountController
 import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
-import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController}
+import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController, MilestoneSummaryController}
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
@@ -139,6 +139,15 @@ object TgServer {
             milestoneDateController.listVersions,
             milestoneDateController.updateVersion,
             milestoneDateController.deleteVersion,
+            milestoneSummaryController.findById,
+            milestoneSummaryController.findByMilestoneId,
+            milestoneSummaryController.findByProjectId,
+            milestoneSummaryController.save,
+            milestoneSummaryController.update,
+            milestoneSummaryController.delete,
+            milestoneSummaryController.listVersions,
+            milestoneSummaryController.updateVersion,
+            milestoneSummaryController.deleteVersion,
             organizationController.findAll,
             organizationController.findByAccountId,
             organizationController.save,
@@ -237,6 +246,19 @@ class DependenciesModule(
   lazy val milestoneDateEndpoints = new MilestoneDateEndpoints(securedEndpoint)
   lazy val milestoneDateController =
     new MilestoneDateController(milestoneDateEndpoints, milestoneDateService, milestoneService, dateRangeValidation)
+  lazy val milestoneSummaryRepo = new MilestoneSummaryRepoImpl
+  lazy val milestoneSummaryVersionRepo = new MilestoneSummaryVersionRepoImpl
+  lazy val milestoneSummaryService =
+    new MilestoneSummaryService(milestoneSummaryRepo, milestoneSummaryVersionRepo, transactor)
+  lazy val milestoneSummaryEndpoints = new MilestoneSummaryEndpoints(securedEndpoint)
+  lazy val milestoneSummaryController = new MilestoneSummaryController(
+    milestoneSummaryEndpoints,
+    milestoneSummaryService,
+    milestoneService,
+    dateRangeValidation,
+    projectService,
+    contributionService
+  )
 
   lazy val taskRepo = new TaskRepoImpl
   lazy val taskVersionRepo = new TaskVersionRepoImpl
@@ -364,6 +386,8 @@ class DependenciesModule(
       milestoneVersionRepo,
       milestoneDateRepo,
       milestoneDateVersionRepo,
+      milestoneSummaryRepo,
+      milestoneSummaryVersionRepo,
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,
@@ -433,6 +457,8 @@ class DependenciesModule(
       milestoneVersionRepo,
       milestoneDateRepo,
       milestoneDateVersionRepo,
+      milestoneSummaryRepo,
+      milestoneSummaryVersionRepo,
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,

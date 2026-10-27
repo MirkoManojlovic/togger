@@ -42,6 +42,8 @@ class DataImportRepo(
   milestoneVersionRepo: MilestoneVersionRepo,
   milestoneDateRepo: MilestoneDateRepo,
   milestoneDateVersionRepo: MilestoneDateVersionRepo,
+  milestoneSummaryRepo: MilestoneSummaryRepo,
+  milestoneSummaryVersionRepo: MilestoneSummaryVersionRepo,
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
@@ -385,13 +387,15 @@ class DataImportRepo(
           milestoneVersionRepo.insertWithId
         )
         dateOutcomes <- milestoneDump.dates.traverse(mergeMilestoneDate)
+        summaryOutcomes <- milestoneDump.summaries.traverse(mergeMilestoneSummary)
+        childOutcomes = dateOutcomes ++ summaryOutcomes
       } yield DataImportEntityResult.merged(
         DataExportEntityType.Milestone,
         milestoneDump.milestone.id,
         milestoneDump.versions.lastOption.map(_.name),
         rootInserted = !milestoneExists,
-        versionsAdded = added + dateOutcomes.map(_.versionsAdded).sum,
-        childrenAdded = dateOutcomes.count(_.rootInserted)
+        versionsAdded = added + childOutcomes.map(_.versionsAdded).sum,
+        childrenAdded = childOutcomes.count(_.rootInserted)
       )
     }
 
@@ -404,6 +408,19 @@ class DataImportRepo(
           milestoneDateVersionRepo.insertWithId
         )
       } yield ChildMergeOutcome(rootInserted = !dateExists, versionsAdded = added)
+    }
+
+  private def mergeMilestoneSummary(summaryDump: MilestoneSummaryDumpData): ConnectionIO[ChildMergeOutcome] =
+    exists(milestoneSummaryRepo.findById(summaryDump.milestoneSummary.id)).flatMap { summaryExists =>
+      for {
+        _ <-
+          if (summaryExists) ().pure[ConnectionIO]
+          else milestoneSummaryRepo.insertWithId(summaryDump.milestoneSummary).void
+        added <- insertMissing(summaryDump.versions)(
+          v => exists(milestoneSummaryVersionRepo.findByVersion(v.version)),
+          milestoneSummaryVersionRepo.insertWithId
+        )
+      } yield ChildMergeOutcome(rootInserted = !summaryExists, versionsAdded = added)
     }
 
   /** A label has at most one template, so a template whose label already has another one (e.g. a project's default

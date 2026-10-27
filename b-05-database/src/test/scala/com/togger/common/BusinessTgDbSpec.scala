@@ -4,7 +4,14 @@ import cats.implicits.toTraverseOps
 import com.togger.account.{AccountRepoImpl, AccountSessionRepo, AccountTypeRepo, TgDbSpec}
 import com.togger.accountmapping.AccountMappingRepoImpl
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
-import com.togger.milestone.{MilestoneDateRepoImpl, MilestoneDateVersionRepoImpl, MilestoneRepoImpl, MilestoneVersionRepoImpl}
+import com.togger.milestone.{
+  MilestoneDateRepoImpl,
+  MilestoneDateVersionRepoImpl,
+  MilestoneRepoImpl,
+  MilestoneSummaryRepoImpl,
+  MilestoneSummaryVersionRepoImpl,
+  MilestoneVersionRepoImpl
+}
 import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
 import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
 import com.togger.projectmapping.ProjectMappingRepoImpl
@@ -42,6 +49,8 @@ trait BusinessTgDbSpec extends TgDbSpec {
         TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE,
         TaskVersionRepoImpl.TASK_VERSION_TABLE,
         TaskRepoImpl.TASK_TABLE,
+        MilestoneSummaryVersionRepoImpl.MILESTONE_SUMMARY_VERSION_TABLE,
+        MilestoneSummaryRepoImpl.MILESTONE_SUMMARY_TABLE,
         MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE,
         MilestoneDateRepoImpl.MILESTONE_DATE_TABLE,
         MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE,

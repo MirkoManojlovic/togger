@@ -44,6 +44,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
   val milestoneVersionRepo = new MilestoneVersionRepoImpl
   val milestoneDateRepo = new MilestoneDateRepoImpl
   val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
+  val milestoneSummaryRepo = new MilestoneSummaryRepoImpl
+  val milestoneSummaryVersionRepo = new MilestoneSummaryVersionRepoImpl
   val taskTemplateRepo = new TaskTemplateRepoImpl
   val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
   val timeboxRepo = new TimeboxRepoImpl
@@ -77,6 +79,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     milestoneVersionRepo,
     milestoneDateRepo,
     milestoneDateVersionRepo,
+    milestoneSummaryRepo,
+    milestoneSummaryVersionRepo,
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
@@ -106,6 +110,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     milestoneVersionRepo,
     milestoneDateRepo,
     milestoneDateVersionRepo,
+    milestoneSummaryRepo,
+    milestoneSummaryVersionRepo,
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
@@ -238,6 +244,18 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
           updatedAt = nowAsInstant
         )
       )
+      summary <- milestoneSummaryRepo.insert(MilestoneSummary(UUID.randomUUID(), milestone.id, nowAsInstant))
+      _ <- milestoneSummaryVersionRepo.insert(
+        MilestoneSummaryVersion(
+          version = UUID.randomUUID(),
+          milestoneSummaryId = summary.id,
+          summary = "Milestone summary",
+          startDate = LocalDate.of(2026, 1, 5),
+          endDate = LocalDate.of(2026, 1, 9),
+          createdAt = nowAsInstant,
+          updatedAt = nowAsInstant
+        )
+      )
     } yield milestone.id
 
   /** Removes everything an import restores, keeping accounts, the project and its memberships. */
@@ -253,6 +271,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
       TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE,
       TaskVersionRepoImpl.TASK_VERSION_TABLE,
       TaskRepoImpl.TASK_TABLE,
+      MilestoneSummaryVersionRepoImpl.MILESTONE_SUMMARY_VERSION_TABLE,
+      MilestoneSummaryRepoImpl.MILESTONE_SUMMARY_TABLE,
       MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE,
       MilestoneDateRepoImpl.MILESTONE_DATE_TABLE,
       MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE,

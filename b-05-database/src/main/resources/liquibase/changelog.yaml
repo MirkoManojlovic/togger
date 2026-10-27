@@ -1552,3 +1552,94 @@ databaseChangeLog:
               delete from task_status ts
               where ts.name = U&'\+01F4E6 Archived'
                 and not exists (select 1 from task_version tv where tv.task_status_id = ts.id)
+  - changeSet:
+      id: 10
+      author: mirko
+      labels: milestone-summary
+      comment: Versioned summaries of a period of a milestone
+      changes:
+        - createTable:
+            tableName: milestone_summary
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_summary_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_summary_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_summary_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_summary_version_milestone_summary
+                    references: milestone_summary(id)
+                    deleteCascade: true
+              - column:
+                  name: summary
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_summary_version_milestone_summary_id_version
+            tableName: milestone_summary_version
+            columns:
+              - column:
+                  name: milestone_summary_id
+              - column:
+                  name: version
+                  descending: true
+        - createIndex:
+            indexName: idx_milestone_summary_milestone_id_id
+            tableName: milestone_summary
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
