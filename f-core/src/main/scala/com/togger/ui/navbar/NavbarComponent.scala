@@ -68,8 +68,6 @@ class NavbarComponent(
 
   private val organizationMenuLink = MenuLink("Organizations", router.navigateTo(ShowAllOrganizationsPage()))
 
-  private val searchProjectsMenuLink = MenuLink("Search Projects", router.navigateTo(SearchProjectsByLabelPage))
-
   private val settingsMenuOpen: Var[Boolean] = Var(false)
 
   private val closeSettingsMenu = Observer[Unit](_ => settingsMenuOpen.set(false))
@@ -133,7 +131,6 @@ class NavbarComponent(
 
   case class NavbarItems(
     organization: ReactiveHtmlElement[HTMLLIElement],
-    searchProjects: ReactiveHtmlElement[HTMLLIElement],
     settings: ReactiveHtmlElement[HTMLLIElement],
     changePassword: ReactiveHtmlElement[HTMLLIElement],
     logout: ReactiveHtmlElement[HTMLLIElement]
@@ -142,10 +139,8 @@ class NavbarComponent(
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
         case ChangePasswordPage => NavbarItems.changePasswordSelected
-        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) =>
+        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage =>
           NavbarItems.organizationSelected
-        case SearchProjectsByLabelPage =>
-          NavbarItems.searchProjectsSelected
         case CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) | SyncCheckSettingsPage =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
@@ -157,7 +152,6 @@ class NavbarComponent(
     lazy val allDeselected: NavbarItems =
       NavbarItems(
         organization = organizationMenuLink.deselected,
-        searchProjects = searchProjectsMenuLink.deselected,
         settings = settingsMenuItem(selected = false),
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
@@ -168,9 +162,6 @@ class NavbarComponent(
 
     lazy val organizationSelected: NavbarItems =
       NavbarItems.allDeselected.copy(organization = organizationMenuLink.selected)
-
-    lazy val searchProjectsSelected: NavbarItems =
-      NavbarItems.allDeselected.copy(searchProjects = searchProjectsMenuLink.selected)
 
     lazy val settingsSelected: NavbarItems =
       NavbarItems.allDeselected.copy(settings = settingsMenuItem(selected = true))
@@ -210,7 +201,6 @@ class NavbarComponent(
                 children <-- router.currentPageSignal.map(page =>
                   Seq(
                     NavbarItems.allDeselected.selectItem(page).organization,
-                    NavbarItems.allDeselected.selectItem(page).searchProjects,
                     NavbarItems.allDeselected.selectItem(page).settings
                   )
                 )

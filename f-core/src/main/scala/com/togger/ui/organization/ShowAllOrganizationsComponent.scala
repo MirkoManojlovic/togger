@@ -7,6 +7,7 @@ import com.togger.dto.organization.FindOrganizationResp
 import com.togger.routes.Pages.{
   CreateOrganizationPage,
   EditOrganizationPage,
+  SearchProjectsByLabelPage,
   ShowAllOrganizationsPage,
   ShowProjectsForOrganizationIdTable
 }
@@ -59,12 +60,21 @@ class ShowAllOrganizationsComponent(
             div(
               cls("flex justify-between"),
               div("Organizations"),
-              iconButton(
-                "Create Organization",
-                TgIcons.plusIcon(className = "w-4 h-4"),
-                headerIconButtonCls,
-                "mr-2",
-                router.navigateTo(CreateOrganizationPage)
+              div(
+                iconButton(
+                  "Search Projects",
+                  TgIcons.eyeIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(SearchProjectsByLabelPage)
+                ),
+                iconButton(
+                  "Create Organization",
+                  TgIcons.plusIcon(className = "w-4 h-4"),
+                  headerIconButtonCls,
+                  "mr-2",
+                  router.navigateTo(CreateOrganizationPage)
+                )
               )
             ),
             TgCard.CardHeaderSize.H3
