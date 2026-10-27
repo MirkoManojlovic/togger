@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{
   CreateMilestoneSummaryReq,
   FindMilestoneResp,
@@ -22,7 +23,7 @@ import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
 import com.togger.ui.timebox.StagedGrouping
 import com.togger.ui.toast.Toast
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 import java.util.UUID
 
 /** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
@@ -164,8 +165,12 @@ class MilestoneSummaryComponent(
 
   // A row of tabs per task status, a tab per task of it. The rows share the selection, so it is put on the first task
   // when a reload takes the selected one away.
-  private def statusTabs(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement =
-    if (tasks.isEmpty) div(cls("text-sm text-body"), "No tasks in this milestone.")
+  private def statusTabs(
+    tasks: Seq[FindTaskRespFull],
+    milestone: Option[FindMilestoneResp],
+    emptyMessage: String
+  ): HtmlElement =
+    if (tasks.isEmpty) div(cls("text-sm text-body"), emptyMessage)
     else {
       val rows = StagedGrouping.ByStatus.group(tasks, Seq.empty).map { group =>
         group.title -> group.tasks.map(task => TgTab(task.id.toString, task.name, taskPreview(task, milestone)))
@@ -182,15 +187,47 @@ class MilestoneSummaryComponent(
       )
     }
 
+  // Whether only the tasks with log entries in the period of the new summary are shown.
+  private val summaryLimitVar = Var(true)
+
+  private val newSummaryPeriod: Signal[(String, String)] =
+    newSummaryVar.signal.flatMapSwitch(_.formState.signal.map(form => form.startDate -> form.endDate)).distinct
+
+  private def limitButton(text: String, limited: Boolean): HtmlElement =
+    button(
+      typ("button"),
+      cls <-- summaryLimitVar.signal.map(current =>
+        if (current == limited) TgHtmlButton.tailwindSmallButton else TgHtmlButton.tailwindExtraSmallButton
+      ),
+      text,
+      onClick.mapToUnit --> (_ => summaryLimitVar.set(limited))
+    )
+
+  private val tasksHeader: HtmlElement =
+    div(
+      cls("flex items-center justify-between"),
+      div(cls("mr-2"), "Tasks"),
+      div(cls("flex gap-2"), limitButton("Summary limit", limited = true), limitButton("Everything", limited = false))
+    )
+
   private lazy val tasksCard: HtmlElement =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
+        header = TgCard.CardHeader.html(tasksHeader),
         body = TgCard.HtmlCardContent(
           div(
             child <-- tasksVar.signal
-              .combineWith(milestoneVar.signal, workDaysVar.signal)
-              .map { case (tasks, milestone, _) => statusTabs(tasks, milestone) }
+              .combineWith(milestoneVar.signal, workDaysVar.signal, summaryLimitVar.signal, newSummaryPeriod)
+              .map { case (tasks, milestone, _, limited, (startDate, endDate)) =>
+                if (limited && startDate.nonEmpty && endDate.nonEmpty)
+                  statusTabs(
+                    MilestoneSummaryComponent
+                      .withLogEntriesBetween(tasks, LocalDate.parse(startDate), LocalDate.parse(endDate)),
+                    milestone,
+                    "No task has log entries in the period of the summary."
+                  )
+                else statusTabs(tasks, milestone, "No tasks in this milestone.")
+              }
           )
         )
       )
@@ -232,4 +269,14 @@ class MilestoneSummaryComponent(
       ),
       tasksCard.amend(cls("min-w-0 lg:flex-1"))
     )
+}
+
+object MilestoneSummaryComponent {
+
+  /** The tasks with a log entry created from `startDate` to `endDate`, both included. */
+  def withLogEntriesBetween(tasks: Seq[FindTaskRespFull], startDate: LocalDate, endDate: LocalDate): Seq[FindTaskRespFull] =
+    tasks.filter(_.logEntries.exists { entry =>
+      val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
+      !day.isBefore(startDate) && !day.isAfter(endDate)
+    })
 }
