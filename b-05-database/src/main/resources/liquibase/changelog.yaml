@@ -1643,3 +1643,82 @@ databaseChangeLog:
                   name: milestone_id
               - column:
                   name: id
+  - changeSet:
+      id: 11
+      author: mirko
+      labels: tg-prompt
+      comment: Account-scoped AI prompts with an append-only history of versions
+      changes:
+        - createTable:
+            tableName: tg_prompt
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_prompt_created_by_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: tg_prompt_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tg_prompt_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_prompt_version_tg_prompt
+                    references: tg_prompt(id)
+                    deleteCascade: true
+              - column:
+                  name: title
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_tg_prompt_created_by
+            tableName: tg_prompt
+            columns:
+              - column:
+                  name: created_by
+        - createIndex:
+            indexName: idx_tg_prompt_version_tg_prompt_id_version
+            tableName: tg_prompt_version
+            columns:
+              - column:
+                  name: tg_prompt_id
+              - column:
+                  name: version
+                  descending: true

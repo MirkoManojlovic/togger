@@ -7,6 +7,7 @@ import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, Con
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.tgprompt.TgPromptController
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
@@ -43,6 +44,7 @@ import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImp
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
+import com.togger.tgprompt.{TgPromptEndpoints, TgPromptRepoImpl, TgPromptService, TgPromptVersionRepoImpl}
 import com.togger.dataexportconfig.{DataExportConfigEndpoints, DataExportConfigRepoImpl, DataExportConfigService}
 import com.togger.dataimportconfig.{DataImportConfigEndpoints, DataImportConfigRepoImpl, DataImportConfigService}
 import com.togger.projectlabel.{
@@ -171,6 +173,13 @@ object TgServer {
             taskTemplateController.findByLabel,
             taskTemplateController.listVersions,
             taskTemplateController.delete,
+            tgPromptController.save,
+            tgPromptController.newVersion,
+            tgPromptController.findAll,
+            tgPromptController.findById,
+            tgPromptController.listVersions,
+            tgPromptController.deleteVersion,
+            tgPromptController.delete,
             dataExportController.exportTasks,
             dataExportController.checkStatus,
             dataExportController.exportByConfig,
@@ -363,6 +372,12 @@ class DependenciesModule(
     new TaskTemplateService(taskTemplateRepo, taskTemplateVersionRepo, taskLabelRepo, transactor)
   lazy val taskTemplateEndpoints = new TaskTemplateEndpoints(securedEndpoint)
   lazy val taskTemplateController = new TaskTemplateController(taskTemplateService, taskTemplateEndpoints, tgClock)
+
+  lazy val tgPromptRepo = new TgPromptRepoImpl
+  lazy val tgPromptVersionRepo = new TgPromptVersionRepoImpl
+  lazy val tgPromptService = new TgPromptService(tgPromptRepo, tgPromptVersionRepo, transactor)
+  lazy val tgPromptEndpoints = new TgPromptEndpoints(securedEndpoint)
+  lazy val tgPromptController = new TgPromptController(tgPromptService, tgPromptEndpoints, tgClock)
 
   lazy val dataExportDiskOps = new DiskOps
   lazy val dataExportRepo =
