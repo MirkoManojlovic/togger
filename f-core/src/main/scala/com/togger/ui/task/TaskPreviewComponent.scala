@@ -24,6 +24,8 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   *   where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
+  * @param descriptionOnTop
+  *   the description over the log entries and the calendar, which then share the row, instead of beside them
   */
 class TaskPreviewComponent(
   task: FindTaskRespFull,
@@ -33,7 +35,8 @@ class TaskPreviewComponent(
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   showName: Boolean = false,
-  milestones: Seq[FindMilestoneResp] = Seq.empty
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
+  descriptionOnTop: Boolean = false
 ) {
 
   private val currentWeekStart: LocalDate = {
@@ -79,31 +82,43 @@ class TaskPreviewComponent(
       )
     )
 
-  val element: HtmlElement =
-    div(
-      cls("flex flex-col md:flex-row gap-4 items-start"),
+  private val nameBlock: Option[HtmlElement] =
+    Option.when(showName)(
       div(
-        cls("flex-1 min-w-0"),
-        Option.when(showName)(
-          div(
-            cls("mb-3 p-2 border border-default rounded-base bg-neutral-primary-soft"),
-            nameWithLabels,
-            badges
-          )
-        ),
-        tgMarkdown.toLaminarDiv(task.description)
-      ),
-      // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
-      div(
-        cls("flex-1 min-w-0 md:min-w-min"),
-        cls("[&_[role=tablist]]:flex-nowrap [&_[role=tab]]:whitespace-nowrap"),
-        weekRangeStatusTabs(task.logEntries, selectedDayVar)
-      ),
-      div(
-        cls("w-fit"),
-        new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
+        cls("mb-3 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+        nameWithLabels,
+        badges
       )
     )
+
+  // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
+  private val logEntriesColumn: HtmlElement =
+    div(
+      cls("flex-1 min-w-0 md:min-w-min"),
+      cls("[&_[role=tablist]]:flex-nowrap [&_[role=tab]]:whitespace-nowrap"),
+      weekRangeStatusTabs(task.logEntries, selectedDayVar)
+    )
+
+  private val calendarColumn: HtmlElement =
+    div(
+      cls("w-fit"),
+      new LogEntryCalendarComponent(task.logEntries, tgDateFormater, workDays, selectedDayVar).element
+    )
+
+  val element: HtmlElement =
+    if (descriptionOnTop)
+      div(
+        nameBlock,
+        tgMarkdown.toLaminarDiv(task.description).amend(cls("mb-4")),
+        div(cls("flex flex-col md:flex-row gap-4 items-start"), logEntriesColumn, calendarColumn)
+      )
+    else
+      div(
+        cls("flex flex-col md:flex-row gap-4 items-start"),
+        div(cls("flex-1 min-w-0"), nameBlock, tgMarkdown.toLaminarDiv(task.description)),
+        logEntriesColumn,
+        calendarColumn
+      )
 
   private def selectedDayStatus(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]) =
     div(
