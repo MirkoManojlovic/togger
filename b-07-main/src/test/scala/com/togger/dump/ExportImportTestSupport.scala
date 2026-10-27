@@ -14,6 +14,7 @@ import com.togger.projectmapping.ProjectMappingRepoImpl
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
+import com.togger.tgprompt.{TgPromptRepoImpl, TgPromptVersionRepoImpl}
 import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
 import cats.effect.IO
 import com.togger.dump.DayOfWeekCodec._
@@ -50,6 +51,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
   val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
   val timeboxRepo = new TimeboxRepoImpl
   val timeboxVersionRepo = new TimeboxVersionRepoImpl
+  val tgPromptRepo = new TgPromptRepoImpl
+  val tgPromptVersionRepo = new TgPromptVersionRepoImpl
   val projectLabelRepo = new ProjectLabelRepoImpl
   val projectLabelCategoryRepo = new ProjectLabelCategoryRepoImpl
   val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
@@ -84,7 +87,9 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
-    timeboxVersionRepo
+    timeboxVersionRepo,
+    tgPromptRepo,
+    tgPromptVersionRepo
   )
 
   val dataImportRepo = new DataImportRepo(
@@ -115,7 +120,9 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
-    timeboxVersionRepo
+    timeboxVersionRepo,
+    tgPromptRepo,
+    tgPromptVersionRepo
   )
 
   def newExportService(transactor: Transactor[IO]) =
@@ -279,6 +286,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
       MilestoneRepoImpl.MILESTONE_TABLE,
       TaskTemplateVersionRepoImpl.TASK_TEMPLATE_VERSION_TABLE,
       TaskTemplateRepoImpl.TASK_TEMPLATE_TABLE,
+      TgPromptVersionRepoImpl.TG_PROMPT_VERSION_TABLE,
+      TgPromptRepoImpl.TG_PROMPT_TABLE,
       TaskLabelRepoImpl.TASK_LABEL_TABLE,
       TaskStatusRepoImpl.TASK_STATUS_TABLE
     ).traverse_(table => doobie.Fragment.const(s"delete from $table").update.run.void)
