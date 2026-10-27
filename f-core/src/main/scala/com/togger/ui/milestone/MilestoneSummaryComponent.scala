@@ -17,7 +17,9 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectService, TaskListItem}
+import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
 import com.togger.ui.timebox.StagedGrouping
@@ -149,20 +151,42 @@ class MilestoneSummaryComponent(
     )
     .unsafeRunAndForget()
 
+  private val previewedTaskVar = Var(Option.empty[(FindTaskRespFull, Option[FindMilestoneResp])])
+
   private def previewTask(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): Unit =
-    modalFactory.previewModal(
-      new TaskPreviewComponent(
-        task,
-        workDaysVar.now(),
-        router,
-        tgDateFormater,
-        tgMarkdown,
-        tgClock,
-        showName = true,
-        milestone.toSeq
-      ).element,
-      title = "Task preview"
-    )
+    previewedTaskVar.set(Some(task -> milestone))
+
+  private def previewCard(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
+    TgCard
+      .headerNoFooter(
+        header = TgCard.CardHeader.html(
+          div(
+            cls("flex items-center justify-between"),
+            div(cls("mr-2"), "Task preview"),
+            iconButton(
+              "Close preview",
+              TgIcons.closeIcon(className = "w-4 h-4"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => previewedTaskVar.set(None))
+            )
+          )
+        ),
+        body = TgCard.HtmlCardContent(
+          new TaskPreviewComponent(
+            task,
+            workDaysVar.now(),
+            router,
+            tgDateFormater,
+            tgMarkdown,
+            tgClock,
+            showName = true,
+            milestone.toSeq
+          ).element
+        )
+      )
+      .element
+      .amend(cls("w-full mb-4"))
 
   private def taskList(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement = {
     val taskItem = new TaskListItem(
@@ -273,13 +297,17 @@ class MilestoneSummaryComponent(
 
   val element: HtmlElement =
     div(
-      cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
+      cls("w-full"),
+      child.maybe <-- previewedTaskVar.signal.map(_.map { case (task, milestone) => previewCard(task, milestone) }),
       div(
-        cls("flex w-full min-w-0 flex-col gap-8 lg:w-[40rem] lg:shrink-0"),
-        newSummaryCard,
-        previousSummariesCard
-      ),
-      tasksCard.amend(cls("min-w-0 lg:flex-1"))
+        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
+        div(
+          cls("flex w-full min-w-0 flex-col gap-8 lg:w-[40rem] lg:shrink-0"),
+          newSummaryCard,
+          previousSummariesCard
+        ),
+        tasksCard.amend(cls("min-w-0 lg:flex-1"))
+      )
     )
 }
 
