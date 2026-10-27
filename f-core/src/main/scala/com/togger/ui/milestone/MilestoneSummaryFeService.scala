@@ -5,17 +5,27 @@ import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.{CreateMilestoneSummaryReq, FindMilestoneSummaryResp, UpdateMilestoneSummaryReq}
-import com.togger.milestone.MilestoneSummaryEndpoints
+import com.togger.dto.{
+  CreateMilestoneSummaryReq,
+  FindMilestoneSummaryResp,
+  SummariseMilestoneWithAiReq,
+  SummariseMilestoneWithAiResp,
+  UpdateMilestoneSummaryReq
+}
+import com.togger.milestone.{MilestoneAiSummaryEndpoints, MilestoneSummaryEndpoints}
 import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
 class MilestoneSummaryFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
   val milestoneSummaryEndpoints = new MilestoneSummaryEndpoints(securedEndpoint)
+  val milestoneAiSummaryEndpoints = new MilestoneAiSummaryEndpoints(securedEndpoint)
 
   def createMilestoneSummary(dto: CreateMilestoneSummaryReq): TgRespIO[FindMilestoneSummaryResp] =
     protectedBackendClient.protectedHttpCall(milestoneSummaryEndpoints.saveEndpoint)(dto)
+
+  def summariseWithAi(dto: SummariseMilestoneWithAiReq): TgRespIO[SummariseMilestoneWithAiResp] =
+    protectedBackendClient.protectedHttpCall(milestoneAiSummaryEndpoints.summariseEndpoint)(dto)
 
   def findByMilestoneId(milestoneId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindMilestoneSummaryResp]] =
     protectedBackendClient.protectedHttpCall(milestoneSummaryEndpoints.findByMilestoneIdEndpoint)((milestoneId, page))

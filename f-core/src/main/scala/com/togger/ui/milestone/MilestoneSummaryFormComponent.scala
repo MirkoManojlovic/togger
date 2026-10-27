@@ -38,9 +38,13 @@ class MilestoneSummaryFormComponent(
   initial: MilestoneSummaryForm,
   tgClock: TgClock,
   onSave: MilestoneSummaryFormComponent => Unit,
-  onRemove: MilestoneSummaryFormComponent => Unit
+  onRemove: MilestoneSummaryFormComponent => Unit,
+  onAiSummary: MilestoneSummaryFormComponent => Unit
 ) {
   val formState = Var(initial)
+
+  /** Whether the AI is writing the summary, which can take a while on a local model. */
+  val aiSummaryRunning = Var(false)
 
   private val summaryEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.summary),
@@ -84,6 +88,15 @@ class MilestoneSummaryFormComponent(
       onClick.mapToUnit --> (_ => onRemove(this))
     )
 
+  private val aiSummaryButton: HtmlElement =
+    button(
+      typ("button"),
+      cls(TgHtmlButton.tailwindExtraSmallButton),
+      disabled <-- aiSummaryRunning.signal,
+      child.text <-- aiSummaryRunning.signal.map(running => if (running) "Writing summary..." else "AI Summary"),
+      onClick.mapToUnit --> (_ => onAiSummary(this))
+    )
+
   val htmlElement: ReactiveHtmlElement[HTMLFormElement] =
     form(
       onSubmit.preventDefault.mapToUnit --> (_ => onSave(this)),
@@ -96,6 +109,7 @@ class MilestoneSummaryFormComponent(
       summaryEditor.htmlElement.amend(cls("mb-4")),
       div(
         cls("flex justify-end gap-2"),
+        child.maybe <-- isSaved.map(saved => Option.when(!saved)(aiSummaryButton)),
         child <-- isSaved.map(saved =>
           if (saved) TgHtmlButton.updateSmall(EventStream.fromValue(false))
           else TgHtmlButton.createSmall(EventStream.fromValue(false))

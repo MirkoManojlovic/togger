@@ -53,7 +53,7 @@ class MilestoneSummaryComponent(
   val newSummaryVar = Var(newSummaryForm(MilestoneSummaryForm()))
 
   private def newSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
-    new MilestoneSummaryFormComponent(form, tgClock, saveSummary, removeSummary)
+    new MilestoneSummaryFormComponent(form, tgClock, saveSummary, removeSummary, writeSummaryWithAi)
 
   private def removeSummary(component: MilestoneSummaryFormComponent): Unit =
     component.formState.now().id.foreach { id =>
@@ -73,6 +73,24 @@ class MilestoneSummaryComponent(
         close()
       }
     }
+
+  // Replaces the summary text of the form with what the AI writes from the log entries of its period.
+  private def writeSummaryWithAi(component: MilestoneSummaryFormComponent): Unit = {
+    val form = component.formState.now()
+    if (form.startDate.isEmpty || form.endDate.isEmpty) toast.error("Choose the start and end date of the summary")
+    else {
+      component.aiSummaryRunning.set(true)
+      spinnerService
+        .runWithSpinner(
+          milestoneSummaryService.summariseWithAi(
+            MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
+          )
+        )
+        .toastJustErrorsUnit(response => component.formState.update(_.copy(summary = response.summary)))
+        .guarantee(IO(component.aiSummaryRunning.set(false)))
+        .unsafeRunAndForget()
+    }
+  }
 
   private def saveSummary(component: MilestoneSummaryFormComponent): Unit = {
     val form = component.formState.now()
