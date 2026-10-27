@@ -309,22 +309,19 @@ class MilestoneSummaryComponent(
 
   val element: HtmlElement =
     div(
-      cls("w-full"),
+      cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
       div(
-        cls("w-full mb-4"),
+        cls("flex w-full min-w-0 flex-col gap-8 lg:w-[50rem] lg:shrink-0"),
+        tasksCard,
+        newSummaryCard,
+        previousSummariesCard
+      ),
+      div(
+        cls("w-full min-w-0 lg:flex-1"),
         child <-- previewedTaskVar.signal.map {
           case Some((task, milestone)) => previewCard(task, milestone)
           case None                    => emptyPreviewCard
         }
-      ),
-      div(
-        cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
-        div(
-          cls("flex w-full min-w-0 flex-col gap-8 lg:w-[50rem] lg:shrink-0"),
-          newSummaryCard,
-          previousSummariesCard
-        ),
-        tasksCard.amend(cls("min-w-0 lg:flex-1"))
       )
     )
 }
