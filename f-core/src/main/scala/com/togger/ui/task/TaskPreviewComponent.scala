@@ -14,6 +14,8 @@ import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.gantt.ReviewTaskBadges
 
+import org.scalajs.dom
+
 import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 
 /** A task as the status of the projects shows it: its description on the left, its log entries in the middle, by the
@@ -90,14 +92,39 @@ class TaskPreviewComponent(
       )
     )
 
-  // The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
-  private val logEntriesColumn: HtmlElement =
+  private val logDateAttr = dataAttr("log-date")
+
+  private def scrollToDay(pane: dom.html.Element, day: LocalDate): Unit =
+    // the tabs repeat a day, and the ones of the tabs that are not selected are hidden
+    pane
+      .querySelectorAll(s"[data-log-date='$day']")
+      .toSeq
+      .collectFirst { case entry: dom.html.Element if entry.offsetParent != null => entry }
+      .foreach { entry =>
+      pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
+    }
+
+  /** The log entries in a pane that scrolls and the calendar beside it, outside of the pane, so the calendar stays
+    * where it is; a click on a day of the calendar scrolls the pane to the entries of that day.
+    *
+    * The tabs stay in one row: the column is at least as wide as the row of tabs, and the other columns give way.
+    */
+  private val logEntriesColumn: HtmlElement = {
+    val pane = div(
+      // room around the entries for the border of the selected day, which the scrolling pane would cut
+      cls("max-h-[70vh] overflow-y-auto scroll-smooth p-1 pe-2"),
+      weekRangeStatusTabs(task.logEntries, selectedDayVar)
+    )
     div(
       cls("flex-1 min-w-0 md:min-w-min"),
       cls(sectionCls),
       cls("[&_[role=tablist]]:flex-nowrap [&_[role=tab]]:whitespace-nowrap"),
-      weekRangeStatusTabs(task.logEntries, selectedDayVar)
+      selectedDayVar.signal.changes.collect { case Some(day) => day } --> Observer[LocalDate](day =>
+        scrollToDay(pane.ref, day)
+      ),
+      pane
     )
+  }
 
   private val calendarColumn: HtmlElement =
     div(
@@ -177,6 +204,7 @@ class TaskPreviewComponent(
       else
         entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
           div(
+            logDateAttr := day.toString,
             cls("mb-2 p-2 border rounded-base"),
             cls.toggle("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
             cls.toggle("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
