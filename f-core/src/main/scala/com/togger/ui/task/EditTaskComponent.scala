@@ -617,8 +617,8 @@ class EditTaskComponent(
         cls("flex w-full flex-col items-start gap-8 mb-4"),
         editTaskCard.amend(cls("min-w-0")),
         div(
-          cls("flex w-full min-w-0 flex-col gap-8"),
-          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element)),
+          cls("flex w-full min-w-0 items-start gap-8"),
+          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element.amend(cls("w-[44rem] shrink-0")))),
           child <-- logEntryPanelVar.signal.map(logEntriesCard)
         )
       )
@@ -669,7 +669,7 @@ class EditTaskComponent(
         .changes
         .collect { case (Some(day), _) => day }
     div(
-      cls("w-full bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"),
+      cls("min-w-0 flex-1 bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"),
       clickedDays --> Observer[LocalDate] { day =>
         if (scrollOnSelect) scrollToDay(pane.ref, day)
         scrollOnSelect = true
