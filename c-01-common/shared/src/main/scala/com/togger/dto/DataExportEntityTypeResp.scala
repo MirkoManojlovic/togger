@@ -17,5 +17,5 @@ object DataExportEntityTypeResp extends Enum[DataExportEntityTypeResp] {
   case object LogEntry extends DataExportEntityTypeResp
   case object TaskTemplate extends DataExportEntityTypeResp
   case object Timebox extends DataExportEntityTypeResp
-  case object TgPrompt extends DataExportEntityTypeResp
+  case object TgPromptTemplate extends DataExportEntityTypeResp
 }
