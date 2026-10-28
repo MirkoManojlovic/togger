@@ -21,7 +21,7 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
-import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryRangeCalendar}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk._
@@ -553,10 +553,17 @@ class TimeboxFormComponent(
           form(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-            div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
-            presetButtons,
-            child.maybe <-- endBeforeStartError.map(
-              _.map(message => p(cls("mb-4 text-xs text-fg-danger-strong"), message))
+            div(
+              cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+              div(
+                cls("min-w-0"),
+                div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
+                presetButtons,
+                child.maybe <-- endBeforeStartError.map(
+                  _.map(message => p(cls("mt-4 text-xs text-fg-danger-strong"), message))
+                )
+              ),
+              MilestoneSummaryRangeCalendar.element(formState.signal.map(f => f.startDate -> f.endDate).distinct)
             ),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             if (isCreate) emptyNode
