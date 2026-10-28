@@ -1,6 +1,6 @@
 package com.togger
 import cats.effect.{IO, Resource}
-import com.togger.ai.{TgAiClient, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
+import com.togger.ai.{TgAiClient, TgAiModelEndpoints, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
 import com.togger.account.{AccountEndpoints, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.AccountController
@@ -8,6 +8,7 @@ import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, Con
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneAiSummaryStreamEndpoints, MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.ai.TgAiModelController
 import com.togger.controllers.tgaiaction.TgAiActionController
 import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
 import com.togger.tgaiaction.{TgAiActionDefaultRepoImpl, TgAiActionEndpointRepoImpl, TgAiActionEndpoints, TgAiActionRepoImpl, TgAiActionService}
@@ -205,6 +206,7 @@ object TgServer {
             tgAiActionController.clearDefault,
             tgAiActionController.findById,
             tgAiActionController.delete,
+            tgAiModelController.list,
             dataExportController.exportTasks,
             dataExportController.checkStatus,
             dataExportController.exportByConfig,
@@ -418,10 +420,11 @@ class DependenciesModule(
   lazy val tgAiActionEndpoints = new TgAiActionEndpoints(securedEndpoint)
   lazy val tgAiActionController = new TgAiActionController(tgAiActionService, tgAiActionEndpoints, tgClock)
 
-  // TgAiService is used internally by services such as MilestoneAiSummaryService, it has no endpoints of its own
   lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend, TgOllama.BaseUri, TgOllama.ReadTimeout)
   lazy val tgAiApiKeyProvider = new TgStaticApiKeyProvider(TgOllama.ApiKey)
   lazy val tgAiService = new TgAiService(tgAiClient, tgAiApiKeyProvider)
+  lazy val tgAiModelEndpoints = new TgAiModelEndpoints(securedEndpoint)
+  lazy val tgAiModelController = new TgAiModelController(tgAiService, tgAiModelEndpoints)
 
   lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryStreamEndpoints(securedEndpoint)
   lazy val milestoneAiSummaryService =
