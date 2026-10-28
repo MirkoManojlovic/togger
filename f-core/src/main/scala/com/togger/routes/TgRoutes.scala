@@ -231,6 +231,10 @@ class TgRoutes {
         root / "settings" / "sync-check"
       ),
       Route.static(
+        McpSettingsPage,
+        root / "settings" / "mcp"
+      ),
+      Route.static(
         CreateProjectLabelPage,
         root / "settings" / "project-label" / "create"
       ),

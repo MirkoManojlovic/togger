@@ -101,7 +101,8 @@ class NavbarComponent(
         Seq(
           "Import / export check" -> SyncCheckSettingsPage,
           "Prompt templates" -> ShowAllTgPromptTemplatesPage(),
-          "AI actions" -> ShowAllTgAiActionsPage()
+          "AI actions" -> ShowAllTgAiActionsPage(),
+          "MCP" -> McpSettingsPage
         ).map {
           case (label, page) =>
             li(
@@ -157,7 +158,7 @@ class NavbarComponent(
         case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
             CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.organizationSelected
-        case SyncCheckSettingsPage | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) |
+        case SyncCheckSettingsPage | McpSettingsPage | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) |
             EditTgPromptTemplatePage(_) | CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) |
             TgAiActionDefaultsPage =>
           NavbarItems.settingsSelected

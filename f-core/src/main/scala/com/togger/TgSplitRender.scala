@@ -19,6 +19,7 @@ import com.togger.ui.milestone._
 import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
+import com.togger.ui.mcp.McpSettingsComponent
 import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
 import com.togger.ui.organization._
@@ -275,6 +276,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case ChangeAccountInfoPage =>
                 new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
+              case McpSettingsPage => new McpSettingsComponent().element
               case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>
                 new CreateTaskComponent(

@@ -81,6 +81,7 @@ object TgBreadcrumbTrail {
     case ChangePasswordPage        => underOrganizations(current("Change password"))
     case ChangeAccountInfoPage     => underOrganizations(current("Account information"))
     case ApexChartDemoPage         => underOrganizations(current("Chart demo"))
+    case McpSettingsPage           => underOrganizations(current("MCP"))
     case SyncCheckSettingsPage     => underOrganizations(current("Import / export check"))
 
     case ShowAllTgPromptTemplatesPage(_) => underOrganizations(current("Prompt templates"))
