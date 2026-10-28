@@ -223,7 +223,7 @@ class TimeboxReviewGanttComponent(
       singleDayTab,
       rangeTab("last-week", "Last week", day => !day.isBefore(weekStart) && !day.isAfter(weekEnd)),
       rangeTab("last-2-weeks", "Last 2 weeks", day => !day.isBefore(weekStart.minusDays(7L)) && !day.isAfter(weekEnd)),
-      rangeTab("everything", "Everything", _ => true)
+      rangeTab("all-history", "All History", _ => true)
     )
   }
 

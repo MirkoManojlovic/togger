@@ -260,8 +260,8 @@ class TaskPreviewComponent(
         content = weekRangeStatus(logEntries, lastTwoWeeksStart, lastTwoWeeksEnd, selectedDayVar)
       ),
       TgTab(
-        id = "everything",
-        label = "Everything",
+        id = "all-history",
+        label = "All History",
         content = weekRangeStatus(logEntries, LocalDate.MIN, LocalDate.MAX, selectedDayVar)
       )
     )
