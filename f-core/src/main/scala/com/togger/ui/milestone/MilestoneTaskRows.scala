@@ -49,7 +49,7 @@ object MilestoneTaskRows {
 
   private def column(title: String, content: HtmlElement): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-2 text-center px-3 border-r border-default last:border-r-0"),
+      cls("flex flex-col items-center gap-2 text-center px-3 min-w-0 border-r border-default last:border-r-0"),
       span(cls("text-base font-semibold text-heading"), title),
       content
     )
@@ -68,7 +68,9 @@ object MilestoneTaskRows {
         ringSizeCls = "w-12 h-12",
         labelOf = label,
         fillCls = fillCls,
-        trackCls = trackCls
+        trackCls = trackCls,
+        containerCls = "flex flex-col items-center gap-1",
+        labelCls = "text-center break-words"
       ).element
     )
 
@@ -94,7 +96,7 @@ object MilestoneTaskRows {
         cls("flex flex-col sm:flex-row sm:items-stretch gap-4"),
         counts(tasks, statuses),
         div(
-          cls("grid grid-cols-4"),
+          cls("grid grid-cols-4 flex-1 min-w-0"),
           progressRing(
             "Tasks",
             TaskProgress(progress.done, progress.total),

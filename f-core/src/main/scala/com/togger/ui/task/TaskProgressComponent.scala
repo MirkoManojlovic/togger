@@ -18,6 +18,7 @@ object TaskProgressVariant {
   *
   * Nothing renders when the description has no task list (`TaskProgress.total == 0`) — that is "no progress to
   * show", not "0%". `ringSizeCls` and `textSizeCls` size the ring and the label, "n of m tasks" unless `labelOf` says otherwise.
+  * `containerCls` and `labelCls` lay the ring and the label out, beside each other unless told otherwise.
   */
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
@@ -26,12 +27,14 @@ case class TaskProgressComponent(
   textSizeCls: String = "text-sm",
   labelOf: TaskProgress => String = progress => s"${progress.checked} of ${progress.total} tasks",
   fillCls: String = "text-fg-brand",
-  trackCls: String = "text-blue-200 dark:text-blue-900"
+  trackCls: String = "text-blue-200 dark:text-blue-900",
+  containerCls: String = "inline-flex items-center gap-2",
+  labelCls: String = "whitespace-nowrap"
 ) {
 
   val element: HtmlDiv =
     div(
-      cls("inline-flex items-center gap-2"),
+      cls(containerCls),
       children <-- progressSignal.map(renderChildren)
     )
 
@@ -42,7 +45,7 @@ case class TaskProgressComponent(
         case TaskProgressVariant.Doughnut =>
           Seq(
             doughnutRing(progress.percent),
-            span(cls(textSizeCls, "text-body whitespace-nowrap"), labelOf(progress))
+            span(cls(textSizeCls, "text-body", labelCls), labelOf(progress))
           )
       }
 
