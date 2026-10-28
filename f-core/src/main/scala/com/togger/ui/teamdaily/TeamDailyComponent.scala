@@ -626,7 +626,7 @@ class TeamDailyComponent(
     div(
       cls("flex flex-col items-start gap-6 rounded-base border border-default-medium bg-neutral-secondary-soft p-3"),
       div(
-        cls("min-w-0 flex-1"),
+        cls("w-full min-w-0 flex-1"),
         div(
           cls("mb-2 flex flex-wrap items-center gap-1.5"),
           statusTab("Last status", selectedDay.signal.map(_.isEmpty), () => selectedDay.set(None)),
