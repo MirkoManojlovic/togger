@@ -21,6 +21,9 @@ class TgAiServiceTest extends AsyncWordSpec with Matchers {
     val calls = new AtomicInteger(0)
     val lastKey = new java.util.concurrent.atomic.AtomicReference[TgAiApiKey]()
 
+    override def listModels(apiKey: TgAiApiKey): IO[Either[TgAiError, List[TgAiModel]]] =
+      IO { calls.incrementAndGet(); lastKey.set(apiKey); List(TgAiModel("llama3")).asRight }
+
     override def chat(apiKey: TgAiApiKey, request: TgAiChatRequest): IO[Either[TgAiError, TgAiChatResult]] =
       IO { calls.incrementAndGet(); lastKey.set(apiKey); reply }
 
@@ -39,6 +42,22 @@ class TgAiServiceTest extends AsyncWordSpec with Matchers {
   }
 
   "TgAiService" should {
+    "list the models with the resolved api key" in {
+      val client = new StubClient(chatResult.asRight)
+      val service = new TgAiService(client, keyProvider(TgAiApiKey("secret").asRight))
+      service.listModels(accountId).map { result =>
+        (result, client.lastKey.get()) shouldBe (List(TgAiModel("llama3")).asRight, TgAiApiKey("secret"))
+      }.unsafeToFuture()
+    }
+
+    "not list models without an api key" in {
+      val client = new StubClient(chatResult.asRight)
+      val service = new TgAiService(client, new TgNoApiKeyProvider)
+      service.listModels(accountId).map { result =>
+        (result, client.calls.get()) shouldBe (TgAiApiKeyMissing.asLeft, 0)
+      }.unsafeToFuture()
+    }
+
     "pass the resolved api key to the client and return its result" in {
       val client = new StubClient(chatResult.asRight)
       val service = new TgAiService(client, keyProvider(TgAiApiKey("secret").asRight))

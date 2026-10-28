@@ -44,6 +44,32 @@ class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
   private def errorJson(message: String): String =
     s"""{"error":{"message":"$message","type":"invalid_request_error","param":null,"code":null}}"""
 
+  "TgOpenAiClient.listModels" should {
+    "return the ids of the models the server offers" in {
+      val json =
+        """{"object":"list","data":[{"id":"llama3","object":"model","created":1,"owned_by":"library"},
+          |{"id":"qwen3","object":"model","created":2,"owned_by":"library"}]}""".stripMargin
+      clientReplying(StatusCode.Ok, json)
+        .listModels(apiKey)
+        .map(_ shouldBe List(TgAiModel("llama3"), TgAiModel("qwen3")).asRight)
+        .unsafeToFuture()
+    }
+
+    "return an empty list when no model is installed" in {
+      clientReplying(StatusCode.Ok, """{"object":"list","data":[]}""")
+        .listModels(apiKey)
+        .map(_ shouldBe Nil.asRight)
+        .unsafeToFuture()
+    }
+
+    "map an unavailable server to TgAiProviderUnavailable" in {
+      clientReplying(StatusCode.ServiceUnavailable, errorJson("down"))
+        .listModels(apiKey)
+        .map(_.left.toOption.exists(_.isInstanceOf[TgAiProviderUnavailable]) shouldBe true)
+        .unsafeToFuture()
+    }
+  }
+
   "TgOpenAiClient.chat" should {
     "return text and usage on success" in {
       clientReplying(StatusCode.Ok, completionJson("hi there"))

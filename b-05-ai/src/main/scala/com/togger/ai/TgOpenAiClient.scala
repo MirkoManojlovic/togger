@@ -28,6 +28,13 @@ class TgOpenAiClient(
 ) extends TgAiClient
     with TgLogging {
 
+  override def listModels(apiKey: TgAiApiKey): IO[Either[TgAiError, List[TgAiModel]]] =
+    openAI(apiKey).getModels
+      .send(backend)
+      .map(_.body.leftMap(toTgAiError).map(_.data.map(model => TgAiModel(model.id)).toList))
+      .handleError(unavailable)
+      .flatTap(logOutcome("listModels"))
+
   override def chat(apiKey: TgAiApiKey, request: TgAiChatRequest): IO[Either[TgAiError, TgAiChatResult]] =
     sendChat(apiKey, toChatBody(request)).map(_.flatMap(toChatResult))
 

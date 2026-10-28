@@ -13,6 +13,12 @@ import java.util.UUID
 class TgAiService(client: TgAiClient, apiKeyProvider: TgAiApiKeyProvider) extends TgLogging {
   type Result[A] = Either[TgAiError, A]
 
+  def listModels(accountId: UUID): IO[Result[List[TgAiModel]]] =
+    (for {
+      apiKey <- EitherT(apiKeyProvider.apiKey(accountId))
+      models <- EitherT(client.listModels(apiKey))
+    } yield models).value
+
   def chat(accountId: UUID, request: TgAiChatRequest): IO[Result[TgAiChatResult]] =
     withValidRequest(accountId, request)(client.chat(_, request))
 
