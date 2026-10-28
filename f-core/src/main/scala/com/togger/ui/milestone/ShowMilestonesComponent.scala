@@ -25,7 +25,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
 import com.raquo.laminar.nodes.ReactiveHtmlElement
@@ -161,35 +161,36 @@ class ShowMilestonesComponent(
 
   /** One tall row spanning every column, so the table keeps its size when no milestone matches. */
   private def noMilestonesRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
-    Seq(td(colSpan(2), cls("px-6 py-32 text-center text-lg text-body"), "No milestones found"))
+    Seq(td(colSpan(1), cls("px-6 py-32 text-center text-lg text-body"), "No milestones found"))
 
   private def row(dto: FindMilestoneResp): Seq[ReactiveHtmlElement[HTMLTableCellElement]] =
     Seq(
       createTd(
         div(
           cls("flex flex-col gap-1"),
-          a(
-            cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
-            dto.name,
-            router.navigateTo(EditMilestonePage(projectId, dto.id))
+          div(
+            cls("flex items-center gap-2"),
+            iconButton(
+              "Review",
+              TgIcons.eyeIcon(className = "w-3.5 h-3.5"),
+              smallRowIconButtonCls,
+              "",
+              onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))
+            ),
+            a(
+              cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
+              dto.name,
+              router.navigateTo(EditMilestonePage(projectId, dto.id))
+            )
           ),
           BulkTaskCard.readOnlyRow(Seq(BadgeSpec(dto.status.toStringWithEmoji, statusColor(dto.status)))),
           BulkTaskCard.readOnlyRow(dateRow(dto))
         )
-      ),
-      td(
-        cls("!px-2 w-0 whitespace-nowrap"),
-        div(
-          iconButton(
-            "Review",
-            TgIcons.eyeIcon(className = "w-4 h-4"),
-            rowIconButtonCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(MilestoneReviewPage(projectId, dto.id)))
-          )
-        )
       )
     )
+
+  private val smallRowIconButtonCls =
+    "inline-flex items-center justify-center w-6 h-6 shrink-0 text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs rounded-base focus:outline-none"
 
   val element = {
     div(
@@ -224,10 +225,6 @@ class ShowMilestonesComponent(
                       cls("flex items-center justify-between gap-4"),
                       "Name",
                       div(cls("flex items-center justify-end gap-2"), statusFilter.element)
-                    ),
-                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                      cls("!px-2 w-0 whitespace-nowrap text-center"),
-                      "Action"
                     )
                   ),
                   striped = false
