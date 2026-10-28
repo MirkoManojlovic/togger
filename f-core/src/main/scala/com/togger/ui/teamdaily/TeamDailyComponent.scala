@@ -692,7 +692,7 @@ class TeamDailyComponent(
         TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
         LogEntryMemberBadge(entry.createdByName)
       ),
-      div(cls("max-h-48 overflow-y-auto"), tgMarkdown.toLaminarDiv(entry.textExternal))
+      div(tgMarkdown.toLaminarDiv(entry.textExternal))
     )
 
   private def dayView(day: LocalDate, entries: Seq[LogEntryDto]): HtmlElement =
@@ -837,7 +837,7 @@ class TeamDailyComponent(
         (_ => if (confirmingClose.now()) confirmingClose.set(false) else requestClose()),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("flex w-full max-w-[96rem] flex-col min-h-[75vh] max-h-[calc(100vh-6rem)]"),
+        cls("flex w-full max-w-[96rem] flex-col"),
         div(
           cls(ModalStyles.headerCls),
           h3(cls(ModalStyles.titleCls), "Team daily"),
@@ -851,7 +851,7 @@ class TeamDailyComponent(
         ),
         stepper,
         // the steps scroll in the space between the stepper and the footer, which stays at the bottom
-        div(cls("min-h-0 flex-1 overflow-y-auto"), child <-- body),
+        div(child <-- body),
         footer
       )
     )
