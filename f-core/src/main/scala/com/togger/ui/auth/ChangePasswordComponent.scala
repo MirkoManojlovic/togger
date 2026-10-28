@@ -17,6 +17,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import io.scalaland.chimney.dsl._
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 
 class ChangePasswordService(
@@ -50,7 +51,8 @@ case class ChangePasswordFormState(
 class ChangePasswordComponent(
   changePasswordService: ChangePasswordService,
   accountService: AccountService,
-  spinnerService: SpinnerService
+  spinnerService: SpinnerService,
+  modalFactory: ModalFactory
 //  val toast: Toast
 )(implicit ioRuntime: IORuntime) {
 
@@ -84,8 +86,8 @@ class ChangePasswordComponent(
       .runWithSpinner(changePasswordService.change(dto))
       .map(
         _.fold(
-          error => dom.window.alert(ToastError.errorMatch(error)),
-          _ => dom.window.alert("Password successfully changed")
+          error => modalFactory.alertModal(ToastError.errorMatch(error), "Error", PlainModalVariant.Danger),
+          _ => modalFactory.alertModal("Password successfully changed", "Success")
         )
       )
       .unsafeRunAndForget()

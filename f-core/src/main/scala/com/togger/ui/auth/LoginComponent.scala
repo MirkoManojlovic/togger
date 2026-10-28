@@ -13,13 +13,15 @@ import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 case class LoginFormState(email: String = "@email.com", password: String = "A!good_1_password_is_good") {}
 
 class LoginComponent(
   router: TgRouter[FrontendPage],
   loginService: LoginService,
-  spinnerService: SpinnerService
+  spinnerService: SpinnerService,
+  modalFactory: ModalFactory
 )(implicit runtime: IORuntime) {
   private val formState = Var(LoginFormState())
 
@@ -53,7 +55,7 @@ class LoginComponent(
           .login(dto)
           .map { result =>
             result.fold(
-              error => dom.window.alert("Wrong login credentials"),
+              error => modalFactory.alertModal("Wrong login credentials", "Login failed", PlainModalVariant.Danger),
               _ => {
                 val currentPage = router.currentPageSignal.now()
                 if (currentPage == LoginPage) router.route(HomePage)

@@ -13,7 +13,7 @@ import com.togger.ui.auth.{TgCard, TgInputType}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import org.scalajs.dom
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 
 import java.util.UUID
 
@@ -30,6 +30,7 @@ class EditDataExportConfigComponent(
   dataExportConfigService: DataExportConfigFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  modalFactory: ModalFactory,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -42,7 +43,7 @@ class EditDataExportConfigComponent(
         .findById(id)
         .map(
           _.fold(
-            error => dom.window.alert("Oops an error: " + error),
+            error => modalFactory.alertModal("Oops an error: " + error, "Error", PlainModalVariant.Danger),
             success => {
               val dto = success.body.get
               formState.set(

@@ -133,7 +133,7 @@ class EditTaskComponent(
                   .findTaskById(taskId)
                   .map(
                     _.fold(
-                      error => dom.window.alert("Oops an error: " + error),
+                      error => modalFactory.alertModal("Oops an error: " + error, "Error", PlainModalVariant.Danger),
                       success => {
                         val dto = success.body.get
                         formState.set(

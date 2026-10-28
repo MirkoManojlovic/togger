@@ -31,7 +31,8 @@ final case class PlainModal(
   confirmButtonMsg: String = "Confirm",
   cancelButtonMsg: String = "Cancel",
   variant: PlainModalVariant = PlainModalVariant.Info,
-  confirmationText: Option[String] = None
+  confirmationText: Option[String] = None,
+  showCancel: Boolean = true
 ) extends TgModal {
 
   // With a confirmation text, the confirm button stays disabled until the user has typed exactly that text.
@@ -118,11 +119,13 @@ final case class PlainModal(
                 confirmButtonMsg,
                 onClick --> okayObserver
               ),
-              button(
-                `type`("button"),
-                cls(ModalStyles.secondaryButtonCls),
-                cancelButtonMsg,
-                onClick --> cancelObserver
+              Option.when(showCancel)(
+                button(
+                  `type`("button"),
+                  cls(ModalStyles.secondaryButtonCls),
+                  cancelButtonMsg,
+                  onClick --> cancelObserver
+                )
               )
             )
           )

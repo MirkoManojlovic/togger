@@ -16,6 +16,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import io.scalaland.chimney.dsl._
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 
 class ChangeAccountInfoService(
@@ -56,7 +57,8 @@ case class ChangeAccountInfoFormState(
 class ChangeAccountInfoComponent(
   changeAccountInfoService: ChangeAccountInfoService,
   accountService: AccountService,
-  spinnerService: SpinnerService
+  spinnerService: SpinnerService,
+  modalFactory: ModalFactory
 )(implicit ioRuntime: IORuntime) {
 
   private val formState = Var(
@@ -92,8 +94,8 @@ class ChangeAccountInfoComponent(
       .runWithSpinner(changeAccountInfoService.change(state.into[AccountInfoDto].transform))
       .map(
         _.fold(
-          error => dom.window.alert(ToastError.errorMatch(error)),
-          _ => dom.window.alert("Account information successfully changed")
+          error => modalFactory.alertModal(ToastError.errorMatch(error), "Error", PlainModalVariant.Danger),
+          _ => modalFactory.alertModal("Account information successfully changed", "Success")
         )
       )
       .unsafeRunAndForget()

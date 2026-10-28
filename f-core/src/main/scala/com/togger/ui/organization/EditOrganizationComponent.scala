@@ -19,7 +19,7 @@ import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import org.scalajs.dom
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 
 import java.util.UUID
 
@@ -39,6 +39,7 @@ class EditOrganizationComponent(
   spinnerService: SpinnerService,
   localStorage: LocalStorage,
   sidebarRefresh: SidebarRefresh,
+  modalFactory: ModalFactory,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
@@ -72,7 +73,7 @@ class EditOrganizationComponent(
             .findById(organizationId)
             .map(
               _.fold(
-                error => dom.window.alert("Oops an error: " + error),
+                error => modalFactory.alertModal("Oops an error: " + error, "Error", PlainModalVariant.Danger),
                 success => {
                   val dto = success.body.get
                   formState.set(

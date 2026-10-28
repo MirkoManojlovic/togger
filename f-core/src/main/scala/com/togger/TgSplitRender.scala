@@ -260,11 +260,11 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
               case HomePage  => router.route(ShowAllOrganizationsPage()); div()
-              case LoginPage => new LoginComponent(router, loginService, spinnerService).element
+              case LoginPage => new LoginComponent(router, loginService, spinnerService, modalFactory).element
               case ChangePasswordPage =>
-                new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
+                new ChangePasswordComponent(changePasswordService, accountService, spinnerService, modalFactory).element
               case ChangeAccountInfoPage =>
-                new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService).element
+                new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>
@@ -412,6 +412,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   dataExportConfigService,
                   router,
                   spinnerService,
+                  modalFactory,
                   toast
                 ).element
               case CreateDataImportConfigPage(projectId: UUID) =>
@@ -427,6 +428,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   dataImportConfigService,
                   router,
                   spinnerService,
+                  modalFactory,
                   toast
                 ).element
               case ShowAllTasksPage(projectId: UUID, listParams) =>
@@ -533,6 +535,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   localStorage,
                   sidebarRefresh,
+                  modalFactory,
                   toast
                 ).element
               case CreateProjectLabelPage =>

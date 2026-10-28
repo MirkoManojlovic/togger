@@ -24,6 +24,23 @@ class ModalFactory(val parentElementForModal: HtmlElement) {
   )(onClose: (() => Unit) => Unit): Unit =
     show(PlainModal(title, message, onClose, confirmButtonMsg, cancelButtonMsg, variant, confirmationText))
 
+  /** Replaces `dom.window.alert`: a message with a single OK button. */
+  def alertModal(
+    message: String,
+    title: String = "Attention",
+    variant: PlainModalVariant = PlainModalVariant.Info
+  ): Unit =
+    show(
+      PlainModal(
+        title,
+        PlainTextModalMessage(message),
+        onClose = close => close(),
+        confirmButtonMsg = "OK",
+        variant = variant,
+        showCancel = false
+      )
+    )
+
   private def show(modal: TgModal): Unit = {
     currentModalVar.set(Some(modal.element))
     modal.isClicked.changes.foreach {
