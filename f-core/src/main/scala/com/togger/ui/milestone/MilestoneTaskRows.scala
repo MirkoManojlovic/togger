@@ -47,6 +47,13 @@ object MilestoneTaskRows {
       )
     )
 
+  private def column(title: String, content: HtmlElement): HtmlElement =
+    div(
+      cls("flex flex-col items-center gap-2 text-center px-3 border-r border-default last:border-r-0"),
+      span(cls("text-base font-semibold text-heading"), title),
+      content
+    )
+
   private def progressRing(
     title: String,
     progress: TaskProgress,
@@ -54,9 +61,8 @@ object MilestoneTaskRows {
     fillCls: String,
     trackCls: String
   ): HtmlElement =
-    div(
-      cls("flex flex-col items-center gap-2 text-center px-3 border-r border-default last:border-r-0"),
-      span(cls("text-base font-semibold text-heading"), title),
+    column(
+      title,
       TaskProgressComponent(
         Val(progress),
         ringSizeCls = "w-12 h-12",
@@ -66,6 +72,9 @@ object MilestoneTaskRows {
       ).element
     )
 
+  private def estimationColumn(status: MilestoneEstimationStatus): HtmlElement =
+    column("Milestone estimation", TgBadge(text = status.label, color = status.color, bordered = true).element)
+
   /** One card for the tasks of the total or of a member: the counts beside the rings they add up to. The days left
     * until the due date belong to the milestone, so only the total shows them.
     */
@@ -74,7 +83,8 @@ object MilestoneTaskRows {
     tasks: Seq[FindTaskRespFull],
     statuses: Seq[FindTaskStatusResp],
     days: Option[DaysProgress],
-    workDays: Option[DaysProgress]
+    workDays: Option[DaysProgress],
+    estimation: Option[MilestoneEstimationStatus]
   ): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     div(
@@ -84,7 +94,7 @@ object MilestoneTaskRows {
         cls("flex flex-col sm:flex-row sm:items-stretch gap-4"),
         counts(tasks, statuses),
         div(
-          cls("grid grid-cols-3"),
+          cls("grid grid-cols-4"),
           progressRing(
             "Tasks",
             TaskProgress(progress.done, progress.total),
@@ -109,7 +119,8 @@ object MilestoneTaskRows {
               "text-blue-500",
               "text-blue-200 dark:text-blue-900"
             )
-          )
+          ),
+          estimation.map(estimationColumn)
         )
       )
     )
@@ -119,6 +130,7 @@ object MilestoneTaskRows {
     tasks: Seq[FindTaskRespFull],
     statuses: Seq[FindTaskStatusResp],
     days: DaysProgress,
+    dueDate: LocalDate,
     today: LocalDate,
     workDays: Set[DayOfWeek]
   ): HtmlElement = {
@@ -129,12 +141,20 @@ object MilestoneTaskRows {
           memberTasks,
           statuses,
           None,
-          Some(TimeboxReviewStats.workDaysProgress(memberTasks, today, workDays))
+          Some(TimeboxReviewStats.workDaysProgress(memberTasks, today, workDays)),
+          None
         )
       }
     div(
       cls("flex flex-col gap-4"),
-      row("Total", tasks, statuses, Some(days), Some(TimeboxReviewStats.workDaysProgress(tasks, today, workDays))),
+      row(
+        "Total",
+        tasks,
+        statuses,
+        Some(days),
+        Some(TimeboxReviewStats.workDaysProgress(tasks, today, workDays)),
+        Some(MilestoneEstimation.estimate(tasks, today, dueDate, workDays))
+      ),
       memberRows
     )
   }

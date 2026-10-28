@@ -239,7 +239,7 @@ class MilestoneReviewComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(MilestoneTaskRows(tasks, statuses, days, tgClock.currentDate(), workDays))
+        body = TgCard.HtmlCardContent(MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays))
       )
       .element
       .amend(cls("w-full mb-4"))
