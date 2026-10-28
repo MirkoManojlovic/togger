@@ -4,8 +4,8 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -177,7 +177,7 @@ class CreateProjectComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Project description",
-    minWidthRem = 0
+    placeholderValue = "Describe the project"
   )
 
   private val iconInput = formState.tgEmojiPicker(
@@ -215,7 +215,7 @@ class CreateProjectComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               child <-- projectLabelsVar.signal.map(projectLabelSelectElement).map(_.amend(cls("mb-4"))),

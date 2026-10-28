@@ -178,7 +178,7 @@ class EditProjectComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Project description",
-    minWidthRem = 0
+    placeholderValue = "Describe the project"
   )
 
   private val iconInput = formState.tgEmojiPicker(
@@ -234,7 +234,7 @@ class EditProjectComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> updateSubmitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               workDaysSelect.htmlElement.amend(cls("mb-4")),
