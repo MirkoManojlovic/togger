@@ -8,8 +8,6 @@ import com.togger.dto.{FindMilestoneSummaryResp, FindTgAiActionResp}
 import com.togger.ui.auth.TgSelect
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.organization.TgIcons
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonDangerCls}
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLFormElement
 
@@ -58,6 +56,9 @@ class MilestoneSummaryFormComponent(
   workDays: Signal[Set[DayOfWeek]] = Val(Set.empty)
 ) {
   val formState = Var(initial)
+
+  /** Whether a saved summary shows its form instead of its rendered text. */
+  val editingVar = Var(false)
 
   /** Whether the AI is writing the summary into the editor, which can take a while on a local model. */
   val aiSummaryState = Var[AiSummaryState](AiSummaryState.Idle)
@@ -184,11 +185,13 @@ class MilestoneSummaryFormComponent(
   private val isSaved: Signal[Boolean] = formState.signal.map(_.id.isDefined).distinct
 
   private val deleteButton: HtmlElement =
-    iconButton(
-      "Delete summary",
-      TgIcons.trashIcon(className = "w-4 h-4"),
-      rowIconButtonDangerCls,
-      rowButtonMarginCls,
+    button(
+      typ("button"),
+      cls(
+        "text-white bg-red-600 hover:bg-red-700 box-border border border-transparent focus:ring-4 " +
+          "focus:ring-red-300 shadow-xs font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
+      ),
+      "Delete",
       onClick.mapToUnit --> (_ => onRemove(this))
     )
 
@@ -228,8 +231,7 @@ class MilestoneSummaryFormComponent(
           cls("min-w-0"),
           div(
             cls("mb-2 flex flex-wrap items-center gap-1.5"),
-            dateBadges.element,
-            div(cls("ml-auto"), child.maybe <-- isSaved.map(Option.when(_)(deleteButton)))
+            dateBadges.element
           ),
           div(
             cls("flex flex-col gap-1.5"),
@@ -250,6 +252,7 @@ class MilestoneSummaryFormComponent(
         cls("flex items-center justify-end gap-2"),
         aiSummaryIndicator,
         child.maybe <-- isSaved.map(saved => Option.when(!saved && aiActions.isEmpty)(aiSummaryButton)),
+        child.maybe <-- isSaved.map(Option.when(_)(deleteButton)),
         child <-- isSaved.map(saved =>
           if (saved) TgHtmlButton.updateSmall(EventStream.fromValue(false))
           else TgHtmlButton.createSmall(EventStream.fromValue(false))

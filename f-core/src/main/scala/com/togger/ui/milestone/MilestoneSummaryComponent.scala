@@ -149,7 +149,7 @@ class MilestoneSummaryComponent(
             .runWithSpinner(
               milestoneSummaryService.updateMilestoneSummary(UpdateMilestoneSummaryReq(id, component.textToSave, startDate, endDate))
             )
-            .toastMessageDto(_ => "Summary updated successfully")(_ => IO.unit)
+            .toastMessageDto(_ => "Summary updated successfully")(_ => IO(component.editingVar.set(false)))
         case None =>
           spinnerService
             .runWithSpinner(
@@ -375,8 +375,53 @@ class MilestoneSummaryComponent(
       )
       .element
 
+  private def summaryToggleButton(component: MilestoneSummaryFormComponent, name: String, icon: SvgElement) =
+    button(
+      typ("button"),
+      cls(
+        "text-fg-brand bg-neutral-primary border border-brand hover:bg-brand hover:text-white " +
+          "focus:ring-4 focus:ring-brand-subtle rounded-full w-6 h-6 inline-flex items-center justify-center focus:outline-none"
+      ),
+      aria.label(name),
+      title(name),
+      icon,
+      onClick.mapToUnit --> (_ => component.editingVar.update(!_))
+    )
+
   private def previousSummaryRow(component: MilestoneSummaryFormComponent): HtmlElement =
-    component.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+    div(
+      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
+      child <-- component.editingVar.signal.map { editing =>
+        if (editing)
+          div(
+            div(cls("flex justify-end mb-2"), summaryToggleButton(component, "Show", TgIcons.eyeIcon("w-3 h-3"))),
+            component.htmlElement
+          )
+        else
+          div(
+            div(
+              cls("mb-2 flex items-start justify-between gap-2"),
+              child <-- component.formState.signal.map(form =>
+                TgBadge(
+                  text = s"${form.startDate} - ${form.endDate}",
+                  bordered = true,
+                  color = TgBadgeColor.Gray
+                ).element
+              ),
+              summaryToggleButton(component, "Edit", TgIcons.editIcon("w-3 h-3"))
+            ),
+            div(
+              cls("mb-4"),
+              MilestoneSummaryRangeCalendar.element(
+                component.formState.signal.map(form => form.startDate -> form.endDate).distinct,
+                workDaysVar.signal,
+                (_, _) => ()
+              )
+            ),
+            div(child <-- component.formState.signal.map(form => tgMarkdown.toLaminarDiv(form.summary)))
+          )
+      }
+    )
 
   private lazy val previousSummariesCard: HtmlElement =
     TgCard
