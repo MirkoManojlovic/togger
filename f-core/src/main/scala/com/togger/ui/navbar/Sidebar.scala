@@ -276,6 +276,8 @@ class Sidebar(
 
   private val organizationState: Var[Seq[OrganizationWithProjects]] = Var(Seq.empty)
 
+  private val organizationsLoaded: Var[Boolean] = Var(false)
+
   val organizations: Signal[Seq[OrganizationWithProjects]] = organizationState.signal
 
   // The sidebar lists every organization with all of its projects, read page by page.
@@ -285,10 +287,29 @@ class Sidebar(
       .map(
         _.fold(
           error => println(error),
-          success => organizationState.set(success.body.get)
+          success => {
+            organizationState.set(success.body.get)
+            organizationsLoaded.set(true)
+          }
         )
       )
       .unsafeRunAndForget()
+
+  private def createOrganizationLink =
+    li(
+      a(
+        cls(Sidebar.sideBarLinkStyle),
+        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
+        title("Create new organization"),
+        TgIcons.plusIcon("w-5 h-5 shrink-0"),
+        span(
+          cls("ms-2 whitespace-nowrap"),
+          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+          "Create new organization"
+        ),
+        router.navigateTo(CreateOrganizationPage)
+      )
+    )
 
   reloadOrganizations()
 
@@ -323,8 +344,11 @@ class Sidebar(
           ),
           ul(
             cls("space-y-2 font-medium"),
-            children <-- organizationState.signal.combineWith(router.currentPageSignal).map {
-              case (organizations, page) =>
+            children <-- organizationState.signal
+              .combineWith(router.currentPageSignal, organizationsLoaded.signal)
+              .map {
+              case (organizations, _, true) if organizations.isEmpty => Seq(createOrganizationLink)
+              case (organizations, page, _) =>
                 organizations
                   .sortBy(_.name)
                   .flatMap {
