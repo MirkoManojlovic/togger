@@ -19,6 +19,7 @@ import java.util.UUID
 case class MilestoneSummaryForm(
   id: Option[UUID] = None,
   summary: String = "",
+  aiSummary: String = "",
   startDate: String = "",
   endDate: String = ""
 )
@@ -66,7 +67,7 @@ class MilestoneSummaryFormComponent(
   )
 
   private val aiSummaryEditor = formState.wysiwygSplitEditorSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.summary),
+    inputAndUpdater = selectorAndUpdaterMacro(_.aiSummary),
     labelValue = "Summary",
     placeholderValue = "Summarize the period, or pick an AI action",
     minHeightRem = 18,
@@ -74,6 +75,11 @@ class MilestoneSummaryFormComponent(
   )
 
   private val selectedTabVar = Var(MilestoneSummaryFormComponent.SummaryTabId)
+
+  /** The text of the tab being shown, which is the one that gets saved. */
+  def textToSave: String =
+    if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId) formState.now().aiSummary
+    else formState.now().summary
 
   private def aiActionButton(action: FindTgAiActionResp): HtmlElement =
     button(
@@ -190,7 +196,7 @@ class MilestoneSummaryFormComponent(
       div(
         cls("flex items-center justify-end gap-2"),
         aiSummaryIndicator,
-        child.maybe <-- isSaved.map(saved => Option.when(!saved)(aiSummaryButton)),
+        child.maybe <-- isSaved.map(saved => Option.when(!saved && aiActions.isEmpty)(aiSummaryButton)),
         child <-- isSaved.map(saved =>
           if (saved) TgHtmlButton.updateSmall(EventStream.fromValue(false))
           else TgHtmlButton.createSmall(EventStream.fromValue(false))

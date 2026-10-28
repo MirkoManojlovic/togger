@@ -108,7 +108,7 @@ class MilestoneSummaryComponent(
     val form = component.formState.now()
     if (form.startDate.isEmpty || form.endDate.isEmpty) toast.error("Choose the start and end date of the summary")
     else {
-      component.formState.update(_.copy(summary = ""))
+      component.formState.update(_.copy(aiSummary = ""))
       component.aiSummaryState.set(AiSummaryState.Streaming)
       milestoneSummaryService
         .summariseWithAi(
@@ -116,7 +116,7 @@ class MilestoneSummaryComponent(
             MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
           )(MilestoneSummaryAi.request(_, milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate)))
         ) {
-          case AiSummaryEvent.Chunk(text) => component.formState.update(f => f.copy(summary = f.summary + text))
+          case AiSummaryEvent.Chunk(text) => component.formState.update(f => f.copy(aiSummary = f.aiSummary + text))
           case AiSummaryEvent.Done        => component.aiSummaryState.set(AiSummaryState.Finished)
           case AiSummaryEvent.Failed(message) =>
             component.aiSummaryState.set(AiSummaryState.Idle)
@@ -137,14 +137,14 @@ class MilestoneSummaryComponent(
         case Some(id) =>
           spinnerService
             .runWithSpinner(
-              milestoneSummaryService.updateMilestoneSummary(UpdateMilestoneSummaryReq(id, form.summary, startDate, endDate))
+              milestoneSummaryService.updateMilestoneSummary(UpdateMilestoneSummaryReq(id, component.textToSave, startDate, endDate))
             )
             .toastMessageDto(_ => "Summary updated successfully")(_ => IO.unit)
         case None =>
           spinnerService
             .runWithSpinner(
               milestoneSummaryService.createMilestoneSummary(
-                CreateMilestoneSummaryReq(milestoneId, form.summary, startDate, endDate)
+                CreateMilestoneSummaryReq(milestoneId, component.textToSave, startDate, endDate)
               )
             )
             .toastMessageDto(_ => "Summary created successfully")(created =>
