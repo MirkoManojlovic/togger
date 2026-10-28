@@ -37,12 +37,13 @@ class MilestoneAiSummaryService(
 
   type Result[A] = Either[TgError, A]
 
-  def summarise(accountId: UUID, command: MilestoneAiSummaryCommand): IO[Result[String]] =
+  /** Everything that can be checked up front fails here; the stream carries the pieces of the summary as written. */
+  def summariseStream(accountId: UUID, command: MilestoneAiSummaryCommand): IO[Result[fs2.Stream[IO, TgAiChunk]]] =
     (for {
       entries <- EitherT(findLogEntries(command))
       storedPrompt <- EitherT(findStoredPrompt(accountId, command.promptId))
-      result <- EitherT(chat(accountId, command, buildPrompt(storedPrompt, command.summarizePrompt, entries)))
-    } yield result.text).value
+      stream <- EitherT(chatStream(accountId, command, buildPrompt(storedPrompt, command.summarizePrompt, entries)))
+    } yield stream).value
 
   private def findLogEntries(command: MilestoneAiSummaryCommand): IO[Result[List[LogEntryAiDto]]] =
     logEntryRepo
@@ -61,9 +62,13 @@ class MilestoneAiSummaryService(
         tgPromptService.findById(accountId, id).map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
     }
 
-  private def chat(accountId: UUID, command: MilestoneAiSummaryCommand, prompt: String): IO[Result[TgAiChatResult]] =
+  private def chatStream(
+    accountId: UUID,
+    command: MilestoneAiSummaryCommand,
+    prompt: String
+  ): IO[Result[fs2.Stream[IO, TgAiChunk]]] =
     tgAiService
-      .chat(accountId, TgAiChatRequest(command.model, List(TgAiMessage.User(prompt))))
+      .chatStream(accountId, TgAiChatRequest(command.model, List(TgAiMessage.User(prompt))))
       .map(_.leftMap(e => e: TgError))
 
   private def buildPrompt(storedPrompt: Option[String], summarizePrompt: String, entries: List[LogEntryAiDto]): String =

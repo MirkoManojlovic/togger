@@ -7,7 +7,7 @@ import com.togger.controllers.account.AccountController
 import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
-import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneAiSummaryStreamEndpoints, MilestoneController, MilestoneDateController, MilestoneSummaryController}
 import com.togger.controllers.tgprompt.TgPromptController
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
@@ -398,7 +398,7 @@ class DependenciesModule(
   lazy val tgAiApiKeyProvider = new TgStaticApiKeyProvider(TgOllama.ApiKey)
   lazy val tgAiService = new TgAiService(tgAiClient, tgAiApiKeyProvider)
 
-  lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryEndpoints(securedEndpoint)
+  lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryStreamEndpoints(securedEndpoint)
   lazy val milestoneAiSummaryService =
     new MilestoneAiSummaryService(logEntryRepo, tgPromptService, tgAiService, transactor)
   lazy val milestoneAiSummaryController = new MilestoneAiSummaryController(

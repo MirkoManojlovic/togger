@@ -64,7 +64,7 @@ class MilestoneAiSummaryControllerTest extends AnyWordSpec with Matchers {
   private val controller = {
     val transactor = new MockedTransactor {}.transactorMock
     new MilestoneAiSummaryController(
-      new MilestoneAiSummaryEndpoints(new SecuredEndpoint(securityLogic)),
+      new MilestoneAiSummaryStreamEndpoints(new SecuredEndpoint(securityLogic)),
       new MilestoneAiSummaryService(null, null, new TgAiService(null, null), transactor),
       new MilestoneService(new StubMilestoneRepo, null, transactor),
       new DateRangeValidation,

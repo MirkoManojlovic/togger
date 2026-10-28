@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.ai._
+import com.togger.common.TgError
 import com.togger.logentry._
 import com.togger.tgprompt.TgPromptError.TgPromptNotFound
 import com.togger.tgprompt.{TgPrompt, TgPromptFull, TgPromptService, TgPromptVersion}
@@ -44,12 +45,18 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
     s"""[{"logEntryId":"$logEntryId","taskId":"$taskId","status":"Completed","textInternal":"internal",""" +
       s""""textExternal":"external","createdAt":"$at","updatedAt":"$at"}]"""
 
-  private class CapturingAiService(reply: Either[TgAiError.TgAiError, TgAiChatResult])
+  private class CapturingAiService(reply: Either[TgAiError.TgAiError, List[String]])
       extends TgAiService(null, null) {
     val request = new AtomicReference[TgAiChatRequest]()
-    override def chat(accountId: UUID, request: TgAiChatRequest): IO[Result[TgAiChatResult]] =
-      IO { this.request.set(request); reply }
+    override def chatStream(accountId: UUID, request: TgAiChatRequest): IO[Result[fs2.Stream[IO, TgAiChunk]]] =
+      IO { this.request.set(request); reply.map(pieces => fs2.Stream.emits(pieces.map(TgAiChunk(_))).covary[IO]) }
   }
+
+  private def summarise(service: MilestoneAiSummaryService, command: MilestoneAiSummaryCommand) =
+    service.summariseStream(accountId, command).flatMap {
+      case Right(stream) => stream.compile.toList.map(_.map(_.delta).mkString.asRight[TgError])
+      case Left(error)   => IO.pure(error.asLeft[String])
+    }
 
   private def promptService(reply: Either[com.togger.tgprompt.TgPromptError.TgPromptError, TgPromptFull]) =
     new TgPromptService(null, null, transactor) {
@@ -67,10 +74,10 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
   private val unusedPromptService = promptService(Left(TgPromptNotFound))
 
   "MilestoneAiSummaryService" should {
-    "send summarize prompt followed by the entries as compact json, and return the summary" in {
-      val ai = new CapturingAiService(TgAiChatResult("the summary", None).asRight)
+    "send summarize prompt followed by the entries as compact json, and stream the summary" in {
+      val ai = new CapturingAiService(List("the ", "summary").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
-      service.summarise(accountId, command).map { result =>
+      summarise(service, command).map { result =>
         (result, ai.request.get()) shouldBe (
           "the summary".asRight,
           TgAiChatRequest(
@@ -87,35 +94,35 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
         TgPrompt(promptId, accountId, at),
         TgPromptVersion(UUID.randomUUID(), promptId, "title", "You are a PM.", at)
       )
-      val ai = new CapturingAiService(TgAiChatResult("ok", None).asRight)
+      val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), promptService(full.asRight), ai, transactor)
-      service.summarise(accountId, command.copy(promptId = Some(promptId))).map { _ =>
+      summarise(service, command.copy(promptId = Some(promptId))).map { _ =>
         ai.request.get().messages shouldBe
           List(TgAiMessage.User(s"You are a PM.\n\nSummarise the work.\n\n$expectedEntryJson"))
       }.unsafeToFuture()
     }
 
     "fail when the stored prompt is not found, without calling the ai" in {
-      val ai = new CapturingAiService(TgAiChatResult("ok", None).asRight)
+      val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
-      service.summarise(accountId, command.copy(promptId = Some(UUID.randomUUID()))).map { result =>
+      summarise(service, command.copy(promptId = Some(UUID.randomUUID()))).map { result =>
         (result, Option(ai.request.get())) shouldBe (TgPromptNotFound.asLeft, None)
       }.unsafeToFuture()
     }
 
     "fail without calling the ai when there are no log entries" in {
-      val ai = new CapturingAiService(TgAiChatResult("ok", None).asRight)
+      val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(Nil), unusedPromptService, ai, transactor)
-      service.summarise(accountId, command).map { result =>
+      summarise(service, command).map { result =>
         (result, Option(ai.request.get())) shouldBe (NoLogEntriesInRange.asLeft, None)
       }.unsafeToFuture()
     }
 
     "fail when there are more log entries than the limit" in {
-      val ai = new CapturingAiService(TgAiChatResult("ok", None).asRight)
+      val ai = new CapturingAiService(List("ok").asRight)
       val tooMany = List.fill(MilestoneAiSummaryService.MAX_LOG_ENTRIES + 1)(entry)
       val service = new MilestoneAiSummaryService(repoReturning(tooMany), unusedPromptService, ai, transactor)
-      service.summarise(accountId, command).map { result =>
+      summarise(service, command).map { result =>
         (result, Option(ai.request.get())) shouldBe (TooManyLogEntries(MilestoneAiSummaryService.MAX_LOG_ENTRIES).asLeft, None)
       }.unsafeToFuture()
     }
@@ -123,7 +130,7 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
     "pass through ai errors" in {
       val ai = new CapturingAiService(TgAiError.TgAiApiKeyMissing.asLeft)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
-      service.summarise(accountId, command).map(_ shouldBe TgAiError.TgAiApiKeyMissing.asLeft).unsafeToFuture()
+      summarise(service, command).map(_ shouldBe TgAiError.TgAiApiKeyMissing.asLeft).unsafeToFuture()
     }
   }
 }

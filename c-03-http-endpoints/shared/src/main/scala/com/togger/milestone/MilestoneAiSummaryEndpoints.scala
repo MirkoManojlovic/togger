@@ -1,21 +1,17 @@
 package com.togger.milestone
 
-import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.TgSecuredEndpoint
-import com.togger.common.TgJsonSuccess
-import com.togger.dto.{SummariseMilestoneWithAiReq, SummariseMilestoneWithAiResp}
-import io.circe.generic.auto._
-import sttp.tapir._
-import sttp.tapir.generic.auto._
-import sttp.tapir.json.circe.jsonBody
+/** The streamed summary is a server-sent events response, so the backend declares its endpoint; this is what the
+  * frontend, which reads the stream itself, shares with it.
+  */
+object MilestoneAiSummaryStreamContract {
+  val PathSegments: List[String] = List("milestone-ai-summary", "stream")
 
-class MilestoneAiSummaryEndpoints(securedEndpoint: SecuredEndpoint) {
+  /** The data of a chunk event is a JSON string with the next piece of the summary. */
+  val ChunkEvent = "chunk"
 
-  private val basePath: EndpointInput[Unit] = "milestone-ai-summary"
+  /** The summary is complete; the data is empty. */
+  val DoneEvent = "done"
 
-  val summariseEndpoint: TgSecuredEndpoint[SummariseMilestoneWithAiReq, SummariseMilestoneWithAiResp] =
-    securedEndpoint.endpoint.post
-      .in(basePath)
-      .in(jsonBody[SummariseMilestoneWithAiReq])
-      .out(jsonBody[TgJsonSuccess[SummariseMilestoneWithAiResp]])
+  /** The stream broke off; the data is a message for the user. */
+  val ErrorEvent = "error"
 }
