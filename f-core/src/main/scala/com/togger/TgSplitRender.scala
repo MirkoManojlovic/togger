@@ -200,6 +200,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
   lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
+  lazy val changeAccountInfoService =
+    new ChangeAccountInfoService(baseEndpoint, securedEndpoint, protectedBackendClient, loginRepo)
 
   lazy val tgClock = new TgClockImpl
   lazy val tgDateFormater = new TgDateFormater
@@ -261,6 +263,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case LoginPage => new LoginComponent(router, loginService, spinnerService).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService).element
+              case ChangeAccountInfoPage =>
+                new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>

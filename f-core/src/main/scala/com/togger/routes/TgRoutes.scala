@@ -54,6 +54,10 @@ class TgRoutes {
         root / "change-password"
       ),
       Route.static(
+        ChangeAccountInfoPage,
+        root / "account-info"
+      ),
+      Route.static(
         ApexChartDemoPage,
         root / "chart-demo"
       ),

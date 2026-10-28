@@ -2,7 +2,7 @@ package com.togger.ui.auth
 
 import com.togger.auth.AuthAccountFe
 import com.togger.auth.UserRole.NoPermissionsUserRole
-import com.togger.dto.login.LoginResponseDto
+import com.togger.dto.login.{AccountInfoDto, LoginResponseDto}
 import com.togger.logging.TgLogging
 import com.togger.ui.localstorage.LocalStorage
 import com.raquo.airstream.core.Signal
@@ -41,6 +41,14 @@ class LoginRepo(
     localStorage.setItem(accessTokenKey, authAccount.asJson.noSpaces)
     userAuthState.set(Some(authAccount))
   }
+
+  def updateInfo(dto: AccountInfoDto): Unit =
+    account.foreach { current =>
+      val updated =
+        current.copy(firstName = Some(dto.firstName), lastName = Some(dto.lastName), email = Some(dto.email))
+      localStorage.setItem(accessTokenKey, updated.asJson.noSpaces)
+      userAuthState.set(Some(updated))
+    }
 
   def delete(): Unit = {
     localStorage

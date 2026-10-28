@@ -121,6 +121,15 @@ class NavbarComponent(
       onNavigate = () => userMenuOpen.set(false)
     )
 
+  private val accountInfoMenuLink =
+    MenuLink(
+      "Account Information",
+      router.navigateTo(ChangeAccountInfoPage),
+      linkClass = NavbarComponent.dropdownItemClass,
+      selectedClass = NavbarComponent.dropdownItemSelectedClass,
+      onNavigate = () => userMenuOpen.set(false)
+    )
+
   private val logoutElement =
     li(
       logout.logoutButton.amend(
@@ -132,6 +141,7 @@ class NavbarComponent(
   case class NavbarItems(
     organization: ReactiveHtmlElement[HTMLLIElement],
     settings: ReactiveHtmlElement[HTMLLIElement],
+    accountInfo: ReactiveHtmlElement[HTMLLIElement],
     changePassword: ReactiveHtmlElement[HTMLLIElement],
     logout: ReactiveHtmlElement[HTMLLIElement]
   ) {
@@ -139,6 +149,7 @@ class NavbarComponent(
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
         case ChangePasswordPage => NavbarItems.changePasswordSelected
+        case ChangeAccountInfoPage => NavbarItems.accountInfoSelected
         case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
             CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.organizationSelected
@@ -154,9 +165,13 @@ class NavbarComponent(
       NavbarItems(
         organization = organizationMenuLink.deselected,
         settings = settingsMenuItem(selected = false),
+        accountInfo = accountInfoMenuLink.deselected,
         changePassword = passwordMenuLink.deselected,
         logout = logoutElement
       )
+
+    lazy val accountInfoSelected: NavbarItems =
+      NavbarItems.allDeselected.copy(accountInfo = accountInfoMenuLink.selected)
 
     lazy val changePasswordSelected: NavbarItems =
       NavbarItems.allDeselected.copy(changePassword = passwordMenuLink.selected)
@@ -280,7 +295,7 @@ class NavbarComponent(
         cls("p-2 text-sm text-body font-medium"),
         children <-- router.currentPageSignal.map { page =>
           val items = NavbarItems.allDeselected.selectItem(page)
-          Seq(items.changePassword, items.logout)
+          Seq(items.accountInfo, items.changePassword, items.logout)
         }
       )
     )
