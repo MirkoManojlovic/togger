@@ -37,6 +37,9 @@ object TgBreadcrumbTrail {
   private def underPromptTemplates(label: String) =
     underOrganizations(link("Prompt templates", ShowAllTgPromptTemplatesPage()), current(label))
 
+  private def underAiActions(label: String) =
+    underOrganizations(link("AI actions", ShowAllTgAiActionsPage()), current(label))
+
   private def underCategories(label: String) =
     underOrganizations(link("Project label categories", ShowAllProjectLabelCategoriesPage()), current(label))
 
@@ -83,6 +86,10 @@ object TgBreadcrumbTrail {
     case ShowAllTgPromptTemplatesPage(_) => underOrganizations(current("Prompt templates"))
     case CreateTgPromptTemplatePage      => underPromptTemplates("Create prompt template")
     case EditTgPromptTemplatePage(_)     => underPromptTemplates("Edit prompt template")
+    case ShowAllTgAiActionsPage(_)       => underOrganizations(current("AI actions"))
+    case CreateTgAiActionPage            => underAiActions("Create AI action")
+    case EditTgAiActionPage(_)           => underAiActions("Edit AI action")
+    case TgAiActionDefaultsPage          => underAiActions("Default actions per project")
 
     case ShowAllProjectLabelsPage(_)       => underOrganizations(current("Project labels"))
     case CreateProjectLabelPage            => underProjectLabels("Create project label")

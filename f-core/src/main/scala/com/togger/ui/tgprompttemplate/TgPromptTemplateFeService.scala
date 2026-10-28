@@ -23,6 +23,9 @@ class TgPromptTemplateFeService(securedEndpoint: SecuredEndpoint, protectedBacke
   def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgPromptTemplateResp]] =
     protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findAllEndpoint)(page)
 
+  /** Every prompt template, for the pickers; see [[PaginatedLoader]] for the bound. */
+  def findAllTemplates: TgRespIO[Seq[FindTgPromptTemplateResp]] = PaginatedLoader.loadAll(findAll)
+
   def findTgPromptTemplateById(id: UUID): TgRespIO[FindTgPromptTemplateResp] =
     protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findByIdEndpoint)(id)
 

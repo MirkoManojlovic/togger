@@ -259,6 +259,24 @@ class TgRoutes {
         pattern = root / "settings" / "prompt-template" / "edit" / segment[String] / endOfSegments
       ),
       Route.static(
+        CreateTgAiActionPage,
+        root / "settings" / "ai-action" / "create"
+      ),
+      Route.static(
+        TgAiActionDefaultsPage,
+        root / "settings" / "ai-action" / "defaults"
+      ),
+      Route.withQuery[ShowAllTgAiActionsPage, Unit, ListQuery](
+        encode = (page: ShowAllTgAiActionsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllTgAiActionsPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "ai-action" / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: EditTgAiActionPage) => page.id.toString,
+        decode = (id: String) => EditTgAiActionPage(UUID.fromString(id)),
+        pattern = root / "settings" / "ai-action" / "edit" / segment[String] / endOfSegments
+      ),
+      Route.static(
         CreateProjectLabelCategoryPage,
         root / "settings" / "project-label-category" / "create"
       ),

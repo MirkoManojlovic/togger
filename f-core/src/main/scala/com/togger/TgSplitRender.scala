@@ -28,6 +28,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.syncconfig._
 import com.togger.ui.tasktemplate._
+import com.togger.ui.tgaiaction._
 import com.togger.ui.tgprompttemplate._
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
@@ -186,6 +187,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
   lazy val tgPromptTemplateService = new TgPromptTemplateFeService(securedEndpoint, protectedBackendClient)
+  lazy val tgAiActionService = new TgAiActionFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelService = new ProjectLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
   lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
@@ -590,6 +592,36 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgDateFormater,
                   modalFactory,
                   tgPromptTemplateId,
+                  toast
+                ).element
+              case CreateTgAiActionPage =>
+                new CreateTgAiActionComponent(tgAiActionService, tgPromptTemplateService, spinnerService, toast).element
+              case ShowAllTgAiActionsPage(listParams) =>
+                new ShowAllTgAiActionsComponent(
+                  tgAiActionService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  listParams,
+                  toast
+                ).element
+              case EditTgAiActionPage(tgAiActionId) =>
+                new EditTgAiActionComponent(
+                  tgAiActionService,
+                  tgPromptTemplateService,
+                  router,
+                  spinnerService,
+                  modalFactory,
+                  tgAiActionId,
+                  toast
+                ).element
+              case TgAiActionDefaultsPage =>
+                new TgAiActionDefaultsComponent(
+                  tgAiActionService,
+                  organizationProjectsLoader,
+                  accountService,
+                  spinnerService,
                   toast
                 ).element
               case CreateProjectLabelCategoryPage =>

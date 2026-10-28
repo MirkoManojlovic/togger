@@ -91,6 +91,14 @@ object Pages {
 
   case class EditTgPromptTemplatePage(id: UUID) extends PrivatePage
 
+  case object CreateTgAiActionPage extends PrivatePage
+
+  case class ShowAllTgAiActionsPage(list: ListParams = ListParams.default) extends PrivatePage
+
+  case class EditTgAiActionPage(id: UUID) extends PrivatePage
+
+  case object TgAiActionDefaultsPage extends PrivatePage
+
   case object CreateProjectLabelCategoryPage extends PrivatePage
 
   case class ShowAllProjectLabelCategoriesPage(list: ListParams = ListParams.default) extends PrivatePage

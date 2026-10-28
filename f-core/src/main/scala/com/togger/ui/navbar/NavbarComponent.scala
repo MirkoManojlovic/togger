@@ -98,7 +98,11 @@ class NavbarComponent(
       onMountBind(_ => documentEvents(_.onKeyDown).filter(_.key == "Escape").mapToUnit --> closeSettingsMenu),
       ul(
         cls("p-2 text-sm text-body font-medium"),
-        Seq("Import / export check" -> SyncCheckSettingsPage, "Prompt templates" -> ShowAllTgPromptTemplatesPage()).map {
+        Seq(
+          "Import / export check" -> SyncCheckSettingsPage,
+          "Prompt templates" -> ShowAllTgPromptTemplatesPage(),
+          "AI actions" -> ShowAllTgAiActionsPage()
+        ).map {
           case (label, page) =>
             li(
               a(
@@ -153,7 +157,9 @@ class NavbarComponent(
         case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
             CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.organizationSelected
-        case SyncCheckSettingsPage | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) | EditTgPromptTemplatePage(_) =>
+        case SyncCheckSettingsPage | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) |
+            EditTgPromptTemplatePage(_) | CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) |
+            TgAiActionDefaultsPage =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }
