@@ -1768,3 +1768,156 @@ databaseChangeLog:
                     nullable: false
                     unique: true
                     uniqueConstraintName: uq_ai_endpoints_name
+  - changeSet:
+      id: 14
+      author: mirko
+      labels: tg-ai-action
+      comment: Account-scoped, unversioned AI actions
+      changes:
+        - createTable:
+            tableName: tg_ai_action
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_created_by_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tg_prompt_template_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: model
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: tg_ai_action
+            baseColumnNames: tg_prompt_template_id
+            constraintName: fk_tg_ai_action_tg_prompt_template
+            referencedTableName: tg_prompt_template
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addUniqueConstraint:
+            tableName: tg_ai_action
+            columnNames: created_by, name
+            constraintName: uq_tg_ai_action_created_by_name
+        - createIndex:
+            indexName: idx_tg_ai_action_tg_prompt_template_id
+            tableName: tg_ai_action
+            columns:
+              - column:
+                  name: tg_prompt_template_id
+  - changeSet:
+      id: 15
+      author: mirko
+      labels: tg-ai-action
+      comment: Binding of AI actions to AI endpoints
+      changes:
+        - createTable:
+            tableName: tg_ai_action_endpoint
+            columns:
+              - column:
+                  name: tg_ai_action_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_endpoint_tg_ai_action
+                    references: tg_ai_action(id)
+                    deleteCascade: true
+              - column:
+                  name: ai_endpoint_id
+                  type: integer
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_endpoint_ai_endpoints
+                    references: ai_endpoints(id)
+        - addPrimaryKey:
+            tableName: tg_ai_action_endpoint
+            columnNames: tg_ai_action_id, ai_endpoint_id
+            constraintName: pk_tg_ai_action_endpoint
+  - changeSet:
+      id: 16
+      author: mirko
+      labels: tg-ai-action
+      comment: Default AI action of a member per project and AI endpoint
+      changes:
+        - createTable:
+            tableName: tg_ai_action_default
+            columns:
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_default_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_default_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: ai_endpoint_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tg_ai_action_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: tg_ai_action_default
+            columnNames: account_id, project_id, ai_endpoint_id
+            constraintName: pk_tg_ai_action_default
+        - addForeignKeyConstraint:
+            baseTableName: tg_ai_action_default
+            baseColumnNames: tg_ai_action_id, ai_endpoint_id
+            constraintName: fk_tg_ai_action_default_binding
+            referencedTableName: tg_ai_action_endpoint
+            referencedColumnNames: tg_ai_action_id, ai_endpoint_id
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_tg_ai_action_default_project_id
+            tableName: tg_ai_action_default
+            columns:
+              - column:
+                  name: project_id
