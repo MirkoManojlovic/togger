@@ -73,6 +73,9 @@ class DataExportStatusServiceTest extends ExportImportTestSupport {
       } yield {
         statusOf(result, DataExportEntityType.Task, taskId).status shouldBe DataExportSyncStatus.OutOfSync
         statusOf(result, DataExportEntityType.Task, taskId).differences should not be empty
+        val fieldDiffs = statusOf(result, DataExportEntityType.Task, taskId).fieldDiffs
+        fieldDiffs.exists(_.database.contains("Renamed after export")) shouldBe true
+        fieldDiffs.forall(d => d.disk != d.database) shouldBe true
       }
     }
 

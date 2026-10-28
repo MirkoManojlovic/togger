@@ -16,12 +16,16 @@ object DataExportSyncStatusResp extends Enum[DataExportSyncStatusResp] {
   case object Malformed extends DataExportSyncStatusResp
 }
 
+/** A field that differs between the disk and the database; `None` when the field is absent on that side. */
+case class DataExportFieldDiffResp(field: String, disk: Option[String], database: Option[String])
+
 case class DataExportEntityStatusResp(
   entityType: DataExportEntityTypeResp,
   entityId: UUID,
   entityName: Option[String],
   status: DataExportSyncStatusResp,
-  differences: List[String]
+  differences: List[String],
+  fieldDiffs: List[DataExportFieldDiffResp] = Nil
 )
 
 case class DataExportPathStatusResp(

@@ -158,7 +158,11 @@ class DataExportService(
       case _                      => false
     }
     if (entityStatus.status == DataExportSyncStatus.OutOfSync && diskIsOlder)
-      entityStatus.copy(status = DataExportSyncStatus.InSync, differences = List("database is newer than the disk"))
+      entityStatus.copy(
+        status = DataExportSyncStatus.InSync,
+        differences = List("database is newer than the disk"),
+        fieldDiffs = Nil
+      )
     else entityStatus
   }
 
@@ -198,7 +202,7 @@ class DataExportService(
           val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
             val entity = db(id)
             if (indexed(id).hash != entity.hash)
-              status(entityType, id, entity.name, DataExportSyncStatus.OutOfSync, List("content differs"))
+              outOfSyncStatus(folderPath, index, entity)
             else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
               status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
             else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
@@ -214,13 +218,36 @@ class DataExportService(
     }
   }
 
+  /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. */
+  private def outOfSyncStatus(folderPath: String, index: ExportIndex, entity: ExportEntity): DataExportEntityStatus =
+    dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, entity.id) match {
+      case Right(diskJson) =>
+        status(
+          entity.entityType,
+          entity.id,
+          entity.name,
+          DataExportSyncStatus.OutOfSync,
+          List("content differs"),
+          ExportJsonDiff.diff(diskJson, entity.json)
+        )
+      case Left(error) =>
+        status(
+          entity.entityType,
+          entity.id,
+          entity.name,
+          DataExportSyncStatus.OutOfSync,
+          List("content differs", s"cannot compare: $error")
+        )
+    }
+
   private def status(
     entityType: DataExportEntityType,
     id: UUID,
     name: Option[String],
     syncStatus: DataExportSyncStatus,
-    differences: List[String] = Nil
-  ) = DataExportEntityStatus(entityType, id, name, syncStatus, differences)
+    differences: List[String] = Nil,
+    fieldDiffs: List[ExportFieldDiff] = Nil
+  ) = DataExportEntityStatus(entityType, id, name, syncStatus, differences, fieldDiffs)
 
   private def getExportData(projectId: UUID, accountId: UUID): ConnectionIO[Either[ProjectError, ExportData]] =
     dataExportRepo.isAssigned(projectId, accountId).flatMap { assigned =>

@@ -4,7 +4,12 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.PageRequest
-import com.togger.dto.{DataExportEntityStatusResp, DataExportPathStatusResp, DataExportSyncStatusResp}
+import com.togger.dto.{
+  DataExportEntityStatusResp,
+  DataExportFieldDiffResp,
+  DataExportPathStatusResp,
+  DataExportSyncStatusResp
+}
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
 import com.togger.ui.components.pagination.PaginationState
@@ -93,6 +98,51 @@ object TaskConfigTableSupport {
 
   private val CopiedMessageMillis = 2000.0
 
+  private def expandButton(expandedVar: Var[Boolean]) =
+    button(
+      typ("button"),
+      cls("text-body hover:text-fg-brand focus:outline-none focus:ring-2 focus:ring-brand rounded-base"),
+      title <-- expandedVar.signal.map(if (_) "Hide the differences" else "Show the differences"),
+      aria.expanded <-- expandedVar.signal,
+      child <-- expandedVar.signal.map { expanded =>
+        if (expanded) TgIcons.chevronDownIcon("w-4 h-4") else TgIcons.chevronRightIcon("w-4 h-4")
+      },
+      onClick --> (_ => expandedVar.update(!_))
+    )
+
+  private def fieldDiffsRow(fieldDiffs: List[DataExportFieldDiffResp], expanded: Signal[Boolean]) =
+    tr(
+      cls(rowCls),
+      hidden <-- expanded.map(!_),
+      td(
+        colSpan(5),
+        cls("px-6 py-2"),
+        div(
+          cls(tableWrapperCls),
+          table(
+            cls(tableCls),
+            thead(cls(theadCls), tr(Seq("field", "disk", "database").map(createTh))),
+            tbody(
+              fieldDiffs.map { diff =>
+                tr(
+                  cls("border-b border-default"),
+                  td(cls("px-6 py-2 font-mono break-all"), diff.field),
+                  fieldDiffValue(diff.disk),
+                  fieldDiffValue(diff.database)
+                )
+              }
+            )
+          )
+        )
+      )
+    )
+
+  private def fieldDiffValue(value: Option[String]) =
+    td(
+      cls("px-6 py-2 font-mono break-all whitespace-pre-wrap"),
+      value.fold[Modifier[HtmlElement]](span(cls("text-body opacity-60"), "-"))(v => v)
+    )
+
   def exportPathStatusCard(pathStatus: DataExportPathStatusResp, header: String) = {
     val allStatuses = pathStatus.entityStatuses.sortBy(s => (s.entityType.entryName, s.entityId))
     val pageVar = Var((PageRequest.DefaultPage, PageRequest.DefaultSize))
@@ -135,15 +185,25 @@ object TaskConfigTableSupport {
         }
       )
 
-    def entityRow(entityStatus: DataExportEntityStatusResp) =
-      tr(
+    def entityRows(entityStatus: DataExportEntityStatusResp): Seq[HtmlElement] = {
+      val expandedVar = Var(false)
+      val hasDiffs = entityStatus.fieldDiffs.nonEmpty
+      val entityRow = tr(
         cls(rowCls),
         createTd(entityStatus.entityType.entryName),
         createTd(entityStatus.entityId.toString),
         createTd(entityStatus.entityName.getOrElse("-"): String),
         createTd(exportSyncStatusBadge(entityStatus.status)),
-        createTd(entityStatus.differences.mkString(", "))
+        createTd(
+          div(
+            cls("flex items-center gap-2"),
+            Option.when(hasDiffs)(expandButton(expandedVar)),
+            entityStatus.differences.mkString(", ")
+          )
+        )
       )
+      if (hasDiffs) Seq(entityRow, fieldDiffsRow(entityStatus.fieldDiffs, expandedVar.signal)) else Seq(entityRow)
+    }
 
     TgCard
       .headerNoFooter(
@@ -162,7 +222,7 @@ object TaskConfigTableSupport {
                   cls(theadCls),
                   tr(Seq("type", "id", "name", "status", "details").map(createTh))
                 ),
-                tbody(children <-- pageSignal.map { case (_, slice) => slice.map(entityRow) })
+                tbody(children <-- pageSignal.map { case (_, slice) => slice.flatMap(entityRows) })
               )
             ),
             TgPaginationComponent(

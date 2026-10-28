@@ -6,6 +6,7 @@ import com.togger.dto.{
   DataExportEntityCountResp,
   DataExportEntityStatusResp,
   DataExportEntityTypeResp,
+  DataExportFieldDiffResp,
   DataExportPathResultResp,
   DataExportPathStatusResp,
   DataExportResp,
@@ -170,7 +171,14 @@ class DataExportController(
   }
 
   private def toResp(s: DataExportEntityStatus): DataExportEntityStatusResp =
-    DataExportEntityStatusResp(toResp(s.entityType), s.entityId, s.entityName, toRespStatus(s.status), s.differences)
+    DataExportEntityStatusResp(
+      toResp(s.entityType),
+      s.entityId,
+      s.entityName,
+      toRespStatus(s.status),
+      s.differences,
+      s.fieldDiffs.map(d => DataExportFieldDiffResp(d.field, d.disk, d.database))
+    )
 
   private def toRespStatus(s: DataExportSyncStatus): DataExportSyncStatusResp = s match {
     case DataExportSyncStatus.InSync            => DataExportSyncStatusResp.InSync

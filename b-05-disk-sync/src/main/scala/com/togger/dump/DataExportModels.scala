@@ -137,7 +137,8 @@ case class DataExportEntityStatus(
   entityId: UUID,
   entityName: Option[String],
   status: DataExportSyncStatus,
-  differences: List[String]
+  differences: List[String],
+  fieldDiffs: List[ExportFieldDiff] = Nil
 )
 case class DataExportPathStatus(
   exportPath: String,
