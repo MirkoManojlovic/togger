@@ -26,7 +26,7 @@ case class ExportIndex(
 
 }
 
-/** Hashes an entity by the canonical form of its json, so key order and whitespace never change a hash. */
+/** Hashes an entity by the canonical form of its json, so key order, whitespace and the order of array elements never change a hash. */
 object ExportHasher {
 
   def hashJson(json: Json): String = sha256(canonical(json).noSpaces)
@@ -34,7 +34,7 @@ object ExportHasher {
   def canonical(json: Json): Json =
     json.arrayOrObject(
       json,
-      values => Json.fromValues(values.map(canonical)),
+      values => Json.fromValues(values.map(canonical).sortBy(_.noSpaces)),
       obj => Json.fromFields(obj.toList.sortBy(_._1).map { case (key, value) => key -> canonical(value) })
     )
 

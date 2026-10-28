@@ -6,8 +6,8 @@ import io.circe.Json
 case class ExportFieldDiff(field: String, disk: Option[String], database: Option[String])
 
 /** Compares two versions of an entity's json leaf by leaf, whatever the entity type. A nested field is named by its
-  * path (`taskVersions[1a2b3c4d].name`); the elements of a list of objects with ids are matched by id instead of
-  * position, so a version added in the middle is not reported as a change of all the versions after it.
+  * path (`taskVersions[1a2b3c4d].name`); the elements of a list are never compared by position: those with ids are
+  * matched by id, the others are put in a canonical order first, so a reordered list is not reported as a change.
   */
 object ExportJsonDiff {
 
@@ -34,13 +34,17 @@ object ExportJsonDiff {
       values =>
         if (values.isEmpty) List(path -> json)
         else {
-          val labels = elementLabels(values)
-          values.toList.zip(labels).flatMap { case (value, label) => leaves(value, s"$path[$label]") }
+          val ordered = orderedElements(values)
+          val labels = elementLabels(ordered)
+          ordered.toList.zip(labels).flatMap { case (value, label) => leaves(value, s"$path[$label]") }
         },
       obj =>
         if (obj.isEmpty) List(path -> json)
         else obj.toList.sortBy(_._1).flatMap { case (key, value) => leaves(value, if (path.isEmpty) key else s"$path.$key") }
     )
+
+  private def orderedElements(values: Vector[Json]): Vector[Json] =
+    values.map(ExportHasher.canonical).sortBy(_.noSpaces)
 
   private def elementLabels(values: Vector[Json]): List[String] = {
     val ids = values.flatMap(_.hcursor.get[String]("id").toOption)
