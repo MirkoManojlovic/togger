@@ -92,7 +92,7 @@ class MilestoneSummaryFormComponent(
     inputAndUpdater = selectorAndUpdaterMacro(_.aiPrompt),
     labelValue = "Prompt",
     placeholderValue = "Pick an AI action to edit its prompt",
-    minHeightRem = 10,
+    minHeightRem = 13,
     minWidthRem = 0
   )
 
@@ -129,12 +129,15 @@ class MilestoneSummaryFormComponent(
     div(
       cls("flex min-w-0 flex-col gap-2"),
       actions --> aiActionList.writer,
-      child <-- actions.map(aiActionSelect),
+      div(
+        cls("flex items-end gap-2"),
+        div(cls("min-w-0 flex-1"), child <-- actions.map(aiActionSelect)),
+        runAiActionButton.amend(cls("mb-1 shrink-0"))
+      ),
       child.maybe <-- actions.map(list =>
         Option.when(list.isEmpty)(div(cls("text-sm text-body"), "No AI action is bound to the milestone summary."))
       ),
-      aiPromptEditor.htmlElement,
-      div(cls("flex justify-end"), runAiActionButton)
+      aiPromptEditor.htmlElement
     )
 
   private def summaryTabs(actions: Signal[Seq[FindTgAiActionResp]]): HtmlElement =
