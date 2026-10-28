@@ -3,7 +3,7 @@ package com.togger.ui.timebox
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, SearchAccountDto}
 import com.togger.ui.apexchart.ApexChartOptions
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 import java.time.temporal.ChronoUnit
 
 /** The days of a timebox, the start and the end both included. */
@@ -44,6 +44,22 @@ object TimeboxReviewStats {
 
   def tasksProgress(tasks: Seq[FindTaskRespFull]): TasksProgress =
     TasksProgress(done = tasks.count(isDone), total = tasks.size)
+
+  /** The work days the tasks not done span, a day shared by several tasks counted once: those before today are
+    * worked, those from today on are left.
+    */
+  def workDaysProgress(tasks: Seq[FindTaskRespFull], today: LocalDate, workDays: Set[DayOfWeek]): DaysProgress = {
+    val days = tasks
+      .filterNot(isDone)
+      .flatMap { task =>
+        Iterator
+          .iterate(task.startDate)(_.plusDays(1))
+          .takeWhile(!_.isAfter(task.dueDate))
+          .filter(d => workDays.contains(d.getDayOfWeek))
+      }
+      .toSet
+    DaysProgress(elapsed = days.count(_.isBefore(today)), total = days.size)
+  }
 
   def isDone(task: FindTaskRespFull): Boolean = task.taskStatus.name.trim.equalsIgnoreCase(DoneStatusName)
 

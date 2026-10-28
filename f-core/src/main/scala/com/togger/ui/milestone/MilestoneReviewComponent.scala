@@ -232,13 +232,14 @@ class MilestoneReviewComponent(
   private def statsCard(
     milestone: FindMilestoneResp,
     tasks: Seq[FindTaskRespFull],
-    statuses: Seq[FindTaskStatusResp]
+    statuses: Seq[FindTaskStatusResp],
+    workDays: Set[DayOfWeek]
   ): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Tasks", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(MilestoneTaskRows(tasks, statuses, days))
+        body = TgCard.HtmlCardContent(MilestoneTaskRows(tasks, statuses, days, tgClock.currentDate(), workDays))
       )
       .element
       .amend(cls("w-full mb-4"))
@@ -250,8 +251,12 @@ class MilestoneReviewComponent(
       summaryCard,
       summariesCard,
       child.maybe <-- milestoneVar.signal
-        .combineWith(tasksVar.signal, lookups.statusesVar.signal.map(_.taskStatusesSorted))
-        .map { case (milestone, tasks, statuses) => milestone.map(statsCard(_, tasks, statuses)) },
+        .combineWith(
+          tasksVar.signal,
+          lookups.statusesVar.signal.map(_.taskStatusesSorted),
+          lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of))
+        )
+        .map { case (milestone, tasks, statuses, workDays) => milestone.map(statsCard(_, tasks, statuses, workDays)) },
       history.element.amend(cls("mb-4")),
       TgCard
         .headerNoFooter(

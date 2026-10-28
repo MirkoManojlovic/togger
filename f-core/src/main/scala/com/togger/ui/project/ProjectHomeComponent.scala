@@ -151,7 +151,7 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
-      MilestoneTaskRows(tasks, statuses, days)
+      MilestoneTaskRows(tasks, statuses, days, tgClock.currentDate(), workDays)
     )
   }
 

@@ -8,6 +8,8 @@ import com.togger.markdown.TaskProgress
 import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.timebox.{DaysProgress, TimeboxReviewStats}
 
+import java.time.{DayOfWeek, LocalDate}
+
 /** The task counts of a milestone with their progress bars: a row for the total first, then one for each team member;
   * the counts are on the left of a row and the bars on the right.
   */
@@ -61,7 +63,8 @@ object MilestoneTaskRows {
     title: String,
     tasks: Seq[FindTaskRespFull],
     statuses: Seq[FindTaskStatusResp],
-    days: Option[DaysProgress]
+    days: Option[DaysProgress],
+    workDays: Option[DaysProgress]
   ): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     div(
@@ -81,20 +84,32 @@ object MilestoneTaskRows {
               TaskProgress(d.elapsed, d.total),
               p => s"${p.total - p.checked} of ${p.total} days left until the due date"
             )
+          ),
+          workDays.map(d =>
+            progressRing(
+              TaskProgress(d.elapsed, d.total),
+              p => s"${p.checked} days worked, ${p.total - p.checked} days of work left"
+            )
           )
         )
       )
     )
   }
 
-  def apply(tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp], days: DaysProgress): HtmlElement = {
+  def apply(
+    tasks: Seq[FindTaskRespFull],
+    statuses: Seq[FindTaskStatusResp],
+    days: DaysProgress,
+    today: LocalDate,
+    workDays: Set[DayOfWeek]
+  ): HtmlElement = {
     val memberRows: Seq[HtmlElement] =
       TimeboxReviewStats.tasksPerMember(tasks).map { case (member, memberTasks) =>
-        row(member.fold("Unassigned")(_.fullName), memberTasks, statuses, None)
+        row(member.fold("Unassigned")(_.fullName), memberTasks, statuses, None, None)
       }
     div(
       cls("flex flex-col gap-4"),
-      row("Total", tasks, statuses, Some(days)),
+      row("Total", tasks, statuses, Some(days), Some(TimeboxReviewStats.workDaysProgress(tasks, today, workDays))),
       memberRows
     )
   }
