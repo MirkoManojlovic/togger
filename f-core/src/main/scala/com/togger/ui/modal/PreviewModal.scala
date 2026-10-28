@@ -5,7 +5,7 @@ import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 
 /** A wide modal around some content to look at, closed by its button, the backdrop or Escape. */
-case class PreviewModal(title: String, content: HtmlElement) extends TgModal {
+case class PreviewModal(title: String, content: HtmlElement, maxWidthCls: String = "max-w-6xl") extends TgModal {
 
   private val modalClickedBus = new EventBus[ModalResult]
   val isClicked: Signal[Option[ModalResult]] = modalClickedBus.events.toWeakSignal
@@ -18,7 +18,8 @@ case class PreviewModal(title: String, content: HtmlElement) extends TgModal {
       tabIndex(-1),
       ModalStyles.closeOnBackdropOrEscape(closeObserver),
       div(
-        cls("relative w-full max-w-6xl max-h-full"),
+        cls("relative w-full max-h-full"),
+        cls(maxWidthCls),
         div(
           cls(ModalStyles.contentBoxCls),
           cls("max-h-[90vh] overflow-y-auto"),

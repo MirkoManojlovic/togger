@@ -213,7 +213,8 @@ class ProjectHomeComponent(
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
       new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now()).element,
-      title = "Task preview"
+      title = "Task preview",
+      maxWidthCls = "max-w-[96rem]"
     )
 
   private def activeTasks(tasks: Seq[FindTaskRespFull], config: ActiveTasksConfig): HtmlElement =
