@@ -225,7 +225,7 @@ class MilestoneSummaryComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Task preview", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(div(cls("text-sm text-body"), "Press the eye icon of a task to preview it here."))
+        body = TgCard.HtmlCardContent(div(cls("text-sm text-body"), "Click a task to preview it here."))
       )
       .element
       .amend(cls("w-full"))
@@ -280,8 +280,7 @@ class MilestoneSummaryComponent(
       milestones = Seq.empty,
       workDaysVar.now(),
       showAssignee = true,
-      onPreview(_, milestone),
-      previewOnRowClick = true
+      onPreview(_, milestone)
     )
     ul(tasks.sortBy(_.name).map(taskItem(_)))
   }
