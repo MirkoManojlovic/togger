@@ -2,6 +2,7 @@ package com.togger.common
 
 import cats.implicits.toTraverseOps
 import com.togger.account.{AccountRepoImpl, AccountSessionRepo, AccountTypeRepo, TgDbSpec}
+import com.togger.ai.AiEndpointRepoImpl
 import com.togger.accountmapping.AccountMappingRepoImpl
 import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
 import com.togger.milestone.{
@@ -57,6 +58,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
         MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE,
         MilestoneRepoImpl.MILESTONE_TABLE,
         TaskStatusRepoImpl.TASK_STATUS_TABLE,
+        AiEndpointRepoImpl.AI_ENDPOINTS_TABLE,
         TgPromptTemplateVersionRepoImpl.TG_PROMPT_TEMPLATE_VERSION_TABLE,
         TgPromptTemplateRepoImpl.TG_PROMPT_TEMPLATE_TABLE,
         TaskTemplateVersionRepoImpl.TASK_TEMPLATE_VERSION_TABLE,
