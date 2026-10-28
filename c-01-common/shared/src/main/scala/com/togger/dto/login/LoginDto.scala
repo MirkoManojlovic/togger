@@ -41,3 +41,9 @@ case class ChangePasswordDto(
   val passwordsMatch: Boolean = newPassword == confirmNewPassword
 
 }
+
+case class AccountInfoDto(
+  firstName: String,
+  lastName: String,
+  email: String
+)
