@@ -344,7 +344,10 @@ class EditMilestoneComponent(
               div(
                 cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
                 div(cls("flex flex-wrap items-center gap-1.5"), statusBadge, dateBadges.element),
-                MilestoneSummaryRangeCalendar.element(formState.signal.map(form => form.startDate -> form.dueDate).distinct)
+                MilestoneSummaryRangeCalendar.element(
+                  formState.signal.map(form => form.startDate -> form.dueDate).distinct,
+                  (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+                )
               ),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               div(

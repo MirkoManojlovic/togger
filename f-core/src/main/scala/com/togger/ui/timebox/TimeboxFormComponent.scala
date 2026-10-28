@@ -563,7 +563,10 @@ class TimeboxFormComponent(
                   _.map(message => p(cls("mt-4 text-xs text-fg-danger-strong"), message))
                 )
               ),
-              MilestoneSummaryRangeCalendar.element(formState.signal.map(f => f.startDate -> f.endDate).distinct)
+              MilestoneSummaryRangeCalendar.element(
+                formState.signal.map(f => f.startDate -> f.endDate).distinct,
+                (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString))
+              )
             ),
             descriptionEditor.htmlElement.amend(cls("mb-4")),
             if (isCreate) emptyNode

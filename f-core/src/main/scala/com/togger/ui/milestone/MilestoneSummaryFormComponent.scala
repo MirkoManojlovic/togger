@@ -235,7 +235,10 @@ class MilestoneSummaryFormComponent(
             MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
           )
         ),
-        MilestoneSummaryRangeCalendar.element(formState.signal.map(form => form.startDate -> form.endDate).distinct)
+        MilestoneSummaryRangeCalendar.element(
+          formState.signal.map(form => form.startDate -> form.endDate).distinct,
+          (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString))
+        )
       ),
       (aiActions match {
         case Some(actions) => summaryTabs(actions)

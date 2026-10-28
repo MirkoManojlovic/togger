@@ -590,7 +590,9 @@ class EditTaskComponent(
                 cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
                 badges.element,
                 MilestoneSummaryRangeCalendar.element(
-                  badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct
+                  badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct,
+                  (start, due) =>
+                    badges.taskVar.update(_.copy(startDate = start, dueDate = due, dueDateManual = true))
                 )
               ),
               linksSection.element.amend(cls("mb-4")),
