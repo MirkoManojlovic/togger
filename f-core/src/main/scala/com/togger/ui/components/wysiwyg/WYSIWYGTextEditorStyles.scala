@@ -37,18 +37,21 @@ object WYSIWYGTextEditorStyles {
 
   val splitPanesStacked = "flex flex-col items-stretch"
 
-  val splitPaneSourceSideBySide = "w-1/2 border-e border-default"
+  val splitPaneSourceSideBySide = "flex flex-col w-1/2 border-e border-default"
 
-  val splitPanePreviewSideBySide = "w-1/2"
+  val splitPanePreviewSideBySide = "flex flex-col w-1/2"
 
   /** Takes up the `minWidthRem` the card is meant to grow to, without being the editor's own box — the editor can then
     * be measured at the width it is really given.
     */
   val widthReserve = "h-0 pointer-events-none invisible"
 
-  /** `resize-none` because the pane owns the height; the textarea's own grip would desynchronise the two sides. */
+  /** `flex-1` rather than `h-full`: the pane has no definite height to take a percentage of, so the textarea would
+    * shrink to its intrinsic rows and scroll on its own.
+    *
+    * `resize-none` because the pane owns the height; the textarea's own grip would desynchronise the two sides. */
   val splitSource =
-    "w-full h-full p-3 text-sm font-mono text-body bg-transparent resize-none " +
+    "w-full flex-1 p-3 text-sm font-mono text-body bg-transparent resize-none " +
       "border-0 focus:outline-none focus:ring-0"
 
   val splitPreview = "p-3 overflow-y-auto break-words"
@@ -69,5 +72,5 @@ object WYSIWYGTextEditorStyles {
   /** Hides the pane a stacked viewer is not looking at. */
   val splitPaneHidden = "hidden"
 
-  val splitPaneShown = "block"
+  val splitPaneShown = "flex flex-col flex-1"
 }
