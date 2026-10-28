@@ -2,7 +2,7 @@ package com.togger.dep
 
 import cats.effect.IO
 import com.togger.account.{AccountRepoImpl, AccountService, AccountSessionRepo, AccountTypeAdminCheck, AccountTypeRepo}
-import com.togger.auth.{ChangePasswordLogic, PasswordUpdate, SecuredEndpoint}
+import com.togger.auth.{ChangePasswordLogic, PasswordUpdate, SecuredEndpoint, UpdateAccountInfoLogic}
 import com.togger.common.TgClockImpl
 import com.togger.login.{LoginController, SessionTokenFactoryImpl}
 import doobie.Transactor
@@ -25,8 +25,10 @@ class AuthDependenciesModule(val transactor: Transactor[IO]) {
 
   lazy val passwordUpdate = new PasswordUpdate()
   lazy val changePasswordLogic = new ChangePasswordLogic(accountRepo, passwordUpdate, tgClock, transactor)
+  lazy val updateAccountInfoLogic = new UpdateAccountInfoLogic(accountRepo, tgClock, transactor)
 
-  lazy val loginController = new LoginController(accountService, changePasswordLogic, securedEndpoint, tgClock)
+  lazy val loginController =
+    new LoginController(accountService, changePasswordLogic, updateAccountInfoLogic, securedEndpoint, tgClock)
 
   lazy val securityLogic = new SecurityLogicJvm(accountSessionRepo, transactor)
   lazy val securedEndpoint: SecuredEndpoint = new SecuredEndpoint(securityLogic)

@@ -2,10 +2,10 @@ package com.togger.login
 
 import cats.effect.IO
 import com.togger.account.AccountService
-import com.togger.auth.{BaseEndpoint, ChangePasswordLogic, SecuredEndpoint}
-import com.togger.common.TgResponseTypes.{TgAuth, TgRespEmptyBodyIO}
+import com.togger.auth.{BaseEndpoint, ChangePasswordLogic, SecuredEndpoint, UpdateAccountInfoLogic}
+import com.togger.common.TgResponseTypes.{TgAuth, TgRespEmptyBodyIO, TgRespIO}
 import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
-import com.togger.dto.login.{ChangePasswordDto, ExpireSessionResult, LoginResponseDto, LogoutEveryoneDto}
+import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, ExpireSessionResult, LoginResponseDto, LogoutEveryoneDto}
 import com.togger.logging.TgLogging
 
 import java.time.temporal.ChronoUnit
@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit
 class LoginController(
   accountService: AccountService,
   changePasswordLogic: ChangePasswordLogic,
+  updateAccountInfoLogic: UpdateAccountInfoLogic,
   securedEndpoint: SecuredEndpoint,
   tgClock: TgClock
 ) extends TgLogging {
@@ -75,5 +76,11 @@ class LoginController(
 
   private def changePasswordFunc: TgAuth => ChangePasswordDto => TgRespEmptyBodyIO =
     _ => dto => changePasswordLogic.change(dto)
+
+  val updateAccountInfo =
+    endpoints.updateAccountInfo.serverLogic(updateAccountInfoFunc)
+
+  private def updateAccountInfoFunc: TgAuth => AccountInfoDto => TgRespIO[AccountInfoDto] =
+    auth => dto => updateAccountInfoLogic.update(auth.body.get.id, dto)
 
 }

@@ -100,6 +100,7 @@ object TgServer {
             loginController.expireOldSessions,
             loginController.logoutEveryone,
             loginController.changePassword,
+            loginController.updateAccountInfo,
             loginController.exampleAuth,
             taskController.findById,
             taskController.findByProjectId,
