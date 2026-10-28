@@ -57,7 +57,7 @@ case class SidebarLink(
       onClick.mapToUnit --> (_ => action())
     )
 
-  /** Where the right-click menu of a collapsed sidebar opens, in viewport coordinates; none while it is closed. */
+  /** Where the right-click menu of a project row opens, in viewport coordinates; none while it is closed. */
   private val menuPosition: Var[Option[(Double, Double)]] = Var(None)
 
   private val closeMenu = Observer[Unit](_ => menuPosition.set(None))
@@ -111,56 +111,24 @@ case class SidebarLink(
   private def linkElementProject =
     div(
       cls("flex items-center justify-between"),
-      onContextMenu.compose(_.withCurrentValueOf(collapsed).collect { case (event, true) => event }) --> openMenuAtRow,
-      child.maybe <-- menuPosition.signal.combineWith(collapsed).map {
-        case (Some((x, y)), true) => Some(contextMenu(x, y))
-        case _                    => None
-      },
+      onContextMenu --> openMenuAtRow,
+      child.maybe <-- menuPosition.signal.map(_.map { case (x, y) => contextMenu(x, y) }),
       a(
-        cls("inline-flex items-center"),
+        cls("inline-flex items-center min-w-0"),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
         span(
           cls <-- collapsed.map(isCollapsed =>
-            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5")
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5", "shrink-0")
           ),
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
         span(
-          cls("whitespace-nowrap"),
+          cls("min-w-0 break-words"),
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
         ),
         link
-      ),
-      div(
-        // no wrapping while the sidebar widens, or the rows grow taller and the ones below are pushed down
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq("flex", "shrink-0")),
-        onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
-        onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
-        onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
-        onExportClick.map(exportAction =>
-          button(
-            `type`("button"),
-            TgIcons.downloadIcon("w-3.5 h-3.5"),
-            SyncPendingDot(exportPending, "There is something to export"),
-            cls(
-              "relative inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer"
-            ),
-            onClick.mapToUnit --> (_ => exportAction())
-          )
-        ),
-        onImportClick.map(importAction =>
-          button(
-            `type`("button"),
-            TgIcons.uploadIcon("w-3.5 h-3.5"),
-            SyncPendingDot(importPending, "There is something to import"),
-            cls(
-              "relative inline-flex items-center justify-center w-5 h-5 text-body bg-transparent border border-default hover:bg-neutral-tertiary hover:text-fg-brand focus:ring-2 focus:ring-neutral-tertiary rounded-base focus:outline-none cursor-pointer ml-1"
-            ),
-            onClick.mapToUnit --> (_ => importAction())
-          )
-        )
       )
     )
 
@@ -168,17 +136,17 @@ case class SidebarLink(
     div(
       cls("flex items-center"),
       a(
-        cls("inline-flex items-center"),
+        cls("inline-flex items-center min-w-0"),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
         span(
           cls <-- collapsed.map(isCollapsed =>
-            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5")
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5", "shrink-0")
           ),
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
         span(
-          cls("whitespace-nowrap"),
+          cls("min-w-0 break-words"),
           cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
           linkName
         ),
@@ -470,10 +438,10 @@ object Sidebar {
   }
 
   val sideBarLinkStyle =
-    "flex items-center px-2 py-1.5 text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group"
+    "flex items-center px-2 py-1.5 text-sm text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group"
 
   val sidebarSelectedLink =
-    "flex items-center px-2 py-1.5 text-body rounded-base bg-neutral-tertiary text-fg-brand group"
+    "flex items-center px-2 py-1.5 text-sm text-body rounded-base bg-neutral-tertiary text-fg-brand group"
 
   val collapsedGlyphBoxStyle: Seq[String] =
     Seq("w-6", "h-6", "flex", "items-center", "justify-center", "leading-none", "shrink-0")
