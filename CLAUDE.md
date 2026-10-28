@@ -140,7 +140,9 @@ account (retrying while the backend starts), then serves 16 tools (`tools/*Tools
 backend's `body` JSON as text. Config is env only: `TOGGER_BACKEND_URL` (default `http://localhost:8081`),
 `TOGGER_MCP_HOST`, `TOGGER_MCP_PORT`, and `TOGGER_MCP_API_KEY` (if set, every MCP call needs it as bearer token).
 The `mcp` account (`mcp@email.com`, admin type, member of every organization and project) is ensured on every backend
-start by `McpAccountSeedService` in `b-07-main`, so projects created later get it at the next backend restart. Register
+start by `McpAccountSeedService` in `b-07-main`, so projects created later get it at the next backend restart. `McpApp desktop` (first arg, like the
+backend's `AppEnv`) also runs `CheckDesktopAppRunning` and exits when the Togger desktop app is no longer running; without
+the arg it runs until stopped. Register
 with `claude mcp add --transport http togger http://localhost:8090/mcp`. Run with `sbt --client "backendMcp/run"` (this
 blocks the shared sbt server; alternatively run `com.togger.mcp.McpApp` from the exported classpath).
 

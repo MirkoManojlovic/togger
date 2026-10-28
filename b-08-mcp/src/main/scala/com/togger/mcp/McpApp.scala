@@ -10,9 +10,11 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.netty.sync.NettySyncServer
 
 object McpApp:
+  private val DesktopMode = "desktop"
   private val LoginAttempts = 30
   private val LoginRetryDelayMillis = 2000L
 
+  /** `McpApp desktop` stops the server when the Togger desktop app is no longer running, like the backend does. */
   def main(args: Array[String]): Unit =
     val config = McpConfig.fromEnv()
     val client = TgBackendClient(config, DefaultSyncBackend())
@@ -34,6 +36,10 @@ object McpApp:
         "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks and milestones. " +
           "Start with list_organizations, then list_projects, then get_project_overview. All ids are UUIDs."
       )
+
+    if args.headOption.contains(DesktopMode) then
+      scribe.info("Desktop mode: stopping when the Togger desktop app is no longer running")
+      CheckDesktopAppRunning(onStopped = () => sys.exit(0)).start()
 
     scribe.info(s"Togger MCP listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools")
     NettySyncServer()
