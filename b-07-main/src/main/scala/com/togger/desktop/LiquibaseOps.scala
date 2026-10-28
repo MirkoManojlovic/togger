@@ -77,17 +77,17 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
   }
 
   def createToggerUser: IO[Int] = {
-    fr"CREATE USER togger_account_development WITH PASSWORD 'togger_password'".update.run
+    fr"CREATE USER togger_account WITH PASSWORD 'togger_password'".update.run
       .transact(transactorWithRootAccount)
   }
 
   def grantAllPrivileges(dbName: String): IO[Int] = {
-    (fr"GRANT ALL PRIVILEGES ON DATABASE" ++ Fragment.const(s""""$dbName"""") ++ fr"TO togger_account_development").update.run
+    (fr"GRANT ALL PRIVILEGES ON DATABASE" ++ Fragment.const(s""""$dbName"""") ++ fr"TO togger_account").update.run
       .transact(transactorWithRootAccount)
   }
 
   def makeSuperUser: IO[Int] = {
-    fr"""ALTER ROLE togger_account_development SUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION NOBYPASSRLS""".update.run
+    fr"""ALTER ROLE togger_account SUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION NOBYPASSRLS""".update.run
       .transact(transactorWithRootAccount)
   }
 
