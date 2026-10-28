@@ -37,7 +37,7 @@ object Libraries {
 
     val `org.liquibase` = "org.liquibase"
     val `liquibase-core` = "liquibase-core"
-    val `liquibase-version` = "4.18.0"
+    val `liquibase-version` = "4.25.1"
 
     val `org.postgresql` = "org.postgresql"
     val postgresql = "postgresql"
