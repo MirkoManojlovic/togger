@@ -37,7 +37,7 @@ object MilestoneTaskRows {
 
   private def counts(tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp]): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-3 sm:pr-4 sm:border-r border-default"),
+      cls("flex flex-col items-center gap-3 sm:w-60 sm:shrink-0 sm:pr-4 sm:border-r border-default"),
       totalStat(tasks),
       div(
         cls("flex flex-col gap-2 w-full"),
