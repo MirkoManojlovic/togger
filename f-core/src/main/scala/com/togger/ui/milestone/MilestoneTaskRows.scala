@@ -47,14 +47,24 @@ object MilestoneTaskRows {
       )
     )
 
-  private def progressRing(progress: TaskProgress, label: TaskProgress => String): HtmlElement =
-    TaskProgressComponent(
-      Val(progress),
-      ringSizeCls = "w-12 h-12",
-      labelOf = label,
-      fillCls = "text-green-500",
-      trackCls = "text-green-200 dark:text-green-900"
-    ).element
+  private def progressRing(
+    title: String,
+    progress: TaskProgress,
+    label: TaskProgress => String,
+    fillCls: String,
+    trackCls: String
+  ): HtmlElement =
+    div(
+      cls("flex flex-col items-center gap-2 text-center px-3 border-r border-default last:border-r-0"),
+      span(cls("text-base font-semibold text-heading"), title),
+      TaskProgressComponent(
+        Val(progress),
+        ringSizeCls = "w-12 h-12",
+        labelOf = label,
+        fillCls = fillCls,
+        trackCls = trackCls
+      ).element
+    )
 
   /** One card for the tasks of the total or of a member: the counts beside the rings they add up to. The days left
     * belong to the milestone, so only the total shows them.
@@ -74,21 +84,30 @@ object MilestoneTaskRows {
         cls("flex flex-col sm:flex-row sm:items-start gap-4"),
         counts(tasks, statuses),
         div(
-          cls("flex flex-col gap-3"),
+          cls("grid grid-cols-3"),
           progressRing(
+            "Tasks",
             TaskProgress(progress.done, progress.total),
-            p => s"${p.total - p.checked} of ${p.total} tasks left to do"
+            p => s"${p.total - p.checked} of ${p.total} tasks left to do",
+            "text-green-500",
+            "text-green-200 dark:text-green-900"
           ),
           days.map(d =>
             progressRing(
+              "Due date",
               TaskProgress(d.elapsed, d.total),
-              p => s"${p.total - p.checked} of ${p.total} days left until the due date"
+              p => s"${p.total - p.checked} of ${p.total} days left until the due date",
+              "text-blue-500",
+              "text-blue-200 dark:text-blue-900"
             )
           ),
           workDays.map(d =>
             progressRing(
+              "Work days",
               TaskProgress(d.elapsed, d.total),
-              p => s"${p.checked} days worked, ${p.total - p.checked} days of work left"
+              p => s"${p.checked} days worked, ${p.total - p.checked} days of work left",
+              "text-purple-500",
+              "text-purple-200 dark:text-purple-900"
             )
           )
         )
