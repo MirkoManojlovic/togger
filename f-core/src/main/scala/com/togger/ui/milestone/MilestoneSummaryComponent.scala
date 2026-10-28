@@ -31,6 +31,7 @@ import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.timebox.{StagedGrouping, StagedGroup}
 import com.togger.ui.toast.Toast
 
+import scala.collection.mutable
 import java.time.{DayOfWeek, LocalDate, ZoneOffset}
 import java.util.UUID
 
@@ -229,7 +230,12 @@ class MilestoneSummaryComponent(
       .element
       .amend(cls("w-full"))
 
-  private def previewCard(task: FindTaskRespFull, milestone: Option[FindMilestoneResp]): HtmlElement =
+  private def previewCard(
+    task: FindTaskRespFull,
+    milestone: Option[FindMilestoneResp],
+    summaryPeriod: Option[(LocalDate, LocalDate)],
+    onClose: () => Unit
+  ): HtmlElement =
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.html(
@@ -241,7 +247,7 @@ class MilestoneSummaryComponent(
               TgIcons.closeIcon(className = "w-4 h-4"),
               rowIconButtonCls,
               rowButtonMarginCls,
-              onClick.mapToUnit --> (_ => previewedTaskVar.set(None))
+              onClick.mapToUnit --> (_ => onClose())
             )
           )
         ),
@@ -254,14 +260,19 @@ class MilestoneSummaryComponent(
             tgMarkdown,
             tgClock,
             showName = true,
-            milestone.toSeq
+            milestone.toSeq,
+            summaryPeriod
           ).element
         )
       )
       .element
       .amend(cls("w-full"))
 
-  private def taskList(tasks: Seq[FindTaskRespFull], milestone: Option[FindMilestoneResp]): HtmlElement = {
+  private def taskList(
+    tasks: Seq[FindTaskRespFull],
+    milestone: Option[FindMilestoneResp],
+    onPreview: (FindTaskRespFull, Option[FindMilestoneResp]) => Unit
+  ): HtmlElement = {
     val taskItem = new TaskListItem(
       router,
       tgDateFormater,
@@ -269,7 +280,7 @@ class MilestoneSummaryComponent(
       milestones = Seq.empty,
       workDaysVar.now(),
       showAssignee = true,
-      previewTask(_, milestone),
+      onPreview(_, milestone),
       previewOnRowClick = true
     )
     ul(tasks.sortBy(_.name).map(taskItem(_)))
@@ -282,7 +293,9 @@ class MilestoneSummaryComponent(
   private def statusTabs(
     tasks: Seq[FindTaskRespFull],
     milestone: Option[FindMilestoneResp],
-    emptyMessage: String
+    emptyMessage: String,
+    selectedVar: Var[String],
+    onPreview: (FindTaskRespFull, Option[FindMilestoneResp]) => Unit
   ): HtmlElement =
     if (tasks.isEmpty) div(cls("text-sm text-body"), emptyMessage)
     else {
@@ -290,11 +303,11 @@ class MilestoneSummaryComponent(
         TgTab(
           id = group.tasks.head.taskStatus.id.toString,
           label = s"${group.tasks.head.taskStatus.emoji} ${group.title}",
-          content = taskList(group.tasks, milestone),
+          content = taskList(group.tasks, milestone, onPreview),
           badge = Some(Val(group.tasks.size))
         )
       }
-      new TgTabs(tabs, selectedStatusVar).element
+      new TgTabs(tabs, selectedVar).element
     }
 
   // Whether only the tasks with log entries in the period of the new summary are shown.
@@ -334,9 +347,11 @@ class MilestoneSummaryComponent(
                     MilestoneSummaryComponent
                       .withLogEntriesBetween(tasks, LocalDate.parse(startDate), LocalDate.parse(endDate)),
                     milestone,
-                    "No task has log entries in the period of the summary."
+                    "No task has log entries in the period of the summary.",
+                    selectedStatusVar,
+                    previewTask
                   )
-                else statusTabs(tasks, milestone, "No tasks in this milestone.")
+                else statusTabs(tasks, milestone, "No tasks in this milestone.", selectedStatusVar, previewTask)
               }
           )
         )
@@ -388,7 +403,46 @@ class MilestoneSummaryComponent(
       onClick.mapToUnit --> (_ => component.editingVar.update(!_))
     )
 
+  // The rows are kept, so the tab and the previewed task of a summary stay while the list of summaries changes.
+  private val previousSummaryRows = mutable.Map.empty[MilestoneSummaryFormComponent, HtmlElement]
+
   private def previousSummaryRow(component: MilestoneSummaryFormComponent): HtmlElement =
+    previousSummaryRows.getOrElseUpdate(component, buildPreviousSummaryRow(component))
+
+  private val summaryPeriodOf: MilestoneSummaryFormComponent => Signal[Option[(LocalDate, LocalDate)]] =
+    _.formState.signal
+      .map(form => Option.when(form.startDate.nonEmpty && form.endDate.nonEmpty)(LocalDate.parse(form.startDate) -> LocalDate.parse(form.endDate)))
+      .distinct
+
+  // The tasks with log entries in the period of the summary; the one pressed is previewed under the list, with the
+  // log entries of the period first.
+  private def summaryTasksTab(component: MilestoneSummaryFormComponent): HtmlElement = {
+    val selectedStatus = Var("")
+    val previewVar = Var(Option.empty[(FindTaskRespFull, Option[FindMilestoneResp])])
+    div(
+      child <-- tasksVar.signal
+        .combineWith(milestoneVar.signal, summaryPeriodOf(component))
+        .map { case (tasks, milestone, period) =>
+          period.fold[HtmlElement](div(cls("text-sm text-body"), "The summary has no period.")) { case (start, end) =>
+            statusTabs(
+              MilestoneSummaryComponent.withLogEntriesBetween(tasks, start, end),
+              milestone,
+              "No task has log entries in the period of the summary.",
+              selectedStatus,
+              (task, taskMilestone) => previewVar.set(Some(task -> taskMilestone))
+            )
+          }
+        },
+      child <-- previewVar.signal.combineWith(summaryPeriodOf(component)).map {
+        case (Some((task, milestone)), period) =>
+          previewCard(task, milestone, period, () => previewVar.set(None)).amend(cls("mt-4"))
+        case _ => emptyNode
+      }
+    )
+  }
+
+  private def buildPreviousSummaryRow(component: MilestoneSummaryFormComponent): HtmlElement = {
+    val selectedTab = Var("summary")
     div(
       cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
       child <-- component.editingVar.signal.map { editing =>
@@ -418,10 +472,21 @@ class MilestoneSummaryComponent(
                 (_, _) => ()
               )
             ),
-            div(child <-- component.formState.signal.map(form => tgMarkdown.toLaminarDiv(form.summary)))
+            new TgTabs(
+              Seq(
+                TgTab(
+                  "summary",
+                  "Summary",
+                  div(child <-- component.formState.signal.map(form => tgMarkdown.toLaminarDiv(form.summary)))
+                ),
+                TgTab("tasks", "Tasks", summaryTasksTab(component))
+              ),
+              selectedTab
+            ).element
           )
       }
     )
+  }
 
   private lazy val previousSummariesCard: HtmlElement =
     TgCard
@@ -446,7 +511,7 @@ class MilestoneSummaryComponent(
       div(
         cls("w-full min-w-0"),
         child <-- previewedTaskVar.signal.map {
-          case Some((task, milestone)) => previewCard(task, milestone)
+          case Some((task, milestone)) => previewCard(task, milestone, None, () => previewedTaskVar.set(None))
           case None                    => emptyPreviewCard
         }
       ),

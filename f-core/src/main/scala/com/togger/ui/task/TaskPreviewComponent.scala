@@ -26,6 +26,8 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   *   where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
+  * @param summaryPeriod
+  *   the dates of a summary, which get a first tab with their log entries
   */
 class TaskPreviewComponent(
   task: FindTaskRespFull,
@@ -35,7 +37,8 @@ class TaskPreviewComponent(
   tgMarkdown: TgMarkdown,
   tgClock: TgClock,
   showName: Boolean = false,
-  milestones: Seq[FindMilestoneResp] = Seq.empty
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
+  summaryPeriod: Option[(LocalDate, LocalDate)] = None
 ) {
 
   private val currentWeekStart: LocalDate = {
@@ -230,8 +233,15 @@ class TaskPreviewComponent(
   }
 
   private def weekRangeStatusTabs(logEntries: Seq[LogEntryDto], selectedDayVar: Var[Option[LocalDate]]): HtmlElement = {
-    val selectedTabVar = Var("single-day")
-    val tabs = Seq(
+    val selectedTabVar = Var(if (summaryPeriod.isDefined) "summary-period" else "single-day")
+    val periodTab = summaryPeriod.toSeq.map { case (start, end) =>
+      TgTab(
+        id = "summary-period",
+        label = "Summary period",
+        content = weekRangeStatus(logEntries, start, end, selectedDayVar)
+      )
+    }
+    val tabs = periodTab ++ Seq(
       TgTab(
         id = "single-day",
         label = "Single day",
