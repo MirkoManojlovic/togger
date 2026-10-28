@@ -1,7 +1,8 @@
 package com.togger.maintenance
 
 import cats.effect.IO
-import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
+import com.togger.DbMode
+import com.togger.Constants.{DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
 import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.controllers.organization.OrganizationService
@@ -32,7 +33,7 @@ trait SeedAppModule {
 
   protected val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver",
-    url = s"jdbc:postgresql:$DB_NAME",
+    url = s"jdbc:postgresql:${DbMode.Development.dbName}",
     user = DB_USERNAME,
     password = DB_PASSWORD,
     logHandler = None

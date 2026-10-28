@@ -4,17 +4,17 @@ import java.io.File
 import java.sql.{DriverManager, SQLException}
 
 import cats.effect.IO
-import com.togger.Constants.{DB_NAME, DB_PASSWORD, DB_USERNAME}
-import com.togger.TgLogging
+import com.togger.{DbMode, TgLogging}
 import doobie.implicits._
+import doobie.util.fragment.Fragment
 import doobie.{FC, Transactor}
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.DirectoryResourceAccessor
 import liquibase.{Contexts, Liquibase}
 
-class LiquibaseOps(changelogPath: String) extends TgLogging {
-  private val jdbcUrl = s"jdbc:postgresql:$DB_NAME"
+class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
+  private val jdbcUrl = s"jdbc:postgresql:${dbMode.dbName}"
 
   def runLiquibase(): Unit = {
     val connection = DriverManager.getConnection(jdbcUrl)
@@ -59,8 +59,16 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
       .transact(transactorWithRootAccount)
   }
 
-  def createDatabase: IO[Either[SQLException, Int]] = {
-    fr"""CREATE DATABASE "togger-local-development" """.update.run.attemptSql
+  def checkIfDatabaseExists(dbName: String): IO[Boolean] = {
+    fr"SELECT 1 FROM pg_database WHERE datname = $dbName"
+      .query[Int]
+      .to[List]
+      .map(_.nonEmpty)
+      .transact(transactorWithRootAccount)
+  }
+
+  def createDatabase(dbName: String): IO[Either[SQLException, Int]] = {
+    (fr"CREATE DATABASE" ++ Fragment.const(s""""$dbName"""")).update.run.attemptSql
       .transact(nonTransactionalTransactor)
       .recover { case e =>
         println(s"error ${e}")
@@ -73,8 +81,8 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
       .transact(transactorWithRootAccount)
   }
 
-  def grantAllPrivileges: IO[Int] = {
-    fr"""GRANT ALL PRIVILEGES ON DATABASE "$DB_NAME" TO togger_account_development""".update.run
+  def grantAllPrivileges(dbName: String): IO[Int] = {
+    (fr"GRANT ALL PRIVILEGES ON DATABASE" ++ Fragment.const(s""""$dbName"""") ++ fr"TO togger_account_development").update.run
       .transact(transactorWithRootAccount)
   }
 

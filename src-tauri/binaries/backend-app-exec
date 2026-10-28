@@ -2,4 +2,4 @@
 
 START_DATE=$(date +%Y%m%d%H%M%S)
 mkdir -p "$HOME/togger/logs"
-bash $1/bin/backend-app desktop $1 > "$HOME/togger/logs/$START_DATE-togger-log.txt" 2>&1
+bash $1/bin/backend-app desktop $1 prod > "$HOME/togger/logs/$START_DATE-togger-log.txt" 2>&1

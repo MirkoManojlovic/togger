@@ -1,7 +1,6 @@
 package com.togger
 
 import cats.effect._
-import com.togger.Constants.DB_NAME
 import com.togger.desktop._
 import doobie.Transactor
 import scribe.format.Formatter
@@ -17,13 +16,13 @@ object BackendApp extends IOApp with TgLogging {
     val liquibaseTransactor = TgTransactor.liquibaseTransactor
 //    val transactor = TgTransactor.dockerTransactor
 
-    val (appEnv, changelogPath) = new AppEnvParser().parse(args)
-    logger.info(s"Running App in [env=$appEnv]")
+    val (appEnv, changelogPath, dbMode) = new AppEnvParser().parse(args)
+    logger.info(s"Running App in [env=$appEnv] [dbMode=$dbMode]")
     val appConfigBe = new AppEnvSelector(appEnv).appConfig
 
-    TgTransactor.desktopTransactor.use { appTransactor =>
+    TgTransactor.desktopTransactor(dbMode).use { appTransactor =>
       for {
-        _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath)
+        _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath, dbMode)
         _ <- setupScribeLogging
         _ <- archiveLogs(appEnv)
         exitCode <- runServer(appTransactor, appConfigBe)
@@ -81,31 +80,39 @@ object BackendApp extends IOApp with TgLogging {
   private def setupDb(
     liquibaseTransactor: Transactor[IO],
     appTransactor: Transactor[IO],
-    changelogPath: String
+    changelogPath: String,
+    dbMode: DbMode
   ): IO[Unit] = {
+    val DB_NAME = dbMode.dbName
     val initialSetup = new InitialSetup(liquibaseTransactor)
-    val liquibaseOps = new LiquibaseOps(changelogPath)
+    val liquibaseOps = new LiquibaseOps(changelogPath, dbMode)
 
     for {
+      dbExists <- initialSetup.checkIfDatabaseExists(DB_NAME)
       userExists <- initialSetup.checkIfUserExits(Constants.DB_USERNAME)
       _ <-
-        if (userExists) {
+        if (dbExists && userExists) {
           for {
-            _ <- IO(logger.info("Togger db account exists skipping"))
+            _ <- IO(logger.info(s"Togger db $DB_NAME and account exist skipping"))
           } yield ()
 
         } else {
           for {
-            _ <- IO(logger.info("Togger db account doesn't exits. Creating..."))
+            _ <- IO(logger.info("Togger db or db account doesn't exist. Creating..."))
             _ <- IO(logger.info(s"Creating $DB_NAME database"))
-            result <- initialSetup.createDatabase
+            result <- initialSetup.createDatabase(DB_NAME)
             _ <- IO(logger.info(s"$DB_NAME database result=$result"))
-            _ <- IO(logger.info("Creating togger_account"))
-            _ <- initialSetup.createToggerUser
-            _ <- IO(logger.info("togger_account created"))
-            _ <- IO(logger.info("Adding privileges to togger_account"))
-            _ <- initialSetup.makeSuperUser
-            _ <- IO(logger.info("Privileges added to togger_account"))
+            _ <-
+              if (userExists) IO(logger.info("togger_account exists, reusing it"))
+              else
+                for {
+                  _ <- IO(logger.info("Creating togger_account"))
+                  _ <- initialSetup.createToggerUser
+                  _ <- IO(logger.info("togger_account created"))
+                  _ <- IO(logger.info("Adding privileges to togger_account"))
+                  _ <- initialSetup.makeSuperUser
+                  _ <- IO(logger.info("Privileges added to togger_account"))
+                } yield ()
             _ <- IO(logger.info("Running Liquibase"))
             _ <- IO(liquibaseOps.runLiquibase())
             _ <- new CreateAdminAccount(appTransactor).run

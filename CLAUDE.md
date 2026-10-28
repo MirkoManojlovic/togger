@@ -160,7 +160,7 @@ JVM (`SecurityLogicJvm`) and JS (`SecurityLogicJs`) implementations). Passwords 
 Liquibase, and seeds an admin account (`CreateAdminAccount`).
 
 **Web vs. desktop split**, both at build time and runtime:
-- Runtime: `AppEnv` (`web`/`desktop`, first CLI arg to `BackendApp`) selects `application-web.conf` /
+- Runtime: `AppEnv` (`web`/`desktop`, first CLI arg to `BackendApp`; third arg is the `DbMode`, `development` → db `togger-local-development` (default) or `prod` → `togger-local`) selects `application-web.conf` /
   `application-desktop.conf` (`AppEnvSelector`), which controls log archiving and whether the backend runs
   a foreground desktop-lifecycle watcher (`CheckDesktopAppRunning`) vs. `IO.never` for web.
   On the frontend, `VITE_IS_DESKTOP_MODE` (set via `.env`/`.env.desktop`/`.env.web`) picks between

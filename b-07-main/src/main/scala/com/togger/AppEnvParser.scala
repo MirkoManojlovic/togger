@@ -11,7 +11,7 @@ object AppEnv extends Enum[AppEnv] {
 }
 
 class AppEnvParser {
-  def parse(inputArgs: List[String]): (AppEnv, String) = {
+  def parse(inputArgs: List[String]): (AppEnv, String, DbMode) = {
     val appEnv = inputArgs.head match {
       case "web"     => AppEnv.Web
       case "desktop" => AppEnv.Desktop
@@ -20,7 +20,12 @@ class AppEnvParser {
 
     val changelogPath = inputArgs.tail.head
 
-    appEnv -> changelogPath
+    val dbMode = inputArgs.drop(2).headOption match {
+      case Some("prod") => DbMode.Prod
+      case _            => DbMode.Development
+    }
+
+    (appEnv, changelogPath, dbMode)
   }
 
 }
