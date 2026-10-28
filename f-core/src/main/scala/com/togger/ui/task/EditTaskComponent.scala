@@ -591,6 +591,7 @@ class EditTaskComponent(
                 badges.element,
                 MilestoneSummaryRangeCalendar.element(
                   badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct,
+badges.workDaysSignal,
                   (start, due) =>
                     badges.taskVar.update(_.copy(startDate = start, dueDate = due, dueDateManual = true))
                 )

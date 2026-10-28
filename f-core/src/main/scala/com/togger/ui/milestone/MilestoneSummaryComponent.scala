@@ -54,11 +54,19 @@ class MilestoneSummaryComponent(
   // The summaries are saved on their own, apart from the milestone: the new one by its Create button, the previous
   // ones (newest period first) by their Update button.
   val previousSummariesVar = Var(Seq.empty[MilestoneSummaryFormComponent])
+  private val workDaysVar = Var(WorkDayCalendar.DefaultWorkDays)
   private val aiActionsVar = Var(Seq.empty[FindTgAiActionResp])
   val newSummaryVar = Var(newSummaryForm(MilestoneSummaryForm()))
 
   private def savedSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
-    new MilestoneSummaryFormComponent(form, tgClock, saveSummary, removeSummary, writeSummaryWithAi(_, None))
+    new MilestoneSummaryFormComponent(
+      form,
+      tgClock,
+      saveSummary,
+      removeSummary,
+      writeSummaryWithAi(_, None),
+      workDays = workDaysVar.signal
+    )
 
   private def newSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
     new MilestoneSummaryFormComponent(
@@ -68,7 +76,8 @@ class MilestoneSummaryComponent(
       removeSummary,
       writeSummaryWithAi(_, None),
       Some(aiActionsVar.signal),
-      (component, action) => writeSummaryWithAi(component, Some(action))
+      (component, action) => writeSummaryWithAi(component, Some(action)),
+      workDaysVar.signal
     )
 
   spinnerService
@@ -175,7 +184,6 @@ class MilestoneSummaryComponent(
 
   private val milestoneVar = Var(Option.empty[FindMilestoneResp])
   private val tasksVar = Var(Seq.empty[FindTaskRespFull])
-  private val workDaysVar = Var(WorkDayCalendar.DefaultWorkDays)
 
   private def loadTasks(milestone: FindMilestoneResp): IO[Unit] =
     taskService

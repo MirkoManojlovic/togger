@@ -34,6 +34,8 @@ class TaskFormBadges(
 
   def lookupsNow(): BulkLookups = lookupsVar.now()
 
+  val workDaysSignal: Signal[Set[DayOfWeek]] = lookupsVar.signal.map(_.workDays).distinct
+
   private val popups = new BulkEditPopups(
     context = _ => BulkEditContext(lookupsVar.now(), Seq(taskVar.now()), tgClock.currentDate()),
     onEdit = (_, edit) =>

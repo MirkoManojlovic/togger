@@ -2,7 +2,7 @@ package com.togger.ui.milestone
 
 import com.togger.common.suites.AsyncJsWordSpec
 
-import java.time.LocalDate
+import java.time.{DayOfWeek, LocalDate}
 
 class MilestoneSummaryRangeCalendarTest extends AsyncJsWordSpec {
 
@@ -54,6 +54,15 @@ class MilestoneSummaryRangeCalendarTest extends AsyncJsWordSpec {
     "keep a one day range when the second click is on the first day" in { _ =>
       val day = LocalDate.of(2026, 10, 10)
       MilestoneSummaryRangeCalendar.pick(Some(day), day) shouldBe (((day, day), None))
+    }
+
+    "show only the work days, in the order of the week" in { _ =>
+      MilestoneSummaryRangeCalendar.shownDays(Set(DayOfWeek.FRIDAY, DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY)) shouldBe
+        Seq(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
+    }
+
+    "show every day while no work days are known" in { _ =>
+      MilestoneSummaryRangeCalendar.shownDays(Set.empty) shouldBe DayOfWeek.values.toSeq
     }
   }
 }

@@ -54,7 +54,8 @@ class MilestoneSummaryFormComponent(
   onRemove: MilestoneSummaryFormComponent => Unit,
   onAiSummary: MilestoneSummaryFormComponent => Unit,
   aiActions: Option[Signal[Seq[FindTgAiActionResp]]] = None,
-  onAiAction: (MilestoneSummaryFormComponent, FindTgAiActionResp) => Unit = (_, _) => ()
+  onAiAction: (MilestoneSummaryFormComponent, FindTgAiActionResp) => Unit = (_, _) => (),
+  workDays: Signal[Set[DayOfWeek]] = Val(Set.empty)
 ) {
   val formState = Var(initial)
 
@@ -237,6 +238,7 @@ class MilestoneSummaryFormComponent(
         ),
         MilestoneSummaryRangeCalendar.element(
           formState.signal.map(form => form.startDate -> form.endDate).distinct,
+          workDays,
           (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString))
         )
       ),

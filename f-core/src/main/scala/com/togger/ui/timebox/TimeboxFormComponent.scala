@@ -565,6 +565,7 @@ class TimeboxFormComponent(
               ),
               MilestoneSummaryRangeCalendar.element(
                 formState.signal.map(f => f.startDate -> f.endDate).distinct,
+                lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
                 (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString))
               )
             ),
