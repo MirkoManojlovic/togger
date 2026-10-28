@@ -22,7 +22,8 @@ object BackendApp extends IOApp with TgLogging {
 
     TgTransactor.desktopTransactor(dbMode).use { appTransactor =>
       for {
-        _ <- setupDb(liquibaseTransactor, appTransactor, changelogPath, dbMode)
+        _ <- setupDb(liquibaseTransactor, changelogPath, dbMode)
+        _ <- new CreateAdminAccount(appTransactor).run
         _ <- setupScribeLogging
         _ <- archiveLogs(appEnv)
         exitCode <- runServer(appTransactor, appConfigBe)
@@ -79,7 +80,6 @@ object BackendApp extends IOApp with TgLogging {
 
   private def setupDb(
     liquibaseTransactor: Transactor[IO],
-    appTransactor: Transactor[IO],
     changelogPath: String,
     dbMode: DbMode
   ): IO[Unit] = {
@@ -115,7 +115,6 @@ object BackendApp extends IOApp with TgLogging {
                 } yield ()
             _ <- IO(logger.info("Running Liquibase"))
             _ <- IO(liquibaseOps.runLiquibase())
-            _ <- new CreateAdminAccount(appTransactor).run
           } yield ()
         }
     } yield ()

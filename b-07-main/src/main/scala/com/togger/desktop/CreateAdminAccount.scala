@@ -8,7 +8,6 @@ import com.togger.account._
 import com.togger.common.{Password, TgClockImpl, TgIds}
 import com.togger.login.SessionTokenFactoryImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 import doobie.{ConnectionIO, Transactor}
 
 class CreateAdminAccount(transactor: Transactor[IO]) {
@@ -30,29 +29,41 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
   private val now = tgClock.currentInstant
   private val hashedPassword =
     HashedPasswordImpl.fromPassword(Password.fromString("A!good_1_password_is_good").toOption.get)
+  private val AdminEmail = "admin@email.com"
   private val accountTypes = Seq("developer", "manager", "qa", AdminCheck.AdminAccountTypeName)
 
   def run: IO[Unit] = {
     for {
       accountTypes <- createAccountTypes.transact(transactor)
       adminAccountType = accountTypes.find(_.name == AdminCheck.AdminAccountTypeName).get
-      _ <- Seq(
-        createAccount("John", "Doe", "admin@email.com", adminAccountType.id)
-      ).map(account => accountService.createAccount(account)).sequence
+      exists <- accountExists(AdminEmail).transact(transactor)
+      _ <-
+        if (exists) IO.unit
+        else accountService.createAccount(createAccount("John", "Doe", AdminEmail, adminAccountType.id)).void
     } yield ()
   }
+
+  private def accountExists(email: String): ConnectionIO[Boolean] =
+    sql"select exists (select 1 from account where email = $email)".query[Boolean].unique
+
+  private def accountTypeExists(name: String): ConnectionIO[Boolean] =
+    sql"select exists (select 1 from account_type where name = $name)".query[Boolean].unique
 
   private def createAccountTypes: ConnectionIO[List[AccountType]] =
     accountTypes
       .map(accountTypeName =>
-        accountTypeRepo.insert(
-          AccountType(
-            id = TgIds.UNASSIGNED_UUID,
-            name = accountTypeName,
-            createdAt = now,
-            updatedAt = now
-          )
-        )
+        accountTypeExists(accountTypeName).flatMap {
+          case true => accountTypeRepo.findByName(accountTypeName)
+          case false =>
+            accountTypeRepo.insert(
+              AccountType(
+                id = TgIds.UNASSIGNED_UUID,
+                name = accountTypeName,
+                createdAt = now,
+                updatedAt = now
+              )
+            )
+        }
       )
       .toList
       .sequence
