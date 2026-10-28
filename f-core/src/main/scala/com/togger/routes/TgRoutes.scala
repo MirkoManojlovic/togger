@@ -245,18 +245,18 @@ class TgRoutes {
         pattern = root / "settings" / "project-label" / "edit" / segment[String] / endOfSegments
       ),
       Route.static(
-        CreateTgPromptPage,
-        root / "settings" / "prompt" / "create"
+        CreateTgPromptTemplatePage,
+        root / "settings" / "prompt-template" / "create"
       ),
-      Route.withQuery[ShowAllTgPromptsPage, Unit, ListQuery](
-        encode = (page: ShowAllTgPromptsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
-        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllTgPromptsPage(listFromQuery(args.params)),
-        pattern = (root / "settings" / "prompt" / endOfSegments) ? listQueryParams
+      Route.withQuery[ShowAllTgPromptTemplatesPage, Unit, ListQuery](
+        encode = (page: ShowAllTgPromptTemplatesPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllTgPromptTemplatesPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "prompt-template" / endOfSegments) ? listQueryParams
       ),
       Route(
-        encode = (page: EditTgPromptPage) => page.id.toString,
-        decode = (id: String) => EditTgPromptPage(UUID.fromString(id)),
-        pattern = root / "settings" / "prompt" / "edit" / segment[String] / endOfSegments
+        encode = (page: EditTgPromptTemplatePage) => page.id.toString,
+        decode = (id: String) => EditTgPromptTemplatePage(UUID.fromString(id)),
+        pattern = root / "settings" / "prompt-template" / "edit" / segment[String] / endOfSegments
       ),
       Route.static(
         CreateProjectLabelCategoryPage,
