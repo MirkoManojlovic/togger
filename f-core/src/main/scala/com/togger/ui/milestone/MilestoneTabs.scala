@@ -6,6 +6,8 @@ import com.togger.markdown.TgMarkdown
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.task.TgDateFormater
 
+import java.time.DayOfWeek
+
 /** The two tabs of a milestone: its status, and its summaries with one tab each. */
 class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
 
@@ -19,18 +21,24 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
       bordered = true
     ).element
 
-  private def summaryContent(summary: FindMilestoneSummaryResp): HtmlElement =
+  private def summaryContent(summary: FindMilestoneSummaryResp, workDays: Signal[Set[DayOfWeek]]): HtmlElement =
     div(
       div(
         cls("flex flex-wrap items-center gap-1.5 mb-2"),
         dateBadge("Start", summary.startDate),
         dateBadge("End", summary.endDate)
       ),
+      MilestoneSummaryRangeCalendar
+        .element(Val(summary.startDate.toString -> summary.endDate.toString), workDays)
+        .amend(cls("mb-3")),
       Option.when(summary.summary.nonEmpty)(tgMarkdown.toLaminarDiv(summary.summary))
     )
 
   // One tab per summary, newest first; the selected tab survives the summaries being reloaded.
-  private def summaryTabs(summaries: Seq[FindMilestoneSummaryResp], selectedVar: Var[String]): HtmlElement =
+  private def summaryTabs(summaries: Seq[FindMilestoneSummaryResp],
+    workDays: Signal[Set[DayOfWeek]],
+    selectedVar: Var[String]
+  ): HtmlElement =
     if (summaries.isEmpty) div(cls("text-sm text-body"), "No summaries yet.")
     else
       new TgTabs(
@@ -39,13 +47,17 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
             id = summary.id.toString,
             label =
               s"${tgDateFormater.asAmericanDate(summary.startDate)} - ${tgDateFormater.asAmericanDate(summary.endDate)}",
-            content = summaryContent(summary)
+            content = summaryContent(summary, workDays)
           )
         },
         selectedVar
       ).element
 
-  def apply(status: HtmlElement, summaries: Signal[Seq[FindMilestoneSummaryResp]]): HtmlElement = {
+  def apply(
+    status: HtmlElement,
+    summaries: Signal[Seq[FindMilestoneSummaryResp]],
+    workDays: Signal[Set[DayOfWeek]]
+  ): HtmlElement = {
     val selectedTabVar = Var(StatusTab)
     val selectedSummaryVar = Var("")
     new TgTabs(
@@ -54,7 +66,7 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
         TgTab(
           id = SummaryTab,
           label = "Milestone summary",
-          content = div(child <-- summaries.map(summaryTabs(_, selectedSummaryVar)))
+          content = div(child <-- summaries.map(summaryTabs(_, workDays, selectedSummaryVar)))
         )
       ),
       selectedTabVar

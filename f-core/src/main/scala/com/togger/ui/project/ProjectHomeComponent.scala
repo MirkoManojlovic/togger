@@ -167,7 +167,8 @@ class ProjectHomeComponent(
       ),
       milestoneTabs(
         MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays),
-        summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty))
+        summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty)),
+        Val(workDays)
       )
     )
   }

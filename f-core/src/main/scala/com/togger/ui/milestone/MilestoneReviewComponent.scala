@@ -231,7 +231,11 @@ class MilestoneReviewComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Milestone", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(milestoneTabs(statusTabContent, summariesVar.signal))
+        body = TgCard.HtmlCardContent(milestoneTabs(
+            statusTabContent,
+            summariesVar.signal,
+            lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of))
+          ))
       )
       .element
       .amend(cls("w-full mb-4"))
