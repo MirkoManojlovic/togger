@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import cats.effect.IO
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgJsonSuccess.TgEmptyBody
@@ -9,23 +10,26 @@ import com.togger.dto.{
   CreateMilestoneSummaryReq,
   FindMilestoneSummaryResp,
   SummariseMilestoneWithAiReq,
-  SummariseMilestoneWithAiResp,
   UpdateMilestoneSummaryReq
 }
-import com.togger.milestone.{MilestoneAiSummaryEndpoints, MilestoneSummaryEndpoints}
+import com.togger.milestone.MilestoneSummaryEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
-class MilestoneSummaryFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
+class MilestoneSummaryFeService(
+  securedEndpoint: SecuredEndpoint,
+  protectedBackendClient: ProtectedBackendClient,
+  aiSummaryStreamClient: MilestoneAiSummaryStreamClient
+) {
   val milestoneSummaryEndpoints = new MilestoneSummaryEndpoints(securedEndpoint)
-  val milestoneAiSummaryEndpoints = new MilestoneAiSummaryEndpoints(securedEndpoint)
 
   def createMilestoneSummary(dto: CreateMilestoneSummaryReq): TgRespIO[FindMilestoneSummaryResp] =
     protectedBackendClient.protectedHttpCall(milestoneSummaryEndpoints.saveEndpoint)(dto)
 
-  def summariseWithAi(dto: SummariseMilestoneWithAiReq): TgRespIO[SummariseMilestoneWithAiResp] =
-    protectedBackendClient.protectedHttpCall(milestoneAiSummaryEndpoints.summariseEndpoint)(dto)
+  /** Streams the summary as the AI writes it; see [[MilestoneAiSummaryStreamClient.stream]] for the events. */
+  def summariseWithAi(dto: SummariseMilestoneWithAiReq)(onEvent: AiSummaryEvent => Unit): IO[Unit] =
+    aiSummaryStreamClient.stream(dto)(onEvent)
 
   def findByMilestoneId(milestoneId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindMilestoneSummaryResp]] =
     protectedBackendClient.protectedHttpCall(milestoneSummaryEndpoints.findByMilestoneIdEndpoint)((milestoneId, page))

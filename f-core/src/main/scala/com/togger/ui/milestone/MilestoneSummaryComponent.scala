@@ -74,20 +74,24 @@ class MilestoneSummaryComponent(
       }
     }
 
-  // Replaces the summary text of the form with what the AI writes from the log entries of its period.
+  // Replaces the summary text of the form with what the AI writes from the log entries of its period, as it writes it.
   private def writeSummaryWithAi(component: MilestoneSummaryFormComponent): Unit = {
     val form = component.formState.now()
     if (form.startDate.isEmpty || form.endDate.isEmpty) toast.error("Choose the start and end date of the summary")
     else {
-      component.aiSummaryRunning.set(true)
-      spinnerService
-        .runWithSpinner(
-          milestoneSummaryService.summariseWithAi(
-            MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
-          )
-        )
-        .toastJustErrorsUnit(response => component.formState.update(_.copy(summary = response.summary)))
-        .guarantee(IO(component.aiSummaryRunning.set(false)))
+      component.formState.update(_.copy(summary = ""))
+      component.aiSummaryState.set(AiSummaryState.Streaming)
+      milestoneSummaryService
+        .summariseWithAi(
+          MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
+        ) {
+          case AiSummaryEvent.Chunk(text) => component.formState.update(f => f.copy(summary = f.summary + text))
+          case AiSummaryEvent.Done        => component.aiSummaryState.set(AiSummaryState.Finished)
+          case AiSummaryEvent.Failed(message) =>
+            component.aiSummaryState.set(AiSummaryState.Idle)
+            toast.error(message)
+        }
+        .guarantee(IO(if (component.aiSummaryState.now() == AiSummaryState.Streaming) component.aiSummaryState.set(AiSummaryState.Idle)))
         .unsafeRunAndForget()
     }
   }

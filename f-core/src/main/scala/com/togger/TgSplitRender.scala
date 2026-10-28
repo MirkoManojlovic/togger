@@ -194,7 +194,11 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
   lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
   lazy val contributionsService = new ContributionsFeService(securedEndpoint, protectedBackendClient)
-  lazy val milestoneSummaryService = new MilestoneSummaryFeService(securedEndpoint, protectedBackendClient)
+  lazy val milestoneSummaryService = new MilestoneSummaryFeService(
+    securedEndpoint,
+    protectedBackendClient,
+    new MilestoneAiSummaryStreamClient(loginRepo, "http://localhost:8081/")
+  )
   lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
   lazy val dateRangeValidation = new DateRangeValidation
 

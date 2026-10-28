@@ -33,6 +33,13 @@ object MilestoneSummaryForm {
     )
 }
 
+sealed trait AiSummaryState
+object AiSummaryState {
+  case object Idle extends AiSummaryState
+  case object Streaming extends AiSummaryState
+  case object Finished extends AiSummaryState
+}
+
 /** The form of one summary, shared by the saved ones and the new one; it saves itself, apart from the milestone. */
 class MilestoneSummaryFormComponent(
   initial: MilestoneSummaryForm,
@@ -43,8 +50,10 @@ class MilestoneSummaryFormComponent(
 ) {
   val formState = Var(initial)
 
-  /** Whether the AI is writing the summary, which can take a while on a local model. */
-  val aiSummaryRunning = Var(false)
+  /** Whether the AI is writing the summary into the editor, which can take a while on a local model. */
+  val aiSummaryState = Var[AiSummaryState](AiSummaryState.Idle)
+
+  private val aiSummaryRunning: Signal[Boolean] = aiSummaryState.signal.map(_ == AiSummaryState.Streaming)
 
   private val summaryEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.summary),
@@ -92,9 +101,27 @@ class MilestoneSummaryFormComponent(
     button(
       typ("button"),
       cls(TgHtmlButton.tailwindExtraSmallButton),
-      disabled <-- aiSummaryRunning.signal,
-      child.text <-- aiSummaryRunning.signal.map(running => if (running) "Writing summary..." else "AI Summary"),
+      disabled <-- aiSummaryRunning,
+      child.text <-- aiSummaryRunning.map(running => if (running) "Writing summary..." else "AI Summary"),
       onClick.mapToUnit --> (_ => onAiSummary(this))
+    )
+
+  private val aiSummaryIndicator: HtmlElement =
+    span(
+      cls("mr-auto flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"),
+      child.maybe <-- aiSummaryState.signal.map {
+        case AiSummaryState.Idle => None
+        case AiSummaryState.Streaming =>
+          Some(
+            span(
+              cls("flex items-center gap-1.5"),
+              span(cls("inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500")),
+              "The AI is writing the summary..."
+            )
+          )
+        case AiSummaryState.Finished =>
+          Some(span(cls("flex items-center gap-1.5 text-green-600 dark:text-green-400"), "✓ The AI finished the summary"))
+      }
     )
 
   val htmlElement: ReactiveHtmlElement[HTMLFormElement] =
@@ -108,7 +135,8 @@ class MilestoneSummaryFormComponent(
       div(cls("mb-4 flex flex-wrap items-center gap-1.5"), MilestoneSummaryPreset.all.map(presetBadge)),
       summaryEditor.htmlElement.amend(cls("mb-4")),
       div(
-        cls("flex justify-end gap-2"),
+        cls("flex items-center justify-end gap-2"),
+        aiSummaryIndicator,
         child.maybe <-- isSaved.map(saved => Option.when(!saved)(aiSummaryButton)),
         child <-- isSaved.map(saved =>
           if (saved) TgHtmlButton.updateSmall(EventStream.fromValue(false))
