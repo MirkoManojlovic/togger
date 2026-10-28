@@ -5,8 +5,10 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.components.button.TgHtmlButton
+import com.togger.ai.TgAiEndpoints
 import com.togger.dto.{
   CreateMilestoneSummaryReq,
+  FindTgAiActionResp,
   FindMilestoneResp,
   FindTaskRespFull,
   UpdateMilestoneSummaryReq
@@ -21,6 +23,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectService, TaskListItem}
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.tgaiaction.TgAiActionFeService
 import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
@@ -33,6 +36,7 @@ import java.util.UUID
 /** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
 class MilestoneSummaryComponent(
   milestoneSummaryService: MilestoneSummaryFeService,
+  tgAiActionService: TgAiActionFeService,
   milestoneService: MilestoneFeService,
   taskService: TaskFeService,
   projectService: ProjectService,
@@ -50,10 +54,35 @@ class MilestoneSummaryComponent(
   // The summaries are saved on their own, apart from the milestone: the new one by its Create button, the previous
   // ones (newest period first) by their Update button.
   val previousSummariesVar = Var(Seq.empty[MilestoneSummaryFormComponent])
+  private val aiActionsVar = Var(Seq.empty[FindTgAiActionResp])
   val newSummaryVar = Var(newSummaryForm(MilestoneSummaryForm()))
 
+  private def savedSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
+    new MilestoneSummaryFormComponent(form, tgClock, saveSummary, removeSummary, writeSummaryWithAi(_, None))
+
   private def newSummaryForm(form: MilestoneSummaryForm): MilestoneSummaryFormComponent =
-    new MilestoneSummaryFormComponent(form, tgClock, saveSummary, removeSummary, writeSummaryWithAi)
+    new MilestoneSummaryFormComponent(
+      form,
+      tgClock,
+      saveSummary,
+      removeSummary,
+      writeSummaryWithAi(_, None),
+      Some(aiActionsVar.signal),
+      (component, action) => writeSummaryWithAi(component, Some(action))
+    )
+
+  spinnerService
+    .runWithSpinner(tgAiActionService.findEvery)
+    .map(
+      _.fold(
+        error => println(error),
+        success =>
+          aiActionsVar.set(
+            success.body.get.filter(_.endpointIds.contains(TgAiEndpoints.MilestoneSummary.value)).sortBy(_.name)
+          )
+      )
+    )
+    .unsafeRunAndForget()
 
   private def removeSummary(component: MilestoneSummaryFormComponent): Unit =
     component.formState.now().id.foreach { id =>
@@ -75,7 +104,7 @@ class MilestoneSummaryComponent(
     }
 
   // Replaces the summary text of the form with what the AI writes from the log entries of its period, as it writes it.
-  private def writeSummaryWithAi(component: MilestoneSummaryFormComponent): Unit = {
+  private def writeSummaryWithAi(component: MilestoneSummaryFormComponent, action: Option[FindTgAiActionResp]): Unit = {
     val form = component.formState.now()
     if (form.startDate.isEmpty || form.endDate.isEmpty) toast.error("Choose the start and end date of the summary")
     else {
@@ -83,7 +112,9 @@ class MilestoneSummaryComponent(
       component.aiSummaryState.set(AiSummaryState.Streaming)
       milestoneSummaryService
         .summariseWithAi(
-          MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
+          action.fold(
+            MilestoneSummaryAi.request(milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate))
+          )(MilestoneSummaryAi.request(_, milestoneId, LocalDate.parse(form.startDate), LocalDate.parse(form.endDate)))
         ) {
           case AiSummaryEvent.Chunk(text) => component.formState.update(f => f.copy(summary = f.summary + text))
           case AiSummaryEvent.Done        => component.aiSummaryState.set(AiSummaryState.Finished)
@@ -118,7 +149,7 @@ class MilestoneSummaryComponent(
             )
             .toastMessageDto(_ => "Summary created successfully")(created =>
               IO {
-                previousSummariesVar.update(newSummaryForm(MilestoneSummaryForm.fromDto(created)) +: _)
+                previousSummariesVar.update(savedSummaryForm(MilestoneSummaryForm.fromDto(created)) +: _)
                 newSummaryVar.set(newSummaryForm(MilestoneSummaryForm()))
               }
             )
@@ -136,7 +167,7 @@ class MilestoneSummaryComponent(
           previousSummariesVar.set(
             success.body.get
               .sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
-              .map(dto => newSummaryForm(MilestoneSummaryForm.fromDto(dto)))
+              .map(dto => savedSummaryForm(MilestoneSummaryForm.fromDto(dto)))
           )
       )
     )

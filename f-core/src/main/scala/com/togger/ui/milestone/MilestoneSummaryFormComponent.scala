@@ -4,8 +4,8 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.FindMilestoneSummaryResp
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.dto.{FindMilestoneSummaryResp, FindTgAiActionResp}
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonDangerCls}
@@ -46,7 +46,9 @@ class MilestoneSummaryFormComponent(
   tgClock: TgClock,
   onSave: MilestoneSummaryFormComponent => Unit,
   onRemove: MilestoneSummaryFormComponent => Unit,
-  onAiSummary: MilestoneSummaryFormComponent => Unit
+  onAiSummary: MilestoneSummaryFormComponent => Unit,
+  aiActions: Option[Signal[Seq[FindTgAiActionResp]]] = None,
+  onAiAction: (MilestoneSummaryFormComponent, FindTgAiActionResp) => Unit = (_, _) => ()
 ) {
   val formState = Var(initial)
 
@@ -62,6 +64,54 @@ class MilestoneSummaryFormComponent(
     minHeightRem = 18,
     minWidthRem = 0
   )
+
+  private val aiSummaryEditor = formState.wysiwygSplitEditorSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.summary),
+    labelValue = "Summary",
+    placeholderValue = "Summarize the period, or pick an AI action",
+    minHeightRem = 18,
+    minWidthRem = 0
+  )
+
+  private val selectedTabVar = Var(MilestoneSummaryFormComponent.SummaryTabId)
+
+  private def aiActionButton(action: FindTgAiActionResp): HtmlElement =
+    button(
+      typ("button"),
+      cls(TgHtmlButton.tailwindExtraSmallButton),
+      cls("w-full text-left"),
+      disabled <-- aiSummaryRunning,
+      title(action.model),
+      action.name,
+      onClick.mapToUnit --> (_ => onAiAction(this, action))
+    )
+
+  private def aiActionsPanel(actions: Signal[Seq[FindTgAiActionResp]]): HtmlElement =
+    div(
+      cls("flex flex-col gap-2"),
+      div(cls("text-sm font-medium text-heading"), "AI actions"),
+      children <-- actions.map(_.map(aiActionButton)),
+      child.maybe <-- actions.map(list =>
+        Option.when(list.isEmpty)(div(cls("text-sm text-body"), "No AI action is bound to the milestone summary."))
+      )
+    )
+
+  private def summaryTabs(actions: Signal[Seq[FindTgAiActionResp]]): HtmlElement =
+    new TgTabs(
+      Seq(
+        TgTab(MilestoneSummaryFormComponent.SummaryTabId, "Summary", summaryEditor.htmlElement),
+        TgTab(
+          MilestoneSummaryFormComponent.AiSummaryTabId,
+          "AI Summary",
+          div(
+            cls("grid grid-cols-1 gap-4 md:grid-cols-3"),
+            aiSummaryEditor.htmlElement.amend(cls("md:col-span-2 min-w-0")),
+            aiActionsPanel(actions)
+          )
+        )
+      ),
+      selectedTabVar
+    ).element
 
   private val everyDay = DayOfWeek.values.toSet
 
@@ -133,7 +183,10 @@ class MilestoneSummaryFormComponent(
         div(cls("ml-auto"), child.maybe <-- isSaved.map(Option.when(_)(deleteButton)))
       ),
       div(cls("mb-4 flex flex-wrap items-center gap-1.5"), MilestoneSummaryPreset.all.map(presetBadge)),
-      summaryEditor.htmlElement.amend(cls("mb-4")),
+      (aiActions match {
+        case Some(actions) => summaryTabs(actions)
+        case None          => summaryEditor.htmlElement
+      }).amend(cls("mb-4")),
       div(
         cls("flex items-center justify-end gap-2"),
         aiSummaryIndicator,
@@ -146,4 +199,9 @@ class MilestoneSummaryFormComponent(
     )
 
   override def toString = s"MilestoneSummaryFormComponent(${formState.now()})"
+}
+
+object MilestoneSummaryFormComponent {
+  val SummaryTabId = "summary"
+  val AiSummaryTabId = "ai-summary"
 }

@@ -1,6 +1,6 @@
 package com.togger.ui.milestone
 
-import com.togger.dto.SummariseMilestoneWithAiReq
+import com.togger.dto.{FindTgAiActionResp, SummariseMilestoneWithAiReq}
 
 import java.time.LocalDate
 import java.util.UUID
@@ -22,5 +22,20 @@ object MilestoneSummaryAi {
       startDate = startDate,
       endDate = endDate,
       model = Model
+    )
+
+  def request(
+    action: FindTgAiActionResp,
+    milestoneId: UUID,
+    startDate: LocalDate,
+    endDate: LocalDate
+  ): SummariseMilestoneWithAiReq =
+    SummariseMilestoneWithAiReq(
+      milestoneId = milestoneId,
+      promptId = action.tgPromptTemplateId,
+      summarizePrompt = action.prompt,
+      startDate = startDate,
+      endDate = endDate,
+      model = action.model
     )
 }

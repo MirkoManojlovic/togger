@@ -703,6 +703,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
               case MilestoneSummaryPage(_, id: UUID) =>
                 new MilestoneSummaryComponent(
                   milestoneSummaryService,
+                  tgAiActionService,
                   milestoneService,
                   taskService,
                   projectService,
