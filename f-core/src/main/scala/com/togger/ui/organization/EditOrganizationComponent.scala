@@ -5,7 +5,7 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.UpdateOrganizationReq
-import com.togger.routes.Pages.EditOrganizationPage
+import com.togger.routes.Pages.{EditOrganizationPage, HomePage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
@@ -14,12 +14,12 @@ import com.togger.ui.auth._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 
 import java.util.UUID
 
@@ -110,6 +110,28 @@ class EditOrganizationComponent(
       .unsafeRunAndForget()
   }
 
+  private def deleteOrganization(): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(
+        s"Delete organization '${formState.now().name}'? All of its projects and their data are deleted too. " +
+          "This cannot be undone."
+      ),
+      title = "Delete organization",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel",
+      confirmationText = Some(formState.now().name)
+    ) { close =>
+      spinnerService
+        .runWithSpinner(organizationService.deleteOrganization(organizationId))
+        .toastMessageFn("Organization deleted successfully") { _ =>
+          sidebarRefresh.request()
+          router.route(HomePage)
+        }
+        .unsafeRunAndForget()
+      close()
+    }
+
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
     errors = EventStream.empty,
@@ -120,7 +142,7 @@ class EditOrganizationComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Organization description",
-    minWidthRem = 0
+    placeholderValue = "Describe the description"
   )
 
   private val iconInput = formState.tgEmojiPicker(
@@ -139,11 +161,24 @@ class EditOrganizationComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
 //              findAccountsComponent.element.amend(width.px(500)),
-              div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+              div(
+                cls("flex justify-between"),
+                button(
+                  typ("button"),
+                  cls(
+                    "text-white bg-danger box-border border border-transparent hover:bg-danger-strong " +
+                      "focus:ring-4 focus:ring-danger-medium shadow-xs font-medium leading-5 rounded-base " +
+                      "text-xs px-3 py-1.5 focus:outline-none"
+                  ),
+                  "Delete organization",
+                  onClick.mapToUnit --> (_ => deleteOrganization())
+                ),
+                TgHtmlButton.updateSmall(EventStream.fromValue(false))
+              )
             )
           )
         )

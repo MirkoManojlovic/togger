@@ -4,6 +4,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
@@ -41,6 +42,8 @@ trait OrganizationServiceFe {
 
   def findById(id: UUID): TgRespIO[FindOrganizationResp]
 
+  def deleteOrganization(id: UUID): TgRespIO[TgEmptyBody]
+
   def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp]
 
   def findByAccountId(accountId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]]
@@ -75,6 +78,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
 
   override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
+
+  override def deleteOrganization(id: UUID): TgRespIO[TgEmptyBody] =
+    protectedBackendClient.protectedHttpCall(organizationEndpoints.deleteByIdEndpoint)(id)
 
   override def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.updateEndpoint)(dto)
@@ -129,7 +135,7 @@ class CreateOrganizationComponent(
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Organization description",
-    minWidthRem = 0
+    placeholderValue = "Describe the description"
   )
 
   private val iconInput = formState.tgEmojiPicker(
@@ -148,7 +154,7 @@ class CreateOrganizationComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               iconInput.htmlElement.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
 //              findAccountsComponent.element.amend(width.px(500)),
