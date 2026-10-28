@@ -28,8 +28,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       LogEntryStatus.Abandoned,
       LogEntryStatus.Paused,
       LogEntryStatus.Holiday,
-      LogEntryStatus.Vacation,
-      LogEntryStatus.Handover
+      LogEntryStatus.Vacation
     )
 
     val logEntrySpanStart = LocalDate.of(2026, 6, 1)

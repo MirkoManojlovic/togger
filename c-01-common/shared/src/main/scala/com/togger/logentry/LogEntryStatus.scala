@@ -29,7 +29,6 @@ object LogEntryStatus extends IntEnum[LogEntryStatus] {
   case object Paused extends LogEntryStatus(5, ChartColor.Yellow, "🟡️", "Paused", "This is on hold, to be resumed later")
   case object Holiday extends LogEntryStatus(6, ChartColor.Orange, "🎄", "Holiday", "Out on a public holiday")
   case object Vacation extends LogEntryStatus(7, ChartColor.Orange, "🏝", "Vacation", "Out on vacation")
-  case object Handover extends LogEntryStatus(8, ChartColor.Purple, "🤲", "Handover", "This has been handed over to someone else")
 
   def namesToValuesMapString: Map[String, String] =
     this.values.map { status => status.value.toString -> status.toStringWithEmoji }.toMap
