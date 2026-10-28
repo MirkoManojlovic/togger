@@ -37,7 +37,7 @@ object MilestoneTaskRows {
 
   private def counts(tasks: Seq[FindTaskRespFull], statuses: Seq[FindTaskStatusResp]): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-3 sm:w-60 sm:shrink-0 sm:pr-4 sm:border-r border-default"),
+      cls("flex flex-col items-center gap-3 sm:w-60 sm:shrink-0 sm:pr-6 sm:border-r border-default"),
       totalStat(tasks),
       div(
         cls("flex flex-col gap-2 w-full"),
@@ -49,7 +49,7 @@ object MilestoneTaskRows {
 
   private def column(title: String, content: HtmlElement): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-2 text-center px-3 min-w-0 border-r border-default last:border-r-0"),
+      cls("flex flex-col items-center gap-2 text-center px-3 first:pl-0 min-w-0 border-r border-default last:border-r-0"),
       span(cls("text-base font-semibold text-heading"), title),
       content
     )
@@ -93,7 +93,7 @@ object MilestoneTaskRows {
       cls("p-3 border border-default rounded-base"),
       div(cls("font-semibold text-heading mb-3"), title),
       div(
-        cls("flex flex-col sm:flex-row sm:items-stretch gap-4"),
+        cls("flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-0"),
         counts(tasks, statuses),
         div(
           cls("grid grid-cols-4 flex-1 min-w-0"),
