@@ -123,6 +123,9 @@ services/controllers get added there and to the endpoint list passed to `HttpMod
 implemented by `TgOpenAiClient` in `b-05-ai` using sttp-ai (OpenAI) on an fs2 sttp-client4 backend that
 `TgServer.instance` acquires as a `Resource`. `TgAiService` resolves the API key per account through
 `TgAiApiKeyProvider` (currently `TgNoApiKeyProvider`; DB-backed keys come later). No controller or endpoints.
+`TgAiEndpoints` (enum in `c-01-common`, package `com.togger.ai`) lists every AI endpoint; its int `value` is the id of the
+`ai_endpoints` table, which `AiEndpointSeedService` syncs on startup (inserts missing rows only). A new AI endpoint
+is a new enum entry with the next free `value`.
 
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
