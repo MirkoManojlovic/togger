@@ -753,7 +753,7 @@ class SlackerComponent(
 
   val element: HtmlElement =
     div(
-      cls("fixed inset-0 z-[100] flex items-start justify-center pt-16 px-4 bg-white/90 dark:bg-neutral-primary/90"),
+      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-16 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
       onMountCallback { _ =>
         projectDataLoader.loadProjects().map(projects => state.update(_.copy(projects = projects))).unsafeRunAndForget()
