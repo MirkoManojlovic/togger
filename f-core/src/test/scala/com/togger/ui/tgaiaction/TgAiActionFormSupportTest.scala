@@ -25,17 +25,19 @@ class TgAiActionFormSupportTest extends AnyWordSpec with Matchers {
 
   "TgAiActionFormSupport" should {
 
-    "offer the listed models" in {
-      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3"), TgAiModelDto("qwen3")), "llama3") shouldBe
-        Seq("llama3", "qwen3")
+    "keep a model the server lists" in {
+      val form = TgAiActionForm(model = "llama3")
+      TgAiActionFormSupport.withListedModel(form, List(TgAiModelDto("llama3"), TgAiModelDto("qwen3"))) shouldBe form
     }
 
-    "keep a saved model that is no longer listed selectable" in {
-      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3")), "gpt-5") shouldBe Seq("gpt-5", "llama3")
+    "clear a saved model the server does not list" in {
+      val form = TgAiActionForm(model = "gpt-5")
+      TgAiActionFormSupport.withListedModel(form, List(TgAiModelDto("llama3"))).model shouldBe ""
     }
 
-    "not add an empty model to the options" in {
-      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3")), "") shouldBe Seq("llama3")
+    "keep the saved model when no model could be listed" in {
+      val form = TgAiActionForm(model = "gpt-5")
+      TgAiActionFormSupport.withListedModel(form, Seq.empty) shouldBe form
     }
 
     "read the models of a successful response and fall back to none on a failure" in {

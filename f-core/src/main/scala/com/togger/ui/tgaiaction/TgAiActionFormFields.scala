@@ -27,13 +27,13 @@ class TgAiActionFormFields(
     tgInputType = TgInputType.Text
   )
 
+  formState.update(TgAiActionFormSupport.withListedModel(_, models))
+
   private val modelSelect = formState.tgSelectManualError(
     inputAndUpdater = selectorAndUpdaterMacro(_.model),
     labelValue = "Model",
     emptyValue = Some("Select a model"),
-    valuesAndDisplays = ListMap(
-      TgAiActionFormSupport.modelIds(models, formState.now().model).map(id => id -> id): _*
-    )
+    valuesAndDisplays = ListMap(models.map(model => model.id -> model.id): _*)
   )
 
   private val promptEditor = formState.wysiwygSplitEditorSig(

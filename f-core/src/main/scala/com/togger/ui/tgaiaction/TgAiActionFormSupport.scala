@@ -46,11 +46,11 @@ object TgAiActionFormSupport {
   def modelsOrEmpty(result: TgResp[List[TgAiModelDto]]): Seq[TgAiModelDto] =
     result.toOption.flatMap(_.body).getOrElse(Seq.empty)
 
-  /** The model ids to pick from; the current model stays selectable when the server no longer lists it. */
-  def modelIds(models: Seq[TgAiModelDto], currentModel: String): Seq[String] = {
-    val listed = models.map(_.id)
-    if (currentModel.isEmpty || listed.contains(currentModel)) listed else currentModel +: listed
-  }
+  /** Clears a model the server does not list, so the form never submits what the dropdown cannot show. Nothing is
+    * cleared when no model could be listed, otherwise an unreachable server would wipe the saved model.
+    */
+  def withListedModel(form: TgAiActionForm, models: Seq[TgAiModelDto]): TgAiActionForm =
+    if (models.isEmpty || models.exists(_.id == form.model)) form else form.copy(model = "")
 
   private def templateId(form: TgAiActionForm): Option[UUID] =
     Option(form.tgPromptTemplateId).filter(_.nonEmpty).map(UUID.fromString)
