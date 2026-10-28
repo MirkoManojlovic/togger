@@ -330,7 +330,7 @@ class MilestoneSummaryComponent(
     div(
       cls("flex items-center justify-between"),
       div(cls("mr-2"), "Tasks"),
-      div(cls("flex gap-2"), limitButton("Summary limit", limited = true), limitButton("Everything", limited = false))
+      div(cls("flex gap-2"), limitButton("Summary dates", limited = true), limitButton("All History", limited = false))
     )
 
   private lazy val tasksCard: HtmlElement =
