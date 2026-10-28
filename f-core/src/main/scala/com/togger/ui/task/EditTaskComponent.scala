@@ -12,6 +12,7 @@ import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components._
@@ -585,7 +586,13 @@ class EditTaskComponent(
               unsavedNotes,
               child.maybe <-- formState.signal.map(_.archived).distinct.map(Option.when(_)(archivedNote)),
               nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-              badges.element.amend(cls("mb-4")),
+              div(
+                cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+                badges.element,
+                MilestoneSummaryRangeCalendar.element(
+                  badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct
+                )
+              ),
               linksSection.element.amend(cls("mb-4")),
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               div(

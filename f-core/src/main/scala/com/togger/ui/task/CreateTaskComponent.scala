@@ -17,6 +17,7 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -259,7 +260,13 @@ class CreateTaskComponent(
                   .mapTo(formState.now() -> linksVar.now())
                   .compose(_.withCurrentValueOf(badges.taskVar.signal)) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-                badges.element.amend(cls("mb-4")),
+                div(
+                  cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+                  badges.element,
+                  MilestoneSummaryRangeCalendar.element(
+                    badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct
+                  )
+                ),
                 linksSection.element.amend(cls("mb-4")),
                 div(
                   cls("mb-4"),
