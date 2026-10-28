@@ -226,7 +226,10 @@ class MilestoneSummaryFormComponent(
         dateBadges.element,
         div(cls("ml-auto"), child.maybe <-- isSaved.map(Option.when(_)(deleteButton)))
       ),
-      div(cls("mb-4 flex flex-wrap items-center gap-1.5"), MilestoneSummaryPreset.all.map(presetBadge)),
+      div(
+        cls("mb-4 flex flex-col gap-1.5"),
+        MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
+      ),
       (aiActions match {
         case Some(actions) => summaryTabs(actions)
         case None          => summaryEditor.htmlElement
