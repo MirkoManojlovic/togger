@@ -8,7 +8,9 @@ import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, Con
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneAiSummaryStreamEndpoints, MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.tgaiaction.TgAiActionController
 import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
+import com.togger.tgaiaction.{TgAiActionDefaultRepoImpl, TgAiActionEndpointRepoImpl, TgAiActionEndpoints, TgAiActionRepoImpl, TgAiActionService}
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
@@ -194,6 +196,15 @@ object TgServer {
             tgPromptTemplateController.listVersions,
             tgPromptTemplateController.deleteVersion,
             tgPromptTemplateController.delete,
+            tgAiActionController.save,
+            tgAiActionController.update,
+            tgAiActionController.findAll,
+            tgAiActionController.listEndpoints,
+            tgAiActionController.findDefaults,
+            tgAiActionController.setDefault,
+            tgAiActionController.clearDefault,
+            tgAiActionController.findById,
+            tgAiActionController.delete,
             dataExportController.exportTasks,
             dataExportController.checkStatus,
             dataExportController.exportByConfig,
@@ -393,6 +404,19 @@ class DependenciesModule(
   lazy val tgPromptTemplateService = new TgPromptTemplateService(tgPromptTemplateRepo, tgPromptTemplateVersionRepo, transactor)
   lazy val tgPromptTemplateEndpoints = new TgPromptTemplateEndpoints(securedEndpoint)
   lazy val tgPromptTemplateController = new TgPromptTemplateController(tgPromptTemplateService, tgPromptTemplateEndpoints, tgClock)
+  lazy val tgAiActionRepo = new TgAiActionRepoImpl
+  lazy val tgAiActionEndpointRepo = new TgAiActionEndpointRepoImpl
+  lazy val tgAiActionDefaultRepo = new TgAiActionDefaultRepoImpl
+  lazy val tgAiActionService = new TgAiActionService(
+    tgAiActionRepo,
+    tgAiActionEndpointRepo,
+    tgAiActionDefaultRepo,
+    tgPromptTemplateRepo,
+    projectAccountRepo,
+    transactor
+  )
+  lazy val tgAiActionEndpoints = new TgAiActionEndpoints(securedEndpoint)
+  lazy val tgAiActionController = new TgAiActionController(tgAiActionService, tgAiActionEndpoints, tgClock)
 
   // TgAiService is used internally by services such as MilestoneAiSummaryService, it has no endpoints of its own
   lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend, TgOllama.BaseUri, TgOllama.ReadTimeout)
