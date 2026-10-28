@@ -154,6 +154,7 @@ class TaskPreviewComponent(
           val dayEntries = logEntries
             .filter(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate == day)
             .sortBy(_.createdAt)
+            .reverse
 
           def dateBadge() =
             TgBadge(
@@ -203,7 +204,7 @@ class TaskPreviewComponent(
       cls("mb-4"),
       if (entriesByDate.isEmpty) p(cls("text-body"), "No status update")
       else
-        entriesByDate.toSeq.sortBy(_._1).map { case (day, dayEntries) =>
+        entriesByDate.toSeq.sortBy(_._1).reverse.map { case (day, dayEntries) =>
           div(
             logDateAttr := day.toString,
             cls("mb-2 p-2 border rounded-base"),
@@ -211,6 +212,7 @@ class TaskPreviewComponent(
             cls.toggle("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
             dayEntries
               .sortBy(_.createdAt)
+              .reverse
               .map(entry =>
                 div(
                   cls("mb-2"),
