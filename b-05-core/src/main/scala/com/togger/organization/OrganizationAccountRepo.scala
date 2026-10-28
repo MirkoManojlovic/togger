@@ -13,6 +13,10 @@ trait OrganizationAccountRepo {
 
   def deleteById(organizationId: UUID, accountId: UUID): ConnectionIO[Int]
 
+  def deleteAllByOrganizationId(organizationId: UUID): ConnectionIO[Int]
+
+  def isMember(organizationId: UUID, accountId: UUID): ConnectionIO[Boolean]
+
 //  def update(organizationAccount: OrganizationAccount, updatedAt: Instant): ConnectionIO[OrganizationAccount]
 
   /** One page of the organization's members by last name, first name. */

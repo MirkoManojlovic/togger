@@ -53,7 +53,7 @@ class OrganizationControllerAdminTest extends AnyWordSpec with Matchers {
   }
 
   private def callFindAll(accountId: UUID, repo: StubOrganizationRepo, pageRequest: PageRequest) = {
-    val service = new OrganizationService(repo, null, new TgClockImpl, new MockedTransactor {}.transactorMock)
+    val service = new OrganizationService(repo, null, null, new TgClockImpl, new MockedTransactor {}.transactorMock)
     val controller =
       new OrganizationController(
         new OrganizationEndpoints(new SecuredEndpoint(securityLogic)),

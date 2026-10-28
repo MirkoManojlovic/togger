@@ -1,6 +1,6 @@
 package com.togger.project
 import cats.data.NonEmptyList
-import cats.implicits.toFoldableOps
+import cats.implicits.{toFoldableOps, toTraverseOps}
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
@@ -67,6 +67,19 @@ class ProjectRepoImpl extends ProjectRepo {
     )(
       s"Deleting project with all its data ${sp(id)}",
       _ => s"Project with all its data ${sp(id)} deleted"
+    )
+
+  override def deleteAllByOrganizationId(organizationId: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      for {
+        projectIds <- (fr"select id from" ++ PROJECT_TABLE_FRAG ++ fr"where organization_id = $organizationId")
+          .query[UUID]
+          .to[List]
+        deleted <- projectIds.traverse(deleteWithAllData)
+      } yield deleted.sum
+    )(
+      s"Deleting all projects of organization ${sp(organizationId)} with their data",
+      deleted => s"${sp(deleted)} projects of organization ${sp(organizationId)} deleted"
     )
 
   private def deleteByProjectId(projectIdColumnAndTable: (String, String), projectId: UUID): ConnectionIO[Int] = {

@@ -118,9 +118,10 @@ class OrganizationController(
   }
 
   val delete = deleteByIdEndpoint.serverLogic { auth => id =>
-    organizationService
-      .deleteById(id)
-      .map(_ => TgJsonSuccess.justMessageRight("Task status deleted successfully"))
+    organizationService.deleteWithAllData(id, auth.body.get.id).map {
+      case false => Left(Forbidden)
+      case true  => TgJsonSuccess.justMessageRight("Organization deleted successfully")
+    }
   }
 
   // Reads the organizations of every tenant, so only admins may call it.

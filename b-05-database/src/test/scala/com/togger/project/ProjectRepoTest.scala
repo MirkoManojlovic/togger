@@ -107,6 +107,30 @@ class ProjectRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganizatio
       res.transact(transactor)
     }
 
+    "delete every project of an organization with its data" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        savedOrganization <- createOrganization
+        projects <- List("First", "Second").traverse(name =>
+          projectRepo.insert(project.copy(id = UUID.randomUUID(), organizationId = savedOrganization.id, name = name))
+        )
+        _ <- projects.traverse(saved =>
+          taskRepo.insert(Task(UUID.randomUUID(), saved.id, savedAccount.id, nowAsInstant))
+        )
+        deleted <- projectRepo.deleteAllByOrganizationId(savedOrganization.id)
+        found <- projects.traverse(saved => projectRepo.findById(saved.id).attempt)
+        tasksLeft <- fr"select count(*) from task".query[Long].unique
+      } yield {
+        val cp = new Checkpoint
+        cp(deleted shouldBe 2)
+        cp(found.forall(_.isLeft) shouldBe true)
+        cp(tasksLeft shouldBe 0L)
+        cp.reportAll()
+      }
+
+      res.transact(transactor)
+    }
+
     "round-trip a non-default work days set through insert, update, and findById" in { transactor =>
       val weekendWorkDays: Set[DayOfWeek] = Set(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 

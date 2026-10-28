@@ -53,6 +53,24 @@ class OrganizationAccountRepoImpl extends OrganizationAccountRepo {
       _ => s"Organization_account with ${sp(organizationId)} and ${sp(accountId)} deleted"
     )
 
+  override def deleteAllByOrganizationId(organizationId: UUID): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      (deleteStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
+        fr"where organization_id = $organizationId").update.run
+    )(
+      s"Deleting all organization_account rows of ${sp(organizationId)}",
+      _ => s"All organization_account rows of ${sp(organizationId)} deleted"
+    )
+
+  override def isMember(organizationId: UUID, accountId: UUID): ConnectionIO[Boolean] =
+    logAroundInfoQuery(
+      (fr"select exists (select 1 from" ++ OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG ++
+        fr"where organization_id = $organizationId and account_id = $accountId)").query[Boolean].unique
+    )(
+      s"Checking if ${sp(accountId)} is a member of organization ${sp(organizationId)}",
+      isMember => s"Membership of ${sp(accountId)} in organization ${sp(organizationId)} is ${sp(isMember)}"
+    )
+
 //  override def update(organizationAccount: OrganizationAccount, updatedAt: Instant): ConnectionIO[OrganizationAccount] =
 //    logAroundInfoQuery(
 //      updateStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG)(organizationAccount.organizationId)(fr"""
