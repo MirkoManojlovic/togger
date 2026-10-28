@@ -5,12 +5,15 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.{FindMilestoneSummaryResp, FindTgAiActionResp}
+import com.togger.ui.auth.TgSelect
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonDangerCls}
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLFormElement
+
+import scala.collection.immutable.ListMap
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -20,6 +23,8 @@ case class MilestoneSummaryForm(
   id: Option[UUID] = None,
   summary: String = "",
   aiSummary: String = "",
+  aiActionId: String = "",
+  aiPrompt: String = "",
   startDate: String = "",
   endDate: String = ""
 )
@@ -81,25 +86,55 @@ class MilestoneSummaryFormComponent(
     if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId) formState.now().aiSummary
     else formState.now().summary
 
-  private def aiActionButton(action: FindTgAiActionResp): HtmlElement =
+  private val aiActionList = Var(Seq.empty[FindTgAiActionResp])
+
+  private val aiPromptEditor = formState.wysiwygSplitEditorSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.aiPrompt),
+    labelValue = "Prompt",
+    placeholderValue = "Pick an AI action to edit its prompt",
+    minHeightRem = 10,
+    minWidthRem = 0
+  )
+
+  private def chooseAiAction(id: String): Unit =
+    formState.update(
+      _.copy(aiActionId = id, aiPrompt = aiActionList.now().find(_.id.toString == id).fold("")(_.prompt))
+    )
+
+  private def aiActionSelect(actions: Seq[FindTgAiActionResp]): HtmlElement =
+    TgSelect(
+      inputSignal = formState.signal.map(_.aiActionId),
+      inputStateUpdater = Observer[String](chooseAiAction),
+      labelValue = "AI action",
+      emptyValue = Some("Select an AI action"),
+      valuesAndDisplays = ListMap(actions.map(action => action.id.toString -> action.name): _*)
+    ).htmlElement
+
+  // The action as chosen, with the prompt as the user edited it.
+  private def runAiAction(): Unit =
+    aiActionList.now().find(_.id.toString == formState.now().aiActionId).foreach { action =>
+      onAiAction(this, action.copy(prompt = formState.now().aiPrompt))
+    }
+
+  private val runAiActionButton: HtmlElement =
     button(
       typ("button"),
       cls(TgHtmlButton.tailwindExtraSmallButton),
-      cls("w-full text-left"),
-      disabled <-- aiSummaryRunning,
-      title(action.model),
-      action.name,
-      onClick.mapToUnit --> (_ => onAiAction(this, action))
+      disabled <-- aiSummaryRunning.combineWithFn(formState.signal.map(_.aiActionId.isEmpty))(_ || _),
+      child.text <-- aiSummaryRunning.map(running => if (running) "Writing summary..." else "Run AI action"),
+      onClick.mapToUnit --> (_ => runAiAction())
     )
 
   private def aiActionsPanel(actions: Signal[Seq[FindTgAiActionResp]]): HtmlElement =
     div(
-      cls("flex flex-col gap-2"),
-      div(cls("text-sm font-medium text-heading"), "AI actions"),
-      children <-- actions.map(_.map(aiActionButton)),
+      cls("flex min-w-0 flex-col gap-2"),
+      actions --> aiActionList.writer,
+      child <-- actions.map(aiActionSelect),
       child.maybe <-- actions.map(list =>
         Option.when(list.isEmpty)(div(cls("text-sm text-body"), "No AI action is bound to the milestone summary."))
-      )
+      ),
+      aiPromptEditor.htmlElement,
+      div(cls("flex justify-end"), runAiActionButton)
     )
 
   private def summaryTabs(actions: Signal[Seq[FindTgAiActionResp]]): HtmlElement =
