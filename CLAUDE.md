@@ -81,10 +81,11 @@ sbt run every time vite starts.
 Desktop packaging (`justfile`, requires the Tauri CLI and a working sbt/GraalVM setup):
 
 ```
-just build-tauri-backend   # sbt Universal package -> unpack into src-tauri/java, copy Liquibase changelog
+just build-tauri-backend <development|prod>  # sbt Universal package -> unpack into src-tauri/java, copy Liquibase changelog, write java/db-mode
 just build-tauri-app       # npm run tauri build
-just desktop                # both of the above
-just desktop-clean          # sbt clean first
+just desktop-dev           # full build; the app uses db togger-local-development
+just desktop-prod          # full build; the app uses db togger-local
+just desktop-dev-clean / desktop-prod-clean   # sbt clean first
 ```
 
 ## Rules for using sbt

@@ -2,7 +2,8 @@ update-emoji-data:
     node tools/emoji/build-emoji-data.mjs
 
 # sbt 2 writes build output under target/out/<platform>/<scala version>/<project>/
-build-tauri-backend:
+# db_mode (development -> togger-local-development, prod -> togger-local) is baked into the bundle as java/db-mode
+build-tauri-backend db_mode:
     #!/usr/bin/env bash
     set -euo pipefail
     sbt "backendMain/Universal/packageZipTarball"
@@ -16,6 +17,7 @@ build-tauri-backend:
     cp -r "$universal_dir/deploy/backend-main-0.1.0-SNAPSHOT/"* src-tauri/java
     mkdir src-tauri/java/liquibase
     cp b-05-database/src/main/resources/liquibase/changelog.yaml src-tauri/java/liquibase/
+    echo -n "{{db_mode}}" > src-tauri/java/db-mode
 
 build-tauri-mcp:
     #!/usr/bin/env bash
@@ -37,7 +39,9 @@ build-tauri-app:
 clean:
     sbt clean
 
-build-tauri-backend-clean: clean build-tauri-backend
+build-tauri-backend-clean db_mode: clean (build-tauri-backend db_mode)
 
-desktop: build-tauri-backend build-tauri-mcp build-tauri-app
-desktop-clean: build-tauri-backend-clean build-tauri-mcp build-tauri-app
+desktop-dev: (build-tauri-backend "development") build-tauri-mcp build-tauri-app
+desktop-prod: (build-tauri-backend "prod") build-tauri-mcp build-tauri-app
+desktop-dev-clean: (build-tauri-backend-clean "development") build-tauri-mcp build-tauri-app
+desktop-prod-clean: (build-tauri-backend-clean "prod") build-tauri-mcp build-tauri-app
