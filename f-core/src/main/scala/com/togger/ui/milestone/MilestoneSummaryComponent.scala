@@ -330,7 +330,7 @@ class MilestoneSummaryComponent(
     div(
       cls("flex w-full flex-col items-start gap-4 mb-4 lg:flex-row"),
       div(
-        cls("flex w-full min-w-0 flex-col gap-8 lg:w-[50rem] lg:shrink-0"),
+        cls("flex w-full min-w-0 flex-col gap-8 lg:w-[60rem] lg:shrink-0"),
         tasksCard,
         newSummaryCard,
         previousSummariesCard
