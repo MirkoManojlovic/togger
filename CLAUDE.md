@@ -58,6 +58,7 @@ Project-name → directory map (see `build.sbt`):
 | `backendMain`          | `b-07-main`             |
 | `backendAuth`          | `b-auth-app-core`       |
 | `backendAi`            | `b-05-ai`               |
+| `backendMcp`           | `b-08-mcp` (Scala 3)    |
 | `tgMacros`             | `c-00-tg-macros` (cross)|
 | `tgCommon`             | `c-01-common` (cross)   |
 | `httpEndpoints`        | `c-03-http-endpoints` (cross) |
@@ -130,6 +131,18 @@ is a new enum entry with the next free `value`.
 (name, prompt, optional `TgPromptTemplate` id, model). It is bound to any number of `TgAiEndpoints` through
 `tg_ai_action_endpoint`; `tg_ai_action_default` holds one default action per member, project and endpoint (it must be
 bound to that endpoint). Not yet consumed by `MilestoneAiSummaryService`.
+
+**MCP server (`backendMcp`, `b-08-mcp`):** a read-only MCP server built with Chimp, in its own **Scala 3.9** module that
+depends on no other Togger project (Chimp's tapir/sttp are compiled with Scala 3.9, and the module overrides the
+build-wide `dependencyOverrides` for that reason). It is a thin HTTP client of the backend: `McpApp` logs in as the `mcp`
+account (retrying while the backend starts), then serves 16 tools (`tools/*Tools.scala`, one class per domain) on
+`http://127.0.0.1:8090/mcp` by calling the existing endpoints with the session as bearer token. Tools return the
+backend's `body` JSON as text. Config is env only: `TOGGER_BACKEND_URL` (default `http://localhost:8081`),
+`TOGGER_MCP_HOST`, `TOGGER_MCP_PORT`, and `TOGGER_MCP_API_KEY` (if set, every MCP call needs it as bearer token).
+The `mcp` account (`mcp@email.com`, admin type, member of every organization and project) is ensured on every backend
+start by `McpAccountSeedService` in `b-07-main`, so projects created later get it at the next backend restart. Register
+with `claude mcp add --transport http togger http://localhost:8090/mcp`. Run with `sbt --client "backendMcp/run"` (this
+blocks the shared sbt server; alternatively run `com.togger.mcp.McpApp` from the exported classpath).
 
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
