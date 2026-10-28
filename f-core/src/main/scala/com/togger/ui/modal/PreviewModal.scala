@@ -3,6 +3,7 @@ package com.togger.ui.modal
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
+import org.scalajs.dom
 
 /** A wide modal around some content to look at, closed by its button, the backdrop or Escape. */
 case class PreviewModal(title: String, content: HtmlElement, maxWidthCls: String = "max-w-6xl") extends TgModal {
@@ -11,6 +12,15 @@ case class PreviewModal(title: String, content: HtmlElement, maxWidthCls: String
   val isClicked: Signal[Option[ModalResult]] = modalClickedBus.events.toWeakSignal
 
   private val closeObserver: Observer[Unit] = modalClickedBus.writer.contramap(_ => Cancel)
+
+  /** A link in the content navigates away from the page the modal is shown over, so the modal goes with it. */
+  private val closeOnLinkClick: Modifier[HtmlElement] =
+    onClick
+      .filter { ev =>
+        val link = ev.target.asInstanceOf[dom.Element].closest("a[href]")
+        link != null && !(ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)
+      }
+      .mapToUnit --> closeObserver
 
   val element: HtmlDiv =
     div(
@@ -34,7 +44,7 @@ case class PreviewModal(title: String, content: HtmlElement, maxWidthCls: String
               onClick.mapToUnit --> closeObserver
             )
           ),
-          content
+          content.amend(closeOnLinkClick)
         )
       )
     )
