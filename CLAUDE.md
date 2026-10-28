@@ -126,6 +126,10 @@ implemented by `TgOpenAiClient` in `b-05-ai` using sttp-ai (OpenAI) on an fs2 st
 `TgAiEndpoints` (enum in `c-01-common`, package `com.togger.ai`) lists every AI endpoint; its int `value` is the id of the
 `ai_endpoints` table, which `AiEndpointSeedService` syncs on startup (inserts missing rows only). A new AI endpoint
 is a new enum entry with the next free `value`.
+`TgAiAction` (`b-05-core`/`b-05-database`, package `com.togger.tgaiaction`) is an account-scoped, unversioned action
+(name, prompt, optional `TgPromptTemplate` id, model). It is bound to any number of `TgAiEndpoints` through
+`tg_ai_action_endpoint`; `tg_ai_action_default` holds one default action per member, project and endpoint (it must be
+bound to that endpoint). Not yet consumed by `MilestoneAiSummaryService`.
 
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
