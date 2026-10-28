@@ -102,7 +102,7 @@ class ShowAllProjectsTableComponent(
                 )
               )
             ),
-            body = TgCard.HtmlCardContent(div(organizationResp.description))
+            body = TgCard.HtmlCardContent(tgMarkdown.toLaminarDiv(organizationResp.description))
           )
           .element
           .amend(cls("mb-4"))

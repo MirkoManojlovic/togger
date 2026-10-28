@@ -12,6 +12,7 @@ import com.togger.routes.Pages.{
   ShowAllOrganizationsPage,
   ShowProjectsForOrganizationIdTable
 }
+import com.togger.markdown.TgMarkdown
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.ui.auth.{AccountService, TgCard}
 import com.togger.ui.components.{TgBadge, TgBadgeColor}
@@ -27,7 +28,8 @@ class ShowAllOrganizationsComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   params: ListParams,
-  toast: Toast
+  toast: Toast,
+  tgMarkdown: TgMarkdown
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -87,7 +89,7 @@ class ShowAllOrganizationsComponent(
         ),
         body = TgCard.HtmlCardContent(
           div(
-            div(dto.description),
+            tgMarkdown.toLaminarDiv(dto.description),
             Option.when(dto.members.nonEmpty)(
               div(
                 cls("mt-4"),

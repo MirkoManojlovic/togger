@@ -537,7 +537,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   accountService,
                   listParams,
-                  toast
+                  toast,
+                  tgMarkdown
                 ).element
               case EditOrganizationPage(organizationId) =>
                 new EditOrganizationComponent(
