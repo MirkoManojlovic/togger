@@ -13,7 +13,7 @@ import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
@@ -77,7 +77,14 @@ class ShowAllTasksComponent(
           header = TgCard.CardHeader.html(
             div(
               cls("flex justify-between"),
-              div("Tasks")
+              div("Tasks"),
+              iconButton(
+                "Create Task",
+                TgIcons.plusIcon(className = "w-4 h-4"),
+                headerIconButtonCls,
+                "mr-2",
+                router.navigateTo(CreateTaskPage(projectId))
+              )
             ),
             TgCard.CardHeaderSize.H3
           ),
