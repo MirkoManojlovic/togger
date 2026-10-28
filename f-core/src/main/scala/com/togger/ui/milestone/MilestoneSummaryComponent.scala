@@ -18,7 +18,8 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
-import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectService, TaskListItem}
 import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
@@ -342,10 +343,34 @@ class MilestoneSummaryComponent(
       )
       .element
 
+  // The tasks with log entries in the period of the new summary, counted by status in the order of the tabs below.
+  private val newSummaryStatusCounts: Signal[Seq[HtmlElement]] =
+    tasksVar.signal.combineWithFn(newSummaryPeriod)((tasks, period) => (tasks, period._1, period._2)).map {
+      case (tasks, startDate, endDate) =>
+      if (startDate.isEmpty || endDate.isEmpty) Seq.empty
+      else {
+        val inPeriod =
+          MilestoneSummaryComponent.withLogEntriesBetween(tasks, LocalDate.parse(startDate), LocalDate.parse(endDate))
+        if (inPeriod.isEmpty) Seq(TgBadge("No tasks", TgBadgeColor.Gray, bordered = true).element)
+        else
+          MilestoneSummaryComponent.byStatusOrder(StagedGrouping.ByStatus.group(inPeriod, Seq.empty)).map { group =>
+            val status = group.tasks.head.taskStatus
+            TgBadge(s"${status.badgeText} × ${group.tasks.size}", status.badgeColor, bordered = true).element
+          }
+      }
+    }
+
+  private lazy val newSummaryHeader: HtmlElement =
+    div(
+      cls("flex flex-wrap items-center justify-between gap-2"),
+      div(cls("mr-2"), "New summary"),
+      div(cls("flex flex-wrap justify-end gap-1.5"), children <-- newSummaryStatusCounts)
+    )
+
   private lazy val newSummaryCard: HtmlElement =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("New summary", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.html(newSummaryHeader),
         body = TgCard.HtmlCardContent(div(child <-- newSummaryVar.signal.map(_.htmlElement)))
       )
       .element
