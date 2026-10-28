@@ -33,5 +33,27 @@ class MilestoneSummaryRangeCalendarTest extends AsyncJsWordSpec {
       MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 10, 30), LocalDate.of(2026, 10, 1)) shouldBe
         Seq.empty
     }
+
+    "start a range of one day with the first click" in { _ =>
+      val day = LocalDate.of(2026, 10, 10)
+      MilestoneSummaryRangeCalendar.pick(None, day) shouldBe (((day, day), Some(day)))
+    }
+
+    "end the range with the second click" in { _ =>
+      val first = LocalDate.of(2026, 10, 10)
+      val second = LocalDate.of(2026, 10, 20)
+      MilestoneSummaryRangeCalendar.pick(Some(first), second) shouldBe (((first, second), None))
+    }
+
+    "put the earlier of the two days first when the second click is before the first" in { _ =>
+      val first = LocalDate.of(2026, 10, 20)
+      val second = LocalDate.of(2026, 10, 10)
+      MilestoneSummaryRangeCalendar.pick(Some(first), second) shouldBe (((second, first), None))
+    }
+
+    "keep a one day range when the second click is on the first day" in { _ =>
+      val day = LocalDate.of(2026, 10, 10)
+      MilestoneSummaryRangeCalendar.pick(Some(day), day) shouldBe (((day, day), None))
+    }
   }
 }
