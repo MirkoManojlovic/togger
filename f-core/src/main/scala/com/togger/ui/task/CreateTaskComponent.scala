@@ -17,19 +17,18 @@ import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
 import com.togger.toast.ToastMessages
-import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.components.MultiSelectItem
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.MultiSelectItem
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryRangeCalendar}
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
 import com.togger.ui.task.bulk.{BulkTask, BulkTaskDefaults}
+import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -68,7 +67,9 @@ case class TaskStatusSelect(id: UUID, name: String) {
   */
 case class TaskLabelsState(taskLabels: Seq[FindTaskLabelResp] = Seq.empty) {
   lazy val asMultiSelectItems: Seq[MultiSelectItem] =
-    taskLabels.sortBy(_.name).map(dto => MultiSelectItem(id = dto.id.toString, name = dto.badgeText, isSelected = false))
+    taskLabels
+      .sortBy(_.name)
+      .map(dto => MultiSelectItem(id = dto.id.toString, name = dto.badgeText, isSelected = false))
 }
 
 class CreateTaskComponent(
@@ -227,9 +228,7 @@ class CreateTaskComponent(
       )
       spinnerService
         .runWithSpinner(taskService.createTask(dto))
-        .toastMessageFn("Task created successfully")(created =>
-          router.route(EditTaskPage(projectId, created.task.id))
-        )
+        .toastMessageFn("Task created successfully")(created => router.route(EditTaskPage(projectId, created.task.id)))
         .unsafeRunAndForget()
   }
 
@@ -265,7 +264,7 @@ class CreateTaskComponent(
                   badges.element,
                   MilestoneSummaryRangeCalendar.element(
                     badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct,
-badges.workDaysSignal,
+                    badges.workDaysSignal,
                     (start, due) =>
                       badges.taskVar.update(_.copy(startDate = start, dueDate = due, dueDateManual = true))
                   )
@@ -283,7 +282,6 @@ badges.workDaysSignal,
         )
         .element
         .amend(heightAndWidthFitContent)
-//        .amend(heightAndWidthFitContent)
     )
 
 }
