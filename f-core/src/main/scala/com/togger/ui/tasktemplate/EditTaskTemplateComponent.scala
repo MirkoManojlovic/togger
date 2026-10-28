@@ -40,7 +40,7 @@ class EditTaskTemplateComponent(
 
   private def loadVersions(): IO[Unit] =
     taskTemplateService.listAllVersions(taskTemplateId).map {
-      case Left(failure) => println(failure)
+      case Left(failure) => toast.error(failure)
       case Right(success) =>
         versionsVar.set(success.body.getOrElse(Seq.empty).sortBy(_.createdAt).reverse)
     }

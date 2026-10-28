@@ -49,7 +49,7 @@ class TgAiActionDefaultsComponent(
     if (projectId.isEmpty) IO(defaultsVar.set(Map.empty))
     else
       tgAiActionService.findDefaults(UUID.fromString(projectId)).map {
-        case Left(failure) => println(failure)
+        case Left(failure) => toast.error(failure)
         case Right(success) =>
           defaultsVar.set(success.body.getOrElse(List.empty).map(d => d.endpointId -> d.actionId.toString).toMap)
       }

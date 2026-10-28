@@ -39,14 +39,14 @@ class EditTgPromptTemplateComponent(
 
   private def loadVersions(): IO[Unit] =
     tgPromptTemplateService.listAllVersions(tgPromptTemplateId).map {
-      case Left(failure) => println(failure)
+      case Left(failure) => toast.error(failure)
       case Right(success) =>
         versionsVar.set(TgPromptTemplateFormSupport.newestFirst(success.body.getOrElse(Seq.empty)))
     }
 
   private def loadForm(): IO[Unit] =
     tgPromptTemplateService.findTgPromptTemplateById(tgPromptTemplateId).map {
-      case Left(failure) => println(failure)
+      case Left(failure) => toast.error(failure)
       case Right(success) =>
         val dto = success.body.get
         formState.set(TgPromptTemplateForm(id = dto.id, title = dto.title, prompt = dto.prompt))

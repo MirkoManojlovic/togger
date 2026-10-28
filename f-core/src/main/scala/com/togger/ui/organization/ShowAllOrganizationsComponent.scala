@@ -18,6 +18,7 @@ import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 
 class ShowAllOrganizationsComponent(
@@ -25,7 +26,8 @@ class ShowAllOrganizationsComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   accountService: AccountService,
-  params: ListParams
+  params: ListParams,
+  toast: Toast
 )(implicit
   ioRuntime: IORuntime
 ) {

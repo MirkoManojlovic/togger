@@ -24,6 +24,7 @@ import com.togger.ui.components.{
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.{ProjectInfoCard, ProjectService}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
@@ -40,7 +41,8 @@ class ShowMilestonesComponent(
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
   projectId: UUID,
-  params: MilestoneListParams
+  params: MilestoneListParams,
+  toast: Toast
 )(implicit
   ioRuntime: IORuntime
 ) {

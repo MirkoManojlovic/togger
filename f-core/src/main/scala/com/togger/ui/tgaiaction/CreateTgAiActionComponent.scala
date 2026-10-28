@@ -42,8 +42,8 @@ class CreateTgAiActionComponent(
             )
           )
         )
-      case (Left(failure), _) => println(failure)
-      case (_, Left(failure)) => println(failure)
+      case (Left(failure), _) => toast.error(failure)
+      case (_, Left(failure)) => toast.error(failure)
     }
 
   spinnerService.runWithSpinner(load()).unsafeRunAndForget()

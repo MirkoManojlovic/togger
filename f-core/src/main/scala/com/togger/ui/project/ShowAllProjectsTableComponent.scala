@@ -13,6 +13,7 @@ import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.toast.Toast
 import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 
 import java.util.UUID
@@ -25,7 +26,8 @@ class ShowAllProjectsTableComponent(
   accountService: AccountService,
   tgMarkdown: TgMarkdown,
   organizationId: UUID,
-  params: ListParams
+  params: ListParams,
+  toast: Toast
 )(implicit
   ioRuntime: IORuntime
 ) {

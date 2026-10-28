@@ -92,7 +92,7 @@ class FindAccountsComponent(
     formState.now().membersToRemove.values.toSeq
 
   private val localRootSpinnerDiv = div(position.relative)
-  private val localSpinner = SpinnerService.localSpinner(localRootSpinnerDiv)
+  private val localSpinner = SpinnerService.localSpinner(localRootSpinnerDiv, error => println(error))
 
   private val employeeSearchInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.searchTerm),

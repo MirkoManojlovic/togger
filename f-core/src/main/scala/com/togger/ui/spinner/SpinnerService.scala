@@ -9,7 +9,8 @@ import scala.concurrent.duration._
 
 class SpinnerService private (
   parentElementForSpinner: HtmlElement,
-  spinnerElement: ReactiveHtmlElement[HTMLDivElement]
+  spinnerElement: ReactiveHtmlElement[HTMLDivElement],
+  onError: Throwable => Unit
 ) {
 
   private val spinnerState = Var(false)
@@ -17,12 +18,9 @@ class SpinnerService private (
   def runWithSpinner[A](codeBlock: => IO[A]): IO[A] = {
     IO(show())
       .flatMap(_ => codeBlock)
-      .flatMap { result =>
-        IO {
-          hide()
-          result
-        }.delayBy(100.millis)
-      }
+      .flatMap(result => IO(result).delayBy(100.millis))
+      .onError { case error => IO(onError(error)) }
+      .guarantee(IO(hide()))
   }
 
   def show(): Unit =
@@ -59,13 +57,13 @@ object SpinnerService {
       role("status")
     )
 
-  def globalSpinner(parentElementForSpinner: HtmlElement): SpinnerService = {
+  def globalSpinner(parentElementForSpinner: HtmlElement, onError: Throwable => Unit): SpinnerService = {
     val spinnerElement = div(cls(s"fixed inset-0 w-screen h-screen $overlayClasses"), spinerElement)
-    new SpinnerService(parentElementForSpinner, spinnerElement)
+    new SpinnerService(parentElementForSpinner, spinnerElement, onError)
   }
 
-  def localSpinner(parentElementForSpinner: HtmlElement): SpinnerService = {
+  def localSpinner(parentElementForSpinner: HtmlElement, onError: Throwable => Unit): SpinnerService = {
     val spinnerElement = div(cls(s"absolute inset-0 w-full h-full $overlayClasses"), spinerElement)
-    new SpinnerService(parentElementForSpinner, spinnerElement)
+    new SpinnerService(parentElementForSpinner, spinnerElement, onError)
   }
 }

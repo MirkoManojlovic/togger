@@ -51,9 +51,9 @@ class EditTgAiActionComponent(
             )
           )
         )
-      case (Left(failure), _, _) => println(failure)
-      case (_, Left(failure), _) => println(failure)
-      case (_, _, Left(failure)) => println(failure)
+      case (Left(failure), _, _) => toast.error(failure)
+      case (_, Left(failure), _) => toast.error(failure)
+      case (_, _, Left(failure)) => toast.error(failure)
     }
 
   spinnerService.runWithSpinner(load()).unsafeRunAndForget()

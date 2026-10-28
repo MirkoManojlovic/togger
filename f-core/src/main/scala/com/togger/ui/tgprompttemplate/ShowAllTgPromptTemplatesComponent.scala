@@ -46,7 +46,7 @@ class ShowAllTgPromptTemplatesComponent(
   /** Reads the page the URL asks for. A page past the end steps back to the last page. */
   private def loadPage(): IO[Unit] =
     tgPromptTemplateService.findAll(params.pageRequest).map {
-      case Left(failure) => println(failure)
+      case Left(failure) => toast.error(failure)
       case Right(success) =>
         val response = success.body.get
         if (response.items.isEmpty && response.totalNumberOfPages > 0 && params.page > response.totalNumberOfPages)

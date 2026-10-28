@@ -52,7 +52,10 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   implicit val runtime = cats.effect.unsafe.implicits.global
 
   lazy val elementForSpinner = div()
-  lazy val spinnerService = SpinnerService.globalSpinner(elementForSpinner)
+  lazy val spinnerService = SpinnerService.globalSpinner(
+    elementForSpinner,
+    error => toast.error(s"Something went wrong: ${Option(error.getMessage).getOrElse(error.toString)}")
+  )
 
   val elementForModal = div()
   val elementForQuickCreate = div()
@@ -337,7 +340,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   spinnerService,
                   accountService,
                   projectId,
-                  listParams
+                  listParams,
+                  toast
                 ).element
               case EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) =>
                 new EditTaskLabelComponent(
@@ -510,7 +514,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   accountService,
                   tgMarkdown,
                   organizationId,
-                  listParams
+                  listParams,
+                  toast
                 ).element
 
               case CreateOrganizationPage =>
@@ -529,7 +534,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   accountService,
-                  listParams
+                  listParams,
+                  toast
                 ).element
               case EditOrganizationPage(organizationId) =>
                 new EditOrganizationComponent(
@@ -638,7 +644,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   router,
                   spinnerService,
                   accountService,
-                  listParams
+                  listParams,
+                  toast
                 ).element
               case EditProjectLabelCategoryPage(projectLabelCategoryId) =>
                 new EditProjectLabelCategoryComponent(
@@ -760,7 +767,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                   tgDateFormater,
                   tgMarkdown,
                   projectId,
-                  listParams
+                  listParams,
+                  toast
                 ).element
               case ShowMilestoneHistoryPage(projectId: UUID, historyParams) =>
                 new MilestoneHistoryComponent(
