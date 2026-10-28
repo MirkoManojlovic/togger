@@ -261,7 +261,7 @@ class CreateTaskComponent(
                   .compose(_.withCurrentValueOf(badges.taskVar.signal)) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 div(
-                  cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+                  cls("mb-4 flex flex-col gap-4"),
                   badges.element,
                   MilestoneSummaryRangeCalendar.element(
                     badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct,

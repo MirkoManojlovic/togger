@@ -222,7 +222,7 @@ class MilestoneSummaryFormComponent(
     form(
       onSubmit.preventDefault.mapToUnit --> (_ => onSave(this)),
       div(
-        cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+        cls("mb-4 flex flex-col gap-4"),
         div(
           cls("min-w-0"),
           div(

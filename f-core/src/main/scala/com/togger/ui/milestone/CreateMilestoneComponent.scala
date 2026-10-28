@@ -153,7 +153,7 @@ class CreateMilestoneComponent(
               onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
               div(
-                cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+                cls("mb-4 flex flex-col gap-4"),
                 dateBadges.element,
                 MilestoneSummaryRangeCalendar.element(
                   formState.signal.map(form => form.startDate -> form.dueDate).distinct,

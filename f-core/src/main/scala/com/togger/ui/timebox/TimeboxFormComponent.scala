@@ -554,7 +554,7 @@ class TimeboxFormComponent(
             formState.signal.changes --> draftSaver,
             onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
             div(
-              cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+              cls("mb-4 flex flex-col gap-4"),
               div(
                 cls("min-w-0"),
                 div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
