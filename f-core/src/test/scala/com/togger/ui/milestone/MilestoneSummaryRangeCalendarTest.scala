@@ -1,0 +1,37 @@
+package com.togger.ui.milestone
+
+import com.togger.common.suites.AsyncJsWordSpec
+
+import java.time.LocalDate
+
+class MilestoneSummaryRangeCalendarTest extends AsyncJsWordSpec {
+
+  testNameFromClassName should {
+
+    "start the only calendar of a week on its Monday" in { _ =>
+      // 2026-10-28 is a Wednesday
+      MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 10, 28), LocalDate.of(2026, 10, 30)) shouldBe
+        Seq(LocalDate.of(2026, 10, 26))
+    }
+
+    "keep a range of four weeks in one calendar" in { _ =>
+      MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 11, 1)) shouldBe
+        Seq(LocalDate.of(2026, 10, 5))
+    }
+
+    "add a calendar, the oldest first, when the range goes past four weeks" in { _ =>
+      MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 11, 2)) shouldBe
+        Seq(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 11, 2))
+    }
+
+    "cover six months with calendars in date order" in { _ =>
+      val starts = MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 9, 30))
+      (starts.head, starts.size, starts == starts.sorted) shouldBe ((LocalDate.of(2026, 3, 30), 7, true))
+    }
+
+    "show nothing for a range that ends before it starts" in { _ =>
+      MilestoneSummaryRangeCalendar.calendarStarts(LocalDate.of(2026, 10, 30), LocalDate.of(2026, 10, 1)) shouldBe
+        Seq.empty
+    }
+  }
+}

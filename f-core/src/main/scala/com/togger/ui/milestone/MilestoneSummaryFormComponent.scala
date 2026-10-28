@@ -222,13 +222,20 @@ class MilestoneSummaryFormComponent(
     form(
       onSubmit.preventDefault.mapToUnit --> (_ => onSave(this)),
       div(
-        cls("mb-2 flex flex-wrap items-center gap-1.5"),
-        dateBadges.element,
-        div(cls("ml-auto"), child.maybe <-- isSaved.map(Option.when(_)(deleteButton)))
-      ),
-      div(
-        cls("mb-4 flex flex-col gap-1.5"),
-        MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
+        cls("mb-4 flex flex-wrap items-start justify-between gap-4"),
+        div(
+          cls("min-w-0"),
+          div(
+            cls("mb-2 flex flex-wrap items-center gap-1.5"),
+            dateBadges.element,
+            div(cls("ml-auto"), child.maybe <-- isSaved.map(Option.when(_)(deleteButton)))
+          ),
+          div(
+            cls("flex flex-col gap-1.5"),
+            MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
+          )
+        ),
+        MilestoneSummaryRangeCalendar.element(formState.signal.map(form => form.startDate -> form.endDate).distinct)
       ),
       (aiActions match {
         case Some(actions) => summaryTabs(actions)
