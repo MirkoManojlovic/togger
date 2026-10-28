@@ -1,20 +1,22 @@
 package com.togger.ui.tgaiaction
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto}
+import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgSelect.TgSelectSyntax
 import com.togger.ui.auth.{TgCheckbox, TgInputType, TgSelect}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import scala.collection.immutable.ListMap
 
-/** The fields shared by the create and the edit form. The prompt templates and the endpoints are read before the form is
-  * shown, because the select and the checkboxes are built from them.
+/** The fields shared by the create and the edit form. The prompt templates, the models and the endpoints are read before
+  * the form is shown, because the selects and the checkboxes are built from them.
   */
 class TgAiActionFormFields(
   formState: Var[TgAiActionForm],
   promptTemplates: Seq[FindTgPromptTemplateResp],
+  models: Seq[TgAiModelDto],
   endpoints: Seq[TgAiEndpointDto]
 ) {
 
@@ -25,11 +27,13 @@ class TgAiActionFormFields(
     tgInputType = TgInputType.Text
   )
 
-  private val modelInput = formState.tgInputManualErrorLPSig(
+  private val modelSelect = formState.tgSelectManualError(
     inputAndUpdater = selectorAndUpdaterMacro(_.model),
-    errors = EventStream.empty,
     labelValue = "Model",
-    tgInputType = TgInputType.Text
+    emptyValue = Some("Select a model"),
+    valuesAndDisplays = ListMap(
+      TgAiActionFormSupport.modelIds(models, formState.now().model).map(id => id -> id): _*
+    )
   )
 
   private val promptEditor = formState.wysiwygSplitEditorSig(
@@ -57,7 +61,7 @@ class TgAiActionFormFields(
 
   val elements: Seq[HtmlElement] = Seq(
     nameInput.htmlElement.amend(cls("mb-4")),
-    modelInput.htmlElement.amend(cls("mb-4")),
+    modelSelect.htmlElement.amend(cls("mb-4")),
     promptTemplateSelect.htmlElement.amend(cls("mb-4")),
     promptEditor.htmlElement.amend(cls("mb-4")),
     div(

@@ -1,6 +1,7 @@
 package com.togger.ui.tgaiaction
 
-import com.togger.dto.{CreateTgAiActionReq, FindTgAiActionResp, TgAiEndpointDto, UpdateTgAiActionReq}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.dto.{CreateTgAiActionReq, FindTgAiActionResp, TgAiEndpointDto, TgAiModelDto, UpdateTgAiActionReq}
 
 import java.util.UUID
 
@@ -40,6 +41,16 @@ object TgAiActionFormSupport {
   /** The names of the endpoints the action is bound to, in endpoint order. */
   def endpointNames(endpointIds: List[Int], endpoints: Seq[TgAiEndpointDto]): String =
     endpoints.filter(endpoint => endpointIds.contains(endpoint.id)).map(_.name).mkString(", ")
+
+  /** The form stays usable when the models cannot be listed, e.g. the local Ollama is not running. */
+  def modelsOrEmpty(result: TgResp[List[TgAiModelDto]]): Seq[TgAiModelDto] =
+    result.toOption.flatMap(_.body).getOrElse(Seq.empty)
+
+  /** The model ids to pick from; the current model stays selectable when the server no longer lists it. */
+  def modelIds(models: Seq[TgAiModelDto], currentModel: String): Seq[String] = {
+    val listed = models.map(_.id)
+    if (currentModel.isEmpty || listed.contains(currentModel)) listed else currentModel +: listed
+  }
 
   private def templateId(form: TgAiActionForm): Option[UUID] =
     Option(form.tgPromptTemplateId).filter(_.nonEmpty).map(UUID.fromString)

@@ -1,6 +1,7 @@
 package com.togger.ui.tgaiaction
 
-import com.togger.dto.{FindTgAiActionResp, TgAiEndpointDto}
+import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.dto.{FindTgAiActionResp, TgAiEndpointDto, TgAiModelDto}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -23,6 +24,25 @@ class TgAiActionFormSupportTest extends AnyWordSpec with Matchers {
   )
 
   "TgAiActionFormSupport" should {
+
+    "offer the listed models" in {
+      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3"), TgAiModelDto("qwen3")), "llama3") shouldBe
+        Seq("llama3", "qwen3")
+    }
+
+    "keep a saved model that is no longer listed selectable" in {
+      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3")), "gpt-5") shouldBe Seq("gpt-5", "llama3")
+    }
+
+    "not add an empty model to the options" in {
+      TgAiActionFormSupport.modelIds(List(TgAiModelDto("llama3")), "") shouldBe Seq("llama3")
+    }
+
+    "read the models of a successful response and fall back to none on a failure" in {
+      val models = List(TgAiModelDto("llama3"))
+      TgAiActionFormSupport.modelsOrEmpty(Right(TgJsonSuccess.justBody(models))) shouldBe models
+      TgAiActionFormSupport.modelsOrEmpty(Left(TgJsonFailure.notFound())) shouldBe Seq.empty
+    }
 
     "turn a dto into a form and back into an update request" in {
       val form = TgAiActionFormSupport.fromDto(dto)

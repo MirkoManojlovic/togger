@@ -5,7 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJsonSuccess
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto}
+import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -29,6 +29,7 @@ class CreateTgAiActionComponent(
     for {
       templates <- tgPromptTemplateService.findAllTemplates
       endpoints <- tgAiActionService.listEndpoints
+      models <- tgAiActionService.listModels
     } yield (templates, endpoints) match {
       case (Right(templatesSuccess), Right(endpointsSuccess)) =>
         fieldsVar.set(
@@ -36,6 +37,7 @@ class CreateTgAiActionComponent(
             new TgAiActionFormFields(
               formState,
               templatesSuccess.body.getOrElse(Seq.empty[FindTgPromptTemplateResp]),
+              TgAiActionFormSupport.modelsOrEmpty(models),
               endpointsSuccess.body.getOrElse(List.empty[TgAiEndpointDto])
             )
           )

@@ -1,5 +1,6 @@
 package com.togger.ui.tgaiaction
 
+import com.togger.ai.TgAiModelEndpoints
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgJsonSuccess.TgEmptyBody
@@ -13,6 +14,7 @@ import java.util.UUID
 
 class TgAiActionFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
   val tgAiActionEndpoints = new TgAiActionEndpoints(securedEndpoint)
+  private val tgAiModelEndpoints = new TgAiModelEndpoints(securedEndpoint)
 
   def create(dto: CreateTgAiActionReq): TgRespIO[FindTgAiActionResp] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.saveEndpoint)(dto)
@@ -34,6 +36,9 @@ class TgAiActionFeService(securedEndpoint: SecuredEndpoint, protectedBackendClie
 
   def listEndpoints: TgRespIO[List[TgAiEndpointDto]] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.listEndpointsEndpoint)(())
+
+  def listModels: TgRespIO[List[TgAiModelDto]] =
+    protectedBackendClient.protectedHttpCall(tgAiModelEndpoints.listEndpoint)(())
 
   def findDefaults(projectId: UUID): TgRespIO[List[FindTgAiActionDefaultResp]] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.findDefaultsEndpoint)(projectId)

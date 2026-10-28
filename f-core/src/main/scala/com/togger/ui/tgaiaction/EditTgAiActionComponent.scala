@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto}
+import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
 import com.togger.routes.Pages.ShowAllTgAiActionsPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
@@ -37,6 +37,7 @@ class EditTgAiActionComponent(
       action <- tgAiActionService.findById(tgAiActionId)
       templates <- tgPromptTemplateService.findAllTemplates
       endpoints <- tgAiActionService.listEndpoints
+      models <- tgAiActionService.listModels
     } yield (action, templates, endpoints) match {
       case (Right(actionSuccess), Right(templatesSuccess), Right(endpointsSuccess)) =>
         formState.set(TgAiActionFormSupport.fromDto(actionSuccess.body.get))
@@ -45,6 +46,7 @@ class EditTgAiActionComponent(
             new TgAiActionFormFields(
               formState,
               templatesSuccess.body.getOrElse(Seq.empty[FindTgPromptTemplateResp]),
+              TgAiActionFormSupport.modelsOrEmpty(models),
               endpointsSuccess.body.getOrElse(List.empty[TgAiEndpointDto])
             )
           )
