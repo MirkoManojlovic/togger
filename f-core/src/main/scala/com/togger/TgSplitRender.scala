@@ -739,6 +739,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ProjectHomeComponent(
                   projectService,
                   milestoneService,
+                  milestoneSummaryService,
                   timeboxService,
                   taskService,
                   taskStatusService,

@@ -6,7 +6,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
+import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindMilestoneSummaryResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
@@ -15,7 +15,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor}
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneTaskRows}
+import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryFeService, MilestoneTabs, MilestoneTaskRows}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -30,6 +30,7 @@ import java.util.UUID
 class ProjectHomeComponent(
   projectService: ProjectService,
   milestoneService: MilestoneFeService,
+  milestoneSummaryService: MilestoneSummaryFeService,
   timeboxService: TimeboxFeService,
   taskService: TaskFeService,
   taskStatusService: TaskStatusFeService,
@@ -46,6 +47,7 @@ class ProjectHomeComponent(
 
   private val projectVar = Var(Option.empty[FindProjectResp])
   private val milestonesVar = Var(Seq.empty[(FindMilestoneResp, Seq[FindTaskRespFull])])
+  private val summariesVar = Var(Map.empty[UUID, Seq[FindMilestoneSummaryResp]])
   private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
   private val allStatusesVar = Var(Seq.empty[FindTaskStatusResp])
@@ -73,6 +75,15 @@ class ProjectHomeComponent(
             taskService.findAllByMilestone(projectId, milestone.id)
           ).map(milestonesVar.set)
       }
+
+  /** The summaries of each active milestone, newest period first; a failure leaves the milestone without summaries. */
+  private def loadSummaries(): IO[Unit] =
+    milestonesVar.now().map(_._1).toList.traverse { milestone =>
+      milestoneSummaryService.findAllByMilestoneId(milestone.id).map { response =>
+        val summaries = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
+        milestone.id -> summaries.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
+      }
+    }.map(loaded => summariesVar.set(loaded.toMap))
 
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
   private def loadAllMilestones(): IO[Unit] =
@@ -114,11 +125,14 @@ class ProjectHomeComponent(
         _ <- loaded(projectService.findById(projectId))(project => projectVar.set(Some(project)))
         _ <- loadAllMilestones()
         _ <- loadMilestones()
+        _ <- loadSummaries()
         _ <- loadTimeboxes()
         _ <- loadInFlightTasks()
       } yield ()
     )
     .unsafeRunAndForget()
+
+  private val milestoneTabs = new MilestoneTabs(tgDateFormater, tgMarkdown)
 
   private val projectInfoCard = new ProjectInfoCard(router, tgMarkdown)
 
@@ -151,7 +165,10 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
-      MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays)
+      milestoneTabs(
+        MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays),
+        summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty))
+      )
     )
   }
 

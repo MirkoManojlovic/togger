@@ -13,9 +13,7 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{
   ChartColorBadgeColor,
   TgBadge,
-  TgBadgeColor,
-  TgTab,
-  TgTabs
+  TgBadgeColor
 }
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
@@ -179,32 +177,7 @@ class MilestoneReviewComponent(
       .element
       .amend(cls("mb-4"))
 
-  private def summaryContent(summary: FindMilestoneSummaryResp): HtmlElement =
-    div(
-      div(
-        cls("flex flex-wrap items-center gap-1.5 mb-2"),
-        dateBadge("Start", summary.startDate),
-        dateBadge("End", summary.endDate)
-      ),
-      Option.when(summary.summary.nonEmpty)(tgMarkdown.toLaminarDiv(summary.summary))
-    )
-
-  private val selectedSummaryVar = Var("")
-
-  // One tab per summary, newest first; the selected tab survives the summaries being reloaded.
-  private def summaryTabs(summaries: Seq[FindMilestoneSummaryResp]): HtmlElement =
-    if (summaries.isEmpty) div(cls("text-sm text-body"), "No summaries yet.")
-    else
-      new TgTabs(
-        summaries.map { summary =>
-          TgTab(
-            id = summary.id.toString,
-            label = s"${tgDateFormater.asAmericanDate(summary.startDate)} - ${tgDateFormater.asAmericanDate(summary.endDate)}",
-            content = summaryContent(summary)
-          )
-        },
-        selectedSummaryVar
-      ).element
+  private val milestoneTabs = new MilestoneTabs(tgDateFormater, tgMarkdown)
 
   private val history = new SingleMilestoneHistoryComponent(
     taskService,
@@ -230,11 +203,6 @@ class MilestoneReviewComponent(
       } yield ()
     )
     .unsafeRunAndForget()
-
-  private val StatusTab = "status"
-  private val SummaryTab = "milestone-summary"
-
-  private val selectedTabVar = Var(StatusTab)
 
   private def statusContent(
     milestone: FindMilestoneResp,
@@ -263,19 +231,7 @@ class MilestoneReviewComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Milestone", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(
-          new TgTabs(
-            Seq(
-              TgTab(id = StatusTab, label = "Status", content = statusTabContent),
-              TgTab(
-                id = SummaryTab,
-                label = "Milestone summary",
-                content = div(child <-- summariesVar.signal.map(summaryTabs))
-              )
-            ),
-            selectedTabVar
-          ).element
-        )
+        body = TgCard.HtmlCardContent(milestoneTabs(statusTabContent, summariesVar.signal))
       )
       .element
       .amend(cls("w-full mb-4"))
