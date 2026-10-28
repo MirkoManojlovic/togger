@@ -699,7 +699,7 @@ class CreateTaskQuick(
 
   val element: HtmlElement =
     div(
-      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-24 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
+      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
       onKeyDown --> (event => onWrapperKeyDown(event)),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => onClose()),
       onMountCallback { _ =>
