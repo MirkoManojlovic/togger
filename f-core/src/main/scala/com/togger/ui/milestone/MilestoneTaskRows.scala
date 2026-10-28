@@ -81,7 +81,7 @@ object MilestoneTaskRows {
       cls("p-3 border border-default rounded-base"),
       div(cls("font-semibold text-heading mb-3"), title),
       div(
-        cls("flex flex-col sm:flex-row sm:items-start gap-4"),
+        cls("flex flex-col sm:flex-row sm:items-stretch gap-4"),
         counts(tasks, statuses),
         div(
           cls("grid grid-cols-3"),
