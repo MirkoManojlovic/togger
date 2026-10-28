@@ -25,10 +25,12 @@
   },
   "bundle": {
     "externalBin": [
-      "binaries/backend-app-exec"
+      "binaries/backend-app-exec",
+      "binaries/mcp-app-exec"
     ],
     "resources": [
-      "java/"
+      "java/",
+      "mcp/"
     ],
     "active": true,
     "targets": "all",

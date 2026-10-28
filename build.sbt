@@ -476,8 +476,10 @@ lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform).in(file("c-00-tg-macr
 // Scala 3 module on purpose: Chimp is Scala 3 only. It does not depend on any other Togger project and talks to the
 // backend over HTTP only.
 lazy val backendMcp = (project in file("b-08-mcp"))
+  .enablePlugins(JavaAppPackaging)
   .settings(
     name := "backend-mcp",
+    Compile / mainClass := Some("com.togger.mcp.McpApp"),
     // Chimp and its tapir/sttp dependencies are compiled with Scala 3.9, so this module needs a 3.9 compiler.
     scalaVersion := "3.9.0",
     Test / parallelExecution := false,

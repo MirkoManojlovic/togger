@@ -17,6 +17,19 @@ build-tauri-backend:
     mkdir src-tauri/java/liquibase
     cp b-05-database/src/main/resources/liquibase/changelog.yaml src-tauri/java/liquibase/
 
+build-tauri-mcp:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sbt "backendMcp/Universal/packageZipTarball"
+    universal_dir=$(echo target/out/jvm/*/backend-mcp/universal)
+    rm -rf "$universal_dir/deploy"
+    mkdir -p "$universal_dir/deploy"
+    cp "$universal_dir/backend-mcp-0.1.0-SNAPSHOT.tgz" "$universal_dir/deploy"
+    tar xfvz "$universal_dir/deploy/backend-mcp-0.1.0-SNAPSHOT.tgz" -C "$universal_dir/deploy"
+    mkdir -p src-tauri/mcp
+    rm -rf src-tauri/mcp/*
+    cp -r "$universal_dir/deploy/backend-mcp-0.1.0-SNAPSHOT/"* src-tauri/mcp
+
 build-tauri-app:
     CI=true PATH="$PATH:/Library/Developer/CommandLineTools/usr/bin" npm run tauri build -- --verbose
     open src-tauri/target/release/bundle/macos
@@ -26,5 +39,5 @@ clean:
 
 build-tauri-backend-clean: clean build-tauri-backend
 
-desktop: build-tauri-backend build-tauri-app
-desktop-clean: build-tauri-backend-clean build-tauri-app
+desktop: build-tauri-backend build-tauri-mcp build-tauri-app
+desktop-clean: build-tauri-backend-clean build-tauri-mcp build-tauri-app

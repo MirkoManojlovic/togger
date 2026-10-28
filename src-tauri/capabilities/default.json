@@ -16,6 +16,11 @@
           "name": "binaries/backend-app-exec",
           "sidecar": true,
           "args": true
+        },
+        {
+          "name": "binaries/mcp-app-exec",
+          "sidecar": true,
+          "args": true
         }
       ]
     }
