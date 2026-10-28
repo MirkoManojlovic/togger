@@ -59,13 +59,13 @@ class CreateDataExportConfigComponent(
     justifyCenterFlex,
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Create an export data config", TgCard.CardHeaderSize.H3),
+        header = TgCard.CardHeader.plainText("Create an Export data config", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
-              exportPathInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
+              exportPathInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )

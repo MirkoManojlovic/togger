@@ -64,8 +64,8 @@ class CreateDataImportConfigComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
-              nameInput.htmlElement.amend(cls("mb-4")),
-              importPathInput.htmlElement.amend(cls("mb-4")),
+              nameInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
+              importPathInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
