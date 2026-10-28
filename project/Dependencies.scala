@@ -108,6 +108,11 @@ object Libraries {
     val `com.softwaremill.sttp.client4` = "com.softwaremill.sttp.client4"
     val `fs2` = "fs2"
     val `client4-version` = "4.1.0"
+    val `sttp-client4-core` = "core"
+
+    val `com.softwaremill.chimp` = "com.softwaremill.chimp"
+    val `chimp-server` = "chimp-server"
+    val `chimp-version` = "0.6.0"
 
     val `com.github.japgolly.scalacss` = "com.github.japgolly.scalacss"
     val `scalacss-version` = "1.0.0"
@@ -128,6 +133,7 @@ object Libraries {
     val `tapir-json-circe` = "tapir-json-circe"
     val `tapir-sttp-client` = "tapir-sttp-client"
     val `tapir-version` = "1.14.0"
+    val `tapir-netty-server-sync` = "tapir-netty-server-sync"
 
     val `tapir-swagger-ui-bundle` = "tapir-swagger-ui-bundle"
     val `tapir-redoc-bundle` = "tapir-redoc-bundle"

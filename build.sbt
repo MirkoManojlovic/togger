@@ -472,3 +472,31 @@ lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform).in(file("c-00-tg-macr
       `com.outr` %% scribe % `scribe-version`
     )
   )
+
+// Scala 3 module on purpose: Chimp is Scala 3 only. It does not depend on any other Togger project and talks to the
+// backend over HTTP only.
+lazy val backendMcp = (project in file("b-08-mcp"))
+  .settings(
+    name := "backend-mcp",
+    // Chimp and its tapir/sttp dependencies are compiled with Scala 3.9, so this module needs a 3.9 compiler.
+    scalaVersion := "3.9.0",
+    Test / parallelExecution := false,
+    // scalatest assertions are values; several of them in one test body are normal
+    Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:s",
+    // Replaces (does not extend) the ThisBuild overrides, which pin the Scala 2.13 scala-library and scala3-library
+    // 3.7.4 for the rest of the build and would break a 3.9 module.
+    dependencyOverrides := Seq(`org.slf4j` % `slf4j-api` % `slf4-api-version`),
+    libraryDependencies ++= Seq(
+      // Chimp (MCP server on top of Tapir)
+      `com.softwaremill.chimp` %% `chimp-server` % `chimp-version`,
+      `com.softwaremill.sttp.tapir` %% `tapir-netty-server-sync` % `tapir-version`,
+      // Backend calls
+      `com.softwaremill.sttp.client4` %% `sttp-client4-core` % `client4-version`,
+      `io.circe` %% `circe-parser` % "0.14.14",
+      // Logging
+      `com.outr` %% scribe % `scribe-version`,
+      `com.outr` %% `scribe-slf4j` % `scribe-version`,
+      // Tests
+      `org.scalatest` %% scalatest % `scalatest-version` % Test
+    )
+  )
