@@ -93,6 +93,7 @@ object TgServer {
     lazy val httpModule = new HttpModule()
     Resource
       .eval(new ProjectLabelSeedService(transactorModule.transactor).run)
+      .evalMap(_ => new AiEndpointSeedService(transactorModule.transactor).run)
       .flatMap(_ =>
         httpModule.createServer(
           List(
