@@ -13,7 +13,7 @@ import com.togger.projectlabel.{ProjectLabelCategoryRepo, ProjectLabelRepo}
 import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepo}
 import com.togger.task._
 import com.togger.tasktemplate.{TaskTemplate, TaskTemplateRepo, TaskTemplateVersion, TaskTemplateVersionRepo}
-import com.togger.tgprompt.{TgPromptRepo, TgPromptVersionRepo}
+import com.togger.tgprompttemplate.{TgPromptTemplateRepo, TgPromptTemplateVersionRepo}
 import com.togger.timebox.{TimeboxRepo, TimeboxVersionRepo}
 import doobie.ConnectionIO
 
@@ -49,8 +49,8 @@ class DataImportRepo(
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
   timeboxVersionRepo: TimeboxVersionRepo,
-  tgPromptRepo: TgPromptRepo,
-  tgPromptVersionRepo: TgPromptVersionRepo
+  tgPromptTemplateRepo: TgPromptTemplateRepo,
+  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
@@ -484,17 +484,17 @@ class DataImportRepo(
       )
     }
 
-  def mergeTgPrompt(promptDump: TgPromptDumpData): ConnectionIO[DataImportEntityResult] =
-    exists(tgPromptRepo.findById(promptDump.tgPrompt.id)).flatMap { promptExists =>
+  def mergeTgPromptTemplate(promptDump: TgPromptTemplateDumpData): ConnectionIO[DataImportEntityResult] =
+    exists(tgPromptTemplateRepo.findById(promptDump.tgPromptTemplate.id)).flatMap { promptExists =>
       for {
-        _ <- if (promptExists) ().pure[ConnectionIO] else tgPromptRepo.insertWithId(promptDump.tgPrompt).void
+        _ <- if (promptExists) ().pure[ConnectionIO] else tgPromptTemplateRepo.insertWithId(promptDump.tgPromptTemplate).void
         added <- insertMissing(promptDump.versions)(
-          v => exists(tgPromptVersionRepo.findByVersion(v.version)),
-          tgPromptVersionRepo.insertWithId
+          v => exists(tgPromptTemplateVersionRepo.findByVersion(v.version)),
+          tgPromptTemplateVersionRepo.insertWithId
         )
       } yield DataImportEntityResult.merged(
-        DataExportEntityType.TgPrompt,
-        promptDump.tgPrompt.id,
+        DataExportEntityType.TgPromptTemplate,
+        promptDump.tgPromptTemplate.id,
         promptDump.versions.lastOption.map(_.title),
         rootInserted = !promptExists,
         versionsAdded = added,

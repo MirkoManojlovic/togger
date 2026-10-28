@@ -113,8 +113,8 @@ class DataImportService(
                 timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(
                   t => dataImportRepo.mergeTimebox(remap.timebox(t))
                 )
-                prompts <- mergeAll[TgPromptDumpData](projectId, read, DataExportEntityType.TgPrompt)(
-                  p => dataImportRepo.mergeTgPrompt(remap.tgPrompt(p))
+                prompts <- mergeAll[TgPromptTemplateDumpData](projectId, read, DataExportEntityType.TgPromptTemplate)(
+                  p => dataImportRepo.mergeTgPromptTemplate(remap.tgPromptTemplate(p))
                 )
                 members <- readMembers(read).fold(
                   malformed => IO.pure(List(malformed)),
@@ -229,8 +229,8 @@ class DataImportService(
       )
 
     /** Prompts belong to an account, not to the project: they are imported for the account that imports. */
-    def tgPrompt(data: TgPromptDumpData): TgPromptDumpData =
-      data.copy(tgPrompt = data.tgPrompt.copy(createdBy = importingAccountId))
+    def tgPromptTemplate(data: TgPromptTemplateDumpData): TgPromptTemplateDumpData =
+      data.copy(tgPromptTemplate = data.tgPromptTemplate.copy(createdBy = importingAccountId))
 
     def timebox(data: TimeboxDumpData): TimeboxDumpData =
       data.copy(timebox = data.timebox.copy(projectId = projectIdDb))

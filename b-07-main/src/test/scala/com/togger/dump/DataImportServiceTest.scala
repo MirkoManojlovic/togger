@@ -3,7 +3,7 @@ package com.togger.dump
 import com.togger.project.{ProjectAccount, ProjectError}
 import com.togger.task.{Link, LinkVersion, TaskLabelAssignment}
 import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
-import com.togger.tgprompt.{TgPrompt, TgPromptVersion}
+import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateVersion}
 import com.togger.timebox.{Timebox, TimeboxVersion}
 import doobie.implicits._
 import io.circe.generic.auto._
@@ -38,9 +38,9 @@ class DataImportServiceTest extends ExportImportTestSupport {
       _ <- taskTemplateVersionRepo.insert(
         TaskTemplateVersion(UUID.randomUUID(), template.id, "Template", "Template body", nowAsInstant)
       )
-      prompt <- tgPromptRepo.insert(TgPrompt(UUID.randomUUID(), account.id, nowAsInstant))
-      _ <- tgPromptVersionRepo.insert(
-        TgPromptVersion(UUID.randomUUID(), prompt.id, "Prompt", "Prompt text", nowAsInstant)
+      prompt <- tgPromptTemplateRepo.insert(TgPromptTemplate(UUID.randomUUID(), account.id, nowAsInstant))
+      _ <- tgPromptTemplateVersionRepo.insert(
+        TgPromptTemplateVersion(UUID.randomUUID(), prompt.id, "Prompt", "Prompt text", nowAsInstant)
       )
       timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), savedProject.id, nowAsInstant))
       timeboxVersion <- timeboxVersionRepo.insert(
@@ -103,7 +103,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         restoredMilestone <- milestoneRepo.findById(fixture.milestoneId).transact(transactor)
         restoredTemplate <- taskTemplateRepo.findFullById(fixture.templateId).transact(transactor)
         restoredTimebox <- timeboxRepo.findById(fixture.timeboxId).transact(transactor)
-        restoredPrompt <- tgPromptRepo.findFullById(fixture.promptId).transact(transactor)
+        restoredPrompt <- tgPromptTemplateRepo.findFullById(fixture.promptId).transact(transactor)
         restoredPlanned <- taskVersionRepo
           .findLatestByTaskId(fixture.taskId)
           .flatMap(v => timeboxVersionRepo.findLatestByTimeboxId(fixture.timeboxId).flatMap(tv => timeboxVersionRepo.findPlannedTasks(tv.version).map(_.map(_.version) -> v.version)))
@@ -117,7 +117,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
           DataExportEntityType.Milestone,
           DataExportEntityType.TaskTemplate,
           DataExportEntityType.Timebox,
-          DataExportEntityType.TgPrompt,
+          DataExportEntityType.TgPromptTemplate,
           DataExportEntityType.TaskStatus,
           DataExportEntityType.TaskLabel
         ).foreach { entityType =>
@@ -129,7 +129,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         cp(restoredMilestone.id shouldBe fixture.milestoneId)
         cp(restoredTemplate.taskLabelName shouldBe Some("Label"))
         cp(restoredTimebox.id shouldBe fixture.timeboxId)
-        cp(restoredPrompt.tgPrompt.createdBy shouldBe fixture.accountId)
+        cp(restoredPrompt.tgPromptTemplate.createdBy shouldBe fixture.accountId)
         cp(restoredPrompt.latestVersion.prompt shouldBe "Prompt text")
         cp(restoredPlanned._1 shouldBe List(restoredPlanned._2))
 
@@ -146,9 +146,9 @@ class DataImportServiceTest extends ExportImportTestSupport {
         other <- accountRepo
           .insert(createAccount(owner.accountTypeId).copy(email = "other@email.com"))
           .transact(transactor)
-        foreign <- tgPromptRepo.insert(TgPrompt(UUID.randomUUID(), other.id, nowAsInstant)).transact(transactor)
-        _ <- tgPromptVersionRepo
-          .insert(TgPromptVersion(UUID.randomUUID(), foreign.id, "Foreign", "Foreign text", nowAsInstant))
+        foreign <- tgPromptTemplateRepo.insert(TgPromptTemplate(UUID.randomUUID(), other.id, nowAsInstant)).transact(transactor)
+        _ <- tgPromptTemplateVersionRepo
+          .insert(TgPromptTemplateVersion(UUID.randomUUID(), foreign.id, "Foreign", "Foreign text", nowAsInstant))
           .transact(transactor)
         root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
         files = os.list(root / "prompts").map(_.baseName).toList

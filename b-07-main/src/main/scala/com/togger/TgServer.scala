@@ -8,7 +8,7 @@ import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, Con
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
 import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneAiSummaryStreamEndpoints, MilestoneController, MilestoneDateController, MilestoneSummaryController}
-import com.togger.controllers.tgprompt.TgPromptController
+import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
@@ -45,7 +45,7 @@ import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImp
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
-import com.togger.tgprompt.{TgPromptEndpoints, TgPromptRepoImpl, TgPromptService, TgPromptVersionRepoImpl}
+import com.togger.tgprompttemplate.{TgPromptTemplateEndpoints, TgPromptTemplateRepoImpl, TgPromptTemplateService, TgPromptTemplateVersionRepoImpl}
 import com.togger.dataexportconfig.{DataExportConfigEndpoints, DataExportConfigRepoImpl, DataExportConfigService}
 import com.togger.dataimportconfig.{DataImportConfigEndpoints, DataImportConfigRepoImpl, DataImportConfigService}
 import com.togger.projectlabel.{
@@ -186,13 +186,13 @@ object TgServer {
             taskTemplateController.findByLabel,
             taskTemplateController.listVersions,
             taskTemplateController.delete,
-            tgPromptController.save,
-            tgPromptController.newVersion,
-            tgPromptController.findAll,
-            tgPromptController.findById,
-            tgPromptController.listVersions,
-            tgPromptController.deleteVersion,
-            tgPromptController.delete,
+            tgPromptTemplateController.save,
+            tgPromptTemplateController.newVersion,
+            tgPromptTemplateController.findAll,
+            tgPromptTemplateController.findById,
+            tgPromptTemplateController.listVersions,
+            tgPromptTemplateController.deleteVersion,
+            tgPromptTemplateController.delete,
             dataExportController.exportTasks,
             dataExportController.checkStatus,
             dataExportController.exportByConfig,
@@ -387,11 +387,11 @@ class DependenciesModule(
   lazy val taskTemplateEndpoints = new TaskTemplateEndpoints(securedEndpoint)
   lazy val taskTemplateController = new TaskTemplateController(taskTemplateService, taskTemplateEndpoints, tgClock)
 
-  lazy val tgPromptRepo = new TgPromptRepoImpl
-  lazy val tgPromptVersionRepo = new TgPromptVersionRepoImpl
-  lazy val tgPromptService = new TgPromptService(tgPromptRepo, tgPromptVersionRepo, transactor)
-  lazy val tgPromptEndpoints = new TgPromptEndpoints(securedEndpoint)
-  lazy val tgPromptController = new TgPromptController(tgPromptService, tgPromptEndpoints, tgClock)
+  lazy val tgPromptTemplateRepo = new TgPromptTemplateRepoImpl
+  lazy val tgPromptTemplateVersionRepo = new TgPromptTemplateVersionRepoImpl
+  lazy val tgPromptTemplateService = new TgPromptTemplateService(tgPromptTemplateRepo, tgPromptTemplateVersionRepo, transactor)
+  lazy val tgPromptTemplateEndpoints = new TgPromptTemplateEndpoints(securedEndpoint)
+  lazy val tgPromptTemplateController = new TgPromptTemplateController(tgPromptTemplateService, tgPromptTemplateEndpoints, tgClock)
 
   // TgAiService is used internally by services such as MilestoneAiSummaryService, it has no endpoints of its own
   lazy val tgAiClient: TgAiClient = new TgOpenAiClient(aiBackend, TgOllama.BaseUri, TgOllama.ReadTimeout)
@@ -400,7 +400,7 @@ class DependenciesModule(
 
   lazy val milestoneAiSummaryEndpoints = new MilestoneAiSummaryStreamEndpoints(securedEndpoint)
   lazy val milestoneAiSummaryService =
-    new MilestoneAiSummaryService(logEntryRepo, tgPromptService, tgAiService, transactor)
+    new MilestoneAiSummaryService(logEntryRepo, tgPromptTemplateService, tgAiService, transactor)
   lazy val milestoneAiSummaryController = new MilestoneAiSummaryController(
     milestoneAiSummaryEndpoints,
     milestoneAiSummaryService,
@@ -436,8 +436,8 @@ class DependenciesModule(
       taskTemplateVersionRepo,
       timeboxRepo,
       timeboxVersionRepo,
-      tgPromptRepo,
-      tgPromptVersionRepo
+      tgPromptTemplateRepo,
+      tgPromptTemplateVersionRepo
     )
   lazy val dataExportTreeStore = new DataExportTreeStore(dataExportDiskOps)
 
@@ -509,8 +509,8 @@ class DependenciesModule(
       taskTemplateVersionRepo,
       timeboxRepo,
       timeboxVersionRepo,
-      tgPromptRepo,
-      tgPromptVersionRepo
+      tgPromptTemplateRepo,
+      tgPromptTemplateVersionRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)

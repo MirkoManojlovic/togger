@@ -8,7 +8,7 @@ import com.togger.common.TgError
 import com.togger.logentry.{LogEntryRepo, LogEntryWithOneVersion}
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneAiSummaryError._
-import com.togger.tgprompt.TgPromptService
+import com.togger.tgprompttemplate.TgPromptTemplateService
 import doobie.Transactor
 import doobie.implicits._
 import io.circe.Printer
@@ -29,7 +29,7 @@ case class MilestoneAiSummaryCommand(
 
 class MilestoneAiSummaryService(
   logEntryRepo: LogEntryRepo,
-  tgPromptService: TgPromptService,
+  tgPromptTemplateService: TgPromptTemplateService,
   tgAiService: TgAiService,
   transactor: Transactor[IO]
 ) extends TgLogging {
@@ -59,7 +59,7 @@ class MilestoneAiSummaryService(
     promptId match {
       case None => IO.pure(None.asRight)
       case Some(id) =>
-        tgPromptService.findById(accountId, id).map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
+        tgPromptTemplateService.findById(accountId, id).map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
     }
 
   private def chatStream(

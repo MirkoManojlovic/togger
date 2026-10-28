@@ -14,7 +14,7 @@ import com.togger.project.Project
 import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory}
 import com.togger.task._
 import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
-import com.togger.tgprompt.{TgPrompt, TgPromptVersion}
+import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateVersion}
 import com.togger.timebox.{Timebox, TimeboxVersion}
 import io.circe.{Decoder, Encoder}
 
@@ -98,7 +98,7 @@ case class TimeboxVersionDumpData(version: TimeboxVersion, plannedTaskVersions: 
 case class TimeboxDumpData(timebox: Timebox, versions: List[TimeboxVersionDumpData])
 
 /** `prompts/<id>.json`: a prompt of the exporting account with its versions. */
-case class TgPromptDumpData(tgPrompt: TgPrompt, versions: List[TgPromptVersion])
+case class TgPromptTemplateDumpData(tgPromptTemplate: TgPromptTemplate, versions: List[TgPromptTemplateVersion])
 
 sealed abstract class DataExportEntityType(val folder: String, val singleton: Boolean = false)
 
@@ -113,11 +113,11 @@ object DataExportEntityType {
   case object LogEntry extends DataExportEntityType("logentries")
   case object TaskTemplate extends DataExportEntityType("tasktemplates")
   case object Timebox extends DataExportEntityType("timeboxes")
-  case object TgPrompt extends DataExportEntityType("prompts")
+  case object TgPromptTemplate extends DataExportEntityType("prompts")
 
   /** Dependency order: an entity only refers to entities listed before it. */
   lazy val all: List[DataExportEntityType] =
-    List(Project, Members, TaskStatus, TaskLabel, ProjectLabel, Milestone, Task, LogEntry, TaskTemplate, Timebox, TgPrompt)
+    List(Project, Members, TaskStatus, TaskLabel, ProjectLabel, Milestone, Task, LogEntry, TaskTemplate, Timebox, TgPromptTemplate)
 
   def fromFolder(folder: String): Option[DataExportEntityType] = all.find(_.folder == folder)
 }

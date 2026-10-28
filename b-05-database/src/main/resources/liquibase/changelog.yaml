@@ -1722,3 +1722,27 @@ databaseChangeLog:
               - column:
                   name: version
                   descending: true
+  - changeSet:
+      id: 12
+      author: mirko
+      labels: tg-prompt-template
+      comment: Rename TgPrompt to TgPromptTemplate
+      changes:
+        - renameTable:
+            oldTableName: tg_prompt
+            newTableName: tg_prompt_template
+        - renameTable:
+            oldTableName: tg_prompt_version
+            newTableName: tg_prompt_template_version
+        - renameColumn:
+            tableName: tg_prompt_template_version
+            oldColumnName: tg_prompt_id
+            newColumnName: tg_prompt_template_id
+        - sql:
+            sql: ALTER TABLE tg_prompt_template RENAME CONSTRAINT fk_tg_prompt_created_by_account TO fk_tg_prompt_template_created_by_account
+        - sql:
+            sql: ALTER TABLE tg_prompt_template_version RENAME CONSTRAINT fk_tg_prompt_version_tg_prompt TO fk_tg_prompt_template_version_tg_prompt_template
+        - sql:
+            sql: ALTER INDEX idx_tg_prompt_created_by RENAME TO idx_tg_prompt_template_created_by
+        - sql:
+            sql: ALTER INDEX idx_tg_prompt_version_tg_prompt_id_version RENAME TO idx_tg_prompt_template_version_tg_prompt_template_id_version

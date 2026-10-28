@@ -6,8 +6,8 @@ import cats.implicits._
 import com.togger.ai._
 import com.togger.common.TgError
 import com.togger.logentry._
-import com.togger.tgprompt.TgPromptError.TgPromptNotFound
-import com.togger.tgprompt.{TgPrompt, TgPromptFull, TgPromptService, TgPromptVersion}
+import com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateNotFound
+import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateFull, TgPromptTemplateService, TgPromptTemplateVersion}
 import doobie.util.transactor.Strategy
 import doobie.{ConnectionIO, Transactor}
 import org.scalamock.scalatest.AsyncMockFactory
@@ -58,9 +58,9 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
       case Left(error)   => IO.pure(error.asLeft[String])
     }
 
-  private def promptService(reply: Either[com.togger.tgprompt.TgPromptError.TgPromptError, TgPromptFull]) =
-    new TgPromptService(null, null, transactor) {
-      override def findById(accountId: UUID, id: UUID): IO[Result[TgPromptFull]] = IO.pure(reply)
+  private def promptService(reply: Either[com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateError, TgPromptTemplateFull]) =
+    new TgPromptTemplateService(null, null, transactor) {
+      override def findById(accountId: UUID, id: UUID): IO[Result[TgPromptTemplateFull]] = IO.pure(reply)
     }
 
   private def repoReturning(entries: List[LogEntryWithOneVersion]) = {
@@ -71,7 +71,7 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
     repo
   }
 
-  private val unusedPromptService = promptService(Left(TgPromptNotFound))
+  private val unusedPromptService = promptService(Left(TgPromptTemplateNotFound))
 
   "MilestoneAiSummaryService" should {
     "send summarize prompt followed by the entries as compact json, and stream the summary" in {
@@ -90,9 +90,9 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
 
     "prepend the stored prompt to the summarize prompt" in {
       val promptId = UUID.randomUUID()
-      val full = TgPromptFull(
-        TgPrompt(promptId, accountId, at),
-        TgPromptVersion(UUID.randomUUID(), promptId, "title", "You are a PM.", at)
+      val full = TgPromptTemplateFull(
+        TgPromptTemplate(promptId, accountId, at),
+        TgPromptTemplateVersion(UUID.randomUUID(), promptId, "title", "You are a PM.", at)
       )
       val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), promptService(full.asRight), ai, transactor)
@@ -106,7 +106,7 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
       val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
       summarise(service, command.copy(promptId = Some(UUID.randomUUID()))).map { result =>
-        (result, Option(ai.request.get())) shouldBe (TgPromptNotFound.asLeft, None)
+        (result, Option(ai.request.get())) shouldBe (TgPromptTemplateNotFound.asLeft, None)
       }.unsafeToFuture()
     }
 

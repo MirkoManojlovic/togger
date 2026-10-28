@@ -10,7 +10,7 @@ import com.togger.project.{Project, ProjectAccountRepo, ProjectLabelAssignmentRe
 import com.togger.projectlabel.ProjectLabelCategoryRepo
 import com.togger.task._
 import com.togger.tasktemplate.{TaskTemplateRepo, TaskTemplateVersionRepo}
-import com.togger.tgprompt.{TgPromptRepo, TgPromptVersionRepo}
+import com.togger.tgprompttemplate.{TgPromptTemplateRepo, TgPromptTemplateVersionRepo}
 import com.togger.timebox.{TimeboxRepo, TimeboxVersionRepo}
 import doobie.ConnectionIO
 
@@ -27,7 +27,7 @@ case class ProjectExportSnapshot(
   logEntries: List[LogEntryDumpData],
   taskTemplates: List[TaskTemplateDumpData],
   timeboxes: List[TimeboxDumpData],
-  tgPrompts: List[TgPromptDumpData],
+  tgPromptTemplates: List[TgPromptTemplateDumpData],
   memberIds: List[UUID]
 )
 
@@ -56,8 +56,8 @@ class DataExportRepo(
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
   timeboxVersionRepo: TimeboxVersionRepo,
-  tgPromptRepo: TgPromptRepo,
-  tgPromptVersionRepo: TgPromptVersionRepo
+  tgPromptTemplateRepo: TgPromptTemplateRepo,
+  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo
 ) {
 
   def isAssigned(projectId: UUID, accountId: UUID): ConnectionIO[Boolean] =
@@ -79,7 +79,7 @@ class DataExportRepo(
       logEntries <- readLogEntries(projectId)
       taskTemplates <- readTaskTemplates(projectId)
       timeboxes <- readTimeboxes(projectId)
-      tgPrompts <- readTgPrompts(accountId)
+      tgPromptTemplates <- readTgPromptTemplates(accountId)
       members <- TgPages.readAll(projectAccountRepo.findPaginatedMembers(projectId, _))
     } yield ProjectExportSnapshot(
       project = project,
@@ -91,7 +91,7 @@ class DataExportRepo(
       logEntries = logEntries.sortBy(_.logEntry.id),
       taskTemplates = taskTemplates.sortBy(_.template.id),
       timeboxes = timeboxes.sortBy(_.timebox.id),
-      tgPrompts = tgPrompts.sortBy(_.tgPrompt.id),
+      tgPromptTemplates = tgPromptTemplates.sortBy(_.tgPromptTemplate.id),
       memberIds = members.map(_.id).sorted
     )
 
@@ -180,13 +180,13 @@ class DataExportRepo(
       }
     } yield dumped
 
-  private def readTgPrompts(accountId: UUID): ConnectionIO[List[TgPromptDumpData]] =
+  private def readTgPromptTemplates(accountId: UUID): ConnectionIO[List[TgPromptTemplateDumpData]] =
     for {
-      prompts <- TgPages.readAll(tgPromptRepo.findPaginatedFullByCreatedBy(accountId, _))
+      prompts <- TgPages.readAll(tgPromptTemplateRepo.findPaginatedFullByCreatedBy(accountId, _))
       dumped <- prompts.traverse { full =>
         TgPages
-          .readAll(tgPromptVersionRepo.findPaginatedByTgPromptId(full.tgPrompt.id, _))
-          .map(versions => TgPromptDumpData(full.tgPrompt, versions.sortBy(_.version)))
+          .readAll(tgPromptTemplateVersionRepo.findPaginatedByTgPromptTemplateId(full.tgPromptTemplate.id, _))
+          .map(versions => TgPromptTemplateDumpData(full.tgPromptTemplate, versions.sortBy(_.version)))
       }
     } yield dumped
 
