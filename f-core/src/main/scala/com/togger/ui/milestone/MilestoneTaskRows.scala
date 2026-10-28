@@ -67,7 +67,7 @@ object MilestoneTaskRows {
     )
 
   /** One card for the tasks of the total or of a member: the counts beside the rings they add up to. The days left
-    * belong to the milestone, so only the total shows them.
+    * until the due date belong to the milestone, so only the total shows them.
     */
   private def row(
     title: String,
@@ -92,15 +92,6 @@ object MilestoneTaskRows {
             "text-green-500",
             "text-green-200 dark:text-green-900"
           ),
-          days.map(d =>
-            progressRing(
-              "Due date",
-              TaskProgress(d.elapsed, d.total),
-              p => s"${p.total - p.checked} of ${p.total} days left until the due date",
-              "text-blue-500",
-              "text-blue-200 dark:text-blue-900"
-            )
-          ),
           workDays.map(d =>
             progressRing(
               "Work days",
@@ -108,6 +99,15 @@ object MilestoneTaskRows {
               p => s"${p.checked} days worked, ${p.total - p.checked} days of work left",
               "text-purple-500",
               "text-purple-200 dark:text-purple-900"
+            )
+          ),
+          days.map(d =>
+            progressRing(
+              "Due date",
+              TaskProgress(d.elapsed, d.total),
+              p => s"${p.total - p.checked} of ${p.total} days left until the due date",
+              "text-blue-500",
+              "text-blue-200 dark:text-blue-900"
             )
           )
         )
@@ -124,7 +124,13 @@ object MilestoneTaskRows {
   ): HtmlElement = {
     val memberRows: Seq[HtmlElement] =
       TimeboxReviewStats.tasksPerMember(tasks).map { case (member, memberTasks) =>
-        row(member.fold("Unassigned")(_.fullName), memberTasks, statuses, None, None)
+        row(
+          member.fold("Unassigned")(_.fullName),
+          memberTasks,
+          statuses,
+          None,
+          Some(TimeboxReviewStats.workDaysProgress(memberTasks, today, workDays))
+        )
       }
     div(
       cls("flex flex-col gap-4"),
