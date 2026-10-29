@@ -139,7 +139,7 @@ class DataExportService(
           case Some(folderPath) =>
             val indexResult = dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_))
             Right(
-              DataExportPathStatus(importPath, entityStatuses(data, folderPath, indexResult).map(withoutOlderDisk(data, indexResult)))
+              DataExportPathStatus(importPath, entityStatuses(data, folderPath, indexResult, matchByContent = true).map(withoutOlderDisk(data, indexResult)))
             )
         }
     }
@@ -176,13 +176,18 @@ class DataExportService(
     )
   }
 
-  /** Compares the hashes of the database entities with the index of the tree, without reading the entity files. */
+  /** Compares the hashes of the database entities with the index of the tree, without reading the entity files. With
+    * `matchByContent`, task statuses and labels are instead matched by name, description and emoji, as an import gives
+    * them new ids and timestamps.
+    */
   private def entityStatuses(
     data: ExportData,
     folderPath: String,
-    indexResult: Either[String, Option[ExportIndex]]
+    indexResult: Either[String, Option[ExportIndex]],
+    matchByContent: Boolean = false
   ): List[DataExportEntityStatus] = {
     val dbEntities = data.entities.map(e => (e.entityType, e.id) -> e).toMap
+    lazy val labelKeys = taskLabelKeys(data, folderPath, indexResult)
 
     indexResult match {
       case Left(error) =>
@@ -199,6 +204,9 @@ class DataExportService(
         DataExportEntityType.all.flatMap { entityType =>
           val indexed = index.entriesOf(entityType)
           val db = dbEntities.collect { case ((`entityType`, id), entity) => id -> entity }
+          if (matchByContent && ExportContentKey.applies(entityType))
+            contentStatuses(entityType, folderPath, index, db.values.toList.sortBy(_.id), indexed, labelKeys)
+          else {
           val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
             val entity = db(id)
             if (indexed(id).hash != entity.hash)
@@ -214,8 +222,69 @@ class DataExportService(
             status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
           }
           common ++ missingFromExport ++ missingFromDb
+          }
         }
     }
+  }
+
+  /** The content keys of the task labels of the database and of the disk, as a template names its label by id. */
+  private def taskLabelKeys(
+    data: ExportData,
+    folderPath: String,
+    indexResult: Either[String, Option[ExportIndex]]
+  ): (Map[UUID, ExportContentKey.Key], Map[UUID, ExportContentKey.Key]) = {
+    val dbLabels = data.entities.collect { case e if e.entityType == DataExportEntityType.TaskLabel => e.id -> e.json }
+    val diskLabels = indexResult.toOption.flatten.toList.flatMap { index =>
+      index.entriesOf(DataExportEntityType.TaskLabel).keys.toList.flatMap { id =>
+        dataExportTreeStore.readEntityJson(folderPath, index, DataExportEntityType.TaskLabel, id).toOption.map(id -> _)
+      }
+    }
+    (ExportContentKey.labelKeys(dbLabels.toMap), ExportContentKey.labelKeys(diskLabels.toMap))
+  }
+
+  /** Each disk entity is paired with one database entity of the same content key, whatever their ids. */
+  private def contentStatuses(
+    entityType: DataExportEntityType,
+    folderPath: String,
+    index: ExportIndex,
+    dbEntities: List[ExportEntity],
+    indexed: Map[UUID, ExportIndexEntry],
+    labelKeys: (Map[UUID, ExportContentKey.Key], Map[UUID, ExportContentKey.Key])
+  ): List[DataExportEntityStatus] = {
+    val (dbLabelKeys, diskLabelKeys) = labelKeys
+    val dbByKey =
+      dbEntities.flatMap(e => ExportContentKey.of(entityType, e.json, dbLabelKeys).toOption.map(_ -> e)).groupMap(_._1)(_._2)
+    val diskKeys = indexed.keys.toList.sorted.map { id =>
+      id -> dataExportTreeStore
+        .readEntityJson(folderPath, index, entityType, id)
+        .flatMap(ExportContentKey.of(entityType, _, diskLabelKeys))
+    }
+
+    val (unmatchedDiskIds, results, remaining) =
+      diskKeys.foldLeft((List.empty[UUID], List.empty[DataExportEntityStatus], dbByKey)) {
+        case ((missing, matched, available), (id, Left(error))) =>
+          (missing, status(entityType, id, indexed(id).name, DataExportSyncStatus.Malformed, List(error)) :: matched, available)
+        case ((missing, matched, available), (id, Right(key))) =>
+          available.getOrElse(key, Nil) match {
+            case dbEntity :: rest =>
+              (missing, status(entityType, dbEntity.id, dbEntity.name, DataExportSyncStatus.InSync) :: matched, available.updated(key, rest))
+            case Nil =>
+              (id :: missing, matched, available)
+          }
+      }
+    // what matches by no content but by id is a changed entity, which the timestamps then tell apart from a stale disk
+    val remainingDb = remaining.values.flatten.toList.sortBy(_.id)
+    val remainingDbById = remainingDb.map(e => e.id -> e).toMap
+    val unmatchedDisk = unmatchedDiskIds.reverse.map { id =>
+      remainingDbById.get(id) match {
+        case Some(entity) => outOfSyncStatus(folderPath, index, entity)
+        case None         => status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
+      }
+    }
+    val missingFromExport = remainingDb.filterNot(e => unmatchedDiskIds.contains(e.id)).map { e =>
+      status(entityType, e.id, e.name, DataExportSyncStatus.MissingFromExport)
+    }
+    results.reverse ++ unmatchedDisk ++ missingFromExport
   }
 
   /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. */
