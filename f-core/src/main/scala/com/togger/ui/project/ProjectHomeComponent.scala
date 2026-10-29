@@ -230,7 +230,8 @@ class ProjectHomeComponent(
       previewTask
     ).element
 
-  private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
+  private def sectionTitle(text: String, marginCls: String = "mb-2"): HtmlElement =
+    div(cls("font-semibold text-heading"), cls(marginCls), text)
 
   private val sectionBorderCls = "p-4 border border-default-medium rounded-base"
 
@@ -253,7 +254,7 @@ class ProjectHomeComponent(
       div(
         cls("mb-4"),
         cls(sectionBorderCls),
-        sectionTitle("Tasks"),
+        sectionTitle("Active tasks", marginCls = "mb-4"),
         activeTasks(
           inFlight.flatMap(_._2),
           ActiveTasksConfig("No tasks in progress, testing, waiting or blocked.")
