@@ -74,7 +74,12 @@ class ActiveTasksComponent(
       div(cls("font-semibold text-heading"), "Member") +:
         (header(columnStatuses.indices.map(column => rows.map(_._2(column).size).sum)) ++
           rows.flatMap { case (member, cells) =>
-            div(cls(cellCls), cls("font-medium text-heading whitespace-nowrap"), member.fold("Unassigned")(_.fullName)) +:
+            div(
+              cls(cellCls),
+              cls("flex items-center text-sm font-medium text-heading"),
+              styleAttr := "max-width: 9rem;",
+              member.fold("Unassigned")(_.fullName)
+            ) +:
               cells.map(cell)
           })
     )
