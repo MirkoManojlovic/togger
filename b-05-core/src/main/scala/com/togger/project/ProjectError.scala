@@ -17,6 +17,11 @@ object ProjectError {
     override def message: String = "No project.json manifest found at the given dump path, or it could not be parsed"
   }
 
+  case object ImportFolderReadTimeout extends ProjectError {
+    override def message: String =
+      "Reading the import folder took too long. If it is in a cloud folder, make sure its files are downloaded and try again"
+  }
+
   case object AccountTypeMissing extends ProjectError {
     override def message: String = "Cannot auto-create dump account: no 'developer' account type exists"
   }

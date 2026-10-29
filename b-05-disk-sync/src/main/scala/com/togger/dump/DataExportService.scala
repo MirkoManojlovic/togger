@@ -7,12 +7,13 @@ import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
-import com.togger.project.ProjectError.{DumpManifestMissing, NoExportPathConfigured, NotAssignedToProject, ProjectError}
+import com.togger.project.ProjectError.{DumpManifestMissing, ImportFolderReadTimeout, NoExportPathConfigured, NotAssignedToProject, ProjectError}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 case class DataExportPathResult(
@@ -131,19 +132,43 @@ class DataExportService(
     importPath: String
   ): IO[Either[ProjectError, DataExportPathStatus]] = {
     logger.info(s"Checking import status for ${sp(projectId)} from ${sp(importPath)} requested by ${sp(accountId)}")
-    getExportData(projectId, accountId).transact(transactor).map {
-      case Left(error) => Left(error)
+    getExportData(projectId, accountId).transact(transactor).flatMap {
+      case Left(error) => IO.pure(Left(error))
       case Right(data) =>
-        dataExportTreeStore.resolveImportFolder(importPath) match {
-          case None => Left(DumpManifestMissing)
-          case Some(folderPath) =>
-            val indexResult = dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_))
-            Right(
-              DataExportPathStatus(importPath, entityStatuses(data, folderPath, indexResult, matchByContent = true).map(withoutOlderDisk(data, indexResult)))
-            )
-        }
+        logger.info(s"Loaded database entities for import check [entities.size=${data.entities.size}]")
+        readImportFolder(data, importPath).timeoutTo(
+          importFolderReadTimeout,
+          IO(logger.error(s"Reading import folder timed out after [timeout=$importFolderReadTimeout] ${sp(importPath)}"))
+            .as(Left(ImportFolderReadTimeout))
+        )
     }
   }
+
+  private val importFolderReadTimeout = 60.seconds
+
+  /** Reads the import folder on the blocking pool and can be interrupted, as reads of a cloud folder can hang. */
+  private def readImportFolder(
+    data: ExportData,
+    importPath: String
+  ): IO[Either[ProjectError, DataExportPathStatus]] =
+    IO.interruptible {
+      val startedAt = System.nanoTime()
+      logger.info(s"Reading import folder ${sp(importPath)}")
+      val result = dataExportTreeStore.resolveImportFolder(importPath) match {
+        case None =>
+          logger.warn(s"No index file found in import folder ${sp(importPath)}")
+          Left(DumpManifestMissing)
+        case Some(folderPath) =>
+          val indexResult = dataExportTreeStore.readIndexAtPath(folderPath).map(Some(_))
+          logger.info(s"Read import index of ${sp(folderPath)} [ok=${indexResult.isRight}]")
+          val statuses = entityStatuses(data, folderPath, indexResult, matchByContent = true)
+            .map(withoutOlderDisk(data, indexResult))
+          Right(DataExportPathStatus(importPath, statuses))
+      }
+      val tookMs = (System.nanoTime() - startedAt) / 1000000
+      logger.info(s"Read import folder ${sp(importPath)} [tookMs=$tookMs]")
+      result
+    }
 
   /** A differing entity is only importable when the disk holds the newer change; without timestamps to compare, it is. */
   private def withoutOlderDisk(data: ExportData, indexResult: Either[String, Option[ExportIndex]])(
