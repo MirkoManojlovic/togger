@@ -2,6 +2,7 @@ package com.togger.ui.project
 
 import cats.effect.unsafe.IORuntime
 import com.togger.account.AccountEndpoints
+import com.togger.ui.account.HiddenAccounts
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
@@ -54,7 +55,9 @@ class FindAccountServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendC
     searchTerm: String,
     page: PageRequest
   ): TgRespIO[PaginatedResponse[SearchAccountDto]] =
-    protectedBackendClient.protectedHttpCall(accountEndpoints.searchByFirstNameLastNameEmail)((searchTerm, page))
+    HiddenAccounts.visiblePage(
+      protectedBackendClient.protectedHttpCall(accountEndpoints.searchByFirstNameLastNameEmail)((searchTerm, page))
+    )
 }
 
 class FindAccountsComponent(

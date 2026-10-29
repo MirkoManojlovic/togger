@@ -13,6 +13,7 @@ import com.togger.dto.organization.FindOrganizationResp
 import com.togger.project.ProjectEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
+import com.togger.ui.account.HiddenAccounts
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
@@ -79,12 +80,14 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
     organizationId: UUID,
     page: PageRequest
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(
-      (organizationId, page)
+    HiddenAccounts.visibleProjects(
+      protectedBackendClient.protectedHttpCall(projectEndpoints.findByOrganizationIdAndAccountIdEndpoint)(
+        (organizationId, page)
+      )
     )
 
   override def findById(id: UUID): TgRespIO[FindProjectResp] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.findByIdEndpoint)(id)
+    HiddenAccounts.visibleProjectResp(protectedBackendClient.protectedHttpCall(projectEndpoints.findByIdEndpoint)(id))
 
   override def updateProject(dto: UpdateProjectReq): TgRespIO[FindProjectResp] =
     protectedBackendClient.protectedHttpCall(projectEndpoints.updateEndpoint)(dto)
@@ -93,14 +96,18 @@ class ProjectServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClien
     protectedBackendClient.protectedHttpCall(projectEndpoints.deleteByIdEndpoint)(id)
 
   override def findMembers(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[SearchAccountDto]] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)((projectId, page))
+    HiddenAccounts.visiblePage(
+      protectedBackendClient.protectedHttpCall(projectEndpoints.findAllMembersEndpoint)((projectId, page))
+    )
 
   override def searchByLabels(
     projectLabelIds: Seq[UUID],
     page: PageRequest
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
-    protectedBackendClient.protectedHttpCall(projectEndpoints.searchByLabelsEndpoint)(
-      (SearchProjectsByLabelsReq(projectLabelIds), page)
+    HiddenAccounts.visibleProjects(
+      protectedBackendClient.protectedHttpCall(projectEndpoints.searchByLabelsEndpoint)(
+        (SearchProjectsByLabelsReq(projectLabelIds), page)
+      )
     )
 
 }

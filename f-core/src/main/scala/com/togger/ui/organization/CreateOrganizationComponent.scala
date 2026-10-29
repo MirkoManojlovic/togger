@@ -13,6 +13,7 @@ import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp,
 import com.togger.organization.OrganizationEndpoints
 import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
 import com.togger.toast.ToastMessages
+import com.togger.ui.account.HiddenAccounts
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.pagination.PaginatedLoader
@@ -68,16 +69,18 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     protectedBackendClient.protectedHttpCall(organizationEndpoints.saveEndpoint)(req)
 
   override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page)
+    HiddenAccounts.visibleOrganizations(protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page))
 
   override def findByAccountId(
     accountId: UUID,
     page: PageRequest
   ): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)((accountId, page))
+    HiddenAccounts.visibleOrganizations(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findByAccountIdEndpoint)((accountId, page))
+    )
 
   override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
+    HiddenAccounts.visibleOrganization(protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id))
 
   override def deleteOrganization(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.deleteByIdEndpoint)(id)
@@ -89,7 +92,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     organizationId: UUID,
     page: PageRequest
   ): TgRespIO[PaginatedResponse[SearchAccountDto]] =
-    protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)((organizationId, page))
+    HiddenAccounts.visiblePage(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllMembersEndpoint)((organizationId, page))
+    )
 }
 
 class CreateOrganizationComponent(
