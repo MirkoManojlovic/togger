@@ -11,7 +11,7 @@ sealed abstract class TaskStatusChartable(val defaultStatus: DefaultTaskStatus, 
 
 object TaskStatusBlockedChartable extends TaskStatusChartable(DefaultTaskStatus.Blocked, ChartColor.Red)
 object TaskStatusInProgressChartable extends TaskStatusChartable(DefaultTaskStatus.InProgress, ChartColor.Blue)
-object TaskStatusTestingChartable extends TaskStatusChartable(DefaultTaskStatus.Testing, ChartColor.Blue)
+object TaskStatusTestingChartable extends TaskStatusChartable(DefaultTaskStatus.Testing, ChartColor.Purple)
 object TaskStatusWaitingChartable extends TaskStatusChartable(DefaultTaskStatus.Waiting, ChartColor.Yellow)
 object TaskStatusTodoChartable extends TaskStatusChartable(DefaultTaskStatus.Todo, ChartColor.Gray)
 object TaskStatusBacklogChartable extends TaskStatusChartable(DefaultTaskStatus.Backlog, ChartColor.Gray)
