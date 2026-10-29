@@ -212,6 +212,7 @@ class DataExportService(
     matchByContent: Boolean = false
   ): List[DataExportEntityStatus] = {
     val dbEntities = data.entities.map(e => (e.entityType, e.id) -> e).toMap
+    lazy val accountKeys = if (matchByContent) importAccountKeys(data, folderPath, indexResult) else None
     lazy val labelKeys = taskLabelKeys(data, folderPath, indexResult)
 
     indexResult match {
@@ -232,12 +233,12 @@ class DataExportService(
           if (matchByContent && ExportContentKey.applies(entityType))
             contentStatuses(entityType, folderPath, index, db.values.toList.sortBy(_.id), indexed, labelKeys)
           else if (matchByContent && entityType == DataExportEntityType.Project && db.size == 1 && indexed.size == 1)
-            importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head) :: Nil
+            importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
           else {
           val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
             val entity = db(id)
             if (indexed(id).hash != entity.hash)
-              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty, entity.id)
+              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty, entity.id, accountKeys)
             else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
               status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
             else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
@@ -318,23 +319,45 @@ class DataExportService(
   private val importIgnoredFields = Set("project.name", "project.id")
 
   /** The project of an import folder is the database project whatever its id, as an import into a new project gives it a new one. */
-  private def importedProjectStatus(folderPath: String, index: ExportIndex, entity: ExportEntity, diskId: UUID) =
-    outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId)
+  private def importedProjectStatus(
+    folderPath: String,
+    index: ExportIndex,
+    entity: ExportEntity,
+    diskId: UUID,
+    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)]
+  ) = outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId, accountKeys)
+
+  /** The accounts of the disk and of the database by their content, from the project file of each side. */
+  private def importAccountKeys(
+    data: ExportData,
+    folderPath: String,
+    indexResult: Either[String, Option[ExportIndex]]
+  ): Option[(ExportAccountKeys, ExportAccountKeys)] =
+    for {
+      index <- indexResult.toOption.flatten
+      diskProjectId <- index.entriesOf(DataExportEntityType.Project).keys.headOption
+      diskJson <- dataExportTreeStore.readEntityJson(folderPath, index, DataExportEntityType.Project, diskProjectId).toOption
+      dbProject <- data.entities.find(_.entityType == DataExportEntityType.Project)
+    } yield (ExportAccountKeys.ofProject(diskJson), ExportAccountKeys.ofProject(dbProject.json))
 
   /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. An
-    * entity whose only differences are in `ignoredFields` is in sync.
+    * entity whose only differences are in `ignoredFields`, or in the ids of equal accounts, is in sync.
     */
   private def outOfSyncStatus(
     folderPath: String,
     index: ExportIndex,
     entity: ExportEntity,
     ignoredFields: Set[String] = Set.empty,
-    diskId: UUID
+    diskId: UUID,
+    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)] = None
   ): DataExportEntityStatus =
     dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, diskId) match {
       case Right(diskJson) =>
-        val fieldDiffs = ExportJsonDiff.diff(diskJson, entity.json).filterNot(d => ignoredFields.contains(d.field))
-        if (fieldDiffs.isEmpty && ignoredFields.nonEmpty)
+        val (diskCompared, databaseCompared) = accountKeys.fold((diskJson, entity.json)) { case (disk, database) =>
+          (disk.replaceIds(diskJson), database.replaceIds(entity.json))
+        }
+        val fieldDiffs = ExportJsonDiff.diff(diskCompared, databaseCompared).filterNot(d => ignoredFields.contains(d.field))
+        if (fieldDiffs.isEmpty && (ignoredFields.nonEmpty || accountKeys.isDefined))
           status(entity.entityType, entity.id, entity.name, DataExportSyncStatus.InSync)
         else
           status(
