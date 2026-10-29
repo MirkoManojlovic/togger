@@ -41,6 +41,13 @@ class DataExportEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[DataImportReq])
       .out(jsonBody[TgJsonSuccess[DataImportResp]])
 
+  /** Creates a project in the organization from the tree at the import path and imports everything into it. */
+  val importNewProjectEndpoint: TgSecuredEndpoint[(UUID, DataImportReq), DataImportResp] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "import-new-project" / path[UUID]("organization-id"))
+      .in(jsonBody[DataImportReq])
+      .out(jsonBody[TgJsonSuccess[DataImportResp]])
+
   val checkImportStatusEndpoint: TgSecuredEndpoint[(UUID, DataImportReq), DataExportStatusResp] =
     securedEndpoint.endpoint.post
       .in(basePath / "import" / "status" / path[UUID]("project-id"))
