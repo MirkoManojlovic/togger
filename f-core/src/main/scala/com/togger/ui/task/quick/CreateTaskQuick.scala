@@ -253,7 +253,8 @@ class CreateTaskQuick(
               status.id.toString,
               status.badgeText,
               status.description,
-              current.effectiveStatusId.contains(status.id)
+              current.effectiveStatusId.contains(status.id),
+              Some(status.badgeColor)
             )
           )
     }
