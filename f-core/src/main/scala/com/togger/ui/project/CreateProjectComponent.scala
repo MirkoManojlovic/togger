@@ -16,7 +16,7 @@ import com.togger.toast.ToastMessages
 import com.togger.ui.account.HiddenAccounts
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
-import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
+import com.togger.ui.components.TgSelectDropdownMultiSelectFilter.TgSelectDropdownMultiSelectFilterSyntax
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
@@ -205,7 +205,7 @@ class CreateProjectComponent(
         )
       )
     formState
-      .tgSelectDropdownMultSelectManualError(
+      .tgSelectDropdownMultiSelectFilterManualError(
         inputAndUpdater = selectorAndUpdaterMacro(_.projectLabelSelected),
         labelValue = "Select project labels",
         options = options
