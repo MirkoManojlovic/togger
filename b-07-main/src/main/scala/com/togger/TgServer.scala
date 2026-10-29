@@ -1,9 +1,9 @@
 package com.togger
 import cats.effect.{IO, Resource}
 import com.togger.ai.{TgAiClient, TgAiModelEndpoints, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
-import com.togger.account.{AccountEndpoints, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
+import com.togger.account.{AccountEndpoints, AccountManagementRepoImpl, AccountManagementService, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
-import com.togger.controllers.account.AccountController
+import com.togger.controllers.account.{AccountController, AccountManagementController}
 import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
@@ -127,6 +127,11 @@ object TgServer {
             projectController.findAllMembers,
             projectController.searchByLabels,
             accountController.searchByFirstNameLastNameEmail,
+            accountManagementController.findAll,
+            accountManagementController.findAccountTypes,
+            accountManagementController.findById,
+            accountManagementController.update,
+            accountManagementController.delete,
             contributionController.findByProjectId,
             logEntryController.findByTaskId,
             logEntryController.findByProjectId,
@@ -364,6 +369,10 @@ class DependenciesModule(
   lazy val accountTypeRepo = new AccountTypeRepo
   val accountServiceCore = new AccountServiceCore(accountRepo, transactor)
   lazy val accountController = new AccountController(accountEndpoints, accountServiceCore)
+  lazy val accountManagementService =
+    new AccountManagementService(accountRepo, new AccountManagementRepoImpl, tgClock, transactor)
+  lazy val accountManagementController =
+    new AccountManagementController(accountEndpoints, accountManagementService, adminCheck)
 
   lazy val baseEndpoint = BaseEndpoint.baseEndpoint
 
