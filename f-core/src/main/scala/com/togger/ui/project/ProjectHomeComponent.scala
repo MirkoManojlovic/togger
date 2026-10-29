@@ -271,15 +271,16 @@ class ProjectHomeComponent(
   ): HtmlElement = {
     val memberMilestones = ProjectHomeStats.milestonesOf(member, milestones)
     div(
-      sectionTitle("Working on"),
       div(
         cls("mb-4"),
+        cls(sectionBorderCls),
+        sectionTitle("Active Tasks", marginCls = "mb-4"),
         activeTasks(
           ProjectHomeStats.inFlightOf(member, inFlight).flatMap(_._2),
           ActiveTasksConfig("Not working on any task.", showMember = false)
         )
       ),
-      sectionTitle("Current work"),
+      sectionTitle("Active Milestones"),
       div(
         if (memberMilestones.isEmpty) Seq(emptyNote("Not part of any active milestone."))
         else memberMilestones.map((milestoneRow _).tupled)
