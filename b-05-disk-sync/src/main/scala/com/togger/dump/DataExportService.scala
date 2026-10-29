@@ -210,7 +210,7 @@ class DataExportService(
           val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
             val entity = db(id)
             if (indexed(id).hash != entity.hash)
-              outOfSyncStatus(folderPath, index, entity)
+              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty)
             else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
               status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
             else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
@@ -287,18 +287,32 @@ class DataExportService(
     results.reverse ++ unmatchedDisk ++ missingFromExport
   }
 
-  /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. */
-  private def outOfSyncStatus(folderPath: String, index: ExportIndex, entity: ExportEntity): DataExportEntityStatus =
+  /** The import check does not report a project that was renamed. */
+  private val importIgnoredFields = Set("project.name")
+
+  /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. An
+    * entity whose only differences are in `ignoredFields` is in sync.
+    */
+  private def outOfSyncStatus(
+    folderPath: String,
+    index: ExportIndex,
+    entity: ExportEntity,
+    ignoredFields: Set[String] = Set.empty
+  ): DataExportEntityStatus =
     dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, entity.id) match {
       case Right(diskJson) =>
-        status(
-          entity.entityType,
-          entity.id,
-          entity.name,
-          DataExportSyncStatus.OutOfSync,
-          List("content differs"),
-          ExportJsonDiff.diff(diskJson, entity.json)
-        )
+        val fieldDiffs = ExportJsonDiff.diff(diskJson, entity.json).filterNot(d => ignoredFields.contains(d.field))
+        if (fieldDiffs.isEmpty && ignoredFields.nonEmpty)
+          status(entity.entityType, entity.id, entity.name, DataExportSyncStatus.InSync)
+        else
+          status(
+            entity.entityType,
+            entity.id,
+            entity.name,
+            DataExportSyncStatus.OutOfSync,
+            List("content differs"),
+            fieldDiffs
+          )
       case Left(error) =>
         status(
           entity.entityType,
