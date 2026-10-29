@@ -261,7 +261,7 @@ class ProjectHomeComponent(
         )
       ),
       generalSection("Active timeboxes", timeboxes, "No active timeboxes.", bordered = true)((timeboxRow _).tupled),
-      generalSection("Current work", milestones, "No current work.")((milestoneRow _).tupled)
+      generalSection("Active Milestones", milestones, "No current work.")((milestoneRow _).tupled)
     )
 
   private def memberPanel(
