@@ -76,9 +76,14 @@ class ActiveTasksComponent(
           rows.flatMap { case (member, cells) =>
             div(
               cls(cellCls),
-              cls("flex items-center text-sm font-medium text-heading"),
+              cls("flex"),
               styleAttr := "max-width: 9rem;",
-              member.fold("Unassigned")(_.fullName)
+              div(
+                cls(
+                  "w-full my-2 flex items-center px-2 py-1 border border-default-medium rounded-base text-sm font-medium text-heading"
+                ),
+                member.fold("Unassigned")(_.fullName)
+              )
             ) +:
               cells.map(cell)
           })
