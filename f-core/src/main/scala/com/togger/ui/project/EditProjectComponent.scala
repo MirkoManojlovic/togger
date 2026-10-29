@@ -160,7 +160,7 @@ class EditProjectComponent(
     ) { close =>
       spinnerService
         .runWithSpinner(projectService.deleteProject(projectId))
-        .toastMessageFn("Project deleted successfully") { _ =>
+        .toastMessageCodeBlock("Project deleted successfully") {
           sidebarRefresh.request()
           router.route(HomePage)
         }
