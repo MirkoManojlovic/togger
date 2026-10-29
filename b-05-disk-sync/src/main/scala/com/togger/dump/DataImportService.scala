@@ -36,19 +36,41 @@ class DataImportService(
     timed("check assignment", projectId)(dataExportRepo.isAssigned(projectId, accountId).transact(transactor)).flatMap { assigned =>
       if (!assigned) IO.pure(Left(NotAssignedToProject))
       else
-        timedNow("read index and project file", projectId)(for {
-          importPath <- dataExportTreeStore.resolveImportFolder(projectFolderPath)
-          index <- dataExportTreeStore.readIndexAtPath(importPath).toOption
-          projectDump <- dataExportTreeStore
-            .readEntityJson(importPath, index, DataExportEntityType.Project, firstId(index, DataExportEntityType.Project))
-            .flatMap(_.as[ProjectDumpData].left.map(_.getMessage))
-            .toOption
-        } yield (importPath, index, projectDump)) match {
+        readTree(projectId, projectFolderPath) match {
           case None => IO.pure(Left(DumpManifestMissing))
           case Some((importPath, index, projectDump)) =>
             importFromTree(projectId, accountId, importPath, index, projectDump)
         }
     }
+
+  /** Creates the project in the organization from the exported `project.json`, then imports the rest of the tree into it. */
+  def importNewProject(
+    organizationId: UUID,
+    accountId: UUID,
+    projectFolderPath: String
+  ): IO[Either[ProjectError, (UUID, DataImportResult)]] = {
+    logger.info(s"Importing a new project into ${sp(organizationId)} from ${sp(projectFolderPath)} requested by ${sp(accountId)}")
+    readTree(organizationId, projectFolderPath) match {
+      case None => IO.pure(Left(DumpManifestMissing))
+      case Some((importPath, index, projectDump)) =>
+        for {
+          project <- timed("create project", organizationId)(
+            dataImportRepo.createProject(organizationId, accountId, projectDump.project).transact(transactor)
+          )
+          result <- timed("import total", project.id)(importFromTree(project.id, accountId, importPath, index, projectDump))
+        } yield result.map(project.id -> _)
+    }
+  }
+
+  private def readTree(logId: UUID, projectFolderPath: String): Option[(String, ExportIndex, ProjectDumpData)] =
+    timedNow("read index and project file", logId)(for {
+      importPath <- dataExportTreeStore.resolveImportFolder(projectFolderPath)
+      index <- dataExportTreeStore.readIndexAtPath(importPath).toOption
+      projectDump <- dataExportTreeStore
+        .readEntityJson(importPath, index, DataExportEntityType.Project, firstId(index, DataExportEntityType.Project))
+        .flatMap(_.as[ProjectDumpData].left.map(_.getMessage))
+        .toOption
+    } yield (importPath, index, projectDump))
 
   /** Logs how long a step of the import took, so a slow import can be traced to the step responsible. */
   private def timed[A](step: String, projectId: UUID)(io: IO[A]): IO[A] =

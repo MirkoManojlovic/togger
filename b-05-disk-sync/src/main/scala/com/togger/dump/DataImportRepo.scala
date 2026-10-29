@@ -8,7 +8,14 @@ import com.togger.common.{Password, TgClock, TgIds}
 import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo}
 import com.togger.milestone._
 import com.togger.project.ProjectError.{AccountTypeMissing, ProjectError}
-import com.togger.project.{ProjectAccount, ProjectAccountRepo, ProjectLabelAssignment, ProjectLabelAssignmentRepo}
+import com.togger.project.{
+  Project,
+  ProjectAccount,
+  ProjectAccountRepo,
+  ProjectLabelAssignment,
+  ProjectLabelAssignmentRepo,
+  ProjectRepo
+}
 import com.togger.projectlabel.{ProjectLabelCategoryRepo, ProjectLabelRepo}
 import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepo}
 import com.togger.task._
@@ -50,10 +57,22 @@ class DataImportRepo(
   timeboxRepo: TimeboxRepo,
   timeboxVersionRepo: TimeboxVersionRepo,
   tgPromptTemplateRepo: TgPromptTemplateRepo,
-  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo
+  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo,
+  projectRepo: ProjectRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
+
+  /** A new project in the organization with the fields of the exported one and the importing account as its member. */
+  def createProject(organizationId: UUID, accountId: UUID, exported: Project): ConnectionIO[Project] = {
+    val now = tgClock.currentInstant
+    for {
+      project <- projectRepo.insert(
+        exported.copy(id = UUID.randomUUID(), organizationId = organizationId, createdAt = now, updatedAt = now)
+      )
+      _ <- projectAccountRepo.insert(ProjectAccount(project.id, accountId, now))
+    } yield project
+  }
 
   def resolveAccountMapping(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
     findMappingOfDumpAccount(accountDumpData.id).flatMap {

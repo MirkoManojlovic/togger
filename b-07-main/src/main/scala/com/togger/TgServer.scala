@@ -214,6 +214,7 @@ object TgServer {
             dataExportController.exportByConfig,
             dataExportController.checkStatusByConfig,
             dataExportController.importData,
+            dataExportController.importNewProject,
             dataExportController.checkImportStatus,
             dataExportController.exportPending,
             dataExportController.importPending,
@@ -540,7 +541,8 @@ class DependenciesModule(
       timeboxRepo,
       timeboxVersionRepo,
       tgPromptTemplateRepo,
-      tgPromptTemplateVersionRepo
+      tgPromptTemplateVersionRepo,
+      projectRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)

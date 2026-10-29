@@ -122,7 +122,8 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
     timeboxRepo,
     timeboxVersionRepo,
     tgPromptTemplateRepo,
-    tgPromptTemplateVersionRepo
+    tgPromptTemplateVersionRepo,
+    projectRepo
   )
 
   def newExportService(transactor: Transactor[IO]) =

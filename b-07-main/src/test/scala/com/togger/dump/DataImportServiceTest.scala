@@ -248,6 +248,37 @@ class DataImportServiceTest extends ExportImportTestSupport {
         }
     }
 
+    "create a new project with its members and tasks from an exported tree" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
+        source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        imported <- newImportService(transactor).importNewProject(source.organizationId, fixture.accountId, root.toString)
+        (newProjectId, result) = imported.toOption.get
+        created <- projectRepo.findById(newProjectId).transact(transactor)
+        isMember <- projectAccountRepo.isMember(newProjectId, fixture.accountId).transact(transactor)
+        tasks <- taskRepo.findAllByProjectId(newProjectId).transact(transactor)
+      } yield {
+        newProjectId should not be fixture.projectId
+        created.organizationId shouldBe source.organizationId
+        created.name shouldBe source.name
+        isMember shouldBe true
+        tasks.map(_.id) should contain(fixture.taskId)
+        result.results.filter(_.entityType == DataExportEntityType.Task).map(_.status) shouldBe List(DataImportStatus.Inserted)
+      }
+    }
+
+    "reject a new project import from a folder without an index" in { transactor =>
+      val emptyFolder = newExportPath()
+      os.makeDir.all(emptyFolder)
+      for {
+        account <- createAccount.transact(transactor)
+        orgAndProject <- createOrgAndProject.transact(transactor)
+        result <- newImportService(transactor).importNewProject(orgAndProject._1.id, account.id, emptyFolder.toString)
+      } yield result shouldBe Left(ProjectError.DumpManifestMissing)
+    }
+
     "merge a template into the one its label already has in the target project" in { transactor =>
       val setupTarget = (sourceProjectId: UUID, accountId: UUID) =>
         for {

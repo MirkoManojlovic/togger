@@ -25,6 +25,7 @@ import com.togger.dump.{
   DataExportService,
   DataExportSyncStatus,
   DataImportEntityResult,
+  DataImportResult,
   DataImportService,
   DataImportStatus,
   DataSyncPendingService
@@ -86,11 +87,19 @@ class DataExportController(
       dataImportService
         .importProject(projectId, auth.body.get.id, req.importPath)
         .map {
-          case Right(result) =>
-            val results = result.results.map(toResp)
-            val counts = DataExportEntityType.all.map(t => t -> results.count(_.entityType == toResp(t)))
-            TgJsonSuccess.justBodyRight(DataImportResp(projectId, result.importPath, toCountsResp(counts), results))
-          case Left(error) => error.toBadRequestLeft[DataImportResp]
+          case Right(result) => TgJsonSuccess.justBodyRight(toImportResp(projectId, result))
+          case Left(error)   => error.toBadRequestLeft[DataImportResp]
+        }
+    }
+  }
+
+  val importNewProject = dataExportEndpoints.importNewProjectEndpoint.serverLogic { auth =>
+    { case (organizationId, req) =>
+      dataImportService
+        .importNewProject(organizationId, auth.body.get.id, req.importPath)
+        .map {
+          case Right((projectId, result)) => TgJsonSuccess.justBodyRight(toImportResp(projectId, result))
+          case Left(error)                => error.toBadRequestLeft[DataImportResp]
         }
     }
   }
@@ -125,6 +134,12 @@ class DataExportController(
         case Right(pending) => TgJsonSuccess.justBodyRight(DataSyncPendingResp(projectId, pending))
         case Left(error)    => error.toBadRequestLeft[DataSyncPendingResp]
       }
+  }
+
+  private def toImportResp(projectId: UUID, result: DataImportResult): DataImportResp = {
+    val results = result.results.map(toResp)
+    val counts = DataExportEntityType.all.map(t => t -> results.count(_.entityType == toResp(t)))
+    DataImportResp(projectId, result.importPath, toCountsResp(counts), results)
   }
 
   private def toResp(id: UUID, result: DataExportResult): DataExportResp =
