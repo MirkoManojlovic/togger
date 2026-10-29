@@ -232,9 +232,14 @@ class ProjectHomeComponent(
 
   private def sectionTitle(text: String): HtmlElement = div(cls("font-semibold text-heading mb-2"), text)
 
-  private def generalSection[A](title: String, items: Seq[A], empty: String)(render: A => HtmlElement): HtmlElement =
+  private val sectionBorderCls = "p-4 border border-default-medium rounded-base"
+
+  private def generalSection[A](title: String, items: Seq[A], empty: String, bordered: Boolean = false)(
+    render: A => HtmlElement
+  ): HtmlElement =
     div(
       cls("mb-4"),
+      cls(if (bordered) sectionBorderCls else ""),
       sectionTitle(title),
       if (items.isEmpty) Seq(emptyNote(empty)) else items.map(render)
     )
@@ -247,13 +252,14 @@ class ProjectHomeComponent(
     div(
       div(
         cls("mb-4"),
+        cls(sectionBorderCls),
         sectionTitle("Tasks"),
         activeTasks(
           inFlight.flatMap(_._2),
           ActiveTasksConfig("No tasks in progress, testing, waiting or blocked.")
         )
       ),
-      generalSection("Active timeboxes", timeboxes, "No active timeboxes.")((timeboxRow _).tupled),
+      generalSection("Active timeboxes", timeboxes, "No active timeboxes.", bordered = true)((timeboxRow _).tupled),
       generalSection("Current work", milestones, "No current work.")((milestoneRow _).tupled)
     )
 

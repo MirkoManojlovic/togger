@@ -5,7 +5,7 @@ import com.togger.common.TgClock
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.task.DefaultTaskStatus
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.{TaskStatusBadgeColor, TgBadge}
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
@@ -57,7 +57,14 @@ class ActiveTasksComponent(
 
   private def header(counts: Seq[Int]): Seq[HtmlElement] =
     columnStatuses.zip(counts).map { case (columnStatus, count) =>
-      div(TgBadge(text = s"${columnStatus.toStringWithEmoji} ($count)", color = TgBadgeColor.Gray, bordered = true).element)
+      div(
+        cls("flex justify-center"),
+        TgBadge(
+          text = s"${columnStatus.toStringWithEmoji} ($count)",
+          color = TaskStatusBadgeColor.of(columnStatus.statusName),
+          bordered = true
+        ).element
+      )
     }
 
   private def withMembers: HtmlElement = {
