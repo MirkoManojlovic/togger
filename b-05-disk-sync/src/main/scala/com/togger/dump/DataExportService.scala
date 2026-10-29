@@ -231,11 +231,13 @@ class DataExportService(
           val db = dbEntities.collect { case ((`entityType`, id), entity) => id -> entity }
           if (matchByContent && ExportContentKey.applies(entityType))
             contentStatuses(entityType, folderPath, index, db.values.toList.sortBy(_.id), indexed, labelKeys)
+          else if (matchByContent && entityType == DataExportEntityType.Project && db.size == 1 && indexed.size == 1)
+            importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head) :: Nil
           else {
           val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
             val entity = db(id)
             if (indexed(id).hash != entity.hash)
-              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty)
+              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty, entity.id)
             else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
               status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
             else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
@@ -302,7 +304,7 @@ class DataExportService(
     val remainingDbById = remainingDb.map(e => e.id -> e).toMap
     val unmatchedDisk = unmatchedDiskIds.reverse.map { id =>
       remainingDbById.get(id) match {
-        case Some(entity) => outOfSyncStatus(folderPath, index, entity)
+        case Some(entity) => outOfSyncStatus(folderPath, index, entity, diskId = entity.id)
         case None         => status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
       }
     }
@@ -312,8 +314,12 @@ class DataExportService(
     results.reverse ++ unmatchedDisk ++ missingFromExport
   }
 
-  /** The import check does not report a project that was renamed. */
-  private val importIgnoredFields = Set("project.name")
+  /** The import check does not report a project that was renamed, nor the id it had when exported. */
+  private val importIgnoredFields = Set("project.name", "project.id")
+
+  /** The project of an import folder is the database project whatever its id, as an import into a new project gives it a new one. */
+  private def importedProjectStatus(folderPath: String, index: ExportIndex, entity: ExportEntity, diskId: UUID) =
+    outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId)
 
   /** The field diffs need the entity file, which can be unreadable; the status is then out of sync without them. An
     * entity whose only differences are in `ignoredFields` is in sync.
@@ -322,9 +328,10 @@ class DataExportService(
     folderPath: String,
     index: ExportIndex,
     entity: ExportEntity,
-    ignoredFields: Set[String] = Set.empty
+    ignoredFields: Set[String] = Set.empty,
+    diskId: UUID
   ): DataExportEntityStatus =
-    dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, entity.id) match {
+    dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, diskId) match {
       case Right(diskJson) =>
         val fieldDiffs = ExportJsonDiff.diff(diskJson, entity.json).filterNot(d => ignoredFields.contains(d.field))
         if (fieldDiffs.isEmpty && ignoredFields.nonEmpty)
