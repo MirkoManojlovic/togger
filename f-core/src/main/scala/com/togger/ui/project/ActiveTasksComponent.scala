@@ -71,7 +71,7 @@ class ActiveTasksComponent(
     val rows = ProjectHomeStats.memberRows(tasks)
     grid(
       "grid-cols-[auto_repeat(4,minmax(0,1fr))]",
-      div(cls("font-semibold text-heading"), "Member") +:
+      div(cls("flex items-center justify-center text-sm font-medium text-heading"), "Member") +:
         (header(columnStatuses.indices.map(column => rows.map(_._2(column).size).sum)) ++
           rows.flatMap { case (member, cells) =>
             div(
