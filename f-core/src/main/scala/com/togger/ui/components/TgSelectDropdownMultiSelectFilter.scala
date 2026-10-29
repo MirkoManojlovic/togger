@@ -112,6 +112,8 @@ case class TgSelectDropdownMultiSelectFilter(
       label(labelValue, cls(TgSelectDropdown.labelCls)),
       div(
         cls("relative"),
+        // The panel is absolutely positioned, so reserve its height below the trigger to let the page scroll down.
+        cls.toggle("pb-96") <-- isOpenVar.signal,
         button(
           `type`("button"),
           cls(TgSelectDropdown.triggerButtonCls),
