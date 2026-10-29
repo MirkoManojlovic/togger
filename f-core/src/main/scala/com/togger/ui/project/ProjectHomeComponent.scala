@@ -290,11 +290,13 @@ class ProjectHomeComponent(
 
   private def milestonePanel(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement =
     div(
-      sectionTitle("Active tasks"),
       div(
         cls("mb-4"),
+        cls(sectionBorderCls),
+        sectionTitle("Active Tasks", marginCls = "mb-4"),
         activeTasks(tasks, ActiveTasksConfig("No active tasks.", showMilestone = false))
       ),
+      sectionTitle("Active Milestones"),
       milestoneRow(milestone, tasks)
     )
 
