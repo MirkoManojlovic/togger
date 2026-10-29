@@ -36,6 +36,7 @@ import com.togger.ui.teamdaily.{
   TeamDailyEntryDraft,
   TeamDailyEntryForm,
   TeamDailyStatusGroup,
+  TeamDailyStatusGroupCard,
   TeamDailyStatusOrder,
   TeamDailyTaskBadges,
   TeamDailyTaskPlan
@@ -450,11 +451,7 @@ class SlackerComponent(
     )
 
   private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
-    div(
-      cls("mb-2 ms-3"),
-      h5(cls("mb-1 text-sm font-medium text-body"), s"${group.statusLabel} (${group.tasks.size})"),
-      group.tasks.map(taskRow)
-    )
+    TeamDailyStatusGroupCard(group, taskRow)
 
   private val chooseTasks: HtmlElement =
     div(
