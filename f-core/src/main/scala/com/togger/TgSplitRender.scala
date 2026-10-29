@@ -19,6 +19,7 @@ import com.togger.ui.milestone._
 import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
+import com.togger.ui.accountmanagement.{AccountManagementFeService, EditAccountComponent, ShowAllAccountsComponent}
 import com.togger.ui.mcp.McpSettingsComponent
 import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
@@ -191,6 +192,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
   lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
   lazy val tgPromptTemplateService = new TgPromptTemplateFeService(securedEndpoint, protectedBackendClient)
+  lazy val accountManagementService = new AccountManagementFeService(securedEndpoint, protectedBackendClient)
   lazy val tgAiActionService = new TgAiActionFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelService = new ProjectLabelFeService(securedEndpoint, protectedBackendClient)
   lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
@@ -277,6 +279,17 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case McpSettingsPage => new McpSettingsComponent().element
+              case ShowAllAccountsPage(listParams) =>
+                new ShowAllAccountsComponent(
+                  accountManagementService,
+                  router,
+                  spinnerService,
+                  modalFactory,
+                  listParams,
+                  toast
+                ).element
+              case EditAccountPage(accountId) =>
+                new EditAccountComponent(accountManagementService, router, spinnerService, accountId, toast).element
               case ApexChartDemoPage => new ApexChartDemoComponent(themeStore.isDark).element
               case CreateTaskPage(projectId: UUID) =>
                 new CreateTaskComponent(

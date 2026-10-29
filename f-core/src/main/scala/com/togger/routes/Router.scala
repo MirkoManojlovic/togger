@@ -80,6 +80,10 @@ object Pages {
   case object SyncCheckSettingsPage extends PrivatePage
   case object McpSettingsPage extends PrivatePage
 
+  case class ShowAllAccountsPage(list: ListParams = ListParams.default) extends PrivatePage
+
+  case class EditAccountPage(id: UUID) extends PrivatePage
+
   case object CreateProjectLabelPage extends PrivatePage
 
   case class ShowAllProjectLabelsPage(list: ListParams = ListParams.default) extends PrivatePage

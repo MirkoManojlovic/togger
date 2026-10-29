@@ -234,6 +234,16 @@ class TgRoutes {
         McpSettingsPage,
         root / "settings" / "mcp"
       ),
+      Route.withQuery[ShowAllAccountsPage, Unit, ListQuery](
+        encode = (page: ShowAllAccountsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
+        decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllAccountsPage(listFromQuery(args.params)),
+        pattern = (root / "settings" / "account" / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: EditAccountPage) => page.id.toString,
+        decode = (id: String) => EditAccountPage(UUID.fromString(id)),
+        pattern = root / "settings" / "account" / "edit" / segment[String] / endOfSegments
+      ),
       Route.static(
         CreateProjectLabelPage,
         root / "settings" / "project-label" / "create"
