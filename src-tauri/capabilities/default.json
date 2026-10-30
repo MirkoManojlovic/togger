@@ -15,12 +15,20 @@
         {
           "name": "binaries/backend-app-exec",
           "sidecar": true,
-          "args": true
+          "args": [
+            {
+              "validator": "^[^-].*[/\\\\]java[/\\\\]?$"
+            }
+          ]
         },
         {
           "name": "binaries/mcp-app-exec",
           "sidecar": true,
-          "args": true
+          "args": [
+            {
+              "validator": "^[^-].*[/\\\\]mcp[/\\\\]?$"
+            }
+          ]
         }
       ]
     }
