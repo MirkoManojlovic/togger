@@ -30,6 +30,7 @@ node_modules
 .continue*
 
 dist/
+.vite/
 deploy_folder/liquibase
 deploy_folder/backend
 deploy_folder/frontend
