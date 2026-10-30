@@ -1,0 +1,7 @@
+#!/bin/sh
+# Rejects staged additions that contain personal absolute paths.
+if git diff --cached -U0 --no-color | grep -E '^\+[^+].*/Users/[A-Za-z0-9._-]+/' >/dev/null; then
+  echo "pre-commit: staged changes contain a personal path (/Users/<name>/...). Remove it before committing." >&2
+  git diff --cached -U0 --no-color | grep -nE '^\+[^+].*/Users/[A-Za-z0-9._-]+/' >&2
+  exit 1
+fi
