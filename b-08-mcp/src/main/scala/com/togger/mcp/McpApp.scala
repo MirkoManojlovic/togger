@@ -31,7 +31,7 @@ object McpApp:
 
     val mcpServer = McpServer(tools = tools)
       .name("togger-mcp")
-      .version("0.1.0")
+      .version(Option(getClass.getPackage.getImplementationVersion).getOrElse("dev"))
       .instructions(
         "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks and milestones. " +
           "Start with list_organizations, then list_projects, then get_project_overview. All ids are UUIDs."

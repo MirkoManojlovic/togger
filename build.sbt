@@ -5,7 +5,6 @@ import org.typelevel.scalacoptions.ScalacOptions
 import sbt.Keys.libraryDependencies
 
 ThisBuild / scalaVersion := "2.13.18"
-ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.togger"
 ThisBuild / organizationName := "Togger"
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
