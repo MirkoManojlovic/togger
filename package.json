@@ -23,7 +23,7 @@
     "@tauri-apps/plugin-shell": "^2.3.5",
     "apexcharts": "3.46.0",
     "chart.js": "^4.4.6",
-    "flowbite": "^4.0.1",
+    "flowbite": "^2.3.0",
     "tailwindcss": "^4.1.18"
   }
 }
