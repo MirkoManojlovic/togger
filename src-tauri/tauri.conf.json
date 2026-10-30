@@ -34,6 +34,7 @@
       "mcp/"
     ],
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -44,6 +45,14 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM3NEQyNjE1NjFFMDk5ODAKUldTQW1lQmhGU1pOTnc0QS9lZkJPWkN3VmIvWWM2bTVKVm1zRTlyUk85OHhSOFRMZURLSVNGM0UK",
+      "endpoints": [
+        "https://github.com/MirkoManojlovic/togger/releases/latest/download/latest.json"
+      ]
     }
   }
 }

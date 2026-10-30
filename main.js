@@ -6,6 +6,8 @@ import '@linkOutputDir/main.js'
 import {Command, open} from '@tauri-apps/plugin-shell';
 import {resolveResource} from '@tauri-apps/api/path';
 import {getCurrentWindow} from '@tauri-apps/api/window';
+import {check} from '@tauri-apps/plugin-updater';
+import {relaunch} from '@tauri-apps/plugin-process';
 
 if (appConfig.isDesktopMode === "true") {
   async function load() {
@@ -27,6 +29,27 @@ if (appConfig.isDesktopMode === "true") {
       open(link.href).catch(error => console.log('Error:', error))
     }
   })
+
+  async function stopSidecars() {
+    await fetch("http://localhost:8081/stop-app")
+    const mcp = await mcpChild
+    if (mcp) await mcp.kill()
+  }
+
+  // the Scala.js UI drives updates through this; the sidecars are stopped first because they lock the app files
+  let pendingUpdate = null
+  window.tgUpdater = {
+    check: async () => {
+      pendingUpdate = await check()
+      return pendingUpdate ? {version: pendingUpdate.version, notes: pendingUpdate.body || ""} : null
+    },
+    install: async () => {
+      if (!pendingUpdate) throw new Error("No update has been checked")
+      await stopSidecars()
+      await pendingUpdate.downloadAndInstall()
+      await relaunch()
+    }
+  }
 
   load().then(res => console.log("Loaded"))
   const mcpChild = loadMcp().catch(error => console.log('Error:', error))
