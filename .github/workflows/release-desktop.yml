@@ -52,5 +52,5 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Togger ${{ github.ref_name }}
           releaseDraft: false
-          uploadUpdaterJson: true
-          args: --target aarch64-apple-darwin
+          includeUpdaterJson: true
+          args: --target aarch64-apple-darwin --verbose
