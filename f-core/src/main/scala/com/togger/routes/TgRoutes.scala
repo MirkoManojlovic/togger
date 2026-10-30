@@ -234,6 +234,10 @@ class TgRoutes {
         McpSettingsPage,
         root / "settings" / "mcp"
       ),
+      Route.static(
+        UpdaterSettingsPage,
+        root / "settings" / "updates"
+      ),
       Route.withQuery[ShowAllAccountsPage, Unit, ListQuery](
         encode = (page: ShowAllAccountsPage) => PatternArgs(path = (), params = listToQuery(page.list)),
         decode = (args: PatternArgs[Unit, ListQuery]) => ShowAllAccountsPage(listFromQuery(args.params)),

@@ -21,6 +21,7 @@ import com.togger.ui.timebox._
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.accountmanagement.{AccountManagementFeService, EditAccountComponent, ShowAllAccountsComponent}
 import com.togger.ui.mcp.McpSettingsComponent
+import com.togger.ui.updater.UpdaterComponent
 import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
 import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
 import com.togger.ui.organization._
@@ -279,6 +280,7 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
                 new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case McpSettingsPage => new McpSettingsComponent().element
+              case UpdaterSettingsPage => new UpdaterComponent().element
               case ShowAllAccountsPage(listParams) =>
                 new ShowAllAccountsComponent(
                   accountManagementService,

@@ -103,6 +103,7 @@ class NavbarComponent(
           "Prompt templates" -> ShowAllTgPromptTemplatesPage(),
           "AI actions" -> ShowAllTgAiActionsPage(),
           "MCP" -> McpSettingsPage,
+          "Updates" -> UpdaterSettingsPage,
           "Accounts" -> ShowAllAccountsPage()
         ).map {
           case (label, page) =>
@@ -159,7 +160,7 @@ class NavbarComponent(
         case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
             CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
           NavbarItems.organizationSelected
-        case SyncCheckSettingsPage | McpSettingsPage | ShowAllAccountsPage(_) | EditAccountPage(_) |
+        case SyncCheckSettingsPage | McpSettingsPage | UpdaterSettingsPage | ShowAllAccountsPage(_) | EditAccountPage(_) |
             CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) |
             EditTgPromptTemplatePage(_) | CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) |
             TgAiActionDefaultsPage =>

@@ -79,6 +79,7 @@ object Pages {
 
   case object SyncCheckSettingsPage extends PrivatePage
   case object McpSettingsPage extends PrivatePage
+  case object UpdaterSettingsPage extends PrivatePage
 
   case class ShowAllAccountsPage(list: ListParams = ListParams.default) extends PrivatePage
 

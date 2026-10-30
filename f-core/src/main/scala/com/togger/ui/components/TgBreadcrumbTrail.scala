@@ -82,6 +82,7 @@ object TgBreadcrumbTrail {
     case ChangeAccountInfoPage     => underOrganizations(current("Account information"))
     case ApexChartDemoPage         => underOrganizations(current("Chart demo"))
     case McpSettingsPage           => underOrganizations(current("MCP"))
+    case UpdaterSettingsPage       => underOrganizations(current("Updates"))
     case ShowAllAccountsPage(_)    => underOrganizations(current("Accounts"))
     case EditAccountPage(_) =>
       underOrganizations(link("Accounts", ShowAllAccountsPage()), current("Edit account"))
