@@ -42,3 +42,5 @@ deploy_docker_desktop/frontend
 src-tauri/java/*
 dump.json
 src-tauri/mcp/*
+
+claude_files/
