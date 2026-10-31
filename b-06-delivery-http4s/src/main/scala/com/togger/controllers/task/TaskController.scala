@@ -328,7 +328,7 @@ class TaskController(
         val validation = for {
           _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
           _ <- dateRangeValidation.validateEndDateWhenDone(
-            status.name == DefaultTaskStatus.Done.statusName,
+            DefaultTaskStatus.isTerminalName(status.name),
             dto.endDate
           )
         } yield ()

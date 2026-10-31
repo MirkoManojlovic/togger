@@ -288,7 +288,7 @@ class TaskFeServicePreview(
               task.flatMap(t => projects.projects.find(t.projectId)).fold(allDays)(workDays)
             )
             _ <- dateRangeValidation.validateEndDateWhenDone(
-              status.exists(_.name == DefaultTaskStatus.Done.statusName),
+              status.exists(found => DefaultTaskStatus.isTerminalName(found.name)),
               dto.endDate
             )
           } yield ()
@@ -344,7 +344,7 @@ class TaskFeServicePreview(
     labelIds.distinct.filter(id => taskConfig.labels.find(id).exists(_.projectId == projectId)).toList
 
   private def closedByFor(statusId: UUID, previous: Option[UUID], accountId: UUID): Option[UUID] =
-    if (taskConfig.statuses.find(statusId).exists(_.name == DefaultTaskStatus.Done.statusName)) previous.orElse(Some(accountId))
+    if (taskConfig.statuses.find(statusId).exists(found => DefaultTaskStatus.isTerminalName(found.name))) previous.orElse(Some(accountId))
     else None
 
   private def sameContent(a: TaskVersionDto, b: TaskVersionDto): Boolean =

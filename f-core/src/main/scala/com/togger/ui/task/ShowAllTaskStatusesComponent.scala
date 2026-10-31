@@ -94,7 +94,7 @@ class ShowAllTaskStatusesComponent(
       close()
     }
 
-  private def isDone(state: TaskStatusFormState): Boolean = state.name == DefaultTaskStatus.Done.statusName
+  private def isDone(state: TaskStatusFormState): Boolean = DefaultTaskStatus.isTerminalName(state.name)
 
   spinnerService.runWithSpinner(loadPage()).unsafeRunAndForget()
 

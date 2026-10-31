@@ -9,10 +9,14 @@ import java.time.{DayOfWeek, LocalDate}
 /** What closing a task needs to know: the status it moves to and whether the end date picked for it is acceptable. */
 object TaskClose {
 
-  /** The status a closed task gets, recognised by its default name as statuses have no type of their own. */
-  def doneStatus(statuses: Seq[FindTaskStatusResp]): Option[FindTaskStatusResp] =
-    statuses.find(status =>
-      TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(DefaultTaskStatus.Done.statusName)
+  /** The statuses a closed task can get (Done, then Won't do), recognised by their default names as statuses have no
+    * type of their own.
+    */
+  def closingStatuses(statuses: Seq[FindTaskStatusResp]): Seq[FindTaskStatusResp] =
+    DefaultTaskStatus.terminal.flatMap(terminal =>
+      statuses.find(status =>
+        TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(terminal.statusName)
+      )
     )
 
   def endDateErrors(endDate: Option[LocalDate], startDate: LocalDate, workDays: Set[DayOfWeek]): Seq[String] =

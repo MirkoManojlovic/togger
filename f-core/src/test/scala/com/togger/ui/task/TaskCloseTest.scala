@@ -16,13 +16,14 @@ class TaskCloseTest extends AsyncJsWordSpec {
 
   testNameFromClassName should {
 
-    "find the Done status whatever emoji precedes its name" in { _ =>
+    "find the Done and Won't do statuses whatever emoji precedes their names" in { _ =>
       val done = status("✅ Done")
-      TaskClose.doneStatus(Seq(status("Todo"), done)) shouldBe Some(done)
+      val wontDo = status("🗑️ Won't do")
+      TaskClose.closingStatuses(Seq(wontDo, status("Todo"), done)) shouldBe Seq(done, wontDo)
     }
 
-    "find no Done status when the project has none" in { _ =>
-      TaskClose.doneStatus(Seq(status("Todo"), status("Won't do"))) shouldBe None
+    "find no closing status when the project has none" in { _ =>
+      TaskClose.closingStatuses(Seq(status("Todo"))) shouldBe Seq.empty
     }
 
     "accept a work day on or after the start date" in { _ =>
