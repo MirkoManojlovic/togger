@@ -16,6 +16,8 @@ import com.togger.controllers.project.ProjectService
 import com.togger.logentry.LogEntryRepoImpl
 import com.togger.logentry.LogEntryService
 import com.togger.logentry.LogEntryVersionRepoImpl
+import com.togger.controllers.project.DefaultMilestoneStepTemplateService
+import com.togger.controllers.project.DefaultMilestoneTemplateService
 import com.togger.login.SessionTokenFactoryImpl
 import com.togger.milestone.MilestoneRepoImpl
 import com.togger.milestone.MilestoneService
@@ -29,6 +31,10 @@ import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.TaskTemplateRepoImpl
 import com.togger.tasktemplate.TaskTemplateVersionRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
 import doobie.Transactor
 
 import java.time.Instant
@@ -84,6 +90,12 @@ trait SeedAppModule {
   protected val taskTemplateRepo = new TaskTemplateRepoImpl
   protected val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
   protected val defaultTaskTemplateService = new DefaultTaskTemplateService(tgClock)
+  protected val milestoneStepTemplateRepo = new MilestoneStepTemplateRepoImpl
+  protected val milestoneStepTemplateVersionRepo = new MilestoneStepTemplateVersionRepoImpl
+  protected val defaultMilestoneStepTemplateService = new DefaultMilestoneStepTemplateService(tgClock)
+  protected val milestoneTemplateVersionRepo = new MilestoneTemplateVersionRepoImpl
+  protected val milestoneTemplateRepo = new MilestoneTemplateRepoImpl(milestoneTemplateVersionRepo)
+  protected val defaultMilestoneTemplateService = new DefaultMilestoneTemplateService(tgClock)
 
   protected val organizationService =
     new OrganizationService(
@@ -107,6 +119,12 @@ trait SeedAppModule {
       taskTemplateRepo = taskTemplateRepo,
       taskTemplateVersionRepo = taskTemplateVersionRepo,
       defaultTaskTemplateService = defaultTaskTemplateService,
+      milestoneStepTemplateRepo = milestoneStepTemplateRepo,
+      milestoneStepTemplateVersionRepo = milestoneStepTemplateVersionRepo,
+      defaultMilestoneStepTemplateService = defaultMilestoneStepTemplateService,
+      milestoneTemplateRepo = milestoneTemplateRepo,
+      milestoneTemplateVersionRepo = milestoneTemplateVersionRepo,
+      defaultMilestoneTemplateService = defaultMilestoneTemplateService,
       transactor = xa
     )
 

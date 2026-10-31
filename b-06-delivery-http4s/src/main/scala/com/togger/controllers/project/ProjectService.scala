@@ -14,6 +14,14 @@ import com.togger.project.ProjectAccountRepo
 import com.togger.project.ProjectLabelAssignment
 import com.togger.project.ProjectLabelAssignmentRepo
 import com.togger.project.ProjectRepo
+import com.togger.task.TaskLabelRepo
+import com.togger.task.TaskStatusRepo
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
+import com.togger.tasktemplate.TaskTemplateRepo
+import com.togger.tasktemplate.TaskTemplateVersionRepo
 import com.togger.projectlabel.ProjectLabel
 import com.togger.task.TaskLabelRepo
 import com.togger.task.TaskStatusRepo
@@ -38,6 +46,12 @@ class ProjectService(
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   defaultTaskTemplateService: DefaultTaskTemplateService,
+  milestoneStepTemplateRepo: MilestoneStepTemplateRepo,
+  milestoneStepTemplateVersionRepo: MilestoneStepTemplateVersionRepo,
+  defaultMilestoneStepTemplateService: DefaultMilestoneStepTemplateService,
+  milestoneTemplateRepo: MilestoneTemplateRepo,
+  milestoneTemplateVersionRepo: MilestoneTemplateVersionRepo,
+  defaultMilestoneTemplateService: DefaultMilestoneTemplateService,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
@@ -70,6 +84,31 @@ class ProjectService(
             .insert(template)
             .flatMap(saved => taskTemplateVersionRepo.insert(version.copy(taskTemplateId = saved.id)))
         }
+        .sequence
+      stepTemplateIdsByName <- defaultMilestoneStepTemplateService
+        .createDefaultMilestoneStepTemplates(savedProject.id, accountId)
+        .map { case (template, version) =>
+          milestoneStepTemplateRepo
+            .insert(template)
+            .flatMap(saved =>
+              milestoneStepTemplateVersionRepo
+                .insert(version.copy(milestoneStepTemplateId = saved.id))
+                .map(savedVersion => savedVersion.name -> saved.id)
+            )
+        }
+        .toList
+        .sequence
+        .map(_.toMap)
+      _ <- defaultMilestoneTemplateService
+        .createDefaultMilestoneTemplates(savedProject.id, accountId, stepTemplateIdsByName)
+        .map { case (template, version, stepTemplateIds) =>
+          for {
+            saved <- milestoneTemplateRepo.insert(template)
+            savedVersion <- milestoneTemplateVersionRepo.insert(version.copy(milestoneTemplateId = saved.id))
+            _ <- milestoneTemplateVersionRepo.insertSteps(savedVersion.version, stepTemplateIds)
+          } yield ()
+        }
+        .toList
         .sequence
     } yield savedProject -> members).transact(transactor)
   }

@@ -1,9 +1,12 @@
 package com.togger.controllers.milestone
 
+import cats.data.EitherNec
 import cats.effect.IO
 import com.togger.common.DateRangeValidation
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
+import cats.implicits._
+import com.togger.common.TgError
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneDtoMapper.toDto
 import com.togger.controllers.milestone.MilestoneDtoMapper.toVersionDto
@@ -15,53 +18,110 @@ import com.togger.milestone.MilestoneEndpoints
 import com.togger.milestone.MilestoneService
 import com.togger.milestone.MilestoneStatus
 import com.togger.milestone.MilestoneVersion
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.dto.CreateMilestoneReq
+import com.togger.dto.NewMilestoneStepReq
+import com.togger.dto.UpdateMilestoneReq
+import com.togger.milestone.MilestoneError.InvalidStep
+import com.togger.milestone.MilestoneError.StepsOutsideNewRange
+import com.togger.milestone.MilestoneStep
+import com.togger.milestone.MilestoneStepCounts
+import com.togger.milestone.MilestoneStepService
+import com.togger.milestone.MilestoneStepStatus
+import com.togger.milestone.MilestoneStepVersion
+import com.togger.milestone.MilestoneWithStepsService
+import com.togger.milestone.MilestoneWithOneVersion
 
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 class MilestoneController(
   milestoneEndpoints: MilestoneEndpoints,
   milestoneService: MilestoneService,
   dateRangeValidation: DateRangeValidation,
-  projectService: ProjectService
+  projectService: ProjectService,
+  milestoneStepService: MilestoneStepService,
+  milestoneWithStepsService: MilestoneWithStepsService
 ) {
 
   val save = milestoneEndpoints.saveEndpoint.serverLogic { _ => dto =>
     projectService.findById(dto.projectId).flatMap { case (project, _, _) =>
-      dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), None, project.workDays) match {
+      validateNewMilestone(dto, project.workDays) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
-        case Right(_) =>
-          val now = java.time.Instant.now()
-          val milestone = Milestone(
-            id = UUID.randomUUID(),
-            projectId = dto.projectId,
-            createdAt = now
-          )
-          val firstVersion = MilestoneVersion(
-            version = UUID.randomUUID(),
-            milestoneId = milestone.id,
-            name = dto.name,
-            description = dto.description,
-            status = MilestoneStatus.InProgress,
-            startDate = dto.startDate,
-            dueDate = dto.dueDate,
-            endDate = None,
-            createdAt = now,
-            updatedAt = now
-          )
-
-          milestoneService
-            .createMilestone(milestone, firstVersion)
-            .map(result => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version)))
+        case Right(_)     => createMilestone(dto)
       }
     }
   }
 
-  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { _ => id =>
+  private def validateNewMilestone(dto: CreateMilestoneReq, workDays: Set[DayOfWeek]): EitherNec[TgError, Unit] =
+    (
+      dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), None, workDays).toValidated,
+      dto.steps.traverse_(step => validateNewStep(step, dto, workDays).toValidated)
+    ).mapN((_, _) => ()).toEither
+
+  private def validateNewStep(
+    step: NewMilestoneStepReq,
+    dto: CreateMilestoneReq,
+    workDays: Set[DayOfWeek]
+  ): EitherNec[TgError, Unit] =
+    List(
+      dateRangeValidation.validate(Some(step.startDate), Some(step.dueDate), None, workDays),
+      dateRangeValidation.validateWithinRange(step.startDate, step.dueDate, dto.startDate, dto.dueDate)
+    ).traverse_(_.toValidated).toEither.leftMap(_.map(error => InvalidStep(step.name, error.message): TgError))
+
+  private def createMilestone(dto: CreateMilestoneReq): IO[TgResp[FindMilestoneResp]] = {
+    val now = java.time.Instant.now()
+    val milestone = Milestone(
+      id = UUID.randomUUID(),
+      projectId = dto.projectId,
+      createdAt = now
+    )
+    val firstVersion = MilestoneVersion(
+      version = UUID.randomUUID(),
+      milestoneId = milestone.id,
+      name = dto.name,
+      description = dto.description,
+      status = MilestoneStatus.InProgress,
+      startDate = dto.startDate,
+      dueDate = dto.dueDate,
+      endDate = None,
+      createdAt = now,
+      updatedAt = now
+    )
+    val steps = dto.steps.map { step =>
+      val stepEntity = MilestoneStep(UUID.randomUUID(), milestone.id, now)
+      stepEntity -> MilestoneStepVersion(
+        version = UUID.randomUUID(),
+        milestoneStepId = stepEntity.id,
+        name = step.name,
+        description = step.description,
+        status = MilestoneStepStatus.Planned,
+        position = 0,
+        startDate = step.startDate,
+        dueDate = step.dueDate,
+        endDate = None,
+        createdAt = now,
+        updatedAt = now,
+        changeComment = ""
+      )
+    }
+
+    milestoneWithStepsService
+      .create(milestone, firstVersion, steps)
+      .map { case (created, createdSteps) =>
+        TgJsonSuccess.justBodyRight(
+          toDto(created.milestone, created.version, MilestoneStepCounts(createdSteps.size, 0))
+        )
+      }
+  }
+
+  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { auth => id =>
     milestoneService
       .getCurrent(id)
-      .map {
-        case Right(result) => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version))
-        case Left(error)   => error.toBadRequestLeft[FindMilestoneResp]
+      .flatMap {
+        case Right(result) =>
+          stepCounts(List(id)).map(counts => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(id))))
+        case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
       }
   }
 
@@ -70,9 +130,13 @@ class MilestoneController(
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneService
         .findPaginatedByProjectId(projectId, filter, page)
-        .map(milestonesPage =>
-          TgJsonSuccess.justBodyRight(milestonesPage.mapItem(m => toDto(m.milestone, m.versions.head)))
-        )
+        .flatMap { milestonesPage =>
+          stepCounts(milestonesPage.items.map(_.milestone.id).toList).map(counts =>
+            TgJsonSuccess.justBodyRight(
+              milestonesPage.mapItem(m => toDto(m.milestone, m.versions.head, counts(m.milestone.id)))
+            )
+          )
+        }
     }
   }
 
@@ -93,6 +157,26 @@ class MilestoneController(
           ) match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
             case Right(_) =>
+              milestoneStepService.findStepsOutsideRange(dto.id, effectiveStartDate, effectiveDueDate).flatMap {
+                case outside if outside.nonEmpty =>
+                  IO.pure(
+                    StepsOutsideNewRange(outside.map(_.name), effectiveStartDate, effectiveDueDate)
+                      .toBadRequestLeft[FindMilestoneResp]
+                  )
+                case _ => saveUpdatedVersion(dto, current, effectiveStartDate, effectiveDueDate, effectiveEndDate)
+              }
+          }
+        }
+    }
+  }
+
+  private def saveUpdatedVersion(
+    dto: UpdateMilestoneReq,
+    current: MilestoneWithOneVersion,
+    effectiveStartDate: LocalDate,
+    effectiveDueDate: LocalDate,
+    effectiveEndDate: Option[LocalDate]
+  ): IO[TgResp[FindMilestoneResp]] = {
               val now = java.time.Instant.now()
               val newVersion = MilestoneVersion(
                 version = UUID.randomUUID(),
@@ -109,16 +193,19 @@ class MilestoneController(
 
               milestoneService
                 .saveNewVersion(dto.id, newVersion)
-                .map {
-                  case Right(result) => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version))
-                  case Left(error)   => error.toBadRequestLeft[FindMilestoneResp]
+                .flatMap {
+                  case Right(result) =>
+                    stepCounts(List(dto.id)).map(counts =>
+                      TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(dto.id)))
+                    )
+                  case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
                 }
-          }
-        }
-    }
   }
 
-  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { _ => id =>
+  private def stepCounts(milestoneIds: List[UUID]): IO[Map[UUID, MilestoneStepCounts]] =
+    milestoneStepService.countsByMilestoneIds(milestoneIds)
+
+  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
     milestoneService
       .deleteMilestone(id)
       .map(_ => TgJsonSuccess.justMessageRight("Milestone deleted successfully"))
