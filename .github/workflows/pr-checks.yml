@@ -80,8 +80,11 @@ jobs:
 
       - name: Create the schema of the test database
         run: |
+          # the Liquibase image does not ship the Postgres JDBC driver
+          curl -fsSLo postgresql.jar https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.7/postgresql-42.7.7.jar
           docker run --rm --network host \
             -v "$PWD/b-05-database/src/main/resources/liquibase:/liquibase/changelog" \
+            -v "$PWD/postgresql.jar:/liquibase/lib/postgresql.jar" \
             liquibase/liquibase:5.0.4 \
             --search-path=/liquibase/changelog \
             --changelog-file=changelog.yaml \
