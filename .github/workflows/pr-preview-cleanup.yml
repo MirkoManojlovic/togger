@@ -26,16 +26,36 @@ jobs:
           set -euo pipefail
           API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments"
 
-          # a deployment that is still the alias of its branch needs force=true to be deleted
+          # prints the body of the response, and fails with it when Cloudflare answers with an error
+          cloudflare() {
+            local response status
+            response=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$@")
+            status="${response##*$'\n'}"
+            if [ "${status:0:1}" != "2" ]; then
+              echo "::error::Cloudflare answered $status: ${response%$'\n'*}"
+              return 1
+            fi
+            echo "${response%$'\n'*}"
+          }
+
+          # every page of the preview deployments, collecting the ids that were deployed for the branch of the pull request
+          IDS=""
+          PAGE=1
           while true; do
-            IDS=$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}?env=preview&per_page=100" \
-              | jq -r --arg branch "$BRANCH" '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')
-            [ -n "$IDS" ] || break
-            for ID in $IDS; do
-              echo "Deleting deployment $ID of $BRANCH"
-              curl -fsS -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}/${ID}?force=true" > /dev/null
-            done
+            RESPONSE=$(cloudflare "${API}?env=preview&page=${PAGE}")
+            IDS="$IDS $(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" \
+              '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')"
+            TOTAL_PAGES=$(echo "$RESPONSE" | jq -r '.result_info.total_pages // 1')
+            [ "$PAGE" -lt "$TOTAL_PAGES" ] || break
+            PAGE=$((PAGE + 1))
           done
+
+          # a deployment that is still the alias of its branch needs force=true to be deleted
+          for ID in $IDS; do
+            echo "Deleting deployment $ID of $BRANCH"
+            cloudflare -X DELETE "${API}/${ID}?force=true" > /dev/null
+          done
+          echo "Deleted $(echo $IDS | wc -w) deployments of $BRANCH"
 
       - name: Find the preview comment
         uses: peter-evans/find-comment@v3
