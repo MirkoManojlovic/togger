@@ -2,11 +2,23 @@ package com.togger.milestone
 
 import com.togger.common.TgError
 
+import java.time.LocalDate
+
 object MilestoneError {
   sealed trait MilestoneError extends TgError
 
   case object MilestoneNotFound extends MilestoneError {
     override def message: String = "Milestone not found"
+  }
+
+  case class StepsOutsideNewRange(stepNames: List[String], startDate: LocalDate, dueDate: LocalDate)
+      extends MilestoneError {
+    override def message: String =
+      s"These steps would lie outside the milestone range $startDate - $dueDate: ${stepNames.mkString(", ")}"
+  }
+
+  case class InvalidStep(stepName: String, reason: String) extends MilestoneError {
+    override def message: String = s"Step '$stepName': $reason"
   }
 
   case object VersionNotFound extends MilestoneError {
