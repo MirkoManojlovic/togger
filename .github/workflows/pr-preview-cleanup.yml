@@ -26,14 +26,27 @@ jobs:
           set -euo pipefail
           API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments"
 
-          # a deployment that is still the alias of its branch needs force=true to be deleted
+          # prints the body of the response, and fails with it when Cloudflare answers with an error
+          cloudflare() {
+            local response status
+            response=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$@")
+            status="${response##*$'\n'}"
+            if [ "${status:0:1}" != "2" ]; then
+              echo "::error::Cloudflare answered $status: ${response%$'\n'*}"
+              return 1
+            fi
+            echo "${response%$'\n'*}"
+          }
+
+          # a deployment that is still the alias of its branch needs force=true to be deleted; the list is newest
+          # first, so the deployments of a pull request that was just closed are on the first page
           while true; do
-            IDS=$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}?env=preview&per_page=100" \
+            IDS=$(cloudflare "${API}?env=preview" \
               | jq -r --arg branch "$BRANCH" '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')
             [ -n "$IDS" ] || break
             for ID in $IDS; do
               echo "Deleting deployment $ID of $BRANCH"
-              curl -fsS -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}/${ID}?force=true" > /dev/null
+              cloudflare -X DELETE "${API}/${ID}?force=true" > /dev/null
             done
           done
 
