@@ -1,0 +1,93 @@
+name: PR Checks
+
+# Two required checks for every pull request into develop: everything compiles (main and test code of all projects,
+# the ScalaJS frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all
+# of them at the root.
+
+on:
+  pull_request:
+    branches: [develop]
+    # only documentation changed, nothing to compile or test
+    paths-ignore:
+      - "**/*.md"
+      - "claude_files/**"
+
+permissions:
+  contents: read
+
+# a newer push to the pull request supersedes the running checks
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: sbt/setup-sbt@v1
+
+      - run: sbt Test/compile
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # the backend specs run against a real Postgres database, see TgTestTransactor; the schema needs uuidv7(), so 18
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: togger_account
+          POSTGRES_PASSWORD: togger_password
+          POSTGRES_DB: togger-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U togger_account -d togger-test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: sbt/setup-sbt@v1
+
+      # the frontend specs run on node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Create the schema of the test database
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/b-05-database/src/main/resources/liquibase:/liquibase/changelog" \
+            liquibase/liquibase:5.0.4 \
+            --search-path=/liquibase/changelog \
+            --changelog-file=changelog.yaml \
+            --url=jdbc:postgresql://localhost:5432/togger-test \
+            --username=togger_account \
+            --password=togger_password \
+            update
+
+      - run: sbt test
