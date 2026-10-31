@@ -1,0 +1,127 @@
+name: PR Checks
+
+# Two checks for every pull request into develop: everything compiles (main and test code of all projects, the ScalaJS
+# frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all of them at
+# the root for the compile. The job "PR Checks" sums both up; it is the status check the ruleset of develop requires.
+
+on:
+  pull_request:
+    branches: [develop]
+    # only documentation changed, nothing to compile or test
+    paths-ignore:
+      - "**/*.md"
+      - "claude_files/**"
+
+permissions:
+  contents: read
+
+# a newer push to the pull request supersedes the running checks
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: sbt/setup-sbt@v1
+
+      - run: sbt Test/compile
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # the backend specs run against a real Postgres database, see TgTestTransactor; the schema needs uuidv7(), so 18
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: togger_account
+          POSTGRES_PASSWORD: togger_password
+          POSTGRES_DB: togger-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U togger_account -d togger-test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: sbt/setup-sbt@v1
+
+      # the frontend specs run on node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Create the schema of the test database
+        run: |
+          # the Liquibase image does not ship the Postgres JDBC driver
+          curl -fsSLo postgresql.jar https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.7/postgresql-42.7.7.jar
+          docker run --rm --network host \
+            -v "$PWD/b-05-database/src/main/resources/liquibase:/liquibase/changelog" \
+            -v "$PWD/postgresql.jar:/liquibase/lib/postgresql.jar" \
+            liquibase/liquibase:5.0.4 \
+            --search-path=/liquibase/changelog \
+            --changelog-file=changelog.yaml \
+            --url=jdbc:postgresql://localhost:5432/togger-test \
+            --username=togger_account \
+            --password=togger_password \
+            update
+
+      # the specs of all projects share the one test database, so the projects are tested one after another (a build
+      # wide `sbt test` runs them in parallel and they delete each other's rows); every project runs, even after a failure
+      - name: Run the tests
+        run: |
+          failed=""
+          for project in tgMacrosJVM tgMacrosJS tgCommonJVM tgCommonJS httpEndpointsJVM httpEndpointsJS backendCore \
+            backendCommon backendDatabase backendDiskSync backendAi backendAuth backendDeliveryHttp4s backendMain \
+            backendMcp frontendCore frontendMain; do
+            echo "::group::$project/test"
+            sbt --client "$project/test" || failed="$failed $project"
+            echo "::endgroup::"
+          done
+          sbt --client shutdown || true
+          if [ -n "$failed" ]; then
+            echo "::error::Tests failed in:$failed"
+            exit 1
+          fi
+
+  # the ruleset of develop requires one status check named "PR Checks"; it is green when both checks above are
+  pr-checks:
+    name: PR Checks
+    needs: [compile, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Both checks passed
+        env:
+          RESULTS: ${{ needs.compile.result }} ${{ needs.test.result }}
+        run: |
+          echo "compile and test: $RESULTS"
+          [ "$RESULTS" = "success success" ]
