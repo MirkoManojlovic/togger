@@ -46,6 +46,12 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
 
   lazy val milestones = new MilestonesPreviewData(db, projects)
 
+  lazy val milestoneSteps = new MilestoneStepsPreviewData(db, milestones)
+
+  lazy val milestoneStepTemplates = new MilestoneStepTemplatesPreviewData(db, projects, clock)
+
+  lazy val milestoneTemplates = new MilestoneTemplatesPreviewData(db, projects, milestoneStepTemplates, clock)
+
   lazy val ai = new AiPreviewData(db, projects)
 
   lazy val dataSync = new DataSyncPreviewData(db, projects)
@@ -60,13 +66,21 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
     new ProjectLabelsPreviewSeed(projectLabels, demo.projectLabelCategories, demo.projectLabels),
     new TaskConfigPreviewSeed(taskConfig, demo.taskStatuses, demo.taskLabels, demo.taskTemplates),
     new MilestonesPreviewSeed(milestones, demo.milestones),
+    new MilestoneStepsPreviewSeed(
+      milestoneSteps,
+      demo.milestones,
+      demo.projects,
+      clock.currentDate(ZoneOffset.UTC)
+    ),
+    new MilestoneStepTemplatesPreviewSeed(milestoneStepTemplates, demo.projects),
+    new MilestoneTemplatesPreviewSeed(milestoneTemplates, demo.projects),
     new AiPreviewSeed(ai, demo.promptTemplates, demo.aiActions, demo.aiActionDefaults),
     new TasksPreviewSeed(tasks, demo.tasks, demo.timeboxes),
     new DataSyncPreviewSeed(dataSync, demo.exportConfigs, demo.importConfigs, demo.projectMappings)
   )
 
   /** Holders register project creation/deletion hooks in their constructors, so none may be created lazily later. */
-  private val hookRegistrations: List[AnyRef] = List(taskConfig, milestones, ai, tasks, dataSync)
+  private val hookRegistrations: List[AnyRef] = List(taskConfig, milestones, milestoneSteps, milestoneStepTemplates, milestoneTemplates, ai, tasks, dataSync)
 
   /** Creating every holder registers every collection name in the db, which the reset needs. */
   private lazy val allHolders: List[AnyRef] =

@@ -23,7 +23,7 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
 
   private class Services(val env: PreviewTestEnv = new PreviewTestEnv) {
     private val m = env.module
-    val milestones = new MilestoneFeServicePreview(m.context, m.projects, m.milestones)
+    val milestones = new MilestoneFeServicePreview(m.context, m.projects, m.milestones, m.milestoneSteps)
     val dates = new MilestoneDateFeServicePreview(m.context, m.milestones)
     val aiClient = new MilestoneAiSummaryStreamClientPreview(m.context, m.projects, m.milestones, m.taskStats, 1.milli)
     val summaries = new MilestoneSummaryFeServicePreview(m.context, m.projects, m.milestones, aiClient)

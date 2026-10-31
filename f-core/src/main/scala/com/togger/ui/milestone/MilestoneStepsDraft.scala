@@ -1,0 +1,84 @@
+package com.togger.ui.milestone
+
+import com.togger.common.{DateRangeValidation, WorkDayCalendar}
+import com.togger.dto.{MilestoneTemplateStepDto, NewMilestoneStepReq}
+
+import java.time.{DayOfWeek, LocalDate}
+import scala.util.Try
+
+/** A step of a milestone that is being created; the dates are the text of the date inputs. */
+case class MilestoneStepDraft(name: String = "", description: String = "", startDate: String = "", dueDate: String = "")
+
+object MilestoneStepsDraft {
+
+  private val dateRangeValidation = new DateRangeValidation
+
+  private val allDays: Set[DayOfWeek] = DayOfWeek.values().toSet
+
+  def parseDate(text: String): Option[LocalDate] = Try(LocalDate.parse(text)).toOption
+
+  /** One draft per step of the template, with the milestone range spread evenly over them. */
+  def fromTemplate(
+    steps: Seq[MilestoneTemplateStepDto],
+    milestoneStart: String,
+    milestoneDue: String,
+    workDays: Set[DayOfWeek]
+  ): List[MilestoneStepDraft] =
+    steps.toList.zip(spread(steps.size, milestoneStart, milestoneDue, workDays)).map { case (step, (start, due)) =>
+      MilestoneStepDraft(step.name, step.description, start, due)
+    }
+
+  /** The start and due date of each of `count` steps; empty dates when the milestone range is not a valid one yet. */
+  def spread(
+    count: Int,
+    milestoneStart: String,
+    milestoneDue: String,
+    workDays: Set[DayOfWeek]
+  ): List[(String, String)] = {
+    val ranges = for {
+      start <- parseDate(milestoneStart)
+      due <- parseDate(milestoneDue)
+    } yield WorkDayCalendar.splitEvenly(start, due, count, workDays).map { case (from, to) => from.toString -> to.toString }
+    ranges.filter(_.size == count).getOrElse(List.fill(count)("" -> ""))
+  }
+
+  /** Why the step cannot be created in the milestone; nothing when it can. */
+  def errors(
+    draft: MilestoneStepDraft,
+    milestoneStart: String,
+    milestoneDue: String,
+    workDays: Set[DayOfWeek]
+  ): List[String] = {
+    val nameErrors = if (draft.name.trim.isEmpty) List("Step name is required") else Nil
+    val dateErrors = (parseDate(draft.startDate), parseDate(draft.dueDate)) match {
+      case (Some(start), Some(due)) => rangeErrors(start, due, milestoneStart, milestoneDue, workDays)
+      case _                        => List("Start date and due date are required")
+    }
+    nameErrors ++ dateErrors
+  }
+
+  private def rangeErrors(
+    start: LocalDate,
+    due: LocalDate,
+    milestoneStart: String,
+    milestoneDue: String,
+    workDays: Set[DayOfWeek]
+  ): List[String] = {
+    val workDayErrors =
+      dateRangeValidation.validate(Some(start), Some(due), None, if (workDays.isEmpty) allDays else workDays)
+    val milestoneRangeErrors = (parseDate(milestoneStart), parseDate(milestoneDue)) match {
+      case (Some(from), Some(to)) => dateRangeValidation.validateWithinRange(start, due, from, to)
+      case _                      => Right(())
+    }
+    List(workDayErrors, milestoneRangeErrors).flatMap(_.left.toOption.toList.flatMap(_.toChain.toList.map(_.message)))
+  }
+
+  /** The drafts as the request wants them; a draft with a date that cannot be read is left out. */
+  def toRequests(drafts: Seq[MilestoneStepDraft]): List[NewMilestoneStepReq] =
+    drafts.toList.flatMap { draft =>
+      for {
+        start <- parseDate(draft.startDate)
+        due <- parseDate(draft.dueDate)
+      } yield NewMilestoneStepReq(draft.name.trim, draft.description, start, due)
+    }
+}

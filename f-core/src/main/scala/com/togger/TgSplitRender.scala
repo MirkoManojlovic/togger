@@ -34,6 +34,39 @@ import com.togger.ui.contributions.ContributionsComponent
 import com.togger.ui.contributions.ContributionsFeService
 import com.togger.ui.contributions.ContributionsFeServiceImpl
 import com.togger.ui.contributions.ContributionsFeServicePreview
+import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.localstorage.LocalStorageBrowser
+import com.togger.ui.milestone._
+import com.togger.ui.timebox._
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
+import com.togger.ui.accountmanagement.AccountManagementFeService
+import com.togger.ui.accountmanagement.AccountManagementFeServiceImpl
+import com.togger.ui.accountmanagement.AccountManagementFeServicePreview
+import com.togger.ui.accountmanagement.EditAccountComponent
+import com.togger.ui.accountmanagement.ShowAllAccountsComponent
+import com.togger.ui.mcp.McpSettingsComponent
+import com.togger.ui.updater.UpdaterComponent
+import com.togger.ui.synccheck.SyncCheckSettingsComponent
+import com.togger.ui.synccheck.SyncCheckSettingsStore
+import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.navbar.Logout
+import com.togger.ui.navbar.NavbarComponent
+import com.togger.ui.navbar.Sidebar
+import com.togger.ui.navbar.SidebarCollapseStore
+import com.togger.ui.navbar.SidebarRefresh
+import com.togger.ui.organization._
+import com.togger.ui.project._
+import com.togger.ui.projectmapping._
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task._
+import com.togger.ui.syncconfig._
+import com.togger.ui.milestonesteptemplate._
+import com.togger.ui.milestonetemplate._
+import com.togger.ui.tasktemplate._
+import com.togger.ui.tgaiaction._
+import com.togger.ui.tgprompttemplate._
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
 import com.togger.ui.dataimportconfig._
@@ -292,6 +325,30 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
     if (previewConfig.enabled)
       new TaskLabelFeServicePreview(previewModule.context, previewModule.projects, previewModule.taskConfig)
     else new TaskLabelFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val milestoneStepService: MilestoneStepFeService =
+    if (previewConfig.enabled)
+      new MilestoneStepFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.milestoneSteps
+      )
+    else new MilestoneStepFeServiceImpl(securedEndpoint, protectedBackendClient)
+
+  lazy val milestoneTemplateService: MilestoneTemplateFeService =
+    if (previewConfig.enabled)
+      new MilestoneTemplateFeServicePreview(
+        previewModule.context,
+        previewModule.milestoneTemplates,
+        previewModule.milestoneStepTemplates
+      )
+    else new MilestoneTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+
+  lazy val milestoneStepTemplateService: MilestoneStepTemplateFeService =
+    if (previewConfig.enabled)
+      new MilestoneStepTemplateFeServicePreview(previewModule.context, previewModule.milestoneStepTemplates)
+    else new MilestoneStepTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+
   lazy val taskTemplateService: TaskTemplateFeService =
     if (previewConfig.enabled) new TaskTemplateFeServicePreview(previewModule.context, previewModule.taskConfig)
     else new TaskTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
@@ -301,7 +358,12 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
     else new DataExportFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val milestoneService: MilestoneFeService =
     if (previewConfig.enabled)
-      new MilestoneFeServicePreview(previewModule.context, previewModule.projects, previewModule.milestones)
+      new MilestoneFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.milestoneSteps
+      )
     else new MilestoneFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val timeboxService: TimeboxFeService =
     if (previewConfig.enabled) new TimeboxFeServicePreview(previewModule.context, previewModule.tasks)
