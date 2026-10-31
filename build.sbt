@@ -13,6 +13,9 @@ Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ Scala
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+// the specs of several projects share the one test database, so a build wide `test` must not run them in parallel
+Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
+
 // `io.github.edadma:markdown` (used by frontendCore) is a Scala 3 library and is consumed from Scala 2.13
 // through the TASTy reader. It is built against the Scala 3 "Next" standard library, which ships as
 // `scalajs-scalalib_2.13:3.x` (ScalaJS IR only) plus `scala-library:3.x` (JVM signatures). These overrides keep
