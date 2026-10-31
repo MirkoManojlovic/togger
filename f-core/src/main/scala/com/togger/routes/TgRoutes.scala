@@ -441,6 +441,24 @@ class TgRoutes {
           root / "edit-milestone" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
       ),
       Route(
+        encode = (page: ShowMilestoneStepsPage) => page.projectId.toString -> page.milestoneId.toString,
+        decode = { (ids: (String, String)) => ShowMilestoneStepsPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern =
+          root / "milestone-steps" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: CreateMilestoneStepPage) => page.projectId.toString -> page.milestoneId.toString,
+        decode = { (ids: (String, String)) => CreateMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern = root / "create-milestone-step" / "project-id" / segment[String] / "milestone-id" / segment[String] /
+          endOfSegments
+      ),
+      Route(
+        encode = (page: EditMilestoneStepPage) => page.projectId.toString -> page.milestoneStepId.toString,
+        decode = { (ids: (String, String)) => EditMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern = root / "edit-milestone-step" / "project-id" / segment[String] / "milestone-step-id" / segment[String] /
+          endOfSegments
+      ),
+      Route(
         encode = (page: MilestoneSummaryPage) => page.projectId.toString -> page.milestoneId.toString,
         decode = { (ids: (String, String)) => MilestoneSummaryPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
         pattern = root / "milestone-summary" / "project-id" / segment[String] / "milestone-id" / segment[String] /

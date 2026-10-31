@@ -155,10 +155,18 @@ object TgBreadcrumbTrail {
     case ShowContributionsPage(projectId, _)    => underProject(projectId, current("Contributions"))
     case ShowMilestonesPage(projectId, _)       => underProject(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId, _) => underMilestones(projectId, "Milestone history")
-    case CreateMilestonePage(projectId)         => underMilestones(projectId, "Create milestone")
-    case EditMilestonePage(projectId, _)        => underMilestones(projectId, "Edit milestone")
-    case MilestoneReviewPage(projectId, _)      => underMilestones(projectId, "Milestone review")
-    case MilestoneSummaryPage(projectId, _)     => underMilestones(projectId, "Milestone summaries")
+    case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")
+    case EditMilestonePage(projectId, _)     => underMilestones(projectId, "Edit milestone")
+    case MilestoneReviewPage(projectId, _)   => underMilestones(projectId, "Milestone review")
+    case ShowMilestoneStepsPage(projectId, _) => underMilestones(projectId, "Milestone steps")
+    case CreateMilestoneStepPage(projectId, milestoneId) =>
+      underProject(
+        projectId,
+        link("Milestone steps", ShowMilestoneStepsPage(projectId, milestoneId)),
+        current("Add step")
+      )
+    case EditMilestoneStepPage(projectId, _) => underMilestones(projectId, "Edit step")
+    case MilestoneSummaryPage(projectId, _)  => underMilestones(projectId, "Milestone summaries")
   }
 
 }

@@ -433,16 +433,19 @@ object Sidebar {
     case ShowMilestonesPage(projectId, _)       => Some(projectId)
     case EditMilestonePage(projectId, _)        => Some(projectId)
     case ShowMilestoneHistoryPage(projectId, _) => Some(projectId)
-    case MilestoneReviewPage(projectId, _)      => Some(projectId)
-    case MilestoneSummaryPage(projectId, _)     => Some(projectId)
-    case ShowTimeboxesPage(projectId, _)        => Some(projectId)
-    case CreateTimeboxPage(projectId)           => Some(projectId)
-    case EditTimeboxPage(projectId, _)          => Some(projectId)
-    case TimeboxHistoryPage(projectId, _)       => Some(projectId)
-    case TimeboxReviewPage(projectId, _)        => Some(projectId)
-    case ShowContributionsPage(projectId, _)    => Some(projectId)
-    case EditProjectPage(id)                    => Some(id)
-    case _                                      => None
+    case MilestoneReviewPage(projectId, _)   => Some(projectId)
+    case ShowMilestoneStepsPage(projectId, _) => Some(projectId)
+    case CreateMilestoneStepPage(projectId, _) => Some(projectId)
+    case EditMilestoneStepPage(projectId, _) => Some(projectId)
+    case MilestoneSummaryPage(projectId, _)  => Some(projectId)
+    case ShowTimeboxesPage(projectId, _)     => Some(projectId)
+    case CreateTimeboxPage(projectId)        => Some(projectId)
+    case EditTimeboxPage(projectId, _)       => Some(projectId)
+    case TimeboxHistoryPage(projectId, _)    => Some(projectId)
+    case TimeboxReviewPage(projectId, _)     => Some(projectId)
+    case ShowContributionsPage(projectId, _) => Some(projectId)
+    case EditProjectPage(id)                 => Some(id)
+    case _                                   => None
   }
 
   val sideBarLinkStyle =

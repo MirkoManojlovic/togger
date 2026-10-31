@@ -967,20 +967,60 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateMilestoneComponent(
                   milestoneService,
                   milestoneDateService,
+                  milestoneTemplateService,
                   spinnerService,
                   tgClock,
                   projectService,
                   projectId,
                   toast
                 ).element
-              case EditMilestonePage(_, id: UUID) =>
+              case EditMilestonePage(projectId, id: UUID) =>
                 new EditMilestoneComponent(
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
                   tgClock,
                   projectService,
+                  router,
+                  projectId,
                   id,
+                  toast
+                ).element
+              case ShowMilestoneStepsPage(projectId: UUID, milestoneId: UUID) =>
+                new ShowMilestoneStepsComponent(
+                  milestoneStepService,
+                  milestoneService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  milestoneId,
+                  toast
+                ).element
+              case CreateMilestoneStepPage(projectId: UUID, milestoneId: UUID) =>
+                new CreateMilestoneStepPageComponent(
+                  milestoneStepService,
+                  milestoneService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  projectId,
+                  milestoneId,
+                  toast
+                ).element
+              case EditMilestoneStepPage(projectId: UUID, milestoneStepId: UUID) =>
+                new EditMilestoneStepComponent(
+                  milestoneStepService,
+                  milestoneService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  tgClock,
+                  projectId,
+                  milestoneStepId,
                   toast
                 ).element
               case MilestoneSummaryPage(_, id: UUID) =>
