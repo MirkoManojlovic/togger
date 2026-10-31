@@ -1,0 +1,103 @@
+name: PR Preview Deploy
+
+# Publishes the build of pr-preview-build.yml to Cloudflare Pages, one URL per pull request, and links it in a comment.
+# Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID and a Pages project named togger-preview.
+# It runs on the default branch and only uploads static files; it never runs code of the pull request.
+
+on:
+  workflow_run:
+    workflows: ["PR Preview Build"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    # a newer build of the same branch supersedes this one
+    concurrency:
+      group: pr-preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: preview-deployments
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr-preview-build
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Get the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          REPO_OWNER: ${{ github.event.workflow_run.repository.owner.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_OWNER" != "$REPO_OWNER" ]; then
+            BRANCH="${HEAD_OWNER}:${HEAD_BRANCH}"
+          else
+            BRANCH="${HEAD_BRANCH}"
+          fi
+
+          PR_NUMBER=$(gh pr view --repo "$REPO" "$BRANCH" --json number --jq '.number')
+          if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "::error::Could not determine the pull request number"
+            exit 1
+          fi
+
+          SAFE_BRANCH=$(echo "$HEAD_BRANCH" | sed 's/[^a-zA-Z0-9._\/-]//g')
+
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head_branch=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      # aliased by the pull request number, not by the branch, so a fork branch can never take over another alias
+      - name: Deploy to Cloudflare Pages
+        id: cloudflare-deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=togger-preview --branch=pr-${{ steps.pr.outputs.number }}
+
+      - name: Find the existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- pr-preview-comment -->"
+
+      - name: Create or update the comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ steps.pr.outputs.number }}
+          edit-mode: replace
+          body: |
+            <!-- pr-preview-comment -->
+            ## Preview Deployment
+
+            | Status | URL |
+            |--------|-----|
+            | Deployed | ${{ steps.cloudflare-deploy.outputs.deployment-url }} |
+
+            **Branch:** `${{ steps.pr.outputs.head_branch }}`
+            **Commit:** ${{ steps.pr.outputs.head_sha }}
+
+            The preview runs the frontend only (frontend preview mode): there is no backend and all data lives in your
+            browser. Log in with `admin@email.com` / `A!good_1_password_is_good`.
+
+            ---
+            <sub>Deployed with Cloudflare Pages</sub>

@@ -84,6 +84,8 @@ function gitOutput(args) {
 
 // the commit hash, plus "-dirty" while there are uncommitted changes, so two different builds never share storage
 function previewBuildId() {
+  // CI builds a merge commit of the pull request, so it passes the commit that is actually being previewed
+  if (process.env.PREVIEW_BUILD_ID) return process.env.PREVIEW_BUILD_ID;
   const hash = gitOutput(["rev-parse", "--short", "HEAD"]) || "unknown";
   return gitOutput(["status", "--porcelain"]) ? `${hash}-dirty` : hash;
 }

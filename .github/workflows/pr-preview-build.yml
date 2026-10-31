@@ -1,0 +1,62 @@
+name: PR Preview Build
+
+# Builds the frontend in preview mode (no backend, data in localStorage) for every pull request. It runs the code of
+# the pull request, so it has no secrets and no write access; pr-preview-deploy.yml publishes the result.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    # the backend, the desktop shell and the docs do not change the preview
+    paths-ignore:
+      - "**/*.md"
+      - "claude_files/**"
+      - "b-*/**"
+      - "src-tauri/**"
+      - ".github/workflows/release-desktop.yml"
+
+permissions:
+  contents: read
+
+# a newer push to the pull request supersedes the old build
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: sbt/setup-sbt@v1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Link the ScalaJS frontend
+        run: sbt frontendMain/fullLinkJS
+
+      - name: Build the preview
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export PREVIEW_BUILD_ID="$(echo "$HEAD_SHA" | cut -c1-8)"
+          npm run build-preview
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr-preview-build
+          path: dist
+          retention-days: 1

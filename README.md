@@ -46,6 +46,14 @@ Log in with `admin@email.com` / `A!good_1_password_is_good` (or `demo@togger.pre
 changes), so every new build starts with fresh demo data. Export and import are not available in this mode.
 "Reset preview data" in the Settings menu restores the demo data.
 
+### Pull request previews
+
+Every pull request that changes the frontend gets a preview URL, posted as a comment on the pull request. `PR Preview
+Build` builds the frontend in preview mode (build id = the head commit of the pull request) and `PR Preview Deploy`
+publishes it to Cloudflare Pages as `pr-<number>`. One time setup: a Cloudflare Pages project `togger-preview`, the
+repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and both workflows on the default branch (a
+`workflow_run` workflow only runs from there).
+
 ## Releasing
 
 ```
