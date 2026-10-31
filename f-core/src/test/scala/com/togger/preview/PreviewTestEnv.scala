@@ -1,5 +1,7 @@
 package com.togger.preview
 
+import com.togger.demo.DemoIdentity
+
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.togger.common.TgResponseTypes.TgRespIO
@@ -32,7 +34,7 @@ class PreviewTestEnv {
     loginRepo.save(LoginResponseDto(account.id, "session", account.firstName, account.lastName, account.email))
   }
 
-  def loginAsDemo(): Unit = loginAs(PreviewDemo.AccountId)
+  def loginAsDemo(): Unit = loginAs(DemoIdentity.AccountId)
 
   def run[A](response: TgRespIO[A]): Future[Either[TgJsonFailure, A]] =
     response.map(_.map(_.body.get)).unsafeToFuture()

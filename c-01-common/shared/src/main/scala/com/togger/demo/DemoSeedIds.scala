@@ -1,9 +1,9 @@
-package com.togger.preview
+package com.togger.demo
 
 import java.util.UUID
 
 /** Deterministic ids for seeded rows, one `group` per kind of entity, so that seeders can reference each other. */
-object PreviewSeedIds {
+object DemoSeedIds {
   val TaskStatus = 3
   val TaskLabel = 4
   val TaskTemplate = 5

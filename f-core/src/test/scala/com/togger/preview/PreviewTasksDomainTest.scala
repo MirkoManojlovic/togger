@@ -1,5 +1,11 @@
 package com.togger.preview
 
+import com.togger.demo.DemoTaskConfigData
+import com.togger.demo.DemoMilestonesData
+
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoSeedIds
+
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.{BadRequest, PageRequest, Unauthenticated}
 import com.togger.dto._
@@ -25,17 +31,17 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       new ContributionsFeServicePreview(m.context, m.projects, m.milestones, m.taskConfig, m.accounts, m.tasks)
     env.loginAsDemo()
 
-    val todoStatus: UUID = TaskConfigPreviewSeed.statusId(0, 4)
-    val doneStatus: UUID = TaskConfigPreviewSeed.statusId(0, 6)
+    val todoStatus: UUID = DemoTaskConfigData.statusId(0, 4)
+    val doneStatus: UUID = DemoTaskConfigData.statusId(0, 6)
 
     def newTask(name: String, start: LocalDate = monday.plusDays(1), due: LocalDate = monday.plusDays(3)): CreateTaskAndLinksReq =
       CreateTaskAndLinksReq(
         CreateTaskReq(
-          PreviewDemo.ProjectId,
+          DemoIdentity.ProjectId,
           name,
           "desc",
-          Some(PreviewDemo.SecondAccountId),
-          PreviewDemo.AccountId,
+          Some(DemoIdentity.SecondAccountId),
+          DemoIdentity.AccountId,
           todoStatus,
           Instant.parse("2026-06-15T10:00:00Z"),
           Instant.parse("2026-06-15T10:00:00Z"),
@@ -43,7 +49,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
           None,
           start,
           due,
-          Seq(TaskConfigPreviewSeed.labelId(0, 1))
+          Seq(DemoTaskConfigData.labelId(0, 1))
         ),
         Seq(CreateLinkReq("Doc", "https://example.com"), CreateLinkReq("", ""))
       )
@@ -56,17 +62,17 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     "answer unauthenticated without a session" in { _ =>
       val env = new PreviewTestEnv
       val tasks = new TaskFeServicePreview(env.module.context, env.module.projects, env.module.taskConfig, env.module.tasks)
-      env.run(tasks.findByProjectId(PreviewDemo.ProjectId, TaskFilter.empty, firstPage)).map(_ shouldBe Left(Unauthenticated))
+      env.run(tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, firstPage)).map(_ shouldBe Left(Unauthenticated))
     }
 
     "list the seeded tasks newest first without the archived ones" in { _ =>
       val s = new Services
       for {
-        all <- s.env.run(s.tasks.findByProjectId(PreviewDemo.ProjectId, TaskFilter.empty, firstPage))
+        all <- s.env.run(s.tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, firstPage))
         withArchived <- s.env.run(
-          s.tasks.findByProjectId(PreviewDemo.ProjectId, TaskFilter(includeArchived = true), firstPage)
+          s.tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter(includeArchived = true), firstPage)
         )
-        paged <- s.env.run(s.tasks.findByProjectId(PreviewDemo.ProjectId, TaskFilter.empty, PageRequest(2, 10)))
+        paged <- s.env.run(s.tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, PageRequest(2, 10)))
       } yield {
         all.map(_.totalNumberOfItems) shouldBe Right(21L)
         all.toOption.get.items.map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.items.map(_.createdAt.toEpochMilli).sorted.reverse
@@ -78,14 +84,14 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     "filter by status, priority, label, assignee, milestone and search" in { _ =>
       val s = new Services
       def count(filter: TaskFilter) =
-        s.env.run(s.tasks.findByProjectId(PreviewDemo.ProjectId, filter, firstPage)).map(_.toOption.get.items)
+        s.env.run(s.tasks.findByProjectId(DemoIdentity.ProjectId, filter, firstPage)).map(_.toOption.get.items)
       for {
         done <- count(TaskFilter(statusIds = List(s.doneStatus)))
         critical <- count(TaskFilter(priorities = List(TaskPriority.Critical)))
-        bugs <- count(TaskFilter(labelIds = List(TaskConfigPreviewSeed.labelId(0, 1))))
+        bugs <- count(TaskFilter(labelIds = List(DemoTaskConfigData.labelId(0, 1))))
         unassigned <- count(TaskFilter(assigneeIds = List(com.togger.common.TgIds.UNASSIGNED_UUID)))
         noMilestone <- count(TaskFilter(milestoneIds = List(com.togger.common.TgIds.NO_MILESTONE_UUID)))
-        beta <- count(TaskFilter(milestoneIds = List(MilestonesPreviewSeed.BetaId)))
+        beta <- count(TaskFilter(milestoneIds = List(DemoMilestonesData.BetaId)))
         searched <- count(TaskFilter(search = Some(" TIMEZONE ")))
       } yield {
         done.forall(_.taskStatus.id == s.doneStatus) shouldBe true
@@ -94,7 +100,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         bugs.forall(_.taskLabels.exists(_.name == "bug")) shouldBe true
         unassigned.map(_.assignedTo) .distinct shouldBe List(None)
         noMilestone.forall(_.milestone.isEmpty) shouldBe true
-        beta.forall(_.milestone.contains(MilestonesPreviewSeed.BetaId)) shouldBe true
+        beta.forall(_.milestone.contains(DemoMilestonesData.BetaId)) shouldBe true
         searched.map(_.name) shouldBe List("Fix the timezone bug in the daily log")
       }
     }
@@ -132,7 +138,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         gone <- s.env.run(s.tasks.findTaskById(id))
       } yield {
         created.map(_.links.map(_.name)) shouldBe Right(List("Doc"))
-        found.map(_.task.taskLabelIds) shouldBe Right(Seq(TaskConfigPreviewSeed.labelId(0, 1)))
+        found.map(_.task.taskLabelIds) shouldBe Right(Seq(DemoTaskConfigData.labelId(0, 1)))
         sameUpdate.isRight shouldBe true
         versionsAfterSame.map(_.totalNumberOfItems) shouldBe Right(1L)
         updated.isRight shouldBe true
@@ -163,7 +169,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
 
     "edit and delete only old task versions" in { _ =>
       val s = new Services
-      val taskId = PreviewSeedIds.id(PreviewSeedIds.Task, 2)
+      val taskId = DemoSeedIds.id(DemoSeedIds.Task, 2)
       for {
         versions <- s.env.run(s.tasks.listTaskVersions(taskId, firstPage))
         items = versions.toOption.get.items
@@ -182,12 +188,12 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
 
     "save a log entry once per day and edit its history" in { _ =>
       val s = new Services
-      val taskId = PreviewSeedIds.id(PreviewSeedIds.Task, 13)
+      val taskId = DemoSeedIds.id(DemoSeedIds.Task, 13)
       val at = Instant.parse("2026-06-15T11:00:00Z")
       val entry = LogEntryDto(
         UUID.randomUUID(),
         taskId,
-        PreviewDemo.AccountId,
+        DemoIdentity.AccountId,
         at,
         UUID.randomUUID(),
         "internal",
@@ -221,8 +227,8 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       val from = Instant.parse("2026-06-08T00:00:00Z")
       val to = Instant.parse("2026-06-15T00:00:00Z")
       for {
-        all <- s.env.run(s.tasks.findAllLogEntriesByProjectId(PreviewDemo.ProjectId))
-        week <- s.env.run(s.tasks.findAllLogEntriesByProjectId(PreviewDemo.ProjectId, LogEntryFilter(Some(from), Some(to))))
+        all <- s.env.run(s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId))
+        week <- s.env.run(s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId, LogEntryFilter(Some(from), Some(to))))
       } yield {
         week.toOption.get.nonEmpty shouldBe true
         all.toOption.get.size should be > week.toOption.get.size
@@ -233,7 +239,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
 
     "manage link versions" in { _ =>
       val s = new Services
-      val taskId = PreviewSeedIds.id(PreviewSeedIds.Task, 5)
+      val taskId = DemoSeedIds.id(DemoSeedIds.Task, 5)
       for {
         task <- s.env.run(s.tasks.findTaskById(taskId))
         linkId = task.toOption.get.links.head.id
@@ -250,11 +256,11 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       val s = new Services
       val m = s.env.module
       m.taskStats.source.statusInUse(s.doneStatus) shouldBe true
-      m.milestones.deleteMilestone(MilestonesPreviewSeed.BetaId)
-      m.taskConfig.deleteLabel(TaskConfigPreviewSeed.labelId(0, 1))
-      s.env.run(s.tasks.findByProjectId(PreviewDemo.ProjectId, TaskFilter.empty, firstPage)).map { result =>
+      m.milestones.deleteMilestone(DemoMilestonesData.BetaId)
+      m.taskConfig.deleteLabel(DemoTaskConfigData.labelId(0, 1))
+      s.env.run(s.tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, firstPage)).map { result =>
         val items = result.toOption.get.items
-        items.exists(_.milestone.contains(MilestonesPreviewSeed.BetaId)) shouldBe false
+        items.exists(_.milestone.contains(DemoMilestonesData.BetaId)) shouldBe false
         items.exists(_.taskLabels.exists(_.name == "bug")) shouldBe false
       }
     }
@@ -262,7 +268,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     "feed the milestone activity from the log entries" in { _ =>
       val s = new Services
       val activity = s.env.module.taskStats.source.activityOf(
-        MilestonesPreviewSeed.BetaId,
+        DemoMilestonesData.BetaId,
         monday.minusDays(14),
         monday
       )
@@ -273,12 +279,12 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     "list, version and validate timeboxes" in { _ =>
       val s = new Services
       for {
-        seeded <- s.env.run(s.timeboxes.findByProjectId(PreviewDemo.ProjectId, firstPage))
+        seeded <- s.env.run(s.timeboxes.findByProjectId(DemoIdentity.ProjectId, firstPage))
         current = seeded.toOption.get.items.head
         versions <- s.env.run(s.timeboxes.listAllVersions(current.id))
-        planned <- s.env.run(s.tasks.findAllByTimebox(PreviewDemo.ProjectId, current.id))
+        planned <- s.env.run(s.tasks.findAllByTimebox(DemoIdentity.ProjectId, current.id))
         overlapping <- s.env.run(
-          s.timeboxes.createTimebox(CreateTimeboxReq(PreviewDemo.ProjectId, monday, monday.plusDays(5)))
+          s.timeboxes.createTimebox(CreateTimeboxReq(DemoIdentity.ProjectId, monday, monday.plusDays(5)))
         )
         noComment <- s.env.run(
           s.timeboxes.saveNewVersion(SaveTimeboxVersionReq(current.id, monday, monday.plusDays(13)))
@@ -290,12 +296,12 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         )
         created <- s.env.run(
           s.timeboxes.createTimebox(
-            CreateTimeboxReq(PreviewDemo.ProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(PreviewSeedIds.id(PreviewSeedIds.Task, 13)))
+            CreateTimeboxReq(DemoIdentity.ProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(DemoSeedIds.id(DemoSeedIds.Task, 13)))
           )
         )
         wrongProject <- s.env.run(
           s.timeboxes.createTimebox(
-            CreateTimeboxReq(PreviewDemo.SecondProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(PreviewSeedIds.id(PreviewSeedIds.Task, 13)))
+            CreateTimeboxReq(DemoIdentity.SecondProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(DemoSeedIds.id(DemoSeedIds.Task, 13)))
           )
         )
         deleted <- s.env.runEmpty(s.timeboxes.deleteTimebox(current.id))
@@ -317,10 +323,10 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     "aggregate the contributions per member and milestone" in { _ =>
       val s = new Services
       for {
-        all <- s.env.run(s.contributions.findByProjectId(PreviewDemo.ProjectId, ContributionsFilter.empty))
+        all <- s.env.run(s.contributions.findByProjectId(DemoIdentity.ProjectId, ContributionsFilter.empty))
         ranged <- s.env.run(
           s.contributions.findByProjectId(
-            PreviewDemo.ProjectId,
+            DemoIdentity.ProjectId,
             ContributionsFilter(Some(monday.minusDays(7)), Some(monday))
           )
         )
