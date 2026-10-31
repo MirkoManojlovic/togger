@@ -166,7 +166,7 @@ class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelper
         previousMonday.atTime(at10),
         previousThursday.atTime(at17),
         previousFriday.atTime(at1),
-        yesterday.atTime(at14),
+        yesterday.atStartOfDay,
         tomorrow.atTime(at20),
         dayAfterTomorrow.atTime(at12),
         nextMonday.atTime(at9)
