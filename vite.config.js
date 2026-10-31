@@ -77,7 +77,22 @@ const multiPageAppIndexRouting = () => ({
   }
 });
 
-export default defineConfig({
+function gitOutput(args) {
+  const result = spawnSync("git", args, { encoding: "utf8" });
+  return result.status === 0 ? result.stdout.trim() : "";
+}
+
+// the commit hash, plus "-dirty" while there are uncommitted changes, so two different builds never share storage
+function previewBuildId() {
+  const hash = gitOutput(["rev-parse", "--short", "HEAD"]) || "unknown";
+  return gitOutput(["status", "--porcelain"]) ? `${hash}-dirty` : hash;
+}
+
+const previewBuild = previewBuildId();
+
+export default defineConfig(({ mode }) => {
+  const isPreview = mode === "preview";
+  return {
   // prevent vite from obscuring rust errors
   clearScreen: false,
   server: {
@@ -123,8 +138,17 @@ export default defineConfig({
     ],
   },
   appType: 'mpa',
+  define: {
+    "import.meta.env.VITE_PREVIEW_BUILD_ID": JSON.stringify(previewBuild),
+  },
   plugins: [
   multiPageAppIndexRouting(),
-  tailwindcss()
+  tailwindcss(),
+  {
+    // index.html reads the theme before the app starts, so it needs the same key prefix as the app
+    name: "tg-storage-prefix",
+    transformIndexHtml: (html) => html.replace("__TG_STORAGE_PREFIX__", isPreview ? `${previewBuild}:` : ""),
+  }
   ]
+  };
 });

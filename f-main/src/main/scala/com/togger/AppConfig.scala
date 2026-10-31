@@ -8,6 +8,8 @@ import scala.scalajs.js.annotation.JSGlobalScope
 @js.native
 trait AppConfig extends js.Object {
   val isDesktopMode: String = js.native
+  val isPreviewMode: String = js.native
+  val previewBuildId: String = js.native
 }
 
 // shows dead code warnings

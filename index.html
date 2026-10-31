@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <script>
       (function () {
-        var stored = localStorage.getItem('tg-color-theme'); // 'light' | 'dark' | 'system' | null
+        var stored = localStorage.getItem('__TG_STORAGE_PREFIX__tg-color-theme'); // 'light' | 'dark' | 'system' | null
         var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         var isDark = stored === 'dark' || ((stored === 'system' || !stored) && systemDark);
         document.documentElement.classList.toggle('dark', isDark);
