@@ -40,6 +40,7 @@
     pkgs.docker-compose
     pkgs.hugo
     pkgs.graalvmPackages.graalvm-ce
+    pkgs.gh
   ];
 
   # https://devenv.sh/scripts/
