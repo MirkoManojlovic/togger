@@ -218,8 +218,10 @@ worth following when writing Scala in this repo:
   - `frontend`: changes to the frontend (`f-*`, the `c-*` code it uses, npm/vite).
   - `backend`: changes to the backend (`b-*`).
   - `frontend` and `backend` together when the PR changes both, e.g. a shared DTO or endpoint with its callers.
-  - `infra`: changes to `build.sbt`, the GitHub workflows, `devenv.nix` and other build/CI/environment files.
-  - `nocode`: changes to docs (`*.md`, `claude_files/`) or anything else that is not code.
+  - `infra`: changes to `build.sbt`, the GitHub workflows, `devenv.nix` and other build/CI/environment files. It can
+    go together with `frontend` and `backend`.
+  - `nocode`: only for a PR with no code and no infra changes: docs (`*.md`, `claude_files/`) or anything else that is
+    not code. Never together with `frontend`, `backend` or `infra`.
 - `👀 preview` is separate: it asks for a frontend preview deployment of the PR.
 
 ## Current branch context
