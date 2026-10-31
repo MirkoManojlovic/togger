@@ -1,5 +1,7 @@
 # Togger
 
+[![Preview](https://img.shields.io/badge/preview-develop-blue)](https://develop.togger-preview.pages.dev)
+
 Togger is an app for logging everyday developer activity. It contains a lightweight project management tool
 (organizations, projects, tasks, task statuses and log entries) and dashboards for analytics.
 
@@ -45,6 +47,12 @@ npm run build-preview   # static build
 Log in with `admin@email.com` / `A!good_1_password_is_good` (or `demo@togger.preview` / `demo`). Data is keyed by the build id (git short hash, `-dirty` with uncommitted
 changes), so every new build starts with fresh demo data. Export and import are not available in this mode.
 "Reset preview data" in the Settings menu restores the demo data.
+
+### Develop preview
+
+Every push to `develop` (a merged pull request) builds the preview again and publishes it to the stable URL
+https://develop.togger-preview.pages.dev (workflow `Develop Preview`, same Cloudflare setup as below). The URL stays
+the same, only the content and the build id change; a new build id starts with fresh demo data.
 
 ### Pull request previews
 
