@@ -44,7 +44,7 @@ npm run dev-preview     # dev server
 npm run build-preview   # static build
 ```
 
-Log in with `admin@email.com` / `A!good_1_password_is_good` (or `demo@togger.preview` / `demo`). Data is keyed by the build id (git short hash, `-dirty` with uncommitted
+Data is keyed by the build id (git short hash, `-dirty` with uncommitted
 changes), so every new build starts with fresh demo data. Export and import are not available in this mode.
 "Reset preview data" in the Settings menu restores the demo data.
 
