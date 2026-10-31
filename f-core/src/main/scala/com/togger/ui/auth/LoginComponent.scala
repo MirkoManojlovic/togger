@@ -15,7 +15,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
-case class LoginFormState(email: String = "@email.com", password: String = "A!good_1_password_is_good") {}
+case class LoginFormState(email: String = "admin@email.com", password: String = "A!good_1_password_is_good") {}
 
 class LoginComponent(
   router: TgRouter[FrontendPage],
