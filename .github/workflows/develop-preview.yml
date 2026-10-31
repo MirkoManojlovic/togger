@@ -65,3 +65,12 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=togger-preview --branch=develop
+
+      # every deployment keeps its own <hash> URL, so the old ones pile up with every merge
+      - name: Delete the old deployments
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: togger-preview
+          KEEP: "10"
+        run: .github/scripts/prune-pages-deployments.sh
