@@ -124,54 +124,83 @@ class DataImportService(
         .resolveAccountMappings(index.exportedBy :: projectDump.referencedAccounts)
         .transact(transactor)
     ).flatMap {
-      case Left(error) => IO.pure(Left(error))
-      case Right(accountIdMap) =>
-        timed("reconcile statuses and labels", projectId)(
+        case Left(error) => IO.pure(Left(error))
+        case Right(accountIdMap) =>
+          timed("reconcile statuses and labels", projectId)(
+            dataImportRepo
+              .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
+              .transact(transactor)
+          ).flatMap { prepared =>
+              val remap = new Remapper(projectId, accountId, accountIdMap, prepared.ids)
+              for {
+                state <- timed("load existing project state", projectId)(dataImportRepo.loadImportState(projectId).transact(transactor))
+                milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(
+                  m => dataImportRepo.mergeMilestone(remap.milestone(m))
+                )
+                tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(
+                  t => dataImportRepo.mergeTask(remap.task(t), state)
+                )
+                logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(
+                  le => dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
+                )
+                templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(
+                  t => dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
+                )
+                stepTemplates <- mergeStepTemplates(projectId, read, remap)
+                stepTemplateTargets <- IO.pure(stepTemplates._1)
+                milestoneTemplates <- mergeAll[MilestoneTemplateDumpData](
+                  projectId,
+                  read,
+                  DataExportEntityType.MilestoneTemplate
+                )(t => dataImportRepo.mergeMilestoneTemplate(remap.milestoneTemplate(t, stepTemplateTargets)))
+                timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(
+                  t => dataImportRepo.mergeTimebox(remap.timebox(t))
+                )
+                prompts <- mergeAll[TgPromptTemplateDumpData](projectId, read, DataExportEntityType.TgPromptTemplate)(
+                  p => dataImportRepo.mergeTgPromptTemplate(remap.tgPromptTemplate(p))
+                )
+                members <- readMembers(read).fold(
+                  malformed => IO.pure(List(malformed)),
+                  members =>
+                    dataImportRepo
+                      .mergeMembers(projectId, members.accountIds.map(remap.account))
+                      .transact(transactor)
+                      .attempt
+                      .map(_.fold(e => failed(DataExportEntityType.Members, projectId, e), identity))
+                      .map(List(_))
+                )
+              } yield Right(
+                DataImportResult(
+                  importPath,
+                  statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
+                    milestones ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
+                )
+              )
+            }
+      }
+  }
+
+  /** Merges the milestone step templates. The milestone templates refer to them, so the ids they were merged into are
+    * returned together with the results.
+    */
+  private def mergeStepTemplates(
+    projectId: UUID,
+    read: TreeReader,
+    remap: Remapper
+  ): IO[(Map[UUID, UUID], List[DataImportEntityResult])] = {
+    val (malformed, dumps) = read.all[MilestoneStepTemplateDumpData](DataExportEntityType.MilestoneStepTemplate)
+    val remapped = dumps.map(remap.milestoneStepTemplate)
+    dataImportRepo.stepTemplateTargets(projectId, remapped).transact(transactor).flatMap { targets =>
+      remapped
+        .sortBy(_.template.id)
+        .traverse { dump =>
           dataImportRepo
-            .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
+            .mergeMilestoneStepTemplate(dump, targets.get(dump.template.id))
             .transact(transactor)
-        ).flatMap { prepared =>
-          val remap = new Remapper(projectId, accountId, accountIdMap, prepared.ids)
-          for {
-            state <- timed("load existing project state", projectId)(
-              dataImportRepo.loadImportState(projectId).transact(transactor)
-            )
-            milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(m =>
-              dataImportRepo.mergeMilestone(remap.milestone(m))
-            )
-            tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(t =>
-              dataImportRepo.mergeTask(remap.task(t), state)
-            )
-            logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(le =>
-              dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
-            )
-            templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(t =>
-              dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
-            )
-            timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(t =>
-              dataImportRepo.mergeTimebox(remap.timebox(t))
-            )
-            prompts <- mergeAll[TgPromptTemplateDumpData](projectId, read, DataExportEntityType.TgPromptTemplate)(p =>
-              dataImportRepo.mergeTgPromptTemplate(remap.tgPromptTemplate(p))
-            )
-            members <- readMembers(read).fold(
-              malformed => IO.pure(List(malformed)),
-              members =>
-                dataImportRepo
-                  .mergeMembers(projectId, members.accountIds.map(remap.account))
-                  .transact(transactor)
-                  .attempt
-                  .map(_.fold(e => failed(DataExportEntityType.Members, projectId, e), identity))
-                  .map(List(_))
-            )
-          } yield Right(
-            DataImportResult(
-              importPath,
-              statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ prompts ++ members
-            )
-          )
+            .attempt
+            .map(_.fold(e => failed(DataExportEntityType.MilestoneStepTemplate, dump.template.id, e), identity))
         }
+        .map(results => targets -> (malformed ++ results))
     }
   }
 
@@ -261,6 +290,23 @@ class DataImportService(
       data.copy(
         logEntry = data.logEntry.copy(createdBy = account(data.logEntry.createdBy)),
         versions = data.versions.map(v => v.copy(createdBy = account(v.createdBy)))
+      )
+
+    def milestoneStepTemplate(data: MilestoneStepTemplateDumpData): MilestoneStepTemplateDumpData =
+      data.copy(template =
+        data.template.copy(projectId = projectIdDb, createdBy = account(data.template.createdBy))
+      )
+
+    /** The steps point at the step templates that the project has, whichever id the dump knows them by. */
+    def milestoneTemplate(
+      data: MilestoneTemplateDumpData,
+      stepTemplateTargets: Map[UUID, UUID]
+    ): MilestoneTemplateDumpData =
+      data.copy(
+        template = data.template.copy(projectId = projectIdDb, createdBy = account(data.template.createdBy)),
+        versions = data.versions.map(v =>
+          v.copy(stepTemplateIds = v.stepTemplateIds.map(id => stepTemplateTargets.getOrElse(id, id)))
+        )
       )
 
     def milestone(data: MilestoneDumpData): MilestoneDumpData =

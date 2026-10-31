@@ -33,6 +33,12 @@ object DataExportEntities {
       snapshot.taskTemplates.map(t =>
         entity(DataExportEntityType.TaskTemplate, t.template.id, t.versions.lastOption.map(_.name), t)
       ) ++
+      snapshot.milestoneStepTemplates.map(t =>
+        entity(DataExportEntityType.MilestoneStepTemplate, t.template.id, t.versions.lastOption.map(_.name), t)
+      ) ++
+      snapshot.milestoneTemplates.map(t =>
+        entity(DataExportEntityType.MilestoneTemplate, t.template.id, t.versions.lastOption.map(_.version.name), t)
+      ) ++
       snapshot.timeboxes.map(t => entity(DataExportEntityType.Timebox, t.timebox.id, None, t)) ++
       snapshot.tgPromptTemplates.map(p =>
         entity(DataExportEntityType.TgPromptTemplate, p.tgPromptTemplate.id, p.versions.lastOption.map(_.title), p)

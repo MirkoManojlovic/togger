@@ -154,17 +154,19 @@ class DataExportController(
     counts.map { case (entityType, count) => DataExportEntityCountResp(toResp(entityType), count) }
 
   private def toResp(t: DataExportEntityType): DataExportEntityTypeResp = t match {
-    case DataExportEntityType.Project          => DataExportEntityTypeResp.Project
-    case DataExportEntityType.Members          => DataExportEntityTypeResp.Members
-    case DataExportEntityType.TaskStatus       => DataExportEntityTypeResp.TaskStatus
-    case DataExportEntityType.TaskLabel        => DataExportEntityTypeResp.TaskLabel
-    case DataExportEntityType.ProjectLabel     => DataExportEntityTypeResp.ProjectLabel
-    case DataExportEntityType.Milestone        => DataExportEntityTypeResp.Milestone
-    case DataExportEntityType.Task             => DataExportEntityTypeResp.Task
-    case DataExportEntityType.LogEntry         => DataExportEntityTypeResp.LogEntry
-    case DataExportEntityType.TaskTemplate     => DataExportEntityTypeResp.TaskTemplate
-    case DataExportEntityType.Timebox          => DataExportEntityTypeResp.Timebox
-    case DataExportEntityType.TgPromptTemplate => DataExportEntityTypeResp.TgPromptTemplate
+    case DataExportEntityType.Project      => DataExportEntityTypeResp.Project
+    case DataExportEntityType.Members      => DataExportEntityTypeResp.Members
+    case DataExportEntityType.TaskStatus   => DataExportEntityTypeResp.TaskStatus
+    case DataExportEntityType.TaskLabel    => DataExportEntityTypeResp.TaskLabel
+    case DataExportEntityType.ProjectLabel => DataExportEntityTypeResp.ProjectLabel
+    case DataExportEntityType.Milestone    => DataExportEntityTypeResp.Milestone
+    case DataExportEntityType.Task         => DataExportEntityTypeResp.Task
+    case DataExportEntityType.LogEntry     => DataExportEntityTypeResp.LogEntry
+    case DataExportEntityType.TaskTemplate => DataExportEntityTypeResp.TaskTemplate
+    case DataExportEntityType.MilestoneStepTemplate => DataExportEntityTypeResp.MilestoneStepTemplate
+    case DataExportEntityType.MilestoneTemplate => DataExportEntityTypeResp.MilestoneTemplate
+    case DataExportEntityType.Timebox      => DataExportEntityTypeResp.Timebox
+    case DataExportEntityType.TgPromptTemplate     => DataExportEntityTypeResp.TgPromptTemplate
   }
 
   private def toResp(r: DataImportEntityResult): DataImportEntityResultResp =

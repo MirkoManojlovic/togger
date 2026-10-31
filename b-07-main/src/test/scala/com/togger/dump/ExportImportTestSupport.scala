@@ -33,6 +33,17 @@ import com.togger.timebox.TimeboxRepoImpl
 import com.togger.timebox.TimeboxVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.Transactor
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateVersion
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import cats.effect.IO
+import com.togger.dump.DayOfWeekCodec._
+import com.togger.project.Project
 import doobie.implicits._
 import io.circe.Encoder
 import io.circe.generic.auto._
@@ -65,6 +76,12 @@ trait ExportImportTestSupport
   val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
   val milestoneSummaryRepo = new MilestoneSummaryRepoImpl
   val milestoneSummaryVersionRepo = new MilestoneSummaryVersionRepoImpl
+  val milestoneStepRepo = new MilestoneStepRepoImpl
+  val milestoneStepVersionRepo = new MilestoneStepVersionRepoImpl
+  val milestoneStepTemplateRepo = new MilestoneStepTemplateRepoImpl
+  val milestoneStepTemplateVersionRepo = new MilestoneStepTemplateVersionRepoImpl
+  val milestoneTemplateVersionRepo = new MilestoneTemplateVersionRepoImpl
+  val milestoneTemplateRepo = new MilestoneTemplateRepoImpl(milestoneTemplateVersionRepo)
   val taskTemplateRepo = new TaskTemplateRepoImpl
   val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
   val timeboxRepo = new TimeboxRepoImpl
@@ -102,6 +119,12 @@ trait ExportImportTestSupport
     milestoneDateVersionRepo,
     milestoneSummaryRepo,
     milestoneSummaryVersionRepo,
+    milestoneStepRepo,
+    milestoneStepVersionRepo,
+    milestoneStepTemplateRepo,
+    milestoneStepTemplateVersionRepo,
+    milestoneTemplateRepo,
+    milestoneTemplateVersionRepo,
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
@@ -135,6 +158,12 @@ trait ExportImportTestSupport
     milestoneDateVersionRepo,
     milestoneSummaryRepo,
     milestoneSummaryVersionRepo,
+    milestoneStepRepo,
+    milestoneStepVersionRepo,
+    milestoneStepTemplateRepo,
+    milestoneStepTemplateVersionRepo,
+    milestoneTemplateRepo,
+    milestoneTemplateVersionRepo,
     taskTemplateRepo,
     taskTemplateVersionRepo,
     timeboxRepo,
@@ -282,7 +311,57 @@ trait ExportImportTestSupport
           updatedAt = nowAsInstant
         )
       )
+      step <- milestoneStepRepo.insert(MilestoneStep(UUID.randomUUID(), milestone.id, nowAsInstant))
+      firstStepVersion <- milestoneStepVersionRepo.insert(
+        MilestoneStepVersion(
+          version = UUID.randomUUID(),
+          milestoneStepId = step.id,
+          name = "Milestone step",
+          description = "Step description",
+          status = MilestoneStepStatus.Planned,
+          position = 0,
+          startDate = LocalDate.now(),
+          dueDate = LocalDate.now().plusDays(10),
+          endDate = None,
+          createdAt = nowAsInstant,
+          updatedAt = nowAsInstant,
+          changeComment = ""
+        )
+      )
+      _ <- milestoneStepVersionRepo.insert(
+        firstStepVersion.copy(status = MilestoneStepStatus.InProgress, changeComment = "Started")
+      )
     } yield milestone.id
+
+  /** A step template with its first version. */
+  def createMilestoneStepTemplate(
+    projectId: UUID,
+    createdBy: UUID,
+    name: String,
+    description: String
+  ): ConnectionIO[UUID] =
+    for {
+      template <- milestoneStepTemplateRepo.insert(MilestoneStepTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant))
+      _ <- milestoneStepTemplateVersionRepo.insert(
+        MilestoneStepTemplateVersion(UUID.randomUUID(), template.id, name, description, nowAsInstant)
+      )
+    } yield template.id
+
+  /** A milestone template with its first version and the ordered steps of it. */
+  def createMilestoneTemplate(
+    projectId: UUID,
+    createdBy: UUID,
+    name: String,
+    description: String,
+    stepTemplateIds: List[UUID]
+  ): ConnectionIO[UUID] =
+    for {
+      template <- milestoneTemplateRepo.insert(MilestoneTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant))
+      version <- milestoneTemplateVersionRepo.insert(
+        MilestoneTemplateVersion(UUID.randomUUID(), template.id, name, description, nowAsInstant)
+      )
+      _ <- milestoneTemplateVersionRepo.insertSteps(version.version, stepTemplateIds)
+    } yield template.id
 
   /** Removes everything an import restores, keeping accounts, the project and its memberships. */
   def deleteProjectContent: ConnectionIO[Unit] =
@@ -297,6 +376,13 @@ trait ExportImportTestSupport
       TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE,
       TaskVersionRepoImpl.TASK_VERSION_TABLE,
       TaskRepoImpl.TASK_TABLE,
+      MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_STEP_TABLE,
+      MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_TABLE,
+      MilestoneTemplateRepoImpl.MILESTONE_TEMPLATE_TABLE,
+      MilestoneStepTemplateVersionRepoImpl.MILESTONE_STEP_TEMPLATE_VERSION_TABLE,
+      MilestoneStepTemplateRepoImpl.MILESTONE_STEP_TEMPLATE_TABLE,
+      MilestoneStepVersionRepoImpl.MILESTONE_STEP_VERSION_TABLE,
+      MilestoneStepRepoImpl.MILESTONE_STEP_TABLE,
       MilestoneSummaryVersionRepoImpl.MILESTONE_SUMMARY_VERSION_TABLE,
       MilestoneSummaryRepoImpl.MILESTONE_SUMMARY_TABLE,
       MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE,
