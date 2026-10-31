@@ -1,0 +1,62 @@
+name: PR Preview Cleanup
+
+# Deletes the Cloudflare Pages deployments of a pull request once it is closed or merged. pull_request_target gives
+# fork pull requests access to the secrets; this workflow never checks out or runs code of the pull request.
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  cleanup-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview-deployments
+    steps:
+      - name: Delete the preview deployments
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: togger-preview
+          BRANCH: pr-${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments"
+
+          # a deployment that is still the alias of its branch needs force=true to be deleted
+          while true; do
+            IDS=$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}?env=preview&per_page=100" \
+              | jq -r --arg branch "$BRANCH" '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')
+            [ -n "$IDS" ] || break
+            for ID in $IDS; do
+              echo "Deleting deployment $ID of $BRANCH"
+              curl -fsS -X DELETE -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}/${ID}?force=true" > /dev/null
+            done
+          done
+
+      - name: Find the preview comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- pr-preview-comment -->"
+
+      - name: Mark the preview as removed
+        if: steps.find-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- pr-preview-comment -->
+            ## Preview Deployment
+
+            The preview was removed because the pull request is closed.
+
+            ---
+            <sub>Deployed with Cloudflare Pages</sub>

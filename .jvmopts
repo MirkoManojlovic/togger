@@ -1,2 +1,3 @@
 -Xmx4G
+-Xss16M
 -XX:+UseG1GC

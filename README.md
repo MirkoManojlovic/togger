@@ -52,7 +52,8 @@ Every pull request that changes the frontend gets a preview URL, posted as a com
 Build` builds the frontend in preview mode (build id = the head commit of the pull request) and `PR Preview Deploy`
 publishes it to Cloudflare Pages as `pr-<number>`. One time setup: a Cloudflare Pages project `togger-preview`, the
 repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and both workflows on the default branch (a
-`workflow_run` workflow only runs from there).
+`workflow_run` workflow only runs from there). `PR Preview Cleanup` deletes the deployments of a pull request and edits
+the comment when the pull request is closed or merged; it needs the same secrets.
 
 ## Releasing
 
