@@ -11,6 +11,11 @@ import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.milestone.MilestoneStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
+import com.togger.dto.LinkVersionDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.dto.TaskVersionDto
+import com.togger.dto.TgPromptTemplateVersionDto
+import com.togger.milestone.MilestoneStepStatus
 
 import java.time.Instant
 import java.time.LocalDate
@@ -70,6 +75,20 @@ case class DemoMilestoneSummary(
   updatedAt: Instant
 )
 
+case class DemoMilestoneStep(
+  id: UUID,
+  createdAt: Instant,
+  version: UUID,
+  name: String,
+  description: String,
+  status: MilestoneStepStatus,
+  position: Int,
+  startDate: LocalDate,
+  dueDate: LocalDate,
+  endDate: Option[LocalDate],
+  updatedAt: Instant
+)
+
 case class DemoMilestone(
   id: UUID,
   projectId: UUID,
@@ -83,7 +102,8 @@ case class DemoMilestone(
   endDate: Option[LocalDate],
   updatedAt: Instant,
   dates: List[DemoMilestoneDate],
-  summaries: List[DemoMilestoneSummary]
+  summaries: List[DemoMilestoneSummary],
+  steps: List[DemoMilestoneStep] = Nil
 )
 
 case class DemoLink(id: UUID, createdAt: Instant, versions: List[LinkVersionDto])
