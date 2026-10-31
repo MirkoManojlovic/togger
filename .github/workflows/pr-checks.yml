@@ -2,7 +2,7 @@ name: PR Checks
 
 # Two required checks for every pull request into develop: everything compiles (main and test code of all projects,
 # the ScalaJS frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all
-# of them at the root.
+# of them at the root for the compile.
 
 on:
   pull_request:
@@ -93,4 +93,20 @@ jobs:
             --password=togger_password \
             update
 
-      - run: sbt test
+      # the specs of all projects share the one test database, so the projects are tested one after another (a build
+      # wide `sbt test` runs them in parallel and they delete each other's rows); every project runs, even after a failure
+      - name: Run the tests
+        run: |
+          failed=""
+          for project in tgMacrosJVM tgMacrosJS tgCommonJVM tgCommonJS httpEndpointsJVM httpEndpointsJS backendCore \
+            backendCommon backendDatabase backendDiskSync backendAi backendAuth backendDeliveryHttp4s backendMain \
+            backendMcp frontendCore frontendMain; do
+            echo "::group::$project/test"
+            sbt --client "$project/test" || failed="$failed $project"
+            echo "::endgroup::"
+          done
+          sbt --client shutdown || true
+          if [ -n "$failed" ]; then
+            echo "::error::Tests failed in:$failed"
+            exit 1
+          fi
