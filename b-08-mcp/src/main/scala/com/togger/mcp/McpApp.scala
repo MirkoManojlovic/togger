@@ -27,13 +27,14 @@ object McpApp:
 
     val tools =
       OrganizationTools(client).all ++ ProjectTools(client).all ++ TaskTools(client).all ++
-        MilestoneTools(client).all ++ AccountTools(client).all
+        MilestoneTools(client).all ++ MilestoneStepTools(client).all ++ MilestoneTemplateTools(client).all ++
+        AccountTools(client).all
 
     val mcpServer = McpServer(tools = tools)
       .name("togger-mcp")
       .version(Option(getClass.getPackage.getImplementationVersion).getOrElse("dev"))
       .instructions(
-        "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks and milestones. " +
+        "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks, milestones with their steps, and milestone templates. " +
           "Start with list_organizations, then list_projects, then get_project_overview. All ids are UUIDs."
       )
 
