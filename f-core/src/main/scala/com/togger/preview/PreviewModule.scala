@@ -1,8 +1,11 @@
 package com.togger.preview
 
 import com.togger.common.TgClock
+import com.togger.demo.DemoDataSet
 import com.togger.ui.auth.LoginRepo
 import com.togger.ui.localstorage.LocalStorage
+
+import java.time.ZoneOffset
 
 /** Entry point of the frontend preview mode: the storage, the shared context and the demo data seeding.
   *
@@ -49,15 +52,17 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
 
   lazy val tasks = new TasksPreviewData(db, projects, taskConfig, milestones, accounts, taskStats)
 
+  private lazy val demo: DemoDataSet = DemoDataSet.build(clock.currentDate(ZoneOffset.UTC), clock.currentInstant)
+
   private[preview] lazy val seeders: List[PreviewSeeder] = List(
-    new AccountsPreviewSeed(accounts),
-    new OrganizationsPreviewSeed(organizations, projects),
-    new ProjectLabelsPreviewSeed(projectLabels, projects),
-    new TaskConfigPreviewSeed(taskConfig, clock),
-    new MilestonesPreviewSeed(milestones, projects, clock),
-    new AiPreviewSeed(ai, clock),
-    new TasksPreviewSeed(tasks, projects, clock),
-    new DataSyncPreviewSeed(dataSync, clock)
+    new AccountsPreviewSeed(accounts, demo.accounts),
+    new OrganizationsPreviewSeed(organizations, projects, demo.organizations, demo.projects),
+    new ProjectLabelsPreviewSeed(projectLabels, demo.projectLabelCategories, demo.projectLabels),
+    new TaskConfigPreviewSeed(taskConfig, demo.taskStatuses, demo.taskLabels, demo.taskTemplates),
+    new MilestonesPreviewSeed(milestones, demo.milestones),
+    new AiPreviewSeed(ai, demo.promptTemplates, demo.aiActions, demo.aiActionDefaults),
+    new TasksPreviewSeed(tasks, demo.tasks, demo.timeboxes),
+    new DataSyncPreviewSeed(dataSync, demo.exportConfigs, demo.importConfigs, demo.projectMappings)
   )
 
   /** Holders register project creation/deletion hooks in their constructors, so none may be created lazily later. */

@@ -1,9 +1,9 @@
-package com.togger.preview
+package com.togger.demo
 
 import java.util.UUID
 
 /** Fixed ids and credentials of the seeded demo data, so seeders of different domains can reference each other. */
-object PreviewDemo {
+object DemoIdentity {
   val Email = "demo@togger.preview"
   val Password = "demo"
   val AdminEmail = "admin@email.com"
@@ -14,4 +14,6 @@ object PreviewDemo {
   val OrganizationId: UUID = UUID.fromString("00000000-0000-7000-8000-000000000101")
   val ProjectId: UUID = UUID.fromString("00000000-0000-7000-8000-000000000201")
   val SecondProjectId: UUID = UUID.fromString("00000000-0000-7000-8000-000000000202")
+  val SideOrganizationId: UUID = UUID.fromString("00000000-0000-7000-8000-000000000102")
+  val SideProjectId: UUID = UUID.fromString("00000000-0000-7000-8000-000000000203")
 }

@@ -1,5 +1,10 @@
 package com.togger.preview
 
+import com.togger.demo.DemoMilestonesData
+import com.togger.demo.DemoAccountsData
+
+import com.togger.demo.DemoIdentity
+
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.{BadRequest, Forbidden, PageRequest}
 import com.togger.dto._
@@ -31,7 +36,7 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
     "list the seeded milestones by due date around the clock's today" in { _ =>
       val s = new Services
       val today = LocalDate.parse("2026-06-15")
-      s.env.run(s.milestones.findByProjectId(PreviewDemo.ProjectId, MilestoneFilter.empty, firstPage)).map { result =>
+      s.env.run(s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter.empty, firstPage)).map { result =>
         val items = result.toOption.get.items
         items.map(_.name) shouldBe List("Platform foundations", "Legacy API sunset", "Beta release", "General availability")
         items.map(_.dueDate).sorted shouldBe items.map(_.dueDate)
@@ -44,12 +49,12 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         done <- s.env.run(
-          s.milestones.findByProjectId(PreviewDemo.ProjectId, MilestoneFilter(statuses = List(MilestoneStatus.Done)), firstPage)
+          s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter(statuses = List(MilestoneStatus.Done)), firstPage)
         )
         searched <- s.env.run(
-          s.milestones.findByProjectId(PreviewDemo.ProjectId, MilestoneFilter(search = Some(" BETA ")), firstPage)
+          s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter(search = Some(" BETA ")), firstPage)
         )
-        paged <- s.env.run(s.milestones.findByProjectId(PreviewDemo.ProjectId, MilestoneFilter.empty, PageRequest(2, 3)))
+        paged <- s.env.run(s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter.empty, PageRequest(2, 3)))
       } yield {
         done.map(_.items.map(_.name)) shouldBe Right(List("Platform foundations"))
         searched.map(_.items.map(_.name)) shouldBe Right(List("Beta release"))
@@ -62,16 +67,16 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
       val monday = LocalDate.parse("2026-07-06")
       for {
         weekend <- s.env.run(
-          s.milestones.createMilestone(CreateMilestoneReq(PreviewDemo.ProjectId, "Weekend", "", LocalDate.parse("2026-07-04"), monday))
+          s.milestones.createMilestone(CreateMilestoneReq(DemoIdentity.ProjectId, "Weekend", "", LocalDate.parse("2026-07-04"), monday))
         )
-        created <- s.env.run(s.milestones.createMilestone(CreateMilestoneReq(PreviewDemo.ProjectId, "Hardening", "d", monday, monday.plusDays(4))))
+        created <- s.env.run(s.milestones.createMilestone(CreateMilestoneReq(DemoIdentity.ProjectId, "Hardening", "d", monday, monday.plusDays(4))))
         id = created.toOption.get.id
         updated <- s.env.run(
           s.milestones.updateMilestone(UpdateMilestoneReq(id, "Hardening 2", "d", Some(MilestoneStatus.Paused), dueDate = Some(monday.plusDays(11))))
         )
         beforeStart <- s.env.run(s.milestones.updateMilestone(UpdateMilestoneReq(id, "x", "", dueDate = Some(monday.minusDays(3)))))
         found <- s.env.run(s.milestones.findMilestoneById(id))
-        all <- s.env.run(s.milestones.findAllByProjectId(PreviewDemo.ProjectId))
+        all <- s.env.run(s.milestones.findAllByProjectId(DemoIdentity.ProjectId))
         missing <- s.env.run(s.milestones.findMilestoneById(UUID.randomUUID()))
       } yield {
         isBadRequest(weekend) shouldBe true
@@ -86,10 +91,10 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
 
     "validate and list milestone dates by milestone and by project" in { _ =>
       val s = new Services
-      val beta = MilestonesPreviewSeed.BetaId
+      val beta = DemoMilestonesData.BetaId
       for {
         byMilestone <- s.env.run(s.dates.findAllByMilestoneId(beta))
-        byProject <- s.env.run(s.dates.findAllByProjectId(PreviewDemo.ProjectId))
+        byProject <- s.env.run(s.dates.findAllByProjectId(DemoIdentity.ProjectId))
         tooEarly <- s.env.run(s.dates.createMilestoneDate(CreateMilestoneDateReq(beta, "Early", "", Instant.parse("2020-01-01T09:00:00Z"))))
         created <- s.env.run(s.dates.createMilestoneDate(CreateMilestoneDateReq(beta, "Demo", "", Instant.parse("2026-06-20T09:00:00Z"))))
         updated <- s.env.run(
@@ -105,7 +110,7 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
 
     "keep summaries behind project membership and valid periods" in { _ =>
       val s = new Services
-      val beta = MilestonesPreviewSeed.BetaId
+      val beta = DemoMilestonesData.BetaId
       def request(from: String, to: String) = CreateMilestoneSummaryReq(beta, "text", LocalDate.parse(from), LocalDate.parse(to))
       for {
         seeded <- s.env.run(s.summaries.findAllByMilestoneId(beta))
@@ -115,8 +120,8 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
           s.summaries.updateMilestoneSummary(UpdateMilestoneSummaryReq(created.toOption.get.id, "new text", LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-14")))
         )
         deleted <- s.env.runEmpty(s.summaries.deleteMilestoneSummary(created.toOption.get.id))
-        _ = s.env.loginAs(AccountsPreviewSeed.FifthAccountId)
-        outsider <- s.env.run(s.summaries.findByMilestoneId(MilestonesPreviewSeed.MobileBetaId, firstPage))
+        _ = s.env.loginAs(DemoAccountsData.FifthAccountId)
+        outsider <- s.env.run(s.summaries.findByMilestoneId(DemoMilestonesData.MobileBetaId, firstPage))
       } yield {
         seeded.map(_.size) shouldBe Right(2)
         isBadRequest(backwards) shouldBe true
@@ -130,7 +135,7 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
       val s = new Services
       val events = ListBuffer.empty[AiSummaryEvent]
       val req = SummariseMilestoneWithAiReq(
-        MilestonesPreviewSeed.BetaId,
+        DemoMilestonesData.BetaId,
         None,
         "Summarise",
         LocalDate.parse("2026-06-01"),
@@ -151,11 +156,11 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
         val events = ListBuffer.empty[AiSummaryEvent]
         s.env.runIO(s.summaries.summariseWithAi(req)(events += _)).map(_ => events.toList)
       }
-      val backwards = SummariseMilestoneWithAiReq(MilestonesPreviewSeed.BetaId, None, "p", LocalDate.parse("2026-06-12"), LocalDate.parse("2026-06-01"), "m")
-      val foreign = backwards.copy(milestoneId = MilestonesPreviewSeed.MobileBetaId, startDate = LocalDate.parse("2026-06-01"), endDate = LocalDate.parse("2026-06-12"))
+      val backwards = SummariseMilestoneWithAiReq(DemoMilestonesData.BetaId, None, "p", LocalDate.parse("2026-06-12"), LocalDate.parse("2026-06-01"), "m")
+      val foreign = backwards.copy(milestoneId = DemoMilestonesData.MobileBetaId, startDate = LocalDate.parse("2026-06-01"), endDate = LocalDate.parse("2026-06-12"))
       for {
         wrongDates <- run(backwards)
-        _ = s.env.loginAs(AccountsPreviewSeed.FifthAccountId)
+        _ = s.env.loginAs(DemoAccountsData.FifthAccountId)
         stranger <- run(foreign)
         _ = s.env.loginRepo.delete()
         loggedOut <- run(backwards)
@@ -174,15 +179,15 @@ class PreviewMilestonesDomainTest extends AsyncJsWordSpec {
           List(MilestoneActivity("Fix login", "Done", List("Found the cause in the session cache")))
       }
       val events = ListBuffer.empty[AiSummaryEvent]
-      val req = SummariseMilestoneWithAiReq(MilestonesPreviewSeed.BetaId, None, "p", LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-12"), "m")
+      val req = SummariseMilestoneWithAiReq(DemoMilestonesData.BetaId, None, "p", LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-12"), "m")
       for {
         _ <- s.env.runIO(s.summaries.summariseWithAi(req)(events += _))
-        _ = s.env.module.projects.deleteProject(PreviewDemo.ProjectId)
+        _ = s.env.module.projects.deleteProject(DemoIdentity.ProjectId)
       } yield {
         events.collect { case AiSummaryEvent.Chunk(t) => t }.mkString should include("**Fix login** (Done): Found the cause")
-        s.env.module.milestones.milestones.filter(_.projectId == PreviewDemo.ProjectId) shouldBe Nil
-        s.env.module.milestones.dates.all.exists(_.milestoneId == MilestonesPreviewSeed.BetaId) shouldBe false
-        s.env.module.milestones.summaries.all.exists(_.milestoneId == MilestonesPreviewSeed.BetaId) shouldBe false
+        s.env.module.milestones.milestones.filter(_.projectId == DemoIdentity.ProjectId) shouldBe Nil
+        s.env.module.milestones.dates.all.exists(_.milestoneId == DemoMilestonesData.BetaId) shouldBe false
+        s.env.module.milestones.summaries.all.exists(_.milestoneId == DemoMilestonesData.BetaId) shouldBe false
       }
     }
   }

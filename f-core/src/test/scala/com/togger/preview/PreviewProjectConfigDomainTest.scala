@@ -1,5 +1,10 @@
 package com.togger.preview
 
+import com.togger.demo.DemoProjectLabelsData
+import com.togger.demo.DemoTaskConfigData
+
+import com.togger.demo.DemoIdentity
+
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.{BadRequest, NotFound, PageRequest, Unauthenticated}
 import com.togger.dto._
@@ -32,14 +37,14 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     "answer unauthenticated without a session" in { _ =>
       val env = new PreviewTestEnv
       val statuses = new TaskStatusFeServicePreview(env.module.context, env.module.projects, env.module.taskConfig, env.module.taskStats)
-      env.run(statuses.findByProjectId(PreviewDemo.ProjectId, firstPage)).map(_ shouldBe Left(Unauthenticated))
+      env.run(statuses.findByProjectId(DemoIdentity.ProjectId, firstPage)).map(_ shouldBe Left(Unauthenticated))
     }
 
     "seed the default statuses sorted by name and paginate them" in { _ =>
       val s = new Services
       for {
-        all <- s.env.run(s.statuses.findByProjectId(PreviewDemo.ProjectId, firstPage))
-        second <- s.env.run(s.statuses.findByProjectId(PreviewDemo.ProjectId, PageRequest(2, 3)))
+        all <- s.env.run(s.statuses.findByProjectId(DemoIdentity.ProjectId, firstPage))
+        second <- s.env.run(s.statuses.findByProjectId(DemoIdentity.ProjectId, PageRequest(2, 3)))
       } yield {
         all.map(_.items.map(_.name)) shouldBe Right(
           List("Backlog", "Blocked", "Done", "In progress", "Testing", "Todo", "Waiting", "Won't do")
@@ -51,14 +56,14 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     "create, update and delete a status but keep Done" in { _ =>
       val s = new Services
       for {
-        created <- s.env.run(s.statuses.createTaskStatus(CreateTaskStatusReq(PreviewDemo.ProjectId, "Review", "In review", "👀")))
+        created <- s.env.run(s.statuses.createTaskStatus(CreateTaskStatusReq(DemoIdentity.ProjectId, "Review", "In review", "👀")))
         updated <- s.env.run(
-          s.statuses.updateTaskStatus(UpdateTaskStatusResp(created.toOption.get.id, PreviewDemo.ProjectId, "Code review", "In review", "👀"))
+          s.statuses.updateTaskStatus(UpdateTaskStatusResp(created.toOption.get.id, DemoIdentity.ProjectId, "Code review", "In review", "👀"))
         )
         found <- s.env.run(s.statuses.findTaskStatusById(created.toOption.get.id))
         deleted <- s.env.runEmpty(s.statuses.deleteTaskStatusById(created.toOption.get.id))
         gone <- s.env.run(s.statuses.findTaskStatusById(created.toOption.get.id))
-        done = s.env.module.taskConfig.statuses.all.find(st => st.projectId == PreviewDemo.ProjectId && st.name == "Done").get
+        done = s.env.module.taskConfig.statuses.all.find(st => st.projectId == DemoIdentity.ProjectId && st.name == "Done").get
         doneDelete <- s.env.runEmpty(s.statuses.deleteTaskStatusById(done.id))
         unknownProject <- s.env.run(s.statuses.createTaskStatus(CreateTaskStatusReq(UUID.randomUUID(), "X", "", "")))
       } yield {
@@ -85,7 +90,7 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         project <- s.env.run(
-          s.projects.createProject(CreateProjectReq(PreviewDemo.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty))
+          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty))
         )
         created = project.toOption.get
         statuses <- s.env.run(s.statuses.findAllByProjectId(created.id))
@@ -100,10 +105,10 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     "manage task labels per project" in { _ =>
       val s = new Services
       for {
-        seeded <- s.env.run(s.labels.findAllByProjectId(PreviewDemo.ProjectId))
-        created <- s.env.run(s.labels.createTaskLabel(CreateTaskLabelReq(PreviewDemo.ProjectId, "security", "Security work", "🔒")))
+        seeded <- s.env.run(s.labels.findAllByProjectId(DemoIdentity.ProjectId))
+        created <- s.env.run(s.labels.createTaskLabel(CreateTaskLabelReq(DemoIdentity.ProjectId, "security", "Security work", "🔒")))
         updated <- s.env.run(
-          s.labels.updateTaskLabel(UpdateTaskLabelResp(created.toOption.get.id, PreviewDemo.ProjectId, "sec", "Security work", "🔒"))
+          s.labels.updateTaskLabel(UpdateTaskLabelResp(created.toOption.get.id, DemoIdentity.ProjectId, "sec", "Security work", "🔒"))
         )
         deleted <- s.env.runEmpty(s.labels.deleteTaskLabelById(created.toOption.get.id))
         missing <- s.env.runEmpty(s.labels.deleteTaskLabelById(created.toOption.get.id))
@@ -118,9 +123,9 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     "fill the labels of the projects and clean them when a label is deleted" in { _ =>
       val s = new Services
       for {
-        project <- s.env.run(s.projects.findById(PreviewDemo.ProjectId))
-        deleted <- s.env.runEmpty(s.projectLabels.deleteProjectLabelById(ProjectLabelsPreviewSeed.ScalaLabelId))
-        after <- s.env.run(s.projects.findById(PreviewDemo.ProjectId))
+        project <- s.env.run(s.projects.findById(DemoIdentity.ProjectId))
+        deleted <- s.env.runEmpty(s.projectLabels.deleteProjectLabelById(DemoProjectLabelsData.ScalaLabelId))
+        after <- s.env.run(s.projects.findById(DemoIdentity.ProjectId))
       } yield {
         project.map(_.projectLabels.map(_.name)) shouldBe Right(List("Backend", "Customer facing", "Scala", "Web"))
         deleted.isRight shouldBe true
@@ -148,15 +153,15 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
 
     "link one template per label, version it and list the versions" in { _ =>
       val s = new Services
-      val bugLabel = TaskConfigPreviewSeed.labelId(0, 1)
-      val choreLabel = TaskConfigPreviewSeed.labelId(0, 5)
+      val bugLabel = DemoTaskConfigData.labelId(0, 1)
+      val choreLabel = DemoTaskConfigData.labelId(0, 5)
       for {
-        seeded <- s.env.run(s.templates.findAllByProjectId(PreviewDemo.ProjectId))
-        clash <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(PreviewDemo.ProjectId, "Another bug", "x", Some(bugLabel))))
+        seeded <- s.env.run(s.templates.findAllByProjectId(DemoIdentity.ProjectId))
+        clash <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Another bug", "x", Some(bugLabel))))
         foreign <- s.env.run(
-          s.templates.createTaskTemplate(CreateTaskTemplateReq(PreviewDemo.ProjectId, "Foreign", "x", Some(TaskConfigPreviewSeed.labelId(1, 5))))
+          s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Foreign", "x", Some(DemoTaskConfigData.labelId(1, 5))))
         )
-        created <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(PreviewDemo.ProjectId, "Chore", "v1", Some(choreLabel))))
+        created <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Chore", "v1", Some(choreLabel))))
         id = created.toOption.get.id
         same <- s.env.run(s.templates.updateTaskTemplate(UpdateTaskTemplateReq(id, "Chore", "v1", Some(choreLabel))))
         changed <- s.env.run(s.templates.updateTaskTemplate(UpdateTaskTemplateReq(id, "Chore", "v2", None)))

@@ -1,5 +1,9 @@
 package com.togger.preview
 
+import com.togger.demo.DemoAccountsData
+
+import com.togger.demo.DemoIdentity
+
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.{BadRequest, Forbidden, NotFound, PageRequest, Unauthenticated}
 import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, DeviceInfo, LoginDto}
@@ -31,44 +35,44 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
     "log in with the demo credentials and save the session" in { _ =>
       val s = new Services
       s.env
-        .runIO(s.login.login(LoginDto(PreviewDemo.Email, PreviewDemo.Password, device)))
+        .runIO(s.login.login(LoginDto(DemoIdentity.Email, DemoIdentity.Password, device)))
         .map { result =>
           result shouldBe Right(())
-          s.env.loginRepo.account.map(_.id) shouldBe Some(PreviewDemo.AccountId)
+          s.env.loginRepo.account.map(_.id) shouldBe Some(DemoIdentity.AccountId)
         }
     }
 
     "log in as a teammate and reject wrong credentials" in { _ =>
       val s = new Services
       for {
-        wrong <- s.env.runIO(s.login.login(LoginDto(PreviewDemo.Email, "nope", device)))
+        wrong <- s.env.runIO(s.login.login(LoginDto(DemoIdentity.Email, "nope", device)))
         teammate <- s.env.runIO(s.login.login(LoginDto("SAM.rivera@togger.preview", "preview", device)))
       } yield {
         wrong.isLeft shouldBe true
         teammate shouldBe Right(())
-        s.env.loginRepo.account.map(_.id) shouldBe Some(PreviewDemo.SecondAccountId)
+        s.env.loginRepo.account.map(_.id) shouldBe Some(DemoIdentity.SecondAccountId)
       }
     }
 
     "answer unauthenticated without a session" in { _ =>
       val s = new Services
-      s.env.run(s.organizations.findByAccountId(PreviewDemo.AccountId, firstPage)).map(_ shouldBe Left(Unauthenticated))
+      s.env.run(s.organizations.findByAccountId(DemoIdentity.AccountId, firstPage)).map(_ shouldBe Left(Unauthenticated))
     }
 
     "change the password only with the right old password" in { _ =>
       val s = new Services
       s.env.loginAsDemo()
       def dto(old: String, confirm: String) =
-        ChangePasswordDto(PreviewDemo.AccountId, old, "NewPassw0rd!2345", confirm)
+        ChangePasswordDto(DemoIdentity.AccountId, old, "NewPassw0rd!2345", confirm)
       for {
         wrongOld <- s.env.runIO(s.password.change(dto("bad", "NewPassw0rd!2345")))
-        mismatch <- s.env.runIO(s.password.change(dto(PreviewDemo.Password, "other")))
-        ok <- s.env.runIO(s.password.change(dto(PreviewDemo.Password, "NewPassw0rd!2345")))
+        mismatch <- s.env.runIO(s.password.change(dto(DemoIdentity.Password, "other")))
+        ok <- s.env.runIO(s.password.change(dto(DemoIdentity.Password, "NewPassw0rd!2345")))
       } yield {
         wrongOld.left.exists(_.isInstanceOf[BadRequest]) shouldBe true
         mismatch.left.exists(_.isInstanceOf[BadRequest]) shouldBe true
         ok.isRight shouldBe true
-        s.env.module.accounts.accounts.find(PreviewDemo.AccountId).get.password shouldBe "NewPassw0rd!2345"
+        s.env.module.accounts.accounts.find(DemoIdentity.AccountId).get.password shouldBe "NewPassw0rd!2345"
       }
     }
 
@@ -92,19 +96,19 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
         page <- s.env.run(s.management.findAll(PageRequest(1, 2)))
         updated <- s.env.run(
           s.management.update(
-            UpdateAccountReq(PreviewDemo.SecondAccountId, "Samantha", "Rivera", "sam.rivera@togger.preview", PreviewAccountTypes.AdminId)
+            UpdateAccountReq(DemoIdentity.SecondAccountId, "Samantha", "Rivera", "sam.rivera@togger.preview", PreviewAccountTypes.AdminId)
           )
         )
-        self <- s.env.runEmpty(s.management.deleteById(PreviewDemo.AccountId))
-        deleted <- s.env.runEmpty(s.management.deleteById(AccountsPreviewSeed.FifthAccountId))
-        _ = s.env.loginAs(AccountsPreviewSeed.ThirdAccountId)
+        self <- s.env.runEmpty(s.management.deleteById(DemoIdentity.AccountId))
+        deleted <- s.env.runEmpty(s.management.deleteById(DemoAccountsData.FifthAccountId))
+        _ = s.env.loginAs(DemoAccountsData.ThirdAccountId)
         forbidden <- s.env.run(s.management.findAll(firstPage))
       } yield {
         page.map(p => (p.items.size, p.totalNumberOfItems)) shouldBe Right((2, 6L))
         updated.map(_.accountTypeName) shouldBe Right("admin")
         self.left.exists(_.isInstanceOf[BadRequest]) shouldBe true
         deleted.isRight shouldBe true
-        s.env.module.accounts.accounts.find(AccountsPreviewSeed.FifthAccountId) shouldBe None
+        s.env.module.accounts.accounts.find(DemoAccountsData.FifthAccountId) shouldBe None
         forbidden shouldBe Left(Forbidden)
       }
     }
@@ -126,15 +130,15 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
       s.env.loginAsDemo()
       for {
         created <- s.env.run(
-          s.organizations.createOrganization(CreateOrganizationReq("Zeta", "d", "🔥", Seq(PreviewDemo.SecondAccountId)))
+          s.organizations.createOrganization(CreateOrganizationReq("Zeta", "d", "🔥", Seq(DemoIdentity.SecondAccountId)))
         )
         id = created.toOption.get.id
         updated <- s.env.run(
           s.organizations.update(
-            UpdateOrganizationReq(id, "Zeta 2", "d", "🔥", Seq(AccountsPreviewSeed.ThirdAccountId), Seq(PreviewDemo.SecondAccountId))
+            UpdateOrganizationReq(id, "Zeta 2", "d", "🔥", Seq(DemoAccountsData.ThirdAccountId), Seq(DemoIdentity.SecondAccountId))
           )
         )
-        mine <- s.env.run(s.organizations.findByAccountId(PreviewDemo.AccountId, PageRequest(1, 2)))
+        mine <- s.env.run(s.organizations.findByAccountId(DemoIdentity.AccountId, PageRequest(1, 2)))
         members <- s.env.run(s.organizations.findMembers(id, firstPage))
         _ <- s.env.runEmpty(s.organizations.deleteOrganization(id))
         gone <- s.env.run(s.organizations.findById(id))
@@ -149,25 +153,25 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
 
     "create, filter, update and delete projects and cascade from the organization" in { _ =>
       val s = new Services
-      s.env.loginAs(PreviewDemo.SecondAccountId)
+      s.env.loginAs(DemoIdentity.SecondAccountId)
       for {
-        acme <- s.env.run(s.projects.findByOrganizationId(PreviewDemo.OrganizationId, firstPage))
+        acme <- s.env.run(s.projects.findByOrganizationId(DemoIdentity.OrganizationId, firstPage))
         created <- s.env.run(
-          s.projects.createProject(CreateProjectReq(PreviewDemo.OrganizationId, "Alpha", "d", "🅰", Seq(PreviewDemo.AccountId)))
+          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Seq(DemoIdentity.AccountId)))
         )
         id = created.toOption.get.id
         noWorkDays <- s.env.run(
-          s.projects.updateProject(UpdateProjectReq(id, PreviewDemo.OrganizationId, "Alpha", "d", "🅰", Set.empty, Seq.empty, Seq.empty))
+          s.projects.updateProject(UpdateProjectReq(id, DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Set.empty, Seq.empty, Seq.empty))
         )
         updated <- s.env.run(
           s.projects.updateProject(
-            UpdateProjectReq(id, PreviewDemo.OrganizationId, "Alpha 2", "d", "🅰", Set(1, 2), Seq.empty, Seq(PreviewDemo.AccountId))
+            UpdateProjectReq(id, DemoIdentity.OrganizationId, "Alpha 2", "d", "🅰", Set(1, 2), Seq.empty, Seq(DemoIdentity.AccountId))
           )
         )
         members <- s.env.run(s.projects.findAllMembers(id))
         missing <- s.env.run(s.projects.findById(java.util.UUID.randomUUID()))
         _ = s.env.loginAsDemo()
-        _ <- s.env.runEmpty(s.organizations.deleteOrganization(PreviewDemo.OrganizationId))
+        _ <- s.env.runEmpty(s.organizations.deleteOrganization(DemoIdentity.OrganizationId))
         remaining <- s.env.run(s.projects.searchByLabels(Seq.empty, firstPage))
       } yield {
         acme.map(_.items.map(_.name)) shouldBe Right(List("Acme Platform", "Mobile App"))

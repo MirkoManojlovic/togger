@@ -1,5 +1,8 @@
 package com.togger.preview
 
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoSeedIds
+
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.BadRequest
 import com.togger.dto._
@@ -25,7 +28,7 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         mine <- s.env.run(s.prompts.findAllTemplates)
-        _ = s.env.loginAs(PreviewDemo.SecondAccountId)
+        _ = s.env.loginAs(DemoIdentity.SecondAccountId)
         theirs <- s.env.run(s.prompts.findAllTemplates)
       } yield {
         mine.map(_.size) shouldBe Right(3)
@@ -44,7 +47,7 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
         versions <- s.env.run(s.prompts.listAllVersions(id))
         deleteOld <- s.env.runEmpty(s.prompts.deleteVersion(versions.toOption.get.last.version))
         deleteLast <- s.env.runEmpty(s.prompts.deleteVersion(versions.toOption.get.head.version))
-        _ = s.env.loginAs(PreviewDemo.SecondAccountId)
+        _ = s.env.loginAs(DemoIdentity.SecondAccountId)
         foreign <- s.env.run(s.prompts.findTgPromptTemplateById(id))
       } yield {
         same.map(_.latestVersion) shouldBe created.map(_.latestVersion)
@@ -58,10 +61,10 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
 
     "detach a deleted prompt from its actions" in { _ =>
       val s = new Services
-      val promptId = PreviewSeedIds.id(PreviewSeedIds.PromptTemplate, 1)
+      val promptId = DemoSeedIds.id(DemoSeedIds.PromptTemplate, 1)
       for {
         deleted <- s.env.runEmpty(s.prompts.deleteTgPromptTemplateById(promptId))
-        action <- s.env.run(s.actions.findById(PreviewSeedIds.id(PreviewSeedIds.AiAction, 1)))
+        action <- s.env.run(s.actions.findById(DemoSeedIds.id(DemoSeedIds.AiAction, 1)))
       } yield {
         deleted.isRight shouldBe true
         action.map(_.tgPromptTemplateId) shouldBe Right(None)
@@ -81,22 +84,22 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
 
     "create, update and delete actions with unique names per account" in { _ =>
       val s = new Services
-      val promptId = PreviewSeedIds.id(PreviewSeedIds.PromptTemplate, 1)
+      val promptId = DemoSeedIds.id(DemoSeedIds.PromptTemplate, 1)
       def create(name: String, prompt: Option[UUID] = None, endpoints: List[Int] = List(0)) =
         s.actions.create(CreateTgAiActionReq(name, "p", prompt, "gpt-4.1", endpoints))
       for {
         seeded <- s.env.run(s.actions.findEvery)
         duplicate <- s.env.run(create("Weekly summary"))
         badEndpoint <- s.env.run(create("Other", endpoints = List(42)))
-        foreignPrompt <- s.env.run(create("Other", Some(PreviewSeedIds.id(PreviewSeedIds.PromptTemplate, 4))))
+        foreignPrompt <- s.env.run(create("Other", Some(DemoSeedIds.id(DemoSeedIds.PromptTemplate, 4))))
         created <- s.env.run(create("Brand new", Some(promptId)))
         id = created.toOption.get.id
         updated <- s.env.run(s.actions.update(UpdateTgAiActionReq(id, "Brand newer", "p2", None, "gpt-4o", List(0))))
         renameClash <- s.env.run(s.actions.update(UpdateTgAiActionReq(id, "Quick recap", "p2", None, "gpt-4o", List(0))))
         deleted <- s.env.runEmpty(s.actions.deleteById(id))
         gone <- s.env.run(s.actions.findById(id))
-        _ = s.env.loginAs(PreviewDemo.SecondAccountId)
-        foreign <- s.env.run(s.actions.findById(PreviewSeedIds.id(PreviewSeedIds.AiAction, 1)))
+        _ = s.env.loginAs(DemoIdentity.SecondAccountId)
+        foreign <- s.env.run(s.actions.findById(DemoSeedIds.id(DemoSeedIds.AiAction, 1)))
       } yield {
         seeded.map(_.map(_.name)) shouldBe Right(List("Quick recap", "Risk review", "Executive brief", "Weekly summary"))
         isBadRequest(duplicate) shouldBe true
@@ -112,19 +115,19 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
 
     "manage the defaults per project and endpoint" in { _ =>
       val s = new Services
-      val weekly = PreviewSeedIds.id(PreviewSeedIds.AiAction, 1)
-      val risk = PreviewSeedIds.id(PreviewSeedIds.AiAction, 3)
+      val weekly = DemoSeedIds.id(DemoSeedIds.AiAction, 1)
+      val risk = DemoSeedIds.id(DemoSeedIds.AiAction, 3)
       for {
-        seeded <- s.env.run(s.actions.findDefaults(PreviewDemo.ProjectId))
-        replaced <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(PreviewDemo.ProjectId, 0, risk)))
-        afterReplace <- s.env.run(s.actions.findDefaults(PreviewDemo.ProjectId))
-        notBound <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(PreviewDemo.ProjectId, 7, weekly)))
+        seeded <- s.env.run(s.actions.findDefaults(DemoIdentity.ProjectId))
+        replaced <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(DemoIdentity.ProjectId, 0, risk)))
+        afterReplace <- s.env.run(s.actions.findDefaults(DemoIdentity.ProjectId))
+        notBound <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(DemoIdentity.ProjectId, 7, weekly)))
         notMember <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(UUID.randomUUID(), 0, weekly)))
-        cleared <- s.env.runEmpty(s.actions.clearDefault(PreviewDemo.ProjectId, 0))
-        afterClear <- s.env.run(s.actions.findDefaults(PreviewDemo.ProjectId))
-        _ <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(PreviewDemo.ProjectId, 0, weekly)))
+        cleared <- s.env.runEmpty(s.actions.clearDefault(DemoIdentity.ProjectId, 0))
+        afterClear <- s.env.run(s.actions.findDefaults(DemoIdentity.ProjectId))
+        _ <- s.env.run(s.actions.setDefault(SetTgAiActionDefaultReq(DemoIdentity.ProjectId, 0, weekly)))
         _ <- s.env.runEmpty(s.actions.deleteById(weekly))
-        afterDelete <- s.env.run(s.actions.findDefaults(PreviewDemo.ProjectId))
+        afterDelete <- s.env.run(s.actions.findDefaults(DemoIdentity.ProjectId))
       } yield {
         seeded.map(_.map(_.actionId)) shouldBe Right(List(weekly))
         replaced.map(_.actionId) shouldBe Right(risk)
