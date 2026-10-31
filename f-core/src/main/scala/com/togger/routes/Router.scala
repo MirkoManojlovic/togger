@@ -65,6 +65,19 @@ object Pages {
 
   case class ShowAllTaskTemplatesPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage
 
+  case class CreateMilestoneStepTemplatePage(projectId: UUID) extends PrivatePage
+
+  case class EditMilestoneStepTemplatePage(projectId: UUID, milestoneStepTemplateId: UUID) extends PrivatePage
+
+  case class ShowAllMilestoneStepTemplatesPage(projectId: UUID, list: ListParams = ListParams.default)
+      extends PrivatePage
+
+  case class CreateMilestoneTemplatePage(projectId: UUID) extends PrivatePage
+
+  case class EditMilestoneTemplatePage(projectId: UUID, milestoneTemplateId: UUID) extends PrivatePage
+
+  case class ShowAllMilestoneTemplatesPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage
+
   case class ShowAllTasksPage(projectId: UUID, list: TaskListParams = TaskListParams.default) extends PrivatePage
 
   case class ShowAllTaskStatusesPage(projectId: UUID, list: ListParams = ListParams.default) extends PrivatePage

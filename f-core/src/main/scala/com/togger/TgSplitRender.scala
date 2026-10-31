@@ -617,6 +617,64 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateId,
                   toast
                 ).element
+              case CreateMilestoneTemplatePage(projectId: UUID) =>
+                new CreateMilestoneTemplateComponent(
+                  milestoneTemplateService,
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllMilestoneTemplatesPage(projectId, listParams) =>
+                new ShowAllMilestoneTemplatesComponent(
+                  milestoneTemplateService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  listParams,
+                  toast
+                ).element
+              case EditMilestoneTemplatePage(projectId: UUID, milestoneTemplateId: UUID) =>
+                new EditMilestoneTemplateComponent(
+                  milestoneTemplateService,
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  projectId,
+                  milestoneTemplateId,
+                  toast
+                ).element
+              case CreateMilestoneStepTemplatePage(projectId: UUID) =>
+                new CreateMilestoneStepTemplateComponent(
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllMilestoneStepTemplatesPage(projectId, listParams) =>
+                new ShowAllMilestoneStepTemplatesComponent(
+                  milestoneStepTemplateService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  listParams,
+                  toast
+                ).element
+              case EditMilestoneStepTemplatePage(projectId: UUID, milestoneStepTemplateId: UUID) =>
+                new EditMilestoneStepTemplateComponent(
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  projectId,
+                  milestoneStepTemplateId,
+                  toast
+                ).element
               case SyncConfigPage(projectId: UUID, listParams) =>
                 new SyncConfigComponent(
                   dataExportConfigService,

@@ -53,6 +53,16 @@ object TgBreadcrumbTrail {
   private def underTaskTemplates(projectId: UUID, label: String) =
     underProject(projectId, link("Task templates", ShowAllTaskTemplatesPage(projectId)), current(label))
 
+  private def underMilestoneStepTemplates(projectId: UUID, label: String) =
+    underProject(
+      projectId,
+      link("Milestone step templates", ShowAllMilestoneStepTemplatesPage(projectId)),
+      current(label)
+    )
+
+  private def underMilestoneTemplates(projectId: UUID, label: String) =
+    underProject(projectId, link("Milestone templates", ShowAllMilestoneTemplatesPage(projectId)), current(label))
+
   private def underConfigs(projectId: UUID, label: String) =
     underOrganizations(
       link("Project", ProjectHomePage(projectId)),
@@ -121,11 +131,19 @@ object TgBreadcrumbTrail {
     case CreateTaskTemplatePage(projectId)      => underTaskTemplates(projectId, "Create template")
     case EditTaskTemplatePage(projectId, _)     => underTaskTemplates(projectId, "Edit template")
 
-    case SyncConfigPage(projectId, _)           => underProject(projectId, current("Sync config"))
-    case DataExportStatusPage(projectId)        => underProject(projectId, current("Export data status"))
-    case CreateDataExportConfigPage(projectId)  => underConfigs(projectId, "Create export data config")
-    case CreateDataImportConfigPage(projectId)  => underConfigs(projectId, "Create import data config")
-    case CreateProjectMappingPage(projectId)    => underConfigs(projectId, "Create project mapping")
+    case ShowAllMilestoneTemplatesPage(projectId, _) => underProject(projectId, current("Milestone templates"))
+    case CreateMilestoneTemplatePage(projectId)      => underMilestoneTemplates(projectId, "Create template")
+    case EditMilestoneTemplatePage(projectId, _)     => underMilestoneTemplates(projectId, "Edit template")
+    case ShowAllMilestoneStepTemplatesPage(projectId, _) =>
+      underProject(projectId, current("Milestone step templates"))
+    case CreateMilestoneStepTemplatePage(projectId)  => underMilestoneStepTemplates(projectId, "Create step template")
+    case EditMilestoneStepTemplatePage(projectId, _) => underMilestoneStepTemplates(projectId, "Edit step template")
+
+    case SyncConfigPage(projectId, _) => underProject(projectId, current("Sync config"))
+    case DataExportStatusPage(projectId)       => underProject(projectId, current("Export data status"))
+    case CreateDataExportConfigPage(projectId) => underConfigs(projectId, "Create export data config")
+    case CreateDataImportConfigPage(projectId) => underConfigs(projectId, "Create import data config")
+    case CreateProjectMappingPage(projectId) => underConfigs(projectId, "Create project mapping")
     case EditDataExportConfigPage(projectId, _) => underConfigs(projectId, "Edit export data config")
     case EditDataImportConfigPage(projectId, _) => underConfigs(projectId, "Edit import data config")
 

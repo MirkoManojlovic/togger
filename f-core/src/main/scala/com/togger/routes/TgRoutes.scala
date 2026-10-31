@@ -197,6 +197,53 @@ class TgRoutes {
         pattern = (root / "task-template" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
+        encode = (page: CreateMilestoneStepTemplatePage) => page.projectId.toString,
+        decode = (projectId: String) => CreateMilestoneStepTemplatePage(UUID.fromString(projectId)),
+        pattern = root / "create-milestone-step-template" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditMilestoneStepTemplatePage) =>
+          page.projectId.toString -> page.milestoneStepTemplateId.toString,
+        decode = { (projectIdAndTemplateId: (String, String)) =>
+          EditMilestoneStepTemplatePage(
+            UUID.fromString(projectIdAndTemplateId._1),
+            UUID.fromString(projectIdAndTemplateId._2)
+          )
+        },
+        pattern = root / "edit-milestone-step-template" / "project-id" / segment[String] /
+          "milestone-step-template-id" / segment[String] / endOfSegments
+      ),
+      Route.withQuery[ShowAllMilestoneStepTemplatesPage, String, ListQuery](
+        encode = (page: ShowAllMilestoneStepTemplatesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllMilestoneStepTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "milestone-step-template" / segment[String] / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: CreateMilestoneTemplatePage) => page.projectId.toString,
+        decode = (projectId: String) => CreateMilestoneTemplatePage(UUID.fromString(projectId)),
+        pattern = root / "create-milestone-template" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditMilestoneTemplatePage) => page.projectId.toString -> page.milestoneTemplateId.toString,
+        decode = { (projectIdAndTemplateId: (String, String)) =>
+          EditMilestoneTemplatePage(
+            UUID.fromString(projectIdAndTemplateId._1),
+            UUID.fromString(projectIdAndTemplateId._2)
+          )
+        },
+        pattern = root / "edit-milestone-template" / "project-id" / segment[String] /
+          "milestone-template-id" / segment[String] / endOfSegments
+      ),
+      Route.withQuery[ShowAllMilestoneTemplatesPage, String, ListQuery](
+        encode = (page: ShowAllMilestoneTemplatesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllMilestoneTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "milestone-template" / segment[String] / endOfSegments) ? listQueryParams
+      ),
+      Route(
         encode = (page: CreateProjectPage) => page.organizationId.toString,
         decode = (organizationId: String) => CreateProjectPage(UUID.fromString(organizationId)),
         pattern = root / "create-project" / segment[String] / endOfSegments
