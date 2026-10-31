@@ -180,3 +180,26 @@ jobs:
         run: |
           echo "compile and test: $RESULT"
           [ "$RESULT" = "success" ]
+
+  # the runs that a newer push cancelled stay in the history; the run that survived deletes them
+  clean-up:
+    name: Delete cancelled runs
+    needs: [pr-checks]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Delete the cancelled runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW: ${{ github.workflow }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: .github/scripts/delete-cancelled-runs.sh
