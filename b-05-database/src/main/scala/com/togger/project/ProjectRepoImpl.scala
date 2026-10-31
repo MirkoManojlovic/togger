@@ -182,6 +182,8 @@ object ProjectRepoImpl {
     "task" -> "project_id",
     "timebox" -> "project_id",
     "milestone" -> "project_id",
+    "milestone_template" -> "project_id",
+    "milestone_step_template" -> "project_id",
     "task_template" -> "project_id",
     "task_status" -> "project_id",
     "task_label" -> "project_id",

@@ -1921,3 +1921,327 @@ databaseChangeLog:
             columns:
               - column:
                   name: project_id
+  - changeSet:
+      id: 17
+      author: mirko
+      labels: milestone-step
+      comment: Versioned, ordered steps of a milestone
+      changes:
+        - createTable:
+            tableName: milestone_step
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_step_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_step_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_version_milestone_step
+                    references: milestone_step(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_comment
+                  type: text
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_step_version_milestone_step_id_version
+            tableName: milestone_step_version
+            columns:
+              - column:
+                  name: milestone_step_id
+              - column:
+                  name: version
+                  descending: true
+        - createIndex:
+            indexName: idx_milestone_step_milestone_id_id
+            tableName: milestone_step
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 18
+      author: mirko
+      labels: milestone-step-template
+      comment: >
+        Milestone step templates: a project-scoped name and description for a step of a milestone, with an
+        append-only history of versions
+      changes:
+        - createTable:
+            tableName: milestone_step_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_project
+                    references: project(id)
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_step_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_step_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_version_template
+                    references: milestone_step_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_step_template_project_id
+            tableName: milestone_step_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_milestone_step_template_version_template_id_version
+            tableName: milestone_step_template_version
+            columns:
+              - column:
+                  name: milestone_step_template_id
+              - column:
+                  name: version
+                  descending: true
+  - changeSet:
+      id: 19
+      author: mirko
+      labels: milestone-template
+      comment: >
+        Milestone templates: a project-scoped name and description with an ordered list of milestone step templates,
+        with an append-only history of versions. The steps belong to a version. A step template that is deleted
+        disappears from the steps of the versions that listed it.
+      changes:
+        - createTable:
+            tableName: milestone_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_project
+                    references: project(id)
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_template
+                    references: milestone_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_template_version_step
+            columns:
+              - column:
+                  name: milestone_template_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_step_version
+                    references: milestone_template_version(version)
+                    deleteCascade: true
+              - column:
+                  name: position
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: milestone_step_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_step_step_template
+                    references: milestone_step_template(id)
+                    deleteCascade: true
+        - addPrimaryKey:
+            tableName: milestone_template_version_step
+            columnNames: milestone_template_version, position
+            constraintName: pk_milestone_template_version_step
+        - createIndex:
+            indexName: idx_milestone_template_version_step_step_template_id
+            tableName: milestone_template_version_step
+            columns:
+              - column:
+                  name: milestone_step_template_id
+        - createIndex:
+            indexName: idx_milestone_template_project_id
+            tableName: milestone_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_milestone_template_version_template_id_version
+            tableName: milestone_template_version
+            columns:
+              - column:
+                  name: milestone_template_id
+              - column:
+                  name: version
+                  descending: true
