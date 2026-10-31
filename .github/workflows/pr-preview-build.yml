@@ -1,11 +1,12 @@
 name: PR Preview Build
 
-# Builds the frontend in preview mode (no backend, data in localStorage) for every pull request. It runs the code of
-# the pull request, so it has no secrets and no write access; pr-preview-deploy.yml publishes the result.
+# Builds the frontend in preview mode (no backend, data in localStorage) for every pull request that has the label
+# "👀 preview": adding the label starts the build, and every later push builds again. It runs the code of the pull
+# request, so it has no secrets and no write access; pr-preview-deploy.yml publishes the result.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     # the backend, the desktop shell and the docs do not change the preview
     paths-ignore:
       - "**/*.md"
@@ -17,13 +18,16 @@ on:
 permissions:
   contents: read
 
-# a newer push to the pull request supersedes the old build
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
   build-preview:
+    # adding any other label must neither build nor cancel a running build, so only the preview label counts
+    if: >
+      contains(github.event.pull_request.labels.*.name, '👀 preview') &&
+      (github.event.action != 'labeled' || github.event.label.name == '👀 preview')
+    # a newer push to the pull request supersedes the old build; at job level, so a skipped run cancels nothing
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
