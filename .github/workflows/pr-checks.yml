@@ -1,8 +1,8 @@
 name: PR Checks
 
-# Two required checks for every pull request into develop: everything compiles (main and test code of all projects,
-# the ScalaJS frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all
-# of them at the root for the compile.
+# Two checks for every pull request into develop: everything compiles (main and test code of all projects, the ScalaJS
+# frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all of them at
+# the root for the compile. The job "PR Checks" sums both up; it is the status check the ruleset of develop requires.
 
 on:
   pull_request:
@@ -110,3 +110,18 @@ jobs:
             echo "::error::Tests failed in:$failed"
             exit 1
           fi
+
+  # the ruleset of develop requires one status check named "PR Checks"; it is green when both checks above are
+  pr-checks:
+    name: PR Checks
+    needs: [compile, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Both checks passed
+        env:
+          RESULTS: ${{ needs.compile.result }} ${{ needs.test.result }}
+        run: |
+          echo "compile and test: $RESULTS"
+          [ "$RESULTS" = "success success" ]
