@@ -86,3 +86,26 @@ jobs:
           PROJECT: togger-preview
           KEEP: "10"
         run: .github/scripts/prune-pages-deployments.sh
+
+  # the runs that a newer merge cancelled stay in the history; the run that survived deletes them
+  clean-up:
+    name: Delete cancelled runs
+    needs: [deploy-develop-preview]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Delete the cancelled runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW: ${{ github.workflow }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: .github/scripts/delete-cancelled-runs.sh

@@ -123,3 +123,30 @@ jobs:
 
             ---
             <sub>Deployed with Cloudflare Pages</sub>
+
+  # This workflow runs for every run of "PR Checks". The ones that a newer push cancelled leave a run of this workflow
+  # with every job skipped, and a newer deploy cancels the running one of the same pull request; both stay in the
+  # history. A run that went through (a run of this workflow has the branch develop, not the one of the pull request)
+  # deletes them. It never runs code of the pull request: it checks out develop.
+  clean-up:
+    name: Delete cancelled and skipped runs
+    needs: [find-build, deploy-preview]
+    if: ${{ !cancelled() && needs.find-build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Delete the cancelled and skipped runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW: ${{ github.workflow }}
+          BRANCH: ${{ github.ref_name }}
+          STATUSES: cancelled skipped
+        run: .github/scripts/delete-cancelled-runs.sh
