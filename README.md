@@ -57,7 +57,9 @@ URL, which is not the one to share); a new build id starts with fresh demo data.
 
 ### Pull request previews
 
-Every pull request that changes the frontend gets a preview URL, posted as a comment on the pull request. `PR Preview
+A pull request with the label `👀 preview` gets a preview URL, posted as a comment on the pull request (adding the
+label starts the build, every later push builds again; removing the label does not delete the preview, closing the pull
+request does). `PR Preview
 Build` builds the frontend in preview mode (build id = the head commit of the pull request) and `PR Preview Deploy`
 publishes it to Cloudflare Pages as `pr-<number>`. One time setup: a Cloudflare Pages project `togger-preview`, the
 repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and both workflows on the default branch (a
