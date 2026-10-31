@@ -81,4 +81,48 @@ class WorkDayCalendarTest extends AnyWordSpec with Matchers {
       WorkDayCalendar.countWorkDays(monday, monday.minusDays(1), monFri) shouldBe 0
     }
   }
+
+  "WorkDayCalendar.splitEvenly" should {
+    // Monday to Friday of the next week: 10 work days.
+    val twoWeeksEnd = monday.plusDays(11)
+
+    "divide the work days into consecutive ranges of the same size" in {
+      WorkDayCalendar.splitEvenly(monday, twoWeeksEnd, 2, monFri) shouldBe
+        List(monday -> monday.plusDays(4), monday.plusDays(7) -> twoWeeksEnd)
+    }
+
+    "give the remainder to the later ranges and leave no work day out" in {
+      val ranges = WorkDayCalendar.splitEvenly(monday, twoWeeksEnd, 3, monFri)
+      ranges.map { case (from, to) => WorkDayCalendar.countWorkDays(from, to, monFri) } shouldBe List(3, 3, 4)
+      ranges.head._1 shouldBe monday
+      ranges.last._2 shouldBe twoWeeksEnd
+    }
+
+    "start and end on work days when the period starts and ends on a weekend" in {
+      val ranges = WorkDayCalendar.splitEvenly(monday.minusDays(2), twoWeeksEnd.plusDays(2), 1, monFri)
+      ranges shouldBe List(monday -> twoWeeksEnd)
+    }
+
+    "let ranges share a day when there are more ranges than work days" in {
+      val ranges = WorkDayCalendar.splitEvenly(monday, monday.plusDays(1), 4, monFri)
+      ranges should have size 4
+      ranges.foreach { case (from, to) =>
+        from.isBefore(monday) shouldBe false
+        to.isAfter(monday.plusDays(1)) shouldBe false
+        to.isBefore(from) shouldBe false
+      }
+      ranges.map(_._1) shouldBe ranges.map(_._1).sorted
+    }
+
+    "divide the calendar days when the period has no work day" in {
+      val saturday = monday.plusDays(5)
+      WorkDayCalendar.splitEvenly(saturday, saturday.plusDays(1), 2, monFri) shouldBe
+        List(saturday -> saturday, saturday.plusDays(1) -> saturday.plusDays(1))
+    }
+
+    "give nothing for no steps or an end before the start" in {
+      WorkDayCalendar.splitEvenly(monday, twoWeeksEnd, 0, monFri) shouldBe Nil
+      WorkDayCalendar.splitEvenly(monday, monday.minusDays(1), 2, monFri) shouldBe Nil
+    }
+  }
 }

@@ -33,6 +33,27 @@ object WorkDayCalendar {
       .next()
   }
 
+  /** Divides `start` to `end` into `count` consecutive date ranges of about the same number of work days, in order.
+    * Every range lies inside `start` - `end`. With fewer work days than ranges, ranges share a day. With no work day in
+    * the period (or no work days configured) the calendar days are divided instead.
+    */
+  def splitEvenly(
+    start: LocalDate,
+    end: LocalDate,
+    count: Int,
+    workDays: Set[DayOfWeek]
+  ): List[(LocalDate, LocalDate)] = {
+    if (count <= 0 || end.isBefore(start)) return Nil
+    val allDays = Iterator.iterate(start)(_.plusDays(1)).takeWhile(!_.isAfter(end)).toVector
+    val workDaysInPeriod = allDays.filter(day => workDays.contains(day.getDayOfWeek))
+    val days = if (workDaysInPeriod.isEmpty) allDays else workDaysInPeriod
+    (0 until count).toList.map { index =>
+      val first = index * days.size / count
+      val last = ((index + 1) * days.size / count - 1).max(first)
+      days(first) -> days(last)
+    }
+  }
+
   /** Work days from `start` to `end`, counting both ends. */
   def countWorkDays(start: LocalDate, end: LocalDate, workDays: Set[DayOfWeek]): Int =
     Iterator
