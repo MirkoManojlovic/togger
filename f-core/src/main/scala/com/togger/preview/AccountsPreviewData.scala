@@ -46,3 +46,5 @@ object AccountsPreviewData {
   val byName: Ordering[PreviewAccount] =
     Ordering.by(account => (account.lastName.toLowerCase, account.firstName.toLowerCase, account.id.toString))
 }
+
+// cache measurement, reverted right after
