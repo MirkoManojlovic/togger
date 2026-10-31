@@ -21,6 +21,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # the same version as in the PR checks, see ThisBuild / version in build.sbt; the frontend does not show it
+  TOGGER_FIXED_VERSION: ci
+
 # a newer merge supersedes the running build
 concurrency:
   group: develop-preview
@@ -40,8 +44,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: sbt # the dependencies, keyed by the build files
 
       - uses: sbt/setup-sbt@v1
+        with:
+          disk-cache: false # the cache of the PR checks is used instead
+
+      # the sbt cache that the PR checks of the previous merge saved on develop (they run on every push to develop, this
+      # build runs at the same time, so it cannot wait for the one of its own commit); only the changes since then are
+      # compiled. This build only reads, the PR checks keep the cache.
+      - uses: ./.github/actions/sbt-cache
 
       - uses: actions/setup-node@v4
         with:

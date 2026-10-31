@@ -77,24 +77,10 @@ jobs:
         with:
           disk-cache: false # the cache step below keeps it
 
-      # the sbt 2 disk cache (~/.cache/sbt, where the results of the tasks are stored by the hash of their inputs) and the
-      # target directories (links into it): a project whose inputs did not change is not compiled or linked again. A cache
-      # entry cannot be updated, so the key has the hash of the sources: a hit means nothing changed, a miss restores the
-      # newest cache of the branch or develop and saves what the build adds to it
-      - uses: actions/cache@v4
+      # the sbt 2 task cache and the target directories, see the action; the build saves what it adds
+      - uses: ./.github/actions/sbt-cache
         with:
-          path: |
-            ~/.cache/sbt
-            target
-            project/target
-            project/project/target
-            **/target
-            !target/test-data-export-*
-            !src-tauri/target
-            !liquibase/target
-          key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
-          restore-keys: |
-            sbt-cache-${{ runner.os }}-
+          save: "true"
 
       # the frontend specs run on node
       - uses: actions/setup-node@v4
@@ -153,21 +139,8 @@ jobs:
         with:
           disk-cache: false # the cache step below keeps it
 
-      # what the build job saved for these exact sources; the key must be the same as there
-      - uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.cache/sbt
-            target
-            project/target
-            project/project/target
-            **/target
-            !target/test-data-export-*
-            !src-tauri/target
-            !liquibase/target
-          key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
-          restore-keys: |
-            sbt-cache-${{ runner.os }}-
+      # what the build job saved for these exact sources
+      - uses: ./.github/actions/sbt-cache
 
       - uses: actions/setup-node@v4
         with:

@@ -1,0 +1,50 @@
+name: sbt cache
+description: >
+  Restores the sbt 2 task cache (~/.cache/sbt, where the results of the tasks are stored by the hash of their inputs)
+  and the target directories (links into it), so a project whose inputs did not change is not compiled or linked again.
+  Needs the repository checked out. Use it with TOGGER_FIXED_VERSION set (see ThisBuild / version in build.sbt), the
+  version of git is part of every jar and so of the cache key of every project that depends on another one.
+
+inputs:
+  save:
+    description: >
+      "true" saves the cache at the end of the job. A cache entry cannot be updated, so the key has the hash of the
+      sources: a hit means nothing changed, a miss restores the newest cache of the branch or develop and, with save,
+      stores what the build adds to it. Without save the job only reads.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.save == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/sbt
+          target
+          project/target
+          project/project/target
+          **/target
+          !target/test-data-export-*
+          !src-tauri/target
+          !liquibase/target
+        key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+        restore-keys: |
+          sbt-cache-${{ runner.os }}-
+
+    - if: inputs.save != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ~/.cache/sbt
+          target
+          project/target
+          project/project/target
+          **/target
+          !target/test-data-export-*
+          !src-tauri/target
+          !liquibase/target
+        key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+        restore-keys: |
+          sbt-cache-${{ runner.os }}-
