@@ -88,6 +88,28 @@ just desktop-prod          # full build; the app uses db togger-local
 just desktop-dev-clean / desktop-prod-clean   # sbt clean first
 ```
 
+## Run modes
+
+Besides the web and the desktop app, the same ScalaJS frontend runs as a backend-less **frontend preview**
+(`VITE_IS_PREVIEW_MODE=true`, `.env.preview`): no HTTP call is made, all data lives in the browser's localStorage.
+
+```
+npm run dev-preview     # vite dev server in preview mode
+npm run build-preview   # static preview build
+```
+
+- Build id = git short hash (`-dirty` with uncommitted changes); it prefixes every localStorage key
+  (`PrefixedLocalStorage`), so a new build starts with fresh demo data and never reads an older build's data.
+- Demo login: `admin@email.com` / `A!good_1_password_is_good` (admin, also the login page default) or `demo@togger.preview` / `demo` (`PreviewDemo`).
+- Every frontend backend service has a `*FeServicePreview` twin (same trait, full in-memory logic) in the service's
+  package; `TgSplitRender` picks the twin when `previewConfig.enabled`, and the real `*Impl` (the only code touching
+  `ProtectedBackendClient`/`UnprotectedBackendClient`/`fetch`) otherwise.
+- `PreviewModule` (`f-core/.../preview`) owns `PreviewDb` (typed JSON collections, one localStorage key each), the
+  per-domain `*PreviewData` holders and `*PreviewSeed` seeders (demo data computed from `TgClock`). A new domain adds a
+  data holder, a seeder (registered in `PreviewModule.seeders`, ids from `PreviewSeedIds`) and its twin service.
+- Export/import actions answer "Export/import is not available in frontend preview mode"; their pending checks report
+  nothing pending. Settings menu > "Reset preview data" re-seeds everything.
+
 ## Rules for using sbt
 
 - The user always has a manually started `sbt ~frontendMain/fastLinkJS` process running. Do not start another sbt
