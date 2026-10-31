@@ -1,12 +1,13 @@
 name: PR Preview Deploy
 
-# Publishes the build of pr-preview-build.yml to Cloudflare Pages, one URL per pull request, and links it in a comment.
+# Publishes the preview that the job "Frontend preview" of pr-checks.yml built to Cloudflare Pages, one URL per pull
+# request, and links it in a comment.
 # Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID and a Pages project named togger-preview.
 # It runs on the default branch and only uploads static files; it never runs code of the pull request.
 
 on:
   workflow_run:
-    workflows: ["PR Preview Build"]
+    workflows: ["PR Checks"]
     types: [completed]
 
 permissions:
@@ -15,10 +16,31 @@ permissions:
   pull-requests: write
 
 jobs:
-  deploy-preview:
+  # most pull requests have no preview label and so no preview build; this keeps them out of the environment below
+  find-build:
     if: >
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      found: ${{ steps.artifact.outputs.found }}
+    steps:
+      - name: Look for the preview build
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          count=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "pr-preview-build" and (.expired | not))] | length')
+          echo "preview builds in the run: $count"
+          echo "found=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  deploy-preview:
+    needs: find-build
+    if: needs.find-build.outputs.found == 'true'
     # a newer build of the same branch supersedes this one
     concurrency:
       group: pr-preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}

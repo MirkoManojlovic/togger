@@ -5,6 +5,12 @@ name: PR Checks
 # has no explicit root project, so sbt aggregates all of them at the root. The job "PR Checks" sums the build up; it is
 # the status check the ruleset of develop requires.
 #
+# A pull request with the label "👀 preview" also gets a frontend preview (no backend, data in localStorage). Its job
+# starts after the build and restores the compiled output the build saved, so it only links and bundles the frontend;
+# pr-preview-deploy.yml publishes the result. The preview does not count for "PR Checks". Adding a label runs the whole
+# workflow again (so the preview starts when its label is added); a skipped build would hide a failed one of the same
+# commit behind a green "PR Checks".
+#
 # The sbt dependencies and the compiled output are cached. A cache is only readable from its own branch and from the
 # default branch, so develop runs the build too (on every merge) to keep a warm cache for the pull requests.
 
@@ -16,6 +22,7 @@ on:
       - "claude_files/**"
   pull_request:
     branches: [develop]
+    types: [opened, synchronize, reopened, labeled]
     # only documentation changed, nothing to compile or test
     paths-ignore:
       - "**/*.md"
@@ -114,6 +121,64 @@ jobs:
           sbt --client test || status=$?
           sbt --client shutdown || true
           exit $status
+
+  preview:
+    name: Frontend preview
+    needs: [build]
+    if: contains(github.event.pull_request.labels.*.name, '👀 preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+
+      - uses: sbt/setup-sbt@v1
+
+      # the output the build job saved for these exact sources; the key must be the same as there
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            target
+            project/target
+            project/project/target
+            **/target
+            !target/test-data-export-*
+            !src-tauri/target
+            !liquibase/target
+          key: sbt-output-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+          restore-keys: |
+            sbt-output-${{ runner.os }}-
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # everything is compiled already, this only runs the optimiser
+      - name: Link the ScalaJS frontend
+        run: sbt frontendMain/fullLinkJS
+
+      - name: Build the preview
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export PREVIEW_BUILD_ID="$(echo "$HEAD_SHA" | cut -c1-8)"
+          npm run build-preview
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr-preview-build
+          path: dist
+          retention-days: 1
 
   # the ruleset of develop requires one status check named "PR Checks"; it is green when the build above is
   pr-checks:
