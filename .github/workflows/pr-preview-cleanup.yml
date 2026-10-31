@@ -38,17 +38,24 @@ jobs:
             echo "${response%$'\n'*}"
           }
 
-          # a deployment that is still the alias of its branch needs force=true to be deleted; the list is newest
-          # first, so the deployments of a pull request that was just closed are on the first page
+          # every page of the preview deployments, collecting the ids that were deployed for the branch of the pull request
+          IDS=""
+          PAGE=1
           while true; do
-            IDS=$(cloudflare "${API}?env=preview" \
-              | jq -r --arg branch "$BRANCH" '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')
-            [ -n "$IDS" ] || break
-            for ID in $IDS; do
-              echo "Deleting deployment $ID of $BRANCH"
-              cloudflare -X DELETE "${API}/${ID}?force=true" > /dev/null
-            done
+            RESPONSE=$(cloudflare "${API}?env=preview&page=${PAGE}")
+            IDS="$IDS $(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" \
+              '.result[] | select(.deployment_trigger.metadata.branch == $branch) | .id')"
+            TOTAL_PAGES=$(echo "$RESPONSE" | jq -r '.result_info.total_pages // 1')
+            [ "$PAGE" -lt "$TOTAL_PAGES" ] || break
+            PAGE=$((PAGE + 1))
           done
+
+          # a deployment that is still the alias of its branch needs force=true to be deleted
+          for ID in $IDS; do
+            echo "Deleting deployment $ID of $BRANCH"
+            cloudflare -X DELETE "${API}/${ID}?force=true" > /dev/null
+          done
+          echo "Deleted $(echo $IDS | wc -w) deployments of $BRANCH"
 
       - name: Find the preview comment
         uses: peter-evans/find-comment@v3
