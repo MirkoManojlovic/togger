@@ -11,8 +11,9 @@ name: PR Checks
 # workflow again (so the preview starts when its label is added); a skipped build would hide a failed one of the same
 # commit behind a green "PR Checks".
 #
-# The sbt dependencies and the compiled output are cached. A cache is only readable from its own branch and from the
-# default branch, so develop runs the build too (on every merge) to keep a warm cache for the pull requests.
+# The sbt dependencies and the sbt 2 task cache are cached (see the cache step). A cache is only readable from its own
+# branch and from the default branch, so develop runs the build too (on every merge) to keep a warm cache for the pull
+# requests.
 
 on:
   push:
@@ -30,6 +31,10 @@ on:
 
 permissions:
   contents: read
+
+env:
+  # see the comment at ThisBuild / version in build.sbt
+  TOGGER_FIXED_VERSION: ci
 
 # a newer push to the pull request supersedes the running checks
 concurrency:
@@ -69,12 +74,17 @@ jobs:
           cache: sbt # the dependencies, keyed by the build files
 
       - uses: sbt/setup-sbt@v1
+        with:
+          disk-cache: false # the cache step below keeps it
 
-      # the compiled output; sbt recompiles only what changed since the cache was saved. A hit on the exact key (same
-      # sources) saves nothing new, a miss restores the newest cache of the branch or develop and saves the new state
+      # the sbt 2 disk cache (~/.cache/sbt, where the results of the tasks are stored by the hash of their inputs) and the
+      # target directories (links into it): a project whose inputs did not change is not compiled or linked again. A cache
+      # entry cannot be updated, so the key has the hash of the sources: a hit means nothing changed, a miss restores the
+      # newest cache of the branch or develop and saves what the build adds to it
       - uses: actions/cache@v4
         with:
           path: |
+            ~/.cache/sbt
             target
             project/target
             project/project/target
@@ -82,9 +92,9 @@ jobs:
             !target/test-data-export-*
             !src-tauri/target
             !liquibase/target
-          key: sbt-output-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+          key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
           restore-keys: |
-            sbt-output-${{ runner.os }}-
+            sbt-cache-${{ runner.os }}-
 
       # the frontend specs run on node
       - uses: actions/setup-node@v4
@@ -140,11 +150,14 @@ jobs:
           cache: sbt
 
       - uses: sbt/setup-sbt@v1
+        with:
+          disk-cache: false # the cache step below keeps it
 
-      # the output the build job saved for these exact sources; the key must be the same as there
+      # what the build job saved for these exact sources; the key must be the same as there
       - uses: actions/cache/restore@v4
         with:
           path: |
+            ~/.cache/sbt
             target
             project/target
             project/project/target
@@ -152,9 +165,9 @@ jobs:
             !target/test-data-export-*
             !src-tauri/target
             !liquibase/target
-          key: sbt-output-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+          key: sbt-cache-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
           restore-keys: |
-            sbt-output-${{ runner.os }}-
+            sbt-cache-${{ runner.os }}-
 
       - uses: actions/setup-node@v4
         with:

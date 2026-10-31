@@ -7,6 +7,10 @@ import sbt.Keys.libraryDependencies
 ThisBuild / scalaVersion := "2.13.18"
 ThisBuild / organization := "com.togger"
 ThisBuild / organizationName := "Togger"
+// The version (from git, see sbt-dynver) is part of the manifest of every jar, and sbt 2 passes jars between projects,
+// so with a version that changes per commit the cache key of every project that depends on another one changes too and
+// nothing is reused. The PR checks pin the version to keep their sbt cache useful.
+ThisBuild / version ~= (gitVersion => sys.env.getOrElse("TOGGER_FIXED_VERSION", gitVersion))
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
 Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ ScalacOptions.fatalWarningOptions
