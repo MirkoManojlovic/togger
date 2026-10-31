@@ -36,11 +36,11 @@ jobs:
     timeout-minutes: 30
     environment: preview-deployments
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -55,7 +55,7 @@ jobs:
       # compiled. This build only reads, the PR checks keep the cache.
       - uses: ./.github/actions/sbt-cache
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -72,7 +72,7 @@ jobs:
 
       # develop is the branch alias, so every deployment replaces the previous one at the same URL
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
