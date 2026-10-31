@@ -11,23 +11,16 @@ import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
-class TimeboxFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  private val timeboxEndpoints = new TimeboxEndpoints(securedEndpoint)
+trait TimeboxFeService {
+  def createTimebox(dto: CreateTimeboxReq): TgRespIO[FindTimeboxResp]
 
-  def createTimebox(dto: CreateTimeboxReq): TgRespIO[FindTimeboxResp] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.saveEndpoint)(dto)
+  def saveNewVersion(dto: SaveTimeboxVersionReq): TgRespIO[FindTimeboxResp]
 
-  def saveNewVersion(dto: SaveTimeboxVersionReq): TgRespIO[FindTimeboxResp] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.saveNewVersionEndpoint)(dto)
+  def findById(id: UUID): TgRespIO[FindTimeboxResp]
 
-  def findById(id: UUID): TgRespIO[FindTimeboxResp] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByIdEndpoint)(id)
+  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTimeboxResp]]
 
-  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTimeboxResp]] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByProjectIdEndpoint)((projectId, page))
-
-  def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TimeboxVersionDto]] =
-    protectedBackendClient.protectedHttpCall(timeboxEndpoints.listVersionsEndpoint)((id, page))
+  def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TimeboxVersionDto]]
 
   /** The whole history of the timebox, newest version first, for the history screen; see [[PaginatedLoader]] for the
     * bound.
@@ -35,6 +28,28 @@ class TimeboxFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient:
   def listAllVersions(id: UUID): TgRespIO[Seq[TimeboxVersionDto]] =
     PaginatedLoader.loadAll(listVersions(id, _))
 
-  def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody] =
+  def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody]
+}
+
+class TimeboxFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends TimeboxFeService {
+  private val timeboxEndpoints = new TimeboxEndpoints(securedEndpoint)
+
+  override def createTimebox(dto: CreateTimeboxReq): TgRespIO[FindTimeboxResp] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.saveEndpoint)(dto)
+
+  override def saveNewVersion(dto: SaveTimeboxVersionReq): TgRespIO[FindTimeboxResp] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.saveNewVersionEndpoint)(dto)
+
+  override def findById(id: UUID): TgRespIO[FindTimeboxResp] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByIdEndpoint)(id)
+
+  override def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTimeboxResp]] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.findByProjectIdEndpoint)((projectId, page))
+
+  override def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TimeboxVersionDto]] =
+    protectedBackendClient.protectedHttpCall(timeboxEndpoints.listVersionsEndpoint)((id, page))
+
+  override def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(timeboxEndpoints.deleteByIdEndpoint)(id)
 }

@@ -111,26 +111,3 @@ class CreateProjectLabelComponent(
   )
 
 }
-
-class ProjectLabelFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val projectLabelEndpoints = new ProjectLabelEndpoints(securedEndpoint)
-
-  def createProjectLabel(dto: CreateProjectLabelReq): TgRespIO[CreateProjectLabelResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.saveEndpoint)(dto)
-
-  def updateProjectLabel(dto: UpdateProjectLabelResp): TgRespIO[FindProjectLabelResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.updateEndpoint)(dto)
-
-  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindProjectLabelResp]] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.findAllEndpoint)(page)
-
-  /** Every project label, for the pickers offering all of them; see [[PaginatedLoader]] for the bound. */
-  def findEvery(): TgRespIO[Seq[FindProjectLabelResp]] =
-    PaginatedLoader.loadAll(findAll)
-
-  def findProjectLabelById(id: UUID): TgRespIO[FindProjectLabelResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.findByIdEndpoint)(id)
-
-  def deleteProjectLabelById(id: UUID): TgRespIO[TgEmptyBody] =
-    protectedBackendClient.protectedHttpCall(projectLabelEndpoints.deleteByIdEndpoint)(id)
-}

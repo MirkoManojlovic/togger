@@ -2,6 +2,7 @@ package com.togger.ui.navbar
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.auth.AuthAccountFe
+import com.togger.preview.PreviewConfig
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.ui.auth.LoginRepo
@@ -46,7 +47,9 @@ class NavbarComponent(
   collapsed: Signal[Boolean],
   onExport: UUID => Unit,
   onImport: UUID => Unit,
-  syncPendingStore: SyncPendingStore
+  syncPendingStore: SyncPendingStore,
+  previewConfig: PreviewConfig = PreviewConfig.disabled,
+  onResetPreview: () => Unit = () => ()
 ) {
 
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
@@ -115,9 +118,25 @@ class NavbarComponent(
                 onClick.mapToUnit --> closeSettingsMenu
               )
             )
-        }
+        } ++ resetPreviewItem
       )
     )
+
+  private def resetPreviewItem: Seq[HtmlElement] =
+    if (previewConfig.enabled)
+      Seq(
+        li(
+          a(
+            cls(NavbarComponent.dropdownItemClass, "cursor-pointer"),
+            "Reset preview data",
+            onClick.mapToUnit --> { _ =>
+              settingsMenuOpen.set(false)
+              onResetPreview()
+            }
+          )
+        )
+      )
+    else Seq.empty
 
   private val passwordMenuLink =
     MenuLink(
@@ -210,10 +229,11 @@ class NavbarComponent(
                 a(
                   cls("flex items-center ms-2"),
                   TgSvgIcons.tgIconLogo,
-                  span(
-                    cls("self-center ms-3 text-lg text-heading font-semibold whitespace-nowrap"),
+                  div(
+                    cls("flex flex-col"),
                     cls <-- collapsed.map(isCollapsed => if (isCollapsed) "sm:hidden" else ""),
-                    "Togger"
+                    span(cls("self-center ms-3 text-lg text-heading font-semibold whitespace-nowrap"), "Togger"),
+                    previewBuildInfo
                   ),
                   router.navigateTo(HomePage)
                 )
@@ -237,6 +257,16 @@ class NavbarComponent(
         )
       )
     )
+
+  /** Only in frontend preview mode: tells which build the locally stored preview data belongs to. */
+  private lazy val previewBuildInfo: Modifier[HtmlElement] =
+    if (previewConfig.enabled)
+      span(
+        cls("ms-3 text-xs text-fg-brand whitespace-nowrap"),
+        title("Frontend preview mode: data is stored in this browser only"),
+        s"Preview mode ${previewConfig.buildId}"
+      )
+    else emptyNode
 
   /** Relocated from the sidebar unchanged, including its commented out drawer attributes: below `sm` the sidebar is
     * translated off screen and nothing toggles it back, exactly as before.

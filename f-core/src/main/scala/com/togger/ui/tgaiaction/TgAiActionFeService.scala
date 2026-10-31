@@ -12,40 +12,63 @@ import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
-class TgAiActionFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val tgAiActionEndpoints = new TgAiActionEndpoints(securedEndpoint)
-  private val tgAiModelEndpoints = new TgAiModelEndpoints(securedEndpoint)
+trait TgAiActionFeService {
+  def create(dto: CreateTgAiActionReq): TgRespIO[FindTgAiActionResp]
 
-  def create(dto: CreateTgAiActionReq): TgRespIO[FindTgAiActionResp] =
-    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.saveEndpoint)(dto)
+  def update(dto: UpdateTgAiActionReq): TgRespIO[FindTgAiActionResp]
 
-  def update(dto: UpdateTgAiActionReq): TgRespIO[FindTgAiActionResp] =
-    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.updateEndpoint)(dto)
-
-  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgAiActionResp]] =
-    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.findAllEndpoint)(page)
+  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgAiActionResp]]
 
   /** Every action, for the pickers; see [[PaginatedLoader]] for the bound. */
   def findEvery: TgRespIO[Seq[FindTgAiActionResp]] = PaginatedLoader.loadAll(findAll)
 
-  def findById(id: UUID): TgRespIO[FindTgAiActionResp] =
+  def findById(id: UUID): TgRespIO[FindTgAiActionResp]
+
+  def deleteById(id: UUID): TgRespIO[TgEmptyBody]
+
+  def listEndpoints: TgRespIO[List[TgAiEndpointDto]]
+
+  def listModels: TgRespIO[List[TgAiModelDto]]
+
+  def findDefaults(projectId: UUID): TgRespIO[List[FindTgAiActionDefaultResp]]
+
+  def setDefault(dto: SetTgAiActionDefaultReq): TgRespIO[FindTgAiActionDefaultResp]
+
+  def clearDefault(projectId: UUID, endpointId: Int): TgRespIO[TgEmptyBody]
+}
+
+class TgAiActionFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends TgAiActionFeService {
+  val tgAiActionEndpoints = new TgAiActionEndpoints(securedEndpoint)
+  private val tgAiModelEndpoints = new TgAiModelEndpoints(securedEndpoint)
+
+  override def create(dto: CreateTgAiActionReq): TgRespIO[FindTgAiActionResp] =
+    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.saveEndpoint)(dto)
+
+  override def update(dto: UpdateTgAiActionReq): TgRespIO[FindTgAiActionResp] =
+    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.updateEndpoint)(dto)
+
+  override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgAiActionResp]] =
+    protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.findAllEndpoint)(page)
+
+  override def findById(id: UUID): TgRespIO[FindTgAiActionResp] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.findByIdEndpoint)(id)
 
-  def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
+  override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.deleteByIdEndpoint)(id)
 
-  def listEndpoints: TgRespIO[List[TgAiEndpointDto]] =
+  override def listEndpoints: TgRespIO[List[TgAiEndpointDto]] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.listEndpointsEndpoint)(())
 
-  def listModels: TgRespIO[List[TgAiModelDto]] =
+  override def listModels: TgRespIO[List[TgAiModelDto]] =
     protectedBackendClient.protectedHttpCall(tgAiModelEndpoints.listEndpoint)(())
 
-  def findDefaults(projectId: UUID): TgRespIO[List[FindTgAiActionDefaultResp]] =
+  override def findDefaults(projectId: UUID): TgRespIO[List[FindTgAiActionDefaultResp]] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.findDefaultsEndpoint)(projectId)
 
-  def setDefault(dto: SetTgAiActionDefaultReq): TgRespIO[FindTgAiActionDefaultResp] =
+  override def setDefault(dto: SetTgAiActionDefaultReq): TgRespIO[FindTgAiActionDefaultResp] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.setDefaultEndpoint)(dto)
 
-  def clearDefault(projectId: UUID, endpointId: Int): TgRespIO[TgEmptyBody] =
+  override def clearDefault(projectId: UUID, endpointId: Int): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(tgAiActionEndpoints.clearDefaultEndpoint)((projectId, endpointId))
 }

@@ -20,15 +20,19 @@ import io.scalaland.chimney.dsl._
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 
-class ChangePasswordService(
+trait ChangePasswordService {
+  def change(dto: ChangePasswordDto): TgRespEmptyBodyIO
+}
+
+class ChangePasswordServiceImpl(
   baseEndpoint: TgBaseEndpoint,
   securedEndpoint: SecuredEndpoint,
   protectedBackendClient: ProtectedBackendClient
-) {
+) extends ChangePasswordService {
 
   val changePasswordEndpoint = new AuthEndpoints(baseEndpoint, securedEndpoint)
 
-  def change(dto: ChangePasswordDto): TgRespEmptyBodyIO =
+  override def change(dto: ChangePasswordDto): TgRespEmptyBodyIO =
     protectedBackendClient.protectedHttpCall(changePasswordEndpoint.changePassword)(dto)
 
 }

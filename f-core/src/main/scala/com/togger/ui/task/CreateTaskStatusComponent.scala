@@ -100,28 +100,3 @@ class CreateTaskStatusComponent(
   )
 
 }
-
-class TaskStatusFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val taskStatusEndpoints = new TaskStatusEndpoints(securedEndpoint)
-
-  def createTaskStatus(dto: CreateTaskStatusReq): TgRespIO[CreateTaskStatusResp] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.saveEndpoint)(dto)
-
-  def updateTaskStatus(dto: UpdateTaskStatusResp): TgRespIO[FindTaskStatusResp] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.updateEndpoint)(dto)
-
-  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTaskStatusResp]] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByProjectIdEndpoint)((projectId, page))
-
-  /** Every status of the project, for the pickers and filters offering all of them; see [[PaginatedLoader]] for the
-    * bound.
-    */
-  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskStatusResp]] =
-    PaginatedLoader.loadAll(findByProjectId(projectId, _))
-
-  def findTaskStatusById(id: UUID): TgRespIO[FindTaskStatusResp] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.findByIdEndpoint)(id)
-
-  def deleteTaskStatusById(id: UUID): TgRespIO[TgEmptyBody] =
-    protectedBackendClient.protectedHttpCall(taskStatusEndpoints.deleteByIdEndpoint)(id)
-}

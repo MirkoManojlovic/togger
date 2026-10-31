@@ -8,37 +8,58 @@ import com.togger.dump.DataExportEndpoints
 
 import java.util.UUID
 
-class DataExportFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
+trait DataExportFeService {
+  def exportData(projectId: UUID): TgRespIO[DataExportResp]
+
+  def checkStatus(projectId: UUID): TgRespIO[DataExportStatusResp]
+
+  def exportByConfig(exportConfigId: UUID): TgRespIO[DataExportResp]
+
+  def checkStatusByConfig(exportConfigId: UUID): TgRespIO[DataExportStatusResp]
+
+  def importData(projectId: UUID, importPath: String): TgRespIO[DataImportResp]
+
+  def importNewProject(organizationId: UUID, importPath: String): TgRespIO[DataImportResp]
+
+  def checkImportStatus(projectId: UUID, importPath: String): TgRespIO[DataExportStatusResp]
+
+  def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp]
+
+  def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp]
+}
+
+class DataExportFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends DataExportFeService {
   val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
 
-  def exportData(projectId: UUID): TgRespIO[DataExportResp] =
+  override def exportData(projectId: UUID): TgRespIO[DataExportResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.exportEndpoint)(projectId)
 
-  def checkStatus(projectId: UUID): TgRespIO[DataExportStatusResp] =
+  override def checkStatus(projectId: UUID): TgRespIO[DataExportStatusResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkStatusEndpoint)(projectId)
 
-  def exportByConfig(exportConfigId: UUID): TgRespIO[DataExportResp] =
+  override def exportByConfig(exportConfigId: UUID): TgRespIO[DataExportResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.exportByConfigEndpoint)(exportConfigId)
 
-  def checkStatusByConfig(exportConfigId: UUID): TgRespIO[DataExportStatusResp] =
+  override def checkStatusByConfig(exportConfigId: UUID): TgRespIO[DataExportStatusResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkStatusByConfigEndpoint)(exportConfigId)
 
-  def importData(projectId: UUID, importPath: String): TgRespIO[DataImportResp] =
+  override def importData(projectId: UUID, importPath: String): TgRespIO[DataImportResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.importEndpoint)((projectId, DataImportReq(importPath)))
 
-  def importNewProject(organizationId: UUID, importPath: String): TgRespIO[DataImportResp] =
+  override def importNewProject(organizationId: UUID, importPath: String): TgRespIO[DataImportResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.importNewProjectEndpoint)(
       (organizationId, DataImportReq(importPath))
     )
 
-  def checkImportStatus(projectId: UUID, importPath: String): TgRespIO[DataExportStatusResp] =
+  override def checkImportStatus(projectId: UUID, importPath: String): TgRespIO[DataExportStatusResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.checkImportStatusEndpoint)(
       (projectId, DataImportReq(importPath))
     )
 
-  def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
+  override def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.exportPendingEndpoint)(projectId)
 
-  def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
+  override def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.importPendingEndpoint)(projectId)
 }

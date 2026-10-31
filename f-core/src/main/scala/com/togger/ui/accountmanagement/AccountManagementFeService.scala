@@ -10,21 +10,34 @@ import com.togger.dto.{AccountManagementDto, AccountTypeDto, UpdateAccountReq}
 
 import java.util.UUID
 
-class AccountManagementFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
+trait AccountManagementFeService {
+  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[AccountManagementDto]]
+
+  def findById(id: UUID): TgRespIO[AccountManagementDto]
+
+  def findAccountTypes: TgRespIO[List[AccountTypeDto]]
+
+  def update(req: UpdateAccountReq): TgRespIO[AccountManagementDto]
+
+  def deleteById(id: UUID): TgRespIO[TgEmptyBody]
+}
+
+class AccountManagementFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends AccountManagementFeService {
   private val accountEndpoints = new AccountEndpoints(securedEndpoint)
 
-  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[AccountManagementDto]] =
+  override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[AccountManagementDto]] =
     protectedBackendClient.protectedHttpCall(accountEndpoints.findAllEndpoint)(page)
 
-  def findById(id: UUID): TgRespIO[AccountManagementDto] =
+  override def findById(id: UUID): TgRespIO[AccountManagementDto] =
     protectedBackendClient.protectedHttpCall(accountEndpoints.findByIdEndpoint)(id)
 
-  def findAccountTypes: TgRespIO[List[AccountTypeDto]] =
+  override def findAccountTypes: TgRespIO[List[AccountTypeDto]] =
     protectedBackendClient.protectedHttpCall(accountEndpoints.findAccountTypesEndpoint)(())
 
-  def update(req: UpdateAccountReq): TgRespIO[AccountManagementDto] =
+  override def update(req: UpdateAccountReq): TgRespIO[AccountManagementDto] =
     protectedBackendClient.protectedHttpCall(accountEndpoints.updateEndpoint)(req)
 
-  def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
+  override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(accountEndpoints.deleteByIdEndpoint)(id)
 }

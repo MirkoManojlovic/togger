@@ -69,28 +69,3 @@ class CreateProjectLabelCategoryComponent(
   )
 
 }
-
-class ProjectLabelCategoryFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val projectLabelCategoryEndpoints = new ProjectLabelCategoryEndpoints(securedEndpoint)
-
-  def createProjectLabelCategory(dto: CreateProjectLabelCategoryReq): TgRespIO[CreateProjectLabelCategoryResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelCategoryEndpoints.saveEndpoint)(dto)
-
-  def updateProjectLabelCategory(dto: UpdateProjectLabelCategoryResp): TgRespIO[FindProjectLabelCategoryResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelCategoryEndpoints.updateEndpoint)(dto)
-
-  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindProjectLabelCategoryResp]] =
-    protectedBackendClient.protectedHttpCall(projectLabelCategoryEndpoints.findAllEndpoint)(page)
-
-  /** Every project label category, for the pickers and name lookups needing all of them; see [[PaginatedLoader]] for
-    * the bound.
-    */
-  def findEvery(): TgRespIO[Seq[FindProjectLabelCategoryResp]] =
-    PaginatedLoader.loadAll(findAll)
-
-  def findProjectLabelCategoryById(id: UUID): TgRespIO[FindProjectLabelCategoryResp] =
-    protectedBackendClient.protectedHttpCall(projectLabelCategoryEndpoints.findByIdEndpoint)(id)
-
-  def deleteProjectLabelCategoryById(id: UUID): TgRespIO[TgEmptyBody] =
-    protectedBackendClient.protectedHttpCall(projectLabelCategoryEndpoints.deleteByIdEndpoint)(id)
-}

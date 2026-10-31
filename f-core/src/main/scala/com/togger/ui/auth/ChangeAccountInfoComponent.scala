@@ -19,16 +19,20 @@ import io.scalaland.chimney.dsl._
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 
-class ChangeAccountInfoService(
+trait ChangeAccountInfoService {
+  def change(dto: AccountInfoDto): TgRespIO[AccountInfoDto]
+}
+
+class ChangeAccountInfoServiceImpl(
   baseEndpoint: TgBaseEndpoint,
   securedEndpoint: SecuredEndpoint,
   protectedBackendClient: ProtectedBackendClient,
   loginRepo: LoginRepo
-) {
+) extends ChangeAccountInfoService {
 
   private val authEndpoints = new AuthEndpoints(baseEndpoint, securedEndpoint)
 
-  def change(dto: AccountInfoDto): TgRespIO[AccountInfoDto] =
+  override def change(dto: AccountInfoDto): TgRespIO[AccountInfoDto] =
     protectedBackendClient
       .protectedHttpCall(authEndpoints.updateAccountInfo)(dto)
       .map { result =>

@@ -10,12 +10,17 @@ import com.togger.dto.login.LoginDto
 import com.togger.login.AuthEndpoints
 import sttp.client3.UriContext
 
-class LoginService(baseEndpoint: TgBaseEndpoint, securedEndpoint: SecuredEndpoint, loginRepo: LoginRepo) {
+trait LoginService {
+  def login(dto: LoginDto): IO[Either[TgJsonFailure, Unit]]
+}
+
+class LoginServiceImpl(baseEndpoint: TgBaseEndpoint, securedEndpoint: SecuredEndpoint, loginRepo: LoginRepo)
+    extends LoginService {
   val authEndpoints = new AuthEndpoints(baseEndpoint, securedEndpoint)
 
   val unprotectedBackendClient = new UnprotectedBackendClient(baseUri = uri"http://localhost:8081/")
 
-  def login(dto: LoginDto): IO[Either[TgJsonFailure, Unit]] =
+  override def login(dto: LoginDto): IO[Either[TgJsonFailure, Unit]] =
     EitherT(unprotectedBackendClient.httpCall(authEndpoints.loginEndpoint)(dto))
       .map(success => loginRepo.save(success.body.get))
       .value

@@ -21,14 +21,23 @@ object AiSummaryEvent {
   case class Failed(message: String) extends AiSummaryEvent
 }
 
+trait MilestoneAiSummaryStreamClient {
+
+  /** Calls `onEvent` for every piece of the summary, then exactly once with [[AiSummaryEvent.Done]] or
+    * [[AiSummaryEvent.Failed]].
+    */
+  def stream(dto: SummariseMilestoneWithAiReq)(onEvent: AiSummaryEvent => Unit): IO[Unit]
+}
+
 /** Reads the streamed AI summary with fetch: EventSource cannot send the bearer token, nor a POST body. */
-class MilestoneAiSummaryStreamClient(loginRepo: LoginRepo, baseUrl: String) extends TgLogging {
+class MilestoneAiSummaryStreamClientImpl(loginRepo: LoginRepo, baseUrl: String)
+    extends MilestoneAiSummaryStreamClient
+    with TgLogging {
   import AiSummaryEvent._
 
   private val url = baseUrl.stripSuffix("/") + "/" + PathSegments.mkString("/")
 
-  /** Calls `onEvent` for every piece of the summary, then exactly once with [[Done]] or [[Failed]]. */
-  def stream(dto: SummariseMilestoneWithAiReq)(onEvent: AiSummaryEvent => Unit): IO[Unit] =
+  override def stream(dto: SummariseMilestoneWithAiReq)(onEvent: AiSummaryEvent => Unit): IO[Unit] =
     loginRepo.account match {
       case None => IO(onEvent(Failed("Please log in again")))
       case Some(account) =>

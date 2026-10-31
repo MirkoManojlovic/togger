@@ -67,27 +67,3 @@ class CreateMilestoneDateComponent(milestoneStartDate: Signal[String], tgClock: 
 
   override def toString = s"CreateMilestoneDateComponent(${formState.now()})"
 }
-
-class MilestoneDateFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val milestoneDateEndpoints = new MilestoneDateEndpoints(securedEndpoint)
-
-  def createMilestoneDate(dto: CreateMilestoneDateReq): TgRespIO[FindMilestoneDateResp] =
-    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.saveEndpoint)(dto)
-
-  def findByMilestoneId(milestoneId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindMilestoneDateResp]] =
-    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.findByMilestoneIdEndpoint)((milestoneId, page))
-
-  /** Every date of the milestone, for the form that edits all of them; see [[PaginatedLoader]] for the bound. */
-  def findAllByMilestoneId(milestoneId: UUID): TgRespIO[Seq[FindMilestoneDateResp]] =
-    PaginatedLoader.loadAll(findByMilestoneId(milestoneId, _))
-
-  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindMilestoneDateResp]] =
-    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.findByProjectIdEndpoint)((projectId, page))
-
-  /** Every date of the project's milestones, for the history chart; see [[PaginatedLoader]] for the bound. */
-  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneDateResp]] =
-    PaginatedLoader.loadAll(findByProjectId(projectId, _))
-
-  def updateMilestoneDate(dto: UpdateMilestoneDateReq): TgRespIO[FindMilestoneDateResp] =
-    protectedBackendClient.protectedHttpCall(milestoneDateEndpoints.updateEndpoint)(dto)
-}

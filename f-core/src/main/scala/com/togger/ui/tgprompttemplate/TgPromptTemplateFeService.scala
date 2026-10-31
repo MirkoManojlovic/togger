@@ -11,34 +11,54 @@ import com.togger.ui.components.pagination.PaginatedLoader
 
 import java.util.UUID
 
-class TgPromptTemplateFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val tgPromptTemplateEndpoints = new TgPromptTemplateEndpoints(securedEndpoint)
+trait TgPromptTemplateFeService {
+  def createTgPromptTemplate(dto: CreateTgPromptTemplateReq): TgRespIO[FindTgPromptTemplateResp]
 
-  def createTgPromptTemplate(dto: CreateTgPromptTemplateReq): TgRespIO[FindTgPromptTemplateResp] =
-    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.saveEndpoint)(dto)
+  def saveNewVersion(dto: NewTgPromptTemplateVersionReq): TgRespIO[FindTgPromptTemplateResp]
 
-  def saveNewVersion(dto: NewTgPromptTemplateVersionReq): TgRespIO[FindTgPromptTemplateResp] =
-    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.newVersionEndpoint)(dto)
-
-  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgPromptTemplateResp]] =
-    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findAllEndpoint)(page)
+  def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgPromptTemplateResp]]
 
   /** Every prompt template, for the pickers; see [[PaginatedLoader]] for the bound. */
   def findAllTemplates: TgRespIO[Seq[FindTgPromptTemplateResp]] = PaginatedLoader.loadAll(findAll)
 
-  def findTgPromptTemplateById(id: UUID): TgRespIO[FindTgPromptTemplateResp] =
-    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findByIdEndpoint)(id)
+  def findTgPromptTemplateById(id: UUID): TgRespIO[FindTgPromptTemplateResp]
 
-  def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TgPromptTemplateVersionDto]] =
-    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.listVersionsEndpoint)((id, page))
+  def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[TgPromptTemplateVersionDto]]
 
   /** Every version of the prompt, for the history; see [[PaginatedLoader]] for the bound. */
   def listAllVersions(id: UUID): TgRespIO[Seq[TgPromptTemplateVersionDto]] =
     PaginatedLoader.loadAll(listVersions(id, _))
 
-  def deleteVersion(version: UUID): TgRespIO[TgEmptyBody] =
+  def deleteVersion(version: UUID): TgRespIO[TgEmptyBody]
+
+  def deleteTgPromptTemplateById(id: UUID): TgRespIO[TgEmptyBody]
+}
+
+class TgPromptTemplateFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends TgPromptTemplateFeService {
+  val tgPromptTemplateEndpoints = new TgPromptTemplateEndpoints(securedEndpoint)
+
+  override def createTgPromptTemplate(dto: CreateTgPromptTemplateReq): TgRespIO[FindTgPromptTemplateResp] =
+    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.saveEndpoint)(dto)
+
+  override def saveNewVersion(dto: NewTgPromptTemplateVersionReq): TgRespIO[FindTgPromptTemplateResp] =
+    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.newVersionEndpoint)(dto)
+
+  override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindTgPromptTemplateResp]] =
+    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findAllEndpoint)(page)
+
+  override def findTgPromptTemplateById(id: UUID): TgRespIO[FindTgPromptTemplateResp] =
+    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.findByIdEndpoint)(id)
+
+  override def listVersions(
+    id: UUID,
+    page: PageRequest
+  ): TgRespIO[PaginatedResponse[TgPromptTemplateVersionDto]] =
+    protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.listVersionsEndpoint)((id, page))
+
+  override def deleteVersion(version: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.deleteVersionEndpoint)(version)
 
-  def deleteTgPromptTemplateById(id: UUID): TgRespIO[TgEmptyBody] =
+  override def deleteTgPromptTemplateById(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(tgPromptTemplateEndpoints.deleteByIdEndpoint)(id)
 }

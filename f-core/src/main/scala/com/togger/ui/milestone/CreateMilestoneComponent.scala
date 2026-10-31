@@ -182,29 +182,3 @@ class CreateMilestoneComponent(
   )
 
 }
-
-class MilestoneFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val milestoneEndpoints = new MilestoneEndpoints(securedEndpoint)
-
-  def createMilestone(dto: CreateMilestoneReq): TgRespIO[FindMilestoneResp] =
-    protectedBackendClient.protectedHttpCall(milestoneEndpoints.saveEndpoint)(dto)
-
-  def findMilestoneById(id: UUID): TgRespIO[FindMilestoneResp] =
-    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByIdEndpoint)(id)
-
-  def updateMilestone(dto: UpdateMilestoneReq): TgRespIO[FindMilestoneResp] =
-    protectedBackendClient.protectedHttpCall(milestoneEndpoints.updateEndpoint)(dto)
-
-  def findByProjectId(
-    projectId: UUID,
-    filter: MilestoneFilter,
-    page: PageRequest
-  ): TgRespIO[PaginatedResponse[FindMilestoneResp]] =
-    protectedBackendClient.protectedHttpCall(milestoneEndpoints.findByProjectIdEndpoint)((projectId, filter, page))
-
-  /** Every milestone of the project, for the pickers, filters and charts offering all of them; see [[PaginatedLoader]]
-    * for the bound.
-    */
-  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindMilestoneResp]] =
-    PaginatedLoader.loadAll(findByProjectId(projectId, MilestoneFilter.empty, _))
-}

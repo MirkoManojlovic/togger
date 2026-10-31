@@ -100,28 +100,3 @@ class CreateTaskLabelComponent(
   )
 
 }
-
-class TaskLabelFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
-  val taskLabelEndpoints = new TaskLabelEndpoints(securedEndpoint)
-
-  def createTaskLabel(dto: CreateTaskLabelReq): TgRespIO[CreateTaskLabelResp] =
-    protectedBackendClient.protectedHttpCall(taskLabelEndpoints.saveEndpoint)(dto)
-
-  def updateTaskLabel(dto: UpdateTaskLabelResp): TgRespIO[FindTaskLabelResp] =
-    protectedBackendClient.protectedHttpCall(taskLabelEndpoints.updateEndpoint)(dto)
-
-  def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindTaskLabelResp]] =
-    protectedBackendClient.protectedHttpCall(taskLabelEndpoints.findByProjectIdEndpoint)((projectId, page))
-
-  /** Every label of the project, for the pickers and filters offering all of them; see [[PaginatedLoader]] for the
-    * bound.
-    */
-  def findAllByProjectId(projectId: UUID): TgRespIO[Seq[FindTaskLabelResp]] =
-    PaginatedLoader.loadAll(findByProjectId(projectId, _))
-
-  def findTaskLabelById(id: UUID): TgRespIO[FindTaskLabelResp] =
-    protectedBackendClient.protectedHttpCall(taskLabelEndpoints.findByIdEndpoint)(id)
-
-  def deleteTaskLabelById(id: UUID): TgRespIO[TgEmptyBody] =
-    protectedBackendClient.protectedHttpCall(taskLabelEndpoints.deleteByIdEndpoint)(id)
-}

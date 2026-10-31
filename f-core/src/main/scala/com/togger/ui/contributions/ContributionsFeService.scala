@@ -8,9 +8,14 @@ import com.togger.dto.{ContributionsDto, ContributionsFilter}
 
 import java.util.UUID
 
-class ContributionsFeService(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient) {
+trait ContributionsFeService {
+  def findByProjectId(projectId: UUID, filter: ContributionsFilter): TgRespIO[ContributionsDto]
+}
+
+class ContributionsFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
+    extends ContributionsFeService {
   private val contributionEndpoints = new ContributionEndpoints(securedEndpoint)
 
-  def findByProjectId(projectId: UUID, filter: ContributionsFilter): TgRespIO[ContributionsDto] =
+  override def findByProjectId(projectId: UUID, filter: ContributionsFilter): TgRespIO[ContributionsDto] =
     protectedBackendClient.protectedHttpCall(contributionEndpoints.findByProjectIdEndpoint)((projectId, filter))
 }

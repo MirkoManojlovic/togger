@@ -10,16 +10,17 @@ import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.backendcalls.{ProtectedBackendClient, SecurityLogicJs, UnprotectedBackendClient}
 import com.togger.common.{DateRangeValidation, TgClockImpl}
 import com.togger.markdown.TgMarkdown
+import com.togger.preview.{PrefixedLocalStorage, PreviewConfig, PreviewModule}
 import com.togger.routes.Pages._
 import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
 import com.togger.ui.auth._
 import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
-import com.togger.ui.localstorage.LocalStorageBrowser
+import com.togger.ui.localstorage.{LocalStorage, LocalStorageBrowser}
 import com.togger.ui.milestone._
-import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService}
+import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService, ContributionsFeServiceImpl, ContributionsFeServicePreview}
 import com.togger.ui.timebox._
-import com.togger.ui.modal.ModalFactory
-import com.togger.ui.accountmanagement.{AccountManagementFeService, EditAccountComponent, ShowAllAccountsComponent}
+import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.accountmanagement.{AccountManagementFeService, AccountManagementFeServiceImpl, AccountManagementFeServicePreview, EditAccountComponent, ShowAllAccountsComponent}
 import com.togger.ui.mcp.McpSettingsComponent
 import com.togger.ui.updater.UpdaterComponent
 import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
@@ -44,12 +45,13 @@ import com.togger.ui.theme.ThemeStore
 import com.togger.ui.slacker.SlackerComponent
 import com.togger.ui.teamdaily.TeamDailyComponent
 import com.togger.ui.toast.{Toast, ToastMessagesService}
+import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
 
 import java.util.UUID
 
-class TgSplitRender(router: TgRouter[FrontendPage]) {
+class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig = PreviewConfig.disabled) {
 
   // FIXME
   implicit val runtime = cats.effect.unsafe.implicits.global
@@ -57,7 +59,8 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val elementForSpinner = div()
   lazy val spinnerService = SpinnerService.globalSpinner(
     elementForSpinner,
-    error => toast.error(s"Something went wrong: ${Option(error.getMessage).getOrElse(error.toString)}")
+    error => toast.error(s"Something went wrong: ${Option(error.getMessage).getOrElse(error.toString)}"),
+    waitForPaint = previewConfig.enabled
   )
 
   val elementForModal = div()
@@ -147,10 +150,28 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
+  private def confirmPreviewReset(): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(
+        "Reset all preview data? Everything you changed in this browser is deleted and the demo data is restored. " +
+          "This cannot be undone."
+      ),
+      title = "Reset preview data",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, reset it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      previewModule.resetAndReseed()
+      close()
+      dom.window.location.reload()
+    }
+
   lazy val securedEndpoint = new SecuredEndpoint(new SecurityLogicJs)
   lazy val baseEndpoint = BaseEndpoint.baseEndpoint
 
-  lazy val localStorage = new LocalStorageBrowser
+  lazy val localStorage: LocalStorage =
+    if (previewConfig.enabled) new PrefixedLocalStorage(previewConfig.storagePrefix, new LocalStorageBrowser)
+    else new LocalStorageBrowser
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val sidebarRefresh = new SidebarRefresh
   lazy val themeStore = new ThemeStore(localStorage)
@@ -164,7 +185,12 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   themeStore.listenToSystemPreference()
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
-  lazy val loginService = new LoginService(baseEndpoint, securedEndpoint, loginRepo)
+  lazy val previewModule = new PreviewModule(localStorage, loginRepo, tgClock)
+  if (previewConfig.enabled) previewModule.ensureSeeded()
+
+  lazy val loginService: LoginService =
+    if (previewConfig.enabled) new LoginServicePreview(previewModule.accounts, loginRepo)
+    else new LoginServiceImpl(baseEndpoint, securedEndpoint, loginRepo)
   lazy val authenticationRouteGuard = new AuthenticationRouteGuard(loginRepo, LoginPage, ShowAllOrganizationsPage())
   lazy val navigationSelection =
     NavigationSelection(
@@ -184,37 +210,114 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
       () => bulkCreateHost.open(),
       () => teamDailyHost.open(),
       () => slackerHost.open(),
-      toast
+      toast,
+      previewConfig,
+      () => confirmPreviewReset()
     )
 
   lazy val protectedBackendClient = new ProtectedBackendClient(loginRepo, baseUri = uri"http://localhost:8081/")
   lazy val unprotectedBackendClient = new UnprotectedBackendClient(baseUri = uri"http://localhost:8081/")
 
-  lazy val taskService = new TaskFeService(securedEndpoint, protectedBackendClient)
-  lazy val taskStatusService = new TaskStatusFeService(securedEndpoint, protectedBackendClient)
-  lazy val tgPromptTemplateService = new TgPromptTemplateFeService(securedEndpoint, protectedBackendClient)
-  lazy val accountManagementService = new AccountManagementFeService(securedEndpoint, protectedBackendClient)
-  lazy val tgAiActionService = new TgAiActionFeService(securedEndpoint, protectedBackendClient)
-  lazy val projectLabelService = new ProjectLabelFeService(securedEndpoint, protectedBackendClient)
-  lazy val projectLabelCategoryService = new ProjectLabelCategoryFeService(securedEndpoint, protectedBackendClient)
-  lazy val taskLabelService = new TaskLabelFeService(securedEndpoint, protectedBackendClient)
-  lazy val taskTemplateService = new TaskTemplateFeService(securedEndpoint, protectedBackendClient)
-  lazy val dataExportService = new DataExportFeService(securedEndpoint, protectedBackendClient)
-  lazy val milestoneService = new MilestoneFeService(securedEndpoint, protectedBackendClient)
-  lazy val timeboxService = new TimeboxFeService(securedEndpoint, protectedBackendClient)
-  lazy val contributionsService = new ContributionsFeService(securedEndpoint, protectedBackendClient)
-  lazy val milestoneSummaryService = new MilestoneSummaryFeService(
-    securedEndpoint,
-    protectedBackendClient,
-    new MilestoneAiSummaryStreamClient(loginRepo, "http://localhost:8081/")
-  )
-  lazy val milestoneDateService = new MilestoneDateFeService(securedEndpoint, protectedBackendClient)
+  lazy val taskService: TaskFeService =
+    if (previewConfig.enabled)
+      new TaskFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.taskConfig,
+        previewModule.tasks
+      )
+    else new TaskFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val taskStatusService: TaskStatusFeService =
+    if (previewConfig.enabled)
+      new TaskStatusFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.taskConfig,
+        previewModule.taskStats
+      )
+    else new TaskStatusFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val tgPromptTemplateService: TgPromptTemplateFeService =
+    if (previewConfig.enabled) new TgPromptTemplateFeServicePreview(previewModule.context, previewModule.ai)
+    else new TgPromptTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val accountManagementService: AccountManagementFeService =
+    if (previewConfig.enabled)
+      new AccountManagementFeServicePreview(
+        previewModule.context,
+        previewModule.accounts,
+        previewModule.organizations,
+        previewModule.projects
+      )
+    else new AccountManagementFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val tgAiActionService: TgAiActionFeService =
+    if (previewConfig.enabled)
+      new TgAiActionFeServicePreview(previewModule.context, previewModule.projects, previewModule.ai)
+    else new TgAiActionFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val projectLabelService: ProjectLabelFeService =
+    if (previewConfig.enabled) new ProjectLabelFeServicePreview(previewModule.context, previewModule.projectLabels)
+    else new ProjectLabelFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val projectLabelCategoryService: ProjectLabelCategoryFeService =
+    if (previewConfig.enabled)
+      new ProjectLabelCategoryFeServicePreview(previewModule.context, previewModule.projectLabels)
+    else new ProjectLabelCategoryFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val taskLabelService: TaskLabelFeService =
+    if (previewConfig.enabled)
+      new TaskLabelFeServicePreview(previewModule.context, previewModule.projects, previewModule.taskConfig)
+    else new TaskLabelFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val taskTemplateService: TaskTemplateFeService =
+    if (previewConfig.enabled) new TaskTemplateFeServicePreview(previewModule.context, previewModule.taskConfig)
+    else new TaskTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val dataExportService: DataExportFeService =
+    if (previewConfig.enabled)
+      new DataExportFeServicePreview(previewModule.context, previewModule.projects, previewModule.dataSync)
+    else new DataExportFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val milestoneService: MilestoneFeService =
+    if (previewConfig.enabled)
+      new MilestoneFeServicePreview(previewModule.context, previewModule.projects, previewModule.milestones)
+    else new MilestoneFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val timeboxService: TimeboxFeService =
+    if (previewConfig.enabled) new TimeboxFeServicePreview(previewModule.context, previewModule.tasks)
+    else new TimeboxFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val contributionsService: ContributionsFeService =
+    if (previewConfig.enabled)
+      new ContributionsFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.taskConfig,
+        previewModule.accounts,
+        previewModule.tasks
+      )
+    else new ContributionsFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val milestoneAiSummaryStreamClient: MilestoneAiSummaryStreamClient =
+    if (previewConfig.enabled)
+      new MilestoneAiSummaryStreamClientPreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.taskStats
+      )
+    else new MilestoneAiSummaryStreamClientImpl(loginRepo, "http://localhost:8081/")
+  lazy val milestoneSummaryService: MilestoneSummaryFeService =
+    if (previewConfig.enabled)
+      new MilestoneSummaryFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        milestoneAiSummaryStreamClient
+      )
+    else new MilestoneSummaryFeServiceImpl(securedEndpoint, protectedBackendClient, milestoneAiSummaryStreamClient)
+  lazy val milestoneDateService: MilestoneDateFeService =
+    if (previewConfig.enabled) new MilestoneDateFeServicePreview(previewModule.context, previewModule.milestones)
+    else new MilestoneDateFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val dateRangeValidation = new DateRangeValidation
 
   lazy val accountService = new AccountServiceImpl(loginRepo)
-  lazy val changePasswordService = new ChangePasswordService(baseEndpoint, securedEndpoint, protectedBackendClient)
-  lazy val changeAccountInfoService =
-    new ChangeAccountInfoService(baseEndpoint, securedEndpoint, protectedBackendClient, loginRepo)
+  lazy val changePasswordService: ChangePasswordService =
+    if (previewConfig.enabled) new ChangePasswordServicePreview(previewModule.accounts, loginRepo)
+    else new ChangePasswordServiceImpl(baseEndpoint, securedEndpoint, protectedBackendClient)
+  lazy val changeAccountInfoService: ChangeAccountInfoService =
+    if (previewConfig.enabled) new ChangeAccountInfoServicePreview(previewModule.accounts, loginRepo)
+    else new ChangeAccountInfoServiceImpl(baseEndpoint, securedEndpoint, protectedBackendClient, loginRepo)
 
   lazy val tgClock = new TgClockImpl
   lazy val tgDateFormater = new TgDateFormater
@@ -231,15 +334,43 @@ class TgSplitRender(router: TgRouter[FrontendPage]) {
   lazy val toastMessagesService = new ToastMessagesService(toastMessageDisplayTimeInMillis, new OneTimeOwner(() => ()))
   lazy val toast = new Toast(toastMessagesService, toastHolder)
 
-  lazy val findAccountServiceImpl = new FindAccountServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val findAccountServiceImpl: FindAccountService =
+    if (previewConfig.enabled) new FindAccountServicePreview(previewModule.context, previewModule.accounts)
+    else new FindAccountServiceImpl(securedEndpoint, protectedBackendClient)
 //  lazy val findAccounts = new FindAccountsComponent(findAccountServiceImpl)
 
-  lazy val projectService = new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
-  lazy val organizationService = new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
+  lazy val projectService: ProjectService =
+    if (previewConfig.enabled)
+      new ProjectServicePreview(
+        previewModule.context,
+        previewModule.accounts,
+        previewModule.organizations,
+        previewModule.projects,
+        previewModule.projectLabels.labelsOf
+      )
+    else new ProjectServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val organizationService: OrganizationServiceFe =
+    if (previewConfig.enabled)
+      new OrganizationServiceFePreview(
+        previewModule.context,
+        previewModule.accounts,
+        previewModule.organizations,
+        previewModule.projects
+      )
+    else new OrganizationServiceFeImpl(securedEndpoint, protectedBackendClient)
   lazy val organizationProjectsLoader = new OrganizationProjectsLoader(organizationService, projectService)
-  lazy val dataExportConfigService = new DataExportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
-  lazy val dataImportConfigService = new DataImportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
-  lazy val projectMappingService = new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val dataExportConfigService: DataExportConfigFeService =
+    if (previewConfig.enabled)
+      new DataExportConfigFeServicePreview(previewModule.context, previewModule.projects, previewModule.dataSync)
+    else new DataExportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val dataImportConfigService: DataImportConfigFeService =
+    if (previewConfig.enabled)
+      new DataImportConfigFeServicePreview(previewModule.context, previewModule.projects, previewModule.dataSync)
+    else new DataImportConfigFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val projectMappingService: ProjectMappingFeService =
+    if (previewConfig.enabled)
+      new ProjectMappingFeServicePreview(previewModule.context, previewModule.projects, previewModule.dataSync)
+    else new ProjectMappingFeServiceImpl(securedEndpoint, protectedBackendClient)
 
   lazy val tgMarkdown = new TgMarkdown()
 
@@ -919,7 +1050,9 @@ case class NavigationSelection(
   onBulkCreate: () => Unit,
   onTeamDaily: () => Unit,
   onSlacker: () => Unit,
-  toast: Toast
+  toast: Toast,
+  previewConfig: PreviewConfig,
+  onResetPreview: () => Unit
 )(implicit IORuntime: IORuntime) {
 
   lazy val navigationSignal: Signal[ReactiveHtmlElement[HTMLDivElement]] = {
@@ -945,7 +1078,7 @@ case class NavigationSelection(
               toast
             )
             div(
-              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject, syncPendingStore).element,
+              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject, syncPendingStore, previewConfig, onResetPreview).element,
               sidebar.element
             )
           }
