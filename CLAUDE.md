@@ -205,6 +205,23 @@ worth following when writing Scala in this repo:
 - Match existing styling/component patterns in a file rather than introducing new ones (especially in `f-core`
   UI components).
 
+## Pull requests
+
+- **Title:** a plain imperative sentence describing the change, without a conventional-commit prefix (no
+  `chore(project):`, `test(backend):`, ...). The kind of change is the label, the area is the label (see below). Commit
+  messages keep their conventional prefix.
+- **Defaults:** assignee `@me`, project "Togger", milestone "First working version - team", and the PR description ends
+  with the Claude Code attribution line.
+- **Type label** (what kind of change): `🆕 feature`, `🐞 bug`, `🧱 refactor`, `🧪 test`, `📑 docs`, `🧹 chore`
+  (workflows/tooling = chore).
+- **Area labels** (where; at least one, and several when they apply):
+  - `frontend`: changes to the frontend (`f-*`, the `c-*` code it uses, npm/vite).
+  - `backend`: changes to the backend (`b-*`).
+  - `frontend` and `backend` together when the PR changes both, e.g. a shared DTO or endpoint with its callers.
+  - `infra`: changes to `build.sbt`, the GitHub workflows, `devenv.nix` and other build/CI/environment files.
+  - `nocode`: changes to docs (`*.md`, `claude_files/`) or anything else that is not code.
+- `👀 preview` is separate: it asks for a frontend preview deployment of the PR.
+
 ## Current branch context
 
 `feature/ids-long-to-uuids` is an in-progress migration of primary key types from `Long` to `UUID` (see
