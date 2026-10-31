@@ -1,3 +1,4 @@
+// throwaway change to test the preview cleanup
 import { defineConfig } from "vite";
 import { spawnSync } from "child_process";
 import { existsSync } from "fs";
