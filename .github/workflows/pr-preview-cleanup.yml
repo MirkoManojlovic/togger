@@ -32,7 +32,7 @@ jobs:
             response=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$@")
             status="${response##*$'\n'}"
             if [ "${status:0:1}" != "2" ]; then
-              echo "::error::Cloudflare answered $status: ${response%$'\n'*}"
+              echo "::error::Cloudflare answered $status: ${response%$'\n'*}" >&2
               return 1
             fi
             echo "${response%$'\n'*}"
