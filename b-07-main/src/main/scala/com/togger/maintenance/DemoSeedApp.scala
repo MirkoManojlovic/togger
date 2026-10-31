@@ -59,6 +59,8 @@ object DemoSeedApp extends IOApp with SeedAppModule {
   private val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
   private val milestoneSummaryRepo = new MilestoneSummaryRepoImpl
   private val milestoneSummaryVersionRepo = new MilestoneSummaryVersionRepoImpl
+  private val milestoneStepRepo = new MilestoneStepRepoImpl
+  private val milestoneStepVersionRepo = new MilestoneStepVersionRepoImpl
   private val promptTemplateRepo = new TgPromptTemplateRepoImpl
   private val promptTemplateVersionRepo = new TgPromptTemplateVersionRepoImpl
   private val aiActionRepo = new TgAiActionRepoImpl
@@ -98,7 +100,7 @@ object DemoSeedApp extends IOApp with SeedAppModule {
       ids = Ids(accountIds, projectIds, statusIds, taskLabelIds)
       _ <- seedRest(demo, ids).transact(xa)
       _ <- IO.println(
-        s"Seeded ${demo.accounts.size} accounts, ${demo.projects.size} projects, ${demo.milestones.size} milestones, " +
+        s"Seeded ${demo.accounts.size} accounts, ${demo.projects.size} projects, ${demo.milestones.size} milestones with ${demo.milestones.map(_.steps.size).sum} steps, " +
           s"${demo.tasks.size} tasks and ${demo.tasks.map(_.logEntries.size).sum} log entries."
       )
     } yield ()
@@ -295,6 +297,25 @@ object DemoSeedApp extends IOApp with SeedAppModule {
         milestoneSummaryRepo.insertWithId(MilestoneSummary(s.id, m.id, s.createdAt)) *>
           milestoneSummaryVersionRepo.insertWithId(
             MilestoneSummaryVersion(s.version, s.id, s.text, s.fromDate, s.toDate, s.createdAt, s.updatedAt)
+          )
+      }
+      _ <- m.steps.traverse_ { s =>
+        milestoneStepRepo.insertWithId(MilestoneStep(s.id, m.id, s.createdAt)) *>
+          milestoneStepVersionRepo.insertWithId(
+            MilestoneStepVersion(
+              s.version,
+              s.id,
+              s.name,
+              s.description,
+              s.status,
+              s.position,
+              s.startDate,
+              s.dueDate,
+              s.endDate,
+              s.createdAt,
+              s.updatedAt,
+              ""
+            )
           )
       }
     } yield ()
