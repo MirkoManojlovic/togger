@@ -12,6 +12,8 @@ ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ ScalacOptions.fatalWarningOptions
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+// parallel DB specs each clone a database and open a pool; keep it well below the postgres connection limit
+Global / concurrentRestrictions += Tags.limit(Tags.Test, 4)
 
 // `io.github.edadma:markdown` (used by frontendCore) is a Scala 3 library and is consumed from Scala 2.13
 // through the TASTy reader. It is built against the Scala 3 "Next" standard library, which ships as
@@ -175,8 +177,7 @@ lazy val backendMain = (project in file("b-07-main"))
   .enablePlugins(GraalVMNativeImagePlugin)
   .settings(
     name := "backend-main",
-    Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
-    Test / executeTests := Def.uncached((Test / executeTests).dependsOn(backendDatabase / Test / executeTests).value), // run backendDatabase tests first, never concurrently, same shared postgres
+    Test / parallelExecution := true, // every spec works on its own database cloned from togger-test (TgTestDatabase)
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Http4s
@@ -246,8 +247,7 @@ lazy val backendDiskSync = (project in file("b-05-disk-sync"))
 lazy val backendDatabase = (project in file("b-05-database"))
   .settings(
     name := "backend-database",
-    Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
-    Test / executeTests := Def.uncached((Test / executeTests).dependsOn(backendAuth / Test / executeTests).value), // run backendAuth tests first, never concurrently, same shared postgres
+    Test / parallelExecution := true, // every spec works on its own database cloned from togger-test (TgTestDatabase)
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Postgres
@@ -380,7 +380,7 @@ lazy val backendAuth = (project in file("b-auth-app-core"))
 //  .settings(commonSettings)
   .settings(
     name := "backend-auth-app-core",
-    Test / parallelExecution := false, // because I'm using devenv and one postgres for testing I need tests to run seq
+    Test / parallelExecution := true, // every spec works on its own database cloned from togger-test (TgTestDatabase)
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
       // Enumeration
