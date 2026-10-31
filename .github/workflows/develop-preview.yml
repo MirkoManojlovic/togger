@@ -1,8 +1,9 @@
 name: Develop Preview
 
 # Builds the frontend in preview mode (no backend, data in localStorage) after every merge into develop and publishes it
-# to the stable URL https://develop.togger-preview.pages.dev (the "develop" branch alias of the Cloudflare Pages
-# project, which is also served on https://togger-preview.pages.dev when develop is the production branch).
+# to the stable URL https://togger-preview.pages.dev. develop must be the production branch of the Cloudflare Pages
+# project: production deployments are served on the root domain and get no branch alias, and every deployment also
+# keeps its own <hash>.togger-preview.pages.dev URL.
 # Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, see pr-preview-deploy.yml.
 
 on:
