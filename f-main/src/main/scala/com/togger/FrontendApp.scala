@@ -29,8 +29,8 @@ class WebFrontendApp(previewConfig: PreviewConfig) {
   def run: Unit = {
     splashScreen.remove()
 
-    val origin = "http://localhost:5173"
-    val initialUrl = "http://localhost:5173/"
+    // a deployed preview is served from its own origin; everything else runs on the vite dev server
+    val origin = if (previewConfig.enabled) dom.window.location.origin else "http://localhost:5173"
     val basePath = "/"
 
     val routes = new TgRoutes().routes(basePath)
