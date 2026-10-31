@@ -52,6 +52,15 @@ jobs:
 
       - run: just build-tauri-mcp
 
+      - name: Build the release notes
+        id: notes
+        run: |
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            .github/scripts/release-notes.sh "$RELEASE_TAG"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,6 +70,7 @@ jobs:
           projectPath: .
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Togger ${{ env.RELEASE_TAG }}
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true # an immutable release accepts no assets once published, so it is published below
           includeUpdaterJson: true
           args: --target aarch64-apple-darwin --verbose
