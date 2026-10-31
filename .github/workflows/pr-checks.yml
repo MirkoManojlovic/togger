@@ -1,10 +1,19 @@
 name: PR Checks
 
-# Two checks for every pull request into develop: everything compiles (main and test code of all projects, the ScalaJS
-# frontend included), and every test passes. The build has no explicit root project, so sbt aggregates all of them at
-# the root for the compile. The job "PR Checks" sums both up; it is the status check the ruleset of develop requires.
+# One build for every pull request into develop: everything compiles (main and test code of all projects, the ScalaJS
+# frontend included), then every test passes. Both run in one sbt server, so the code is compiled only once. The build
+# has no explicit root project, so sbt aggregates all of them at the root. The job "PR Checks" sums the build up; it is
+# the status check the ruleset of develop requires.
+#
+# The sbt dependencies and the compiled output are cached. A cache is only readable from its own branch and from the
+# default branch, so develop runs the build too (on every merge) to keep a warm cache for the pull requests.
 
 on:
+  push:
+    branches: [develop]
+    paths-ignore:
+      - "**/*.md"
+      - "claude_files/**"
   pull_request:
     branches: [develop]
     # only documentation changed, nothing to compile or test
@@ -17,33 +26,16 @@ permissions:
 
 # a newer push to the pull request supersedes the running checks
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  compile:
-    name: Compile
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - uses: sbt/setup-sbt@v1
-
-      - run: sbt Test/compile
-
-  test:
-    name: Test
+  build:
+    name: Compile and test
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # the backend specs run against a real Postgres database, see TgTestTransactor; the schema needs uuidv7(), so 18
+    # the backend specs run against a real Postgres database, see TgTestTransactor; the schema needs uuidv7(), so 18.
+    # Every spec clones its own database from togger-test (TgTestDatabase), so the role must be allowed to create one
     services:
       postgres:
         image: postgres:18
@@ -67,8 +59,25 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: sbt # the dependencies, keyed by the build files
 
       - uses: sbt/setup-sbt@v1
+
+      # the compiled output; sbt recompiles only what changed since the cache was saved. A hit on the exact key (same
+      # sources) saves nothing new, a miss restores the newest cache of the branch or develop and saves the new state
+      - uses: actions/cache@v4
+        with:
+          path: |
+            target
+            project/target
+            project/project/target
+            **/target
+            !target/test-data-export-*
+            !src-tauri/target
+            !liquibase/target
+          key: sbt-output-${{ runner.os }}-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/*.scala', '**/*.scala', '**/*.java') }}
+          restore-keys: |
+            sbt-output-${{ runner.os }}-
 
       # the frontend specs run on node
       - uses: actions/setup-node@v4
@@ -93,35 +102,30 @@ jobs:
             --password=togger_password \
             update
 
-      # the specs of all projects share the one test database, so the projects are tested one after another (a build
-      # wide `sbt test` runs them in parallel and they delete each other's rows); every project runs, even after a failure
-      - name: Run the tests
+      # one step and so one sbt server for both commands: the test run reuses what the compile built. The specs of a
+      # project work on their own cloned databases, so all projects are tested in one go; sbt runs every project even
+      # after a failure in another one
+      - name: Compile and test
         run: |
-          failed=""
-          for project in tgMacrosJVM tgMacrosJS tgCommonJVM tgCommonJS httpEndpointsJVM httpEndpointsJS backendCore \
-            backendCommon backendDatabase backendDiskSync backendAi backendAuth backendDeliveryHttp4s backendMain \
-            backendMcp frontendCore frontendMain; do
-            echo "::group::$project/test"
-            sbt --client "$project/test" || failed="$failed $project"
-            echo "::endgroup::"
-          done
+          echo "::group::Test/compile"
+          sbt --client Test/compile
+          echo "::endgroup::"
+          status=0
+          sbt --client test || status=$?
           sbt --client shutdown || true
-          if [ -n "$failed" ]; then
-            echo "::error::Tests failed in:$failed"
-            exit 1
-          fi
+          exit $status
 
-  # the ruleset of develop requires one status check named "PR Checks"; it is green when both checks above are
+  # the ruleset of develop requires one status check named "PR Checks"; it is green when the build above is
   pr-checks:
     name: PR Checks
-    needs: [compile, test]
+    needs: [build]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Both checks passed
         env:
-          RESULTS: ${{ needs.compile.result }} ${{ needs.test.result }}
+          RESULT: ${{ needs.build.result }}
         run: |
-          echo "compile and test: $RESULTS"
-          [ "$RESULTS" = "success success" ]
+          echo "compile and test: $RESULT"
+          [ "$RESULT" = "success" ]
