@@ -66,12 +66,7 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
     new ProjectLabelsPreviewSeed(projectLabels, demo.projectLabelCategories, demo.projectLabels),
     new TaskConfigPreviewSeed(taskConfig, demo.taskStatuses, demo.taskLabels, demo.taskTemplates),
     new MilestonesPreviewSeed(milestones, demo.milestones),
-    new MilestoneStepsPreviewSeed(
-      milestoneSteps,
-      demo.milestones,
-      demo.projects,
-      clock.currentDate(ZoneOffset.UTC)
-    ),
+    new MilestoneStepsPreviewSeed(milestoneSteps, demo.milestones),
     new MilestoneStepTemplatesPreviewSeed(milestoneStepTemplates, demo.projects),
     new MilestoneTemplatesPreviewSeed(milestoneTemplates, demo.projects),
     new AiPreviewSeed(ai, demo.promptTemplates, demo.aiActions, demo.aiActionDefaults),
