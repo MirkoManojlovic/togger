@@ -17,20 +17,25 @@ class TgBreadcrumbTrailTest extends AsyncJsWordSpec {
 
     "link a project-scoped page back to the project's tasks" in { _ =>
       TgBreadcrumbTrail.forPage(CreateTaskPage(projectId)).map(_.page) shouldBe
-        Seq(Some(ShowAllOrganizationsPage()), Some(ShowAllTasksPage(projectId)), None)
+        Seq(
+          Some(ShowAllOrganizationsPage()),
+          Some(ProjectHomePage(projectId)),
+          Some(ShowAllTasksPage(projectId)),
+          None
+        )
     }
 
     "lead the project home back to the organizations" in { _ =>
-      TgBreadcrumbTrail.forPage(ProjectHomePage(projectId)).map(_.label) shouldBe Seq("Organizations", "Project home")
+      TgBreadcrumbTrail.forPage(ProjectHomePage(projectId)).map(_.label) shouldBe Seq("Organizations", "Project")
     }
 
     "label the last crumb after the page" in { _ =>
-      TgBreadcrumbTrail.forPage(ShowAllTasksPage(projectId)).map(_.label) shouldBe Seq("Organizations", "Tasks")
+      TgBreadcrumbTrail.forPage(ShowAllTasksPage(projectId)).map(_.label) shouldBe Seq("Organizations", "Project", "Tasks")
     }
 
-    "put the contributions under the project's tasks" in { _ =>
+    "put the contributions under the project" in { _ =>
       TgBreadcrumbTrail.forPage(ShowContributionsPage(projectId)).map(_.label) shouldBe
-        Seq("Organizations", "Tasks", "Contributions")
+        Seq("Organizations", "Project", "Contributions")
     }
 
   }
