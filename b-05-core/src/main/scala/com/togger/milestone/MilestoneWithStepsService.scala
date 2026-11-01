@@ -7,6 +7,8 @@ import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
 import doobie.implicits._
 
+import java.util.UUID
+
 /** Creates a milestone together with its first steps in one transaction, so a failing step leaves no milestone. */
 class MilestoneWithStepsService(
   milestoneRepo: MilestoneRepo,
@@ -16,7 +18,9 @@ class MilestoneWithStepsService(
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  /** The steps are stored in the given order; their ids and positions are set here. */
+  /** The steps are stored in the given order; their ids and positions are set here. Without steps the milestone gets
+    * the [[DefaultMilestoneStep]], as a milestone always has a step for its tasks.
+    */
   def create(
     milestone: Milestone,
     firstVersion: MilestoneVersion,
@@ -26,7 +30,7 @@ class MilestoneWithStepsService(
     (for {
       savedMilestone <- milestoneRepo.insert(milestone)
       savedVersion <- milestoneVersionRepo.insert(firstVersion.copy(milestoneId = savedMilestone.id))
-      savedSteps <- steps.zipWithIndex.traverse { case ((step, stepVersion), position) =>
+      savedSteps <- (if (steps.isEmpty) List(defaultStep(milestone, firstVersion)) else steps).zipWithIndex.traverse { case ((step, stepVersion), position) =>
         for {
           savedStep <- milestoneStepRepo.insert(step.copy(milestoneId = savedMilestone.id))
           savedStepVersion <- milestoneStepVersionRepo.insert(
@@ -35,5 +39,23 @@ class MilestoneWithStepsService(
         } yield MilestoneStepWithOneVersion(savedStep, savedStepVersion)
       }
     } yield MilestoneWithOneVersion(savedMilestone, savedVersion) -> savedSteps).transact(transactor)
+  }
+
+  private def defaultStep(milestone: Milestone, firstVersion: MilestoneVersion): (MilestoneStep, MilestoneStepVersion) = {
+    val step = MilestoneStep(UUID.randomUUID(), milestone.id, milestone.createdAt)
+    step -> MilestoneStepVersion(
+      version = UUID.randomUUID(),
+      milestoneStepId = step.id,
+      name = DefaultMilestoneStep.Name,
+      description = DefaultMilestoneStep.Description,
+      status = MilestoneStepStatus.Planned,
+      position = 0,
+      startDate = firstVersion.startDate,
+      dueDate = firstVersion.dueDate,
+      endDate = None,
+      createdAt = firstVersion.createdAt,
+      updatedAt = firstVersion.createdAt,
+      changeComment = ""
+    )
   }
 }

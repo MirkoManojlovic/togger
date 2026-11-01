@@ -13,6 +13,7 @@ import com.togger.task.TaskPriority
 import com.togger.task.TaskRepoImpl
 import com.togger.task.TaskVersion
 import com.togger.task.TaskVersionRepoImpl
+import com.togger.milestone.MilestoneStepFixtures
 import doobie.ConnectionIO
 import doobie.implicits._
 
@@ -38,6 +39,7 @@ class LogEntryRepoMilestoneTest
   private def newTask(projectId: UUID, creator: UUID, statusId: UUID, milestone: Option[UUID]): ConnectionIO[Task] =
     for {
       task <- taskRepo.insert(Task(UUID.randomUUID(), projectId, creator, nowAsInstant))
+      step <- milestone.traverse(MilestoneStepFixtures.insertStep(_, nowAsInstant))
       _ <- taskVersionRepo.insert(
         TaskVersion(
           version = UUID.randomUUID(),
@@ -47,7 +49,7 @@ class LogEntryRepoMilestoneTest
           assignedTo = None,
           closedBy = None,
           taskStatusId = statusId,
-          milestone = milestone,
+          milestoneStepId = step.map(_.id),
           priority = TaskPriority.Medium,
           startDate = day(1),
           dueDate = day(28),

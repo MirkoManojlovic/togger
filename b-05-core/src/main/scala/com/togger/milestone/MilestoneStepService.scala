@@ -4,7 +4,13 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.logging.TgLogging
-import com.togger.milestone.MilestoneStepError.{MilestoneStepError, MilestoneStepNotFound, StepsDoNotMatchMilestone}
+import com.togger.milestone.MilestoneStepError.{
+  LastStepOfMilestone,
+  MilestoneStepError,
+  MilestoneStepNotFound,
+  StepHasTasks,
+  StepsDoNotMatchMilestone
+}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
@@ -101,6 +107,17 @@ class MilestoneStepService(
       .map(_.asRight[MilestoneStepError])
       .recoverWith { case UnexpectedEnd => IO.pure(Left(MilestoneStepNotFound)) }
 
+  /** The steps of every milestone of the project, with their current version, by milestone then position. */
+  def findAllByProjectId(projectId: UUID): IO[List[MilestoneStepWithOneVersion]] =
+    (for {
+      steps <- milestoneStepRepo.findAllByProjectId(projectId)
+      versions <- milestoneStepVersionRepo.findLatestByProjectId(projectId)
+      stepsById = steps.map(step => step.id -> step).toMap
+    } yield versions
+      .flatMap(version => stepsById.get(version.milestoneStepId).map(MilestoneStepWithOneVersion(_, version)))
+      .sortBy(step => (step.milestoneStep.milestoneId.toString, step.version.position)))
+      .transact(transactor)
+
   /** The steps of the milestone ordered by their current position. */
   def findAllByMilestoneId(milestoneId: UUID): IO[List[MilestoneStepWithOneVersion]] =
     findAllWithLatest(milestoneId).transact(transactor)
@@ -127,8 +144,39 @@ class MilestoneStepService(
   def listVersions(milestoneStepId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneStepVersion]] =
     milestoneStepVersionRepo.findPaginatedByMilestoneStepId(milestoneStepId, page).transact(transactor)
 
-  def deleteMilestoneStep(id: UUID): IO[Int] =
-    milestoneStepRepo.deleteById(id).transact(transactor)
+  /** Refuses to delete the last step of a milestone and a step that tasks are in (by their latest version). */
+  def deleteMilestoneStep(id: UUID): IO[Either[MilestoneStepError, Int]] =
+    (for {
+      step <- milestoneStepRepo.findById(id)
+      siblings <- milestoneStepRepo.findAllByMilestoneId(step.milestoneId)
+      tasks <- milestoneStepRepo.countTasksByStepIds(List(id))
+      result <-
+        if (siblings.size <= 1) (LastStepOfMilestone: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
+        else if (tasks.get(id).exists(_.total > 0))
+          (StepHasTasks(tasks(id).total): MilestoneStepError).asLeft[Int].pure[ConnectionIO]
+        else milestoneStepRepo.deleteById(id).map(_.asRight[MilestoneStepError])
+    } yield result).transact(transactor).recoverWith { case UnexpectedEnd => IO.pure(Left(MilestoneStepNotFound)) }
+
+  /** The milestone of each step; a step that does not exist is absent from the result. */
+  def findMilestoneIdsByStepIds(stepIds: Iterable[UUID]): IO[Map[UUID, UUID]] =
+    milestoneStepRepo.findMilestoneIdsByStepIds(stepIds.toList).transact(transactor)
+
+  /** The project of each step; a step that does not exist is absent from the result. */
+  def findProjectIdsByStepIds(stepIds: Iterable[UUID]): IO[Map[UUID, UUID]] =
+    milestoneStepRepo.findProjectIdsByStepIds(stepIds.toList).transact(transactor)
+
+  /** The tasks in each step; a step without tasks maps to [[MilestoneStepTaskCounts.empty]]. */
+  def taskCountsByStepIds(stepIds: Iterable[UUID]): IO[Map[UUID, MilestoneStepTaskCounts]] = {
+    val ids = stepIds.toList.distinct
+    milestoneStepRepo
+      .countTasksByStepIds(ids)
+      .map(counts => ids.map(id => id -> counts.getOrElse(id, MilestoneStepTaskCounts.empty)).toMap)
+      .transact(transactor)
+  }
+
+  /** The tasks in any step of the milestone. */
+  def countTasksOfMilestone(milestoneId: UUID): IO[Int] =
+    milestoneStepRepo.countTasksOfMilestone(milestoneId).transact(transactor)
 
   private def nextPosition(ordered: List[MilestoneStepVersion]): Int =
     ordered.lastOption.map(_.position + 1).getOrElse(0)

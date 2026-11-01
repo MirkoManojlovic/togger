@@ -5,7 +5,12 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.milestone.MilestoneStepError.{MilestoneStepNotFound, StepsDoNotMatchMilestone}
+import com.togger.milestone.MilestoneStepError.{
+  LastStepOfMilestone,
+  MilestoneStepNotFound,
+  StepHasTasks,
+  StepsDoNotMatchMilestone
+}
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.util.invariant.UnexpectedEnd
@@ -114,6 +119,55 @@ class MilestoneStepServiceTest
       (stepRepo.findById _).expects(id).returns(doobie.free.connection.raiseError[com.togger.milestone.MilestoneStep](UnexpectedEnd))
 
       service.saveNewVersion(id, newVersion(id, "x", 0)).unsafeToFuture().map(_ shouldBe Left(MilestoneStepNotFound))
+    }
+
+    "delete a step of a milestone that has other steps and no tasks" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+      (stepRepo.deleteById _).expects(step.id).returns(1.pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Right(1))
+    }
+
+    "refuse to delete the last step of a milestone" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(LastStepOfMilestone))
+    }
+
+    "refuse to delete a step that tasks are in" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map(step.id -> MilestoneStepTaskCounts(3, 1)).pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(StepHasTasks(3)))
+    }
+
+    "answer not found when deleting a step that does not exist" in {
+      val id = UUID.randomUUID()
+      (stepRepo.findById _).expects(id).returns(doobie.free.connection.raiseError[MilestoneStep](UnexpectedEnd))
+
+      service.deleteMilestoneStep(id).unsafeToFuture().map(_ shouldBe Left(MilestoneStepNotFound))
+    }
+
+    "fill the task counts of the steps, with zero for a step without tasks" in {
+      val withTasks = UUID.randomUUID()
+      val without = UUID.randomUUID()
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(withTasks, without))
+        .returns(Map(withTasks -> MilestoneStepTaskCounts(4, 2)).pure[ConnectionIO])
+
+      service.taskCountsByStepIds(List(withTasks, without)).unsafeToFuture().map { counts =>
+        counts shouldBe Map(withTasks -> MilestoneStepTaskCounts(4, 2), without -> MilestoneStepTaskCounts.empty)
+      }
     }
 
     "version only the steps that move when reordering, with the shared comment" in {

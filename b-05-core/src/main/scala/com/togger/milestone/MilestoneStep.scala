@@ -30,6 +30,13 @@ case class MilestoneStepVersion(
 
 }
 
+/** How many tasks are in a step and how many of them are done (have an end date). */
+case class MilestoneStepTaskCounts(total: Int, done: Int)
+
+object MilestoneStepTaskCounts {
+  val empty: MilestoneStepTaskCounts = MilestoneStepTaskCounts(0, 0)
+}
+
 /** How many steps a milestone has and how many of them are closed (Done or Abandoned). */
 case class MilestoneStepCounts(total: Int, closed: Int)
 

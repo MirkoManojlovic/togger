@@ -35,7 +35,7 @@ class TaskVersionService(
     closedBy: Option[UUID],
     taskStatusId: UUID,
     priority: TaskPriority,
-    milestone: Option[UUID] = None,
+    milestoneStepId: Option[UUID] = None,
     startDate: LocalDate,
     dueDate: LocalDate,
     endDate: Option[LocalDate] = None
@@ -56,7 +56,7 @@ class TaskVersionService(
                 closedBy,
                 taskStatusId,
                 priority,
-                milestone,
+                milestoneStepId,
                 startDate,
                 dueDate,
                 endDate

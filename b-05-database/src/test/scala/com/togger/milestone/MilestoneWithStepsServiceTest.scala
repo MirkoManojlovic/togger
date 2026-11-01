@@ -77,7 +77,7 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
       })
     }
 
-    "create a milestone without steps" in { transactor =>
+    "give a milestone without steps the default step with the dates of the milestone" in { transactor =>
       val service = new MilestoneWithStepsService(
         milestoneRepo,
         milestoneVersionRepo,
@@ -91,7 +91,12 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
         pair = milestoneOf(orgAndProject._2.id)
         (milestone, version) = pair
         created <- service.create(milestone, version, Nil)
-      } yield created._2 shouldBe Nil)
+      } yield {
+        created._2.map(step => (step.version.name, step.version.position, step.version.status)) shouldBe
+          List((DefaultMilestoneStep.Name, 0, MilestoneStepStatus.Planned))
+        created._2.map(step => (step.version.startDate, step.version.dueDate)) shouldBe
+          List((version.startDate, version.dueDate))
+      })
     }
 
     "leave no milestone behind when a step cannot be stored" in { transactor =>

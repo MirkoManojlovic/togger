@@ -2245,3 +2245,36 @@ databaseChangeLog:
               - column:
                   name: version
                   descending: true
+  - changeSet:
+      id: 20
+      author: mirko
+      labels: task-milestone-step
+      comment: >
+        A task belongs to a milestone step (its milestone is the milestone of the step) instead of to a milestone. The
+        column is renamed in place to keep the column order of the table; the old values were milestone ids, which
+        are not step ids, so they are cleared and the tasks start without a step. Deleting a step clears the link of
+        the older task versions that pointed at it (history); the service refuses to delete a step that tasks are in.
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: task_version
+            constraintName: fk_task_version_milestone
+        - sql:
+            sql: update task_version set milestone_id = null
+        - renameColumn:
+            tableName: task_version
+            oldColumnName: milestone_id
+            newColumnName: milestone_step_id
+            columnDataType: uuid
+        - addForeignKeyConstraint:
+            baseTableName: task_version
+            baseColumnNames: milestone_step_id
+            constraintName: fk_task_version_milestone_step
+            referencedTableName: milestone_step
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            indexName: idx_task_version_milestone_step_id
+            tableName: task_version
+            columns:
+              - column:
+                  name: milestone_step_id

@@ -14,6 +14,8 @@ import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.task.TaskVersionRepoImpl.taskPriorityCodec
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
+import com.togger.task.TaskVersionRepoImpl.milestoneStepJoin
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.Fragment
@@ -29,15 +31,15 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def entryActivity(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[EntryActivityRow]] =
     logAroundInfoQuery(
-      (fr"select log_entry.created_by, tv.milestone_id," ++ entryDay ++ fr", latest_entry.status, count(*) from" ++
-        LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++ latestVersionLateral ++
+      (fr"select log_entry.created_by, milestone_step.milestone_id," ++ entryDay ++ fr", latest_entry.status, count(*) from" ++
+        LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++ latestVersionLateral ++ milestoneStepJoin ++
         fr"join lateral (select status from" ++ LOG_ENTRY_VERSION_TABLE_FRAG ++
         fr"where log_entry_id = log_entry.id order by version desc limit 1) latest_entry on true" ++
         Fragments.whereAndOpt(
           Some(fr"task.project_id = $projectId"),
           filter.from.map(from => entryDay ++ fr">= $from"),
           filter.to.map(to => entryDay ++ fr"<= $to")
-        ) ++ fr"group by log_entry.created_by, tv.milestone_id, 3, latest_entry.status")
+        ) ++ fr"group by log_entry.created_by, milestone_step.milestone_id, 3, latest_entry.status")
         .query[EntryActivityRow]
         .to[List]
     )(
@@ -47,13 +49,13 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def tasksAssigned(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskAssignedRow]] =
     logAroundInfoQuery(
-      (fr"select tv.assigned_to, tv.milestone_id, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
+      (fr"select tv.assigned_to, milestone_step.milestone_id, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++ milestoneStepJoin ++
         Fragments.whereAndOpt(
           Some(fr"task.project_id = $projectId"),
           Some(fr"tv.assigned_to is not null"),
           filter.from.map(from => fr"tv.start_date >= $from"),
           filter.to.map(to => fr"tv.start_date <= $to")
-        ) ++ fr"group by tv.assigned_to, tv.milestone_id").query[TaskAssignedRow].to[List]
+        ) ++ fr"group by tv.assigned_to, milestone_step.milestone_id").query[TaskAssignedRow].to[List]
     )(
       s"Counting assigned tasks of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Assigned tasks counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -61,14 +63,14 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def tasksClosed(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskClosedRow]] =
     logAroundInfoQuery(
-      (fr"select tv.closed_by, tv.milestone_id, count(*) from" ++
-        TASK_TABLE_FRAG ++ latestVersionLateral ++
+      (fr"select tv.closed_by, milestone_step.milestone_id, count(*) from" ++
+        TASK_TABLE_FRAG ++ latestVersionLateral ++ milestoneStepJoin ++
         Fragments.whereAndOpt(
           Some(fr"task.project_id = $projectId"),
           Some(fr"tv.closed_by is not null"),
           filter.from.map(from => fr"tv.end_date >= $from"),
           filter.to.map(to => fr"tv.end_date <= $to")
-        ) ++ fr"group by tv.closed_by, tv.milestone_id").query[TaskClosedRow].to[List]
+        ) ++ fr"group by tv.closed_by, milestone_step.milestone_id").query[TaskClosedRow].to[List]
     )(
       s"Counting closed tasks of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Closed tasks counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -84,9 +86,9 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def tasksByStatus(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskStatusCountRow]] =
     logAroundInfoQuery(
-      (fr"select tv.milestone_id, tv.assigned_to, task_status.name, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
+      (fr"select milestone_step.milestone_id, tv.assigned_to, task_status.name, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++ milestoneStepJoin ++
         innerJoin(TASK_STATUS_TABLE_FRAG)(fr"tv.task_status_id = task_status.id") ++ startedIn(projectId, filter) ++
-        fr"group by tv.milestone_id, tv.assigned_to, task_status.name").query[TaskStatusCountRow].to[List]
+        fr"group by milestone_step.milestone_id, tv.assigned_to, task_status.name").query[TaskStatusCountRow].to[List]
     )(
       s"Counting tasks by status of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Tasks by status counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -97,10 +99,8 @@ class ContributionRepoImpl extends ContributionRepo {
     filter: ContributionsFilter
   ): ConnectionIO[List[TaskPriorityCountRow]] =
     logAroundInfoQuery(
-      (fr"select tv.milestone_id, tv.assigned_to, tv.priority, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
-        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, tv.priority")
-        .query[TaskPriorityCountRow]
-        .to[List]
+      (fr"select milestone_step.milestone_id, tv.assigned_to, tv.priority, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++ milestoneStepJoin ++
+        startedIn(projectId, filter) ++ fr"group by milestone_step.milestone_id, tv.assigned_to, tv.priority").query[TaskPriorityCountRow].to[List]
     )(
       s"Counting tasks by priority of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Tasks by priority counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -108,13 +108,11 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def tasksByLabel(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[TaskLabelCountRow]] =
     logAroundInfoQuery(
-      (fr"select tv.milestone_id, tv.assigned_to, task_label.name, count(distinct task.id) from" ++ TASK_TABLE_FRAG ++
-        latestVersionLateral ++
+      (fr"select milestone_step.milestone_id, tv.assigned_to, task_label.name, count(distinct task.id) from" ++ TASK_TABLE_FRAG ++
+        latestVersionLateral ++ milestoneStepJoin ++
         leftJoin(TASK_LABEL_ASSIGNMENT_TABLE_FRAG)(fr"task_label_assignment.task_id = task.id") ++
         leftJoin(TASK_LABEL_TABLE_FRAG)(fr"task_label.id = task_label_assignment.task_label_id") ++
-        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, task_label.name")
-        .query[TaskLabelCountRow]
-        .to[List]
+        startedIn(projectId, filter) ++ fr"group by milestone_step.milestone_id, tv.assigned_to, task_label.name").query[TaskLabelCountRow].to[List]
     )(
       s"Counting tasks by label of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Tasks by label counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -136,8 +134,8 @@ class ContributionRepoImpl extends ContributionRepo {
 
   override def milestoneTaskTotals(projectId: UUID): ConnectionIO[List[MilestoneTaskTotalsRow]] =
     logAroundInfoQuery(
-      (fr"select tv.milestone_id, count(*), count(tv.end_date) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
-        fr"where task.project_id = $projectId group by tv.milestone_id").query[MilestoneTaskTotalsRow].to[List]
+      (fr"select milestone_step.milestone_id, count(*), count(tv.end_date) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++ milestoneStepJoin ++
+        fr"where task.project_id = $projectId group by milestone_step.milestone_id").query[MilestoneTaskTotalsRow].to[List]
     )(
       s"Counting tasks per milestone of ${sp(projectId)}",
       rows => s"Tasks per milestone counted in ${sp(rows.size)} rows for ${sp(projectId)}"

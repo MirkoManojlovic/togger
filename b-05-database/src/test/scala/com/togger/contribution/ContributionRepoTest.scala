@@ -28,6 +28,7 @@ import com.togger.task.TaskPriority
 import com.togger.task.TaskRepoImpl
 import com.togger.task.TaskVersion
 import com.togger.task.TaskVersionRepoImpl
+import com.togger.milestone.MilestoneStepFixtures
 import doobie.ConnectionIO
 import doobie.implicits._
 
@@ -81,6 +82,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       status <- createTaskStatus(projectId)
       done <- taskStatusRepo.insert(taskStatus.copy(id = UUID.randomUUID(), projectId = projectId, name = "Done"))
       milestone <- milestoneRepo.insert(Milestone(UUID.randomUUID(), projectId, nowAsInstant))
+      step <- MilestoneStepFixtures.insertStep(milestone.id, nowAsInstant)
       t1 <- newTask(projectId, first)
       t2 <- newTask(projectId, first)
       t3 <- newTask(projectId, first)
@@ -91,7 +93,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         2,
         assignedTo = Some(first.id),
         closedBy = Some(first.id),
-        milestone = Some(milestone.id),
+        milestoneStepId = Some(step.id),
         startDate = day(12),
         endDate = Some(day(18))
       )
@@ -102,7 +104,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         priority = TaskPriority.Critical,
         assignedTo = Some(second.id),
         closedBy = Some(second.id),
-        milestone = Some(milestone.id),
+        milestoneStepId = Some(step.id),
         startDate = day(13),
         endDate = Some(day(20))
       )
@@ -132,7 +134,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     number: Long,
     assignedTo: Option[UUID],
     closedBy: Option[UUID] = None,
-    milestone: Option[UUID] = None,
+    milestoneStepId: Option[UUID] = None,
     priority: TaskPriority = TaskPriority.Medium,
     startDate: LocalDate = day(12),
     endDate: Option[LocalDate] = None
@@ -146,7 +148,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
         assignedTo = assignedTo,
         closedBy = closedBy,
         taskStatusId = statusId,
-        milestone = milestone,
+        milestoneStepId = milestoneStepId,
         priority = priority,
         startDate = startDate,
         dueDate = day(19),

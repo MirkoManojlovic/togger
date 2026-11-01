@@ -17,6 +17,11 @@ object MilestoneError {
       s"These steps would lie outside the milestone range $startDate - $dueDate: ${stepNames.mkString(", ")}"
   }
 
+  case class MilestoneHasTasks(count: Int) extends MilestoneError {
+    override def message: String =
+      s"The milestone has $count ${if (count == 1) "task" else "tasks"}; move or delete them before deleting the milestone"
+  }
+
   case class InvalidStep(stepName: String, reason: String) extends MilestoneError {
     override def message: String = s"Step '$stepName': $reason"
   }

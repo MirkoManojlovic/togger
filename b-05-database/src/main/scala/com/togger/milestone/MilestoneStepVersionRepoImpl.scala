@@ -3,6 +3,7 @@ package com.togger.milestone
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.db.Util._
 import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
+import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
 import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.milestone.MilestoneStepVersionRepoImpl.{MILESTONE_STEP_VERSION_TABLE_FRAG, milestoneStepStatusCodec}
 import com.togger.util.SplunkMacro.sp
@@ -109,6 +110,20 @@ class MilestoneStepVersionRepoImpl extends MilestoneStepVersionRepo {
     )(
       s"Finding latest milestone step versions of ${sp(milestoneId)}",
       found => s"Latest milestone step versions found ${sp(found)} for ${sp(milestoneId)}"
+    )
+
+  override def findLatestByProjectId(projectId: UUID): ConnectionIO[List[MilestoneStepVersion]] =
+    logAroundInfoQuery(
+      (fr"select distinct on (v.milestone_step_id)" ++ Fragment.const(returnFields.map("v." + _).mkString(", ")) ++
+        fr"from" ++ MILESTONE_STEP_VERSION_TABLE_FRAG ++ fr"v" ++
+        innerJoin(MILESTONE_STEP_TABLE_FRAG)(fr"v.milestone_step_id = milestone_step.id") ++
+        innerJoin(MILESTONE_TABLE_FRAG)(fr"milestone.id = milestone_step.milestone_id") ++
+        fr"where milestone.project_id = $projectId order by v.milestone_step_id, v.version desc")
+        .query[MilestoneStepVersion]
+        .to[List]
+    )(
+      s"Finding latest milestone step versions of project ${sp(projectId)}",
+      found => s"Latest milestone step versions found ${sp(found.size)} for project ${sp(projectId)}"
     )
 
   override def countByMilestoneIds(milestoneIds: List[UUID]): ConnectionIO[Map[UUID, MilestoneStepCounts]] =

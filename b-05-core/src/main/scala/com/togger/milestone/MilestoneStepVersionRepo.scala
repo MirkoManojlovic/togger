@@ -22,6 +22,9 @@ trait MilestoneStepVersionRepo {
   /** The latest version of every step of the milestone, in no particular order. */
   def findLatestByMilestoneId(milestoneId: UUID): ConnectionIO[List[MilestoneStepVersion]]
 
+  /** The latest version of every step of every milestone of the project, in no particular order. */
+  def findLatestByProjectId(projectId: UUID): ConnectionIO[List[MilestoneStepVersion]]
+
   /** Counts of the latest versions per milestone; milestones without steps are absent from the result. */
   def countByMilestoneIds(milestoneIds: List[UUID]): ConnectionIO[Map[UUID, MilestoneStepCounts]]
 
