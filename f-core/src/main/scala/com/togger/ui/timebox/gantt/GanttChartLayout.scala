@@ -6,7 +6,7 @@ import com.togger.dto.FindTaskRespFull
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
-import java.time.LocalDate
+import java.time.{LocalDate, YearMonth}
 
 /** What the Gantt charts have in common: the grid, the header, the day columns, the bar and the labels. */
 class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
@@ -29,21 +29,46 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     s"border-default-medium$gap$today"
   }
 
-  def headerRow(axis: GanttAxis): HtmlElement =
+  /** Consecutive columns of the same month, as (first day, number of columns). */
+  private def monthSpans(axis: GanttAxis): Seq[(LocalDate, Int)] =
+    axis.days
+      .foldLeft(Vector.empty[(LocalDate, Int)]) { case (spans, day) =>
+        spans.lastOption match {
+          case Some((first, count)) if YearMonth.from(first) == YearMonth.from(day) =>
+            spans.init :+ ((first, count + 1))
+          case _ => spans :+ ((day, 1))
+        }
+      }
+
+  private def monthRow(axis: GanttAxis): HtmlElement =
+    div(
+      cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
+      styleAttr := gridTemplate(axis),
+      div(),
+      monthSpans(axis).map { case (first, count) =>
+        div(
+          cls("flex items-center justify-center border-l border-default-medium py-1 font-medium text-heading"),
+          styleAttr := s"grid-column: span $count",
+          tgDateFormater.monthName(first)
+        )
+      }
+    )
+
+  private def dayRow(axis: GanttAxis): HtmlElement =
     div(
       cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
       styleAttr := gridTemplate(axis),
       div(cls("flex items-center justify-center px-2 py-1 font-medium"), "Task"),
       axis.days.zipWithIndex.map { case (day, index) =>
-        val monthStarts = index == 0 || axis.days(index - 1).getMonth != day.getMonth
         div(
           cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
-          div(cls("h-4 font-medium text-heading"), if (monthStarts) tgDateFormater.monthName(day).take(3) else ""),
           div(tgDateFormater.dayOfWeekAbbrev(day)),
           div(cls("text-heading"), tgDateFormater.dayOnly(day))
         )
       }
     )
+
+  def headerRow(axis: GanttAxis): HtmlElement = div(monthRow(axis), dayRow(axis))
 
   def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
     barTitle(task.name, start, due)
