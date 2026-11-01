@@ -27,6 +27,9 @@ import com.togger.organization.OrganizationRepoImpl
 import com.togger.project.ProjectAccountRepoImpl
 import com.togger.project.ProjectLabelAssignmentRepoImpl
 import com.togger.project.ProjectRepoImpl
+import com.togger.milestone.MilestoneStepRepoImpl
+import com.togger.milestone.MilestoneStepVersionRepoImpl
+import com.togger.milestone.MilestoneWithStepsService
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.TaskTemplateRepoImpl
@@ -147,6 +150,16 @@ trait SeedAppModule {
     new MilestoneService(
       milestoneRepo = milestoneRepo,
       milestoneVersionRepo = milestoneVersionRepo,
+      transactor = xa
+    )
+
+  /** Creates a milestone with its first steps; without steps it gets the default one. */
+  protected val milestoneWithStepsService =
+    new MilestoneWithStepsService(
+      milestoneRepo = milestoneRepo,
+      milestoneVersionRepo = milestoneVersionRepo,
+      milestoneStepRepo = new MilestoneStepRepoImpl,
+      milestoneStepVersionRepo = new MilestoneStepVersionRepoImpl,
       transactor = xa
     )
 

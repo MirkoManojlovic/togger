@@ -70,7 +70,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
 
     def createTaskWithLogEntries(
       projectId: UUID,
-      milestoneId: UUID,
+      milestoneStepId: UUID,
       taskStatusId: UUID,
       ownerId: UUID,
       taskName: String,
@@ -87,7 +87,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             description = "",
             assignedTo = None,
             taskStatusId = taskStatusId,
-            milestone = Some(milestoneId),
+            milestoneStepId = Some(milestoneStepId),
             startDate = LocalDate.now(),
             dueDate = LocalDate.now().plusMonths(1),
             createdAt = now,
@@ -128,7 +128,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       labelPool: Seq[UUID]
     ): IO[Unit] =
       for {
-        milestoneResult <- milestoneService.createMilestone(
+        milestoneResult <- milestoneWithStepsService.create(
           Milestone(id = TgIds.UNASSIGNED_UUID, projectId = projectId, createdAt = now),
           MilestoneVersion(
             version = TgIds.UNASSIGNED_UUID,
@@ -140,9 +140,10 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             dueDate = LocalDate.now().plusMonths(1),
             createdAt = now,
             updatedAt = now
-          )
+          ),
+          Nil
         )
-        milestone = milestoneResult.milestone
+        milestoneStepId = milestoneResult._2.head.milestoneStep.id
         _ <- (1 to 10).toList.traverse { i =>
           val taskNumber = f"$i%02d"
           val taskIndex = taskIndexOffset + (i - 1)
@@ -150,7 +151,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           val taskLabelIds = if (labelPool.isEmpty) Seq.empty else Seq(labelPool(taskIndex % labelPool.size))
           createTaskWithLogEntries(
             projectId = projectId,
-            milestoneId = milestone.id,
+            milestoneStepId = milestoneStepId,
             taskStatusId = taskStatusId,
             ownerId = ownerId,
             taskName = s"Task - Alpha - $quarterLabel - $taskNumber",

@@ -370,7 +370,7 @@ object DemoSeedApp extends IOApp with SeedAppModule {
             closedBy = v.closedBy.map(ids.account),
             taskStatusId = ids.status(v.taskStatusId),
             priority = v.priority,
-            milestone = v.milestone,
+            milestoneStepId = v.milestoneStepId,
             startDate = v.startDate,
             dueDate = v.dueDate,
             endDate = v.endDate,

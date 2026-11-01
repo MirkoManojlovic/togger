@@ -243,6 +243,7 @@ object TgServer {
             milestoneController.deleteVersion,
             milestoneStepController.findById,
             milestoneStepController.findByMilestoneId,
+            milestoneStepController.findByProjectId,
             milestoneStepController.save,
             milestoneStepController.update,
             milestoneStepController.reorder,
@@ -484,14 +485,15 @@ class DependenciesModule(
       dateRangeValidation,
       projectService,
       taskStatusService,
-      accountNameLookup
+      accountNameLookup,
+      milestoneStepService
     )
 
   lazy val timeboxRepo = new TimeboxRepoImpl
   lazy val timeboxVersionRepo = new TimeboxVersionRepoImpl
   lazy val timeboxService = new TimeboxService(timeboxRepo, timeboxVersionRepo, taskRepo, taskVersionRepo, transactor)
   lazy val timeboxEndpoints = new TimeboxEndpoints(securedEndpoint)
-  lazy val timeboxController = new TimeboxController(timeboxEndpoints, timeboxService, dateRangeValidation, tgClock)
+  lazy val timeboxController = new TimeboxController(timeboxEndpoints, timeboxService, dateRangeValidation, tgClock, milestoneStepService)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl

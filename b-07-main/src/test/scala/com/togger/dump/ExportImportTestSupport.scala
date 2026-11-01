@@ -217,6 +217,10 @@ trait ExportImportTestSupport
     milestoneId: Option[UUID] = None
   ): ConnectionIO[UUID] =
     for {
+      // the task is in the first step of the milestone, as a task belongs to a step
+      stepId <- milestoneId.traverse(id =>
+        milestoneStepVersionRepo.findLatestByMilestoneId(id).map(_.minBy(_.position).milestoneStepId)
+      )
       savedTask <- taskRepo.insert(
         Task(id = UUID.randomUUID(), projectId = projectId, createdBy = createdBy, createdAt = nowAsInstant)
       )
@@ -229,7 +233,7 @@ trait ExportImportTestSupport
           assignedTo = None,
           closedBy = None,
           taskStatusId = taskStatusId,
-          milestone = milestoneId,
+          milestoneStepId = stepId,
           startDate = LocalDate.now(),
           dueDate = LocalDate.now().plusDays(7),
           createdAt = nowAsInstant,
