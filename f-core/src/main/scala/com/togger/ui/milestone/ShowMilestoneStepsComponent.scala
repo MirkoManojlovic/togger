@@ -217,13 +217,15 @@ class ShowMilestoneStepsComponent(
             rowButtonMarginCls,
             onClick.mapToUnit --> (_ => router.route(EditMilestoneStepPage(projectId, step.id)))
           ),
-          iconButton(
-            "Delete",
-            TgIcons.trashIcon(className = "w-4 h-4"),
-            rowIconButtonDangerCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => deleteStep(step))
-          )
+          if (step.shelf) emptyNode
+          else
+            iconButton(
+              "Delete",
+              TgIcons.trashIcon(className = "w-4 h-4"),
+              rowIconButtonDangerCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => deleteStep(step))
+            )
         )
       )
     )

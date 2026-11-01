@@ -6,7 +6,7 @@ import io.circe.generic.auto._
 import java.time.{Instant, LocalDate}
 import java.util.UUID
 
-case class PreviewMilestoneStep(id: UUID, milestoneId: UUID, createdAt: Instant)
+case class PreviewMilestoneStep(id: UUID, milestoneId: UUID, createdAt: Instant, shelf: Boolean = false)
 
 /** The status is kept as its int value, so that no codec of the enum is needed in the storage. */
 case class PreviewMilestoneStepVersion(

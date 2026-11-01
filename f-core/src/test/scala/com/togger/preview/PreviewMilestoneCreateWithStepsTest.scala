@@ -46,14 +46,14 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
         id = created.toOption.get.id
         found <- s.env.run(s.milestones.findMilestoneById(id))
       } yield {
-        created.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((2, 0))
-        found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((2, 0))
+        created.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 0))
+        found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 0))
         s.steps.latestVersionsOf(id).map(v => (v.name, v.position, v.status.statusName)) shouldBe
-          List(("Design", 0, "Planned"), ("Build", 1, "Planned"))
+          List(("Design", 0, "Planned"), ("Build", 1, "Planned"), ("Shelf", 2, "Planned"))
       }
     }
 
-    "give a milestone without steps the default step with the dates of the milestone" in { _ =>
+    "give a milestone without steps only the Shelf step with the dates of the milestone" in { _ =>
       val s = new Services
       for {
         created <- s.env.run(s.milestones.createMilestone(create(Nil)))
@@ -63,7 +63,7 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
         s.steps
           .latestVersionsOf(id)
           .map(v => (v.name, v.position, v.status.statusName, v.startDate, v.dueDate)) shouldBe
-          List(("Main", 0, "Planned", monday, nextFriday))
+          List(("Shelf", 0, "Planned", monday, nextFriday))
       }
     }
 
@@ -83,8 +83,8 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
         found <- s.env.run(s.milestones.findMilestoneById(id))
         listed <- s.env.run(s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter.empty, PageRequest(1, 50)))
       } yield {
-        found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((2, 1))
-        listed.map(_.items.find(_.id == id).map(r => (r.stepsTotal, r.stepsClosed))) shouldBe Right(Some((2, 1)))
+        found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 1))
+        listed.map(_.items.find(_.id == id).map(r => (r.stepsTotal, r.stepsClosed))) shouldBe Right(Some((3, 1)))
       }
     }
 

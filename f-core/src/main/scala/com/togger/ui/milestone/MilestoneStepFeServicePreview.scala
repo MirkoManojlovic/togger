@@ -29,6 +29,7 @@ class MilestoneStepFeServicePreview(
   private val ChangeCommentEmpty = "Change comment must not be empty"
   private val EndDateRequiredWhenClosed = "End date is required when the status is Done or Abandoned"
   private val StepsDoNotMatchMilestone = "The ordered steps must be exactly the steps of the milestone"
+  private val ShelfStepCannotBeDeleted = "The Shelf step of a milestone cannot be deleted"
   private val LastStepOfMilestone = "The last step of a milestone cannot be deleted"
 
   private def stepHasTasks(count: Int) =
@@ -137,6 +138,7 @@ class MilestoneStepFeServicePreview(
       IO.defer {
         val step = data.steps.find(id)
         if (step.isEmpty) PreviewResponses.badRequest[TgEmptyBody](StepNotFound)
+        else if (step.get.shelf) PreviewResponses.badRequest[TgEmptyBody](ShelfStepCannotBeDeleted)
         else if (data.steps.filter(_.milestoneId == step.get.milestoneId).size <= 1)
           PreviewResponses.badRequest[TgEmptyBody](LastStepOfMilestone)
         else if (data.taskCounts(id)._1 > 0)
@@ -241,7 +243,8 @@ class MilestoneStepFeServicePreview(
       updatedAt = version.updatedAt,
       changeComment = version.changeComment,
       tasksTotal = data.taskCounts(step.id)._1,
-      tasksDone = data.taskCounts(step.id)._2
+      tasksDone = data.taskCounts(step.id)._2,
+      shelf = step.shelf
     )
 
   private def toVersionDto(version: PreviewMilestoneStepVersion): MilestoneStepVersionDto =

@@ -81,12 +81,11 @@ class MilestoneFeServicePreview(
         updatedAt = now
       )
     )
-    // like the backend: a milestone always has a step for its tasks
-    val stepsToStore =
-      if (dto.steps.nonEmpty) dto.steps
-      else List(NewMilestoneStepReq(DefaultMilestoneStep.Name, DefaultMilestoneStep.Description, dto.startDate, dto.dueDate))
-    stepsToStore.zipWithIndex.foreach { case (step, position) =>
-      val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now))
+    // like the backend: the Shelf step is always added after the given steps
+    val shelf = NewMilestoneStepReq(DefaultMilestoneStep.Name, DefaultMilestoneStep.Description, dto.startDate, dto.dueDate)
+    (dto.steps :+ shelf).zipWithIndex.foreach { case (step, position) =>
+      val isShelf = position == dto.steps.size
+      val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now, isShelf))
       steps.stepVersions.upsert(
         PreviewMilestoneStepVersion(
           version = UUID.randomUUID(),
