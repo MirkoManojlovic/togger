@@ -6,19 +6,59 @@ import com.togger.dto.FindTaskRespFull
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
+import org.scalajs.dom
+
 import java.time.{LocalDate, YearMonth}
 
 /** What the Gantt charts have in common: the grid, the header, the day columns, the bar and the labels. */
 class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
-  private val NameColumn = "20rem"
-  private val NameColumnRem = 20
+  private val NameColumnVar = "--gantt-name-col"
+  private val MinNameColumnPx = 192.0 // 12rem at default root font size
+  private val MaxNameColumnPx = 640.0
+  private val DefaultNameColumnPx = 320.0
   private val DefaultNameColumnTitle = "Task"
 
-  def gridTemplate(axis: GanttAxis): String =
-    s"grid-template-columns: $NameColumn repeat(${axis.size}, minmax(2.25rem, 1fr))"
+  private val nameColumnWidthPxVar: Var[Double] = Var(DefaultNameColumnPx)
+  private val nameColumnDragVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
 
-  def minWidthStyle(axis: GanttAxis): String = s"min-width: ${NameColumnRem + axis.size * 2.25}rem"
+  def gridTemplate(axis: GanttAxis): String =
+    s"grid-template-columns: var($NameColumnVar) repeat(${axis.size}, minmax(2.25rem, 1fr))"
+
+  def minWidthStyle(axis: GanttAxis): String = s"min-width: calc(var($NameColumnVar) + ${axis.size * 2.25}rem)"
+
+  /** The name cell of a row. It spans the whole row so that, being sticky, it stays in view while the days scroll. */
+  val nameCellClasses = "sticky left-0 z-20 border-r border-default-medium bg-neutral-primary-soft"
+
+  def nameCellStyle(gridRow: String = "1"): String =
+    s"grid-column: 1 / -1; grid-row: $gridRow; justify-self: start; width: var($NameColumnVar)"
+
+  private def startNameColumnDrag(event: dom.MouseEvent): Unit = {
+    event.preventDefault()
+    nameColumnDragVar.set(Some((event.clientX, nameColumnWidthPxVar.now())))
+  }
+
+  private def moveNameColumnDrag(event: dom.MouseEvent): Unit =
+    nameColumnDragVar.now().foreach { case (startX, startWidth) =>
+      nameColumnWidthPxVar.set((startWidth + event.clientX - startX).max(MinNameColumnPx).min(MaxNameColumnPx))
+    }
+
+  /** The grip in the middle of the name column's right edge. The strip around it is a sticky, zero wide flex item as
+    * tall as the chart, so the grip stays in view and vertically centered while the days scroll.
+    */
+  private val nameColumnResizeHandle: HtmlElement =
+    div(
+      cls("sticky left-0 z-40 w-0 self-stretch"),
+      div(
+        cls("pointer-events-none absolute inset-y-0 left-0 flex items-center justify-end"),
+        styleAttr := s"width: var($NameColumnVar)",
+        div(
+          cls("pointer-events-auto h-20 w-2 cursor-col-resize rounded-full bg-neutral-quaternary-medium hover:bg-fg-brand"),
+          cls("bg-fg-brand") <-- nameColumnDragVar.signal.map(_.isDefined),
+          onMouseDown --> (event => startNameColumnDrag(event))
+        )
+      )
+    )
 
   /** A column starts a new block when the day before it is not the previous column, so a weekend shows as a gap. */
   private def startsAfterGap(axis: GanttAxis, index: Int): Boolean =
@@ -29,6 +69,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     val today = if (axis.days(index) == tgClock.currentDate()) " bg-brand-softer" else ""
     s"border-default-medium$gap$today"
   }
+
 
   /** Consecutive columns of the same month, as (first day, first column index, number of columns). */
   private def monthSpans(axis: GanttAxis): Seq[(LocalDate, Int, Int)] =
@@ -47,8 +88,8 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
       cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
       styleAttr := gridTemplate(axis),
       div(
-        cls("flex items-center justify-center px-2 py-1 font-medium"),
-        styleAttr := "grid-column: 1; grid-row: 1 / span 2",
+        cls(s"flex items-center justify-center px-2 py-1 font-medium $nameCellClasses z-30"),
+        styleAttr := nameCellStyle("1 / span 2"),
         nameColumnTitle
       ),
       monthSpans(axis).map { case (first, start, count) =>
@@ -147,6 +188,14 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def frame(axis: GanttAxis, rows: Seq[HtmlElement], nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
       cls("overflow-x-auto rounded-base border border-default-medium"),
-      div(styleAttr := minWidthStyle(axis), headerRow(axis, nameColumnTitle), rows)
+      styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(width => s"${width}px"),
+      windowEvents(_.onMouseMove) --> (event => moveNameColumnDrag(event)),
+      windowEvents(_.onMouseUp) --> (_ => nameColumnDragVar.set(None)),
+      div(
+        cls("flex"),
+        styleAttr := minWidthStyle(axis),
+        nameColumnResizeHandle,
+        div(cls("min-w-0 flex-1"), headerRow(axis, nameColumnTitle), rows)
+      )
     )
 }

@@ -121,8 +121,8 @@ class TimeboxReviewGanttComponent(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := layout.gridTemplate(axis),
       div(
-        cls("flex items-center self-stretch overflow-hidden px-2 py-1"),
-        styleAttr := "grid-column: 1; grid-row: 1 / span 2",
+        cls(s"flex items-center self-stretch overflow-hidden px-2 py-1 ${layout.nameCellClasses}"),
+        styleAttr := layout.nameCellStyle("1 / span 2"),
         taskDetails(task, milestoneList)
       ),
       layout.dayCells(axis, "1"),

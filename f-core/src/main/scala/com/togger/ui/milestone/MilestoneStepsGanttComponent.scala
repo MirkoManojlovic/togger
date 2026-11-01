@@ -35,7 +35,8 @@ class MilestoneStepsGanttComponent(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := layout.gridTemplate(axis),
       div(
-        cls("flex items-center self-stretch overflow-hidden px-2 py-1"),
+        cls(s"flex items-center self-stretch overflow-hidden px-2 py-1 ${layout.nameCellClasses}"),
+        styleAttr := layout.nameCellStyle(),
         span(cls("min-w-0 truncate text-sm text-heading"), title := step.name, step.name)
       ),
       layout.dayCells(axis, "1"),
