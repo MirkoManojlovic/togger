@@ -61,7 +61,7 @@ class TimeboxReviewGanttComponent(
 
   private def taskDetails(task: FindTaskRespFull, milestones: Seq[FindMilestoneResp]): HtmlElement =
     div(
-      cls("flex min-w-0 flex-col gap-1 py-1"),
+      cls("flex min-w-0 flex-col gap-0.5 py-0.5"),
       div(
         cls("flex items-center gap-1.5"),
         a(
@@ -121,7 +121,7 @@ class TimeboxReviewGanttComponent(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := layout.gridTemplate(axis),
       div(
-        cls(s"flex items-center self-stretch overflow-hidden px-2 py-1 ${layout.nameCellClasses}"),
+        cls(s"flex items-center self-stretch overflow-hidden px-2 py-0.5 ${layout.nameCellClasses}"),
         styleAttr := layout.nameCellStyle("1 / span 2"),
         taskDetails(task, milestoneList)
       ),
