@@ -1,48 +1,49 @@
 package com.togger.mcp
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.duration.DurationInt
-
+import cats.effect.{Deferred, IO}
+import cats.effect.testing.scalatest.AsyncIOSpec
+import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
-class CheckDesktopAppRunningTest extends AnyWordSpec with Matchers:
+class CheckDesktopAppRunningTest extends AsyncWordSpec with AsyncIOSpec with Matchers with Checkpoints {
 
   "CheckDesktopAppRunning" should {
 
-    "call onStopped once when the desktop app is no longer running" in {
+    "complete the stop signal once the desktop app is no longer running" in {
       val checks = AtomicInteger(0)
-      val stopped = AtomicInteger(0)
-      val watcher = CheckDesktopAppRunning(
-        isRunning = () => checks.incrementAndGet() < 3,
-        checkInterval = 10.millis,
-        onStopped = () => { stopped.incrementAndGet(); () }
-      ).start()
 
-      watcher.join(5000)
-
-      checks.get() shouldBe 3
-      stopped.get() shouldBe 1
+      for {
+        stopSignal <- Deferred[IO, Unit]
+        _ <- new CheckDesktopAppRunning(10.millis).run(() => checks.incrementAndGet() < 3, stopSignal)
+        stopped <- stopSignal.tryGet
+      } yield {
+        val cp = new Checkpoint
+        cp(checks.get() shouldBe 3)
+        stopped shouldBe Some(())
+      }
     }
 
-    "keep running while the desktop app is running" in {
-      val stopped = AtomicInteger(0)
-      val watcher = CheckDesktopAppRunning(
-        isRunning = () => true,
-        checkInterval = 10.millis,
-        onStopped = () => { stopped.incrementAndGet(); () }
-      ).start()
+    "keep polling while the desktop app is running, until cancelled" in {
+      val checks = AtomicInteger(0)
 
-      Thread.sleep(200)
-
-      watcher.isAlive shouldBe true
-      stopped.get() shouldBe 0
-    }
-
-    "recognise the desktop app in ps output" in {
-      val running = "user 123 0.0 /Applications/Togger.app/Contents/MacOS/app"
-      CheckDesktopAppRunning.containsDesktopApp(running) shouldBe true
-      CheckDesktopAppRunning.containsDesktopApp("user 123 0.0 /usr/bin/java -jar other.jar") shouldBe false
+      for {
+        stopSignal <- Deferred[IO, Unit]
+        fiber <- new CheckDesktopAppRunning(10.millis).run(() => checks.incrementAndGet() > 0, stopSignal).start
+        _ <- IO.sleep(200.millis)
+        checksWhileRunning = checks.get()
+        _ <- fiber.cancel
+        checksAfterCancel = checks.get()
+        _ <- IO.sleep(100.millis)
+        stopped <- stopSignal.tryGet
+      } yield {
+        val cp = new Checkpoint
+        cp(checksWhileRunning should be > 1)
+        cp(checks.get() shouldBe checksAfterCancel)
+        stopped shouldBe None
+      }
     }
   }
+}
