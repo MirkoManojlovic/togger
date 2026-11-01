@@ -47,5 +47,31 @@ class DemoMilestoneStepsTest extends AnyWordSpec with Matchers {
       foundations.steps.map(_.status) shouldBe
         List(MilestoneStepStatus.Done, MilestoneStepStatus.Done, MilestoneStepStatus.InProgress)
     }
+
+    "hold the demo tasks of a milestone in one of its steps, in the project of the milestone" in {
+      val stepsById = demo.milestones.flatMap(m => m.steps.map(_.id -> m)).toMap
+      val inSteps = demo.tasks.flatMap(task => task.versions.map(task -> _)).filter(_._2.milestoneStepId.isDefined)
+
+      inSteps.nonEmpty shouldBe true
+      inSteps.foreach { case (task, version) =>
+        val milestone = stepsById(version.milestoneStepId.get)
+        version.milestone shouldBe Some(milestone.id)
+        milestone.projectId shouldBe task.projectId
+      }
+    }
+
+    "give every task that names a milestone a step, and no step to the others" in {
+      demo.tasks.flatMap(_.versions).foreach(version => version.milestone.isDefined shouldBe version.milestoneStepId.isDefined)
+    }
+
+    "put some tasks of a milestone in each of several of its steps" in {
+      val betaSteps = demo.tasks
+        .flatMap(_.versions)
+        .filter(_.milestone.contains(DemoMilestonesData.BetaId))
+        .flatMap(_.milestoneStepId)
+        .toSet
+
+      betaSteps.size should be > 1
+    }
   }
 }

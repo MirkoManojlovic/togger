@@ -33,6 +33,7 @@ case class UpdateMilestoneStepReq(
 /** `stepIds` is the complete new order of the steps of the milestone. */
 case class ReorderMilestoneStepsReq(milestoneId: UUID, stepIds: List[UUID], changeComment: String)
 
+/** `tasksTotal` and `tasksDone` count the tasks in the step; a task is done when it has an end date. */
 case class FindMilestoneStepResp(
   id: UUID,
   milestoneId: UUID,
@@ -46,7 +47,9 @@ case class FindMilestoneStepResp(
   dueDate: LocalDate,
   endDate: Option[LocalDate],
   updatedAt: Instant,
-  changeComment: String
+  changeComment: String,
+  tasksTotal: Int = 0,
+  tasksDone: Int = 0
 )
 
 case class MilestoneStepVersionDto(

@@ -47,6 +47,12 @@ class MilestoneStepEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(basePath / "milestone" / path[UUID]("id"))
       .out(jsonBody[TgJsonSuccess[List[FindMilestoneStepResp]]])
 
+  /** All steps of the milestones of the project, by milestone then position, for the pickers of the task forms. */
+  val findByProjectIdEndpoint: TgSecuredEndpoint[UUID, List[FindMilestoneStepResp]] =
+    securedEndpoint.endpoint.get
+      .in(basePath / "project" / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[List[FindMilestoneStepResp]]])
+
   val reorderEndpoint: TgSecuredEndpoint[ReorderMilestoneStepsReq, List[FindMilestoneStepResp]] =
     securedEndpoint.endpoint.put
       .in(basePath / "order")

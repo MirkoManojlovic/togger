@@ -180,7 +180,8 @@ object DemoDataSet {
 
   def build(today: LocalDate, now: Instant): DemoDataSet = {
     val projects = DemoOrganizationsData.projects
-    val tasks = DemoTasksData.tasks(today, now, projects)
+    val milestones = DemoMilestonesData.milestones(today, now, projects)
+    val tasks = DemoTasksData.tasks(today, now, projects, milestones)
     DemoDataSet(
       accounts = DemoAccountsData.accounts,
       organizations = DemoOrganizationsData.organizations,
@@ -190,7 +191,7 @@ object DemoDataSet {
       taskStatuses = DemoTaskConfigData.statuses,
       taskLabels = DemoTaskConfigData.labels,
       taskTemplates = DemoTaskConfigData.templates(now),
-      milestones = DemoMilestonesData.milestones(today, now, projects),
+      milestones = milestones,
       promptTemplates = DemoAiData.promptTemplates(now),
       aiActions = DemoAiData.actions(now),
       aiActionDefaults = DemoAiData.defaults,
