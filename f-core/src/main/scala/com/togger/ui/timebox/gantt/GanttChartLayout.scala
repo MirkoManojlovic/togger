@@ -20,7 +20,6 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
   /** None while the column is sized by its widest cell, so that the width can be measured. */
   private val nameColumnWidthPxVar: Var[Option[Double]] = Var(None)
-  private var userResizedNameColumn = false
   private val nameColumnDragVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
 
   def gridTemplate(axis: GanttAxis): String =
@@ -41,18 +40,16 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
   private def moveNameColumnDrag(event: dom.MouseEvent): Unit =
     nameColumnDragVar.now().foreach { case (startX, startWidth) =>
-      userResizedNameColumn = true
       nameColumnWidthPxVar.set(Some(clampNameColumn(startWidth + event.clientX - startX)))
     }
 
   private def clampNameColumn(width: Double): Double = width.max(MinNameColumnPx).min(MaxNameColumnPx)
 
-  /** Sizes the column to its widest cell, header and rows alike, within the minimum and the maximum. A width the user
-    * dragged to is kept.
+  /** Sizes the column to its widest cell, header and rows alike, within the minimum and the maximum. This is done once:
+    * a chart redrawn after an edit keeps the width it has, as does a width the user dragged to.
     */
   private def fitNameColumn(frameElement: dom.Element): Unit =
-    if (!userResizedNameColumn) {
-      nameColumnWidthPxVar.set(None)
+    if (nameColumnWidthPxVar.now().isEmpty) {
       dom.window.requestAnimationFrame { _ =>
         val cells = frameElement.querySelectorAll(".gantt-name-cell")
         val widest = (0 until cells.length).map(cells(_).asInstanceOf[dom.html.Element].offsetWidth).maxOption
