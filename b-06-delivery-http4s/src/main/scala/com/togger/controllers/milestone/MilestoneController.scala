@@ -31,6 +31,14 @@ import com.togger.milestone.MilestoneStepStatus
 import com.togger.milestone.MilestoneStepVersion
 import com.togger.milestone.MilestoneWithStepsService
 import com.togger.milestone.MilestoneWithOneVersion
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.MilestoneVersionDto
+import com.togger.milestone.MilestoneError.MilestoneHasTasks
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneEndpoints
+import com.togger.milestone.MilestoneService
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneVersion
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
@@ -206,9 +214,13 @@ class MilestoneController(
     milestoneStepService.countsByMilestoneIds(milestoneIds)
 
   val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
-    milestoneService
-      .deleteMilestone(id)
-      .map(_ => TgJsonSuccess.justMessageRight("Milestone deleted successfully"))
+    milestoneStepService.countTasksOfMilestone(id).flatMap {
+      case tasks if tasks > 0 => IO.pure(MilestoneHasTasks(tasks).toBadRequestLeft[TgJsonSuccess.TgEmptyBody])
+      case _ =>
+        milestoneService
+          .deleteMilestone(id)
+          .map(_ => TgJsonSuccess.justMessageRight("Milestone deleted successfully"))
+    }
   }
 
   val listVersions = milestoneEndpoints.listVersionsEndpoint.serverLogic { _ => request =>

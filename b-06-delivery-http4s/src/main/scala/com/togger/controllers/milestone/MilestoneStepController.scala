@@ -92,17 +92,31 @@ class MilestoneStepController(
       .map(result => TgJsonSuccess.justBodyRight(toDto(result)))
   }
 
+  /** The steps with the number of tasks in each. */
+  private def withTaskCounts(steps: List[MilestoneStepWithOneVersion]): IO[List[FindMilestoneStepResp]] =
+    milestoneStepService
+      .taskCountsByStepIds(steps.map(_.milestoneStep.id))
+      .map(counts => steps.map(step => toDto(step, counts.getOrElse(step.milestoneStep.id, MilestoneStepTaskCounts.empty))))
+
   val findById = milestoneStepEndpoints.findByIdEndpoint.serverLogic { auth => id =>
-    milestoneStepService.getCurrent(id).map {
-      case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
-      case Left(error)   => error.toBadRequestLeft[FindMilestoneStepResp]
+    milestoneStepService.getCurrent(id).flatMap {
+      case Right(result) => withTaskCounts(List(result)).map(found => TgJsonSuccess.justBodyRight(found.head))
+      case Left(error)   => IO.pure(error.toBadRequestLeft[FindMilestoneStepResp])
     }
   }
 
   val findByMilestoneId = milestoneStepEndpoints.findByMilestoneIdEndpoint.serverLogic { auth => milestoneId =>
     milestoneStepService
       .findAllByMilestoneId(milestoneId)
-      .map(steps => TgJsonSuccess.justBodyRight(steps.map(toDto)))
+      .flatMap(withTaskCounts)
+      .map(steps => TgJsonSuccess.justBodyRight(steps))
+  }
+
+  val findByProjectId = milestoneStepEndpoints.findByProjectIdEndpoint.serverLogic { auth => projectId =>
+    milestoneStepService
+      .findAllByProjectId(projectId)
+      .flatMap(withTaskCounts)
+      .map(steps => TgJsonSuccess.justBodyRight(steps))
   }
 
   val update = milestoneStepEndpoints.updateEndpoint.serverLogic { auth => dto =>
@@ -132,9 +146,9 @@ class MilestoneStepController(
       updatedAt = now,
       changeComment = dto.changeComment.trim
     )
-    milestoneStepService.saveNewVersion(dto.id, newVersion).map {
-      case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
-      case Left(error)   => error.toBadRequestLeft[FindMilestoneStepResp]
+    milestoneStepService.saveNewVersion(dto.id, newVersion).flatMap {
+      case Right(result) => withTaskCounts(List(result)).map(found => TgJsonSuccess.justBodyRight(found.head))
+      case Left(error)   => IO.pure(error.toBadRequestLeft[FindMilestoneStepResp])
     }
   }
 
@@ -144,15 +158,18 @@ class MilestoneStepController(
       case Right(_) =>
         milestoneStepService
           .reorder(dto.milestoneId, dto.stepIds, dto.changeComment.trim, tgClock.currentInstant)
-          .map {
-            case Right(steps) => TgJsonSuccess.justBodyRight(steps.map(toDto))
-            case Left(error)  => error.toBadRequestLeft[List[FindMilestoneStepResp]]
+          .flatMap {
+            case Right(steps) => withTaskCounts(steps).map(found => TgJsonSuccess.justBodyRight(found))
+            case Left(error)  => IO.pure(error.toBadRequestLeft[List[FindMilestoneStepResp]])
           }
     }
   }
 
   val delete = milestoneStepEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
-    milestoneStepService.deleteMilestoneStep(id).map(_ => TgJsonSuccess.justMessageRight("Milestone step deleted successfully"))
+    milestoneStepService.deleteMilestoneStep(id).map {
+      case Right(_)    => TgJsonSuccess.justMessageRight("Milestone step deleted successfully")
+      case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]
+    }
   }
 
   val listVersions = milestoneStepEndpoints.listVersionsEndpoint.serverLogic { auth => request =>

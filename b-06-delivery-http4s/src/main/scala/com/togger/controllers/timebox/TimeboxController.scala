@@ -17,15 +17,34 @@ import com.togger.dto.SaveTimeboxVersionReq
 import com.togger.timebox.TimeboxEndpoints
 import com.togger.timebox.TimeboxError.ChangeCommentEmpty
 import com.togger.timebox.TimeboxService
+import com.togger.milestone.MilestoneStepService
+import com.togger.timebox.TimeboxError.TimeboxError
+import com.togger.timebox.TimeboxVersionWithTasks
+import com.togger.timebox.TimeboxWithOneVersion
 
 import java.time.LocalDate
+import java.util.UUID
 
 class TimeboxController(
   timeboxEndpoints: TimeboxEndpoints,
   timeboxService: TimeboxService,
   dateRangeValidation: DateRangeValidation,
-  tgClock: TgClock
+  tgClock: TgClock,
+  milestoneStepService: MilestoneStepService
 ) {
+
+  /** The milestone of the steps the planned tasks are in, as the milestone of a task is the one of its step. */
+  private def milestonesOf(versions: Iterable[TimeboxVersionWithTasks]): IO[UUID => Option[UUID]] =
+    milestoneStepService
+      .findMilestoneIdsByStepIds(versions.flatMap(_.tasks.flatMap(_.milestoneStepId)))
+      .map(milestones => (id: UUID) => milestones.get(id))
+
+  private def respond(result: Either[TimeboxError, TimeboxWithOneVersion]) =
+    result match {
+      case Right(found) =>
+        milestonesOf(List(found.version)).map(milestoneOf => TgJsonSuccess.justBodyRight(toDto(found, milestoneOf)))
+      case Left(error) => IO.pure(error.toBadRequestLeft[FindTimeboxResp])
+    }
 
   private def validateRange(start: LocalDate, end: LocalDate): Either[NonEmptyChain[TgError], Unit] = {
     val validated: ValidatedNec[TgError, LocalDate] = dateRangeValidation.validateOnOrAfterStart("End date", end, start)
@@ -45,18 +64,8 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .createTimebox(
-            dto.projectId,
-            dto.startDate,
-            dto.endDate,
-            dto.description,
-            dto.taskIds,
-            tgClock.currentInstant
-          )
-          .map {
-            case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
-            case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
-          }
+          .createTimebox(dto.projectId, dto.startDate, dto.endDate, dto.description, dto.taskIds, tgClock.currentInstant)
+          .flatMap(respond)
     }
   }
 
@@ -65,27 +74,13 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .saveNewVersion(
-            dto.timeboxId,
-            dto.startDate,
-            dto.endDate,
-            dto.description,
-            dto.changeComment.trim,
-            dto.taskIds,
-            tgClock.currentInstant
-          )
-          .map {
-            case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
-            case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
-          }
+          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, dto.taskIds, tgClock.currentInstant)
+          .flatMap(respond)
     }
   }
 
-  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { _ => id =>
-    timeboxService.getCurrent(id).map {
-      case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
-      case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
-    }
+  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+    timeboxService.getCurrent(id).flatMap(respond)
   }
 
   val findByProjectId = timeboxEndpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
@@ -93,7 +88,11 @@ class TimeboxController(
     PageRequestValidation.withPage(pageRequest) { page =>
       timeboxService
         .findPaginatedByProjectId(projectId, page)
-        .map(timeboxesPage => TgJsonSuccess.justBodyRight(timeboxesPage.mapItem(toDto)))
+        .flatMap(timeboxesPage =>
+          milestonesOf(timeboxesPage.items.map(_.version)).map(milestoneOf =>
+            TgJsonSuccess.justBodyRight(timeboxesPage.mapItem(toDto(_, milestoneOf)))
+          )
+        )
     }
   }
 
@@ -102,7 +101,11 @@ class TimeboxController(
     PageRequestValidation.withPage(pageRequest) { page =>
       timeboxService
         .listVersions(timeboxId, page)
-        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+        .flatMap(versionsPage =>
+          milestonesOf(versionsPage.items).map(milestoneOf =>
+            TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto(_, milestoneOf)))
+          )
+        )
     }
   }
 

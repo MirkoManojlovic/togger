@@ -6,9 +6,14 @@ import com.togger.dto.TimeboxVersionDto
 import com.togger.timebox.TimeboxVersionWithTasks
 import com.togger.timebox.TimeboxWithOneVersion
 
+import java.util.UUID
+
 object TimeboxDtoMapper {
 
-  def toVersionDto(versionWithTasks: TimeboxVersionWithTasks): TimeboxVersionDto = {
+  def toVersionDto(
+    versionWithTasks: TimeboxVersionWithTasks,
+    milestoneOf: UUID => Option[UUID] = _ => None
+  ): TimeboxVersionDto = {
     val version = versionWithTasks.version
     TimeboxVersionDto(
       version = version.version,
@@ -18,16 +23,16 @@ object TimeboxDtoMapper {
       description = version.description,
       createdAt = version.createdAt,
       changeComment = version.changeComment,
-      tasks = versionWithTasks.tasks.map(TaskDtoMapper.toVersionDto)
+      tasks = versionWithTasks.tasks.map(TaskDtoMapper.toVersionDto(_, milestoneOf))
     )
   }
 
-  def toDto(timeboxWithVersion: TimeboxWithOneVersion): FindTimeboxResp =
+  def toDto(timeboxWithVersion: TimeboxWithOneVersion, milestoneOf: UUID => Option[UUID] = _ => None): FindTimeboxResp =
     FindTimeboxResp(
       id = timeboxWithVersion.timebox.id,
       projectId = timeboxWithVersion.timebox.projectId,
       createdAt = timeboxWithVersion.timebox.createdAt,
-      latestVersion = toVersionDto(timeboxWithVersion.version)
+      latestVersion = toVersionDto(timeboxWithVersion.version, milestoneOf)
     )
 
 }
