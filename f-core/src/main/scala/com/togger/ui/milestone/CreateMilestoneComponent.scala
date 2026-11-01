@@ -281,7 +281,7 @@ class CreateMilestoneComponent(
         Option.when(steps.isEmpty)(
           p(
             cls("mb-4 text-sm text-body"),
-            s"Without steps, the milestone gets one step, ${DefaultMilestoneStep.Name}, with the dates of the milestone."
+            s"Without steps, the milestone gets one step, ${DefaultMilestoneStep.Shelf.stepName}, with the dates of the milestone."
           )
         )
       ),

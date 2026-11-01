@@ -49,7 +49,7 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
         created.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 0))
         found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 0))
         s.steps.latestVersionsOf(id).map(v => (v.name, v.position, v.status.statusName)) shouldBe
-          List(("Design", 0, "Planned"), ("Build", 1, "Planned"), ("Shelf", 2, "Planned"))
+          List(("Shelf", 0, "Planned"), ("Design", 1, "Planned"), ("Build", 2, "Planned"))
       }
     }
 

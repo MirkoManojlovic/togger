@@ -160,7 +160,7 @@ class PreviewTaskStepsTest extends AsyncJsWordSpec {
       }
     }
 
-    "refuse to delete the only step of a milestone" in { _ =>
+    "refuse to delete the Shelf step, the only step of a milestone" in { _ =>
       val s = new Services
       for {
         created <- s.env.run(
@@ -171,9 +171,9 @@ class PreviewTaskStepsTest extends AsyncJsWordSpec {
         only <- s.stepsOf(created.toOption.get.id)
         refused <- s.env.runEmpty(s.steps.deleteMilestoneStepById(only.head.id))
       } yield {
-        only.map(_.name) shouldBe List("Main")
+        only.map(_.name) shouldBe List("Shelf")
         isBadRequest(refused) shouldBe true
-        refused.left.exists(_.toString.contains("last step")) shouldBe true
+        refused.left.exists(_.toString.contains("Shelf")) shouldBe true
       }
     }
 

@@ -7,7 +7,7 @@ import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse, TgError}
 import com.togger.dto._
-import com.togger.milestone.MilestoneStepStatus
+import com.togger.milestone.{DefaultMilestoneStep, MilestoneStepStatus}
 import com.togger.preview._
 
 import java.time.{DayOfWeek, Instant, LocalDate}
@@ -29,7 +29,10 @@ class MilestoneStepFeServicePreview(
   private val ChangeCommentEmpty = "Change comment must not be empty"
   private val EndDateRequiredWhenClosed = "End date is required when the status is Done or Abandoned"
   private val StepsDoNotMatchMilestone = "The ordered steps must be exactly the steps of the milestone"
-  private val ShelfStepCannotBeDeleted = "The Shelf step of a milestone cannot be deleted"
+  private def defaultStepCannotBeDeleted(name: String) = s"The $name step of a milestone cannot be deleted"
+  private def defaultStepCannotBeEdited(name: String) = s"The $name step of a milestone cannot be edited"
+  private def defaultStepNameReserved(name: String) =
+    s"The step name $name is reserved for the default step of a milestone"
   private val LastStepOfMilestone = "The last step of a milestone cannot be deleted"
 
   private def stepHasTasks(count: Int) =
@@ -43,6 +46,8 @@ class MilestoneStepFeServicePreview(
         case None => PreviewResponses.badRequest[FindMilestoneStepResp](MilestoneNotFound)
         case Some(milestone) =>
           validateDates(milestone, dto.startDate, dto.dueDate, None) match {
+            case _ if DefaultMilestoneStep.isDefaultName(dto.name) =>
+              PreviewResponses.badRequest[FindMilestoneStepResp](defaultStepNameReserved(dto.name.trim))
             case Left(errors) => errors.toBadRequestLeftIO[FindMilestoneStepResp]
             case Right(_)     => PreviewResponses.ok(create(milestone, dto))
           }
@@ -53,6 +58,10 @@ class MilestoneStepFeServicePreview(
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(stepWithMilestone(dto.id) match {
         case None => PreviewResponses.badRequest[FindMilestoneStepResp](StepNotFound)
+        case Some((_, current, _)) if DefaultMilestoneStep.isDefaultName(current.name) =>
+          PreviewResponses.badRequest[FindMilestoneStepResp](defaultStepCannotBeEdited(current.name))
+        case Some(_) if DefaultMilestoneStep.isDefaultName(dto.name) =>
+          PreviewResponses.badRequest[FindMilestoneStepResp](defaultStepNameReserved(dto.name.trim))
         case Some((step, current, milestone)) =>
           val validation = List(
             validateDates(milestone, dto.startDate, dto.dueDate, dto.endDate),
@@ -89,13 +98,14 @@ class MilestoneStepFeServicePreview(
   override def reorderMilestoneSteps(dto: ReorderMilestoneStepsReq): TgRespIO[List[FindMilestoneStepResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer {
-        val current = data.latestVersionsOf(dto.milestoneId)
+        val (defaults, movable) = data.latestVersionsOf(dto.milestoneId).partition(isDefault)
+        val requested = dto.stepIds.filterNot(defaults.map(_.milestoneStepId).contains)
         if (dto.changeComment.trim.isEmpty) PreviewResponses.badRequest[List[FindMilestoneStepResp]](ChangeCommentEmpty)
-        else if (current.map(_.milestoneStepId).toSet != dto.stepIds.toSet || dto.stepIds.distinct.size != current.size)
+        else if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
           PreviewResponses.badRequest[List[FindMilestoneStepResp]](StepsDoNotMatchMilestone)
         else {
-          val byStepId = current.map(version => version.milestoneStepId -> version).toMap
-          renumber(dto.stepIds.map(byStepId), 0, dto.changeComment.trim)
+          val byStepId = movable.map(version => version.milestoneStepId -> version).toMap
+          renumber(defaults ++ requested.map(byStepId), 0, dto.changeComment.trim)
           PreviewResponses.ok(stepsOf(dto.milestoneId))
         }
       }
@@ -138,7 +148,8 @@ class MilestoneStepFeServicePreview(
       IO.defer {
         val step = data.steps.find(id)
         if (step.isEmpty) PreviewResponses.badRequest[TgEmptyBody](StepNotFound)
-        else if (step.get.shelf) PreviewResponses.badRequest[TgEmptyBody](ShelfStepCannotBeDeleted)
+        else if (data.latestVersion(id).exists(v => DefaultMilestoneStep.isDefaultName(v.name)))
+          PreviewResponses.badRequest[TgEmptyBody](defaultStepCannotBeDeleted(data.latestVersion(id).get.name))
         else if (data.steps.filter(_.milestoneId == step.get.milestoneId).size <= 1)
           PreviewResponses.badRequest[TgEmptyBody](LastStepOfMilestone)
         else if (data.taskCounts(id)._1 > 0)
@@ -155,7 +166,7 @@ class MilestoneStepFeServicePreview(
   private def create(milestone: PreviewMilestone, dto: CreateMilestoneStepReq): FindMilestoneStepResp = {
     val now = ctx.clock.currentInstant
     val current = data.latestVersionsOf(milestone.id)
-    val insertAt = dto.position.map(_.max(0)).filter(_ < current.size)
+    val insertAt = dto.position.map(_.max(current.takeWhile(isDefault).size)).filter(_ < current.size)
     val step = data.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), milestone.id, now))
     val first = data.stepVersions.upsert(
       PreviewMilestoneStepVersion(
@@ -181,6 +192,8 @@ class MilestoneStepFeServicePreview(
   }
 
   /** Gives `ordered` the positions `firstPosition`, `firstPosition + 1`, ... and versions only the ones that move. */
+  private def isDefault(version: PreviewMilestoneStepVersion): Boolean = DefaultMilestoneStep.isDefaultName(version.name)
+
   private def renumber(ordered: List[PreviewMilestoneStepVersion], firstPosition: Int, comment: String): Unit = {
     val now = ctx.clock.currentInstant
     ordered.zipWithIndex.foreach { case (version, index) =>
@@ -243,8 +256,7 @@ class MilestoneStepFeServicePreview(
       updatedAt = version.updatedAt,
       changeComment = version.changeComment,
       tasksTotal = data.taskCounts(step.id)._1,
-      tasksDone = data.taskCounts(step.id)._2,
-      shelf = step.shelf
+      tasksDone = data.taskCounts(step.id)._2
     )
 
   private def toVersionDto(version: PreviewMilestoneStepVersion): MilestoneStepVersionDto =

@@ -45,7 +45,7 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
           )
         )
         listed <- env.run(steps.findByMilestoneId(created.toOption.get.id))
-      } yield created.toOption.get.id -> listed.toOption.get.map(_.id)
+      } yield created.toOption.get.id -> listed.toOption.get.drop(1).map(_.id)
   }
 
   private def isBadRequest(result: Either[_, _]): Boolean = result.left.exists(_.isInstanceOf[BadRequest])
@@ -90,7 +90,7 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
       } yield {
         appended.map(_.position) shouldBe Right(4)
         inserted.map(_.position) shouldBe Right(1)
-        listed.map(_.map(_.name)) shouldBe Right(List("A", "X", "B", "C", "Shelf", "D"))
+        listed.map(_.map(_.name)) shouldBe Right(List("Shelf", "X", "A", "B", "C", "D"))
         listed.map(_.map(_.position)) shouldBe Right(List(0, 1, 2, 3, 4, 5))
         moved.map(_.map(_.changeComment)) shouldBe Right(List("Moved to make room for a new step", ""))
       }
@@ -125,7 +125,7 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
         versions <- s.env.run(s.steps.listAllVersions(ids(1)))
       } yield {
         isBadRequest(noComment) shouldBe true
-        saved.map(r => (r.name, r.position, r.changeComment)) shouldBe Right(("B2", 1, "Renamed"))
+        saved.map(r => (r.name, r.position, r.changeComment)) shouldBe Right(("B2", 2, "Renamed"))
         versions.map(_.map(_.name)) shouldBe Right(List("B2", "B"))
       }
     }
@@ -167,16 +167,16 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
         (milestoneId, ids) <- s.milestoneWithSteps()
         noComment <- s.env.run(s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids, " ")))
         reordered <- s.env.run(
-          s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, List(ids(0), ids(2), ids(1), ids(3)), "Swap"))
+          s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, List(ids(0), ids(2), ids(1)), "Swap"))
         )
         untouched <- s.env.run(s.steps.listAllVersions(ids(0)))
         moved <- s.env.run(s.steps.listAllVersions(ids(1)))
         mismatch <- s.env.run(s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids.take(2), "x")))
       } yield {
         isBadRequest(noComment) shouldBe true
-        reordered.map(_.map(_.name)) shouldBe Right(List("A", "C", "B", "Shelf"))
+        reordered.map(_.map(_.name)) shouldBe Right(List("Shelf", "A", "C", "B"))
         untouched.map(_.size) shouldBe Right(1)
-        moved.map(_.map(v => (v.position, v.changeComment))) shouldBe Right(List((2, "Swap"), (1, "")))
+        moved.map(_.map(v => (v.position, v.changeComment))) shouldBe Right(List((3, "Swap"), (2, "")))
         isBadRequest(mismatch) shouldBe true
       }
     }
@@ -184,9 +184,16 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
     "refuse to delete the Shelf step" in { _ =>
       val s = new Services
       for {
-        (_, ids) <- s.milestoneWithSteps()
-        deleted <- s.env.runEmpty(s.steps.deleteMilestoneStepById(ids(3)))
-      } yield isBadRequest(deleted) shouldBe true
+        (milestoneId, ids) <- s.milestoneWithSteps()
+        listed <- s.env.run(s.steps.findByMilestoneId(milestoneId))
+        deleted <- s.env.runEmpty(s.steps.deleteMilestoneStepById(listed.toOption.get.head.id))
+        edited <- s.env.run(s.steps.updateMilestoneStep(update(listed.toOption.get.head.id, comment = "x")))
+        reserved <- s.env.run(s.steps.updateMilestoneStep(update(ids(0), name = "shelf", comment = "x")))
+      } yield {
+        isBadRequest(deleted) shouldBe true
+        isBadRequest(edited) shouldBe true
+        isBadRequest(reserved) shouldBe true
+      }
     }
 
     "delete a step and answer bad request for one that does not exist" in { _ =>
@@ -201,7 +208,7 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
       } yield {
         deleted.isRight shouldBe true
         isBadRequest(again) shouldBe true
-        listed.map(_.map(_.name)) shouldBe Right(List("B", "C", "Shelf"))
+        listed.map(_.map(_.name)) shouldBe Right(List("Shelf", "B", "C"))
         isBadRequest(missing) shouldBe true
         paged.map(_.totalNumberOfItems) shouldBe Right(1L)
       }

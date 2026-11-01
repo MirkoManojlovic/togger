@@ -81,11 +81,10 @@ class MilestoneFeServicePreview(
         updatedAt = now
       )
     )
-    // like the backend: the Shelf step is always added after the given steps
-    val shelf = NewMilestoneStepReq(DefaultMilestoneStep.Name, DefaultMilestoneStep.Description, dto.startDate, dto.dueDate)
-    (dto.steps :+ shelf).zipWithIndex.foreach { case (step, position) =>
-      val isShelf = position == dto.steps.size
-      val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now, isShelf))
+    // like the backend: the Shelf step is always the first step
+    val shelf = NewMilestoneStepReq(DefaultMilestoneStep.Shelf.stepName, DefaultMilestoneStep.Shelf.description, dto.startDate, dto.dueDate)
+    (shelf +: dto.steps).zipWithIndex.foreach { case (step, position) =>
+      val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now))
       steps.stepVersions.upsert(
         PreviewMilestoneStepVersion(
           version = UUID.randomUUID(),
@@ -174,7 +173,10 @@ class MilestoneFeServicePreview(
     )
 
   private def stepsOutside(milestoneId: UUID, start: LocalDate, due: LocalDate) =
-    steps.latestVersionsOf(milestoneId).filter(step => step.startDate.isBefore(start) || step.dueDate.isAfter(due))
+    steps
+      .latestVersionsOf(milestoneId)
+      .filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
+      .filter(step => step.startDate.isBefore(start) || step.dueDate.isAfter(due))
 
   private val allDays: Set[DayOfWeek] = DayOfWeek.values().toSet
 

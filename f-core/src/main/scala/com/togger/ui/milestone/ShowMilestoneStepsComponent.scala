@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindMilestoneResp, FindMilestoneStepResp, ReorderMilestoneStepsReq}
-import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.{DefaultMilestoneStep, MilestoneStatus}
 import com.togger.routes.Pages.{CreateMilestoneStepPage, EditMilestonePage, EditMilestoneStepPage}
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
@@ -65,7 +65,10 @@ class ShowMilestoneStepsComponent(
 
   private def requestMove(index: Int, delta: Int): Unit = {
     val target = index + delta
-    if (stepsVar.now().indices.contains(target)) {
+    // the default steps stay at the top: they do not move and nothing moves above them
+    val steps = stepsVar.now()
+    def movable(i: Int) = steps.lift(i).exists(step => !DefaultMilestoneStep.isDefaultName(step.name))
+    if (movable(index) && movable(target)) {
       moveComment.set("")
       pendingMove.set(Some(index -> delta))
     }
@@ -195,30 +198,30 @@ class ShowMilestoneStepsComponent(
       createTd(tgDateFormater.asAmericanDate(step.dueDate)),
       createTd(step.endDate.map(end => span(tgDateFormater.asAmericanDate(end)))),
       createTd(
-        div(
-          iconButton(
-            "Move up",
-            span("↑"),
-            rowIconButtonCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => requestMove(index, -1))
-          ),
-          iconButton(
-            "Move down",
-            span("↓"),
-            rowIconButtonCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => requestMove(index, 1))
-          ),
-          iconButton(
-            "Edit",
-            TgIcons.editIcon(className = "w-4 h-4"),
-            rowIconButtonCls,
-            rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => router.route(EditMilestoneStepPage(projectId, step.id)))
-          ),
-          if (step.shelf) emptyNode
-          else
+        if (DefaultMilestoneStep.isDefaultName(step.name)) emptyNode
+        else
+          div(
+            iconButton(
+              "Move up",
+              span("↑"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => requestMove(index, -1))
+            ),
+            iconButton(
+              "Move down",
+              span("↓"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => requestMove(index, 1))
+            ),
+            iconButton(
+              "Edit",
+              TgIcons.editIcon(className = "w-4 h-4"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => router.route(EditMilestoneStepPage(projectId, step.id)))
+            ),
             iconButton(
               "Delete",
               TgIcons.trashIcon(className = "w-4 h-4"),
@@ -226,7 +229,7 @@ class ShowMilestoneStepsComponent(
               rowButtonMarginCls,
               onClick.mapToUnit --> (_ => deleteStep(step))
             )
-        )
+          )
       )
     )
 
