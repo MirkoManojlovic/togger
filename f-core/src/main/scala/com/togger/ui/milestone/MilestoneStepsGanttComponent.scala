@@ -56,7 +56,7 @@ class MilestoneStepsGanttComponent(
   private def chart(axis: GanttAxis, rows: Seq[MilestoneGanttStep]): HtmlElement =
     if (axis.isEmpty) layout.emptyMessage("Pick a valid start and due date with at least one work day to see the Gantt chart.")
     else if (rows.isEmpty) layout.emptyMessage("The milestone has no steps to show on the Gantt chart.")
-    else layout.frame(axis, rows.zipWithIndex.map { case (step, index) => stepRow(step, index, axis) })
+    else layout.frame(axis, rows.zipWithIndex.map { case (step, index) => stepRow(step, index, axis) }, "Steps")
 
   val element: HtmlElement =
     TgCard
