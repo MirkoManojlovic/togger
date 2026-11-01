@@ -30,47 +30,43 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     s"border-default-medium$gap$today"
   }
 
-  /** Consecutive columns of the same month, as (first day, number of columns). */
-  private def monthSpans(axis: GanttAxis): Seq[(LocalDate, Int)] =
-    axis.days
-      .foldLeft(Vector.empty[(LocalDate, Int)]) { case (spans, day) =>
+  /** Consecutive columns of the same month, as (first day, first column index, number of columns). */
+  private def monthSpans(axis: GanttAxis): Seq[(LocalDate, Int, Int)] =
+    axis.days.zipWithIndex
+      .foldLeft(Vector.empty[(LocalDate, Int, Int)]) { case (spans, (day, index)) =>
         spans.lastOption match {
-          case Some((first, count)) if YearMonth.from(first) == YearMonth.from(day) =>
-            spans.init :+ ((first, count + 1))
-          case _ => spans :+ ((day, 1))
+          case Some((first, start, count)) if YearMonth.from(first) == YearMonth.from(day) =>
+            spans.init :+ ((first, start, count + 1))
+          case _ => spans :+ ((day, index, 1))
         }
       }
 
-  private def monthRow(axis: GanttAxis): HtmlElement =
+  /** The name column cell spans both header rows; the months row and the days row start from the second column. */
+  def headerRow(axis: GanttAxis, nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
       cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
       styleAttr := gridTemplate(axis),
-      div(),
-      monthSpans(axis).map { case (first, count) =>
+      div(
+        cls("flex items-center justify-center px-2 py-1 font-medium"),
+        styleAttr := "grid-column: 1; grid-row: 1 / span 2",
+        nameColumnTitle
+      ),
+      monthSpans(axis).map { case (first, start, count) =>
         div(
-          cls("flex items-center justify-center border-l border-default-medium py-1 font-medium text-heading"),
-          styleAttr := s"grid-column: span $count",
+          cls("flex items-center justify-center border-b border-l border-default-medium py-1 font-medium text-heading"),
+          styleAttr := s"grid-column: ${start + 2} / span $count; grid-row: 1",
           tgDateFormater.monthName(first)
         )
-      }
-    )
-
-  private def dayRow(axis: GanttAxis, nameColumnTitle: String): HtmlElement =
-    div(
-      cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
-      styleAttr := gridTemplate(axis),
-      div(cls("flex items-center justify-center px-2 py-1 font-medium"), nameColumnTitle),
+      },
       axis.days.zipWithIndex.map { case (day, index) =>
         div(
           cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
+          styleAttr := s"grid-column: ${index + 2}; grid-row: 2",
           div(tgDateFormater.dayOfWeekAbbrev(day)),
           div(cls("text-heading"), tgDateFormater.dayOnly(day))
         )
       }
     )
-
-  def headerRow(axis: GanttAxis, nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
-    div(monthRow(axis), dayRow(axis, nameColumnTitle))
 
   def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
     barTitle(task.name, start, due)
