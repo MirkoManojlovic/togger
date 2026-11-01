@@ -25,7 +25,8 @@ case class TeamDailyTaskPlan(
   logEntries: Seq[LogEntryDto] = Seq.empty,
   description: String = "",
   statusEmoji: String = "",
-  todayEntry: Option[LogEntryDto] = None
+  todayEntry: Option[LogEntryDto] = None,
+  milestoneStepId: Option[UUID] = None
 ) {
 
   def statusLabel: String = s"$statusEmoji $statusName".trim
@@ -83,6 +84,7 @@ object TeamDailyPlan {
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
+      milestoneStepId = task.milestoneStepId,
       labels = task.taskLabels,
       startDate = task.startDate,
       dueDate = task.dueDate,

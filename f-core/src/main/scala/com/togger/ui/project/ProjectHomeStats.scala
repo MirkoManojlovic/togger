@@ -5,6 +5,8 @@ import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.FindTimeboxResp
 import com.togger.dto.SearchAccountDto
+import com.togger.ui.milestone.MilestoneStepBadges
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
@@ -75,6 +77,7 @@ object ProjectHomeStats {
   def taskBadges(
     task: FindTaskRespFull,
     milestones: Seq[FindMilestoneResp],
+    steps: Seq[FindMilestoneStepResp],
     showAssignee: Boolean,
     today: LocalDate,
     workDays: Set[DayOfWeek],
@@ -84,6 +87,7 @@ object ProjectHomeStats {
       .flatMap(id => milestones.find(_.id == id))
       .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
       .toSeq ++
+      MilestoneStepBadges.of(task.milestoneStepId, steps) ++
       Seq(BadgeSpec(task.priority.shortCode, task.priority.badgeColor)) ++
       Option.when(showAssignee)(task.assignedTo).flatten.map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray)) ++
       Seq(

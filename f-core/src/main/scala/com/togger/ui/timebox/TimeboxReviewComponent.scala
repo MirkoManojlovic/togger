@@ -10,6 +10,7 @@ import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTimeboxResp
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.TimeboxVersionDto
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
@@ -23,6 +24,7 @@ import com.togger.ui.components.TgProgressComponent
 import com.togger.ui.components.TgProgressLabel
 import com.togger.ui.components.TgProgressSize
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -43,6 +45,7 @@ case class TimeboxReviewState(
   versions: Seq[TimeboxVersionDto] = Seq.empty,
   tasks: Seq[FindTaskRespFull] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
   workDays: Set[DayOfWeek] = Set.empty
 )
@@ -52,6 +55,7 @@ class TimeboxReviewComponent(
   timeboxService: TimeboxFeService,
   taskService: TaskFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   projectService: ProjectService,
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
@@ -76,6 +80,7 @@ class TimeboxReviewComponent(
       versions <- timeboxService.listAllVersions(timeboxId)
       tasks <- taskService.findAllByTimebox(projectId, timeboxId)
       milestones <- milestoneService.findAllByProjectId(projectId)
+      steps <- milestoneStepService.findByProjectId(projectId)
       members <- projectService.findAllMembers(projectId)
       project <- projectService.findById(projectId)
     } yield stateVar.set(
@@ -84,6 +89,7 @@ class TimeboxReviewComponent(
         versions = bodyOf(versions, Seq.empty),
         tasks = bodyOf(tasks, Seq.empty),
         milestones = bodyOf(milestones, Seq.empty),
+        steps = bodyOf(steps, Seq.empty),
         members = bodyOf(members, Seq.empty),
         workDays = project.toOption.flatMap(_.body).map(_.workDays.map(DayOfWeek.of)).getOrElse(Set.empty)
       )
@@ -189,6 +195,7 @@ class TimeboxReviewComponent(
       Val(state.timebox.map(_.latestVersion).map(version => (version.startDate, version.endDate))),
       Val(state.members.map(_.id)),
       Val(state.milestones),
+      Val(state.steps),
       tgDateFormater,
       tgMarkdown,
       router,

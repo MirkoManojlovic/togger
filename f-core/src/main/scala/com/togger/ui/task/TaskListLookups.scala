@@ -5,6 +5,8 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindProjectResp
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID
@@ -15,12 +17,14 @@ class TaskListLookups(
   projectService: ProjectService,
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
-  milestoneService: MilestoneFeService
+  milestoneService: MilestoneFeService,
+  milestoneStepService: Option[MilestoneStepFeService] = None
 ) {
 
   val statusesVar = Var(TaskStatusesState())
   val taskLabelsVar = Var(TaskLabelsState())
   val milestonesVar = Var(Seq.empty[FindMilestoneResp])
+  val stepsVar = Var(Seq.empty[FindMilestoneStepResp])
 
   val projectVar: Var[FindProjectResp] = Var(
     FindProjectResp(
@@ -60,10 +64,16 @@ class TaskListLookups(
       .findAllByProjectId(projectId)
       .map(response => response.map(success => milestonesVar.set(success.body.get)))
 
+    // The step badge of a task shows the name of its step.
+    val stepCall = milestoneStepService.fold(IO.unit)(
+      _.findByProjectId(projectId).map(response => response.foreach(success => stepsVar.set(success.body.get)))
+    )
+
     projectCall
       .flatMap(_ => taskStatusCall)
       .flatMap(_ => taskLabelCall)
       .flatMap(_ => milestoneCall)
+      .flatMap(_ => stepCall)
       .void
   }
 }

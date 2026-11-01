@@ -89,6 +89,8 @@ class ProjectHomeComponent(
   private val summariesVar = Var(Map.empty[UUID, Seq[FindMilestoneSummaryResp]])
   private val stepsVar = Var(Map.empty[UUID, Seq[FindMilestoneStepResp]])
   private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
+
+  private def allStepsNow(): Seq[FindMilestoneStepResp] = stepsVar.now().values.flatten.toSeq
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
   private val allStatusesVar = Var(Seq.empty[FindTaskStatusResp])
   private val inFlightVar = Var(Seq.empty[(FindTaskStatusResp, Seq[FindTaskRespFull])])
@@ -271,6 +273,7 @@ class ProjectHomeComponent(
       Val(Some((version.startDate, version.endDate))),
       Val(projectVar.now().map(_.members.map(_.id)).getOrElse(Seq.empty)),
       Val(allMilestonesVar.now()),
+      Val(allStepsNow()),
       tgDateFormater,
       tgMarkdown,
       router,
@@ -305,16 +308,7 @@ class ProjectHomeComponent(
 
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
-      new TaskPreviewComponent(
-        task,
-        workDays,
-        router,
-        tgDateFormater,
-        tgMarkdown,
-        tgClock,
-        showName = true,
-        allMilestonesVar.now()
-      ).element,
+      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now(), allStepsNow()).element,
       title = "Task preview",
       maxWidthCls = "max-w-[112rem]"
     )
@@ -325,6 +319,7 @@ class ProjectHomeComponent(
       tgDateFormater,
       tgClock,
       allMilestonesVar.now(),
+      allStepsNow(),
       workDays,
       tasks,
       config,

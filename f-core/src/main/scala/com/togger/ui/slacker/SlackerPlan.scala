@@ -64,6 +64,7 @@ object SlackerPlan {
         task.logEntries.maxByOption(_.createdAt).fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,
       milestoneId = task.milestone,
+      milestoneStepId = task.milestoneStepId,
       labels = task.taskLabels,
       startDate = task.startDate,
       dueDate = task.dueDate,

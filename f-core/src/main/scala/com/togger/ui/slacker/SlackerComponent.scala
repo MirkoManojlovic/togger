@@ -10,6 +10,10 @@ import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.LogEntryDto
 import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
@@ -26,6 +30,7 @@ import com.togger.ui.components.TgStepperBreadcrumb
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -57,6 +62,7 @@ case class SlackerState(
   projectId: Option[UUID],
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
   loaded: Boolean = false,
   candidates: Seq[TeamDailyTaskPlan] = Seq.empty,
   selectedTasks: Option[Set[UUID]] = None,
@@ -102,6 +108,7 @@ class SlackerComponent(
   taskService: TaskFeService,
   projectDataLoader: TaskProjectDataLoader,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgClock: TgClock,
@@ -173,10 +180,11 @@ class SlackerComponent(
         for {
           projects <- projectDataLoader.loadProjects()
           milestones <- milestoneService.findAllByProjectId(projectId)
+          steps <- milestoneStepService.findByProjectId(projectId)
           tasks <- taskService.findAllByProjectId(projectId)
-        } yield (projects, milestones, tasks)
+        } yield (projects, milestones, steps, tasks)
       )
-      .flatMap { case (projects, milestones, tasks) =>
+      .flatMap { case (projects, milestones, steps, tasks) =>
         tasks.fold(
           error => IO(toast.error(error)),
           found =>
@@ -186,6 +194,7 @@ class SlackerComponent(
                   projectId,
                   projects,
                   milestones.toOption.flatMap(_.body).getOrElse(Seq.empty),
+                  steps.toOption.flatMap(_.body).getOrElse(Seq.empty),
                   planOf(found.body.getOrElse(Seq.empty), workDaysOf(projects, projectId))
                 )
             }
@@ -202,6 +211,7 @@ class SlackerComponent(
     projectId: UUID,
     projects: Seq[OrganizationProjectResp],
     milestones: Seq[FindMilestoneResp],
+    steps: Seq[FindMilestoneStepResp],
     plan: Seq[TeamDailyTaskPlan]
   ): Unit = {
     val restored = if (scope.isDefined) None else draftStore(projectId).flatMap(_.load())
@@ -212,6 +222,7 @@ class SlackerComponent(
       _.copy(
         projects = projects,
         milestones = milestones,
+        steps = steps,
         loaded = true,
         candidates = plan,
         selectedTasks = restored.flatMap(_.taskIds.map(_.toSet.intersect(ids))),
@@ -461,7 +472,7 @@ class SlackerComponent(
             .element,
           span(cls("text-body-subtle"), missingText(task))
         ),
-        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones))
+        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps))
       )
     )
 
@@ -527,7 +538,7 @@ class SlackerComponent(
         trailing.map(_.amend(cls("ms-auto")))
       ),
       badgeRow(
-        TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+
+        TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps) :+
           BadgeSpec(task.statusLabel, TaskStatusBadgeColor.of(task.statusName))
       ),
       badgeRow(

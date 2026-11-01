@@ -12,6 +12,7 @@ import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTgAiActionResp
 import com.togger.dto.UpdateMilestoneSummaryReq
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.FrontendPage
 import com.togger.routes.TgRouter
@@ -54,6 +55,7 @@ class MilestoneSummaryComponent(
   milestoneSummaryService: MilestoneSummaryFeService,
   tgAiActionService: TgAiActionFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   taskService: TaskFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
@@ -207,6 +209,12 @@ class MilestoneSummaryComponent(
 
   private val milestoneVar = Var(Option.empty[FindMilestoneResp])
   private val tasksVar = Var(Seq.empty[FindTaskRespFull])
+  private val stepsVar = Var(Seq.empty[FindMilestoneStepResp])
+
+  private def loadSteps(): IO[Unit] =
+    milestoneStepService
+      .findByMilestoneId(milestoneId)
+      .map(_.fold(error => println(error), success => stepsVar.set(success.body.get)))
 
   private def loadTasks(milestone: FindMilestoneResp): IO[Unit] =
     taskService
@@ -231,7 +239,7 @@ class MilestoneSummaryComponent(
         success => {
           val milestone = success.body.get
           milestoneVar.set(Some(milestone))
-          loadWorkDays(milestone) >> loadTasks(milestone)
+          loadWorkDays(milestone) >> loadSteps() >> loadTasks(milestone)
         }
       )
     )
@@ -282,6 +290,7 @@ class MilestoneSummaryComponent(
             tgClock,
             showName = true,
             milestone.toSeq,
+            stepsVar.now(),
             summaryPeriod
           ).element
         )
@@ -299,6 +308,7 @@ class MilestoneSummaryComponent(
       tgDateFormater,
       tgClock,
       milestones = Seq.empty,
+      steps = stepsVar.now(),
       workDaysVar.now(),
       showAssignee = true,
       onPreview(_, milestone)

@@ -6,6 +6,7 @@ import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.FrontendPage
 import com.togger.routes.TgRouter
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.TaskStatusBadgeColor
 import com.togger.ui.components.TgBadge
@@ -33,6 +34,7 @@ class ActiveTasksComponent(
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
   milestones: Seq[FindMilestoneResp],
+  steps: Seq[FindMilestoneStepResp],
   workDays: Set[DayOfWeek],
   tasks: Seq[FindTaskRespFull],
   config: ActiveTasksConfig,
@@ -48,6 +50,7 @@ class ActiveTasksComponent(
     tgDateFormater,
     tgClock,
     if (config.showMilestone) milestones else Seq.empty,
+    steps,
     workDays,
     showAssignee = false,
     onPreview

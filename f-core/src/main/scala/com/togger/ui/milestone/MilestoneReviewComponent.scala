@@ -43,6 +43,7 @@ import java.util.UUID
 /** A milestone with all of its tasks, in the same table the task list shows. */
 class MilestoneReviewComponent(
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   milestoneDateService: MilestoneDateFeService,
   milestoneSummaryService: MilestoneSummaryFeService,
   taskService: TaskFeService,
@@ -89,7 +90,7 @@ class MilestoneReviewComponent(
       .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
 
   private val lookups =
-    new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
+    new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService, Some(milestoneStepService))
 
   // The table is paged, searched and filtered here, so its params are kept in a Var rather than in the URL.
   private val paramsVar = Var(TaskListParams.default)
