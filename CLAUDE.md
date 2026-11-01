@@ -195,6 +195,16 @@ template cannot be deleted; deleting one drops it from older versions. Export/im
 name (the defaults), and `ExportContentKey` matches them by content for the import check. The frontend has the
 `MilestoneStep*`, `MilestoneStepTemplate*` and `MilestoneTemplate*` services with preview twins.
 
+**Tasks belong to a milestone step:** `task_version.milestone_step_id` (nullable) is the only link; the milestone of a task
+is the milestone of its step. Task DTOs are written with `milestoneStepId` and read with both `milestoneStepId` and a
+derived `milestone` (filled from a batch step→milestone lookup in `TaskController`/`TimeboxController`), so frontend code
+that only reads `task.milestone` is unchanged. SQL that grouped by the task's milestone joins `milestone_step`
+(`TaskVersionRepoImpl.milestoneStepJoin`). Every milestone has at least one step (`DefaultMilestoneStep` `Main` when
+created without steps); the last step and a step with tasks cannot be deleted (`LastStepOfMilestone`, `StepHasTasks`), nor a
+milestone with tasks (`MilestoneHasTasks`); deleting a step clears the link of older task versions (`ON DELETE SET NULL`).
+`FindMilestoneStepResp` carries `tasksTotal`/`tasksDone` (done = the latest task version has an end date), which the home
+page turns into one progress bar per step (`StepBar`: blue, green when the step is Done and all its tasks are done).
+
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
 JVM (`SecurityLogicJvm`) and JS (`SecurityLogicJs`) implementations). Passwords hashed with `scalapass`.
