@@ -199,8 +199,9 @@ name (the defaults), and `ExportContentKey` matches them by content for the impo
 is the milestone of its step. Task DTOs are written with `milestoneStepId` and read with both `milestoneStepId` and a
 derived `milestone` (filled from a batch step→milestone lookup in `TaskController`/`TimeboxController`), so frontend code
 that only reads `task.milestone` is unchanged. SQL that grouped by the task's milestone joins `milestone_step`
-(`TaskVersionRepoImpl.milestoneStepJoin`). Every milestone has at least one step (`DefaultMilestoneStep` `Main` when
-created without steps); the last step and a step with tasks cannot be deleted (`LastStepOfMilestone`, `StepHasTasks`), nor a
+(`TaskVersionRepoImpl.milestoneStepJoin`). Every milestone has a `Shelf` step (`DefaultMilestoneStep`, flag `milestone_step.shelf`), created with the milestone after
+its other steps and never deletable (`ShelfStepCannotBeDeleted`); `ShelfStepSeedService` adds it on startup to older
+milestones. The last step and a step with tasks cannot be deleted (`LastStepOfMilestone`, `StepHasTasks`), nor a
 milestone with tasks (`MilestoneHasTasks`); deleting a step clears the link of older task versions (`ON DELETE SET NULL`).
 `FindMilestoneStepResp` carries `tasksTotal`/`tasksDone` (done = the latest task version has an end date), which the home
 page turns into one progress bar per step (`StepBar`: blue, green when the step is Done and all its tasks are done).
