@@ -6,7 +6,7 @@ import com.togger.milestone.MilestoneStepStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{ChartColorBadgeColor, TgBadge}
 import com.togger.ui.task.TgDateFormater
-import com.togger.ui.timebox.gantt.{GanttAssigneeColors, GanttAxis, GanttBarDrag, GanttChartLayout}
+import com.togger.ui.timebox.gantt.{DiffColors, GanttAxis, GanttBarDrag, GanttBarProgress, GanttChartLayout, GanttColors}
 
 import java.time.{DayOfWeek, LocalDate}
 
@@ -16,7 +16,9 @@ case class MilestoneGanttStep(
   name: String,
   startDate: LocalDate,
   dueDate: LocalDate,
-  status: MilestoneStepStatus = MilestoneStepStatus.Planned
+  status: MilestoneStepStatus = MilestoneStepStatus.Planned,
+  tasksTotal: Int = 0,
+  tasksDone: Int = 0
 )
 
 /** The steps of a milestone as a Gantt chart that looks like the one of a timebox: one column per work day of the
@@ -30,7 +32,8 @@ class MilestoneStepsGanttComponent(
   workDays: Signal[Set[DayOfWeek]],
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
-  onDatesChange: Option[(MilestoneGanttStep, LocalDate, LocalDate) => Unit] = None
+  onDatesChange: Option[(MilestoneGanttStep, LocalDate, LocalDate) => Unit] = None,
+  colors: GanttColors = DiffColors
 ) {
 
   private val layout = new GanttChartLayout(tgDateFormater, tgClock)
@@ -59,9 +62,11 @@ class MilestoneStepsGanttComponent(
         axis,
         "milestone",
         placed => {
-          val bar = layout.barElement(
+          val bar = colors.bar(
+            layout,
             layout.barTitle(step.name, step.startDate, step.dueDate),
-            GanttAssigneeColors.Palette(index % GanttAssigneeColors.Palette.size),
+            index,
+            GanttBarProgress(step.tasksTotal, step.tasksDone),
             placed
           )
           onDatesChange.fold(bar) { change =>

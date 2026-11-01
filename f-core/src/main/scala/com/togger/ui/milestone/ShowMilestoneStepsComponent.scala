@@ -26,6 +26,7 @@ import com.togger.ui.task.TaskConfigTableSupport.{
 }
 import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TgDateFormater}
 import com.togger.ui.timebox.TimeboxStagingStore
+import com.togger.ui.timebox.gantt.Percentages
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate}
@@ -348,7 +349,7 @@ class ShowMilestoneStepsComponent(
         .filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
         .map { step =>
           val (start, due) = staged.getOrElse(step.id, (step.startDate, step.dueDate))
-          MilestoneGanttStep(step.id.toString, step.name, start, due, step.status)
+          MilestoneGanttStep(step.id.toString, step.name, start, due, step.status, step.tasksTotal, step.tasksDone)
         }
     }
 
@@ -358,7 +359,8 @@ class ShowMilestoneStepsComponent(
     workDaysVar.signal,
     tgDateFormater,
     tgClock,
-    onDatesChange = Some((step, start, due) => stageDates(UUID.fromString(step.key), start, due))
+    onDatesChange = Some((step, start, due) => stageDates(UUID.fromString(step.key), start, due)),
+    colors = Percentages
   )
 
   private val stepTasks = new MilestoneStepTasksComponent(

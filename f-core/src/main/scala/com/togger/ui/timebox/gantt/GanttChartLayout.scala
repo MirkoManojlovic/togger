@@ -144,14 +144,17 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
       placed
     )
 
-  /** A bar with the given tooltip and background colour class. */
-  def barElement(tooltip: String, color: String, placed: GanttBar.Placed): HtmlElement = {
-    val rounding = (placed.clippedLeft, placed.clippedRight) match {
+  def barRounding(placed: GanttBar.Placed): String =
+    (placed.clippedLeft, placed.clippedRight) match {
       case (false, false) => "rounded-md"
       case (true, false)  => "rounded-r-md"
       case (false, true)  => "rounded-l-md"
       case (true, true)   => ""
     }
+
+  /** A bar with the given tooltip and background colour class. */
+  def barElement(tooltip: String, color: String, placed: GanttBar.Placed): HtmlElement = {
+    val rounding = barRounding(placed)
     div(
       cls(s"relative z-10 mx-1 my-1 flex h-7 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"),
       title := tooltip,
