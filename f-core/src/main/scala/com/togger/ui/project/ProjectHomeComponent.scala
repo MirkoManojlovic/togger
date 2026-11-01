@@ -16,6 +16,7 @@ import com.togger.dto.FindTimeboxResp
 import com.togger.dto.MilestoneFilter
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.TaskFilter
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.FrontendPage
@@ -31,6 +32,16 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneSummaryFeService
 import com.togger.ui.milestone.MilestoneTabs
 import com.togger.ui.milestone.MilestoneTaskRows
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgProgressComponent
+import com.togger.ui.components.TgProgressLabel
+import com.togger.ui.components.TgProgressSize
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.StepBar
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -52,6 +63,7 @@ class ProjectHomeComponent(
   projectService: ProjectService,
   milestoneService: MilestoneFeService,
   milestoneSummaryService: MilestoneSummaryFeService,
+  milestoneStepService: MilestoneStepFeService,
   timeboxService: TimeboxFeService,
   taskService: TaskFeService,
   taskStatusService: TaskStatusFeService,
@@ -69,6 +81,7 @@ class ProjectHomeComponent(
   private val projectVar = Var(Option.empty[FindProjectResp])
   private val milestonesVar = Var(Seq.empty[(FindMilestoneResp, Seq[FindTaskRespFull])])
   private val summariesVar = Var(Map.empty[UUID, Seq[FindMilestoneSummaryResp]])
+  private val stepsVar = Var(Map.empty[UUID, Seq[FindMilestoneStepResp]])
   private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
   private val allStatusesVar = Var(Seq.empty[FindTaskStatusResp])
@@ -115,6 +128,13 @@ class ProjectHomeComponent(
       }
       .map(loaded => summariesVar.set(loaded.toMap))
 
+  /** The steps of the milestones of the project by milestone, in order; a failure leaves the milestones without bars. */
+  private def loadSteps(): IO[Unit] =
+    milestoneStepService.findByProjectId(projectId).map { response =>
+      val steps = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
+      stepsVar.set(steps.groupBy(_.milestoneId).view.mapValues(_.sortBy(_.position)).toMap)
+    }
+
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
   private def loadAllMilestones(): IO[Unit] =
     PaginatedLoader.loadAll(milestoneService.findByProjectId(projectId, MilestoneFilter.empty, _)).flatMap {
@@ -157,6 +177,7 @@ class ProjectHomeComponent(
         _ <- loadMilestones()
         _ <- loadSummaries()
         _ <- if (TimeboxUi.visible) loadTimeboxes() else IO.unit
+        _ <- loadSteps()
         _ <- loadInFlightTasks()
       } yield ()
     )
@@ -180,6 +201,23 @@ class ProjectHomeComponent(
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
+
+  /** One progress bar per step: its tasks done, blue, and green once the step is done with all its tasks done. */
+  private def stepBars(steps: Seq[FindMilestoneStepResp]): HtmlElement =
+    div(
+      cls("flex flex-col gap-3 mb-4"),
+      steps.map { step =>
+        val bar = StepBar.of(step)
+        TgProgressComponent(
+          value = bar.value,
+          max = bar.max,
+          color = bar.color,
+          size = TgProgressSize.Large,
+          label = TgProgressLabel.Outside(bar.title)
+        ).element
+      }
+    )
+
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
@@ -194,6 +232,7 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
+      child <-- stepsVar.signal.map(steps => stepBars(steps.getOrElse(milestone.id, Seq.empty))),
       milestoneTabs(
         MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays),
         summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty)),

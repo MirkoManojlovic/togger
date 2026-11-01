@@ -16,6 +16,8 @@ import com.togger.common.PaginatedResponse
 import cats.implicits._
 import com.togger.common.TgError
 import com.togger.milestone.MilestoneStepStatus
+import com.togger.dto.NewMilestoneStepReq
+import com.togger.milestone.DefaultMilestoneStep
 import com.togger.preview._
 
 import java.time.{DayOfWeek, LocalDate}
@@ -79,7 +81,11 @@ class MilestoneFeServicePreview(
         updatedAt = now
       )
     )
-    dto.steps.zipWithIndex.foreach { case (step, position) =>
+    // like the backend: a milestone always has a step for its tasks
+    val stepsToStore =
+      if (dto.steps.nonEmpty) dto.steps
+      else List(NewMilestoneStepReq(DefaultMilestoneStep.Name, DefaultMilestoneStep.Description, dto.startDate, dto.dueDate))
+    stepsToStore.zipWithIndex.foreach { case (step, position) =>
       val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now))
       steps.stepVersions.upsert(
         PreviewMilestoneStepVersion(

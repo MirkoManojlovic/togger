@@ -14,6 +14,7 @@ import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.dto.FindMilestoneTemplateResp
 import com.togger.dto.MilestoneFilter
 import com.togger.dto.UpdateMilestoneReq
+import com.togger.milestone.DefaultMilestoneStep
 import com.togger.milestone.MilestoneEndpoints
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -274,6 +275,14 @@ class CreateMilestoneComponent(
           templatesVar.signal,
           selectedTemplateVar.signal,
           Observer[Option[FindMilestoneTemplateResp]](applyTemplate)
+        )
+      ),
+      child.maybe <-- milestoneStepsVar.signal.map(steps =>
+        Option.when(steps.isEmpty)(
+          p(
+            cls("mb-4 text-sm text-body"),
+            s"Without steps, the milestone gets one step, ${DefaultMilestoneStep.Name}, with the dates of the milestone."
+          )
         )
       ),
       children <-- milestoneStepsVar.signal.map(_.zipWithIndex.map { case (step, index) => stepCard(step, index) }),

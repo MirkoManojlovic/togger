@@ -56,7 +56,7 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
 
   lazy val dataSync = new DataSyncPreviewData(db, projects)
 
-  lazy val tasks = new TasksPreviewData(db, projects, taskConfig, milestones, accounts, taskStats)
+  lazy val tasks = new TasksPreviewData(db, projects, taskConfig, milestones, milestoneSteps, accounts, taskStats)
 
   private lazy val demo: DemoDataSet = DemoDataSet.build(clock.currentDate(ZoneOffset.UTC), clock.currentInstant)
 

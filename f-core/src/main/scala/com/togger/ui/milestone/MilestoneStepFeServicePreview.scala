@@ -29,6 +29,11 @@ class MilestoneStepFeServicePreview(
   private val ChangeCommentEmpty = "Change comment must not be empty"
   private val EndDateRequiredWhenClosed = "End date is required when the status is Done or Abandoned"
   private val StepsDoNotMatchMilestone = "The ordered steps must be exactly the steps of the milestone"
+  private val LastStepOfMilestone = "The last step of a milestone cannot be deleted"
+
+  private def stepHasTasks(count: Int) =
+    s"The step has $count ${if (count == 1) "task" else "tasks"}; move or delete them before deleting the step"
+
   private val MoveForNewStepComment = "Moved to make room for a new step"
 
   override def createMilestoneStep(dto: CreateMilestoneStepReq): TgRespIO[FindMilestoneStepResp] =
@@ -98,6 +103,18 @@ class MilestoneStepFeServicePreview(
   override def findByMilestoneId(milestoneId: UUID): TgRespIO[List[FindMilestoneStepResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ => IO.defer(PreviewResponses.ok(stepsOf(milestoneId))))
 
+  override def findByProjectId(projectId: UUID): TgRespIO[List[FindMilestoneStepResp]] =
+    PreviewResponses.authenticated(ctx.loginRepo)(_ =>
+      IO.defer(
+        PreviewResponses.ok(
+          milestones.milestones
+            .filter(_.projectId == projectId)
+            .sortBy(_.id.toString)
+            .flatMap(milestone => stepsOf(milestone.id))
+        )
+      )
+    )
+
   override def findMilestoneStepById(id: UUID): TgRespIO[FindMilestoneStepResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
@@ -118,7 +135,12 @@ class MilestoneStepFeServicePreview(
   override def deleteMilestoneStepById(id: UUID): TgRespIO[TgEmptyBody] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer {
-        if (data.steps.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](StepNotFound)
+        val step = data.steps.find(id)
+        if (step.isEmpty) PreviewResponses.badRequest[TgEmptyBody](StepNotFound)
+        else if (data.steps.filter(_.milestoneId == step.get.milestoneId).size <= 1)
+          PreviewResponses.badRequest[TgEmptyBody](LastStepOfMilestone)
+        else if (data.taskCounts(id)._1 > 0)
+          PreviewResponses.badRequest[TgEmptyBody](stepHasTasks(data.taskCounts(id)._1))
         else {
           data.stepVersions.deleteWhere(_.milestoneStepId == id)
           data.steps.delete(id)
@@ -217,7 +239,9 @@ class MilestoneStepFeServicePreview(
       dueDate = version.dueDate,
       endDate = version.endDate,
       updatedAt = version.updatedAt,
-      changeComment = version.changeComment
+      changeComment = version.changeComment,
+      tasksTotal = data.taskCounts(step.id)._1,
+      tasksDone = data.taskCounts(step.id)._2
     )
 
   private def toVersionDto(version: PreviewMilestoneStepVersion): MilestoneStepVersionDto =

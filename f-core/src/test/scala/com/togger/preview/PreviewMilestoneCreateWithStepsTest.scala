@@ -53,10 +53,17 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
       }
     }
 
-    "create a milestone without steps as before" in { _ =>
+    "give a milestone without steps the default step with the dates of the milestone" in { _ =>
       val s = new Services
-      s.env.run(s.milestones.createMilestone(create(Nil))).map { created =>
-        created.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((0, 0))
+      for {
+        created <- s.env.run(s.milestones.createMilestone(create(Nil)))
+        id = created.toOption.get.id
+      } yield {
+        created.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((1, 0))
+        s.steps
+          .latestVersionsOf(id)
+          .map(v => (v.name, v.position, v.status.statusName, v.startDate, v.dueDate)) shouldBe
+          List(("Main", 0, "Planned", monday, nextFriday))
       }
     }
 

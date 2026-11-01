@@ -26,6 +26,13 @@ case class PreviewMilestoneStepVersion(
   def status: MilestoneStepStatus = MilestoneStepStatus.withValue(statusValue)
 }
 
+/** What the tasks domain tells about the tasks in the steps; set by [[TasksPreviewData]], which owns the tasks. */
+trait StepTaskSource {
+
+  /** The tasks (by their latest version) in each step and how many of them are done; steps without tasks are absent. */
+  def countsOf(stepIds: Set[UUID]): Map[UUID, (Int, Int)]
+}
+
 /** The steps of the milestones with all their versions. */
 class MilestoneStepsPreviewData(db: PreviewDb, milestones: MilestonesPreviewData) {
 
@@ -36,7 +43,18 @@ class MilestoneStepsPreviewData(db: PreviewDb, milestones: MilestonesPreviewData
   val stepVersions: PreviewCollection[PreviewMilestoneStepVersion] =
     db.collection[PreviewMilestoneStepVersion](MilestoneStepsPreviewData.VersionsName, _.version)
 
+  /** Without the tasks domain no step has tasks. */
+  var taskSource: StepTaskSource = (_: Set[UUID]) => Map.empty
+
   milestones.onMilestoneDeleted(deleteStepsOf)
+
+  def taskCounts(stepId: UUID): (Int, Int) = taskSource.countsOf(Set(stepId)).getOrElse(stepId, (0, 0))
+
+  /** The tasks in any step of the milestone. */
+  def tasksInMilestone(milestoneId: UUID): Int = {
+    val stepIds = steps.filter(_.milestoneId == milestoneId).map(_.id).toSet
+    taskSource.countsOf(stepIds).values.map(_._1).sum
+  }
 
   def latestVersion(stepId: UUID): Option[PreviewMilestoneStepVersion] =
     stepVersions.filter(_.milestoneStepId == stepId).lastOption

@@ -23,6 +23,9 @@ trait MilestoneStepFeService {
   /** All steps of the milestone ordered by position; a milestone has a short list of them, so it is not paged. */
   def findByMilestoneId(milestoneId: UUID): TgRespIO[List[FindMilestoneStepResp]]
 
+  /** The steps of every milestone of the project by milestone then position, for the pickers of the task forms. */
+  def findByProjectId(projectId: UUID): TgRespIO[List[FindMilestoneStepResp]]
+
   def findMilestoneStepById(id: UUID): TgRespIO[FindMilestoneStepResp]
 
   def listVersions(id: UUID, page: PageRequest): TgRespIO[PaginatedResponse[MilestoneStepVersionDto]]
@@ -49,6 +52,9 @@ class MilestoneStepFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBack
 
   override def findByMilestoneId(milestoneId: UUID): TgRespIO[List[FindMilestoneStepResp]] =
     protectedBackendClient.protectedHttpCall(endpoints.findByMilestoneIdEndpoint)(milestoneId)
+
+  override def findByProjectId(projectId: UUID): TgRespIO[List[FindMilestoneStepResp]] =
+    protectedBackendClient.protectedHttpCall(endpoints.findByProjectIdEndpoint)(projectId)
 
   override def findMilestoneStepById(id: UUID): TgRespIO[FindMilestoneStepResp] =
     protectedBackendClient.protectedHttpCall(endpoints.findByIdEndpoint)(id)
