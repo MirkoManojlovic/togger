@@ -3,7 +3,7 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindMilestoneResp, FindMilestoneStepResp, ReorderMilestoneStepsReq}
+import com.togger.dto.{FindMilestoneResp, FindMilestoneStepResp, ReorderMilestoneStepsReq, UpdateMilestoneStepReq}
 import com.togger.milestone.{DefaultMilestoneStep, MilestoneStatus}
 import com.togger.routes.Pages.{CreateMilestoneStepPage, EditMilestonePage, EditMilestoneStepPage}
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -27,7 +27,7 @@ import com.togger.ui.task.TaskConfigTableSupport.{
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
-import java.time.DayOfWeek
+import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 /** The steps of one milestone in order: their state, reordering with a change comment, and the way to close the
@@ -55,6 +55,11 @@ class ShowMilestoneStepsComponent(
   /** The move waiting for its change comment: the index of the step and how far it goes. */
   private val pendingMove = Var(Option.empty[(Int, Int)])
   private val moveComment = Var("")
+
+  /** The dates dragged on the Gantt chart and not saved yet, by step. */
+  private val stagedDates = Var(Map.empty[UUID, (LocalDate, LocalDate)])
+  private val savingDates = Var(false)
+  private val saveComment = Var("")
 
   private def load(): IO[Unit] =
     for {
@@ -155,23 +160,31 @@ class ShowMilestoneStepsComponent(
         )
     }
 
-  private val moveDialog: HtmlElement =
+  /** A dialog asking for the change comment that a save needs. */
+  private def commentDialog(
+    dialogTitle: String,
+    hint: String,
+    confirmLabel: String,
+    comment: Var[String],
+    cancel: () => Unit,
+    confirm: () => Unit
+  ): HtmlElement =
     div(
       cls(ModalStyles.wrapperCls),
-      ModalStyles.closeOnBackdropOrEscape(Observer(_ => pendingMove.set(None))),
+      ModalStyles.closeOnBackdropOrEscape(Observer(_ => cancel())),
       div(
         cls(ModalStyles.contentBoxCls),
         cls("w-full max-w-md"),
-        h3(cls(ModalStyles.titleCls), cls("mb-4"), "Reorder steps"),
+        h3(cls(ModalStyles.titleCls), cls("mb-4"), dialogTitle),
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "Change comment"),
         textArea(
           cls("w-full p-2.5 text-sm text-heading bg-neutral-secondary-medium border border-default-medium rounded-base"),
           rows(3),
-          placeholder("Why are the steps reordered?"),
-          controlled(value <-- moveComment.signal, onInput.mapToValue --> moveComment)
+          placeholder(hint),
+          controlled(value <-- comment.signal, onInput.mapToValue --> comment)
         ),
-        child <-- moveComment.signal.map(comment =>
-          MilestoneStepClose.commentErrors(comment).headOption.fold[Node](emptyNode)(error =>
+        child <-- comment.signal.map(text =>
+          MilestoneStepClose.commentErrors(text).headOption.fold[Node](emptyNode)(error =>
             p(cls("mt-2 text-sm text-red-600 dark:text-red-500"), error)
           )
         ),
@@ -182,18 +195,99 @@ class ShowMilestoneStepsComponent(
             typ("button"),
             cls(ModalStyles.secondaryButtonCls),
             "Cancel",
-            onClick.mapToUnit --> (_ => pendingMove.set(None))
+            onClick.mapToUnit --> (_ => cancel())
           ),
           button(
             typ("button"),
             cls(ModalStyles.primaryButtonCls),
-            "Reorder",
-            disabled <-- moveComment.signal.map(MilestoneStepClose.commentErrors(_).nonEmpty),
-            onClick.mapToUnit --> (_ => confirmMove())
+            confirmLabel,
+            disabled <-- comment.signal.map(MilestoneStepClose.commentErrors(_).nonEmpty),
+            onClick.mapToUnit --> (_ => confirm())
           )
         )
       )
     )
+
+  private val moveDialog: HtmlElement =
+    commentDialog(
+      "Reorder steps",
+      "Why are the steps reordered?",
+      "Reorder",
+      moveComment,
+      () => pendingMove.set(None),
+      () => confirmMove()
+    )
+
+  private val saveDatesDialog: HtmlElement =
+    commentDialog(
+      "Save step dates",
+      "Why are the dates changed?",
+      "Save",
+      saveComment,
+      () => savingDates.set(false),
+      () => confirmSaveDates()
+    )
+
+  /** The dates are staged only when they differ from the saved ones. */
+  private def stageDates(stepId: UUID, start: LocalDate, due: LocalDate): Unit =
+    stepsVar.now().find(_.id == stepId).foreach { step =>
+      if ((start, due) == ((step.startDate, step.dueDate))) stagedDates.update(_ - stepId)
+      else stagedDates.update(_ + (stepId -> (start -> due)))
+    }
+
+  private def requestSaveDates(): Unit = {
+    saveComment.set("")
+    savingDates.set(true)
+  }
+
+  private def confirmSaveDates(): Unit = {
+    val comment = saveComment.now()
+    val requests = stepsVar.now().flatMap { step =>
+      stagedDates.now().get(step.id).map { case (start, due) =>
+        UpdateMilestoneStepReq(
+          step.id,
+          step.name,
+          step.description,
+          step.status,
+          start,
+          due,
+          step.endDate,
+          comment
+        )
+      }
+    }
+    savingDates.set(false)
+    // the steps are saved one after the other, stopping at the first that fails, as the milestone range is checked for each
+    val saveAll = requests.foldLeft(IO.pure(true)) { (previous, request) =>
+      previous.flatMap { saved =>
+        if (!saved) IO.pure(false)
+        else milestoneStepService.updateMilestoneStep(request).map(_.fold(failure => { toast.error(failure); false }, _ => true))
+      }
+    }
+    spinnerService
+      .runWithSpinner(saveAll.flatMap(saved => IO(if (saved) stagedDates.set(Map.empty)).flatMap(_ => load())))
+      .unsafeRunAndForget()
+  }
+
+  private val stagedDatesBanner: Signal[Option[HtmlElement]] =
+    stagedDates.signal.map { staged =>
+      Option.when(staged.nonEmpty)(
+        div(
+          cls("flex items-center justify-between p-4 mb-4 text-sm rounded-base bg-warning-soft text-fg-warning border border-warning-subtle"),
+          span(s"${staged.size} ${if (staged.size == 1) "step has" else "steps have"} unsaved date changes."),
+          div(
+            cls("flex gap-2"),
+            button(
+              typ("button"),
+              cls(ModalStyles.secondaryButtonCls),
+              "Discard",
+              onClick.mapToUnit --> (_ => stagedDates.set(Map.empty))
+            ),
+            button(typ("button"), cls(ModalStyles.primaryButtonCls), "Save", onClick.mapToUnit --> (_ => requestSaveDates()))
+          )
+        )
+      )
+    }
 
   private def row(step: FindMilestoneStepResp, index: Int): HtmlElement =
     tr(
@@ -241,20 +335,31 @@ class ShowMilestoneStepsComponent(
       )
     )
 
+  /** The steps as the chart draws them: the saved ones with the dates dragged so far, and never a default step. */
+  private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
+    stepsVar.signal.combineWith(stagedDates.signal).map { case (steps, staged) =>
+      steps
+        .filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
+        .map { step =>
+          val (start, due) = staged.getOrElse(step.id, (step.startDate, step.dueDate))
+          MilestoneGanttStep(step.id.toString, step.name, start, due, step.status)
+        }
+    }
+
   private val stepsGantt = new MilestoneStepsGanttComponent(
-    stepsVar.signal.map(
-      _.filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
-        .map(step => MilestoneGanttStep(step.name, step.startDate, step.dueDate, step.status))
-    ),
+    ganttSteps,
     milestoneVar.signal.map(_.map(milestone => milestone.startDate -> milestone.dueDate)),
     workDaysVar.signal,
     tgDateFormater,
-    tgClock
+    tgClock,
+    onDatesChange = Some((step, start, due) => stageDates(UUID.fromString(step.key), start, due))
   )
 
   val element: HtmlElement =
     div(
       child.maybe <-- pendingMove.signal.map(_.map(_ => moveDialog)),
+      child.maybe <-- savingDates.signal.map(Option.when(_)(saveDatesDialog)),
+      child.maybe <-- stagedDatesBanner,
       stepsGantt.element,
       TgCard
         .headerNoFooter(

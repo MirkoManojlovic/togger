@@ -218,7 +218,7 @@ class CreateMilestoneComponent(
         for {
           start <- MilestoneStepsDraft.parseDate(draft.startDate)
           due <- MilestoneStepsDraft.parseDate(draft.dueDate)
-        } yield MilestoneGanttStep(Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
+        } yield MilestoneGanttStep(index.toString, Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
       })
 
   private val stepsGantt = new MilestoneStepsGanttComponent(
@@ -228,7 +228,10 @@ class CreateMilestoneComponent(
     },
     workDaysVar.signal,
     tgDateFormater,
-    tgClock
+    tgClock,
+    onDatesChange = Some((step, start, due) =>
+      milestoneStepsVar.now().lift(step.key.toInt).foreach(_.formState.update(_.copy(startDate = start.toString, dueDate = due.toString)))
+    )
   )
 
   private val descriptionEditor = formState.wysiwygSplitEditorSig(

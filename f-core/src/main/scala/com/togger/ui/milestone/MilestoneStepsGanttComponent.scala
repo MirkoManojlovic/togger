@@ -6,27 +6,31 @@ import com.togger.milestone.MilestoneStepStatus
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.{ChartColorBadgeColor, TgBadge}
 import com.togger.ui.task.TgDateFormater
-import com.togger.ui.timebox.gantt.{GanttAssigneeColors, GanttAxis, GanttChartLayout}
+import com.togger.ui.timebox.gantt.{GanttAssigneeColors, GanttAxis, GanttBarDrag, GanttChartLayout}
 
 import java.time.{DayOfWeek, LocalDate}
 
 /** A step as the Gantt chart draws it. */
 case class MilestoneGanttStep(
+  key: String,
   name: String,
   startDate: LocalDate,
   dueDate: LocalDate,
   status: MilestoneStepStatus = MilestoneStepStatus.Planned
 )
 
-/** The steps of a milestone as a read only Gantt chart that looks like the one of a timebox: one column per work day of
-  * the milestone, one row per step, each step as a bar from its start date to its due date. 
+/** The steps of a milestone as a Gantt chart that looks like the one of a timebox: one column per work day of the
+  * milestone, one row per step, each step as a bar from its start date to its due date. With `onDatesChange` the bars
+  * can be dragged to move a step or resize it; the chart only reports the new dates and leaves keeping them to the
+  * caller. Without it the chart is read only.
   */
 class MilestoneStepsGanttComponent(
   steps: Signal[Seq[MilestoneGanttStep]],
   milestoneRange: Signal[Option[(LocalDate, LocalDate)]],
   workDays: Signal[Set[DayOfWeek]],
   tgDateFormater: TgDateFormater,
-  tgClock: TgClock
+  tgClock: TgClock,
+  onDatesChange: Option[(MilestoneGanttStep, LocalDate, LocalDate) => Unit] = None
 ) {
 
   private val layout = new GanttChartLayout(tgDateFormater, tgClock)
@@ -54,12 +58,24 @@ class MilestoneStepsGanttComponent(
         step.dueDate,
         axis,
         "milestone",
-        placed =>
-          layout.barElement(
+        placed => {
+          val bar = layout.barElement(
             layout.barTitle(step.name, step.startDate, step.dueDate),
             GanttAssigneeColors.Palette(index % GanttAssigneeColors.Palette.size),
             placed
           )
+          onDatesChange.fold(bar) { change =>
+            GanttBarDrag.editable(
+              layout,
+              step.name,
+              step.startDate,
+              step.dueDate,
+              axis,
+              placed,
+              (start, due) => change(step, start, due)
+            )(bar)
+          }
+        }
       )
     )
 
