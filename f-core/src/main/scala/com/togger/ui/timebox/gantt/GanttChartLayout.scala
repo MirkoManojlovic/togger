@@ -78,9 +78,11 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   private def startsAfterGap(axis: GanttAxis, index: Int): Boolean =
     index > 0 && axis.days(index - 1).plusDays(1) != axis.days(index)
 
+  private def isToday(day: LocalDate): Boolean = day == tgClock.currentDate()
+
   def dayCellClasses(axis: GanttAxis, index: Int): String = {
     val gap = if (startsAfterGap(axis, index)) " border-l-2 border-l-default-strong" else " border-l"
-    val today = if (axis.days(index) == tgClock.currentDate()) " bg-brand-softer" else ""
+    val today = if (isToday(axis.days(index))) " bg-brand-soft" else ""
     s"border-default-medium$gap$today"
   }
 
@@ -117,8 +119,8 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
         div(
           cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
           styleAttr := s"grid-column: ${index + 2}; grid-row: 2",
-          div(tgDateFormater.dayOfWeekAbbrev(day)),
-          div(cls("text-heading"), tgDateFormater.dayOnly(day))
+          div(cls(if (isToday(day)) "font-semibold text-brand" else ""), tgDateFormater.dayOfWeekAbbrev(day)),
+          div(cls(if (isToday(day)) "font-semibold text-brand" else "text-heading"), tgDateFormater.dayOnly(day))
         )
       }
     )
