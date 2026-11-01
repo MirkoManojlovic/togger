@@ -2,14 +2,21 @@ package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.{ChartColorBadgeColor, TgBadge}
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.timebox.gantt.{GanttAssigneeColors, GanttAxis, GanttChartLayout}
 
 import java.time.{DayOfWeek, LocalDate}
 
 /** A step as the Gantt chart draws it. */
-case class MilestoneGanttStep(name: String, startDate: LocalDate, dueDate: LocalDate)
+case class MilestoneGanttStep(
+  name: String,
+  startDate: LocalDate,
+  dueDate: LocalDate,
+  status: MilestoneStepStatus = MilestoneStepStatus.Planned
+)
 
 /** The steps of a milestone as a read only Gantt chart that looks like the one of a timebox: one column per work day of
   * the milestone, one row per step, each step as a bar from its start date to its due date. 
@@ -37,6 +44,8 @@ class MilestoneStepsGanttComponent(
       div(
         cls(s"flex items-center self-stretch overflow-hidden px-2 py-0.5 ${layout.nameCellClasses}"),
         styleAttr := layout.nameCellStyle(),
+        TgBadge(text = step.status.emoji, color = ChartColorBadgeColor.of(step.status), bordered = true).element
+          .amend(cls("mr-1.5 shrink-0"), title := step.status.statusName),
         span(cls("min-w-0 truncate text-sm text-heading"), title := step.name, step.name)
       ),
       layout.dayCells(axis, "1"),
