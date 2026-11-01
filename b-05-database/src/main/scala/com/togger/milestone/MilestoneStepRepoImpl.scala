@@ -20,10 +20,10 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
     import milestoneStep._
     logAroundInfoQuery(
       insertStatement(MILESTONE_STEP_TABLE_FRAG)(fr"""
-        (milestone_id, created_at)
-        values ($milestoneId, $createdAt)
+        (milestone_id, created_at, shelf)
+        values ($milestoneId, $createdAt, $shelf)
       """).update
-        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at")
+        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at", "shelf")
     )(s"Inserting ${sp(milestoneStep)}", milestoneStep => s"Milestone step inserted ${sp(milestoneStep)}")
   }
 
@@ -31,10 +31,10 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
     import milestoneStep._
     logAroundInfoQuery(
       insertStatement(MILESTONE_STEP_TABLE_FRAG)(fr"""
-        (id, milestone_id, created_at)
-        values ($id, $milestoneId, $createdAt)
+        (id, milestone_id, created_at, shelf)
+        values ($id, $milestoneId, $createdAt, $shelf)
       """).update
-        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at")
+        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at", "shelf")
     )(
       s"Inserting ${sp(milestoneStep)} with existing id",
       milestoneStep => s"Milestone step inserted with existing id ${sp(milestoneStep)}"
@@ -71,6 +71,20 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
     )(
       s"Finding the milestone steps of project ${sp(projectId)}",
       found => s"Milestone steps found ${sp(found.size)} for project ${sp(projectId)}"
+    )
+
+  override def findMilestonesWithoutShelf: ConnectionIO[List[MilestoneWithoutShelf]] =
+    logAroundInfoQuery(
+      sql"""
+        select m.id, v.start_date, v.due_date, (select count(*) from milestone_step s where s.milestone_id = m.id)
+        from milestone m
+        join lateral (select * from milestone_version mv where mv.milestone_id = m.id order by mv.version desc limit 1) v
+          on true
+        where not exists (select 1 from milestone_step s where s.milestone_id = m.id and s.shelf)
+      """.query[MilestoneWithoutShelf].to[List]
+    )(
+      "Finding the milestones without a Shelf step",
+      found => s"Milestones without a Shelf step found ${sp(found.size)}"
     )
 
   override def findMilestoneIdsByStepIds(stepIds: List[UUID]): ConnectionIO[Map[UUID, UUID]] =

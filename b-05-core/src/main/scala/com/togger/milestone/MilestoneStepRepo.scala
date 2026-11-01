@@ -29,6 +29,11 @@ trait MilestoneStepRepo {
   def countTasksByStepIds(stepIds: List[UUID]): ConnectionIO[Map[UUID, MilestoneStepTaskCounts]]
 
   /** The tasks (by their latest version) in any step of the milestone. */
+  /** The milestones without a Shelf step, with the dates of their latest version and their number of steps. */
+  def findMilestonesWithoutShelf: ConnectionIO[List[MilestoneWithoutShelf]]
+
   def countTasksOfMilestone(milestoneId: UUID): ConnectionIO[Int]
 
 }
+
+case class MilestoneWithoutShelf(milestoneId: UUID, startDate: java.time.LocalDate, dueDate: java.time.LocalDate, stepCount: Int)

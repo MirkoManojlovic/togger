@@ -70,14 +70,14 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
         stored <- stepVersionRepo.findLatestByMilestoneId(created._1.milestone.id).transact(transactor)
       } yield {
         created._2.map(step => step.version.name -> step.version.position) shouldBe
-          List("Design" -> 0, "Development" -> 1, "Production" -> 2)
+          List("Design" -> 0, "Development" -> 1, "Production" -> 2, DefaultMilestoneStep.Name -> 3)
         created._2.map(_.milestoneStep.milestoneId).distinct shouldBe List(created._1.milestone.id)
         stored.map(_.status).distinct shouldBe List(MilestoneStepStatus.Planned)
-        stored.sortBy(_.position).map(_.name) shouldBe List("Design", "Development", "Production")
+        stored.sortBy(_.position).map(_.name) shouldBe List("Design", "Development", "Production", DefaultMilestoneStep.Name)
       })
     }
 
-    "give a milestone without steps the default step with the dates of the milestone" in { transactor =>
+    "give a milestone without steps only the Shelf step with the dates of the milestone" in { transactor =>
       val service = new MilestoneWithStepsService(
         milestoneRepo,
         milestoneVersionRepo,

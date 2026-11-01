@@ -99,6 +99,7 @@ object DemoSeedApp extends IOApp with SeedAppModule {
       (statusIds, taskLabelIds) = statusAndLabelIds
       ids = Ids(accountIds, projectIds, statusIds, taskLabelIds)
       _ <- seedRest(demo, ids).transact(xa)
+      _ <- new com.togger.ShelfStepSeedService(xa).run
       _ <- IO.println(
         s"Seeded ${demo.accounts.size} accounts, ${demo.projects.size} projects, ${demo.milestones.size} milestones with ${demo.milestones.map(_.steps.size).sum} steps, " +
           s"${demo.tasks.size} tasks and ${demo.tasks.map(_.logEntries.size).sum} log entries."

@@ -184,6 +184,7 @@ object TgServer {
     Resource
       .eval(new ProjectLabelSeedService(transactorModule.transactor).run)
       .evalMap(_ => new AiEndpointSeedService(transactorModule.transactor).run)
+      .evalMap(_ => new ShelfStepSeedService(transactorModule.transactor).run)
       .evalMap(_ => new McpAccountSeedService(transactorModule.transactor).run)
       .flatMap(_ =>
         httpModule.createServer(

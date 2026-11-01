@@ -8,6 +8,7 @@ import com.togger.milestone.MilestoneStepError.{
   LastStepOfMilestone,
   MilestoneStepError,
   MilestoneStepNotFound,
+  ShelfStepCannotBeDeleted,
   StepHasTasks,
   StepsDoNotMatchMilestone
 }
@@ -144,14 +145,15 @@ class MilestoneStepService(
   def listVersions(milestoneStepId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneStepVersion]] =
     milestoneStepVersionRepo.findPaginatedByMilestoneStepId(milestoneStepId, page).transact(transactor)
 
-  /** Refuses to delete the last step of a milestone and a step that tasks are in (by their latest version). */
+  /** Refuses to delete the Shelf step, the last step of a milestone and a step that tasks are in (by their latest version). */
   def deleteMilestoneStep(id: UUID): IO[Either[MilestoneStepError, Int]] =
     (for {
       step <- milestoneStepRepo.findById(id)
       siblings <- milestoneStepRepo.findAllByMilestoneId(step.milestoneId)
       tasks <- milestoneStepRepo.countTasksByStepIds(List(id))
       result <-
-        if (siblings.size <= 1) (LastStepOfMilestone: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
+        if (step.shelf) (ShelfStepCannotBeDeleted: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
+        else if (siblings.size <= 1) (LastStepOfMilestone: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
         else if (tasks.get(id).exists(_.total > 0))
           (StepHasTasks(tasks(id).total): MilestoneStepError).asLeft[Int].pure[ConnectionIO]
         else milestoneStepRepo.deleteById(id).map(_.asRight[MilestoneStepError])

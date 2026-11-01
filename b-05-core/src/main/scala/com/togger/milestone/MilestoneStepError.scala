@@ -23,6 +23,10 @@ object MilestoneStepError {
     override def message: String = "The last step of a milestone cannot be deleted"
   }
 
+  case object ShelfStepCannotBeDeleted extends MilestoneStepError {
+    override def message: String = "The Shelf step of a milestone cannot be deleted"
+  }
+
   case class StepHasTasks(count: Int) extends MilestoneStepError {
     override def message: String =
       s"The step has $count ${if (count == 1) "task" else "tasks"}; move or delete them before deleting the step"

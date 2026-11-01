@@ -2278,3 +2278,20 @@ databaseChangeLog:
             columns:
               - column:
                   name: milestone_step_id
+  - changeSet:
+      id: 21
+      author: mirko
+      labels: milestone-step
+      comment: >
+        Every milestone has a Shelf step that cannot be deleted; the flag marks it. The Shelf steps of existing
+        milestones are added on startup by ShelfStepSeedService.
+      changes:
+        - addColumn:
+            tableName: milestone_step
+            columns:
+              - column:
+                  name: shelf
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

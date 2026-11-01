@@ -7,6 +7,7 @@ import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
 import com.togger.milestone.MilestoneStepError.{
   LastStepOfMilestone,
+  ShelfStepCannotBeDeleted,
   MilestoneStepNotFound,
   StepHasTasks,
   StepsDoNotMatchMilestone
@@ -129,6 +130,15 @@ class MilestoneStepServiceTest
       (stepRepo.deleteById _).expects(step.id).returns(1.pure[ConnectionIO])
 
       service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Right(1))
+    }
+
+    "refuse to delete the Shelf step" in {
+      val step = newStep().copy(shelf = true)
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(ShelfStepCannotBeDeleted))
     }
 
     "refuse to delete the last step of a milestone" in {
