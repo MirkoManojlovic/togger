@@ -42,6 +42,12 @@ import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.milestone.StepBar
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressStyles
+import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneSummaryFeService
+import com.togger.ui.milestone.MilestoneTabs
+import com.togger.ui.milestone.MilestoneTaskRows
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -202,19 +208,35 @@ class ProjectHomeComponent(
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
 
-  /** One progress bar per step: its tasks done, blue, and green once the step is done with all its tasks done. */
+  /** Written out in full so Tailwind finds the classes. */
+  private def stepFillCls(color: TgProgressColor): String = color match {
+    case TgProgressColor.Success => "bg-success-soft"
+    case TgProgressColor.Dark    => "bg-dark-soft"
+    case _                       => "bg-brand-soft"
+  }
+
+  /** One bar per step, its name above it: the tasks of the step and those done with the share done in the middle, over
+    * a fill of that share. The fill is blue, and green once the step is done with all its tasks done.
+    */
   private def stepBars(steps: Seq[FindMilestoneStepResp]): HtmlElement =
     div(
-      cls("flex flex-col gap-3 mb-4"),
+      cls("grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2 lg:grid-cols-4"),
       steps.map { step =>
         val bar = StepBar.of(step)
-        TgProgressComponent(
-          value = bar.value,
-          max = bar.max,
-          color = bar.color,
-          size = TgProgressSize.Large,
-          label = TgProgressLabel.Outside(bar.title)
-        ).element
+        val percent = TgProgressStyles.percent(bar.value, bar.max)
+        div(
+          cls("min-w-0"),
+          title := bar.title,
+          div(cls("mb-1 truncate text-center text-sm font-medium text-heading"), s"${step.status.emoji} ${step.name}"),
+          div(
+            cls("relative h-8 overflow-hidden rounded-base border border-default-medium bg-neutral-primary-soft"),
+            div(cls(s"absolute inset-y-0 left-0 ${stepFillCls(bar.color)}"), width(s"$percent%")),
+            div(
+              cls("relative flex h-full items-center justify-center text-sm text-heading"),
+              s"${step.tasksTotal}/${step.tasksDone} ($percent%)"
+            )
+          )
+        )
       }
     )
 
