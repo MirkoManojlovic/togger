@@ -13,6 +13,7 @@ import com.togger.task.TaskPriority
 import com.togger.ui.task.bulk.BulkEdit
 import com.togger.ui.task.bulk.BulkLookups
 import com.togger.ui.task.bulk.BulkTaskEditor
+import com.togger.ui.milestone.StepTestData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -44,7 +45,9 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
     Instant.EPOCH
   )
   private val workDays = WorkDayCalendar.DefaultWorkDays
-  private val lookups = BulkLookups(Seq(backlog, done), Seq(bug, feature), Seq(member), Seq(milestone), workDays)
+  private val step = StepTestData.step(milestone.id)
+  private val lookups =
+    BulkLookups(Seq(backlog, done), Seq(bug, feature), Seq(member), Seq(milestone), workDays, Seq(step))
 
   private val bare = FindTaskRespFull(
     id = UUID.randomUUID(),
@@ -73,13 +76,13 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
 
   "ShowAllTasksBulkMapping" should {
     "give back the same task when nothing is edited" in {
-      val full = bare.copy(assignedTo = Some(member), milestone = Some(milestone.id), taskLabels = Seq(bug))
+      val full = bare.copy(assignedTo = Some(member), milestone = Some(milestone.id), milestoneStepId = Some(step.id), taskLabels = Seq(bug))
       ShowAllTasksBulkMapping.applyTo(full, ShowAllTasksBulkMapping.toBulkTask(full), lookups) shouldBe full
     }
 
     "map a task without milestone, assignee and labels to empty values" in {
       val task = ShowAllTasksBulkMapping.toBulkTask(bare)
-      (task.milestoneId, task.assigneeId, task.labelIds, task.statusId) shouldBe
+      (task.milestoneStepId, task.assigneeId, task.labelIds, task.statusId) shouldBe
         (None, None, Set.empty, Some(backlog.id))
     }
 
@@ -87,11 +90,11 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
       val edited = Seq[Any](
         edit(bare, BulkEdit.SetStatus(done.id)).taskStatus,
         edit(bare, BulkEdit.SetAssignee(Some(member.id))).assignedTo,
-        edit(bare, BulkEdit.SetMilestone(Some(milestone.id))).milestone,
+        edit(bare, BulkEdit.SetMilestoneStep(Some(step.id))).milestoneStepId,
         edit(bare, BulkEdit.SetPriority(TaskPriority.High)).priority,
         edit(bare, BulkEdit.SetLabels(Set(bug.id, feature.id))).taskLabels.toSet
       )
-      edited shouldBe Seq(done, Some(member), Some(milestone.id), TaskPriority.High, Set(bug, feature))
+      edited shouldBe Seq(done, Some(member), Some(step.id), TaskPriority.High, Set(bug, feature))
     }
 
     "keep the due date when the start moves but the due date is still after it" in {

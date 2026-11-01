@@ -25,7 +25,7 @@ object ShowAllTasksBulkMapping {
       endDate = dto.endDate,
       assigneeId = dto.assignedTo.map(_.id),
       labelIds = dto.taskLabels.map(_.id).toSet,
-      milestoneId = dto.milestone,
+      milestoneStepId = dto.milestoneStepId,
       dueDateManual = true
     )
 
@@ -41,7 +41,8 @@ object ShowAllTasksBulkMapping {
         case Some(id) => lookups.members.find(_.id == id).orElse(dto.assignedTo.filter(_.id == id))
       },
       taskLabels = lookups.labels.filter(label => edited.labelIds.contains(label.id)),
-      milestone = edited.milestoneId,
+      milestone = edited.milestoneStepId.flatMap(id => lookups.steps.find(_.id == id)).map(_.milestoneId),
+      milestoneStepId = edited.milestoneStepId,
       startDate = edited.startDate,
       dueDate = edited.dueDate
     )
@@ -61,7 +62,7 @@ object ShowAllTasksBulkMapping {
         createdAt = now,
         updatedAt = now,
         priority = dto.priority,
-        milestone = dto.milestone,
+        milestoneStepId = dto.milestoneStepId,
         startDate = Some(dto.startDate),
         dueDate = Some(dto.dueDate),
         endDate = dto.endDate,

@@ -28,6 +28,11 @@ import com.togger.ui.modal.ModalStyles
 import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.organization.TgIcons
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
+import com.togger.routes.Pages.EditTaskPage
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DateEmoji
@@ -70,7 +75,8 @@ case class QuickState(
   labels: Seq[FindTaskLabelResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
-  milestoneId: Option[UUID] = None,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
+  milestoneStepId: Option[UUID] = None,
   assigneeId: Option[UUID] = None,
   projectId: Option[UUID] = None,
   statusId: Option[UUID] = None,
@@ -161,6 +167,7 @@ class CreateTaskQuick(
   taskTemplateFeService: TaskTemplateFeService,
   projectService: ProjectService,
   milestoneFeService: MilestoneFeService,
+  milestoneStepFeService: MilestoneStepFeService,
   organizationServiceFe: OrganizationServiceFe,
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -186,6 +193,7 @@ class CreateTaskQuick(
     taskLabelFeService,
     projectService,
     milestoneFeService,
+    milestoneStepFeService,
     organizationServiceFe,
     accountService
   )
@@ -202,15 +210,15 @@ class CreateTaskQuick(
     token.dropdown match {
       case StartDateDropdown | DueDateDropdown => Seq.empty
       case MilestoneDropdown =>
-        current.milestones
-          .filter(milestone => matches(token.query, milestone.name))
-          .sortBy(_.name)
-          .map(milestone =>
+        MilestoneStepLabels
+          .ordered(current.steps, current.milestones)
+          .filter(step => matches(token.query, MilestoneStepLabels.label(step, current.milestones)))
+          .map(step =>
             QuickOption(
-              milestone.id.toString,
-              milestone.name,
-              milestone.status.statusName,
-              current.milestoneId.contains(milestone.id)
+              step.id.toString,
+              MilestoneStepLabels.label(step, current.milestones),
+              step.status.statusName,
+              current.milestoneStepId.contains(step.id)
             )
           )
       case ProjectDropdown =>
@@ -335,7 +343,7 @@ class CreateTaskQuick(
         case TaskStatusDropdown => cleared.copy(statusId = Some(UUID.fromString(option.id)))
         case AssignedToDropdown => cleared.copy(assigneeId = Some(UUID.fromString(option.id)))
         case StartDateDropdown | DueDateDropdown => cleared
-        case MilestoneDropdown                   => cleared.copy(milestoneId = Some(UUID.fromString(option.id)))
+        case MilestoneDropdown                   => cleared.copy(milestoneStepId = Some(UUID.fromString(option.id)))
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
           cleared
@@ -354,9 +362,10 @@ class CreateTaskQuick(
         labels = Seq.empty,
         members = Seq.empty,
         milestones = Seq.empty,
+        steps = Seq.empty,
         statusId = None,
         labelIds = Set.empty,
-        milestoneId = None,
+        milestoneStepId = None,
         templates = Seq.empty,
         templateId = None,
         appliedTemplateBody = None
@@ -379,7 +388,8 @@ class CreateTaskQuick(
                 statuses = data.statuses,
                 labels = data.labels,
                 members = data.members,
-                milestones = data.milestones
+                milestones = data.milestones,
+                steps = data.steps
               )
             )
           }
@@ -419,7 +429,7 @@ class CreateTaskQuick(
             createdAt = now,
             updatedAt = now,
             priority = current.effectivePriority,
-            milestone = current.milestoneId,
+            milestoneStepId = current.milestoneStepId,
             startDate = current.effectiveStartDate,
             dueDate = current.effectiveDueDate,
             taskLabelIds = current.labelIds.toSeq
@@ -539,8 +549,10 @@ class CreateTaskQuick(
         Some(
           badge(
             MilestoneDropdown,
-            current.milestones.find(m => current.milestoneId.contains(m.id)).fold("No milestone")(_.name),
-            current.milestoneId.map(_ => () => state.update(_.copy(milestoneId = None)))
+            current.steps
+              .find(step => current.milestoneStepId.contains(step.id))
+              .fold("No step")(MilestoneStepLabels.label(_, current.milestones)),
+            current.milestoneStepId.map(_ => () => state.update(_.copy(milestoneStepId = None)))
           )
         ),
         Some(

@@ -1,5 +1,6 @@
 package com.togger.ui.task.bulk
 
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.raquo.laminar.api.L._
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskStatusResp
@@ -169,18 +170,18 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
 
   private def milestonePopup(current: BulkEditContext, choose: BulkEdit => Unit): HtmlElement =
     optionsPopup(
-      QuickOption("", "No milestone", "", shared(current)(_.milestoneId).contains(None)) +:
-        current.lookups.milestones
-          .sortBy(_.name)
-          .map(milestone =>
+      QuickOption("", "No step", "", shared(current)(_.milestoneStepId).contains(None)) +:
+        MilestoneStepLabels
+          .ordered(current.lookups.steps, current.lookups.milestones)
+          .map(step =>
             QuickOption(
-              milestone.id.toString,
-              milestone.name,
-              milestone.status.statusName,
-              shared(current)(_.milestoneId).contains(Some(milestone.id))
+              step.id.toString,
+              MilestoneStepLabels.label(step, current.lookups.milestones),
+              step.status.statusName,
+              shared(current)(_.milestoneStepId).contains(Some(step.id))
             )
           ),
-      option => choose(BulkEdit.SetMilestone(optionalId(option)))
+      option => choose(BulkEdit.SetMilestoneStep(optionalId(option)))
     )
 
   private def assigneePopup(current: BulkEditContext, choose: BulkEdit => Unit): HtmlElement =

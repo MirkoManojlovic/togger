@@ -11,6 +11,8 @@ import com.togger.ui.auth.AccountService
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.OrganizationProjectsLoader
 import com.togger.ui.organization.OrganizationServiceFe
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID
@@ -19,7 +21,8 @@ case class TaskProjectData(
   statuses: Seq[FindTaskStatusResp] = Seq.empty,
   labels: Seq[FindTaskLabelResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
-  milestones: Seq[FindMilestoneResp] = Seq.empty
+  milestones: Seq[FindMilestoneResp] = Seq.empty,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty
 )
 
 /** Loads what a task is created against: the projects the account can see and one project's statuses, labels, members
@@ -30,6 +33,7 @@ class TaskProjectDataLoader(
   taskLabelFeService: TaskLabelFeService,
   projectService: ProjectService,
   milestoneFeService: MilestoneFeService,
+  milestoneStepFeService: MilestoneStepFeService,
   organizationServiceFe: OrganizationServiceFe,
   accountService: AccountService
 ) {
@@ -55,16 +59,21 @@ class TaskProjectDataLoader(
       projectService.findAllMembers(projectId)
     val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
       milestoneFeService.findAllByProjectId(projectId)
-    (statusesCall, labelsCall, membersCall, milestonesCall).parMapN {
-      (statusesResp, labelsResp, membersResp, milestonesResp) =>
+    val stepsCall: IO[Either[TgJsonFailure, TgJsonSuccess[List[FindMilestoneStepResp]]]] =
+      milestoneStepFeService.findByProjectId(projectId)
+    (statusesCall, labelsCall, membersCall, milestonesCall, stepsCall).parMapN {
+      (statusesResp, labelsResp, membersResp, milestonesResp, stepsResp) =>
+        val openMilestones = milestonesResp.toOption
+          .flatMap(_.body)
+          .getOrElse(Seq.empty)
+          .filter(milestone => OpenMilestoneStatuses.contains(milestone.status))
         TaskProjectData(
           statuses = statusesResp.toOption.flatMap(_.body).getOrElse(Seq.empty),
           labels = labelsResp.toOption.flatMap(_.body).getOrElse(Seq.empty),
           members = membersResp.toOption.flatMap(_.body).getOrElse(Seq.empty),
-          milestones = milestonesResp.toOption
-            .flatMap(_.body)
-            .getOrElse(Seq.empty)
-            .filter(milestone => OpenMilestoneStatuses.contains(milestone.status))
+          milestones = openMilestones,
+          // a task is put in a step of a milestone that is still being worked on
+          steps = MilestoneStepLabels.ordered(stepsResp.toOption.flatMap(_.body).getOrElse(Nil), openMilestones)
         )
     }
   }

@@ -24,6 +24,8 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BulkTask
@@ -80,6 +82,7 @@ class CreateTaskComponent(
   taskLabelFeService: TaskLabelFeService,
   taskTemplateFeService: TaskTemplateFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -167,21 +170,31 @@ class CreateTaskComponent(
       val call6: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindTaskTemplateResp]]]] =
         taskTemplateFeService.findAllByProjectId(projectId)
 
-      (call1, call2, call3, call4, call5, call6).parMapN {
+      // The step picker offers the steps of every milestone of the project.
+      val call7: IO[Either[TgJsonFailure, TgJsonSuccess[List[FindMilestoneStepResp]]]] =
+        milestoneStepService.findByProjectId(projectId)
+
+      (call1, call2, call3, call4, call5, call6, call7).parMapN {
         (
           findTaskStatusRespEither,
           searchAccountDtoEither,
           findTaskLabelRespEither,
           findProjectRespEither,
           findMilestoneRespEither,
-          findTaskTemplateRespEither
+          findTaskTemplateRespEither,
+          findStepsRespEither
         ) =>
-          val _ = findTaskTemplateRespEither.map(success => templatesVar.set(success.body.get))
-          val _ = findTaskStatusRespEither.map(success => badges.setStatuses(success.body.get))
-          val _ = searchAccountDtoEither.map(success => badges.setMembers(success.body.get))
-          val _ = findTaskLabelRespEither.map(success => badges.setLabels(success.body.get))
-          val _ = findMilestoneRespEither.map(success => badges.setMilestones(success.body.get))
-          val _ = findProjectRespEither.map(success => badges.setWorkDays(success.body.get.workDays.map(DayOfWeek.of)))
+          findTaskTemplateRespEither.map(success => templatesVar.set(success.body.get))
+          findTaskStatusRespEither.map(success => badges.setStatuses(success.body.get))
+          searchAccountDtoEither.map(success => badges.setMembers(success.body.get))
+          findTaskLabelRespEither.map(success => badges.setLabels(success.body.get))
+          findMilestoneRespEither.map { success =>
+            badges.setMilestones(success.body.get)
+            findStepsRespEither.map(steps =>
+              badges.setSteps(MilestoneStepLabels.ordered(steps.body.get, success.body.get))
+            )
+          }
+          findProjectRespEither.map(success => badges.setWorkDays(success.body.get.workDays.map(DayOfWeek.of)))
           applyDefaults(findTaskStatusRespEither.map(_.body.get).getOrElse(Seq.empty))
       }
     }
@@ -215,7 +228,7 @@ class CreateTaskComponent(
           createdAt = now,
           updatedAt = now,
           priority = created.priority,
-          milestone = created.milestoneId,
+          milestoneStepId = created.milestoneStepId,
           startDate = created.startDate,
           dueDate = created.dueDate,
           taskLabelIds = created.labelIds.toSeq

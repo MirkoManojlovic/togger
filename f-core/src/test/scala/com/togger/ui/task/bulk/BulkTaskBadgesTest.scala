@@ -8,6 +8,7 @@ import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
+import com.togger.ui.milestone.StepTestData
 import com.togger.ui.components.TgBadgeColor
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -52,8 +53,10 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
     Instant.EPOCH
   )
 
+  private val step = StepTestData.step(milestone.id, "Build")
+
   private val lookups =
-    BulkLookups(Seq(backlog), Seq(bug, feature), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays)
+    BulkLookups(Seq(backlog), Seq(bug, feature), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays, Seq(step))
 
   private val defaults = BulkTaskDefaults.of(monday.minusDays(3), lookups.workDays, lookups.statuses)
   private val task = BulkTask.withDefaults(UUID.randomUUID(), "A", defaults)
@@ -84,15 +87,15 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
         .map(_.text) shouldBe Seq("🗓️ Oct 12, 2026 | Mon", "🎯 Oct 16, 2026 | Fri", "⏱️ 5 days", "⏳ 5 days left")
     }
 
-    "show the milestone name, label emoji and assignee name when set" in {
+    "show the milestone and step name, label emoji and assignee name when set" in {
       val full = task.copy(
-        milestoneId = Some(milestone.id),
+        milestoneStepId = Some(step.id),
         labelIds = Set(bug.id, feature.id),
         assigneeId = Some(member.id)
       )
       val rows = BulkTaskBadges.of(full, lookups, monday)
       (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(3).text) shouldBe
-        ("Release 1", Seq("🐞", "🆕"), "Ada Lovelace")
+        ("Release 1 › Build", Seq("🐞", "🆕"), "Ada Lovelace")
     }
 
     "put the assignee after the status in the first of two rows, and the labels apart from them" in {

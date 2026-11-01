@@ -55,14 +55,14 @@ class BulkSummaryTest extends AnyWordSpec with Matchers {
       BulkSummary.of(tasks, workDays).byStatus shouldBe Seq(Some(one) -> 2, Some(other) -> 1)
     }
 
-    "count tasks by milestone, ignoring tasks without one" in {
+    "count tasks by step, ignoring tasks without one" in {
       val milestone = UUID.randomUUID()
       val tasks = Seq(
-        task("A").copy(milestoneId = Some(milestone)),
-        task("B").copy(milestoneId = Some(milestone)),
+        task("A").copy(milestoneStepId = Some(milestone)),
+        task("B").copy(milestoneStepId = Some(milestone)),
         task("C")
       )
-      BulkSummary.of(tasks, workDays).byMilestone shouldBe Seq(milestone -> 2)
+      BulkSummary.of(tasks, workDays).byMilestoneStep shouldBe Seq(milestone -> 2)
     }
 
     "count tasks without an assignee and the distinct labels in use" in {

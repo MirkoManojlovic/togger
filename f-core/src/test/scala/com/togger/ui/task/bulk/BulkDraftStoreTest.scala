@@ -21,7 +21,7 @@ class BulkDraftStoreTest extends AnyWordSpec with Matchers {
     priority = TaskPriority.High,
     statusId = Some(UUID.randomUUID()),
     assigneeId = Some(UUID.randomUUID()),
-    milestoneId = Some(UUID.randomUUID()),
+    milestoneStepId = Some(UUID.randomUUID()),
     labelIds = Set(UUID.randomUUID(), UUID.randomUUID()),
     dueDateManual = true
   )

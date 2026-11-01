@@ -4,6 +4,9 @@ import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
+import com.togger.common.WorkDayCalendar
+import com.togger.ui.milestone.MilestoneStepLabels
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
@@ -34,7 +37,8 @@ case class BulkLookups(
   labels: Seq[FindTaskLabelResp],
   members: Seq[SearchAccountDto],
   milestones: Seq[FindMilestoneResp],
-  workDays: Set[DayOfWeek]
+  workDays: Set[DayOfWeek],
+  steps: Seq[FindMilestoneStepResp] = Seq.empty
 )
 
 object EmojiPrefix {
@@ -79,9 +83,9 @@ object BulkTaskBadges {
     )
 
   private def milestone(task: BulkTask, lookups: BulkLookups): BadgeSpec =
-    task.milestoneId
-      .flatMap(id => lookups.milestones.find(_.id == id))
-      .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+    task.milestoneStepId
+      .flatMap(id => MilestoneStepLabels.labelOf(id, lookups.steps, lookups.milestones))
+      .map(label => BadgeSpec(label, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
       .getOrElse(BadgeSpec(EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
 
   private def priority(task: BulkTask): BadgeSpec =

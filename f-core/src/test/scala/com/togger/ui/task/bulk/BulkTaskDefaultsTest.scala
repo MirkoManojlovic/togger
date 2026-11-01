@@ -61,7 +61,7 @@ class BulkTaskDefaultsTest extends AnyWordSpec with Matchers {
   "BulkTask.withDefaults" should {
     "have no assignee, end date, labels or milestone" in {
       val task = BulkTask.withDefaults(UUID.randomUUID(), "A", BulkTaskDefaults.of(monday, monFri, Seq(backlog)))
-      (task.endDate, task.assigneeId, task.labelIds, task.milestoneId) shouldBe (None, None, Set.empty, None)
+      (task.endDate, task.assigneeId, task.labelIds, task.milestoneStepId) shouldBe (None, None, Set.empty, None)
     }
   }
 }

@@ -6,6 +6,7 @@ import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
+import com.togger.ui.milestone.StepTestData
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -119,28 +120,30 @@ class BulkTaskListTest extends AnyWordSpec with Matchers {
       None,
       Instant.EPOCH
     )
-    val lookups = BulkLookups(Seq(status), Seq(label), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays)
+    val step = StepTestData.step(milestone.id)
+    val lookups =
+      BulkLookups(Seq(status), Seq(label), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays, Seq(step))
     val withStatus = defaults.copy(statusId = Some(status.id))
 
     "keep what the project still has" in {
       val kept = ta.copy(
         statusId = Some(status.id),
         labelIds = Set(label.id),
-        milestoneId = Some(milestone.id),
+        milestoneStepId = Some(step.id),
         assigneeId = Some(member.id)
       )
       BulkTaskList.sanitize(Seq(kept), lookups, withStatus) shouldBe Seq(kept)
     }
 
-    "drop labels, a milestone and an assignee the project no longer has" in {
+    "drop labels, a step and an assignee the project no longer has" in {
       val stale = ta.copy(
         statusId = Some(status.id),
         labelIds = Set(label.id, UUID.randomUUID()),
-        milestoneId = Some(UUID.randomUUID()),
+        milestoneStepId = Some(UUID.randomUUID()),
         assigneeId = Some(UUID.randomUUID())
       )
       val cleaned = BulkTaskList.sanitize(Seq(stale), lookups, withStatus).head
-      (cleaned.labelIds, cleaned.milestoneId, cleaned.assigneeId) shouldBe (Set(label.id), None, None)
+      (cleaned.labelIds, cleaned.milestoneStepId, cleaned.assigneeId) shouldBe (Set(label.id), None, None)
     }
 
     "give a task whose status is gone the default status" in {

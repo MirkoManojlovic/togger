@@ -3,3 +3,4 @@ b-05-database/src/main/scala/com/togger/contribution/ContributionRepoImpl.scala:
 b-06-delivery-http4s/src/main/scala/com/togger/controllers/task/TaskController.scala: missing ['dto.milestone']
 b-06-delivery-http4s/src/main/scala/com/togger/controllers/timebox/TimeboxController.scala: missing ['.map', '=', '>', 'FindTimeboxResp', 'Left', 'Right', 'TgJsonSuccess.justBodyRight', '[', ']', 'case', 'error', 'error.toBadRequestLeft', 'result', 'toDto', '{']
 b-06-delivery-http4s/src/main/scala/com/togger/controllers/timebox/TimeboxController.scala: missing ['.map', 'FindTimeboxResp', 'Left', 'Right', 'TgJsonSuccess.justBodyRight', '[', ']', '_', 'case', 'error', 'error.toBadRequestLeft', 'result', 'toDto']
+f-core/src/main/scala/com/togger/ui/task/CreateTaskComponent.scala: missing ['_', 'val']

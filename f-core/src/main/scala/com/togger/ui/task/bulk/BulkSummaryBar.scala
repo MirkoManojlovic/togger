@@ -1,5 +1,6 @@
 package com.togger.ui.task.bulk
 
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.raquo.laminar.api.L._
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
@@ -57,7 +58,7 @@ object BulkSummaryBar {
         ),
         TgStatColumn(
           statElement(
-            "By milestones",
+            "By steps",
             child <-- summary.combineWith(lookups).map { case (current, currentLookups) =>
               badges(milestoneBadges(current, currentLookups))
             }
@@ -88,10 +89,12 @@ object BulkSummaryBar {
       .map { case (label, count) => BadgeSpec(s"${label.badgeText} × $count", label.badgeColor) }
 
   private def milestoneBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
-    summary.byMilestone
-      .flatMap { case (milestoneId, count) => lookups.milestones.find(_.id == milestoneId).map(_ -> count) }
-      .sortBy { case (milestone, count) => (-count, milestone.name) }
-      .map { case (milestone, count) => BadgeSpec(s"${milestone.name} × $count", TgBadgeColor.Alternative) }
+    summary.byMilestoneStep
+      .flatMap { case (stepId, count) =>
+        MilestoneStepLabels.labelOf(stepId, lookups.steps, lookups.milestones).map(_ -> count)
+      }
+      .sortBy { case (label, count) => (-count, label) }
+      .map { case (label, count) => BadgeSpec(s"$label × $count", TgBadgeColor.Alternative) }
 
   private def statusBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byStatus.map { case (statusId, count) =>

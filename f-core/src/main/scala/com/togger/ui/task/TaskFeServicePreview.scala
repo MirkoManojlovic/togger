@@ -30,6 +30,19 @@ class TaskFeServicePreview(
   private val VersionNotFound = "Task version not found"
   private val CannotEditLatest = "Cannot edit the latest version directly, save a new version instead"
 
+  private def stepsOf = data.milestoneSteps
+
+  /** The milestone of a task is the one of its step. */
+  private def milestoneOfStep(stepId: Option[UUID]): Option[UUID] =
+    stepId.flatMap(id => stepsOf.steps.find(id)).map(_.milestoneId)
+
+  /** The steps have to exist and belong to the project of the task, like in the backend. */
+  private def stepError(projectId: UUID, stepIds: Iterable[Option[UUID]]): Option[String] =
+    stepIds.flatten.toList.distinct.collectFirst {
+      case id if !milestoneOfStep(Some(id)).flatMap(milestoneId => data.milestoneProject(milestoneId)).contains(projectId) =>
+        s"Milestone step $id does not belong to the project of the task"
+    }
+
   private def secured[A](response: UUID => TgRespIO[A]): TgRespIO[A] =
     PreviewResponses.authenticated(ctx.loginRepo)(accountId => IO.defer(response(accountId)))
 
@@ -44,13 +57,12 @@ class TaskFeServicePreview(
             .flatMap(_ => LinkValidation.validateAll(dto.links, Seq.empty)) match {
             case Left(errors) => errors.toBadRequestLeftIO[FindTaskResp]
             case Right(_) =>
-              checkStatus(task.projectId, task.taskStatusId).fold(
-                PreviewResponses.badRequest[FindTaskResp](_),
-                _ => {
+              stepError(task.projectId, List(task.milestoneStepId)).fold(
+                checkStatus(task.projectId, task.taskStatusId).fold(PreviewResponses.badRequest[FindTaskResp](_), _ => {
                   val (created, links) = insertTask(accountId, dto, task.createdAt, ctx.clock.currentInstant)
                   PreviewResponses.ok(savedDto(created, links))
-                }
-              )
+                })
+              )(PreviewResponses.badRequest[FindTaskResp](_))
           }
       }
     }
@@ -105,6 +117,7 @@ class TaskFeServicePreview(
             .flatMap(_ => LinkValidation.validateAll(linksToCreate, dto.linksForUpdate)) match {
             case Left(errors) => errors.toBadRequestLeftIO[FindTaskResp]
             case Right(_) =>
+              stepError(task.projectId, List(update.milestoneStepId)).fold(
               checkStatus(task.projectId, update.taskStatusId).fold(
                 PreviewResponses.badRequest[FindTaskResp](_),
                 _ => {
@@ -117,7 +130,8 @@ class TaskFeServicePreview(
                     closedBy = closedByFor(update.taskStatusId, current.closedBy, accountId),
                     taskStatusId = update.taskStatusId,
                     priority = update.priority,
-                    milestone = update.milestone,
+                    milestone = milestoneOfStep(update.milestoneStepId),
+                    milestoneStepId = update.milestoneStepId,
                     startDate = startDate,
                     dueDate = dueDate,
                     endDate = endDate,
@@ -135,6 +149,7 @@ class TaskFeServicePreview(
                   )
                 }
               )
+              )(PreviewResponses.badRequest[FindTaskResp](_))
           }
       }
     }
@@ -325,7 +340,8 @@ class TaskFeServicePreview(
                     closedBy = dto.closedBy,
                     taskStatusId = dto.taskStatusId,
                     priority = dto.priority,
-                    milestone = dto.milestone,
+                    milestone = milestoneOfStep(dto.milestoneStepId),
+                    milestoneStepId = dto.milestoneStepId,
                     startDate = dto.startDate,
                     dueDate = dto.dueDate,
                     endDate = dto.endDate
@@ -398,7 +414,8 @@ class TaskFeServicePreview(
         createdAt,
         createdAt,
         req.priority,
-        req.milestone,
+        milestoneOfStep(req.milestoneStepId),
+        req.milestoneStepId,
         req.startDate,
         req.dueDate,
         None
@@ -445,6 +462,7 @@ class TaskFeServicePreview(
       version.version,
       version.priority,
       version.milestone,
+      version.milestoneStepId,
       version.startDate,
       version.dueDate,
       version.endDate,
@@ -507,6 +525,7 @@ class TaskFeServicePreview(
           .flatMap(toLogEntryDto),
         links = data.linksOf(task.id).flatMap(link => data.latestLinkVersion(link.id).map(toLinkDto(link, _))),
         milestone = version.milestone,
+        milestoneStepId = version.milestoneStepId,
         startDate = version.startDate,
         dueDate = version.dueDate,
         endDate = version.endDate,
@@ -532,6 +551,7 @@ class TaskFeServicePreview(
     (filter.labelIds.isEmpty || task.labelIds.exists(filter.labelIds.contains)) &&
     inOrNone(filter.assigneeIds, version.assignedTo, TgIds.UNASSIGNED_UUID) &&
     inOrNone(filter.milestoneIds, version.milestone, TgIds.NO_MILESTONE_UUID) &&
+    inOrNone(filter.milestoneStepIds, version.milestoneStepId, TgIds.NO_MILESTONE_UUID) &&
     search.forall(term => version.name.toLowerCase.contains(term) || version.description.toLowerCase.contains(term)) &&
     timeboxTaskIds.forall(_.contains(task.id))
   }

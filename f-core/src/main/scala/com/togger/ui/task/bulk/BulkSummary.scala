@@ -23,7 +23,7 @@ case class BulkSummary(
   byPriority: Seq[(TaskPriority, Int)],
   byStatus: Seq[(Option[UUID], Int)],
   byLabel: Seq[(UUID, Int)],
-  byMilestone: Seq[(UUID, Int)],
+  byMilestoneStep: Seq[(UUID, Int)],
   unassigned: Int,
   labelsUsed: Int
 )
@@ -47,7 +47,7 @@ object BulkSummary {
       byPriority = counts(tasks.map(_.priority)).sortBy(_._1.value),
       byStatus = counts(tasks.map(_.statusId)).sortBy(-_._2),
       byLabel = counts(tasks.flatMap(_.labelIds)),
-      byMilestone = counts(tasks.flatMap(_.milestoneId)),
+      byMilestoneStep = counts(tasks.flatMap(_.milestoneStepId)),
       unassigned = tasks.count(_.assigneeId.isEmpty),
       labelsUsed = tasks.flatMap(_.labelIds).distinct.size
     )

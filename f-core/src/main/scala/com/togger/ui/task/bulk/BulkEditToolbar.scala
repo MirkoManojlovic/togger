@@ -20,7 +20,7 @@ class BulkEditToolbar(popups: BulkEditPopups) {
   val element: HtmlElement =
     div(
       cls("flex flex-wrap items-center gap-1.5"),
-      trigger(BulkEditKind.Milestone, "Milestone"),
+      trigger(BulkEditKind.Milestone, "Step"),
       trigger(BulkEditKind.Priority, "Priority"),
       trigger(BulkEditKind.Status, "Status"),
       trigger(BulkEditKind.Assignee, "Assignee"),

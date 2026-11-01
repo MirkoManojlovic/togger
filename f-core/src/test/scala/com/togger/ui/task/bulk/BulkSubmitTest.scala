@@ -59,7 +59,7 @@ class BulkSubmitTest extends AnyWordSpec with Matchers {
       val full = task("B").copy(
         priority = TaskPriority.High,
         assigneeId = Some(assignee),
-        milestoneId = Some(milestone),
+        milestoneStepId = Some(milestone),
         labelIds = Set(label1, label2)
       )
       val request = BulkSubmit.request(Some(projectId), Seq(task("A"), full), hasParseIssues = false, createdBy, now)
@@ -68,7 +68,7 @@ class BulkSubmitTest extends AnyWordSpec with Matchers {
         created.map(_.name),
         created(1).priority,
         created(1).assignedTo,
-        created(1).milestone,
+        created(1).milestoneStepId,
         created(1).taskLabelIds.toSet,
         created.map(_.projectId).distinct,
         created.map(_.taskStatusId).distinct

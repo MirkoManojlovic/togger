@@ -12,7 +12,7 @@ sealed trait BulkEdit
 object BulkEdit {
   case class SetPriority(priority: TaskPriority) extends BulkEdit
   case class SetStatus(statusId: UUID) extends BulkEdit
-  case class SetMilestone(milestoneId: Option[UUID]) extends BulkEdit
+  case class SetMilestoneStep(milestoneStepId: Option[UUID]) extends BulkEdit
   case class SetAssignee(assigneeId: Option[UUID]) extends BulkEdit
   case class AddLabels(labelIds: Set[UUID]) extends BulkEdit
   case class RemoveLabels(labelIds: Set[UUID]) extends BulkEdit
@@ -38,7 +38,7 @@ object BulkTaskEditor {
     edit match {
       case BulkEdit.SetPriority(priority)   => task.copy(priority = priority)
       case BulkEdit.SetStatus(statusId)     => task.copy(statusId = Some(statusId))
-      case BulkEdit.SetMilestone(milestone) => task.copy(milestoneId = milestone)
+      case BulkEdit.SetMilestoneStep(step) => task.copy(milestoneStepId = step)
       case BulkEdit.SetAssignee(assignee)   => task.copy(assigneeId = assignee)
       case BulkEdit.AddLabels(labelIds)     => task.copy(labelIds = task.labelIds ++ labelIds)
       case BulkEdit.RemoveLabels(labelIds)  => task.copy(labelIds = task.labelIds -- labelIds)

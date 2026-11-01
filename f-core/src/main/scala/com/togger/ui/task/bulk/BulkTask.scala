@@ -24,7 +24,7 @@ case class BulkTask(
   endDate: Option[LocalDate],
   assigneeId: Option[UUID],
   labelIds: Set[UUID],
-  milestoneId: Option[UUID],
+  milestoneStepId: Option[UUID],
   dueDateManual: Boolean = false
 )
 
@@ -40,7 +40,7 @@ object BulkTask {
       endDate = None,
       assigneeId = None,
       labelIds = Set.empty,
-      milestoneId = None
+      milestoneStepId = None
     )
 }
 
