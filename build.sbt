@@ -506,10 +506,14 @@ lazy val backendMcp = (project in file("b-08-mcp"))
       // Backend calls
       `com.softwaremill.sttp.client4` %% `sttp-client4-core` % `client4-version`,
       `io.circe` %% `circe-parser` % "0.14.14",
+      // Desktop app watcher
+      `org.typelevel` %% `cats-effect` % `cats-effect-version`,
+      "com.lihaoyi" %% "os-lib" % "0.11.8",
       // Logging
       `com.outr` %% scribe % `scribe-version`,
       `com.outr` %% `scribe-slf4j` % `scribe-version`,
       // Tests
-      `org.scalatest` %% scalatest % `scalatest-version` % Test
+      `org.scalatest` %% scalatest % `scalatest-version` % Test,
+      `org.typelevel` %% `cats-effect-testing-scalatest` % `cats-effect-testing-scalatest-version` % Test
     )
   )
