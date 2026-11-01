@@ -55,7 +55,7 @@ class ToolsTest extends AnyWordSpec with Matchers:
       val result = call(
         named(TaskTools(client).all, "list_tasks"),
         s"""{"projectId":"$projectId","statusIds":["$otherId"],"priorities":[1,2],"labelIds":["$otherId"],
-           |"assigneeIds":["$otherId"],"milestoneIds":["$otherId"],"search":" bug ","timeboxId":"$otherId",
+           |"assigneeIds":["$otherId"],"milestoneIds":["$otherId"],"milestoneStepIds":["$otherId"],"search":" bug ","timeboxId":"$otherId",
            |"includeArchived":true,"page":2,"size":50}""".stripMargin
       )
 
@@ -69,6 +69,7 @@ class ToolsTest extends AnyWordSpec with Matchers:
       uri should include(s"labelId=$otherId")
       uri should include(s"assigneeId=$otherId")
       uri should include(s"milestoneId=$otherId")
+      uri should include(s"milestoneStepId=$otherId")
       uri should include("search=bug")
       uri should include(s"timeboxId=$otherId")
       uri should include("includeArchived=true")
