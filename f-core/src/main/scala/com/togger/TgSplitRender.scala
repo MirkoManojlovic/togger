@@ -1001,6 +1001,11 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   tgClock,
                   projectService,
                   modalFactory,
+                  taskService,
+                  taskStatusService,
+                  taskLabelService,
+                  timeboxStagingStore,
+                  themeStore.isDark,
                   projectId,
                   milestoneId,
                   toast

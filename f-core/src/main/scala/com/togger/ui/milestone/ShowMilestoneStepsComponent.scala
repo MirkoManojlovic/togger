@@ -24,7 +24,8 @@ import com.togger.ui.task.TaskConfigTableSupport.{
   rowIconButtonCls,
   rowIconButtonDangerCls
 }
-import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.timebox.TimeboxStagingStore
 import com.togger.ui.toast.Toast
 
 import java.time.{DayOfWeek, LocalDate}
@@ -42,6 +43,11 @@ class ShowMilestoneStepsComponent(
   tgClock: TgClock,
   projectService: ProjectService,
   modalFactory: ModalFactory,
+  taskService: TaskFeService,
+  taskStatusFeService: TaskStatusFeService,
+  taskLabelFeService: TaskLabelFeService,
+  stagingStore: TimeboxStagingStore,
+  isDark: Signal[Boolean],
   projectId: UUID,
   milestoneId: UUID,
   val toast: Toast
@@ -355,6 +361,25 @@ class ShowMilestoneStepsComponent(
     onDatesChange = Some((step, start, due) => stageDates(UUID.fromString(step.key), start, due))
   )
 
+  private val stepTasks = new MilestoneStepTasksComponent(
+    taskService,
+    taskStatusFeService,
+    taskLabelFeService,
+    milestoneService,
+    milestoneStepService,
+    projectService,
+    tgDateFormater,
+    stagingStore,
+    spinnerService,
+    tgClock,
+    isDark,
+    projectId,
+    milestoneId,
+    stepsVar.signal,
+    load(),
+    toast
+  )
+
   val element: HtmlElement =
     div(
       child.maybe <-- pendingMove.signal.map(_.map(_ => moveDialog)),
@@ -412,6 +437,7 @@ class ShowMilestoneStepsComponent(
             )
           )
         )
-        .element
+        .element,
+      stepTasks.element.amend(cls("mt-4"))
     )
 }
