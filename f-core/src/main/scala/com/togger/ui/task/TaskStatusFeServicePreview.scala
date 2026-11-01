@@ -58,8 +58,8 @@ class TaskStatusFeServicePreview(
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(data.statuses.find(id) match {
         case None => PreviewResponses.notFound[TgEmptyBody]
-        case Some(status) if status.name == DefaultTaskStatus.Done.statusName =>
-          PreviewResponses.badRequest[TgEmptyBody](s"Task status ${DefaultTaskStatus.Done.statusName} cannot be deleted")
+        case Some(status) if DefaultTaskStatus.isTerminalName(status.name) =>
+          PreviewResponses.badRequest[TgEmptyBody](s"Task status ${status.name} cannot be deleted")
         case Some(_) if stats.source.statusInUse(id) =>
           PreviewResponses.badRequest[TgEmptyBody]("Task status is used by tasks and cannot be deleted")
         case Some(_) =>

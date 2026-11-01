@@ -26,4 +26,9 @@ object DefaultTaskStatus extends Enum[DefaultTaskStatus] {
 
   override def values: IndexedSeq[DefaultTaskStatus] = findValues
 
+  /** The statuses that close a task: they need an end date and cannot be deleted. */
+  val terminal: IndexedSeq[DefaultTaskStatus] = IndexedSeq(Done, WontDo)
+
+  def isTerminalName(name: String): Boolean = terminal.exists(_.statusName == name)
+
 }

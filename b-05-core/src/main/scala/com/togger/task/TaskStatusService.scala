@@ -47,8 +47,8 @@ class TaskStatusService(
   def deleteById(id: UUID): IO[Int] =
     (for {
       taskStatus <- taskStatusRepo.findById(id)
-      _ <- Sync[ConnectionIO].raiseWhen(taskStatus.name == DefaultTaskStatus.Done.statusName)(
-        new IllegalArgumentException(s"Task status ${DefaultTaskStatus.Done.statusName} cannot be deleted")
+      _ <- Sync[ConnectionIO].raiseWhen(DefaultTaskStatus.isTerminalName(taskStatus.name))(
+        new IllegalArgumentException(s"Task status ${taskStatus.name} cannot be deleted")
       )
       deleted <- taskStatusRepo.deleteById(id)
     } yield deleted).transact(transactor)

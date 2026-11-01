@@ -16,6 +16,7 @@ import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
 import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.components._
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
 import com.togger.ui.milestone.MilestoneFeService
@@ -103,7 +104,7 @@ class EditTaskComponent(
         .fromDescription(formState.signal.map(_.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
         .element
     ),
-    onDoneChosen = () => closeDialogOpen.set(true)
+    onClosingChosen = statusId => openCloseDialog(Some(statusId))
   )
 
   spinnerService
@@ -319,6 +320,15 @@ class EditTaskComponent(
   // ---- close
 
   private val closeDialogOpen = Var(false)
+  private val closeStatusId = Var(Option.empty[UUID])
+
+  private def closingStatuses: Seq[FindTaskStatusResp] = TaskClose.closingStatuses(badges.lookupsNow().statuses)
+
+  private def openCloseDialog(preferred: Option[UUID]): Unit = {
+    closeStatusId.set(preferred.orElse(closingStatuses.headOption.map(_.id)))
+    closeStatusPopupOpen.set(false)
+    closeDialogOpen.set(true)
+  }
   private val closeEndDate = Var(tgClock.currentDate().toString)
   private val slackerVar: Var[Option[HtmlElement]] = Var(None)
 
@@ -328,8 +338,8 @@ class EditTaskComponent(
     }
 
   private def closeTask(endDate: LocalDate): Unit =
-    TaskClose.doneStatus(badges.lookupsNow().statuses).fold(toast.error("This project has no Done status")) { done =>
-      val dto = updateRequest(formState.now(), linksVar.now(), badges.taskVar.now(), done.id, Some(endDate))
+    closeStatusId.now().fold(toast.error("This project has no Done or Won't do status")) { statusId =>
+      val dto = updateRequest(formState.now(), linksVar.now(), badges.taskVar.now(), statusId, Some(endDate))
       spinnerService
         .runWithSpinner(sendUpdate(dto))
         .toastMessageCodeBlock("Task closed")(router.refresh())
@@ -403,7 +413,57 @@ class EditTaskComponent(
       child.maybe <-- closePickerOpen.signal.map(Option.when(_)(closePicker))
     )
 
-  private val closeDialog: HtmlElement =
+  private val closeStatusPopupOpen = Var(false)
+
+  private def closeStatusOptions: Seq[QuickOption] =
+    closingStatuses.map(status =>
+      QuickOption(
+        status.id.toString,
+        status.badgeText,
+        status.description,
+        closeStatusId.now().contains(status.id),
+        Some(status.badgeColor)
+      )
+    )
+
+  private def closeStatusPopup: HtmlElement =
+    QuickOptionsPopup(
+      options = closeStatusOptions,
+      onChoose = option => {
+        closeStatusId.set(Try(UUID.fromString(option.id)).toOption)
+        closeStatusPopupOpen.set(false)
+      }
+    ).element
+
+  private def closeStatusField: HtmlElement =
+    div(
+      cls("relative"),
+      label(cls("block mb-2.5 text-sm font-medium text-heading"), "Status"),
+      button(
+        typ("button"),
+        cls(tgInputStyle),
+        cls("flex items-center w-full text-left cursor-pointer"),
+        cls("ring-2 ring-blue-500") <-- closeStatusPopupOpen.signal,
+        aria.label("Status"),
+        child <-- closeStatusId.signal.map(selected =>
+          closingStatuses
+            .find(status => selected.contains(status.id))
+            .fold[HtmlElement](span("Select a status"))(status =>
+              TgBadge(text = status.badgeText, color = status.badgeColor, bordered = true).element
+            )
+        ),
+        // stopPropagation keeps this click from reaching the outside-click listener below
+        onClick.stopPropagation.mapToUnit --> (_ => closeStatusPopupOpen.update(!_))
+      ),
+      child.maybe <-- closeStatusPopupOpen.signal.map(Option.when(_)(closeStatusPopup)),
+      onMountBind(ctx =>
+        documentEvents(_.onClick)
+          .filter(event => !ctx.thisNode.ref.contains(event.target.asInstanceOf[dom.Node]))
+          .mapToUnit --> (_ => closeStatusPopupOpen.set(false))
+      )
+    )
+
+  private def closeDialog: HtmlElement =
     div(
       cls(ModalStyles.wrapperCls),
       ModalStyles.closeOnBackdropOrEscape(Observer(_ => closeDialogOpen.set(false))),
@@ -411,6 +471,7 @@ class EditTaskComponent(
         cls(ModalStyles.contentBoxCls),
         cls("w-full max-w-sm"),
         h3(cls(ModalStyles.titleCls), cls("mb-4"), "Close task"),
+        div(cls("mb-4"), closeStatusField),
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
         closeEndDateField,
         children <-- closeEndDateErrors.map(_.map(error => p(cls("mt-2 text-sm text-danger"), error))),
@@ -545,7 +606,7 @@ class EditTaskComponent(
       typ("button"),
       cls(TgHtmlButton.tailwindExtraSmallButton),
       "Close",
-      onClick.mapToUnit --> (_ => closeDialogOpen.set(true))
+      onClick.mapToUnit --> (_ => openCloseDialog(None))
     )
 
   /** The update call; what it was told to delete is gone once it went through. */
