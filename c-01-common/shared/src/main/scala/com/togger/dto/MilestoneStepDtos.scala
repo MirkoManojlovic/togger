@@ -49,7 +49,8 @@ case class FindMilestoneStepResp(
   updatedAt: Instant,
   changeComment: String,
   tasksTotal: Int = 0,
-  tasksDone: Int = 0
+  tasksDone: Int = 0,
+  shelf: Boolean = false
 )
 
 case class MilestoneStepVersionDto(
