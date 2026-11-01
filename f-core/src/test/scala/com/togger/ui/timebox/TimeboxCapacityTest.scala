@@ -127,11 +127,15 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
   }
 
   "CapacityLevel.of" should {
-    "be green up to and including 100%" in {
-      CapacityLevel.of(69, 100) shouldBe CapacityLevel.Green
-      CapacityLevel.of(99, 100) shouldBe CapacityLevel.Green
+    "be blue below 100%" in {
+      CapacityLevel.of(69, 100) shouldBe CapacityLevel.Blue
+      CapacityLevel.of(99, 100) shouldBe CapacityLevel.Blue
+      CapacityLevel.of(0, 5) shouldBe CapacityLevel.Blue
+    }
+
+    "be green at exactly 100%" in {
       CapacityLevel.of(100, 100) shouldBe CapacityLevel.Green
-      CapacityLevel.of(0, 5) shouldBe CapacityLevel.Green
+      CapacityLevel.of(5, 5) shouldBe CapacityLevel.Green
     }
 
     "be red over 100%" in {
@@ -141,7 +145,7 @@ class TimeboxCapacityTest extends AnyWordSpec with Matchers {
 
     "be red for work with no capacity at all" in {
       CapacityLevel.of(1, 0) shouldBe CapacityLevel.Red
-      CapacityLevel.of(0, 0) shouldBe CapacityLevel.Green
+      CapacityLevel.of(0, 0) shouldBe CapacityLevel.Blue
     }
   }
 

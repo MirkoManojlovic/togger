@@ -7,16 +7,19 @@ import com.togger.dto.SearchAccountDto
 import java.time.DayOfWeek
 import java.time.LocalDate
 
-/** How full a bar is: green up to 100%, red over it. */
+/** How full a bar is: blue below 100%, green at exactly 100%, red over it. */
 sealed trait CapacityLevel
 
 object CapacityLevel {
+  case object Blue extends CapacityLevel
   case object Green extends CapacityLevel
   case object Red extends CapacityLevel
 
-  /** Exactly 100% is still green; work with no capacity at all is over it. */
+  /** Work with no capacity at all is over it; nothing used of no capacity is still below it. */
   def of(usedDays: Int, capacityDays: Int): CapacityLevel =
-    if (usedDays > capacityDays) Red else Green
+    if (usedDays > capacityDays) Red
+    else if (usedDays == capacityDays && usedDays > 0) Green
+    else Blue
 }
 
 /** The work days a timebox can hold for someone (or for everyone), and how many of them the staged tasks use.

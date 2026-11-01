@@ -11,6 +11,7 @@ import com.togger.ui.components.TgProgressSize
 class TimeboxCapacityComponent(capacity: Signal[Option[TimeboxCapacity]]) {
 
   private def color(level: CapacityLevel): TgProgressColor = level match {
+    case CapacityLevel.Blue  => TgProgressColor.Brand
     case CapacityLevel.Green => TgProgressColor.Success
     case CapacityLevel.Red   => TgProgressColor.Danger
   }
