@@ -38,7 +38,9 @@ class StagedTasksComponent(
   capacity: Signal[Option[TimeboxCapacity]],
   milestones: Signal[Seq[FindMilestoneResp]],
   isDark: Signal[Boolean],
-  taskBadges: FindTaskRespFull => StagedTaskBadges
+  taskBadges: FindTaskRespFull => StagedTaskBadges,
+  groupings: Seq[StagedGrouping] = StagedGrouping.all,
+  cardTitle: String = "Staged tasks"
 ) {
 
   private val Empty = "—"
@@ -101,7 +103,7 @@ class StagedTasksComponent(
         Option.when(grouping != StagedGrouping.ByStatus)(
           TgStatColumn(statElement("Status", badges(summary.byStatus.map((statusBadge _).tupled), "items-center")))
         ),
-        Option.when(grouping != StagedGrouping.ByMilestone)(
+        Option.when(grouping != StagedGrouping.ByMilestone && groupings.contains(StagedGrouping.ByMilestone))(
           TgStatColumn(
             statElement(
               "Milestones",
@@ -130,7 +132,9 @@ class StagedTasksComponent(
         TgStatColumn(statElement("By priority", badgeColumn(summarySignal.map(_.byPriority))(priorityBadge))),
         TgStatColumn(statElement("By label", badgeColumn(summarySignal.map(_.byLabel))(labelBadge))),
         TgStatColumn(statElement("By status", badgeColumn(summarySignal.map(_.byStatus))(statusBadge))),
-        TgStatColumn(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge))),
+        Option.when(groupings.contains(StagedGrouping.ByMilestone))(
+          TgStatColumn(statElement("By milestones", badgeColumn(summarySignal.map(_.byMilestone))(milestoneCountBadge)))
+        ),
         TgStatColumn(statElement("By assignee", badgeColumn(summarySignal.map(_.byAssignee))(assigneeCountBadge)))
       )
     )
@@ -163,7 +167,7 @@ class StagedTasksComponent(
 
   private val summaryBar: HtmlElement =
     new TgTabs(
-      StagedGrouping.all.map(grouping =>
+      groupings.map(grouping =>
         TgTab(
           grouping.id,
           grouping.label,
@@ -234,7 +238,7 @@ class StagedTasksComponent(
   private val stagedList: HtmlElement =
     div(
       new TgTabs(
-        StagedGrouping.all.map(grouping => TgTab(grouping.id, grouping.label, groupedList(grouping))),
+        groupings.map(grouping => TgTab(grouping.id, grouping.label, groupedList(grouping))),
         selectedGroupingVar
       ).element,
       div(
@@ -247,7 +251,7 @@ class StagedTasksComponent(
   val element: HtmlElement =
     TgCard
       .headerNoFooter(
-        header = TgCard.CardHeader.plainText("Staged tasks", TgCard.CardHeaderSize.H5),
+        header = TgCard.CardHeader.plainText(cardTitle, TgCard.CardHeaderSize.H5),
         body = TgCard.HtmlCardContent(
           div(
             new TimeboxCapacityComponent(capacity).element.amend(cls("mb-4 border-b border-default-medium pb-3")),
