@@ -19,7 +19,7 @@ class MilestoneWithStepsService(
 ) extends TgLogging {
 
   /** The steps are stored in the given order; their ids and positions are set here. Without steps the milestone gets
-    * the [[DefaultMilestoneStep]] (Shelf), which is always added after them.
+    * the [[DefaultMilestoneStep]] (Shelf), which is always the first step.
     */
   def create(
     milestone: Milestone,
@@ -30,7 +30,7 @@ class MilestoneWithStepsService(
     (for {
       savedMilestone <- milestoneRepo.insert(milestone)
       savedVersion <- milestoneVersionRepo.insert(firstVersion.copy(milestoneId = savedMilestone.id))
-      savedSteps <- (steps :+ shelfStep(milestone, firstVersion)).zipWithIndex.traverse { case ((step, stepVersion), position) =>
+      savedSteps <- (shelfStep(milestone, firstVersion) +: steps).zipWithIndex.traverse { case ((step, stepVersion), position) =>
         for {
           savedStep <- milestoneStepRepo.insert(step.copy(milestoneId = savedMilestone.id))
           savedStepVersion <- milestoneStepVersionRepo.insert(
@@ -42,12 +42,12 @@ class MilestoneWithStepsService(
   }
 
   private def shelfStep(milestone: Milestone, firstVersion: MilestoneVersion): (MilestoneStep, MilestoneStepVersion) = {
-    val step = MilestoneStep(UUID.randomUUID(), milestone.id, milestone.createdAt, shelf = true)
+    val step = MilestoneStep(UUID.randomUUID(), milestone.id, milestone.createdAt)
     step -> MilestoneStepVersion(
       version = UUID.randomUUID(),
       milestoneStepId = step.id,
-      name = DefaultMilestoneStep.Name,
-      description = DefaultMilestoneStep.Description,
+      name = DefaultMilestoneStep.Shelf.stepName,
+      description = DefaultMilestoneStep.Shelf.description,
       status = MilestoneStepStatus.Planned,
       position = 0,
       startDate = firstVersion.startDate,

@@ -18,10 +18,11 @@ import doobie.implicits._
 import java.time.Instant
 import java.util.UUID
 
-/** Gives every milestone without one the Shelf step, after its other steps and with the dates of the milestone. New
+/** Gives every milestone without one the Shelf step, at the top, above its other steps, with the dates of the milestone. New
   * milestones get theirs on creation; this covers the milestones that existed before the Shelf step.
   */
 class ShelfStepSeedService(transactor: Transactor[IO]) extends TgLogging {
+  private val MoveComment = "Moved down to make room for the Shelf step"
   private val stepRepo = new MilestoneStepRepoImpl
   private val stepVersionRepo = new MilestoneStepVersionRepoImpl
 
@@ -34,15 +35,17 @@ class ShelfStepSeedService(transactor: Transactor[IO]) extends TgLogging {
   private def addShelf(milestone: MilestoneWithoutShelf): ConnectionIO[Unit] = {
     val now = Instant.now()
     for {
-      step <- stepRepo.insert(MilestoneStep(UUID.randomUUID(), milestone.milestoneId, now, shelf = true))
+      existing <- stepVersionRepo.findLatestByMilestoneId(milestone.milestoneId)
+      _ <- existing.traverse_(version => stepVersionRepo.insert(version.movedTo(version.position + 1, MoveComment, now)))
+      step <- stepRepo.insert(MilestoneStep(UUID.randomUUID(), milestone.milestoneId, now))
       _ <- stepVersionRepo.insert(
         MilestoneStepVersion(
           version = UUID.randomUUID(),
           milestoneStepId = step.id,
-          name = DefaultMilestoneStep.Name,
-          description = DefaultMilestoneStep.Description,
+          name = DefaultMilestoneStep.Shelf.stepName,
+          description = DefaultMilestoneStep.Shelf.description,
           status = MilestoneStepStatus.Planned,
-          position = milestone.stepCount,
+          position = 0,
           startDate = milestone.startDate,
           dueDate = milestone.dueDate,
           endDate = None,

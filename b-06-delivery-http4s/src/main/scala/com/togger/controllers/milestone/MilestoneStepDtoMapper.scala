@@ -30,8 +30,7 @@ object MilestoneStepDtoMapper {
       updatedAt = version.updatedAt,
       changeComment = version.changeComment,
       tasksTotal = taskCounts.total,
-      tasksDone = taskCounts.done,
-      shelf = step.shelf
+      tasksDone = taskCounts.done
     )
 
   def toVersionDto(version: MilestoneStepVersion): MilestoneStepVersionDto =

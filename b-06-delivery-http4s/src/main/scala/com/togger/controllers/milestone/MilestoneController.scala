@@ -1,6 +1,6 @@
 package com.togger.controllers.milestone
 
-import cats.data.EitherNec
+import cats.data.{EitherNec, NonEmptyChain}
 import cats.effect.IO
 import com.togger.common.DateRangeValidation
 import com.togger.common.TgError._
@@ -39,6 +39,8 @@ import com.togger.milestone.MilestoneEndpoints
 import com.togger.milestone.MilestoneService
 import com.togger.milestone.MilestoneStatus
 import com.togger.milestone.MilestoneVersion
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
+import com.togger.milestone.DefaultMilestoneStep
 
 import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
@@ -75,7 +77,12 @@ class MilestoneController(
     List(
       dateRangeValidation.validate(Some(step.startDate), Some(step.dueDate), None, workDays),
       dateRangeValidation.validateWithinRange(step.startDate, step.dueDate, dto.startDate, dto.dueDate)
-    ).traverse_(_.toValidated).toEither.leftMap(_.map(error => InvalidStep(step.name, error.message): TgError))
+    ).traverse_(_.toValidated).toEither.leftMap(_.map(error => InvalidStep(step.name, error.message): TgError)) *>
+      Either.cond(
+        !DefaultMilestoneStep.isDefaultName(step.name),
+        (),
+        NonEmptyChain.one(DefaultStepNameReserved(step.name.trim): TgError)
+      )
 
   private def createMilestone(dto: CreateMilestoneReq): IO[TgResp[FindMilestoneResp]] = {
     val now = java.time.Instant.now()

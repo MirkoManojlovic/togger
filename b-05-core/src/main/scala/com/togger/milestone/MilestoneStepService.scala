@@ -8,7 +8,9 @@ import com.togger.milestone.MilestoneStepError.{
   LastStepOfMilestone,
   MilestoneStepError,
   MilestoneStepNotFound,
-  ShelfStepCannotBeDeleted,
+  DefaultStepCannotBeDeleted,
+  DefaultStepCannotBeEdited,
+  DefaultStepNameReserved,
   StepHasTasks,
   StepsDoNotMatchMilestone
 }
@@ -38,7 +40,8 @@ class MilestoneStepService(
     logger.info(s"Creating a ${sp(milestoneStep)}, with ${sp(firstVersion)} at ${sp(position)}")
     (for {
       current <- orderedLatestVersions(milestoneStep.milestoneId)
-      insertAt = position.map(_.max(0)).filter(_ < current.size)
+      // the default steps stay at the top, so a new step goes below them
+      insertAt = position.map(_.max(current.takeWhile(isDefault).size)).filter(_ < current.size)
       savedStep <- milestoneStepRepo.insert(milestoneStep)
       savedVersion <- milestoneStepVersionRepo.insert(
         firstVersion.copy(
@@ -63,13 +66,22 @@ class MilestoneStepService(
     (for {
       milestoneStep <- milestoneStepRepo.findById(milestoneStepId)
       current <- milestoneStepVersionRepo.findLatestByMilestoneStepId(milestoneStepId)
-      // The position is changed by reordering only; an update keeps it.
-      savedVersion <- milestoneStepVersionRepo.insert(
-        newVersion.copy(milestoneStepId = milestoneStepId, position = current.position)
-      )
-    } yield MilestoneStepWithOneVersion(milestoneStep, savedVersion))
+      result <-
+        if (DefaultMilestoneStep.isDefaultName(current.name))
+          (DefaultStepCannotBeEdited(current.name): MilestoneStepError)
+            .asLeft[MilestoneStepWithOneVersion]
+            .pure[ConnectionIO]
+        else if (DefaultMilestoneStep.isDefaultName(newVersion.name))
+          (DefaultStepNameReserved(newVersion.name.trim): MilestoneStepError)
+            .asLeft[MilestoneStepWithOneVersion]
+            .pure[ConnectionIO]
+        else
+          // The position is changed by reordering only; an update keeps it.
+          milestoneStepVersionRepo
+            .insert(newVersion.copy(milestoneStepId = milestoneStepId, position = current.position))
+            .map(saved => MilestoneStepWithOneVersion(milestoneStep, saved).asRight[MilestoneStepError])
+    } yield result)
       .transact(transactor)
-      .map(_.asRight[MilestoneStepError])
       .recoverWith { case UnexpectedEnd => IO.pure(Left(MilestoneStepNotFound)) }
 
   /** One new version for every step whose position changes, all with the same change comment. */
@@ -90,14 +102,18 @@ class MilestoneStepService(
     orderedStepIds: List[UUID],
     changeComment: String,
     now: Instant
-  ): ConnectionIO[Either[MilestoneStepError, List[MilestoneStepWithOneVersion]]] =
-    if (current.map(_.milestoneStepId).toSet != orderedStepIds.toSet || orderedStepIds.distinct.size != current.size)
+  ): ConnectionIO[Either[MilestoneStepError, List[MilestoneStepWithOneVersion]]] = {
+    val (defaults, movable) = current.partition(isDefault)
+    // the default steps are not ordered: they stay at the top whatever the request says
+    val requested = orderedStepIds.filterNot(defaults.map(_.milestoneStepId).contains)
+    if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
       (StepsDoNotMatchMilestone: MilestoneStepError).asLeft[List[MilestoneStepWithOneVersion]].pure[ConnectionIO]
     else {
-      val byStepId = current.map(version => version.milestoneStepId -> version).toMap
-      renumber(orderedStepIds.map(byStepId), 0, changeComment, now) *>
+      val byStepId = movable.map(version => version.milestoneStepId -> version).toMap
+      renumber(defaults ++ requested.map(byStepId), 0, changeComment, now) *>
         findAllWithLatest(milestoneId).map(_.asRight[MilestoneStepError])
     }
+  }
 
   def getCurrent(milestoneStepId: UUID): IO[Either[MilestoneStepError, MilestoneStepWithOneVersion]] =
     (for {
@@ -139,20 +155,24 @@ class MilestoneStepService(
     rangeEnd: LocalDate
   ): IO[List[MilestoneStepVersion]] =
     orderedLatestVersions(milestoneId)
+      // a default step cannot be edited, so it is not held to the range
+      .map(_.filterNot(step => DefaultMilestoneStep.isDefaultName(step.name)))
       .map(MilestoneStepRange.stepsOutside(_, rangeStart, rangeEnd).toList)
       .transact(transactor)
 
   def listVersions(milestoneStepId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneStepVersion]] =
     milestoneStepVersionRepo.findPaginatedByMilestoneStepId(milestoneStepId, page).transact(transactor)
 
-  /** Refuses to delete the Shelf step, the last step of a milestone and a step that tasks are in (by their latest version). */
+  /** Refuses to delete a default step (Shelf), the last step of a milestone and a step that tasks are in (by their latest version). */
   def deleteMilestoneStep(id: UUID): IO[Either[MilestoneStepError, Int]] =
     (for {
       step <- milestoneStepRepo.findById(id)
+      latest <- milestoneStepVersionRepo.findLatestByMilestoneStepId(id)
       siblings <- milestoneStepRepo.findAllByMilestoneId(step.milestoneId)
       tasks <- milestoneStepRepo.countTasksByStepIds(List(id))
       result <-
-        if (step.shelf) (ShelfStepCannotBeDeleted: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
+        if (DefaultMilestoneStep.isDefaultName(latest.name))
+          (DefaultStepCannotBeDeleted(latest.name): MilestoneStepError).asLeft[Int].pure[ConnectionIO]
         else if (siblings.size <= 1) (LastStepOfMilestone: MilestoneStepError).asLeft[Int].pure[ConnectionIO]
         else if (tasks.get(id).exists(_.total > 0))
           (StepHasTasks(tasks(id).total): MilestoneStepError).asLeft[Int].pure[ConnectionIO]
@@ -179,6 +199,8 @@ class MilestoneStepService(
   /** The tasks in any step of the milestone. */
   def countTasksOfMilestone(milestoneId: UUID): IO[Int] =
     milestoneStepRepo.countTasksOfMilestone(milestoneId).transact(transactor)
+
+  private def isDefault(version: MilestoneStepVersion): Boolean = DefaultMilestoneStep.isDefaultName(version.name)
 
   private def nextPosition(ordered: List[MilestoneStepVersion]): Int =
     ordered.lastOption.map(_.position + 1).getOrElse(0)

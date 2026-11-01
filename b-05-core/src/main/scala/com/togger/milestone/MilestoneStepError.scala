@@ -23,8 +23,16 @@ object MilestoneStepError {
     override def message: String = "The last step of a milestone cannot be deleted"
   }
 
-  case object ShelfStepCannotBeDeleted extends MilestoneStepError {
-    override def message: String = "The Shelf step of a milestone cannot be deleted"
+  case class DefaultStepCannotBeDeleted(name: String) extends MilestoneStepError {
+    override def message: String = s"The $name step of a milestone cannot be deleted"
+  }
+
+  case class DefaultStepCannotBeEdited(name: String) extends MilestoneStepError {
+    override def message: String = s"The $name step of a milestone cannot be edited"
+  }
+
+  case class DefaultStepNameReserved(name: String) extends MilestoneStepError {
+    override def message: String = s"The step name $name is reserved for the default step of a milestone"
   }
 
   case class StepHasTasks(count: Int) extends MilestoneStepError {

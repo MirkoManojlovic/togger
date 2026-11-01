@@ -20,10 +20,10 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
     import milestoneStep._
     logAroundInfoQuery(
       insertStatement(MILESTONE_STEP_TABLE_FRAG)(fr"""
-        (milestone_id, created_at, shelf)
-        values ($milestoneId, $createdAt, $shelf)
+        (milestone_id, created_at)
+        values ($milestoneId, $createdAt)
       """).update
-        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at", "shelf")
+        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at")
     )(s"Inserting ${sp(milestoneStep)}", milestoneStep => s"Milestone step inserted ${sp(milestoneStep)}")
   }
 
@@ -31,10 +31,10 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
     import milestoneStep._
     logAroundInfoQuery(
       insertStatement(MILESTONE_STEP_TABLE_FRAG)(fr"""
-        (id, milestone_id, created_at, shelf)
-        values ($id, $milestoneId, $createdAt, $shelf)
+        (id, milestone_id, created_at)
+        values ($id, $milestoneId, $createdAt)
       """).update
-        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at", "shelf")
+        .withUniqueGeneratedKeys[MilestoneStep]("id", "milestone_id", "created_at")
     )(
       s"Inserting ${sp(milestoneStep)} with existing id",
       milestoneStep => s"Milestone step inserted with existing id ${sp(milestoneStep)}"
@@ -80,7 +80,11 @@ class MilestoneStepRepoImpl extends MilestoneStepRepo {
         from milestone m
         join lateral (select * from milestone_version mv where mv.milestone_id = m.id order by mv.version desc limit 1) v
           on true
-        where not exists (select 1 from milestone_step s where s.milestone_id = m.id and s.shelf)
+        where not exists (
+          select 1 from milestone_step s
+          join milestone_step_version sv on sv.milestone_step_id = s.id
+          where s.milestone_id = m.id and lower(sv.name) = ${DefaultMilestoneStep.Shelf.stepName.toLowerCase}
+        )
       """.query[MilestoneWithoutShelf].to[List]
     )(
       "Finding the milestones without a Shelf step",

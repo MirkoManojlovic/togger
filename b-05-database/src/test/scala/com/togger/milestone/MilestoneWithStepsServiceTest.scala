@@ -70,10 +70,10 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
         stored <- stepVersionRepo.findLatestByMilestoneId(created._1.milestone.id).transact(transactor)
       } yield {
         created._2.map(step => step.version.name -> step.version.position) shouldBe
-          List("Design" -> 0, "Development" -> 1, "Production" -> 2, DefaultMilestoneStep.Name -> 3)
+          List(DefaultMilestoneStep.Shelf.stepName -> 0, "Design" -> 1, "Development" -> 2, "Production" -> 3)
         created._2.map(_.milestoneStep.milestoneId).distinct shouldBe List(created._1.milestone.id)
         stored.map(_.status).distinct shouldBe List(MilestoneStepStatus.Planned)
-        stored.sortBy(_.position).map(_.name) shouldBe List("Design", "Development", "Production", DefaultMilestoneStep.Name)
+        stored.sortBy(_.position).map(_.name) shouldBe List(DefaultMilestoneStep.Shelf.stepName, "Design", "Development", "Production")
       })
     }
 
@@ -93,7 +93,7 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
         created <- service.create(milestone, version, Nil)
       } yield {
         created._2.map(step => (step.version.name, step.version.position, step.version.status)) shouldBe
-          List((DefaultMilestoneStep.Name, 0, MilestoneStepStatus.Planned))
+          List((DefaultMilestoneStep.Shelf.stepName, 0, MilestoneStepStatus.Planned))
         created._2.map(step => (step.version.startDate, step.version.dueDate)) shouldBe
           List((version.startDate, version.dueDate))
       })

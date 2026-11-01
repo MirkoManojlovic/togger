@@ -10,7 +10,7 @@ import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneStepDtoMapper.{toDto, toVersionDto}
 import com.togger.controllers.project.ProjectService
 import com.togger.dto.{CreateMilestoneStepReq, FindMilestoneStepResp, UpdateMilestoneStepReq}
-import com.togger.milestone.MilestoneStepError.{ChangeCommentEmpty, EndDateRequiredWhenClosed}
+import com.togger.milestone.MilestoneStepError.{ChangeCommentEmpty, DefaultStepNameReserved, EndDateRequiredWhenClosed}
 import com.togger.milestone._
 
 import java.time.{DayOfWeek, LocalDate}
@@ -61,9 +61,16 @@ class MilestoneStepController(
       validateComment(dto.changeComment)
     ).traverse_(_.toValidated).toEither
 
+  private def validateNotDefaultName(name: String): EitherNec[TgError, Unit] =
+    Either.cond(
+      !DefaultMilestoneStep.isDefaultName(name),
+      (),
+      NonEmptyChain.one(DefaultStepNameReserved(name.trim): TgError)
+    )
+
   val save = milestoneStepEndpoints.saveEndpoint.serverLogic { auth => dto =>
     withMilestoneContext[FindMilestoneStepResp](dto.milestoneId) { context =>
-      validateDates(context, dto.startDate, dto.dueDate, None) match {
+      validateDates(context, dto.startDate, dto.dueDate, None).flatMap(_ => validateNotDefaultName(dto.name)) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneStepResp])
         case Right(_)     => createStep(dto)
       }

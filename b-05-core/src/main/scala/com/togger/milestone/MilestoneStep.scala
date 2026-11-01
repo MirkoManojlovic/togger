@@ -6,8 +6,7 @@ import java.util.UUID
 case class MilestoneStep(
   id: UUID,
   milestoneId: UUID,
-  createdAt: Instant,
-  shelf: Boolean = false
+  createdAt: Instant
 )
 
 /** Append-only: every change, including a move to another position, is a new version with a change comment. */
