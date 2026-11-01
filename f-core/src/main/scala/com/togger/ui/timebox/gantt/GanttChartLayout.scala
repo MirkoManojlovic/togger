@@ -15,11 +15,12 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
   private val NameColumnVar = "--gantt-name-col"
   private val MinNameColumnPx = 192.0 // 12rem at default root font size
-  private val MaxNameColumnPx = 640.0
-  private val DefaultNameColumnPx = 320.0
+  private val MaxNameColumnPx = 384.0 // 24rem at default root font size
   private val DefaultNameColumnTitle = "Task"
 
-  private val nameColumnWidthPxVar: Var[Double] = Var(DefaultNameColumnPx)
+  /** None while the column is sized by its widest cell, so that the width can be measured. */
+  private val nameColumnWidthPxVar: Var[Option[Double]] = Var(None)
+  private var userResizedNameColumn = false
   private val nameColumnDragVar: Var[Option[(Double, Double)]] = Var(None) // (startClientX, startWidth)
 
   def gridTemplate(axis: GanttAxis): String =
@@ -28,19 +29,35 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def minWidthStyle(axis: GanttAxis): String = s"min-width: calc(var($NameColumnVar) + ${axis.size * 2.25}rem)"
 
   /** The name cell of a row. It spans the whole row so that, being sticky, it stays in view while the days scroll. */
-  val nameCellClasses = "sticky left-0 z-20 border-r border-default-medium bg-neutral-primary-soft"
+  val nameCellClasses = "gantt-name-cell sticky left-0 z-20 border-r border-default-medium bg-neutral-primary-soft"
 
   def nameCellStyle(gridRow: String = "1"): String =
     s"grid-column: 1 / -1; grid-row: $gridRow; justify-self: start; width: var($NameColumnVar)"
 
   private def startNameColumnDrag(event: dom.MouseEvent): Unit = {
     event.preventDefault()
-    nameColumnDragVar.set(Some((event.clientX, nameColumnWidthPxVar.now())))
+    nameColumnDragVar.set(Some((event.clientX, nameColumnWidthPxVar.now().getOrElse(MinNameColumnPx))))
   }
 
   private def moveNameColumnDrag(event: dom.MouseEvent): Unit =
     nameColumnDragVar.now().foreach { case (startX, startWidth) =>
-      nameColumnWidthPxVar.set((startWidth + event.clientX - startX).max(MinNameColumnPx).min(MaxNameColumnPx))
+      userResizedNameColumn = true
+      nameColumnWidthPxVar.set(Some(clampNameColumn(startWidth + event.clientX - startX)))
+    }
+
+  private def clampNameColumn(width: Double): Double = width.max(MinNameColumnPx).min(MaxNameColumnPx)
+
+  /** Sizes the column to its widest cell, header and rows alike, within the minimum and the maximum. A width the user
+    * dragged to is kept.
+    */
+  private def fitNameColumn(frameElement: dom.Element): Unit =
+    if (!userResizedNameColumn) {
+      nameColumnWidthPxVar.set(None)
+      dom.window.requestAnimationFrame { _ =>
+        val cells = frameElement.querySelectorAll(".gantt-name-cell")
+        val widest = (0 until cells.length).map(cells(_).asInstanceOf[dom.html.Element].offsetWidth).maxOption
+        nameColumnWidthPxVar.set(Some(clampNameColumn(widest.getOrElse(MinNameColumnPx))))
+      }
     }
 
   /** The grip in the middle of the name column's right edge. The strip around it is a sticky, zero wide flex item as
@@ -188,7 +205,8 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def frame(axis: GanttAxis, rows: Seq[HtmlElement], nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
       cls("overflow-x-auto rounded-base border border-default-medium"),
-      styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(width => s"${width}px"),
+      styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(_.fold("max-content")(width => s"${width}px")),
+      onMountCallback(context => fitNameColumn(context.thisNode.ref)),
       windowEvents(_.onMouseMove) --> (event => moveNameColumnDrag(event)),
       windowEvents(_.onMouseUp) --> (_ => nameColumnDragVar.set(None)),
       div(
