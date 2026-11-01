@@ -9,6 +9,7 @@ object QuickDropdown {
   case object TaskStatusDropdown extends QuickDropdown
   case object AssignedToDropdown extends QuickDropdown
   case object MilestoneDropdown extends QuickDropdown
+  case object MilestoneStepDropdown extends QuickDropdown
   case object StartDateDropdown extends QuickDropdown
   case object DueDateDropdown extends QuickDropdown
 
@@ -21,7 +22,8 @@ object QuickDropdown {
       '!' -> PriorityDropdown,
       '$' -> TaskStatusDropdown,
       '%' -> AssignedToDropdown,
-      '-' -> MilestoneDropdown
+      '-' -> MilestoneDropdown,
+      '+' -> MilestoneStepDropdown
     )
 
   /** Whole-word triggers: unlike [[triggerChars]] they take no query, so `@sprint` is plain text, not a start date. */

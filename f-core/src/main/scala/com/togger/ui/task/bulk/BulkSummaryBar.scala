@@ -58,9 +58,17 @@ object BulkSummaryBar {
         ),
         TgStatColumn(
           statElement(
-            "By steps",
+            "By milestones",
             child <-- summary.combineWith(lookups).map { case (current, currentLookups) =>
               badges(milestoneBadges(current, currentLookups))
+            }
+          )
+        ),
+        TgStatColumn(
+          statElement(
+            "By steps",
+            child <-- summary.combineWith(lookups).map { case (current, currentLookups) =>
+              badges(stepBadges(current, currentLookups))
             }
           )
         )
@@ -91,10 +99,20 @@ object BulkSummaryBar {
   private def milestoneBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byMilestoneStep
       .flatMap { case (stepId, count) =>
-        MilestoneStepLabels.labelOf(stepId, lookups.steps, lookups.milestones).map(_ -> count)
+        MilestoneStepLabels.milestoneOf(stepId, lookups.steps, lookups.milestones).map(_.name -> count)
       }
-      .sortBy { case (label, count) => (-count, label) }
-      .map { case (label, count) => BadgeSpec(s"$label × $count", TgBadgeColor.Alternative) }
+      .groupMapReduce(_._1)(_._2)(_ + _)
+      .toSeq
+      .sortBy { case (name, count) => (-count, name) }
+      .map { case (name, count) => BadgeSpec(s"$name × $count", TgBadgeColor.Alternative) }
+
+  private def stepBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
+    summary.byMilestoneStep
+      .flatMap { case (stepId, count) => lookups.steps.find(_.id == stepId).map(_.name -> count) }
+      .groupMapReduce(_._1)(_._2)(_ + _)
+      .toSeq
+      .sortBy { case (name, count) => (-count, name) }
+      .map { case (name, count) => BadgeSpec(s"$name × $count", TgBadgeColor.Alternative) }
 
   private def statusBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byStatus.map { case (statusId, count) =>

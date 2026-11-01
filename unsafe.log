@@ -5,3 +5,6 @@ b-06-delivery-http4s/src/main/scala/com/togger/controllers/timebox/TimeboxContro
 b-06-delivery-http4s/src/main/scala/com/togger/controllers/timebox/TimeboxController.scala: missing ['.map', 'FindTimeboxResp', 'Left', 'Right', 'TgJsonSuccess.justBodyRight', '[', ']', '_', 'case', 'error', 'error.toBadRequestLeft', 'result', 'toDto']
 f-core/src/main/scala/com/togger/ui/task/CreateTaskComponent.scala: missing ['_', 'val']
 b-08-mcp/src/main/scala/com/togger/mcp/McpApp.scala: missing ['.start', 'onStopped', 'scribe.info']
+f-core/src/test/scala/com/togger/ui/task/bulk/BulkTaskBadgesTest.scala: missing ['3', 'monday']
+f-core/src/test/scala/com/togger/ui/task/bulk/BulkTaskBadgesTest.scala: missing ['1', 'monday']
+f-core/src/test/scala/com/togger/ui/task/bulk/BulkTaskBadgesTest.scala: missing ['monday', '›']

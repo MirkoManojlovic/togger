@@ -63,9 +63,13 @@ class TaskFormBadges(
 
   private def primaryRow(task: BulkTask, lookups: BulkLookups): Seq[BadgeSpec] = {
     val milestone = task.milestoneStepId
-      .flatMap(id => MilestoneStepLabels.labelOf(id, lookups.steps, lookups.milestones))
-      .map(label => BadgeSpec(label, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+      .flatMap(id => MilestoneStepLabels.milestoneOf(id, lookups.steps, lookups.milestones))
+      .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
       .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
+    val milestoneStep = task.milestoneStepId
+      .flatMap(id => lookups.steps.find(_.id == id))
+      .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.MilestoneStep)))
+      .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep)))
     val status = task.statusId
       .flatMap(id => lookups.statuses.find(_.id == id))
       .map(found => BadgeSpec(found.badgeText, found.badgeColor, Some(BulkEditKind.Status)))
@@ -80,6 +84,7 @@ class TaskFormBadges(
     }
     Seq(
       milestone,
+      milestoneStep,
       BadgeSpec(task.priority.shortCode, task.priority.badgeColor, Some(BulkEditKind.Priority)),
       status,
       assignee
