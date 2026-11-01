@@ -40,6 +40,7 @@ import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
 import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BulkTaskDefaults
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -61,6 +62,7 @@ class CreateMilestoneComponent(
   milestoneTemplateService: MilestoneTemplateFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
+  tgDateFormater: TgDateFormater,
   projectService: ProjectService,
   projectId: UUID,
   val toast: Toast
@@ -208,6 +210,37 @@ class CreateMilestoneComponent(
     tgInputType = TgInputType.Text
   )
 
+  /** The steps as the chart draws them: Shelf over the milestone dates, then the steps being created whose dates can be
+    * read.
+    */
+  private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
+    milestoneStepsVar.signal
+      .flatMapSwitch(steps => Signal.combineSeq(steps.map(_.formState.signal)))
+      .combineWith(formState.signal)
+      .map { case (drafts, form) =>
+        val shelf = for {
+          start <- MilestoneStepsDraft.parseDate(form.startDate)
+          due <- MilestoneStepsDraft.parseDate(form.dueDate)
+        } yield MilestoneGanttStep(DefaultMilestoneStep.Shelf.stepName, start, due)
+        val own = drafts.zipWithIndex.flatMap { case (draft, index) =>
+          for {
+            start <- MilestoneStepsDraft.parseDate(draft.startDate)
+            due <- MilestoneStepsDraft.parseDate(draft.dueDate)
+          } yield MilestoneGanttStep(Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
+        }
+        shelf.toSeq ++ own
+      }
+
+  private val stepsGantt = new MilestoneStepsGanttComponent(
+    ganttSteps,
+    milestoneRange.map { case (start, due) =>
+      MilestoneStepsDraft.parseDate(start).zip(MilestoneStepsDraft.parseDate(due)).headOption
+    },
+    workDaysVar.signal,
+    tgDateFormater,
+    tgClock
+  )
+
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Milestone description",
@@ -269,6 +302,7 @@ class CreateMilestoneComponent(
     div(
       cls("mb-4"),
       h4(cls("text-sm font-medium text-heading mb-2"), "Steps"),
+      stepsGantt.element,
       div(
         cls("mb-4"),
         child <-- MilestoneTemplatePicker(

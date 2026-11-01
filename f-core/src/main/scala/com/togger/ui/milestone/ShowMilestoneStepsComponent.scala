@@ -14,6 +14,8 @@ import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
 import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
 import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
+import com.togger.common.TgClock
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.{
   headerIconButtonCls,
@@ -25,6 +27,7 @@ import com.togger.ui.task.TaskConfigTableSupport.{
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
+import java.time.DayOfWeek
 import java.util.UUID
 
 /** The steps of one milestone in order: their state, reordering with a change comment, and the way to close the
@@ -36,6 +39,8 @@ class ShowMilestoneStepsComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
+  projectService: ProjectService,
   modalFactory: ModalFactory,
   projectId: UUID,
   milestoneId: UUID,
@@ -45,6 +50,7 @@ class ShowMilestoneStepsComponent(
 
   val milestoneVar = Var(Option.empty[FindMilestoneResp])
   val stepsVar = Var(List.empty[FindMilestoneStepResp])
+  private val workDaysVar = Var(Set.empty[DayOfWeek])
 
   /** The move waiting for its change comment: the index of the step and how far it goes. */
   private val pendingMove = Var(Option.empty[(Int, Int)])
@@ -54,7 +60,9 @@ class ShowMilestoneStepsComponent(
     for {
       milestoneResult <- milestoneService.findMilestoneById(milestoneId)
       stepsResult <- milestoneStepService.findByMilestoneId(milestoneId)
+      projectResult <- projectService.findById(projectId)
     } yield {
+      projectResult.foreach(project => workDaysVar.set(project.body.get.workDays.map(DayOfWeek.of)))
       milestoneResult.fold(toast.error, success => milestoneVar.set(success.body))
       stepsResult.fold(toast.error, success => stepsVar.set(success.body.getOrElse(Nil)))
     }
@@ -233,9 +241,18 @@ class ShowMilestoneStepsComponent(
       )
     )
 
+  private val stepsGantt = new MilestoneStepsGanttComponent(
+    stepsVar.signal.map(_.map(step => MilestoneGanttStep(step.name, step.startDate, step.dueDate))),
+    milestoneVar.signal.map(_.map(milestone => milestone.startDate -> milestone.dueDate)),
+    workDaysVar.signal,
+    tgDateFormater,
+    tgClock
+  )
+
   val element: HtmlElement =
     div(
       child.maybe <-- pendingMove.signal.map(_.map(_ => moveDialog)),
+      stepsGantt.element,
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(

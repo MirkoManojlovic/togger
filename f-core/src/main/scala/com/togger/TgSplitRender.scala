@@ -974,6 +974,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   milestoneTemplateService,
                   spinnerService,
                   tgClock,
+                  tgDateFormater,
                   projectService,
                   projectId,
                   toast
@@ -997,6 +998,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   router,
                   spinnerService,
                   tgDateFormater,
+                  tgClock,
+                  projectService,
                   modalFactory,
                   projectId,
                   milestoneId,

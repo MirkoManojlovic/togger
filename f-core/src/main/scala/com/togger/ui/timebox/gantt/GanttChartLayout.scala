@@ -46,7 +46,10 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     )
 
   def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
-    s"${task.name}: ${DateEmoji.Start} ${tgDateFormater.asAmericanDate(start)} - ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(due)}"
+    barTitle(task.name, start, due)
+
+  def barTitle(name: String, start: LocalDate, due: LocalDate): String =
+    s"$name: ${tgDateFormater.asAmericanDate(start)} - ${tgDateFormater.asAmericanDate(due)}"
 
   def barStyle(placed: GanttBar.Placed): String =
     s"grid-column: ${placed.startCol + 2} / span ${placed.width}; grid-row: 1"
@@ -54,8 +57,15 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def outsideStyle(axis: GanttAxis): String = s"grid-column: 2 / span ${axis.size}; grid-row: 1"
 
   /** The bar of a task without anything to grab it by. */
-  def barElement(task: FindTaskRespFull, placed: GanttBar.Placed, memberIds: Seq[java.util.UUID]): HtmlElement = {
-    val color = GanttAssigneeColors.classFor(task.assignedTo.map(_.id), memberIds)
+  def barElement(task: FindTaskRespFull, placed: GanttBar.Placed, memberIds: Seq[java.util.UUID]): HtmlElement =
+    barElement(
+      barTitle(task, task.startDate, task.dueDate),
+      GanttAssigneeColors.classFor(task.assignedTo.map(_.id), memberIds),
+      placed
+    )
+
+  /** A bar with the given tooltip and background colour class. */
+  def barElement(tooltip: String, color: String, placed: GanttBar.Placed): HtmlElement = {
     val rounding = (placed.clippedLeft, placed.clippedRight) match {
       case (false, false) => "rounded-md"
       case (true, false)  => "rounded-r-md"
@@ -63,19 +73,17 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
       case (true, true)   => ""
     }
     div(
-      cls(
-        s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"
-      ),
-      title := barTitle(task, task.startDate, task.dueDate),
+      cls(s"relative z-10 mx-1 my-2 flex h-9 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"),
+      title := tooltip,
       span(if (placed.clippedLeft) "◂" else ""),
       span(if (placed.clippedRight) "▸" else "")
     )
   }
 
-  def outsideElement(side: GanttClamp): HtmlElement = {
+  def outsideElement(side: GanttClamp, rangeName: String = "timebox"): HtmlElement = {
     val (label, alignment) = side match {
-      case GanttClamp.After => ("starts after the timebox ▸", "justify-self-end")
-      case _                => ("◂ ends before the timebox", "justify-self-start")
+      case GanttClamp.After => (s"starts after the $rangeName ▸", "justify-self-end")
+      case _                => (s"◂ ends before the $rangeName", "justify-self-start")
     }
     span(
       cls(s"z-10 my-1.5 whitespace-nowrap px-1 text-xs italic text-body-subtle $alignment"),
@@ -95,9 +103,19 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     axis: GanttAxis,
     bar: (FindTaskRespFull, GanttBar.Placed) => HtmlElement
   ): Modifier[HtmlElement] =
-    GanttBar.of(task.startDate, task.dueDate, axis).fold[Modifier[HtmlElement]](emptyMod) {
-      case placed: GanttBar.Placed => bar(task, placed).amend(styleAttr := barStyle(placed))
-      case GanttBar.Outside(side)  => outsideElement(side).amend(styleAttr := outsideStyle(axis))
+    barOrOutside(task.startDate, task.dueDate, axis, "timebox", placed => bar(task, placed))
+
+  /** The bar for the dates on the row, or the label for dates that lie outside the days of the named range. */
+  def barOrOutside(
+    start: LocalDate,
+    due: LocalDate,
+    axis: GanttAxis,
+    rangeName: String,
+    bar: GanttBar.Placed => HtmlElement
+  ): Modifier[HtmlElement] =
+    GanttBar.of(start, due, axis).fold[Modifier[HtmlElement]](emptyMod) {
+      case placed: GanttBar.Placed => bar(placed).amend(styleAttr := barStyle(placed))
+      case GanttBar.Outside(side)  => outsideElement(side, rangeName).amend(styleAttr := outsideStyle(axis))
     }
 
   def emptyMessage(text: String): HtmlElement = p(cls("p-3 text-sm text-body-subtle"), text)
