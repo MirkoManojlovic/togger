@@ -242,7 +242,10 @@ class ShowMilestoneStepsComponent(
     )
 
   private val stepsGantt = new MilestoneStepsGanttComponent(
-    stepsVar.signal.map(_.map(step => MilestoneGanttStep(step.name, step.startDate, step.dueDate, step.status))),
+    stepsVar.signal.map(
+      _.filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
+        .map(step => MilestoneGanttStep(step.name, step.startDate, step.dueDate, step.status))
+    ),
     milestoneVar.signal.map(_.map(milestone => milestone.startDate -> milestone.dueDate)),
     workDaysVar.signal,
     tgDateFormater,

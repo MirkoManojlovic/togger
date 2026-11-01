@@ -210,26 +210,16 @@ class CreateMilestoneComponent(
     tgInputType = TgInputType.Text
   )
 
-  /** The steps as the chart draws them: Shelf over the milestone dates, then the steps being created whose dates can be
-    * read.
-    */
+  /** The steps as the chart draws them: the steps being created whose dates can be read, never the Shelf step. */
   private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
     milestoneStepsVar.signal
       .flatMapSwitch(steps => Signal.combineSeq(steps.map(_.formState.signal)))
-      .combineWith(formState.signal)
-      .map { case (drafts, form) =>
-        val shelf = for {
-          start <- MilestoneStepsDraft.parseDate(form.startDate)
-          due <- MilestoneStepsDraft.parseDate(form.dueDate)
-        } yield MilestoneGanttStep(DefaultMilestoneStep.Shelf.stepName, start, due)
-        val own = drafts.zipWithIndex.flatMap { case (draft, index) =>
-          for {
-            start <- MilestoneStepsDraft.parseDate(draft.startDate)
-            due <- MilestoneStepsDraft.parseDate(draft.dueDate)
-          } yield MilestoneGanttStep(Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
-        }
-        shelf.toSeq ++ own
-      }
+      .map(_.zipWithIndex.flatMap { case (draft, index) =>
+        for {
+          start <- MilestoneStepsDraft.parseDate(draft.startDate)
+          due <- MilestoneStepsDraft.parseDate(draft.dueDate)
+        } yield MilestoneGanttStep(Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
+      })
 
   private val stepsGantt = new MilestoneStepsGanttComponent(
     ganttSteps,
