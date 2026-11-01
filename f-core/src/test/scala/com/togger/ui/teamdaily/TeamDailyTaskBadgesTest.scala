@@ -4,8 +4,9 @@ import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.logentry.LogEntryStatus
-import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.{MilestoneStatus, MilestoneStepStatus}
 import com.togger.task.TaskPriority
 
 import java.time.Instant
@@ -56,15 +57,36 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
     }
 
     "show the milestone before the priority" in { _ =>
-      TeamDailyTaskBadges.milestoneAndPriority(task(Some(milestone.id), Seq.empty), Seq(milestone)).map(_.text) shouldBe
+      TeamDailyTaskBadges.milestoneAndPriority(task(Some(milestone.id), Seq.empty), Seq(milestone), Seq.empty).map(_.text) shouldBe
         Seq("Release 1", TaskPriority.Medium.shortCode)
+    }
+
+    "show the step between the milestone and the priority" in { _ =>
+      val step = FindMilestoneStepResp(
+        UUID.randomUUID(),
+        milestone.id,
+        Instant.EPOCH,
+        UUID.randomUUID(),
+        "Design",
+        "",
+        MilestoneStepStatus.InProgress,
+        1,
+        dueDate.minusDays(10),
+        dueDate,
+        None,
+        Instant.EPOCH,
+        ""
+      )
+      val inStep = task(Some(milestone.id), Seq.empty).copy(milestoneStepId = Some(step.id))
+      TeamDailyTaskBadges.milestoneAndPriority(inStep, Seq(milestone), Seq(step)).map(_.text) shouldBe
+        Seq("Release 1", "Design", TaskPriority.Medium.shortCode)
     }
 
     "leave out a milestone that is not there or not known" in { _ =>
       val onlyPriority = Seq(TaskPriority.Medium.shortCode)
-      TeamDailyTaskBadges.milestoneAndPriority(task(None, Seq.empty), Seq(milestone)).map(_.text) shouldBe onlyPriority
+      TeamDailyTaskBadges.milestoneAndPriority(task(None, Seq.empty), Seq(milestone), Seq.empty).map(_.text) shouldBe onlyPriority
       TeamDailyTaskBadges
-        .milestoneAndPriority(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone))
+        .milestoneAndPriority(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone), Seq.empty)
         .map(_.text) shouldBe onlyPriority
     }
 
