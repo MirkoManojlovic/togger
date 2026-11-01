@@ -13,6 +13,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
 
   private val NameColumn = "20rem"
   private val NameColumnRem = 20
+  private val DefaultNameColumnTitle = "Task"
 
   def gridTemplate(axis: GanttAxis): String =
     s"grid-template-columns: $NameColumn repeat(${axis.size}, minmax(2.25rem, 1fr))"
@@ -54,11 +55,11 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
       }
     )
 
-  private def dayRow(axis: GanttAxis): HtmlElement =
+  private def dayRow(axis: GanttAxis, nameColumnTitle: String): HtmlElement =
     div(
       cls("grid border-b border-default-medium text-center text-xs text-body-subtle"),
       styleAttr := gridTemplate(axis),
-      div(cls("flex items-center justify-center px-2 py-1 font-medium"), "Task"),
+      div(cls("flex items-center justify-center px-2 py-1 font-medium"), nameColumnTitle),
       axis.days.zipWithIndex.map { case (day, index) =>
         div(
           cls(s"flex flex-col items-center justify-center py-1 ${dayCellClasses(axis, index)}"),
@@ -68,7 +69,8 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
       }
     )
 
-  def headerRow(axis: GanttAxis): HtmlElement = div(monthRow(axis), dayRow(axis))
+  def headerRow(axis: GanttAxis, nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
+    div(monthRow(axis), dayRow(axis, nameColumnTitle))
 
   def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
     barTitle(task.name, start, due)
@@ -146,9 +148,9 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def emptyMessage(text: String): HtmlElement = p(cls("p-3 text-sm text-body-subtle"), text)
 
   /** The scrolling frame with the header and then the rows. */
-  def frame(axis: GanttAxis, rows: Seq[HtmlElement]): HtmlElement =
+  def frame(axis: GanttAxis, rows: Seq[HtmlElement], nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
       cls("overflow-x-auto rounded-base border border-default-medium"),
-      div(styleAttr := minWidthStyle(axis), headerRow(axis), rows)
+      div(styleAttr := minWidthStyle(axis), headerRow(axis, nameColumnTitle), rows)
     )
 }
