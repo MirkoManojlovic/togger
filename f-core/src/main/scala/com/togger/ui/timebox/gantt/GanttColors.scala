@@ -67,7 +67,7 @@ object Percentages extends GanttColors {
       div(cls(s"absolute inset-y-0 left-0 $color"), styleAttr := s"width: $percent%"),
       span(
         cls(s"relative z-10 rounded px-1 font-medium $color ${textClass(color)}"),
-        s"${progress.total} / ${progress.done}"
+        s"${progress.total} / ${progress.done} ($percent%)"
       )
     )
   }
