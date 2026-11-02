@@ -488,6 +488,9 @@ lazy val backendMcp = (project in file("b-08-mcp"))
     // Chimp and its tapir/sttp dependencies are compiled with Scala 3.9, so this module needs a 3.9 compiler.
     scalaVersion := "3.9.0",
     Test / parallelExecution := false,
+    // the Scala 3 semanticdb cannot be written under sbt 2's sandboxed output, so scalafix skips this module
+    Compile / scalafix / unmanagedSources := Seq.empty,
+    Test / scalafix / unmanagedSources := Seq.empty,
     // scalatest assertions are values; several of them in one test body are normal
     Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:s",
     // Replaces (does not extend) the ThisBuild overrides, which pin the Scala 2.13 scala-library and scala3-library
