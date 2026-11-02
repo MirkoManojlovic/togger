@@ -10,6 +10,19 @@ class DatePickerInputTest extends AnyWordSpec with Matchers {
   private val today = LocalDate.of(2026, 10, 2)
 
   "DatePickerInput.parse" should {
+    "parse the american date the picker writes into the input" in {
+      DatePickerInput.parse("Nov 2, 2026", today) shouldBe Some(LocalDate.of(2026, 11, 2))
+    }
+
+    "parse an american date without the comma, in any case, with a long month name" in {
+      Seq("nov 2 2026", "NOV 02, 2026", "November 2, 2026").map(DatePickerInput.parse(_, today)) shouldBe
+        Seq.fill(3)(Some(LocalDate.of(2026, 11, 2)))
+    }
+
+    "not parse an american date with an unknown month or a day that does not exist" in {
+      Seq("Foo 2, 2026", "Feb 30, 2026").map(DatePickerInput.parse(_, today)) shouldBe Seq(None, None)
+    }
+
     "parse a valid yyyy-MM-dd date" in {
       DatePickerInput.parse("2026-10-02", today) shouldBe Some(LocalDate.of(2026, 10, 2))
     }
