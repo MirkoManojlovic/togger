@@ -1,0 +1,61 @@
+#!/bin/sh
+# Runs the same checks as the "Compile and test" job of .github/workflows/pr-checks.yml before a push:
+# everything compiles with fatal warnings (sbt-tpolecat CI mode), formatting and scalafix are clean, all tests pass.
+#
+# It talks to the sbt server that is already running (`sbt --client`), as the other tooling of this repo does. CI mode
+# is switched on for the session with `tpolecatCiMode` and the build is reloaded afterwards, which puts it back to the
+# dev mode of build.sbt; both switches recompile, so the first push after a change is slow.
+#
+# Enable the hooks once with: git config core.hooksPath .githooks
+# Skip with: SKIP_PRE_PUSH=1 git push   (or git push --no-verify)
+
+[ -n "$SKIP_PRE_PUSH" ] && exit 0
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# the backend specs run against a real Postgres database, see TgTestTransactor
+if command -v pg_isready >/dev/null 2>&1 && ! pg_isready -q -h localhost -p 5432; then
+  echo "pre-push: Postgres is not running on localhost:5432, the backend tests need it (start it with devenv)." >&2
+  exit 1
+fi
+
+command -v sbt >/dev/null 2>&1 || { echo "pre-push: sbt is not on the PATH (enter the devenv shell)." >&2; exit 1; }
+
+# sbt 2 links the semanticdb files into its read-only cache; a recompile after an options change cannot overwrite them
+# ("AccessDeniedException"), so they are deleted whenever the options change
+drop_semanticdb() {
+  find target/out -type d \( -name meta -o -name test-meta \) -prune -exec rm -rf {} + 2>/dev/null
+}
+
+restore_dev_mode() {
+  sbt --client reload >/dev/null 2>&1
+  drop_semanticdb
+}
+trap restore_dev_mode EXIT INT TERM
+
+status=0
+
+echo "pre-push: switching sbt to tpolecat CI mode (fatal warnings)"
+# reload first: build files changed by a branch switch would otherwise make the mode switch fail without an exit code
+sbt --client reload >/dev/null 2>&1
+sbt --client tpolecatCiMode >/dev/null 2>&1
+if ! sbt --client "show backendCore/scalacOptions" 2>&1 | grep -q -E -e '-Werror|-Xfatal-warnings'; then
+  echo "pre-push: could not switch sbt to CI mode (is the sbt server running and healthy?)." >&2
+  exit 1
+fi
+
+drop_semanticdb
+
+echo "pre-push: compiling main and test code"
+sbt --client Test/compile || exit 1
+
+echo "pre-push: formatting and scalafix"
+sbt --client "scalafmtCheckAll; scalafix --check; Test/scalafix --check" || status=$?
+
+echo "pre-push: tests"
+sbt --client test || status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "pre-push: checks failed, nothing was pushed. Fix them, or skip with SKIP_PRE_PUSH=1 git push." >&2
+fi
+exit "$status"
