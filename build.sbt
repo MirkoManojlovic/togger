@@ -12,8 +12,9 @@ ThisBuild / organizationName := "Togger"
 // nothing is reused. The PR checks pin the version to keep their sbt cache useful.
 ThisBuild / version ~= (gitVersion => sys.env.getOrElse("TOGGER_FIXED_VERSION", gitVersion))
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
-// scalafix semantic rules (RemoveUnused, ...) read the semanticdb that scalac emits
-ThisBuild / semanticdbEnabled := true
+// scalafix semantic rules (RemoveUnused, ...) read the semanticdb that scalac emits. Not enabled in the sbt import of
+// IntelliJ: its own compiler gets `-P:semanticdb:...` without the plugin jar and fails with "bad option"
+ThisBuild / semanticdbEnabled := !sys.props.contains("idea.managed")
 
 Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ ScalacOptions.fatalWarningOptions
 
