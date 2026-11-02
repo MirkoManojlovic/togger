@@ -5,7 +5,7 @@ import com.togger.common.TgClock
 import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.{DateEmoji, TgDateFormater}
 import com.togger.ui.task.bulk._
 
 import java.time.DayOfWeek
@@ -22,7 +22,7 @@ class MilestoneDateBadges(
   currentWorkDays: () => Set[DayOfWeek],
   onDates: (LocalDate, LocalDate) => Unit,
   tgClock: TgClock,
-  dueLabel: String = "Due",
+  dueLabel: String = DateEmoji.Due,
   endDate: Signal[String] = Val(""),
   daysLeftWorkDays: Option[Signal[Set[DayOfWeek]]] = None
 ) {
@@ -60,7 +60,7 @@ class MilestoneDateBadges(
 
   /** The end date is set by closing the milestone, so its badge has no popup of its own. */
   private def endBadge(date: LocalDate): BadgeSpec =
-    BadgeSpec(s"End ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", TgBadgeColor.Success)
+    BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Success)
 
   private def daysLeft(due: Option[LocalDate], workDays: Set[DayOfWeek]): Option[BadgeSpec] =
     due.map { dueDate =>
@@ -77,7 +77,7 @@ class MilestoneDateBadges(
           BulkTaskCard.row(
             key,
             Seq(
-              badge(parse(start), "Start", BulkEditKind.StartDate),
+              badge(parse(start), DateEmoji.Start, BulkEditKind.StartDate),
               badge(parse(due), dueLabel, BulkEditKind.DueDate)
             ) ++ parse(end).map(endBadge) ++ Option
               .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))

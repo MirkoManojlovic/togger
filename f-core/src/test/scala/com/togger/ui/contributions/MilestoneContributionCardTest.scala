@@ -19,11 +19,11 @@ class MilestoneContributionCardTest extends AnyWordSpec with Matchers {
 
     "give the start and the due date a badge each, in the format asked" in {
       MilestoneContributionCard.dateLabels(milestone(Some(start), Some(due)), _.toString) shouldBe
-        Seq("Start: 2026-07-01", "Due: 2026-09-30")
+        Seq("🗓️ 2026-07-01", "🎯 2026-09-30")
     }
 
     "give a badge only to a date that is known" in {
-      MilestoneContributionCard.dateLabels(milestone(None, Some(due)), _.toString) shouldBe Seq("Due: 2026-09-30")
+      MilestoneContributionCard.dateLabels(milestone(None, Some(due)), _.toString) shouldBe Seq("🎯 2026-09-30")
       MilestoneContributionCard.dateLabels(milestone(None, None), _.toString) shouldBe empty
     }
   }

@@ -157,9 +157,9 @@ class ShowMilestonesComponent(
 
   private def dateRow(dto: FindMilestoneResp): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray),
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray)
-    ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asAmericanDate(date)}", TgBadgeColor.Gray))
+      BadgeSpec(tgDateFormater.asStartDate(dto.startDate), TgBadgeColor.Gray),
+      BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray)
+    ) ++ dto.endDate.map(date => BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
 
   /** One tall row spanning every column, so the table keeps its size when no milestone matches. */
   private def noMilestonesRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =

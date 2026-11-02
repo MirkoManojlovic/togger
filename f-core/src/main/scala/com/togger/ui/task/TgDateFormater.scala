@@ -20,6 +20,12 @@ class TgDateFormater {
   def asAmericanDateWithDayAbrv(date: LocalDate): String =
     s"${AmericanMonthName.formater.format(date)} | ${dayOfWeekAbbrev(date)}"
 
+  def asStartDate(date: LocalDate): String = s"${DateEmoji.Start} ${asAmericanDateWithDayAbrv(date)}"
+
+  def asDueDate(date: LocalDate): String = s"${DateEmoji.Due} ${asAmericanDateWithDayAbrv(date)}"
+
+  def asEndDate(date: LocalDate): String = s"${DateEmoji.End} ${asAmericanDateWithDayAbrv(date)}"
+
   def dayAndMonth(date: LocalDate): String =
     LogEntryFormat.formater.format(date)
 
@@ -36,6 +42,13 @@ class TgDateFormater {
     YearMonthDayTimeFormat.formater.format(
       instant.atOffset(ZoneOffset.UTC)
     ) // When converting from instant an error is thrown
+}
+
+/** The emoji that marks a start, due and end date in the date badges. */
+object DateEmoji {
+  val Start = "🗓️"
+  val Due = "🎯"
+  val End = "✅"
 }
 
 sealed abstract class TgDateFormat(val formater: DateTimeFormatter) extends EnumEntry

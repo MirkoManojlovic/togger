@@ -63,12 +63,12 @@ object BulkTaskBadges {
       primaryRow = Seq(milestone(task, lookups), priority(task), status(task, lookups), assignee(task, lookups)),
       dateRow = Seq(
         BadgeSpec(
-          dateFormater.asAmericanDateWithDayAbrv(task.startDate),
+          dateFormater.asStartDate(task.startDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.StartDate)
         ),
         BadgeSpec(
-          dateFormater.asAmericanDateWithDayAbrv(task.dueDate),
+          dateFormater.asDueDate(task.dueDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
         ),

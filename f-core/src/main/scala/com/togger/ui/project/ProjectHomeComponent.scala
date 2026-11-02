@@ -187,7 +187,7 @@ class ProjectHomeComponent(
         cls("flex flex-wrap items-center gap-2 mb-3"),
         pageLink(milestone.name, MilestoneReviewPage(projectId, milestone.id)),
         TgBadge(
-          text = s"Due ${tgDateFormater.asAmericanDateWithDayAbrv(milestone.dueDate)}",
+          text = tgDateFormater.asDueDate(milestone.dueDate),
           color = TgBadgeColor.Gray,
           bordered = true
         ).element

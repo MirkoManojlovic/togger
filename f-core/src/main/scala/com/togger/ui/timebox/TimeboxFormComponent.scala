@@ -351,11 +351,11 @@ class TimeboxFormComponent(
   private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
       BadgeSpec(
-        tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+        tgDateFormater.asStartDate(dto.startDate),
         TgBadgeColor.Gray,
         Some(BulkEditKind.StartDate)
       ),
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
+      BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
       BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
     )
 

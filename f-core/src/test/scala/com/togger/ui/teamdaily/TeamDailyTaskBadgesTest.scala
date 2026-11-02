@@ -72,7 +72,7 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
       val monday = LocalDate.of(2026, 10, 26)
       TeamDailyTaskBadges
         .dates(task(None, Seq.empty), monday, WorkDayCalendar.DefaultWorkDays, _.toString)
-        .map(_.text) shouldBe Seq("2026-10-20", "2026-10-30", "5 days left")
+        .map(_.text) shouldBe Seq("🗓️ 2026-10-20", "🎯 2026-10-30", "5 days left")
     }
 
     "say overdue after the due date" in { _ =>

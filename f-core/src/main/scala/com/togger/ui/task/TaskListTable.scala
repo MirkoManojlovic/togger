@@ -122,17 +122,17 @@ class TaskListTable(
     def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(
         BadgeSpec(
-          tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+          tgDateFormater.asStartDate(dto.startDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.StartDate)
         ),
         BadgeSpec(
-          tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate),
+          tgDateFormater.asDueDate(dto.dueDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
         ),
         daysLeft(dto)
-      ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asAmericanDate(date)}", TgBadgeColor.Gray))
+      ) ++ dto.endDate.map(date => BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
   }
 
   private def daysLeft(dto: FindTaskRespFull): BadgeSpec = {

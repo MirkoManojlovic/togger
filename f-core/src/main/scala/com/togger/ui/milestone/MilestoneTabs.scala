@@ -7,6 +7,7 @@ import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
@@ -28,8 +29,8 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
     div(
       div(
         cls("flex flex-wrap items-center gap-1.5 mb-2"),
-        dateBadge("Start", summary.startDate),
-        dateBadge("End", summary.endDate)
+        dateBadge(DateEmoji.Start, summary.startDate),
+        dateBadge(DateEmoji.End, summary.endDate)
       ),
       MilestoneSummaryRangeCalendar
         .element(Val(summary.startDate.toString -> summary.endDate.toString), workDays)

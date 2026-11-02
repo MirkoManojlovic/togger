@@ -82,8 +82,8 @@ class TaskPreviewComponent(
       ReviewTaskBadges.primary(task, milestones),
       BulkTaskCard.readOnlyRow(
         Seq(
-          BadgeSpec(tgDateFormater.asAmericanDate(task.startDate), TgBadgeColor.Gray),
-          BadgeSpec(tgDateFormater.asAmericanDate(task.dueDate), TgBadgeColor.Gray),
+          BadgeSpec(s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(task.startDate)}", TgBadgeColor.Gray),
+          BadgeSpec(s"${DateEmoji.Due} ${tgDateFormater.asAmericanDate(task.dueDate)}", TgBadgeColor.Gray),
           TeamDailyTaskBadges.daysLeft(task.dueDate, tgClock.currentDate(), workDays)
         )
       )

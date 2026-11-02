@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
@@ -135,9 +136,9 @@ class MilestoneReviewComponent(
           color = ChartColorBadgeColor.of(milestone.status),
           bordered = true
         ).element,
-        dateBadge("Start", milestone.startDate),
-        dateBadge("Due", milestone.dueDate),
-        milestone.endDate.fold(daysLeftBadge(milestone, workDays))(dateBadge("End", _, TgBadgeColor.Success))
+        dateBadge(DateEmoji.Start, milestone.startDate),
+        dateBadge(DateEmoji.Due, milestone.dueDate),
+        milestone.endDate.fold(daysLeftBadge(milestone, workDays))(dateBadge(DateEmoji.End, _, TgBadgeColor.Success))
       ),
       Option.when(milestone.description.nonEmpty)(tgMarkdown.toLaminarDiv(milestone.description))
     )

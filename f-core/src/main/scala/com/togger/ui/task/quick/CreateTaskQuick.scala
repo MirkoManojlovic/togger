@@ -1,5 +1,6 @@
 package com.togger.ui.task.quick
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
@@ -568,14 +569,14 @@ class CreateTaskQuick(
       Seq(
         dateBadge(
           StartDateDropdown,
-          "Start",
+          DateEmoji.Start,
           current.effectiveStartDate,
           current.startDate.map(_ => () => state.update(_.copy(startDate = None))),
           current
         ),
         dateBadge(
           DueDateDropdown,
-          "Due",
+          DateEmoji.Due,
           current.effectiveDueDate,
           current.dueDate.map(_ => () => state.update(_.copy(dueDate = None))),
           current

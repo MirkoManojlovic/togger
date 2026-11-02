@@ -11,6 +11,7 @@ import com.togger.ui.components.TgProgressColor
 import com.togger.ui.components.TgProgressComponent
 import com.togger.ui.components.TgProgressLabel
 import com.togger.ui.components.TgProgressSize
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate
@@ -81,6 +82,6 @@ object MilestoneContributionCard {
 
   /** The start and the due date of a milestone, each for a badge; one that is not known has none. */
   def dateLabels(milestone: MilestoneContributionsDto, format: LocalDate => String): Seq[String] =
-    milestone.startDate.map(start => s"Start: ${format(start)}").toSeq ++
-      milestone.dueDate.map(due => s"Due: ${format(due)}")
+    milestone.startDate.map(start => s"${DateEmoji.Start} ${format(start)}").toSeq ++
+      milestone.dueDate.map(due => s"${DateEmoji.Due} ${format(due)}")
 }

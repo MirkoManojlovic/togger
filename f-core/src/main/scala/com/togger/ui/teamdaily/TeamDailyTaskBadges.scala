@@ -1,5 +1,6 @@
 package com.togger.ui.teamdaily
 
+import com.togger.ui.task.DateEmoji
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
@@ -32,8 +33,8 @@ object TeamDailyTaskBadges {
     format: LocalDate => String
   ): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(format(task.startDate), TgBadgeColor.Gray),
-      BadgeSpec(format(task.dueDate), TgBadgeColor.Gray),
+      BadgeSpec(s"${DateEmoji.Start} ${format(task.startDate)}", TgBadgeColor.Gray),
+      BadgeSpec(s"${DateEmoji.Due} ${format(task.dueDate)}", TgBadgeColor.Gray),
       daysLeft(task.dueDate, today, workDays)
     )
 

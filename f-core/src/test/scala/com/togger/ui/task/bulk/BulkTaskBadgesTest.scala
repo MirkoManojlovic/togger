@@ -80,7 +80,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
 
     "show dates in full and the work days as a bare number" in {
       val rows = BulkTaskBadges.of(task, lookups)
-      rows.dateRow.map(_.text) shouldBe Seq("Oct 12, 2026 | Mon", "Oct 16, 2026 | Fri", "5")
+      rows.dateRow.map(_.text) shouldBe Seq("🗓️ Oct 12, 2026 | Mon", "🎯 Oct 16, 2026 | Fri", "5")
     }
 
     "show the milestone name, label emoji and assignee name when set" in {
