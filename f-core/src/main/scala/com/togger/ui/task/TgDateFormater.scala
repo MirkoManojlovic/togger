@@ -1,6 +1,6 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.AmericanDashes
+import com.togger.ui.task.TgDateFormat.AmericanMonthName
 import com.togger.ui.task.TgDateFormat.DayOnlyFormat
 import com.togger.ui.task.TgDateFormat.LogEntryFormat
 import com.togger.ui.task.TgDateFormat.MonthNameFormat
@@ -15,13 +15,10 @@ import java.time.format.DateTimeFormatter
 
 class TgDateFormater {
   def asAmericanDate(date: LocalDate): String =
-    AmericanDashes.formater.format(date)
+    AmericanMonthName.formater.format(date)
 
-  def asAmericanDateWithDayAbrv(date: LocalDate): String = {
-    val day = dayOfWeekAbbrev(date)
-    val americanDate = AmericanDashes.formater.format(date)
-    s"$americanDate | $day"
-  }
+  def asAmericanDateWithDayAbrv(date: LocalDate): String =
+    s"${AmericanMonthName.formater.format(date)} | ${dayOfWeekAbbrev(date)}"
 
   def dayAndMonth(date: LocalDate): String =
     LogEntryFormat.formater.format(date)
@@ -47,12 +44,12 @@ object TgDateFormat extends Enum[TgDateFormat] {
 
   override def values: IndexedSeq[TgDateFormat] = findValues
 
-  case object AmericanDashes extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
+  case object AmericanMonthName extends TgDateFormat(DateTimeFormatter.ofPattern("MMM d, yyyy"))
 
 //  case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd-MMM-Y"))
   case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd MMM"))
 
-  case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss"))
+  case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
   case object DayOnlyFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd"))
 
