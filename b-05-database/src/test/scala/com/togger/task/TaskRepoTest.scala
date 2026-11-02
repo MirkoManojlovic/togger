@@ -51,8 +51,8 @@ class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         savedTask <- taskRepo.insert(task.copy(projectId = orgAndProject._2.id, createdBy = savedAccount.id))
-        savedLink <- linkRepo.insert(Link(UUID.randomUUID(), savedTask.id, nowAsInstant))
-        savedLogEntry <-
+        _ <- linkRepo.insert(Link(UUID.randomUUID(), savedTask.id, nowAsInstant))
+        _ <-
           logEntryRepo.insert(LogEntry(UUID.randomUUID(), savedTask.id, savedAccount.id, nowAsInstant))
         _ <- taskRepo.deleteById(savedTask.id)
         links <- linkRepo.findByTaskId(savedTask.id)

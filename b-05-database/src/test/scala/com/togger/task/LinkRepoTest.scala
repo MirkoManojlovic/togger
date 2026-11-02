@@ -53,7 +53,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     }
 
     "insert many links" in { transactor =>
-      def createLinks(taskId: UUID) = (0 to 10).map(index =>
+      def createLinks(taskId: UUID) = (0 to 10).map(_ =>
         Link(
           id = UUID.randomUUID(),
           taskId = taskId,
@@ -92,7 +92,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
       res.transact(transactor)
     }
 
-    def createLinks(taskId: UUID) = (0 to 10).map(index =>
+    def createLinks(taskId: UUID) = (0 to 10).map(_ =>
       Link(
         id = UUID.randomUUID(),
         taskId = taskId,

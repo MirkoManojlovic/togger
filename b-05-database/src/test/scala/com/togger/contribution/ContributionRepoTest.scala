@@ -130,7 +130,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     task: Task,
     statusId: UUID,
     number: Long,
-    assignedTo: Option[UUID] = None,
+    assignedTo: Option[UUID],
     closedBy: Option[UUID] = None,
     milestone: Option[UUID] = None,
     priority: TaskPriority = TaskPriority.Medium,
@@ -161,7 +161,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     name: String,
     status: MilestoneStatus,
     dueDate: LocalDate,
-    startDate: LocalDate = day(1)
+    startDate: LocalDate
   ): ConnectionIO[MilestoneVersion] =
     milestoneVersionRepo.insert(
       MilestoneVersion(

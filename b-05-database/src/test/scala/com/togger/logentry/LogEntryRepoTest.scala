@@ -75,7 +75,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(index =>
+    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(_ =>
       LogEntry(
         id = UUID.randomUUID(),
         taskId = taskId,
