@@ -35,6 +35,8 @@ permissions:
 env:
   # see the comment at ThisBuild / version in build.sbt
   TOGGER_FIXED_VERSION: ci
+  # sbt-tpolecat CI mode: compiler warnings fail the build (local builds only warn, see build.sbt)
+  SBT_TPOLECAT_CI: "true"
 
 # a newer push to the pull request supersedes the running checks
 concurrency:
