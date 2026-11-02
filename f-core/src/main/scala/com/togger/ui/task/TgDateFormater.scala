@@ -1,16 +1,17 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.{
-  AmericanDashes,
-  DayOnlyFormat,
-  LogEntryFormat,
-  MonthNameFormat,
-  YearMonthDayTimeFormat
-}
-import enumeratum.{Enum, EnumEntry}
+import com.togger.ui.task.TgDateFormat.AmericanDashes
+import com.togger.ui.task.TgDateFormat.DayOnlyFormat
+import com.togger.ui.task.TgDateFormat.LogEntryFormat
+import com.togger.ui.task.TgDateFormat.MonthNameFormat
+import com.togger.ui.task.TgDateFormat.YearMonthDayTimeFormat
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDate, ZoneOffset}
 
 class TgDateFormater {
   def asAmericanDate(date: LocalDate): String =

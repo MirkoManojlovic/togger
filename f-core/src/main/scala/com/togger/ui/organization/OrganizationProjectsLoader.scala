@@ -2,10 +2,12 @@ package com.togger.ui.organization
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.FindProjectResp
-import com.togger.dto.organization.{FindOrganizationResp, OrganizationProjectResp}
+import com.togger.dto.organization.FindOrganizationResp
+import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID

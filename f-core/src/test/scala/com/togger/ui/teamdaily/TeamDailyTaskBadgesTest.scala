@@ -2,12 +2,14 @@ package com.togger.ui.teamdaily
 
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
 import com.togger.task.TaskPriority
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {

@@ -4,20 +4,33 @@ import cats.effect.IO
 import cats.syntax.parallel._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
+import com.togger.routes.FrontendPage
+import com.togger.routes.MilestoneHistoryParams
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.LogEntryStatusSquare
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableSearchComponent
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableSearchComponent, TgTooltip}
+import com.togger.ui.components.TgTooltip
 import com.togger.ui.project.ProjectService
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 import org.scalajs.dom.MouseEvent
 
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 /** The Gantt chart of the log entries of the tasks of one milestone, built like [[MilestoneHistoryComponent]]. It reads

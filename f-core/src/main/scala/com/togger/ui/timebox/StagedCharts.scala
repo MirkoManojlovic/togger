@@ -1,7 +1,10 @@
 package com.togger.ui.timebox
 
 import com.togger.chart.ChartColor
-import com.togger.ui.apexchart.{ApexChartOptions, ApexChartType, ApexLegendPosition, ApexSeries}
+import com.togger.ui.apexchart.ApexChartOptions
+import com.togger.ui.apexchart.ApexChartType
+import com.togger.ui.apexchart.ApexLegendPosition
+import com.togger.ui.apexchart.ApexSeries
 
 /** The charts of the staged stats, as chart options. */
 object StagedCharts {

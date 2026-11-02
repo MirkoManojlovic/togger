@@ -3,7 +3,8 @@ package com.togger.ui.dataexportconfig
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{DataExportResp, DataExportStatusResp}
+import com.togger.dto.DataExportResp
+import com.togger.dto.DataExportStatusResp
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService

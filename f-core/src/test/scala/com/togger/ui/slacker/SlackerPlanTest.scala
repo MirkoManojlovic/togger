@@ -3,7 +3,8 @@ package com.togger.ui.slacker
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
-import com.togger.ui.teamdaily.{TeamDailyEntryDraft, TeamDailyTaskPlan}
+import com.togger.ui.teamdaily.TeamDailyEntryDraft
+import com.togger.ui.teamdaily.TeamDailyTaskPlan
 
 import java.time.LocalDate
 import java.util.UUID

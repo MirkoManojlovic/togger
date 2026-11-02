@@ -1,17 +1,18 @@
 package com.togger.preview
 
-import com.togger.demo.DemoMilestonesData
-import com.togger.demo.DemoAccountsData
-
-import com.togger.demo.DemoIdentity
-
+import com.togger.common.BadRequest
+import com.togger.common.Forbidden
+import com.togger.common.PageRequest
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, Forbidden, PageRequest}
+import com.togger.demo.DemoAccountsData
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoMilestonesData
 import com.togger.dto._
 import com.togger.milestone.MilestoneStatus
 import com.togger.ui.milestone._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._

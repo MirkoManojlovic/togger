@@ -7,7 +7,9 @@ import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /** A grid of a task's log entries, one column per the project's configured work day, each showing that day's status
   * emoji(s). Clicking a cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail

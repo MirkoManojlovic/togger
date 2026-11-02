@@ -2,22 +2,16 @@ package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.auth.SecuredEndpoint
-import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.common.TgClock
-import com.togger.dto.{CreateMilestoneDateReq, FindMilestoneDateResp, UpdateMilestoneDateReq}
-import com.togger.milestone.MilestoneDateEndpoints
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
-import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 
-import java.time.{Instant, LocalDate, ZoneOffset}
-import java.util.UUID
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 case class CreateMilestoneDateForm(
   name: String = "",

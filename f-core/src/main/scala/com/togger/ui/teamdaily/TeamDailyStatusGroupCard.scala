@@ -1,7 +1,10 @@
 package com.togger.ui.teamdaily
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.components.{TaskStatusBadgeColor, TgBadge, TgBadgeColor, TgBadgeSize}
+import com.togger.ui.components.TaskStatusBadgeColor
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgBadgeSize
 
 /** A status group of the task picker: a card whose header names the status in its color, with the tasks beneath. */
 object TeamDailyStatusGroupCard {

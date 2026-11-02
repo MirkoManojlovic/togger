@@ -2,9 +2,13 @@ package com.togger.ui.milestone
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.{CreateMilestoneReq, FindMilestoneResp, MilestoneFilter, UpdateMilestoneReq}
+import com.togger.dto.CreateMilestoneReq
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.MilestoneFilter
+import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.MilestoneEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader
 

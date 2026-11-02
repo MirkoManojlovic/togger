@@ -1,6 +1,7 @@
 package com.togger.preview
 
-import com.togger.dto.{AccountTypeDto, SearchAccountDto}
+import com.togger.dto.AccountTypeDto
+import com.togger.dto.SearchAccountDto
 import io.circe.generic.auto._
 
 import java.util.UUID

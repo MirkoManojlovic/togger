@@ -2,7 +2,8 @@ package com.togger.markdown
 
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import io.github.edadma.markdown.{Document, MarkdownConfig}
+import io.github.edadma.markdown.Document
+import io.github.edadma.markdown.MarkdownConfig
 import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
 
 /** Thin wrapper over `io.github.edadma.markdown`.

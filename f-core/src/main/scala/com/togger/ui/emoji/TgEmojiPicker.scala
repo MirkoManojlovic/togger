@@ -2,7 +2,8 @@ package com.togger.ui.emoji
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService

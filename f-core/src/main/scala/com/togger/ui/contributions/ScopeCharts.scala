@@ -1,8 +1,11 @@
 package com.togger.ui.contributions
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{MemberContributionDto, TaskAttributesDto}
-import com.togger.ui.contributions.MemberContributionViews.{chartCard, memberTiles, taskAttributeCharts}
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.TaskAttributesDto
+import com.togger.ui.contributions.MemberContributionViews.chartCard
+import com.togger.ui.contributions.MemberContributionViews.memberTiles
+import com.togger.ui.contributions.MemberContributionViews.taskAttributeCharts
 
 import java.time.LocalDate
 

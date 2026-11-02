@@ -1,7 +1,8 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{CreateTaskTemplatePage, EditTaskTemplatePage}
+import com.togger.routes.Pages.CreateTaskTemplatePage
+import com.togger.routes.Pages.EditTaskTemplatePage
 
 import java.util.UUID
 

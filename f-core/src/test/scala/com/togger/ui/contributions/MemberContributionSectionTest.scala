@@ -1,6 +1,9 @@
 package com.togger.ui.contributions
 
-import com.togger.dto.{ContributionsDto, MemberContributionDto, MilestoneContributionsDto, TaskAttributesDto}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.MilestoneContributionsDto
+import com.togger.dto.TaskAttributesDto
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

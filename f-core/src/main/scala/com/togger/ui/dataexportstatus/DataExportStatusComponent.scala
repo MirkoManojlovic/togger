@@ -5,7 +5,8 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.DataExportPathStatusResp
 import com.togger.toast.ToastMessages
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService}
+import com.togger.ui.task.DataExportFeService
+import com.togger.ui.task.TaskConfigTableSupport
 import com.togger.ui.toast.Toast
 
 import java.util.UUID

@@ -1,6 +1,8 @@
 package com.togger.ui.auth
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgEndpoints.TgBaseEndpoint
@@ -9,16 +11,15 @@ import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.login.ChangePasswordDto
 import com.togger.login.AuthEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastError
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.spinner.SpinnerService
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import io.scalaland.chimney.dsl._
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
-import org.scalajs.dom
 
 trait ChangePasswordService {
   def change(dto: ChangePasswordDto): TgRespEmptyBodyIO

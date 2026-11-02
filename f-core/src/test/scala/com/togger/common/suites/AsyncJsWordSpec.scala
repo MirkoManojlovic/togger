@@ -1,14 +1,18 @@
 package com.togger.common.suites
 
-import com.togger.suites.TestNameHelper
 import com.raquo.airstream.ownership.Owner
 import com.togger.logging.TestLoggingJs
+import com.togger.suites.TestNameHelper
+import org.scalatest.Assertion
+import org.scalatest.Checkpoints
+import org.scalatest.FutureOutcome
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.FixtureAsyncWordSpec
-import org.scalatest.{Assertion, Checkpoints, FutureOutcome}
 
 import scala.annotation.nowarn
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.scalajs.js
 import scala.util.Try
 
@@ -28,7 +32,7 @@ abstract class AsyncJsWordSpec
     complete {
       withFixture(test.toNoArgAsyncTest(testOwner))
     } lastly {
-      logger.info(s"🔪 Killing subscriptions after test")
+      logger.info("🔪 Killing subscriptions after test")
       testOwner.killSubscriptions()
     }
   }

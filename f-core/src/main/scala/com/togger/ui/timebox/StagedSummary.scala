@@ -2,12 +2,15 @@ package com.togger.ui.timebox
 
 import com.togger.chart.ChartColor
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
 import com.togger.task.TaskPriority
 
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, LocalDate}
-import java.util.UUID
 
 /** What the tasks of one group add up to; `title` is empty when the tasks are not grouped. */
 case class GroupSummary(

@@ -2,7 +2,8 @@ package com.togger.toast
 
 import cats.effect.IO
 import com.togger.common.TgJsonFailure
-import com.togger.common.TgResponseTypes.{TgResp, TgRespIO}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.ui.toast.Toast
 
 trait ToastMessagesTgResp {

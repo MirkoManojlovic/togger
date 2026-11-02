@@ -1,10 +1,15 @@
 package com.togger.ui.auth
 
-import com.togger.ui.auth.TgCard.{CardFooter, CardHeader, TgCardContent}
-import com.togger.ui.auth.TgHtmlTypes.{HtmlDiv, HtmlHeading, TgHtmlElement}
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.KeySetter.StyleSetter
-import enumeratum.{Enum, EnumEntry}
+import com.togger.ui.auth.TgCard.CardFooter
+import com.togger.ui.auth.TgCard.CardHeader
+import com.togger.ui.auth.TgCard.TgCardContent
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgHtmlTypes.HtmlHeading
+import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
 case class TgCard(header: Option[CardHeader], body: TgCardContent, footer: Option[CardFooter] = None) {
 

@@ -2,7 +2,8 @@ package com.togger.ui.mcp
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom

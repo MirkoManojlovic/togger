@@ -5,7 +5,8 @@ import com.togger.logentry.LogEntryStatus
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class GanttLogStatusTest extends AnyWordSpec with Matchers {

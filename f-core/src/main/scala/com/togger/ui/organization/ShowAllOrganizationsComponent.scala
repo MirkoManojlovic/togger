@@ -4,23 +4,28 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.{
-  CreateOrganizationPage,
-  EditOrganizationPage,
-  ShowAllProjectLabelsPage,
-  SearchProjectsByLabelPage,
-  ShowAllOrganizationsPage,
-  ShowProjectsForOrganizationIdTable
-}
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
-import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
+import com.togger.routes.Pages.CreateOrganizationPage
+import com.togger.routes.Pages.EditOrganizationPage
+import com.togger.routes.Pages.SearchProjectsByLabelPage
+import com.togger.routes.Pages.ShowAllOrganizationsPage
+import com.togger.routes.Pages.ShowAllProjectLabelsPage
+import com.togger.routes.Pages.ShowProjectsForOrganizationIdTable
+import com.togger.routes.TgRouter
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 import com.togger.ui.toast.Toast
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
 
 class ShowAllOrganizationsComponent(
   organizationService: OrganizationServiceFe,

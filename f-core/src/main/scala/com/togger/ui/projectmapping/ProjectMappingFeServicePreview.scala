@@ -1,10 +1,12 @@
 package com.togger.ui.projectmapping
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.projectmapping.{CreateProjectMappingReq, ProjectMappingResp}
+import com.togger.dto.projectmapping.CreateProjectMappingReq
+import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.preview._
 import com.togger.ui.components.pagination.PaginatedLoader
 

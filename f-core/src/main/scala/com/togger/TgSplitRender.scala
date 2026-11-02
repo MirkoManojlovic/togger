@@ -6,56 +6,72 @@ import com.raquo.airstream.ownership.OneTimeOwner
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.raquo.waypoint.SplitRender
-import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
-import com.togger.backendcalls.{ProtectedBackendClient, SecurityLogicJs, UnprotectedBackendClient}
-import com.togger.common.{DateRangeValidation, TgClockImpl}
+import com.togger.auth.BaseEndpoint
+import com.togger.auth.SecuredEndpoint
+import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.backendcalls.SecurityLogicJs
+import com.togger.backendcalls.UnprotectedBackendClient
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClockImpl
 import com.togger.markdown.TgMarkdown
-import com.togger.preview.{PrefixedLocalStorage, PreviewConfig, PreviewModule}
+import com.togger.preview.PrefixedLocalStorage
+import com.togger.preview.PreviewConfig
+import com.togger.preview.PreviewModule
+import com.togger.routes.AuthenticationRouteGuard
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
+import com.togger.ui.accountmanagement.AccountManagementFeService
+import com.togger.ui.accountmanagement.AccountManagementFeServiceImpl
+import com.togger.ui.accountmanagement.AccountManagementFeServicePreview
+import com.togger.ui.accountmanagement.EditAccountComponent
+import com.togger.ui.accountmanagement.ShowAllAccountsComponent
+import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.auth._
-import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
-import com.togger.ui.localstorage.{LocalStorage, LocalStorageBrowser}
-import com.togger.ui.milestone._
-import com.togger.ui.contributions.{
-  ContributionsComponent,
-  ContributionsFeService,
-  ContributionsFeServiceImpl,
-  ContributionsFeServicePreview
-}
-import com.togger.ui.timebox._
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
-import com.togger.ui.accountmanagement.{
-  AccountManagementFeService,
-  AccountManagementFeServiceImpl,
-  AccountManagementFeServicePreview,
-  EditAccountComponent,
-  ShowAllAccountsComponent
-}
-import com.togger.ui.mcp.McpSettingsComponent
-import com.togger.ui.updater.UpdaterComponent
-import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
-import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
-import com.togger.ui.organization._
-import com.togger.ui.project._
-import com.togger.ui.projectmapping._
-import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task._
-import com.togger.ui.syncconfig._
-import com.togger.ui.tasktemplate._
-import com.togger.ui.tgaiaction._
-import com.togger.ui.tgprompttemplate._
+import com.togger.ui.components.TgBreadcrumbTrail
+import com.togger.ui.components.TgBreadcrumbs
+import com.togger.ui.contributions.ContributionsComponent
+import com.togger.ui.contributions.ContributionsFeService
+import com.togger.ui.contributions.ContributionsFeServiceImpl
+import com.togger.ui.contributions.ContributionsFeServicePreview
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
 import com.togger.ui.dataimportconfig._
-import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
-import com.togger.ui.task.bulk.BulkAddTasks
+import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.localstorage.LocalStorageBrowser
+import com.togger.ui.mcp.McpSettingsComponent
+import com.togger.ui.milestone._
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
+import com.togger.ui.navbar.Logout
+import com.togger.ui.navbar.NavbarComponent
+import com.togger.ui.navbar.Sidebar
+import com.togger.ui.navbar.SidebarCollapseStore
+import com.togger.ui.navbar.SidebarRefresh
+import com.togger.ui.organization._
+import com.togger.ui.project._
 import com.togger.ui.projectlabel._
-import com.togger.ui.apexchart.ApexChartDemoComponent
-import com.togger.ui.theme.ThemeStore
+import com.togger.ui.projectmapping._
 import com.togger.ui.slacker.SlackerComponent
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.synccheck.SyncCheckSettingsComponent
+import com.togger.ui.synccheck.SyncCheckSettingsStore
+import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.syncconfig._
+import com.togger.ui.task._
+import com.togger.ui.task.bulk.BulkAddTasks
+import com.togger.ui.task.quick.CreateTaskQuick
+import com.togger.ui.task.quick.QuickCreateHost
+import com.togger.ui.tasktemplate._
 import com.togger.ui.teamdaily.TeamDailyComponent
-import com.togger.ui.toast.{Toast, ToastMessagesService}
+import com.togger.ui.tgaiaction._
+import com.togger.ui.tgprompttemplate._
+import com.togger.ui.theme.ThemeStore
+import com.togger.ui.timebox._
+import com.togger.ui.toast.Toast
+import com.togger.ui.toast.ToastMessagesService
+import com.togger.ui.updater.UpdaterComponent
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext

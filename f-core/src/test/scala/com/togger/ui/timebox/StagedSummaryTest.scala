@@ -1,13 +1,19 @@
 package com.togger.ui.timebox
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class StagedSummaryTest extends AnyWordSpec with Matchers {

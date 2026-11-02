@@ -2,9 +2,10 @@ package com.togger.ui.tasktemplate
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.task.TaskTemplateEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader

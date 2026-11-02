@@ -1,9 +1,12 @@
 package com.togger.ui.timebox
 
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.SearchAccountDto
 import com.togger.ui.apexchart.ApexChartOptions
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /** The days of a timebox, the start and the end both included. */

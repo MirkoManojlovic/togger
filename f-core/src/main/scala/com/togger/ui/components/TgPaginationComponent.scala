@@ -2,9 +2,11 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
-import com.togger.ui.components.pagination.{PageItem, PaginationMath, PaginationState}
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.ui.components.pagination.PageItem
+import com.togger.ui.components.pagination.PaginationMath
+import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
 
@@ -190,7 +192,7 @@ object TgPaginationComponent {
               role("option"),
               aria.selected(isSelected),
               cls(
-                s"w-full px-3 py-2 text-start hover:bg-neutral-tertiary focus:bg-neutral-tertiary focus:outline-none " +
+                "w-full px-3 py-2 text-start hover:bg-neutral-tertiary focus:bg-neutral-tertiary focus:outline-none " +
                   (if (isSelected) "font-semibold text-fg-brand" else "text-body hover:text-heading")
               ),
               s"$size per page",

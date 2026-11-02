@@ -2,9 +2,11 @@ package com.togger.ui.task.bulk
 
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskStatusResp
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** @param key

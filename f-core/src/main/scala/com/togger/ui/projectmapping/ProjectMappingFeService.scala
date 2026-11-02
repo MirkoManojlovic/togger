@@ -2,10 +2,12 @@ package com.togger.ui.projectmapping
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.projectmapping.{CreateProjectMappingReq, ProjectMappingResp}
+import com.togger.dto.projectmapping.CreateProjectMappingReq
+import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.projectmapping.ProjectMappingEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader
 

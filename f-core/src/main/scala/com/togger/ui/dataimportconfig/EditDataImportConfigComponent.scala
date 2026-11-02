@@ -4,16 +4,20 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.dataimportconfig.UpdateDataImportConfigReq
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditDataImportConfigPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 
 import java.util.UUID
 

@@ -3,8 +3,9 @@ package com.togger.ui.task.bulk
 import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 /** @param workDays

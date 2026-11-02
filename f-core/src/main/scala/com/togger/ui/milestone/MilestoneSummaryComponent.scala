@@ -3,37 +3,50 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
-import com.togger.components.button.TgHtmlButton
 import com.togger.ai.TgAiEndpoints
-import com.togger.dto.{
-  CreateMilestoneSummaryReq,
-  FindTgAiActionResp,
-  FindMilestoneResp,
-  FindTaskRespFull,
-  UpdateMilestoneSummaryReq
-}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto.CreateMilestoneSummaryReq
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.UpdateMilestoneSummaryReq
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
+import com.togger.task.DefaultTaskStatus
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.{ProjectService, TaskListItem}
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.project.ProjectService
+import com.togger.ui.project.TaskListItem
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.tgaiaction.TgAiActionFeService
-import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
-import com.togger.task.DefaultTaskStatus
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskPreviewComponent
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
-import com.togger.ui.timebox.{StagedGrouping, StagedGroup}
+import com.togger.ui.tgaiaction.TgAiActionFeService
+import com.togger.ui.timebox.StagedGroup
+import com.togger.ui.timebox.StagedGrouping
 import com.togger.ui.toast.Toast
 
-import scala.collection.mutable
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
+import scala.collection.mutable
 
 /** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
 class MilestoneSummaryComponent(

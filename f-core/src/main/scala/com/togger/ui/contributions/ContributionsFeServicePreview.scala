@@ -7,9 +7,9 @@ import com.togger.dto._
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
 import com.togger.preview._
-import com.togger.task.TaskPriority
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** Mirrors the backend aggregation: the tasks are counted by their latest version, the log entries by their latest

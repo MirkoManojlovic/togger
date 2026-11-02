@@ -4,31 +4,33 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.auth.SecuredEndpoint
-import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
-import com.togger.logentry.LogEntryEndpoints
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
-import com.togger.task.{DefaultTaskStatus, LinkEndpoints, TaskEndpoints}
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.task.DefaultTaskStatus
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.MultiSelectItem
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryRangeCalendar}
+import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.{BulkTask, BulkTaskDefaults}
-import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
+import com.togger.ui.task.bulk.BulkTask
+import com.togger.ui.task.bulk.BulkTaskDefaults
+import com.togger.ui.tasktemplate.TaskTemplateFeService
+import com.togger.ui.tasktemplate.TaskTemplatePicker
+import com.togger.ui.tasktemplate.TaskTemplateSelection
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 

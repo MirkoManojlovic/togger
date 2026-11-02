@@ -1,7 +1,9 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{CreateTgPromptTemplatePage, EditTgPromptTemplatePage, ShowAllTgPromptTemplatesPage}
+import com.togger.routes.Pages.CreateTgPromptTemplatePage
+import com.togger.routes.Pages.EditTgPromptTemplatePage
+import com.togger.routes.Pages.ShowAllTgPromptTemplatesPage
 
 import java.util.UUID
 

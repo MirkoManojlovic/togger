@@ -1,7 +1,10 @@
 package com.togger.ui.timebox
 
-import com.togger.chart.{ChartColor, TaskLabelChartable, TaskStatusChartable}
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.chart.ChartColor
+import com.togger.chart.TaskLabelChartable
+import com.togger.chart.TaskStatusChartable
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
 import com.togger.task.TaskPriority
 
 /** A group of staged tasks under one heading; `title` is empty when the tasks are not grouped. `chartColor` is the

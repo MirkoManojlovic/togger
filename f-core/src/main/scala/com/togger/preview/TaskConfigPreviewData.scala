@@ -1,6 +1,8 @@
 package com.togger.preview
 
-import com.togger.dto.{FindTaskLabelResp, FindTaskStatusResp, TaskTemplateVersionDto}
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.TaskTemplateVersionDto
 import com.togger.task.DefaultTaskStatus
 import io.circe.generic.auto._
 

@@ -5,29 +5,35 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TimeboxVersionDto
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.apexchart.ApexChartComponent
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{
-  TgBadge,
-  TgBadgeColor,
-  TgProgressColor,
-  TgProgressComponent,
-  TgProgressLabel,
-  TgProgressSize
-}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressComponent
+import com.togger.ui.components.TgProgressLabel
+import com.togger.ui.components.TgProgressSize
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton}
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.timebox.gantt.TimeboxReviewGanttComponent
 
-import java.time.{DayOfWeek, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.ZoneOffset
 import java.util.UUID
 
 /** Everything the review shows, read in one go. */

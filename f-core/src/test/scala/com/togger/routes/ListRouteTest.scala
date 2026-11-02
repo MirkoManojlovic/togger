@@ -1,16 +1,14 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{
-  ShowAllOrganizationsPage,
-  ShowAllProjectLabelCategoriesPage,
-  ShowAllProjectLabelsPage,
-  ShowAllTaskLabelsPage,
-  ShowAllTaskStatusesPage,
-  ShowAllTaskTemplatesPage,
-  ShowProjectsForOrganizationIdTable,
-  ShowTimeboxesPage
-}
+import com.togger.routes.Pages.ShowAllOrganizationsPage
+import com.togger.routes.Pages.ShowAllProjectLabelCategoriesPage
+import com.togger.routes.Pages.ShowAllProjectLabelsPage
+import com.togger.routes.Pages.ShowAllTaskLabelsPage
+import com.togger.routes.Pages.ShowAllTaskStatusesPage
+import com.togger.routes.Pages.ShowAllTaskTemplatesPage
+import com.togger.routes.Pages.ShowProjectsForOrganizationIdTable
+import com.togger.routes.Pages.ShowTimeboxesPage
 
 import java.util.UUID
 

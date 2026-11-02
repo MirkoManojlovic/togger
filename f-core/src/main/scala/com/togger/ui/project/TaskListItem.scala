@@ -2,10 +2,13 @@ package com.togger.ui.project
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.task.{TaskProgressComponent, TgDateFormater}
+import com.togger.routes.TgRouter
+import com.togger.ui.task.TaskProgressComponent
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkTaskCard
 
 import java.time.DayOfWeek

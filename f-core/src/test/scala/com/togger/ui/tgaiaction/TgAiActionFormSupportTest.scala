@@ -1,7 +1,10 @@
 package com.togger.ui.tgaiaction
 
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
-import com.togger.dto.{FindTgAiActionResp, TgAiEndpointDto, TgAiModelDto}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

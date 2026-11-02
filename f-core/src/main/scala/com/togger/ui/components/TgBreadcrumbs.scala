@@ -3,10 +3,12 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import com.raquo.laminar.tags.HtmlTag
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
-import org.scalajs.dom.{HTMLElement, SVGSVGElement}
+import org.scalajs.dom.HTMLElement
+import org.scalajs.dom.SVGSVGElement
 
 import scala.scalajs.js
 

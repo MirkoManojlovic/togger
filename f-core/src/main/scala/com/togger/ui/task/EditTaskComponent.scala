@@ -9,27 +9,37 @@ import com.togger.common._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
-import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
-import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
-import com.togger.ui.components._
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.logentry.{LogEntryComponent, LogEntryForm}
+import com.togger.ui.logentry.LogEntryComponent
+import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.ModalStyles
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.project.ProjectService
-import com.togger.ui.slacker.{SlackerMissingDays, SlackerScope}
+import com.togger.ui.slacker.SlackerMissingDays
+import com.togger.ui.slacker.SlackerScope
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BulkTask
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 

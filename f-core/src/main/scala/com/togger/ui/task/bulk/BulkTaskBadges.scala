@@ -1,7 +1,10 @@
 package com.togger.ui.task.bulk
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps

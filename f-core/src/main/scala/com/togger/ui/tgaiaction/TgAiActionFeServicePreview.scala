@@ -2,9 +2,10 @@ package com.togger.ui.tgaiaction
 
 import cats.effect.IO
 import com.togger.ai.TgAiEndpoints
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 

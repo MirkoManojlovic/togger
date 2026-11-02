@@ -3,13 +3,18 @@ package com.togger.ui.components.wysiwyg
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.markdown.{TaskToggle, TgMarkdown, TgMarkdownStyles, TgMarkdownTasks}
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
+import com.togger.markdown.TaskToggle
+import com.togger.markdown.TgMarkdown
+import com.togger.markdown.TgMarkdownStyles
+import com.togger.markdown.TgMarkdownTasks
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import io.github.edadma.markdown.MarkdownConfig
 import org.scalajs.dom
 import org.scalajs.dom.SVGSVGElement
+
 import scala.scalajs.js
 
 /** Which pane is on screen while the editor is too narrow to show both. */

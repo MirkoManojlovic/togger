@@ -2,9 +2,11 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.ui.auth.TgHtmlTypes.{HtmlSpan, TgHtmlElement}
+import com.togger.ui.auth.TgHtmlTypes.HtmlSpan
+import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
 import com.togger.ui.organization.TgIcons
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.Enum
+import enumeratum.EnumEntry
 import org.scalajs.dom.SVGSVGElement
 
 /** What an interactive badge does.

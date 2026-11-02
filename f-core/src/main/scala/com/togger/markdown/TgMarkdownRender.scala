@@ -5,7 +5,9 @@ import com.raquo.laminar.codecs.StringAsIsCodec
 import com.raquo.laminar.modifiers.KeySetter.StyleSetter
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.TextNode
-import com.togger.ui.auth.TgHtmlTypes.{HtmlLi, HtmlTableCell, HtmlTableRow}
+import com.togger.ui.auth.TgHtmlTypes.HtmlLi
+import com.togger.ui.auth.TgHtmlTypes.HtmlTableCell
+import com.togger.ui.auth.TgHtmlTypes.HtmlTableRow
 import io.github.edadma.markdown._
 import io.github.edadma.markdown.{Image => MarkdownImage}
 import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}

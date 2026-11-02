@@ -4,37 +4,45 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.ui.logentry.LogEntryMemberBadge
-import com.togger.common.{TgClock, WorkDayCalendar}
-import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.{FindMilestoneResp, LogEntryDto, SearchAccountDto}
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.LogEntryDto
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
-import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.DropdownMeta
 import com.togger.ui.components.LogEntryCalendarComponent
-import com.togger.ui.components.{
-  DropdownMeta,
-  TgBadge,
-  TgBadgeColor,
-  TgSelectDropdown,
-  TgSelectDropdownOption,
-  TgStep,
-  TgStepperBreadcrumb,
-  TaskStatusBadgeColor
-}
+import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components.TaskStatusBadgeColor
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgSelectDropdown
+import com.togger.ui.components.TgSelectDropdownOption
+import com.togger.ui.components.TgStep
+import com.togger.ui.components.TgStepperBreadcrumb
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.logentry.LogEntryMemberBadge
+import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskProgressComponent
+import com.togger.ui.task.TaskProjectData
+import com.togger.ui.task.TaskProjectDataLoader
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BadgeSpec
-import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader, TgDateFormater, TaskProgressComponent}
 import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
-import java.time.{DayOfWeek, LocalDate, LocalTime, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneOffset
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 

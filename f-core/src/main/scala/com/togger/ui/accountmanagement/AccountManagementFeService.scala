@@ -3,10 +3,13 @@ package com.togger.ui.accountmanagement
 import com.togger.account.AccountEndpoints
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.{AccountManagementDto, AccountTypeDto, UpdateAccountReq}
+import com.togger.dto.AccountManagementDto
+import com.togger.dto.AccountTypeDto
+import com.togger.dto.UpdateAccountReq
 
 import java.util.UUID
 

@@ -1,10 +1,13 @@
 package com.togger.preview
 
-import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindMilestoneSummaryResp}
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.milestone.MilestoneStatus
 import io.circe.generic.auto._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** The status is kept as its int value, so that no codec of the enum is needed in the storage. */

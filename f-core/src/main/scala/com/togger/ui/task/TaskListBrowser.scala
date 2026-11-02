@@ -5,22 +5,26 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TaskFilter
 import com.togger.routes.TaskListParams
 import com.togger.task.DefaultTaskStatus
-import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
+import com.togger.task.DefaultTaskStatus.Backlog
+import com.togger.task.DefaultTaskStatus.Done
+import com.togger.task.DefaultTaskStatus.WontDo
 import com.togger.task.TaskPriority
+import com.togger.ui.auth.TgCheckbox
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableFilterComponent
+import com.togger.ui.components.TableSearchComponent
+import com.togger.ui.components.TableServerSearchComponent
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.auth.TgCheckbox
-import com.togger.ui.components.{
-  MultiSelectItem,
-  TableFilterComponent,
-  TableSearchComponent,
-  TableServerSearchComponent,
-  TgPaginationComponent
-}
 
 import java.util.UUID
 

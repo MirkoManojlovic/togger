@@ -3,27 +3,35 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
 import com.togger.markdown.TgMarkdown
-import com.togger.dto.{FindMilestoneResp, FindMilestoneSummaryResp, FindTaskRespFull, FindTaskStatusResp}
-import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.routes.Pages.{EditMilestonePage, MilestoneSummaryPage}
-import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.EditMilestonePage
+import com.togger.routes.Pages.MilestoneSummaryPage
+import com.togger.routes.TaskListParams
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
-import com.togger.ui.task.{
-  TaskFeService,
-  TaskLabelFeService,
-  TaskListLookups,
-  TaskListTable,
-  TaskStatusFeService,
-  TgDateFormater
-}
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskLabelFeService
+import com.togger.ui.task.TaskListLookups
+import com.togger.ui.task.TaskListTable
+import com.togger.ui.task.TaskStatusFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.timebox.TimeboxReviewStats
 import com.togger.ui.toast.Toast
 

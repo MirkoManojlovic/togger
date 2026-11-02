@@ -4,7 +4,8 @@ import cats.effect.IO
 import com.togger.common.Password
 import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
 import com.togger.dto.login.ChangePasswordDto
-import com.togger.preview.{AccountsPreviewData, PreviewResponses}
+import com.togger.preview.AccountsPreviewData
+import com.togger.preview.PreviewResponses
 
 class ChangePasswordServicePreview(accounts: AccountsPreviewData, loginRepo: LoginRepo) extends ChangePasswordService {
 

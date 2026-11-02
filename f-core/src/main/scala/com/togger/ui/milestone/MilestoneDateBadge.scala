@@ -7,7 +7,8 @@ import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 

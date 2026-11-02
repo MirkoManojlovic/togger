@@ -3,24 +3,27 @@ package com.togger.ui.project
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.PageRequest
-import com.togger.dto.{FindProjectLabelResp, FindProjectResp}
+import com.togger.dto.FindProjectLabelResp
+import com.togger.dto.FindProjectResp
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditProjectPage
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.DropdownMeta
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
+import com.togger.ui.components.TgPaginationComponent
+import com.togger.ui.components.TgSelectDropdownMultiSelectFilter
+import com.togger.ui.components.TgSelectDropdownOption
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{
-  DropdownMeta,
-  TgBadge,
-  TgBadgeColor,
-  TgPaginationComponent,
-  TgSelectDropdownMultiSelectFilter,
-  TgSelectDropdownOption
-}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.projectlabel.ProjectLabelFeService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 
 import java.util.UUID
 

@@ -2,21 +2,26 @@ package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.project.ProjectHomeStats
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.gantt.ReviewTaskBadges
-
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /** A task as the status of the projects shows it: its description on the left, its log entries in the middle, by the
   * day selected in the calendar or by a range of weeks, and the calendar of the log entries on the right.

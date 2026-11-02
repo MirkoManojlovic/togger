@@ -1,10 +1,15 @@
 package com.togger.ui.contributions
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{MemberContributionDto, TaskAttributesDto}
-import com.togger.ui.apexchart.{ApexChartComponent, ApexChartOptions}
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.TaskAttributesDto
+import com.togger.ui.apexchart.ApexChartComponent
+import com.togger.ui.apexchart.ApexChartOptions
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{TgProgressColor, TgProgressComponent, TgProgressLabel, TgProgressSize}
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressComponent
+import com.togger.ui.components.TgProgressLabel
+import com.togger.ui.components.TgProgressSize
 import com.togger.ui.logentry.LogEntryMemberBadge
 
 /** The pieces the general part and the milestone cards of the contributions page are made of. */

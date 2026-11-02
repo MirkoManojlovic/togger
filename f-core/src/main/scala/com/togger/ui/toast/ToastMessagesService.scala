@@ -1,9 +1,9 @@
 package com.togger.ui.toast
 
-import com.togger.common.TgUnitSyntax.TgUnitOps
-import com.togger.logging.TgLogging
 import com.raquo.airstream.ownership.Owner
 import com.raquo.laminar.api.L._
+import com.togger.common.TgUnitSyntax.TgUnitOps
+import com.togger.logging.TgLogging
 
 import java.util.UUID
 

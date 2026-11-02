@@ -5,34 +5,46 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateTimeboxReq, FindTaskRespFull, FindTimeboxResp, SaveTimeboxVersionReq}
+import com.togger.dto.CreateTimeboxReq
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SaveTimeboxVersionReq
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.routes.TaskListParams
+import com.togger.routes.TgRouter
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
-import com.togger.timebox.{TimeboxDefault, TimeboxDefaults}
+import com.togger.timebox.TimeboxDefault
+import com.togger.timebox.TimeboxDefaults
 import com.togger.toast.ToastMessages
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.CalendarPickerPopup
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryRangeCalendar}
+import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk._
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task._
+import com.togger.ui.task.bulk._
 import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 

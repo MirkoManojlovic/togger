@@ -2,8 +2,10 @@ package com.togger.ui.emoji
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
-import com.togger.ui.auth.{TgInput, TgTextArea}
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgInput
+import com.togger.ui.auth.TgTextArea
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate

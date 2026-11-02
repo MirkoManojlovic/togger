@@ -2,8 +2,10 @@ package com.togger.ui.auth
 
 import cats.effect.IO
 import com.togger.common.TgJsonFailure
-import com.togger.dto.login.{LoginDto, LoginResponseDto}
-import com.togger.preview.{AccountsPreviewData, PreviewAccount}
+import com.togger.dto.login.LoginDto
+import com.togger.dto.login.LoginResponseDto
+import com.togger.preview.AccountsPreviewData
+import com.togger.preview.PreviewAccount
 
 import java.util.UUID
 

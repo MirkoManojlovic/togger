@@ -1,6 +1,8 @@
 package com.togger.preview
 
-import com.togger.demo.{DemoAiAction, DemoAiActionDefault, DemoPromptTemplate}
+import com.togger.demo.DemoAiAction
+import com.togger.demo.DemoAiActionDefault
+import com.togger.demo.DemoPromptTemplate
 
 /** Seeds prompt templates, AI actions and default actions. */
 class AiPreviewSeed(

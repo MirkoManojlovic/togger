@@ -4,7 +4,8 @@ import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.contribution.ContributionEndpoints
-import com.togger.dto.{ContributionsDto, ContributionsFilter}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.ContributionsFilter
 
 import java.util.UUID
 

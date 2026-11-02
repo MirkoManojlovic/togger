@@ -1,7 +1,7 @@
 package com.togger.ui.task
 
-import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.TgIds
+import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.TaskFilter
 import com.togger.routes.TaskListParams
 import com.togger.task.TaskPriority

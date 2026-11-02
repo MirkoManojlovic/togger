@@ -4,17 +4,20 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindMilestoneSummaryResp, FindTgAiActionResp}
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.FindTgAiActionResp
 import com.togger.ui.auth.TgSelect
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLFormElement
 
-import scala.collection.immutable.ListMap
-
 import java.time.DayOfWeek
 import java.util.UUID
+import scala.collection.immutable.ListMap
 
 /** `id` is empty until the summary is saved. */
 case class MilestoneSummaryForm(

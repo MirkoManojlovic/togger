@@ -4,32 +4,35 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.{DateRangeValidation, TgClock}
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
+import com.togger.dto.CreateMilestoneDateReq
+import com.togger.dto.UpdateMilestoneDateReq
+import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.MilestoneStatus
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.components.CalendarPickerPopup
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.QuickOption
+import com.togger.ui.components.QuickOptionsPopup
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
-import com.togger.ui.components.{
-  CalendarPickerPopup,
-  ChartColorBadgeColor,
-  QuickOption,
-  QuickOptionsPopup,
-  TgBadge,
-  TgBadgeColor
-}
 import com.togger.ui.modal.ModalStyles
-import com.togger.ui.task.TgDateFormater
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 

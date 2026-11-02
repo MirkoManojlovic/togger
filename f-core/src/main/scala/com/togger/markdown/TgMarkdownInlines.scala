@@ -3,7 +3,8 @@ package com.togger.markdown
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
-import com.togger.ui.auth.TgHtmlTypes.{HtmlAnchor, HtmlImage}
+import com.togger.ui.auth.TgHtmlTypes.HtmlAnchor
+import com.togger.ui.auth.TgHtmlTypes.HtmlImage
 
 /** Inline markdown nodes that carry structure of their own — a tag choice, an attribute, a wrapper.
   *

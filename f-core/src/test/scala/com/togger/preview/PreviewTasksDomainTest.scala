@@ -1,13 +1,13 @@
 package com.togger.preview
 
-import com.togger.demo.DemoTaskConfigData
-import com.togger.demo.DemoMilestonesData
-
-import com.togger.demo.DemoIdentity
-import com.togger.demo.DemoSeedIds
-
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, Unauthenticated}
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoMilestonesData
+import com.togger.demo.DemoSeedIds
+import com.togger.demo.DemoTaskConfigData
 import com.togger.dto._
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
@@ -15,7 +15,8 @@ import com.togger.ui.contributions.ContributionsFeServicePreview
 import com.togger.ui.task.TaskFeServicePreview
 import com.togger.ui.timebox.TimeboxFeServicePreview
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class PreviewTasksDomainTest extends AsyncJsWordSpec {

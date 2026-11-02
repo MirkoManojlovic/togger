@@ -4,7 +4,8 @@ import com.togger.common.WorkDayCalendar
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.ui.task.TaskProjectData
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** @param awaitingRestoredData

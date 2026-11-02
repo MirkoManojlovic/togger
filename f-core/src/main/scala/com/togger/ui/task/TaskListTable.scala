@@ -1,54 +1,53 @@
 package com.togger.ui.task
+import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.raquo.laminar.modifiers.Modifier
+import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskRespFull
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
+import com.togger.routes.TaskListParams
+import com.togger.routes.TgRouter
 import com.togger.task.DefaultTaskStatus
-import com.togger.task.DefaultTaskStatus.{Backlog, Done, Todo, WontDo}
-import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.task.DefaultTaskStatus.Backlog
+import com.togger.task.DefaultTaskStatus.Done
+import com.togger.task.DefaultTaskStatus.Todo
+import com.togger.task.DefaultTaskStatus.WontDo
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgHtmlTable}
-import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.{
-  BadgeSpec,
-  BulkEdit,
-  BulkEditContext,
-  BulkEditKind,
-  BulkEditPopups,
-  BulkEditToolbar,
-  BulkLookups,
-  BulkSelection,
-  BulkTaskBadges,
-  BulkTaskCard,
-  BulkTaskEditor
-}
-import com.togger.ui.task.TaskConfigTableSupport.{
-  headerIconButtonCls,
-  iconButton,
-  rowButtonMarginCls,
-  rowIconButtonCls,
-  rowIconButtonDangerCls
-}
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkEdit
+import com.togger.ui.task.bulk.BulkEditContext
+import com.togger.ui.task.bulk.BulkEditKind
+import com.togger.ui.task.bulk.BulkEditPopups
+import com.togger.ui.task.bulk.BulkEditToolbar
+import com.togger.ui.task.bulk.BulkLookups
+import com.togger.ui.task.bulk.BulkSelection
+import com.togger.ui.task.bulk.BulkTaskBadges
+import com.togger.ui.task.bulk.BulkTaskCard
+import com.togger.ui.task.bulk.BulkTaskEditor
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.modifiers.Modifier
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
-import cats.effect.IO
 
 import java.time.DayOfWeek
 import java.util.UUID
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
 /** The paged, searchable and filtered task table with its bulk editing, selection and deleting, shared by the task
   * screens. The page, filters and search term live in `paramsVar`; a change is handed to `navigate`, which stores the

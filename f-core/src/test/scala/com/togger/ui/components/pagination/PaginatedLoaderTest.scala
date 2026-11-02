@@ -2,9 +2,12 @@ package com.togger.ui.components.pagination
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.suites.AsyncJsWordSpec
 
 class PaginatedLoaderTest extends AsyncJsWordSpec {
 

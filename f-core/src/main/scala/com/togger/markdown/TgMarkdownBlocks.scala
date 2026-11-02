@@ -2,7 +2,8 @@ package com.togger.markdown
 
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.codecs.{BooleanAsAttrPresenceCodec, IntAsStringCodec}
+import com.raquo.laminar.codecs.BooleanAsAttrPresenceCodec
+import com.raquo.laminar.codecs.IntAsStringCodec
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.tags.HtmlTag
 import com.togger.ui.auth.TgHtmlTypes._

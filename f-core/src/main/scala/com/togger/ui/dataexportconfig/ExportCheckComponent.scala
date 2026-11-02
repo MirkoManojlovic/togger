@@ -1,8 +1,10 @@
 package com.togger.ui.dataexportconfig
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{DataExportPathStatusResp, DataExportSyncStatusResp}
-import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.dto.DataExportPathStatusResp
+import com.togger.dto.DataExportSyncStatusResp
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TaskConfigTableSupport
 

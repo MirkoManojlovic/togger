@@ -3,7 +3,10 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.markdown.TgMarkdown
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek

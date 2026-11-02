@@ -1,9 +1,11 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.common.TgClock
-import com.togger.ui.components.{CalendarPickerPopup, MultiSelectItem, TableFilterComponent}
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.components.CalendarPickerPopup
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableFilterComponent
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 

@@ -4,33 +4,28 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.auth.SecuredEndpoint
-import com.togger.backendcalls.ProtectedBackendClient
-import com.togger.common.{PageRequest, PaginatedResponse, TgClock}
-import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{
-  CreateMilestoneDateReq,
-  CreateMilestoneReq,
-  FindMilestoneResp,
-  MilestoneFilter,
-  UpdateMilestoneReq
-}
-import com.togger.milestone.MilestoneEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.dto.CreateMilestoneDateReq
+import com.togger.dto.CreateMilestoneReq
+import com.togger.dto.FindMilestoneResp
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
-import com.togger.ui.components.pagination.PaginatedLoader
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
 import com.togger.ui.project.ProjectService
-import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 case class CreateMilestoneForm(

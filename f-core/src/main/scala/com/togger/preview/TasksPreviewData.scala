@@ -1,9 +1,13 @@
 package com.togger.preview
 
-import com.togger.dto.{LinkVersionDto, LogEntryVersionDto, SearchAccountDto, TaskVersionDto}
+import com.togger.dto.LinkVersionDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TaskVersionDto
 import io.circe.generic.auto._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class PreviewTask(

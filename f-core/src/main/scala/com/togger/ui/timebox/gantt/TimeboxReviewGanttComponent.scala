@@ -2,18 +2,24 @@ package com.togger.ui.timebox.gantt
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.task.TaskProgressComponent
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.LogEntryStatusSquare
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.logentry.LogEntryReadOnlyCard
-import com.togger.ui.components.{LogEntryStatusSquare, TgTab, TgTabs}
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task.TgDateFormater
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The tasks of a timebox as a read only Gantt chart. Under the bar of each task, the planned duration, there is a

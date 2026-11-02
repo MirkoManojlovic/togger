@@ -3,18 +3,20 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.reorder.{ListReorder, RowReorder}
+import com.togger.ui.components.reorder.ListReorder
+import com.togger.ui.components.reorder.RowReorder
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkLookups
-import com.togger.ui.timebox.{StagedTaskBadges, TimeboxStagingStore}
-
+import com.togger.ui.timebox.StagedTaskBadges
+import com.togger.ui.timebox.TimeboxStagingStore
 import org.scalajs.dom
 
-import scala.scalajs.js
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
+import scala.scalajs.js
 
 /** The staged tasks as a Gantt chart: one column per work day of the timebox, one row per task, each task as a bar from
   * its start date to its due date.

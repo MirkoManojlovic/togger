@@ -1,6 +1,7 @@
 package com.togger.ui.timebox.gantt
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** Where a date landed on the axis compared to the visible columns. */
 sealed trait GanttClamp

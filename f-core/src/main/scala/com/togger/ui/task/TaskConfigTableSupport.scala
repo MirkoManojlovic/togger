@@ -4,16 +4,17 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.PageRequest
-import com.togger.dto.{
-  DataExportEntityStatusResp,
-  DataExportFieldDiffResp,
-  DataExportPathStatusResp,
-  DataExportSyncStatusResp
-}
+import com.togger.dto.DataExportEntityStatusResp
+import com.togger.dto.DataExportFieldDiffResp
+import com.togger.dto.DataExportPathStatusResp
+import com.togger.dto.DataExportSyncStatusResp
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement

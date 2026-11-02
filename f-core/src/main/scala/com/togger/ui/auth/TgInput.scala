@@ -1,19 +1,18 @@
 package com.togger.ui.auth
 
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import com.togger.ui.auth.TgInput.{
-  errorInputClass,
-  errorLabelClass,
-  errorMessageClass,
-  successInputClass,
-  successLabelClass,
-  tgInputStyle
-}
-import com.togger.ui.auth.TgInputType.Text
-import com.togger.ui.auth.TgTextArea.tailwindClasses
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.util.FrontendMacros.{SelectAndUpdate, SelectAndUpdateAndError}
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgInput.errorInputClass
+import com.togger.ui.auth.TgInput.errorLabelClass
+import com.togger.ui.auth.TgInput.errorMessageClass
+import com.togger.ui.auth.TgInput.successInputClass
+import com.togger.ui.auth.TgInput.successLabelClass
+import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.auth.TgInputType.Text
+import com.togger.ui.auth.TgTextArea.tailwindClasses
+import com.togger.util.FrontendMacros.SelectAndUpdate
+import com.togger.util.FrontendMacros.SelectAndUpdateAndError
 import enumeratum._
 import org.scalajs.dom.html
 import org.scalajs.dom.html.Paragraph

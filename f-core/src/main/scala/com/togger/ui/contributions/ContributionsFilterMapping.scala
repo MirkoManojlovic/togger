@@ -1,9 +1,11 @@
 package com.togger.ui.contributions
 
 import com.togger.routes.ContributionsParams
-import com.togger.ui.milestone.{ActiveDateFilter, MonthOption}
+import com.togger.ui.milestone.ActiveDateFilter
+import com.togger.ui.milestone.MonthOption
 
-import java.time.{LocalDate, YearMonth}
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** How the date filter of the page becomes the range asked from the backend. */
 object ContributionsFilterMapping {

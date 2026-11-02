@@ -2,20 +2,27 @@ package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
 import com.togger.task.TaskPriority
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.apexchart.ApexChartComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgStatColumn, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgStatColumn
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task.TgDateFormater
-
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The badges of a staged task as three rows, each of which can edit what its badges show. */
@@ -44,8 +51,6 @@ class StagedTasksComponent(
       .combineWith(workDays, timebox, milestones)
       .map { case (tasks, days, range, all) => StagedSummary.of(tasks, days, range, all) }
       .distinct
-
-  private def date(day: Option[LocalDate]): String = day.fold(Empty)(tgDateFormater.asAmericanDateWithDayAbrv)
 
   private def stat(title: String, value: Signal[String]): HtmlElement =
     statElement(title, span(cls("text-sm font-medium text-heading"), child.text <-- value))

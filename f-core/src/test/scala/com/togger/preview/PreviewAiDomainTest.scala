@@ -1,10 +1,9 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.demo.DemoIdentity
 import com.togger.demo.DemoSeedIds
-
-import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.BadRequest
 import com.togger.dto._
 import com.togger.ui.tgaiaction.TgAiActionFeServicePreview
 import com.togger.ui.tgprompttemplate.TgPromptTemplateFeServicePreview

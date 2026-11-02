@@ -2,9 +2,13 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv, HtmlLi, HtmlUl}
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgHtmlTypes.HtmlLi
+import com.togger.ui.auth.TgHtmlTypes.HtmlUl
 import com.togger.ui.synccheck.SyncPendingDot
-import org.scalajs.dom.{KeyboardEvent, SVGSVGElement}
+import org.scalajs.dom.KeyboardEvent
+import org.scalajs.dom.SVGSVGElement
 
 import scala.annotation.tailrec
 

@@ -3,7 +3,8 @@ package com.togger.ui.timebox.gantt
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class GanttAxisTest extends AsyncJsWordSpec {
 

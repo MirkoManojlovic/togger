@@ -1,17 +1,17 @@
 package com.togger.preview
 
-import com.togger.demo.DemoIdentity
-
 import com.togger.common.BadRequest
 import com.togger.common.PageRequest
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.dto.dataexportconfig.{CreateDataExportConfigReq, UpdateDataExportConfigReq}
+import com.togger.demo.DemoIdentity
+import com.togger.dto.dataexportconfig.CreateDataExportConfigReq
+import com.togger.dto.dataexportconfig.UpdateDataExportConfigReq
 import com.togger.dto.dataimportconfig.CreateDataImportConfigReq
 import com.togger.dto.projectmapping.CreateProjectMappingReq
 import com.togger.ui.dataexportconfig.DataExportConfigFeServicePreview
 import com.togger.ui.dataimportconfig.DataImportConfigFeServicePreview
 import com.togger.ui.projectmapping.ProjectMappingFeServicePreview
-import com.togger.ui.task.{DataExportFeServicePreview}
+import com.togger.ui.task.DataExportFeServicePreview
 
 import java.util.UUID
 

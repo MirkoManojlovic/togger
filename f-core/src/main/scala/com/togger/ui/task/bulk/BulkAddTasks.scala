@@ -4,15 +4,19 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
+import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.components.DropdownMeta
+import com.togger.ui.components.TgSelectDropdown
+import com.togger.ui.components.TgSelectDropdownOption
 import com.togger.ui.components.reorder.RowReorder
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
+import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.auth.AccountService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.localstorage.LocalStorage
-import com.togger.ui.task.{TaskFeService, TaskProjectData, TaskProjectDataLoader}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskProjectData
+import com.togger.ui.task.TaskProjectDataLoader
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
 

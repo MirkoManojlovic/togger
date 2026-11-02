@@ -1,7 +1,9 @@
 package com.togger.preview
 
 import com.togger.ai.TgAiEndpoints
-import com.togger.dto.{TgAiEndpointDto, TgAiModelDto, TgPromptTemplateVersionDto}
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
+import com.togger.dto.TgPromptTemplateVersionDto
 import io.circe.generic.auto._
 
 import java.time.Instant

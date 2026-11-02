@@ -1,7 +1,8 @@
 package com.togger.ui.timebox
 
 import com.togger.chart.ChartColor
-import com.togger.ui.apexchart.{ApexChartType, ApexSeries}
+import com.togger.ui.apexchart.ApexChartType
+import com.togger.ui.apexchart.ApexSeries
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

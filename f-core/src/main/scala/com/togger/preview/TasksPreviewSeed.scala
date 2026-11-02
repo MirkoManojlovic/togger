@@ -1,6 +1,7 @@
 package com.togger.preview
 
-import com.togger.demo.{DemoTask, DemoTimebox}
+import com.togger.demo.DemoTask
+import com.togger.demo.DemoTimebox
 
 /** Seeds tasks with their versions, links, log entries and the timeboxes. Needs the accounts, projects, task config and
   * milestones to be seeded first.

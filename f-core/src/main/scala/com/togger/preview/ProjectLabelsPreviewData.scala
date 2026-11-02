@@ -1,6 +1,7 @@
 package com.togger.preview
 
-import com.togger.dto.{FindProjectLabelCategoryResp, FindProjectLabelResp}
+import com.togger.dto.FindProjectLabelCategoryResp
+import com.togger.dto.FindProjectLabelResp
 import io.circe.generic.auto._
 
 import java.util.UUID

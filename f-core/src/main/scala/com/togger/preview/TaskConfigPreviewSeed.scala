@@ -1,7 +1,11 @@
 package com.togger.preview
 
-import com.togger.demo.{DemoTaskLabel, DemoTaskStatus, DemoTaskTemplate}
-import com.togger.dto.{FindTaskLabelResp, FindTaskStatusResp, TaskTemplateVersionDto}
+import com.togger.demo.DemoTaskLabel
+import com.togger.demo.DemoTaskStatus
+import com.togger.demo.DemoTaskTemplate
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.TaskTemplateVersionDto
 
 /** Seeds the default statuses, task labels and task templates of the demo projects. */
 class TaskConfigPreviewSeed(

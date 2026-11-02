@@ -2,11 +2,15 @@ package com.togger.ui.dataimportconfig
 
 import com.raquo.laminar.api.L._
 import com.togger.common.PageRequest
-import com.togger.dto.{DataImportEntityResultResp, DataImportStatusResp}
+import com.togger.dto.DataImportEntityResultResp
+import com.togger.dto.DataImportStatusResp
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
 import com.togger.ui.task.TaskConfigTableSupport
 
 /** The entities an import went through: a summary of the statuses that doubles as a filter, then the entities a page at

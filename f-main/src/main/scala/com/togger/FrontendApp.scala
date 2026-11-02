@@ -2,7 +2,8 @@ package com.togger
 
 import com.raquo.laminar.api.L._
 import com.togger.preview.PreviewConfig
-import com.togger.routes.{TgRouterImpl, TgRoutes}
+import com.togger.routes.TgRouterImpl
+import com.togger.routes.TgRoutes
 import org.scalajs.dom
 
 import scala.concurrent.duration._

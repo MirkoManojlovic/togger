@@ -1,12 +1,13 @@
 package com.togger.ui.auth
 
-import com.togger.auth.AuthAccountFe
-import com.togger.auth.UserRole.NoPermissionsUserRole
-import com.togger.dto.login.{AccountInfoDto, LoginResponseDto}
-import com.togger.logging.TgLogging
-import com.togger.ui.localstorage.LocalStorage
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.Var
+import com.togger.auth.AuthAccountFe
+import com.togger.auth.UserRole.NoPermissionsUserRole
+import com.togger.dto.login.AccountInfoDto
+import com.togger.dto.login.LoginResponseDto
+import com.togger.logging.TgLogging
+import com.togger.ui.localstorage.LocalStorage
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps

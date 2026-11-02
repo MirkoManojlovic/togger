@@ -2,10 +2,14 @@ package com.togger.ui.slacker
 
 import com.togger.dto.FindTaskRespFull
 import com.togger.logentry.LogEntryStatus
-import com.togger.ui.teamdaily.{TeamDailyEntryDraft, TeamDailyStatusGroup, TeamDailyStatusOrder, TeamDailyTaskPlan}
+import com.togger.ui.teamdaily.TeamDailyEntryDraft
+import com.togger.ui.teamdaily.TeamDailyStatusGroup
+import com.togger.ui.teamdaily.TeamDailyStatusOrder
+import com.togger.ui.teamdaily.TeamDailyTaskPlan
 import com.togger.ui.timebox.gantt.GanttLogStatus
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 sealed trait SlackerPosition

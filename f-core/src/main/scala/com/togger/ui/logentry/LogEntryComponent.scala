@@ -9,22 +9,26 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
-import com.togger.ui.organization.TgIcons
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
-import com.togger.ui.components._
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 import scala.util.Try
 

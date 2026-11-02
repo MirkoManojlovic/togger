@@ -1,6 +1,7 @@
 package com.togger.ui.milestone
 
-import com.togger.dto.{FindTgAiActionResp, SummariseMilestoneWithAiReq}
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.SummariseMilestoneWithAiReq
 
 import java.time.LocalDate
 import java.util.UUID

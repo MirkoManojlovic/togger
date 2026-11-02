@@ -4,31 +4,35 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
-import com.togger.dto.{FindMilestoneResp, FindProjectResp}
+import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindProjectResp
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
+import com.togger.routes.FrontendPage
+import com.togger.routes.MilestoneListParams
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, MilestoneListParams, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableFilterComponent
+import com.togger.ui.components.TableSearchComponent
+import com.togger.ui.components.TableServerSearchComponent
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{
-  MultiSelectItem,
-  TableFilterComponent,
-  TableSearchComponent,
-  TableServerSearchComponent,
-  TgHtmlTable,
-  TgPaginationComponent
-}
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.{ProjectInfoCard, ProjectService}
+import com.togger.ui.project.ProjectInfoCard
+import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.toast.Toast
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TgDateFormater
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
-import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkTaskCard
+import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID

@@ -3,26 +3,35 @@ package com.togger.ui.project
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.common.TgJsonFailure
+import com.togger.dto.DataImportResp
 import com.togger.dto.FindProjectResp
 import com.togger.dto.organization.FindOrganizationResp
 import com.togger.markdown.TgMarkdown
-import com.togger.common.TgJsonFailure
-import com.togger.dto.DataImportResp
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
+import com.togger.routes.TgRouter
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
-import com.togger.ui.dataimportconfig.ImportResultsComponent
-import com.togger.ui.modal.{FormForModal, ModalFactory}
-import com.togger.ui.navbar.SidebarRefresh
-import com.togger.ui.task.DataExportFeService
-import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgPaginationComponent
-import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
+import com.togger.ui.components.pagination.PaginationState
+import com.togger.ui.dataimportconfig.ImportResultsComponent
+import com.togger.ui.modal.FormForModal
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.navbar.SidebarRefresh
+import com.togger.ui.organization.OrganizationServiceFe
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DataExportFeService
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 import com.togger.ui.toast.Toast
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID
 

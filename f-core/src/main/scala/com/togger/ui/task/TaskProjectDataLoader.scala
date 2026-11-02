@@ -2,13 +2,15 @@ package com.togger.ui.task
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.dto._
 import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.milestone.MilestoneStatus
 import com.togger.ui.auth.AccountService
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationServiceFe}
+import com.togger.ui.organization.OrganizationProjectsLoader
+import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID

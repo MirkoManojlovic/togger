@@ -3,15 +3,16 @@ package com.togger.ui.tgaiaction
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgJsonSuccess
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.dto.FindTgPromptTemplateResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.toast.Toast
 import com.togger.ui.tgprompttemplate.TgPromptTemplateFeService
+import com.togger.ui.toast.Toast
 
 class CreateTgAiActionComponent(
   tgAiActionService: TgAiActionFeService,

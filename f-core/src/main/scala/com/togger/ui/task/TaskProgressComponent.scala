@@ -2,7 +2,8 @@ package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
-import com.togger.markdown.{TaskProgress, TaskProgressParser}
+import com.togger.markdown.TaskProgress
+import com.togger.markdown.TaskProgressParser
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import org.scalajs.dom.Element
 

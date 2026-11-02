@@ -1,16 +1,19 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.NotFound
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
+import com.togger.common.suites.AsyncJsWordSpec
+import com.togger.demo.DemoIdentity
 import com.togger.demo.DemoProjectLabelsData
 import com.togger.demo.DemoTaskConfigData
-
-import com.togger.demo.DemoIdentity
-
-import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, NotFound, PageRequest, Unauthenticated}
 import com.togger.dto._
 import com.togger.ui.project.ProjectServicePreview
-import com.togger.ui.projectlabel.{ProjectLabelCategoryFeServicePreview, ProjectLabelFeServicePreview}
-import com.togger.ui.task.{TaskLabelFeServicePreview, TaskStatusFeServicePreview}
+import com.togger.ui.projectlabel.ProjectLabelCategoryFeServicePreview
+import com.togger.ui.projectlabel.ProjectLabelFeServicePreview
+import com.togger.ui.task.TaskLabelFeServicePreview
+import com.togger.ui.task.TaskStatusFeServicePreview
 import com.togger.ui.tasktemplate.TaskTemplateFeServicePreview
 
 import java.util.UUID

@@ -2,11 +2,13 @@ package com.togger.ui.task.bulk
 
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskStatusResp
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 class BulkTaskDefaultsTest extends AnyWordSpec with Matchers {

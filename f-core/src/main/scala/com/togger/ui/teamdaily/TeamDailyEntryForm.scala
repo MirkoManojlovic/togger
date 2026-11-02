@@ -2,12 +2,14 @@ package com.togger.ui.teamdaily
 
 import com.raquo.laminar.api.L._
 import com.togger.logentry.LogEntryStatus
+import com.togger.ui.auth.TgCard
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
-import com.togger.ui.auth.TgCard
-import com.togger.ui.components._
-import com.togger.ui.logentry.{ActivePopup, LogEntryForm, LogEntryMemberBadge}
+import com.togger.ui.logentry.ActivePopup
+import com.togger.ui.logentry.LogEntryForm
+import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.task.TgDateFormater
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom

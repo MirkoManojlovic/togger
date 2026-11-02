@@ -2,8 +2,9 @@ package com.togger.ui.account
 
 import com.togger.common.PaginatedResponse
 import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.dto.FindProjectResp
+import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.dto.{FindProjectResp, SearchAccountDto}
 
 /** Accounts that exist for tooling (the MCP server) and are never shown as members. */
 object HiddenAccounts {

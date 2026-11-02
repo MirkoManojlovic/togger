@@ -3,7 +3,9 @@ package com.togger.ui.timebox.gantt
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 
 object GanttLogStatus {

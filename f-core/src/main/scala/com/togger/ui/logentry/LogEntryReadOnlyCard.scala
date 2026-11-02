@@ -5,7 +5,8 @@ import com.togger.dto.LogEntryDto
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate

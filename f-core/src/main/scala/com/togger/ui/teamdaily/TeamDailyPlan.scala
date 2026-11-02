@@ -1,6 +1,9 @@
 package com.togger.ui.teamdaily
 
-import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, LogEntryDto, SearchAccountDto}
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
+import com.togger.dto.SearchAccountDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 import com.togger.ui.timebox.gantt.GanttLogStatus

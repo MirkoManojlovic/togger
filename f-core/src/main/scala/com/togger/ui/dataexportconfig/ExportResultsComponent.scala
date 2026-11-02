@@ -1,10 +1,13 @@
 package com.togger.ui.dataexportconfig
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{DataExportPathResultResp, DataExportResp}
+import com.togger.dto.DataExportPathResultResp
+import com.togger.dto.DataExportResp
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
 import com.togger.ui.task.TaskConfigTableSupport
 
 /** What an export did: whether each configured path was written, and how many entities of each type it holds. */

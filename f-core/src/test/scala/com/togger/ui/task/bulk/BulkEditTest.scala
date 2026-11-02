@@ -5,7 +5,8 @@ import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 class BulkEditTest extends AnyWordSpec with Matchers {

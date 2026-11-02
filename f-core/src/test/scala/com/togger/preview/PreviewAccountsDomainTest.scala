@@ -1,18 +1,29 @@
 package com.togger.preview
 
-import com.togger.demo.DemoAccountsData
-
-import com.togger.demo.DemoIdentity
-
+import com.togger.common.BadRequest
+import com.togger.common.Forbidden
+import com.togger.common.NotFound
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, Forbidden, NotFound, PageRequest, Unauthenticated}
-import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, DeviceInfo, LoginDto}
-import com.togger.dto.organization.{CreateOrganizationReq, UpdateOrganizationReq}
-import com.togger.dto.{CreateProjectReq, UpdateAccountReq, UpdateProjectReq}
+import com.togger.demo.DemoAccountsData
+import com.togger.demo.DemoIdentity
+import com.togger.dto.CreateProjectReq
+import com.togger.dto.UpdateAccountReq
+import com.togger.dto.UpdateProjectReq
+import com.togger.dto.login.AccountInfoDto
+import com.togger.dto.login.ChangePasswordDto
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.LoginDto
+import com.togger.dto.organization.CreateOrganizationReq
+import com.togger.dto.organization.UpdateOrganizationReq
 import com.togger.ui.accountmanagement.AccountManagementFeServicePreview
-import com.togger.ui.auth.{ChangeAccountInfoServicePreview, ChangePasswordServicePreview, LoginServicePreview}
+import com.togger.ui.auth.ChangeAccountInfoServicePreview
+import com.togger.ui.auth.ChangePasswordServicePreview
+import com.togger.ui.auth.LoginServicePreview
 import com.togger.ui.organization.OrganizationServiceFePreview
-import com.togger.ui.project.{FindAccountServicePreview, ProjectServicePreview}
+import com.togger.ui.project.FindAccountServicePreview
+import com.togger.ui.project.ProjectServicePreview
 
 class PreviewAccountsDomainTest extends AsyncJsWordSpec {
 

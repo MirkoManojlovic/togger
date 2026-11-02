@@ -1,7 +1,9 @@
 package com.togger.ui.contributions
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{ContributionsDto, MemberContributionDto, MilestoneContributionsDto}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.MilestoneContributionsDto
 import com.togger.ui.contributions.MemberContributionViews.card
 import com.togger.ui.task.TgDateFormater
 

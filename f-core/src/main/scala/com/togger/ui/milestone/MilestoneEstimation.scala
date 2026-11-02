@@ -4,9 +4,11 @@ import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskRespFull
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.timebox.TimeboxReviewStats
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** How the work still to do compares with the work days left until the due date of a milestone. */
 sealed abstract class MilestoneEstimationStatus(val label: String, val color: TgBadgeColor) extends EnumEntry

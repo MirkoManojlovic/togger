@@ -1,19 +1,18 @@
 package com.togger.ui.project
 
-import com.togger.dto.{
-  FindTaskLabelResp,
-  FindTaskRespFull,
-  FindTaskStatusResp,
-  FindTimeboxResp,
-  SearchAccountDto,
-  TimeboxVersionDto
-}
 import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TimeboxVersionDto
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class ProjectHomeStatsTest extends AnyWordSpec with Matchers {

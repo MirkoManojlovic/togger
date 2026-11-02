@@ -1,7 +1,8 @@
 package com.togger.ui.milestone
 
 import cats.effect.IO
-import com.togger.backendcalls.{SseEvent, SseParser}
+import com.togger.backendcalls.SseEvent
+import com.togger.backendcalls.SseParser
 import com.togger.dto.SummariseMilestoneWithAiReq
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneAiSummaryStreamContract._
@@ -10,7 +11,8 @@ import io.circe.generic.auto._
 import io.circe.parser.parse
 import io.circe.syntax._
 import org.scalajs.dom
-import org.scalajs.dom.{HttpMethod, RequestInit}
+import org.scalajs.dom.HttpMethod
+import org.scalajs.dom.RequestInit
 
 import scala.scalajs.js
 

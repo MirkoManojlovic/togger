@@ -1,9 +1,10 @@
 package com.togger.ui.auth
 
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.util.FrontendMacros.{SelectAndUpdate, SelectAndUpdateAndError}
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.util.FrontendMacros.SelectAndUpdate
+import com.togger.util.FrontendMacros.SelectAndUpdateAndError
 import org.scalajs.dom.html
 import org.scalajs.dom.html.Paragraph
 

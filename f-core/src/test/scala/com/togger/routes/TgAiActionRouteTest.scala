@@ -1,12 +1,10 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{
-  CreateTgAiActionPage,
-  EditTgAiActionPage,
-  ShowAllTgAiActionsPage,
-  TgAiActionDefaultsPage
-}
+import com.togger.routes.Pages.CreateTgAiActionPage
+import com.togger.routes.Pages.EditTgAiActionPage
+import com.togger.routes.Pages.ShowAllTgAiActionsPage
+import com.togger.routes.Pages.TgAiActionDefaultsPage
 
 import java.util.UUID
 

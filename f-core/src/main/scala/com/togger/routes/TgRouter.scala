@@ -2,7 +2,8 @@ package com.togger.routes
 
 import com.raquo.airstream.state.StrictSignal
 import com.raquo.laminar.api.L._
-import com.raquo.waypoint.{Route, Router}
+import com.raquo.waypoint.Route
+import com.raquo.waypoint.Router
 import com.togger.routes.Pages.NotFoundPage
 import org.scalajs.dom
 

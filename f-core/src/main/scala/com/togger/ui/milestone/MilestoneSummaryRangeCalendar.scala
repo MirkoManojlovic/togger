@@ -3,7 +3,8 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** Mini calendars of a date range, `Weeks` weeks each; the oldest on the left and the newest on the right, with only
   * the work days of the project. The days of the range are filled, the others in the weeks shown are faded, and the

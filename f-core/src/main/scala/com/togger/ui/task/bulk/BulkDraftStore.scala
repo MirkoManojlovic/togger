@@ -2,10 +2,11 @@ package com.togger.ui.task.bulk
 
 import com.togger.task.TaskPriority
 import com.togger.ui.localstorage.LocalStorage
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
 import scala.util.Try

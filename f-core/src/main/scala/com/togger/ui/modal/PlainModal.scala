@@ -3,7 +3,8 @@ package com.togger.ui.modal
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.ui.organization.TgIcons
-import org.scalajs.dom.{MouseEvent, html}
+import org.scalajs.dom.MouseEvent
+import org.scalajs.dom.html
 
 sealed trait ModalMessage
 

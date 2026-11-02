@@ -1,6 +1,7 @@
 package com.togger.ui.slacker
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** The work days from the start of a task through today that have no log entry, oldest first. */
 object SlackerMissingDays {

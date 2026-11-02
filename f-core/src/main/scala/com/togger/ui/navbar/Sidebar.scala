@@ -1,27 +1,30 @@
 package com.togger.ui.navbar
-import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.{ReactiveHtmlElement, ReactiveSvgElement}
-import com.togger.dto.DataImportResp
+import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.raquo.laminar.nodes.ReactiveSvgElement
 import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
 import com.togger.ui.dataexportconfig.ExportCheckFlow
-import com.togger.ui.dataimportconfig.ImportFlow
-import com.togger.ui.dataimportconfig.ImportResultsComponent
-import com.togger.ui.modal.ModalFactory
-import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects, TgIcons}
-import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.synccheck.{SyncPendingDot, SyncPendingStore}
-import com.togger.ui.task.DataExportFeService
 import com.togger.ui.dataimportconfig.DataImportConfigFeService
+import com.togger.ui.dataimportconfig.ImportFlow
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.organization.OrganizationProjectsLoader
+import com.togger.ui.organization.OrganizationWithProjects
+import com.togger.ui.organization.TgIcons
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.synccheck.SyncPendingDot
+import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.task.DataExportFeService
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
-import org.scalajs.dom.{HTMLLIElement, SVGSVGElement}
+import org.scalajs.dom.HTMLLIElement
+import org.scalajs.dom.SVGSVGElement
 
 import java.util.UUID
 
@@ -206,11 +209,6 @@ class Sidebar(
   private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
 
   /** The results modal; an error building it would be lost in the IO that runs it, so it is shown as a toast. */
-  private def showResultsModal(title: String)(content: => HtmlElement): Unit =
-    scala.util.Try(modalFactory.previewModal(content, title)).failed.foreach { error =>
-      dom.console.error(error.toString)
-      toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
-    }
 
   private val exportCheckFlow =
     new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast, () => syncPendingStore.refresh())

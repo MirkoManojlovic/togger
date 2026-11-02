@@ -4,10 +4,15 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.{DateRangeValidation, TgClock, WorkDayCalendar}
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.EditTaskPage
+import com.togger.routes.TgRouter
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
@@ -15,23 +20,27 @@ import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components._
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainTextModalMessage}
-import com.togger.ui.organization.{OrganizationServiceFe, TgIcons}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.ModalStyles
+import com.togger.ui.modal.PlainTextModalMessage
+import com.togger.ui.organization.OrganizationServiceFe
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.quick.QuickDropdown._
 import com.togger.ui.task._
-import com.togger.ui.tasktemplate.{TaskTemplateFeService, TaskTemplatePicker, TaskTemplateSelection}
+import com.togger.ui.task.quick.QuickDropdown._
+import com.togger.ui.tasktemplate.TaskTemplateFeService
+import com.togger.ui.tasktemplate.TaskTemplatePicker
+import com.togger.ui.tasktemplate.TaskTemplateSelection
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** A popup opened by clicking a badge, anchored `left` pixels from the badge row's left edge. */

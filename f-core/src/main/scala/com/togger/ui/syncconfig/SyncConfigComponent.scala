@@ -2,13 +2,18 @@ package com.togger.ui.syncconfig
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.SyncConfigPage
-import com.togger.routes.{FrontendPage, TaskConfigListParams, TgRouter}
+import com.togger.routes.TaskConfigListParams
+import com.togger.routes.TgRouter
+import com.togger.ui.dataexportconfig.DataExportConfigFeService
+import com.togger.ui.dataexportconfig.ShowAllDataExportConfigsComponent
+import com.togger.ui.dataimportconfig.DataImportConfigFeService
+import com.togger.ui.dataimportconfig.ShowAllDataImportConfigsComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{DataExportFeService, TgDateFormater}
-import com.togger.ui.dataexportconfig.{ShowAllDataExportConfigsComponent, DataExportConfigFeService}
-import com.togger.ui.dataimportconfig.{ShowAllDataImportConfigsComponent, DataImportConfigFeService}
+import com.togger.ui.task.DataExportFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
 import java.util.UUID

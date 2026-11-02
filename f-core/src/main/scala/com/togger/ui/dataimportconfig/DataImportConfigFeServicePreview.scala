@@ -1,10 +1,13 @@
 package com.togger.ui.dataimportconfig
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.dataimportconfig.{CreateDataImportConfigReq, DataImportConfigResp, UpdateDataImportConfigReq}
+import com.togger.dto.dataimportconfig.CreateDataImportConfigReq
+import com.togger.dto.dataimportconfig.DataImportConfigResp
+import com.togger.dto.dataimportconfig.UpdateDataImportConfigReq
 import com.togger.preview._
 import com.togger.ui.components.pagination.PaginatedLoader
 

@@ -1,6 +1,7 @@
 package com.togger.preview
 
-import com.togger.demo.{DemoOrganization, DemoProject}
+import com.togger.demo.DemoOrganization
+import com.togger.demo.DemoProject
 
 /** Seeds the organizations, the projects and their members; needs the accounts to be seeded first. */
 class OrganizationsPreviewSeed(

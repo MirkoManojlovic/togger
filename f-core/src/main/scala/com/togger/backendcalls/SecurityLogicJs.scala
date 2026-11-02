@@ -1,8 +1,11 @@
 package com.togger.backendcalls
 
 import cats.effect.IO
-import com.togger.auth.{AuthAccount, SecurityLogic}
-import com.togger.common.{TgIds, TgJsonFailure, TgJsonSuccess}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecurityLogic
+import com.togger.common.TgIds
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.logging.TgLogging
 
 class SecurityLogicJs extends SecurityLogic with TgLogging {

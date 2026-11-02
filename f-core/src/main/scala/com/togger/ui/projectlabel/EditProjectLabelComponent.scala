@@ -1,17 +1,20 @@
 package com.togger.ui.projectlabel
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
-import com.raquo.laminar.api.L._
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.util.UUID

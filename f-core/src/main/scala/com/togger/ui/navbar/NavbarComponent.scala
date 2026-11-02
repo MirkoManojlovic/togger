@@ -3,11 +3,13 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.auth.AuthAccountFe
 import com.togger.preview.PreviewConfig
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
-import com.togger.ui.organization.{OrganizationWithProjects, TgIcons}
+import com.togger.ui.organization.OrganizationWithProjects
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.synccheck.SyncPendingStore
 import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom

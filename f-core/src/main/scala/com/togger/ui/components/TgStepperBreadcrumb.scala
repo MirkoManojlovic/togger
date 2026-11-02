@@ -1,9 +1,9 @@
 package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
+import com.raquo.laminar.tags.HtmlTag
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom.HTMLElement
-import com.raquo.laminar.tags.HtmlTag
 
 /** One step. The first word of `label` is always shown, the rest only from the `sm` breakpoint up. A `done` step is
   * green.

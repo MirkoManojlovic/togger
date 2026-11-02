@@ -1,9 +1,11 @@
 package com.togger.ui.auth
 
-import com.togger.ui.auth.TgCheckboxType.{RegularCheckbox, Switch}
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.raquo.laminar.api.L._
-import enumeratum.{EnumEntry, _}
+import com.togger.ui.auth.TgCheckboxType.RegularCheckbox
+import com.togger.ui.auth.TgCheckboxType.Switch
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import enumeratum.EnumEntry
+import enumeratum._
 
 sealed trait TgCheckboxType extends EnumEntry
 

@@ -5,7 +5,8 @@ import com.togger.auth.AccountInfoError.EmailAlreadyInUse
 import com.togger.auth.AccountInfoValidation
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.login.AccountInfoDto
-import com.togger.preview.{AccountsPreviewData, PreviewResponses}
+import com.togger.preview.AccountsPreviewData
+import com.togger.preview.PreviewResponses
 
 import java.util.UUID
 
