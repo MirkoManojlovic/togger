@@ -110,6 +110,13 @@ npm run build-preview   # static preview build
 - Export/import actions answer "Export/import is not available in frontend preview mode"; their pending checks report
   nothing pending. Settings menu > "Reset preview data" re-seeds everything.
 
+## Git hooks
+
+`.githooks/` holds the git hooks (enable once with `git config core.hooksPath .githooks`). `pre-commit` rejects staged
+personal paths. `pre-push` runs what the PR checks run (tpolecat CI mode compile, `scalafmtCheckAll`, `scalafix --check`,
+all tests) against the running sbt server; it needs Postgres and a `togger-test` schema that is up to date. Skip it with
+`SKIP_PRE_PUSH=1 git push`.
+
 ## Rules for using sbt
 
 - The user always has a manually started `sbt ~frontendMain/fastLinkJS` process running. Do not start another sbt
