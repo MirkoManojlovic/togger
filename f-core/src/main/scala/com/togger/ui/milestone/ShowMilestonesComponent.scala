@@ -90,7 +90,7 @@ class ShowMilestonesComponent(
     )
   private val statusSelectionVar = Var(Set.empty[String])
   private val statusFilter =
-    new TableFilterComponent(Val(statusFilterItems), label = "Filter by status", selectedIdsVar = statusSelectionVar)
+    new TableFilterComponent(Val(statusFilterItems), label = "Status", selectedIdsVar = statusSelectionVar)
 
   // The ticks the URL itself implies (the widget seeds them when it is built) are not a change.
   private val navigateOnStatusChange: Modifier[HtmlElement] =
