@@ -114,7 +114,7 @@ class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelper
         res <- responseDtos
           .map(sessionToken => accountService.findByToken(sessionToken.sessionId))
           .sequence
-          .handleError(e => Seq.empty)
+          .handleError(_ => Seq.empty)
       } yield {
         logger.info(success.toString)
         logger.info(s"Result is $res")

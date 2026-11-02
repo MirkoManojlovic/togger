@@ -182,7 +182,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
         countBefore should not be countAfter
       }
 
-      res.transact(transactor).unsafeToFuture
+      res.transact(transactor).unsafeToFuture()
     }
 
     "should delete all sessions - SOFT DELETE" in { transactor =>
@@ -213,7 +213,7 @@ class AccountSessionRepoTest extends AccountTgDbSpec with TimeHelpers with DateH
         countBefore should not be countAfter
       }
 
-      res.transact(transactor).unsafeToFuture
+      res.transact(transactor).unsafeToFuture()
     }
 
     "should find session by token" in { transactor =>

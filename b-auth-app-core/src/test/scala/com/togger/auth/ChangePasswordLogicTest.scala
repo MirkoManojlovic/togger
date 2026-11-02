@@ -112,7 +112,7 @@ class ChangePasswordLogicTest
       (accountRepo.findById _).expects(accountId).returns(account.pure[ConnectionIO])
       val updatedCustomerAccount = account.copy(password = HashedPasswordImpl.fromPassword(anotherValidPassword))
       (passwordUpdate.run _).expects(account, anotherValidPassword).returns(updatedCustomerAccount)
-      (tgClock.currentInstant _).expects().returns(nowAsInstant).twice()
+      (() => tgClock.currentInstant).expects().returns(nowAsInstant).twice()
       (accountRepo.update _)
         .expects(updatedCustomerAccount, tgClock.currentInstant)
         .returns(updatedCustomerAccount.pure[ConnectionIO])
