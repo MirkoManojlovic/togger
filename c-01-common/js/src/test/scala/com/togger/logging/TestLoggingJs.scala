@@ -1,10 +1,12 @@
 package com.togger.logging
 
-import com.togger.logging.TgLoggingExtra
 import com.togger.logging.TestLoggingJs.separatorLength
+import com.togger.logging.TgLoggingExtra
+import scribe.Level
+import scribe.Logger
+import scribe.Logging
 import scribe.format.Formatter
 import scribe.writer.ConsoleWriter
-import scribe.{Level, Logger, Logging}
 
 trait TestLoggingJs extends Logging with TgLoggingExtra {
   import TestLoggingJs.testLogger

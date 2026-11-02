@@ -1,11 +1,13 @@
 package com.togger.suites
 
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.togger.suites.TestNameHelper
 import com.togger.logging.TestLoggingJs
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
+import com.togger.suites.TestNameHelper
+import org.scalamock.scalatest.AsyncMockFactory
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.{AnyWordSpec, AsyncWordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
 class TgAsyncWordSpecJs extends AsyncWordSpec with AsyncIOSpec with Matchers with TestLoggingJs with TestNameHelper
 
