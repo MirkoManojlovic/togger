@@ -77,7 +77,8 @@ class MilestoneStepTasksComponent(
 
   private val lookups = new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
 
-  private val paramsVar = Var(TaskListParams.default)
+  // The list starts with the tasks of this milestone; the milestone filter can be widened to the other tasks.
+  private val paramsVar = Var(TaskListParams.default.copy(milestones = Some(Set(milestoneId.toString))))
 
   private def showList(newParams: TaskListParams): Unit = {
     paramsVar.set(newParams)
@@ -89,6 +90,11 @@ class MilestoneStepTasksComponent(
   /** The tasks of the project as the backend has them: where each is and its dates when last saved. */
   private val projectTasksVar = Var(Seq.empty[FindTaskRespFull])
 
+  /** The project tasks as last loaded from the backend; staging starts again from them, which an edit of one task
+    * must not do, as it would drop the unsaved plan.
+    */
+  private val loadedTasksVar = Var(Seq.empty[FindTaskRespFull])
+
   /** Every step of the project, to name the step a task is in. */
   private val allStepsVar = Var(Seq.empty[FindMilestoneStepResp])
 
@@ -99,7 +105,12 @@ class MilestoneStepTasksComponent(
   private val workDays: Signal[Set[DayOfWeek]] = lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)).distinct
 
   private def loadProjectTasks(): IO[Unit] =
-    taskService.findAllByProjectId(projectId).map(_.foreach(success => projectTasksVar.set(success.body.get)))
+    taskService
+      .findAllByProjectId(projectId)
+      .map(_.foreach { success =>
+        projectTasksVar.set(success.body.get)
+        loadedTasksVar.set(success.body.get)
+      })
 
   private def load(): IO[Unit] =
     for {
@@ -116,7 +127,7 @@ class MilestoneStepTasksComponent(
     steps.foreach(step => stagingStore.set(step.id, tasks.filter(_.milestoneStepId.contains(step.id))))
 
   private val stageSavedTasksOnLoad: Modifier[HtmlElement] =
-    planSteps.combineWith(projectTasksVar.signal) --> Observer[(Seq[PlanStep], Seq[FindTaskRespFull])] {
+    planSteps.combineWith(loadedTasksVar.signal) --> Observer[(Seq[PlanStep], Seq[FindTaskRespFull])] {
       case (steps, tasks) => stageSavedTasks(steps, tasks)
     }
 
@@ -138,14 +149,22 @@ class MilestoneStepTasksComponent(
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
     else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
-  /** The step the task is saved in, not editable here: the step is chosen by staging the task. */
-  private def stepBadge(dto: FindTaskRespFull): BadgeSpec =
+  /** The milestone of the step the task is saved in; the milestone of the task itself when its step is not known. */
+  private def milestoneBadge(dto: FindTaskRespFull): BadgeSpec =
     dto.milestoneStepId
-      .flatMap(id => MilestoneStepLabels.labelOf(id, allStepsVar.now(), lookups.milestonesVar.now()))
-      .fold(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray))(label => BadgeSpec(label, TgBadgeColor.Alternative))
+      .flatMap(id => MilestoneStepLabels.milestoneOf(id, allStepsVar.now(), lookups.milestonesVar.now()))
+      .orElse(dto.milestone.flatMap(id => lookups.milestonesVar.now().find(_.id == id)))
+      .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+      .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
+
+  private def stepBadge(dto: FindTaskRespFull): BadgeSpec =
+    MilestoneStepBadges
+      .of(dto.milestoneStepId, allStepsVar.now(), editable = true)
+      .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep)))
 
   private def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
+      milestoneBadge(dto),
       stepBadge(dto),
       BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor, Some(BulkEditKind.Priority)),
       BadgeSpec(dto.taskStatus.badgeText, dto.taskStatus.badgeColor, Some(BulkEditKind.Status)),
@@ -231,17 +250,33 @@ class MilestoneStepTasksComponent(
           case Right(_)    => IO.unit
         }
       spinnerService
-        .runWithSpinner(save >> browser.loadPage() >> refreshStaged())
+        .runWithSpinner(save >> browser.loadPage() >> refreshStaged(updated.id))
         .guarantee(IO(savingVar.update(_ - updated.id)))
         .unsafeRunAndForget()
     }
   }
 
-  private def refreshStaged(): IO[Unit] =
+  /** Swaps the staged tasks for their saved state, and, when the edit moved the edited task to another step, puts it
+    * in the step it is now saved in: in none when it left the milestone. The saved state the changes are counted from
+    * follows, without the unsaved plan being dropped.
+    */
+  private def refreshStaged(editedId: UUID): IO[Unit] =
     taskService
       .findAllByProjectId(projectId)
       .flatMap(projectTasks =>
-        IO(projectTasks.foreach(success => planStepsVar.now().foreach(step => stagingStore.refresh(step.id, success.body.get))))
+        IO(projectTasks.foreach { success =>
+          val current = success.body.get
+          val stepBefore = projectTasksVar.now().find(_.id == editedId).flatMap(_.milestoneStepId)
+          projectTasksVar.set(current)
+          val steps = planStepsVar.now()
+          steps.foreach(step => stagingStore.refresh(step.id, current))
+          current.find(_.id == editedId).filter(_.milestoneStepId != stepBefore).foreach { edited =>
+            steps.foreach(step => stagingStore.unstage(step.id, editedId))
+            steps.find(step => edited.milestoneStepId.contains(step.id)).foreach { step =>
+              stagingStore.set(step.id, stagingStore.now(step.id) :+ edited)
+            }
+          }
+        })
       )
 
   // ---- planned tasks ----
@@ -446,7 +481,7 @@ class MilestoneStepTasksComponent(
                 TgCard
                   .headerNoFooter(
                     header = TgCard.CardHeader.plainText("Planned tasks", TgCard.CardHeaderSize.H5),
-                    body = TgCard.HtmlCardContent(div(browser.searchBar, taskTable, browser.pagination))
+                    body = TgCard.HtmlCardContent(div(browser.searchBar, taskTable, browser.pagination(alwaysShowSize = true)))
                   )
                   .element,
                 div(children <-- planSteps.map(_.map(stagedTasksOf)))

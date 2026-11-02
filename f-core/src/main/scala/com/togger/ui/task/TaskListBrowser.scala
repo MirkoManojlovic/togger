@@ -247,9 +247,12 @@ class TaskListBrowser(
     showArchivedVar.signal.changes --> Observer[Boolean](_ => loadPage().unsafeRunAndForget())
   )
 
-  def pagination =
+  def pagination: HtmlElement = pagination(alwaysShowSize = false)
+
+  def pagination(alwaysShowSize: Boolean): HtmlElement =
     TgPaginationComponent(
       paginationVar.signal,
-      (newPage, newSize) => navigate(params.atPage(newPage, newSize))
+      (newPage, newSize) => navigate(params.atPage(newPage, newSize)),
+      alwaysShowSize
     )
 }
