@@ -190,7 +190,7 @@ class MilestoneHistoryComponent(
         )
     )
 
-  private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Filter by status")
+  private val taskStatusFilter = new TableFilterComponent(taskStatusItemsSignal, label = "Status")
 
   private val UnassignedMilestoneId = "unassigned"
 
@@ -208,7 +208,7 @@ class MilestoneHistoryComponent(
         )
     }
 
-  private val milestoneFilter = new TableFilterComponent(milestoneItemsSignal, label = "Filter by milestone")
+  private val milestoneFilter = new TableFilterComponent(milestoneItemsSignal, label = "Milestone")
 
   private val milestoneStatusItemsSignal: Signal[Seq[MultiSelectItem]] = Val(
     MilestoneStatus.values
@@ -223,7 +223,7 @@ class MilestoneHistoryComponent(
   )
 
   private val milestoneStatusFilter =
-    new TableFilterComponent(milestoneStatusItemsSignal, label = "Filter by milestone status")
+    new TableFilterComponent(milestoneStatusItemsSignal, label = "Milestone status")
 
   private val searchTermVar = Var(params.search)
   private val searchBox = TableSearchComponent(

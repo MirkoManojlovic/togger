@@ -22,7 +22,7 @@ class TableFilterComponent(
 ) {
 
   private val filterButtonCls =
-    "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-3 py-2 focus:outline-none"
+    "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-2 py-1 focus:outline-none"
 
   private val isOpenVar = Var(false)
   private val seededIdsVar = Var(Set.empty[String])
@@ -70,7 +70,6 @@ class TableFilterComponent(
   private val trigger: HtmlElement =
     button(
       `type`("button"),
-      TgIcons.filterIcon(className = "w-4 h-4 ms-1.5 inline mr-2"),
       cls(filterButtonCls),
       onClick.mapToUnit --> (_ => isOpenVar.update(isOpened => !isOpened)),
       span(label),
