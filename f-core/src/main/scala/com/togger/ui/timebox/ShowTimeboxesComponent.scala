@@ -20,12 +20,12 @@ import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
-import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 

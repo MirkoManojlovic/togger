@@ -1,7 +1,5 @@
 package com.togger.ui.timebox
 
-import com.togger.ui.teamdaily.TeamDailyTaskBadges
-import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
@@ -36,9 +34,11 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task._
 import com.togger.ui.task.bulk._
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -239,7 +239,8 @@ class TimeboxFormComponent(
     )
   }
 
-  private val startDateInput = dateField(DateEmoji.Start, _.startDate, (form, value) => form.copy(startDate = value), None)
+  private val startDateInput =
+    dateField(DateEmoji.Start, _.startDate, (form, value) => form.copy(startDate = value), None)
 
   private val endDateInput = dateField(
     DateEmoji.End,
@@ -353,7 +354,11 @@ class TimeboxFormComponent(
       ),
       BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
       TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, lookups.projectVar.now().workDays.map(DayOfWeek.of)),
-      TeamDailyTaskBadges.daysLeft(dto.dueDate, tgClock.currentDate(), lookups.projectVar.now().workDays.map(DayOfWeek.of))
+      TeamDailyTaskBadges.daysLeft(
+        dto.dueDate,
+        tgClock.currentDate(),
+        lookups.projectVar.now().workDays.map(DayOfWeek.of)
+      )
     )
 
   private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec], origin: String = "") =

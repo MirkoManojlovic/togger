@@ -1,9 +1,7 @@
 package com.togger.ui.task
 
-import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
@@ -13,6 +11,7 @@ import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.bulk._
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
 import java.time.DayOfWeek
 import java.time.LocalDate

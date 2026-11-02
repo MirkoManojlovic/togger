@@ -1,7 +1,5 @@
 package com.togger.ui.task.bulk
 
-import com.togger.ui.teamdaily.TeamDailyTaskBadges
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
@@ -11,8 +9,10 @@ import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** @param kind
   *   the attribute this badge shows, so clicking it can edit it; none for a badge that is only a label

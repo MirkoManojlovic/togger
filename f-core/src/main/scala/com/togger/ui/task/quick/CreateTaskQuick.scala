@@ -1,7 +1,5 @@
 package com.togger.ui.task.quick
 
-import com.togger.ui.teamdaily.TeamDailyTaskBadges
-import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
@@ -32,11 +30,13 @@ import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task._
 import com.togger.ui.task.quick.QuickDropdown._
 import com.togger.ui.tasktemplate.TaskTemplateFeService
 import com.togger.ui.tasktemplate.TaskTemplatePicker
 import com.togger.ui.tasktemplate.TaskTemplateSelection
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -588,7 +588,8 @@ class CreateTaskQuick(
     }
 
   private def durationBadge(current: QuickState): HtmlElement = {
-    val spec = TeamDailyTaskBadges.duration(current.effectiveStartDate, current.effectiveDueDate, current.effectiveWorkDays)
+    val spec =
+      TeamDailyTaskBadges.duration(current.effectiveStartDate, current.effectiveDueDate, current.effectiveWorkDays)
     TgBadge(text = spec.text, color = spec.color, bordered = true).element
   }
 

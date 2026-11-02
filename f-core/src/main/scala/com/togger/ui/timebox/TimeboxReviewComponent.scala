@@ -1,6 +1,5 @@
 package com.togger.ui.timebox
 
-import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
@@ -27,6 +26,7 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskFeService
@@ -141,7 +141,8 @@ class TimeboxReviewComponent(
             div(
               p(
                 cls("mb-4 font-medium text-heading"),
-                s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(version.endDate)}"
+                s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater
+                    .asAmericanDate(version.endDate)}"
               ),
               version.description
                 .map[HtmlElement](tgMarkdown.toLaminarDiv)

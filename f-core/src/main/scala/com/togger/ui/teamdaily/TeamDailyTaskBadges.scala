@@ -1,12 +1,13 @@
 package com.togger.ui.teamdaily
 
-import com.togger.ui.task.DateEmoji
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.task.bulk.{BadgeSpec, BulkEditKind}
+import com.togger.ui.task.DateEmoji
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkEditKind
 
 import java.time.DayOfWeek
 import java.time.LocalDate

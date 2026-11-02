@@ -5,7 +5,6 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._

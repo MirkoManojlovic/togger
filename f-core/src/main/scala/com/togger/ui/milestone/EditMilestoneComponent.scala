@@ -23,9 +23,9 @@ import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.modal.ModalStyles
-import com.togger.ui.task.DateEmoji
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro

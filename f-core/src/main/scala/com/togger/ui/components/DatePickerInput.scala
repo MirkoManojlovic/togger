@@ -14,15 +14,15 @@ object DatePickerInput {
   private val monthNames = Seq("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
   /** Parses the `MMM d, yyyy` shape `TgDateFormater.asAmericanDate` produces (e.g. "Nov 2, 2026"), the `yyyy-MM-dd`
-    * shape, or a bare 1-2 digit day (e.g. "12"), which is taken as a day in `today`'s month/year. Anything else
-    * parses to `None` rather than throwing.
+    * shape, or a bare 1-2 digit day (e.g. "12"), which is taken as a day in `today`'s month/year. Anything else parses
+    * to `None` rather than throwing.
     */
   def parse(raw: String, today: LocalDate): Option[LocalDate] = {
     val trimmed = raw.trim
     trimmed match {
-      case dayOnly()                    => Try(today.withDayOfMonth(trimmed.toInt)).toOption
+      case dayOnly()                      => Try(today.withDayOfMonth(trimmed.toInt)).toOption
       case monthDayYear(month, day, year) => parseMonthName(month, day.toInt, year.toInt)
-      case _                            => Try(LocalDate.parse(trimmed)).toOption
+      case _                              => Try(LocalDate.parse(trimmed)).toOption
     }
   }
 

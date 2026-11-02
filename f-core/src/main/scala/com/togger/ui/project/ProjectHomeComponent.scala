@@ -1,6 +1,5 @@
 package com.togger.ui.project
 
-import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
@@ -35,6 +34,7 @@ import com.togger.ui.milestone.MilestoneTaskRows
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TaskPreviewComponent
 import com.togger.ui.task.TaskStatusFeService
@@ -219,7 +219,8 @@ class ProjectHomeComponent(
       div(
         cls("mb-3"),
         pageLink(
-          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(version.endDate)}",
+          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater
+              .asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
         version.description

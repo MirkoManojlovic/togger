@@ -3,7 +3,8 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
-import com.togger.ui.task.{DateEmoji, TgDateFormater}
+import com.togger.ui.task.DateEmoji
+import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate
 

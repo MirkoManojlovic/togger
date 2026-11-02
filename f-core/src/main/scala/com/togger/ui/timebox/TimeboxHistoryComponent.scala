@@ -11,9 +11,9 @@ import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
-import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
 import java.util.UUID
@@ -44,7 +44,8 @@ class TimeboxHistoryComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText(
-          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(dto.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(dto.endDate)}" +
+          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(dto.startDate)} - ${DateEmoji.End} ${tgDateFormater
+              .asAmericanDate(dto.endDate)}" +
             s" (saved ${dto.createdAt}${if (isLatest) ", latest" else ""})",
           TgCard.CardHeaderSize.H4
         ),

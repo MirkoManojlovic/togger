@@ -3,10 +3,11 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.task.TaskPriority
-import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.task.{DateEmoji, TgDateFormater}
+import com.togger.ui.task.DateEmoji
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk._
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
 import java.time.DayOfWeek
 import java.time.LocalDate

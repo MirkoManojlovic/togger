@@ -1,6 +1,5 @@
 package com.togger.ui.milestone
 
-import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.syntax.parallel._
 import com.raquo.laminar.api.L._
@@ -22,6 +21,7 @@ import com.togger.ui.components.TableSearchComponent
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgTooltip
 import com.togger.ui.project.ProjectService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom

@@ -1,6 +1,5 @@
 package com.togger.ui.milestone
 
-import com.togger.ui.task.DateEmoji
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
@@ -26,6 +25,7 @@ import com.togger.ui.components.TgTooltip
 import com.togger.ui.project.ProjectInfoCard
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
