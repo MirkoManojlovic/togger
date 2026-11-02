@@ -409,6 +409,7 @@ class BulkAddTasks(
             popups,
             selectCheckbox(key),
             rowReorder.controls(key),
+            () => tgClock.currentDate(),
             rowReorder.dragModifiers(key) ++ (selectionModifier(key) +: selectOnClick(key))
           )
         }

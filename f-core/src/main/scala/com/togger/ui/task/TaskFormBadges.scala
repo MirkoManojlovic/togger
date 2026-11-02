@@ -1,5 +1,6 @@
 package com.togger.ui.task
 
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.WorkDayCalendar
@@ -90,20 +91,15 @@ class TaskFormBadges(
         Some(BulkEditKind.StartDate)
       ),
       BadgeSpec(tgDateFormater.asDueDate(task.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate))
-    ) ++ task.endDate.fold(Seq(daysLeft(task, lookups)))(date => Seq(endBadge(date)))
+    ) ++ Seq(TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays)) ++
+      task.endDate.fold(Seq(daysLeft(task, lookups)))(date => Seq(endBadge(date)))
 
   /** The end date is set by closing the task, so its badge has no popup of its own. */
   private def endBadge(date: LocalDate): BadgeSpec =
     BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Success)
 
-  private def daysLeft(task: BulkTask, lookups: BulkLookups): BadgeSpec = {
-    val today = tgClock.currentDate()
-    if (task.dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
-    else {
-      val left = WorkDayCalendar.countWorkDays(today, task.dueDate, lookups.workDays)
-      BadgeSpec(s"$left days left", TgBadgeColor.Gray)
-    }
-  }
+  private def daysLeft(task: BulkTask, lookups: BulkLookups): BadgeSpec =
+    TeamDailyTaskBadges.daysLeft(task.dueDate, tgClock.currentDate(), lookups.workDays)
 
   private def row(specs: Seq[BadgeSpec], extraCls: String = ""): HtmlElement =
     div(cls("flex flex-wrap items-center gap-1.5", extraCls), BulkTaskCard.row(initial.key, specs, popups))

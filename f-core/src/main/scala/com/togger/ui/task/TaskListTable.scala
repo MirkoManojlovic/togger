@@ -42,6 +42,7 @@ import com.togger.ui.task.bulk.BulkSelection
 import com.togger.ui.task.bulk.BulkTaskBadges
 import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.task.bulk.BulkTaskEditor
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
@@ -131,18 +132,13 @@ class TaskListTable(
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
         ),
+        TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, projectVar.now().workDays.map(DayOfWeek.of)),
         daysLeft(dto)
       ) ++ dto.endDate.map(date => BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
   }
 
-  private def daysLeft(dto: FindTaskRespFull): BadgeSpec = {
-    val today = tgClock.currentDate()
-    if (dto.dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
-    else {
-      val left = WorkDayCalendar.countWorkDays(today, dto.dueDate, projectVar.now().workDays.map(DayOfWeek.of))
-      BadgeSpec(s"$left days left", TgBadgeColor.Gray)
-    }
-  }
+  private def daysLeft(dto: FindTaskRespFull): BadgeSpec =
+    TeamDailyTaskBadges.daysLeft(dto.dueDate, tgClock.currentDate(), projectVar.now().workDays.map(DayOfWeek.of))
 
   private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec]) =
     div(

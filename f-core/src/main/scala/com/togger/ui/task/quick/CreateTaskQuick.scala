@@ -1,5 +1,6 @@
 package com.togger.ui.task.quick
 
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
@@ -581,13 +582,21 @@ class CreateTaskQuick(
           current.dueDate.map(_ => () => state.update(_.copy(dueDate = None))),
           current
         ),
-        TgBadge(
-          text = if (current.workDays == 1) "1 day left" else s"${current.workDays} days left",
-          color = TgBadgeColor.Gray,
-          bordered = true
-        ).element
+        durationBadge(current),
+        daysLeftBadge(current)
       )
     }
+
+  private def durationBadge(current: QuickState): HtmlElement = {
+    val spec = TeamDailyTaskBadges.duration(current.effectiveStartDate, current.effectiveDueDate, current.effectiveWorkDays)
+    TgBadge(text = spec.text, color = spec.color, bordered = true).element
+  }
+
+  private def daysLeftBadge(current: QuickState): HtmlElement = {
+    val spec =
+      TeamDailyTaskBadges.daysLeft(current.effectiveDueDate, current.today, current.effectiveWorkDays)
+    TgBadge(text = spec.text, color = spec.color, bordered = true).element
+  }
 
   private def dateBadge(
     dropdown: QuickDropdown,

@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
@@ -323,12 +324,6 @@ class TimeboxFormComponent(
     }
   )
 
-  private def durationLabel(dto: FindTaskRespFull): String = {
-    val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
-    val days = WorkDayCalendar.countWorkDays(dto.startDate, dto.dueDate, workDays)
-    if (days == 1) "1 day" else s"$days days"
-  }
-
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
     else
@@ -357,7 +352,8 @@ class TimeboxFormComponent(
         Some(BulkEditKind.StartDate)
       ),
       BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
-      BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
+      TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, lookups.projectVar.now().workDays.map(DayOfWeek.of)),
+      TeamDailyTaskBadges.daysLeft(dto.dueDate, tgClock.currentDate(), lookups.projectVar.now().workDays.map(DayOfWeek.of))
     )
 
   private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec], origin: String = "") =

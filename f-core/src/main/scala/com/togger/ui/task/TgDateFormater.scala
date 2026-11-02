@@ -49,6 +49,8 @@ object DateEmoji {
   val Start = "🗓️"
   val Due = "🎯"
   val End = "✅"
+  val Duration = "⏱️"
+  val DaysLeft = "⏳"
 }
 
 sealed abstract class TgDateFormat(val formater: DateTimeFormatter) extends EnumEntry

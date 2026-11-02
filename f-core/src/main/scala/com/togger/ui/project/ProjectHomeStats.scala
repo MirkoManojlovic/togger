@@ -87,7 +87,9 @@ object ProjectHomeStats {
       Seq(BadgeSpec(task.priority.shortCode, task.priority.badgeColor)) ++
       Option.when(showAssignee)(task.assignedTo).flatten.map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray)) ++
       Seq(
+        BadgeSpec(s"${DateEmoji.Start} ${formatDate(task.startDate)}", TgBadgeColor.Gray),
         BadgeSpec(s"${DateEmoji.Due} ${formatDate(task.dueDate)}", TgBadgeColor.Gray),
+        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays),
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
 

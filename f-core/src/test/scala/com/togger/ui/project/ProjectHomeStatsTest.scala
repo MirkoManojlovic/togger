@@ -134,7 +134,13 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
           _.toString
         )
         .map(_.text) shouldBe
-        Seq(TaskPriority.Medium.shortCode, s"🎯 $friday", "5 days left")
+        Seq(
+          TaskPriority.Medium.shortCode,
+          s"🗓️ ${task("t", status("Testing")).startDate}",
+          s"🎯 $friday",
+          "⏱️ 5 days",
+          "⏳ 5 days left"
+        )
     }
 
     "add the assignee only when asked to" in {
