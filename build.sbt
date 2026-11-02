@@ -12,6 +12,8 @@ ThisBuild / organizationName := "Togger"
 // nothing is reused. The PR checks pin the version to keep their sbt cache useful.
 ThisBuild / version ~= (gitVersion => sys.env.getOrElse("TOGGER_FIXED_VERSION", gitVersion))
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
+// scalafix semantic rules (RemoveUnused, ...) read the semanticdb that scalac emits
+ThisBuild / semanticdbEnabled := true
 
 Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ ScalacOptions.fatalWarningOptions
 
