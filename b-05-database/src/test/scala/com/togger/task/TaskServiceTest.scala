@@ -4,9 +4,11 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{TgIds, TimeHelpers}
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo}
+import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.LogEntryVersionRepo
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._

@@ -5,9 +5,11 @@ import cats.implicits._
 import com.togger.account.AccountRepoImpl.ACCOUNT_TABLE_FRAG
 import com.togger.account.AccountSessionRepo.ACCOUNT_SESSION_TABLE_FRAG
 import com.togger.account.AccountTypeRepo.ACCOUNT_TYPE_TABLE_FRAG
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.organization.OrganizationAccountRepoImpl
 import com.togger.project.ProjectAccountRepoImpl
 import com.togger.util.SplunkMacro.sp

@@ -1,16 +1,18 @@
 package com.togger.controllers.tgprompttemplate
 
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
 import com.togger.common.TgError._
-import com.togger.common.{PaginatedResponse, TgClock, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.tgprompttemplate.TgPromptTemplateDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.{FindTgPromptTemplateResp, TgPromptTemplateVersionDto}
-import com.togger.tgprompttemplate.{
-  TgPromptTemplate,
-  TgPromptTemplateEndpoints,
-  TgPromptTemplateService,
-  TgPromptTemplateVersion
-}
+import com.togger.controllers.tgprompttemplate.TgPromptTemplateDtoMapper.toDto
+import com.togger.controllers.tgprompttemplate.TgPromptTemplateDtoMapper.toVersionDto
+import com.togger.dto.FindTgPromptTemplateResp
+import com.togger.dto.TgPromptTemplateVersionDto
+import com.togger.tgprompttemplate.TgPromptTemplate
+import com.togger.tgprompttemplate.TgPromptTemplateEndpoints
+import com.togger.tgprompttemplate.TgPromptTemplateService
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
 
 import java.util.UUID
 

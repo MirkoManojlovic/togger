@@ -5,7 +5,8 @@ import cats.effect.IO
 import cats.syntax.either._
 import com.togger.ai._
 import com.togger.common.TgError
-import com.togger.logentry.{LogEntryRepo, LogEntryWithOneVersion}
+import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.LogEntryWithOneVersion
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneAiSummaryError._
 import com.togger.tgprompttemplate.TgPromptTemplateService
@@ -15,7 +16,8 @@ import io.circe.Printer
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class MilestoneAiSummaryCommand(

@@ -1,7 +1,6 @@
 package com.togger.account
 
 import cats.effect.IO
-import cats.implicits._
 import doobie.Transactor
 import doobie.implicits._
 

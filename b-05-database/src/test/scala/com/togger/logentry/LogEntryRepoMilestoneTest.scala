@@ -2,15 +2,22 @@ package com.togger.logentry
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
-import com.togger.milestone.{Milestone, MilestoneRepoImpl}
-import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.task.{Task, TaskPriority, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneRepoImpl
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
+import com.togger.task.Task
+import com.togger.task.TaskPriority
+import com.togger.task.TaskRepoImpl
+import com.togger.task.TaskVersion
+import com.togger.task.TaskVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class LogEntryRepoMilestoneTest

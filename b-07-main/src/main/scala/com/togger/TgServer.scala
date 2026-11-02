@@ -1,88 +1,104 @@
 package com.togger
-import cats.effect.{IO, Resource}
-import com.togger.ai.{TgAiClient, TgAiModelEndpoints, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
-import com.togger.account.{
-  AccountEndpoints,
-  AccountManagementRepoImpl,
-  AccountManagementService,
-  AccountNameLookup,
-  AccountServiceCore,
-  AccountTypeRepo
-}
-import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
-import com.togger.controllers.account.{AccountController, AccountManagementController}
-import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
-import com.togger.controllers.contribution.ContributionController
-import com.togger.controllers.logentry.LogEntryController
-import com.togger.controllers.milestone.{
-  MilestoneAiSummaryController,
-  MilestoneAiSummaryStreamEndpoints,
-  MilestoneController,
-  MilestoneDateController,
-  MilestoneSummaryController
-}
-import com.togger.controllers.ai.TgAiModelController
-import com.togger.controllers.tgaiaction.TgAiActionController
-import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
-import com.togger.tgaiaction.{
-  TgAiActionDefaultRepoImpl,
-  TgAiActionEndpointRepoImpl,
-  TgAiActionEndpoints,
-  TgAiActionRepoImpl,
-  TgAiActionService
-}
-import com.togger.controllers.timebox.TimeboxController
-import com.togger.controllers.organization.{OrganizationController, OrganizationService}
-import com.togger.controllers.project.{
-  DefaultTaskLabelService,
-  DefaultTaskTemplateService,
-  DefaultTaskStatusService,
-  ProjectController,
-  ProjectService,
-  DataExportController
-}
+import cats.effect.IO
+import cats.effect.Resource
+import com.togger.account.AccountEndpoints
+import com.togger.account.AccountManagementRepoImpl
+import com.togger.account.AccountManagementService
+import com.togger.account.AccountNameLookup
+import com.togger.account.AccountServiceCore
+import com.togger.account.AccountTypeRepo
+import com.togger.accountmapping.AccountMappingEndpoints
+import com.togger.accountmapping.AccountMappingRepoImpl
+import com.togger.accountmapping.AccountMappingService
+import com.togger.ai.TgAiClient
+import com.togger.ai.TgAiModelEndpoints
+import com.togger.ai.TgAiService
+import com.togger.ai.TgOllama
+import com.togger.ai.TgOpenAiClient
+import com.togger.ai.TgStaticApiKeyProvider
+import com.togger.auth.BaseEndpoint
+import com.togger.auth.SecuredEndpoint
+import com.togger.common.DateRangeValidation
+import com.togger.contribution.ContributionEndpoints
+import com.togger.contribution.ContributionRepoImpl
+import com.togger.contribution.ContributionService
+import com.togger.controllers.account.AccountController
+import com.togger.controllers.account.AccountManagementController
 import com.togger.controllers.accountmapping.AccountMappingController
-import com.togger.controllers.projectmapping.ProjectMappingController
-import com.togger.controllers.task.{
-  LinkController,
-  TaskController,
-  TaskLabelController,
-  TaskStatusController,
-  TaskTemplateController
-}
+import com.togger.controllers.ai.TgAiModelController
+import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.dataexportconfig.DataExportConfigController
 import com.togger.controllers.dataimportconfig.DataImportConfigController
-import com.togger.controllers.projectlabel.{ProjectLabelCategoryController, ProjectLabelController}
-import com.togger.common.DateRangeValidation
+import com.togger.controllers.logentry.LogEntryController
+import com.togger.controllers.milestone.MilestoneAiSummaryController
+import com.togger.controllers.milestone.MilestoneAiSummaryStreamEndpoints
+import com.togger.controllers.milestone.MilestoneController
+import com.togger.controllers.milestone.MilestoneDateController
+import com.togger.controllers.milestone.MilestoneSummaryController
+import com.togger.controllers.organization.OrganizationController
+import com.togger.controllers.organization.OrganizationService
+import com.togger.controllers.project.DataExportController
+import com.togger.controllers.project.DefaultTaskLabelService
+import com.togger.controllers.project.DefaultTaskStatusService
+import com.togger.controllers.project.DefaultTaskTemplateService
+import com.togger.controllers.project.ProjectController
+import com.togger.controllers.project.ProjectService
+import com.togger.controllers.projectlabel.ProjectLabelCategoryController
+import com.togger.controllers.projectlabel.ProjectLabelController
+import com.togger.controllers.projectmapping.ProjectMappingController
+import com.togger.controllers.task.LinkController
+import com.togger.controllers.task.TaskController
+import com.togger.controllers.task.TaskLabelController
+import com.togger.controllers.task.TaskStatusController
+import com.togger.controllers.task.TaskTemplateController
+import com.togger.controllers.tgaiaction.TgAiActionController
+import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
+import com.togger.controllers.timebox.TimeboxController
+import com.togger.dataexportconfig.DataExportConfigEndpoints
+import com.togger.dataexportconfig.DataExportConfigRepoImpl
+import com.togger.dataexportconfig.DataExportConfigService
+import com.togger.dataimportconfig.DataImportConfigEndpoints
+import com.togger.dataimportconfig.DataImportConfigRepoImpl
+import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
-import com.togger.logentry.{LogEntryEndpoints, LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
+import com.togger.logentry.LogEntryEndpoints
+import com.togger.logentry.LogEntryRepoImpl
+import com.togger.logentry.LogEntryService
+import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.milestone._
-import com.togger.timebox._
-import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationEndpoints, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectEndpoints, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
-import com.togger.accountmapping.{AccountMappingEndpoints, AccountMappingRepoImpl, AccountMappingService}
-import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImpl, ProjectMappingService}
+import com.togger.organization.OrganizationAccountRepoImpl
+import com.togger.organization.OrganizationEndpoints
+import com.togger.organization.OrganizationRepoImpl
+import com.togger.project.ProjectAccountRepoImpl
+import com.togger.project.ProjectEndpoints
+import com.togger.project.ProjectLabelAssignmentRepoImpl
+import com.togger.project.ProjectRepoImpl
+import com.togger.projectlabel.ProjectLabelCategoryEndpoints
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelCategoryService
+import com.togger.projectlabel.ProjectLabelEndpoints
+import com.togger.projectlabel.ProjectLabelRepoImpl
+import com.togger.projectlabel.ProjectLabelService
+import com.togger.projectmapping.ProjectMappingEndpoints
+import com.togger.projectmapping.ProjectMappingRepoImpl
+import com.togger.projectmapping.ProjectMappingService
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
-import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
-import com.togger.tgprompttemplate.{
-  TgPromptTemplateEndpoints,
-  TgPromptTemplateRepoImpl,
-  TgPromptTemplateService,
-  TgPromptTemplateVersionRepoImpl
-}
-import com.togger.dataexportconfig.{DataExportConfigEndpoints, DataExportConfigRepoImpl, DataExportConfigService}
-import com.togger.dataimportconfig.{DataImportConfigEndpoints, DataImportConfigRepoImpl, DataImportConfigService}
-import com.togger.projectlabel.{
-  ProjectLabelCategoryEndpoints,
-  ProjectLabelCategoryRepoImpl,
-  ProjectLabelCategoryService,
-  ProjectLabelEndpoints,
-  ProjectLabelRepoImpl,
-  ProjectLabelService
-}
+import com.togger.tasktemplate.TaskTemplateRepoImpl
+import com.togger.tasktemplate.TaskTemplateService
+import com.togger.tasktemplate.TaskTemplateVersionRepoImpl
+import com.togger.tgaiaction.TgAiActionDefaultRepoImpl
+import com.togger.tgaiaction.TgAiActionEndpointRepoImpl
+import com.togger.tgaiaction.TgAiActionEndpoints
+import com.togger.tgaiaction.TgAiActionRepoImpl
+import com.togger.tgaiaction.TgAiActionService
+import com.togger.tgprompttemplate.TgPromptTemplateEndpoints
+import com.togger.tgprompttemplate.TgPromptTemplateRepoImpl
+import com.togger.tgprompttemplate.TgPromptTemplateService
+import com.togger.tgprompttemplate.TgPromptTemplateVersionRepoImpl
+import com.togger.timebox._
 import doobie.Transactor
 import org.http4s.server.Server
 import sttp.capabilities.fs2.Fs2Streams

@@ -1,10 +1,16 @@
 package com.togger.dump
 
-import com.togger.project.{ProjectAccount, ProjectError}
-import com.togger.task.{Link, LinkVersion, TaskLabelAssignment}
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateVersion}
-import com.togger.timebox.{Timebox, TimeboxVersion}
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectError
+import com.togger.task.Link
+import com.togger.task.LinkVersion
+import com.togger.task.TaskLabelAssignment
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateVersion
+import com.togger.tgprompttemplate.TgPromptTemplate
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
+import com.togger.timebox.Timebox
+import com.togger.timebox.TimeboxVersion
 import doobie.implicits._
 import io.circe.generic.auto._
 

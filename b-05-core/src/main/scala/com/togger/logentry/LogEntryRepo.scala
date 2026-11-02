@@ -1,10 +1,12 @@
 package com.togger.logentry
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.dto.LogEntryFilter
 import doobie.ConnectionIO
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 trait LogEntryRepo {

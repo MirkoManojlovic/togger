@@ -1,11 +1,14 @@
 package com.togger.project
 
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

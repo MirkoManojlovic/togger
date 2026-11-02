@@ -2,18 +2,16 @@ package com.togger.contribution
 
 import com.togger.account.Account
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{
-  ContributionsDto,
-  ContributionsFilter,
-  DailyStatusCountDto,
-  MemberContributionDto,
-  MilestoneContributionsDto,
-  StatusCountDto,
-  TaskAttributesDto,
-  TaskLabelCountDto,
-  TaskPriorityCountDto,
-  TaskStatusCountDto
-}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.ContributionsFilter
+import com.togger.dto.DailyStatusCountDto
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.MilestoneContributionsDto
+import com.togger.dto.StatusCountDto
+import com.togger.dto.TaskAttributesDto
+import com.togger.dto.TaskLabelCountDto
+import com.togger.dto.TaskPriorityCountDto
+import com.togger.dto.TaskStatusCountDto
 import com.togger.logentry.LogEntryStatus
 
 import java.time.DayOfWeek

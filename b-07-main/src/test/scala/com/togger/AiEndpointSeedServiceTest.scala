@@ -1,6 +1,8 @@
 package com.togger
 
-import com.togger.ai.{AiEndpointRepoImpl, AiEndpointRow, TgAiEndpoints}
+import com.togger.ai.AiEndpointRepoImpl
+import com.togger.ai.AiEndpointRow
+import com.togger.ai.TgAiEndpoints
 import com.togger.common.BusinessTgDbSpec
 import doobie.implicits._
 

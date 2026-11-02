@@ -1,8 +1,9 @@
 package com.togger.controllers.common
 
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
 import com.togger.common.TgError._
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{DbPageRequest, PageRequest}
 
 object PageRequestValidation {
 

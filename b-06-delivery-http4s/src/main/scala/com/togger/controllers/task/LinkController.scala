@@ -4,7 +4,8 @@ import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.controllers.task.LinkDtoMapper.toVersionDto
 import com.togger.dto.LinkVersionDto
-import com.togger.task.{LinkEndpoints, LinkService}
+import com.togger.task.LinkEndpoints
+import com.togger.task.LinkService
 
 class LinkController(
   linkEndpoints: LinkEndpoints,

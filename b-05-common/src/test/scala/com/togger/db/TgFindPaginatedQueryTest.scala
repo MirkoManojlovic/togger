@@ -1,9 +1,11 @@
 package com.togger.db
 
 import cats.effect.unsafe.implicits.global
-import com.togger.common.{DbPageRequest, PageRequest, PaginatedResponse}
-import doobie.free.connection.ConnectionIO
 import cats.implicits._
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

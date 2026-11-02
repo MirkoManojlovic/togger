@@ -1,29 +1,45 @@
 package com.togger.maintenance
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import cats.implicits._
 import com.togger.AiEndpointSeedService
-import com.togger.account.{Account, AccountType, AdminCheck, HashedPassword, HashedPasswordImpl}
-import com.togger.common.{Password, TgIds}
-import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigRepoImpl}
-import com.togger.dataimportconfig.{DataImportConfig, DataImportConfigRepoImpl}
+import com.togger.account.Account
+import com.togger.account.AccountType
+import com.togger.account.AdminCheck
+import com.togger.account.HashedPassword
+import com.togger.account.HashedPasswordImpl
+import com.togger.common.Password
+import com.togger.common.TgIds
+import com.togger.dataexportconfig.DataExportConfig
+import com.togger.dataexportconfig.DataExportConfigRepoImpl
+import com.togger.dataimportconfig.DataImportConfig
+import com.togger.dataimportconfig.DataImportConfigRepoImpl
 import com.togger.db.TgPages
 import com.togger.demo._
-import com.togger.logentry.{LogEntry, LogEntryVersion}
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryVersion
 import com.togger.milestone._
 import com.togger.organization.Organization
 import com.togger.project.Project
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
-import com.togger.projectmapping.{ProjectMapping, ProjectMappingRepoImpl}
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
+import com.togger.projectmapping.ProjectMapping
+import com.togger.projectmapping.ProjectMappingRepoImpl
 import com.togger.task._
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateVersion
 import com.togger.tgaiaction._
 import com.togger.tgprompttemplate._
 import com.togger.timebox._
 import doobie.ConnectionIO
 import doobie.implicits._
 
-import java.time.{DayOfWeek, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.ZoneOffset
 import java.util.UUID
 
 /** Fills the development database with the same demo data the frontend preview mode shows ([[DemoDataSet]]).

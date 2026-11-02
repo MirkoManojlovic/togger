@@ -3,24 +3,26 @@ package com.togger.dump
 import cats.effect.IO
 import cats.implicits._
 import com.togger.common.TgClock
-import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
+import com.togger.dataexportconfig.DataExportConfig
+import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
-import com.togger.project.ProjectError.{
-  DumpManifestMissing,
-  ImportFolderReadTimeout,
-  NoExportPathConfigured,
-  NotAssignedToProject,
-  ProjectError
-}
+import com.togger.project.ProjectError.DumpManifestMissing
+import com.togger.project.ProjectError.ImportFolderReadTimeout
+import com.togger.project.ProjectError.NoExportPathConfigured
+import com.togger.project.ProjectError.NotAssignedToProject
+import com.togger.project.ProjectError.ProjectError
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class DataExportPathResult(
   exportPath: String,

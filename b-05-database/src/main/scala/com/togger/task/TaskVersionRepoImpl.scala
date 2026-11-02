@@ -1,21 +1,27 @@
 package com.togger.task
 
 import cats.data.NonEmptyList
-import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.account.Account
 import com.togger.account.AccountRepoImpl.passwordCodec
-import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgIds
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.dto.TaskFilter
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
-import com.togger.task.TaskVersionRepoImpl.{TASK_VERSION_TABLE_FRAG, latestVersionLateral}
+import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
-import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
+import com.togger.timebox.TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE_FRAG
+import com.togger.timebox.TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Fragments, Meta}
+import doobie.ConnectionIO
+import doobie.Fragments
+import doobie.Meta
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment

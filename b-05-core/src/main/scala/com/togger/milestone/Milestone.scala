@@ -1,6 +1,7 @@
 package com.togger.milestone
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class Milestone(

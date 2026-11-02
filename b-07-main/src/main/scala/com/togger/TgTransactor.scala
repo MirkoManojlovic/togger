@@ -1,7 +1,9 @@
 package com.togger
 
-import cats.effect.{IO, Resource}
-import com.togger.Constants.{DB_PASSWORD, DB_USERNAME}
+import cats.effect.IO
+import cats.effect.Resource
+import com.togger.Constants.DB_PASSWORD
+import com.togger.Constants.DB_USERNAME
 import com.zaxxer.hikari.HikariConfig
 import doobie.Transactor
 import doobie.hikari.HikariTransactor

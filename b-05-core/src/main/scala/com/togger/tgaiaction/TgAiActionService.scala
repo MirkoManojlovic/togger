@@ -3,17 +3,18 @@ package com.togger.tgaiaction
 import cats.effect.IO
 import cats.implicits._
 import com.togger.ai.TgAiEndpoints
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.project.ProjectAccountRepo
 import com.togger.tgaiaction.TgAiActionError._
 import com.togger.tgprompttemplate.TgPromptTemplateRepo
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
-import java.time.Instant
 import java.util.UUID
 
 /** Every method that touches an existing action takes the id of the calling account and reports an action of another

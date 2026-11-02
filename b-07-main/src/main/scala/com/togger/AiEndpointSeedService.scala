@@ -2,7 +2,9 @@ package com.togger
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.ai.{AiEndpointRepoImpl, AiEndpointRow, TgAiEndpoints}
+import com.togger.ai.AiEndpointRepoImpl
+import com.togger.ai.AiEndpointRow
+import com.togger.ai.TgAiEndpoints
 import com.togger.logging.TgLogging
 import doobie.Transactor
 import doobie.implicits._

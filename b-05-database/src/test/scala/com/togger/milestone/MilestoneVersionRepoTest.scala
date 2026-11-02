@@ -2,10 +2,11 @@ package com.togger.milestone
 
 import cats.implicits.catsSyntaxApplicativeError
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID

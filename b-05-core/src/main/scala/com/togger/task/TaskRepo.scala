@@ -1,6 +1,7 @@
 package com.togger.task
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.dto.TaskFilter
 import doobie.ConnectionIO
 

@@ -5,9 +5,14 @@ import com.togger.account.AccountNameLookup
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.logentry.LogEntryDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.{LogEntryDto, LogEntryVersionDto}
-import com.togger.logentry.{LogEntry, LogEntryEndpoints, LogEntryService, LogEntryVersion}
+import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
+import com.togger.controllers.logentry.LogEntryDtoMapper.toVersionDto
+import com.togger.dto.LogEntryDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryEndpoints
+import com.togger.logentry.LogEntryService
+import com.togger.logentry.LogEntryVersion
 
 import java.util.UUID
 

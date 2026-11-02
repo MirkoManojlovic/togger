@@ -1,6 +1,7 @@
 package com.togger.controllers.task
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.task._

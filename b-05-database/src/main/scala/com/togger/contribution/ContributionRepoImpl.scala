@@ -3,19 +3,23 @@ package com.togger.contribution
 import com.togger.db.Util._
 import com.togger.dto.ContributionsFilter
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
-import com.togger.logentry.LogEntryVersionRepoImpl.{LOG_ENTRY_VERSION_TABLE_FRAG, logEntryStatusCodec}
+import com.togger.logentry.LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE_FRAG
+import com.togger.logentry.LogEntryVersionRepoImpl.logEntryStatusCodec
 import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
-import com.togger.milestone.MilestoneVersionRepoImpl.{MILESTONE_VERSION_TABLE_FRAG, milestoneStatusCodec}
+import com.togger.milestone.MilestoneVersionRepoImpl.MILESTONE_VERSION_TABLE_FRAG
+import com.togger.milestone.MilestoneVersionRepoImpl.milestoneStatusCodec
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskLabelRepoImpl.TASK_LABEL_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.task.TaskVersionRepoImpl.taskPriorityCodec
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
-import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Fragments}
 
 import java.util.UUID
 

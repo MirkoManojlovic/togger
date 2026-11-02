@@ -1,7 +1,9 @@
 package com.togger.controllers.task
 
-import com.togger.dto.{FindTaskTemplateResp, TaskTemplateVersionDto}
-import com.togger.tasktemplate.{TaskTemplateFull, TaskTemplateVersion}
+import com.togger.dto.FindTaskTemplateResp
+import com.togger.dto.TaskTemplateVersionDto
+import com.togger.tasktemplate.TaskTemplateFull
+import com.togger.tasktemplate.TaskTemplateVersion
 
 object TaskTemplateDtoMapper {
 

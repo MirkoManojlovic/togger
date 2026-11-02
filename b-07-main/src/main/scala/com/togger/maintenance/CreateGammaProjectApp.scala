@@ -1,9 +1,13 @@
 package com.togger.maintenance
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import cats.implicits._
-import com.togger.account.{Account, AccountType}
-import com.togger.common.{DbPageRequest, TgIds}
+import com.togger.account.Account
+import com.togger.account.AccountType
+import com.togger.common.DbPageRequest
+import com.togger.common.TgIds
 import com.togger.db.TgPages
 import com.togger.organization.Organization
 import com.togger.project.Project

@@ -3,23 +3,26 @@ package com.togger.contribution
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.account.{Account, HashedPasswordImpl}
-import com.togger.common.{Password, TgIds, TimeHelpers}
+import com.togger.account.Account
+import com.togger.account.HashedPasswordImpl
+import com.togger.common.Password
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.dto.{
-  ContributionsFilter,
-  DailyStatusCountDto,
-  StatusCountDto,
-  TaskAttributesDto,
-  TaskLabelCountDto,
-  TaskPriorityCountDto,
-  TaskStatusCountDto
-}
+import com.togger.dto.ContributionsFilter
+import com.togger.dto.DailyStatusCountDto
+import com.togger.dto.StatusCountDto
+import com.togger.dto.TaskAttributesDto
+import com.togger.dto.TaskLabelCountDto
+import com.togger.dto.TaskPriorityCountDto
+import com.togger.dto.TaskStatusCountDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
-import com.togger.project.{Project, ProjectAccountRepo, ProjectRepo}
-import com.togger.task.TaskPriority
+import com.togger.project.Project
+import com.togger.project.ProjectAccountRepo
+import com.togger.project.ProjectRepo
 import com.togger.suites.TestNameHelper
+import com.togger.task.TaskPriority
 import doobie.ConnectionIO
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers

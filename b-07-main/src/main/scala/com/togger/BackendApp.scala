@@ -3,8 +3,10 @@ package com.togger
 import cats.effect._
 import com.togger.desktop._
 import doobie.Transactor
+import scribe.Level
+import scribe.Logger
+import scribe.Logging
 import scribe.format.Formatter
-import scribe.{Level, Logger, Logging}
 
 trait TgLogging extends Logging
 

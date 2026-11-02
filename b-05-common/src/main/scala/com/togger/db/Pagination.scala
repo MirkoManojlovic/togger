@@ -2,9 +2,12 @@ package com.togger.db
 
 import cats.MonadThrow
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.implicits._
-import doobie.{ConnectionIO, Fragment}
 
 /** Runs a page query and its count query in the same transaction.
   *

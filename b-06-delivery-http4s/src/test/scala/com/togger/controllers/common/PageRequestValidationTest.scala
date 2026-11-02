@@ -2,7 +2,10 @@ package com.togger.controllers.common
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.togger.common.{BadRequest, DbPageRequest, PageRequest, TgJsonSuccess}
+import com.togger.common.BadRequest
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.TgJsonSuccess
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

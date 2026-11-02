@@ -2,10 +2,14 @@ package com.togger.task
 
 import cats.effect.IO
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
-import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
-import com.togger.organization.{TgProject, TgTaskStatus}
+import com.togger.logentry.LogEntryRepoImpl
+import com.togger.logentry.LogEntryVersionRepoImpl
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import doobie.Transactor
 import doobie.implicits._
 

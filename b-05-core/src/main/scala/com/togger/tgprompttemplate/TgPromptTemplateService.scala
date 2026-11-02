@@ -2,13 +2,15 @@ package com.togger.tgprompttemplate
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.tgprompttemplate.TgPromptTemplateError._
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
 import java.time.Instant
 import java.util.UUID

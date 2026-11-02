@@ -1,12 +1,13 @@
 package com.togger.account
 
-import java.time.Instant
-import java.util.UUID
-
 import cats.effect.IO
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import doobie.Transactor
 import doobie.implicits._
+
+import java.time.Instant
+import java.util.UUID
 
 case class AccountNoCreds(
   id: UUID,

@@ -1,15 +1,22 @@
 package com.togger.controllers.timebox
 
+import cats.data.NonEmptyChain
+import cats.data.ValidatedNec
 import cats.effect.IO
-import cats.data.{NonEmptyChain, ValidatedNec}
 import cats.implicits._
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
+import com.togger.common.TgError
 import com.togger.common.TgError._
-import com.togger.common.{DateRangeValidation, TgClock, TgError, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.timebox.TimeboxDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.{FindTimeboxResp, SaveTimeboxVersionReq}
+import com.togger.controllers.timebox.TimeboxDtoMapper.toDto
+import com.togger.controllers.timebox.TimeboxDtoMapper.toVersionDto
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SaveTimeboxVersionReq
+import com.togger.timebox.TimeboxEndpoints
 import com.togger.timebox.TimeboxError.ChangeCommentEmpty
-import com.togger.timebox.{TimeboxEndpoints, TimeboxService}
+import com.togger.timebox.TimeboxService
 
 import java.time.LocalDate
 

@@ -1,17 +1,21 @@
 package com.togger.desktop
 
-import java.io.File
-import java.sql.{DriverManager, SQLException}
-
 import cats.effect.IO
-import com.togger.{DbMode, TgLogging}
+import com.togger.DbMode
+import com.togger.TgLogging
+import doobie.FC
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.fragment.Fragment
-import doobie.{FC, Transactor}
+import liquibase.Contexts
+import liquibase.Liquibase
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.DirectoryResourceAccessor
-import liquibase.{Contexts, Liquibase}
+
+import java.io.File
+import java.sql.DriverManager
+import java.sql.SQLException
 
 class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
   private val jdbcUrl = s"jdbc:postgresql:${dbMode.dbName}"

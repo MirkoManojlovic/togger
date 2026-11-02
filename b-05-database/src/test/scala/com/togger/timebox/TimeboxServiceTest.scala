@@ -2,14 +2,19 @@ package com.togger.timebox
 
 import cats.effect.IO
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
-import com.togger.organization.{TgProject, TgTaskStatus}
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import com.togger.task._
-import com.togger.timebox.TimeboxError.{TaskNotFound, TimeboxError, TimeboxNotFound, TimeboxOverlaps}
+import com.togger.timebox.TimeboxError.TaskNotFound
+import com.togger.timebox.TimeboxError.TimeboxError
+import com.togger.timebox.TimeboxError.TimeboxNotFound
+import com.togger.timebox.TimeboxError.TimeboxOverlaps
 import doobie.Transactor
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID

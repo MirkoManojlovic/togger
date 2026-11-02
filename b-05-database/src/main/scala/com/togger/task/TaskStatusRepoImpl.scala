@@ -1,10 +1,13 @@
 package com.togger.taskStatus
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
-import com.togger.task.{TaskStatus, TaskStatusRepo}
+import com.togger.task.TaskStatus
+import com.togger.task.TaskStatusRepo
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO

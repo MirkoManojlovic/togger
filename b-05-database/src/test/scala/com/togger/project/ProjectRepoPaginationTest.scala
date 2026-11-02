@@ -2,12 +2,19 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
-import com.togger.organization.{Organization, TgProject}
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
+import com.togger.organization.Organization
+import com.togger.organization.TgProject
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

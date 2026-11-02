@@ -1,15 +1,20 @@
 package com.togger.controllers.milestone
 
 import cats.effect.IO
-import com.togger.ai.{TgAiChunk, TgAiModel}
+import com.togger.ai.TgAiChunk
+import com.togger.ai.TgAiModel
+import com.togger.common.DateRangeValidation
+import com.togger.common.Forbidden
 import com.togger.common.TgError._
+import com.togger.common.TgJsonFailure
 import com.togger.common.TgResponseTypes.TgAuth
-import com.togger.common.{DateRangeValidation, Forbidden, TgJsonFailure}
 import com.togger.contribution.ContributionService
 import com.togger.dto.SummariseMilestoneWithAiReq
 import com.togger.logging.TgLogging
+import com.togger.milestone.MilestoneAiSummaryCommand
+import com.togger.milestone.MilestoneAiSummaryService
 import com.togger.milestone.MilestoneAiSummaryStreamContract._
-import com.togger.milestone.{MilestoneAiSummaryCommand, MilestoneAiSummaryService, MilestoneService}
+import com.togger.milestone.MilestoneService
 import io.circe.Json
 import sttp.model.sse.ServerSentEvent
 import sttp.tapir.server.http4s.Http4sServerSentEvents

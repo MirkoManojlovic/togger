@@ -1,10 +1,15 @@
 package com.togger.organization
 
 import cats.implicits._
-import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TgIds, TimeHelpers}
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class OrganizationAccountRepoTest extends BusinessTgDbSpec with TgAccount with TgOrganization with TimeHelpers {
 

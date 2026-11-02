@@ -1,6 +1,7 @@
 package com.togger.timebox
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.task.TaskVersion
 import doobie.ConnectionIO
 

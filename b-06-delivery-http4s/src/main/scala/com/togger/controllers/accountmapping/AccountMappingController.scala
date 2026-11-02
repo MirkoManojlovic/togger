@@ -1,7 +1,10 @@
 package com.togger.controllers.accountmapping
 
-import com.togger.accountmapping.{AccountMapping, AccountMappingEndpoints, AccountMappingService}
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.accountmapping.AccountMapping
+import com.togger.accountmapping.AccountMappingEndpoints
+import com.togger.accountmapping.AccountMappingService
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.accountmapping.AccountMappingResp
 

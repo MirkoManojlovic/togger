@@ -2,8 +2,9 @@ package com.togger.db
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeId
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.util.transactor.Transactor.Aux
-import doobie.{ConnectionIO, Transactor}
 
 import java.sql.Connection
 

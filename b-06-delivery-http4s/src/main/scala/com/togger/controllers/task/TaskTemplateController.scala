@@ -1,12 +1,16 @@
 package com.togger.controllers.task
 
+import com.togger.common.TgClock
 import com.togger.common.TgError._
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.task.TaskTemplateDtoMapper.{toDto, toVersionDto}
+import com.togger.controllers.task.TaskTemplateDtoMapper.toDto
+import com.togger.controllers.task.TaskTemplateDtoMapper.toVersionDto
 import com.togger.dto.FindTaskTemplateResp
 import com.togger.task.TaskTemplateEndpoints
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateService, TaskTemplateVersion}
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateService
+import com.togger.tasktemplate.TaskTemplateVersion
 
 import java.util.UUID
 

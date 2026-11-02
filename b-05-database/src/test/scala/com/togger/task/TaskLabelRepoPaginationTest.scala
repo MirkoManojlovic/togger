@@ -2,11 +2,14 @@ package com.togger.task
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

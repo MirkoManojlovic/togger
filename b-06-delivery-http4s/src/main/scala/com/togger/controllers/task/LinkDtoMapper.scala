@@ -1,7 +1,9 @@
 package com.togger.controllers.task
 
-import com.togger.dto.{FindLinkResp, LinkVersionDto}
-import com.togger.task.{Link, LinkVersion}
+import com.togger.dto.FindLinkResp
+import com.togger.dto.LinkVersionDto
+import com.togger.task.Link
+import com.togger.task.LinkVersion
 
 object LinkDtoMapper {
 

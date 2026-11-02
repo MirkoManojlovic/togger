@@ -1,19 +1,22 @@
 package com.togger
 
-import java.time.Instant
-import java.util.UUID
-
 import cats.effect.IO
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl, TgIds}
+import com.togger.common.Password
+import com.togger.common.TgClockImpl
+import com.togger.common.TgIds
 import com.togger.logging.TgLogging
 import com.togger.organization.OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG
 import com.togger.organization.OrganizationRepoImpl.ORGANIZATION_TABLE_FRAG
 import com.togger.project.ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG
 import com.togger.project.ProjectRepoImpl.PROJECT_TABLE_FRAG
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Transactor}
+
+import java.time.Instant
+import java.util.UUID
 
 /** Makes sure the account used by the MCP server exists, is an admin and is a member of every organization and project.
   * Runs on every start and only adds what is missing.

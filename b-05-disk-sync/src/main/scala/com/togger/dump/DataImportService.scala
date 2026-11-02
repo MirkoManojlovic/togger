@@ -4,11 +4,14 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.dump.DayOfWeekCodec._
 import com.togger.logging.TgLogging
-import com.togger.project.ProjectError.{DumpManifestMissing, NotAssignedToProject, ProjectError}
-import com.togger.task.{TaskLabel, TaskStatus}
+import com.togger.project.ProjectError.DumpManifestMissing
+import com.togger.project.ProjectError.NotAssignedToProject
+import com.togger.project.ProjectError.ProjectError
+import com.togger.task.TaskLabel
+import com.togger.task.TaskStatus
 import com.togger.util.SplunkMacro.sp
-import doobie.implicits._
 import doobie.Transactor
+import doobie.implicits._
 import io.circe.Decoder
 import io.circe.generic.auto._
 

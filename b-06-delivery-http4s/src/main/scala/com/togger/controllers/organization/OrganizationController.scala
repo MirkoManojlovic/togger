@@ -2,7 +2,9 @@ package com.togger.controllers.organization
 
 import cats.effect.IO
 import com.togger.account.AdminCheck
-import com.togger.common.{Forbidden, TgClock, TgJsonSuccess}
+import com.togger.common.Forbidden
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.FindOrganizationResp

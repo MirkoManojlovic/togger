@@ -1,6 +1,7 @@
 package com.togger
 
-import enumeratum.{EnumEntry, _}
+import enumeratum.EnumEntry
+import enumeratum._
 
 sealed trait AppEnv extends EnumEntry
 object AppEnv extends Enum[AppEnv] {

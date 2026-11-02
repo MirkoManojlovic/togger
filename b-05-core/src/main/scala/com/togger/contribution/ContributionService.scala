@@ -1,9 +1,11 @@
 package com.togger.contribution
 
 import cats.effect.IO
-import com.togger.dto.{ContributionsDto, ContributionsFilter}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.ContributionsFilter
 import com.togger.logging.TgLogging
-import com.togger.project.{ProjectAccountRepo, ProjectRepo}
+import com.togger.project.ProjectAccountRepo
+import com.togger.project.ProjectRepo
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor
 import doobie.implicits._

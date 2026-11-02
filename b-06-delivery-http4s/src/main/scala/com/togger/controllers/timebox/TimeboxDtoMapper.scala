@@ -1,8 +1,10 @@
 package com.togger.controllers.timebox
 
 import com.togger.controllers.task.TaskDtoMapper
-import com.togger.dto.{FindTimeboxResp, TimeboxVersionDto}
-import com.togger.timebox.{TimeboxVersionWithTasks, TimeboxWithOneVersion}
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.TimeboxVersionDto
+import com.togger.timebox.TimeboxVersionWithTasks
+import com.togger.timebox.TimeboxWithOneVersion
 
 object TimeboxDtoMapper {
 

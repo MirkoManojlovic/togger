@@ -6,20 +6,20 @@ import cats.implicits._
 import com.togger.ai._
 import com.togger.common.TgError
 import com.togger.logentry._
+import com.togger.tgprompttemplate.TgPromptTemplate
 import com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateNotFound
-import com.togger.tgprompttemplate.{
-  TgPromptTemplate,
-  TgPromptTemplateFull,
-  TgPromptTemplateService,
-  TgPromptTemplateVersion
-}
+import com.togger.tgprompttemplate.TgPromptTemplateFull
+import com.togger.tgprompttemplate.TgPromptTemplateService
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.util.transactor.Strategy
-import doobie.{ConnectionIO, Transactor}
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 

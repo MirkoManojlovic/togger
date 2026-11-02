@@ -2,10 +2,12 @@ package com.togger.tgaiaction
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, PaginationTestSupport, TimeHelpers}
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.PaginationTestSupport
+import com.togger.common.TimeHelpers
+import com.togger.tgprompttemplate.TgPromptTemplate
+import com.togger.tgprompttemplate.TgPromptTemplateRepoImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

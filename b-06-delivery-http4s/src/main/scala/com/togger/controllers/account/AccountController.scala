@@ -1,8 +1,10 @@
 package com.togger.controllers.account
 
 import com.togger.account._
+import com.togger.common.AccountSearchTerm
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgError._
-import com.togger.common.{AccountSearchTerm, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.SearchAccountDto
 

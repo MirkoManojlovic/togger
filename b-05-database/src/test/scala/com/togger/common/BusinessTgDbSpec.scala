@@ -1,37 +1,46 @@
 package com.togger.common
 
 import cats.implicits.toTraverseOps
-import com.togger.account.{AccountRepoImpl, AccountSessionRepo, AccountTypeRepo, TgDbSpec}
-import com.togger.ai.AiEndpointRepoImpl
-import com.togger.tgaiaction.{TgAiActionDefaultRepoImpl, TgAiActionEndpointRepoImpl, TgAiActionRepoImpl}
+import com.togger.account.AccountRepoImpl
+import com.togger.account.AccountSessionRepo
+import com.togger.account.AccountTypeRepo
+import com.togger.account.TgDbSpec
 import com.togger.accountmapping.AccountMappingRepoImpl
-import com.togger.logentry.{LogEntryRepoImpl, LogEntryVersionRepoImpl}
-import com.togger.milestone.{
-  MilestoneDateRepoImpl,
-  MilestoneDateVersionRepoImpl,
-  MilestoneRepoImpl,
-  MilestoneSummaryRepoImpl,
-  MilestoneSummaryVersionRepoImpl,
-  MilestoneVersionRepoImpl
-}
-import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
-import com.togger.projectmapping.ProjectMappingRepoImpl
-import com.togger.task.{
-  LinkRepoImpl,
-  LinkVersionRepoImpl,
-  TaskLabelAssignmentRepoImpl,
-  TaskLabelRepoImpl,
-  TaskRepoImpl,
-  TaskVersionRepoImpl
-}
-import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
-import com.togger.tgprompttemplate.{TgPromptTemplateRepoImpl, TgPromptTemplateVersionRepoImpl}
-import com.togger.timebox.{TimeboxRepoImpl, TimeboxVersionRepoImpl}
-import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.ai.AiEndpointRepoImpl
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.dataimportconfig.DataImportConfigRepoImpl
-import com.togger.projectlabel.{ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
+import com.togger.logentry.LogEntryRepoImpl
+import com.togger.logentry.LogEntryVersionRepoImpl
+import com.togger.milestone.MilestoneDateRepoImpl
+import com.togger.milestone.MilestoneDateVersionRepoImpl
+import com.togger.milestone.MilestoneRepoImpl
+import com.togger.milestone.MilestoneSummaryRepoImpl
+import com.togger.milestone.MilestoneSummaryVersionRepoImpl
+import com.togger.milestone.MilestoneVersionRepoImpl
+import com.togger.organization.OrganizationAccountRepoImpl
+import com.togger.organization.OrganizationRepoImpl
+import com.togger.project.ProjectAccountRepoImpl
+import com.togger.project.ProjectLabelAssignmentRepoImpl
+import com.togger.project.ProjectRepoImpl
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
+import com.togger.projectmapping.ProjectMappingRepoImpl
+import com.togger.task.LinkRepoImpl
+import com.togger.task.LinkVersionRepoImpl
+import com.togger.task.TaskLabelAssignmentRepoImpl
+import com.togger.task.TaskLabelRepoImpl
+import com.togger.task.TaskRepoImpl
+import com.togger.task.TaskVersionRepoImpl
+import com.togger.taskStatus.TaskStatusRepoImpl
+import com.togger.tasktemplate.TaskTemplateRepoImpl
+import com.togger.tasktemplate.TaskTemplateVersionRepoImpl
+import com.togger.tgaiaction.TgAiActionDefaultRepoImpl
+import com.togger.tgaiaction.TgAiActionEndpointRepoImpl
+import com.togger.tgaiaction.TgAiActionRepoImpl
+import com.togger.tgprompttemplate.TgPromptTemplateRepoImpl
+import com.togger.tgprompttemplate.TgPromptTemplateVersionRepoImpl
+import com.togger.timebox.TimeboxRepoImpl
+import com.togger.timebox.TimeboxVersionRepoImpl
 import doobie.ConnectionIO
 
 trait BusinessTgDbSpec extends TgDbSpec {

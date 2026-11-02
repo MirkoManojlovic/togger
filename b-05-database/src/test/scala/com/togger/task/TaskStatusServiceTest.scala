@@ -1,8 +1,9 @@
 package com.togger.task
 
-import cats.syntax.applicativeError._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TgClockImpl, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TgClockImpl
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import com.togger.taskStatus.TaskStatusRepoImpl
 import doobie.implicits._

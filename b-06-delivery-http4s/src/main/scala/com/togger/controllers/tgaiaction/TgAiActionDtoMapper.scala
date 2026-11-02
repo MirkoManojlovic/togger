@@ -1,7 +1,9 @@
 package com.togger.controllers.tgaiaction
 
-import com.togger.dto.{FindTgAiActionDefaultResp, FindTgAiActionResp}
-import com.togger.tgaiaction.{TgAiActionDefault, TgAiActionWithBindings}
+import com.togger.dto.FindTgAiActionDefaultResp
+import com.togger.dto.FindTgAiActionResp
+import com.togger.tgaiaction.TgAiActionDefault
+import com.togger.tgaiaction.TgAiActionWithBindings
 
 object TgAiActionDtoMapper {
 

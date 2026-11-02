@@ -1,7 +1,9 @@
 package com.togger.controllers.tgprompttemplate
 
-import com.togger.dto.{FindTgPromptTemplateResp, TgPromptTemplateVersionDto}
-import com.togger.tgprompttemplate.{TgPromptTemplateFull, TgPromptTemplateVersion}
+import com.togger.dto.FindTgPromptTemplateResp
+import com.togger.dto.TgPromptTemplateVersionDto
+import com.togger.tgprompttemplate.TgPromptTemplateFull
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
 
 object TgPromptTemplateDtoMapper {
 

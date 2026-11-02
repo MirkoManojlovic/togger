@@ -2,7 +2,8 @@ package com.togger.ai
 
 import cats.effect.IO
 import cats.syntax.either._
-import com.togger.ai.TgAiError.{TgAiApiKeyMissing, TgAiError}
+import com.togger.ai.TgAiError.TgAiApiKeyMissing
+import com.togger.ai.TgAiError.TgAiError
 
 import java.util.UUID
 

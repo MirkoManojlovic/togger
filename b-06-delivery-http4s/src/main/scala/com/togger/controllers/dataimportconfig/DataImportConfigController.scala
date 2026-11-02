@@ -1,10 +1,15 @@
 package com.togger.controllers.dataimportconfig
 
-import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonError
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
+import com.togger.dataimportconfig.DataImportConfig
+import com.togger.dataimportconfig.DataImportConfigEndpoints
+import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.dto.dataimportconfig.DataImportConfigResp
 import com.togger.dump.DataImportConfigVerification
-import com.togger.dataimportconfig.{DataImportConfig, DataImportConfigEndpoints, DataImportConfigService}
 
 import java.util.UUID
 

@@ -1,10 +1,13 @@
 package com.togger.projectlabel
 
 import cats.implicits._
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class ProjectLabelCategoryRepoPaginationTest extends BusinessTgDbSpec with TimeHelpers {
 

@@ -1,9 +1,11 @@
 package com.togger.dataimportconfig
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
-import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.dataimportconfig.DataImportConfigRepoImpl.DATA_IMPORT_CONFIG_TABLE_FRAG
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
+import com.togger.db.Util._
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._

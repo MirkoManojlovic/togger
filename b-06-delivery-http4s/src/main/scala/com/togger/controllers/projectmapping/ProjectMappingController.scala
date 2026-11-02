@@ -1,9 +1,12 @@
 package com.togger.controllers.projectmapping
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.projectmapping.ProjectMappingResp
-import com.togger.projectmapping.{ProjectMapping, ProjectMappingEndpoints, ProjectMappingService}
+import com.togger.projectmapping.ProjectMapping
+import com.togger.projectmapping.ProjectMappingEndpoints
+import com.togger.projectmapping.ProjectMappingService
 
 class ProjectMappingController(
   projectMappingEndpoints: ProjectMappingEndpoints,

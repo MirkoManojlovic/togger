@@ -1,22 +1,26 @@
 package com.togger.dump
 
 import com.togger.account.Account
-import com.togger.logentry.{LogEntry, LogEntryVersion}
-import com.togger.milestone.{
-  Milestone,
-  MilestoneDate,
-  MilestoneDateVersion,
-  MilestoneSummary,
-  MilestoneSummaryVersion,
-  MilestoneVersion
-}
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryVersion
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneDate
+import com.togger.milestone.MilestoneDateVersion
+import com.togger.milestone.MilestoneSummary
+import com.togger.milestone.MilestoneSummaryVersion
+import com.togger.milestone.MilestoneVersion
 import com.togger.project.Project
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory}
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
 import com.togger.task._
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateVersion}
-import com.togger.timebox.{Timebox, TimeboxVersion}
-import io.circe.{Decoder, Encoder}
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateVersion
+import com.togger.tgprompttemplate.TgPromptTemplate
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
+import com.togger.timebox.Timebox
+import com.togger.timebox.TimeboxVersion
+import io.circe.Decoder
+import io.circe.Encoder
 
 import java.time.DayOfWeek
 import java.util.UUID

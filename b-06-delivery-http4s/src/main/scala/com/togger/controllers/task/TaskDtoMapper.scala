@@ -1,7 +1,9 @@
 package com.togger.controllers.task
 
-import com.togger.dto.{FindTaskResp1, TaskVersionDto}
-import com.togger.task.{Task, TaskVersion}
+import com.togger.dto.FindTaskResp1
+import com.togger.dto.TaskVersionDto
+import com.togger.task.Task
+import com.togger.task.TaskVersion
 
 import java.util.UUID
 

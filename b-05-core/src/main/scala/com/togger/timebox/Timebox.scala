@@ -2,7 +2,8 @@ package com.togger.timebox
 
 import com.togger.task.TaskVersion
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class Timebox(id: UUID, projectId: UUID, createdAt: Instant)

@@ -3,10 +3,11 @@ package com.togger.dump
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.util.SplunkMacro.sp
-import io.circe.generic.auto._
-import io.circe.parser.{decode, parse}
-import io.circe.syntax._
 import io.circe.Json
+import io.circe.generic.auto._
+import io.circe.parser.decode
+import io.circe.parser.parse
+import io.circe.syntax._
 
 import java.time.Instant
 import java.util.UUID

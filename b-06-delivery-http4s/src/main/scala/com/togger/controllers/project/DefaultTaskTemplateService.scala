@@ -1,8 +1,10 @@
 package com.togger.controllers.project
 
 import com.togger.common.TgClock
-import com.togger.task.{DefaultTaskLabel, TaskLabel}
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.TaskLabel
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateVersion
 
 import java.util.UUID
 

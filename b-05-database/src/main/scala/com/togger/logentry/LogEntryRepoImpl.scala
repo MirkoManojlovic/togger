@@ -1,20 +1,26 @@
 package com.togger.logentry
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryRepoImpl.LOG_ENTRY_TABLE_FRAG
-import com.togger.logentry.LogEntryVersionRepoImpl.{LOG_ENTRY_VERSION_TABLE_FRAG, logEntryStatusCodec}
+import com.togger.logentry.LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE_FRAG
+import com.togger.logentry.LogEntryVersionRepoImpl.logEntryStatusCodec
 import com.togger.task.Task
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Fragments}
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class LogEntryRepoImpl extends LogEntryRepo {

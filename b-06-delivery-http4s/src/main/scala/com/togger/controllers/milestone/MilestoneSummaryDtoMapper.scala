@@ -1,7 +1,9 @@
 package com.togger.controllers.milestone
 
-import com.togger.dto.{FindMilestoneSummaryResp, MilestoneSummaryVersionDto}
-import com.togger.milestone.{MilestoneSummary, MilestoneSummaryVersion}
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.MilestoneSummaryVersionDto
+import com.togger.milestone.MilestoneSummary
+import com.togger.milestone.MilestoneSummaryVersion
 
 object MilestoneSummaryDtoMapper {
 

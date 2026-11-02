@@ -1,17 +1,23 @@
 package com.togger.http
 
 import cats.data.Kleisli
-import cats.effect.{IO, Resource}
+import cats.effect.IO
+import cats.effect.Resource
 import com.comcast.ip4s.IpLiteralSyntax
 import com.togger.logging.TgLogging
+import org.http4s.Request
+import org.http4s.Response
+import org.http4s.Uri
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
+import org.http4s.server
 import org.http4s.server.Router
-import org.http4s.server.middleware.{CORS, CORSPolicy}
-import org.http4s.{Request, Response, Uri, server}
+import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.CORSPolicy
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
+import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.server.http4s.Http4sServerOptions
 
 import scala.concurrent.duration._
 import scala.util.chaining.scalaUtilChainingOps

@@ -3,7 +3,9 @@ package com.togger.accountmapping
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO

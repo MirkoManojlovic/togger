@@ -1,8 +1,10 @@
 package com.togger.tasktemplate
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelRepoImpl.TASK_LABEL_TABLE_FRAG
 import com.togger.tasktemplate.TaskTemplateRepoImpl.TASK_TEMPLATE_TABLE_FRAG

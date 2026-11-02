@@ -1,10 +1,13 @@
 package com.togger.organization
 
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
 import com.togger.account.AccountRepoImpl.passwordCodec
-import com.togger.account.{Account, AccountRepoImpl}
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._

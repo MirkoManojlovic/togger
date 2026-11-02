@@ -4,7 +4,6 @@ import com.togger.ProjectLabelSeedService
 import com.togger.common.BusinessTgDbSpec
 import com.togger.db.TgPages
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
 

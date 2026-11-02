@@ -1,10 +1,12 @@
 package com.togger.account
 
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.Password
+import doobie.ConnectionIO
+
 import java.time.Instant
 import java.util.UUID
-
-import com.togger.common.{DbPageRequest, PaginatedResponse, Password}
-import doobie.ConnectionIO
 
 trait HashedPassword {
   val value: String

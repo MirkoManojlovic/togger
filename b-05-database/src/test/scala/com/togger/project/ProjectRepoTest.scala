@@ -2,11 +2,18 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
-import com.togger.organization.{TgOrganization, TgTaskStatus}
-import com.togger.task.{Task, TaskRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
+import com.togger.organization.TgOrganization
+import com.togger.organization.TgTaskStatus
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
+import com.togger.task.Task
+import com.togger.task.TaskRepoImpl
 import com.togger.task.TaskStatus
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
 import doobie.implicits._
 import doobie.postgres.implicits._
 

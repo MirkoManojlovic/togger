@@ -1,11 +1,14 @@
 package com.togger.dump
 
 import cats.implicits._
-import com.togger.account.{Account, AccountType}
+import com.togger.account.Account
+import com.togger.account.AccountType
 import com.togger.accountmapping.AccountMapping
-import com.togger.common.{DbPageRequest, TgIds}
+import com.togger.common.DbPageRequest
+import com.togger.common.TgIds
 import com.togger.db.TgPages
-import com.togger.project.{ProjectAccount, ProjectError}
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectError
 import com.togger.projectmapping.ProjectMapping
 import com.togger.task.TaskStatus
 import doobie.ConnectionIO

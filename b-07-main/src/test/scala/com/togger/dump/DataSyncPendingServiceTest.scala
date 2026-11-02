@@ -1,7 +1,9 @@
 package com.togger.dump
 
 import com.togger.common.TgClockImpl
-import com.togger.dataimportconfig.{DataImportConfig, DataImportConfigRepoImpl, DataImportConfigService}
+import com.togger.dataimportconfig.DataImportConfig
+import com.togger.dataimportconfig.DataImportConfigRepoImpl
+import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.project.ProjectAccount
 import doobie.implicits._
 

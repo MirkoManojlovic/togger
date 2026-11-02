@@ -1,25 +1,34 @@
 package com.togger.maintenance
 
 import cats.effect.IO
+import com.togger.Constants.DB_PASSWORD
+import com.togger.Constants.DB_USERNAME
 import com.togger.DbMode
-import com.togger.Constants.{DB_PASSWORD, DB_USERNAME}
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl, TgIds}
+import com.togger.common.Password
+import com.togger.common.TgClockImpl
+import com.togger.common.TgIds
 import com.togger.controllers.organization.OrganizationService
-import com.togger.controllers.project.{
-  DefaultTaskLabelService,
-  DefaultTaskStatusService,
-  DefaultTaskTemplateService,
-  ProjectService
-}
-import com.togger.logentry.{LogEntryRepoImpl, LogEntryService, LogEntryVersionRepoImpl}
+import com.togger.controllers.project.DefaultTaskLabelService
+import com.togger.controllers.project.DefaultTaskStatusService
+import com.togger.controllers.project.DefaultTaskTemplateService
+import com.togger.controllers.project.ProjectService
+import com.togger.logentry.LogEntryRepoImpl
+import com.togger.logentry.LogEntryService
+import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.login.SessionTokenFactoryImpl
-import com.togger.milestone.{MilestoneRepoImpl, MilestoneService, MilestoneVersionRepoImpl}
-import com.togger.organization.{OrganizationAccountRepoImpl, OrganizationRepoImpl}
-import com.togger.project.{ProjectAccountRepoImpl, ProjectRepoImpl, ProjectLabelAssignmentRepoImpl}
+import com.togger.milestone.MilestoneRepoImpl
+import com.togger.milestone.MilestoneService
+import com.togger.milestone.MilestoneVersionRepoImpl
+import com.togger.organization.OrganizationAccountRepoImpl
+import com.togger.organization.OrganizationRepoImpl
+import com.togger.project.ProjectAccountRepoImpl
+import com.togger.project.ProjectLabelAssignmentRepoImpl
+import com.togger.project.ProjectRepoImpl
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
-import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateVersionRepoImpl}
+import com.togger.tasktemplate.TaskTemplateRepoImpl
+import com.togger.tasktemplate.TaskTemplateVersionRepoImpl
 import doobie.Transactor
 
 import java.time.Instant

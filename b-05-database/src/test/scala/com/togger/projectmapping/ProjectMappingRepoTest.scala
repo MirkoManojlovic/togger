@@ -1,7 +1,9 @@
 package com.togger.projectmapping
 
 import cats.implicits._
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import com.togger.project.Project
 import doobie.implicits._
