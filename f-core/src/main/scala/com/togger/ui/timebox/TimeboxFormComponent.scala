@@ -256,7 +256,7 @@ class TimeboxFormComponent(
         if (end.isBefore(today)) ("Overdue", TgBadgeColor.Red)
         else {
           val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
-          (s"${WorkDayCalendar.countWorkDays(today, end, workDays)} days left", TgBadgeColor.Gray)
+          (TeamDailyTaskBadges.daysLeftText(WorkDayCalendar.countWorkDays(today, end, workDays)), TgBadgeColor.Gray)
         }
       TgBadge(text = text, color = color, extraCls = if (color == TgBadgeColor.Gray) "dark:text-body" else "").element
     }

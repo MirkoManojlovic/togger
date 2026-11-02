@@ -75,6 +75,13 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
         .map(_.text) shouldBe Seq("🗓️ 2026-10-20", "🎯 2026-10-30", "⏱️ 9 days", "⏳ 5 days left")
     }
 
+    "say 1 day left, not 1 days left, on the last work day" in { _ =>
+      TeamDailyTaskBadges
+        .dates(task(None, Seq.empty), dueDate, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .map(_.text)
+        .last shouldBe "⏳ 1 day left"
+    }
+
     "say overdue after the due date" in { _ =>
       TeamDailyTaskBadges
         .dates(task(None, Seq.empty), dueDate.plusDays(1), WorkDayCalendar.DefaultWorkDays, _.toString)

@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
@@ -123,7 +124,7 @@ class MilestoneReviewComponent(
     val today = tgClock.currentDate()
     val (text, color) =
       if (milestone.dueDate.isBefore(today)) ("Overdue", TgBadgeColor.Red)
-      else (s"${WorkDayCalendar.countWorkDays(today, milestone.dueDate, workDays)} days left", TgBadgeColor.Gray)
+      else (TeamDailyTaskBadges.daysLeftText(WorkDayCalendar.countWorkDays(today, milestone.dueDate, workDays)), TgBadgeColor.Gray)
     TgBadge(text = text, color = color, bordered = true).element
   }
 

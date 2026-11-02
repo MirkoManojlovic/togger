@@ -52,5 +52,12 @@ object TeamDailyTaskBadges {
 
   def daysLeft(dueDate: LocalDate, today: LocalDate, workDays: Set[DayOfWeek]): BadgeSpec =
     if (dueDate.isBefore(today)) BadgeSpec(s"${DateEmoji.DaysLeft} Overdue", TgBadgeColor.Red)
-    else BadgeSpec(s"${DateEmoji.DaysLeft} ${WorkDayCalendar.countWorkDays(today, dueDate, workDays)} days left", TgBadgeColor.Gray)
+    else
+      BadgeSpec(
+        s"${DateEmoji.DaysLeft} ${daysLeftText(WorkDayCalendar.countWorkDays(today, dueDate, workDays))}",
+        TgBadgeColor.Gray
+      )
+
+  /** "1 day left", but "0 days left" and "5 days left". */
+  def daysLeftText(days: Int): String = if (days == 1) "1 day left" else s"$days days left"
 }
