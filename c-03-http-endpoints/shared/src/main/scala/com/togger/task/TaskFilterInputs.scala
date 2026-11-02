@@ -5,13 +5,13 @@ import sttp.tapir._
 
 import java.util.UUID
 
-/** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId`
-  * a single `search`, a single `timeboxId` and
-  * the `includeArchived` flag.
+/** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId` a
+  * single `search`, a single `timeboxId` and the `includeArchived` flag.
   */
 object TaskFilterInputs {
 
-  private type FilterParams = (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID], Boolean)
+  private type FilterParams =
+    (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID], Boolean)
 
   val taskFilterQuery: EndpointInput[TaskFilter] =
     query[List[UUID]]("statusId")

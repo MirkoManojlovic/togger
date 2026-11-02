@@ -52,7 +52,6 @@ class AuthEndpoints(baseEndpoint: TgBaseEndpoint, securedEndpoint: SecuredEndpoi
 //      topic = "Change password for business account",
 //      description = "Change password"
 
-
   val updateAccountInfo: TgSecuredEndpoint[AccountInfoDto, AccountInfoDto] =
     securedEndpoint.endpoint.put
       .in(basePath / "info")

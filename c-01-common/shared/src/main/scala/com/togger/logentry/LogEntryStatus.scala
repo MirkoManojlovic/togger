@@ -26,7 +26,8 @@ object LogEntryStatus extends IntEnum[LogEntryStatus] {
   case object Blocked extends LogEntryStatus(2, ChartColor.Red, "🔴", "Blocked", "This cannot proceed")
   case object Completed extends LogEntryStatus(3, ChartColor.Green, "🟢", "Completed", "This has been completed")
   case object Abandoned extends LogEntryStatus(4, ChartColor.Dark, "⚫️", "Abandoned", "This has been given up on")
-  case object Paused extends LogEntryStatus(5, ChartColor.Yellow, "🟡️", "Paused", "This is on hold, to be resumed later")
+  case object Paused
+      extends LogEntryStatus(5, ChartColor.Yellow, "🟡️", "Paused", "This is on hold, to be resumed later")
   case object Holiday extends LogEntryStatus(6, ChartColor.Orange, "🎄", "Holiday", "Out on a public holiday")
   case object Vacation extends LogEntryStatus(7, ChartColor.Orange, "🏝", "Vacation", "Out on vacation")
 

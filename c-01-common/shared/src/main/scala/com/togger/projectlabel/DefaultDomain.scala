@@ -21,15 +21,12 @@ object DefaultDomain extends Enum[DefaultDomain] {
   case object Legal extends DefaultDomain(12, "Legal", "Case management and legal practice software")
   case object RealEstate extends DefaultDomain(13, "Real Estate", "Property management and real estate platforms")
   case object Agriculture extends DefaultDomain(14, "Agriculture", "Farming, crop management, and agritech")
-  case object Hospitality
-      extends DefaultDomain(15, "Hospitality", "Hotels, travel, and guest experience platforms")
+  case object Hospitality extends DefaultDomain(15, "Hospitality", "Hotels, travel, and guest experience platforms")
   case object Gaming extends DefaultDomain(16, "Gaming", "Video games and interactive entertainment")
   case object Media extends DefaultDomain(17, "Media", "Broadcasting, publishing, and content distribution")
   case object Ecommerce extends DefaultDomain(18, "E-commerce", "Online marketplaces and digital storefronts")
-  case object Pharmaceutical
-      extends DefaultDomain(19, "Pharmaceutical", "Drug development and pharmaceutical research")
-  case object Biotechnology
-      extends DefaultDomain(20, "Biotechnology", "Genomics, lab research, and biotech platforms")
+  case object Pharmaceutical extends DefaultDomain(19, "Pharmaceutical", "Drug development and pharmaceutical research")
+  case object Biotechnology extends DefaultDomain(20, "Biotechnology", "Genomics, lab research, and biotech platforms")
   case object Defense extends DefaultDomain(21, "Defense", "Military and defense systems")
   case object Construction
       extends DefaultDomain(22, "Construction", "Building, architecture, and construction management")

@@ -44,8 +44,8 @@ object DbPageRequest {
   val default: DbPageRequest =
     fromPageRequest(PageRequest.default).fold(errors => throw new IllegalStateException(errors.toString), identity)
 
-  /** Page 1 at the maximum size: for lists embedded in another response or offered whole by a picker, which are cut
-    * off at `PageRequest.MaxSize` items.
+  /** Page 1 at the maximum size: for lists embedded in another response or offered whole by a picker, which are cut off
+    * at `PageRequest.MaxSize` items.
     */
   val firstMaxSized: DbPageRequest =
     fromPageRequest(PageRequest(PageRequest.DefaultPage, PageRequest.MaxSize))

@@ -23,7 +23,6 @@ class AccountEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(pageQuery)
       .out(jsonBody[TgJsonSuccess[PaginatedResponse[SearchAccountDto]]])
 
-
   // The account management endpoints below are admin only.
   val findAllEndpoint: TgSecuredEndpoint[PageRequest, PaginatedResponse[AccountManagementDto]] =
     securedEndpoint.endpoint.get

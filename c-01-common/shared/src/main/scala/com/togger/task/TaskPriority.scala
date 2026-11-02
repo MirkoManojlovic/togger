@@ -27,7 +27,7 @@ object TaskPriority extends IntEnum[TaskPriority] {
         "Critical",
         "Immediate response required; system outage, security breach, or complete business disruption. " +
           "SLA: Acknowledge within 15 minutes, resolve within 1-2 hours.",
-          ChartColor.Red
+        ChartColor.Red
       )
   case object High
       extends TaskPriority(
@@ -36,7 +36,7 @@ object TaskPriority extends IntEnum[TaskPriority] {
         "High",
         "Severe degradation or major malfunction affecting many users, but a workaround exists. " +
           "SLA: Acknowledge within 1 hour, resolve within 4-8 hours.",
-          ChartColor.Orange
+        ChartColor.Orange
       )
   case object Medium
       extends TaskPriority(
@@ -45,7 +45,7 @@ object TaskPriority extends IntEnum[TaskPriority] {
         "Medium",
         "Minor issues impacting efficiency or a single department; core operations continue. " +
           "SLA: Acknowledge within 4 hours, resolve within 24-48 hours.",
-          ChartColor.Yellow
+        ChartColor.Yellow
       )
   case object Low
       extends TaskPriority(
@@ -54,7 +54,7 @@ object TaskPriority extends IntEnum[TaskPriority] {
         "Low",
         "Minor inconveniences or routine requests with no immediate business impact. " +
           "SLA: Acknowledge within 24 hours, resolve within 5-7 days.",
-          ChartColor.Lime
+        ChartColor.Lime
       )
   case object Planned
       extends TaskPriority(
@@ -63,7 +63,7 @@ object TaskPriority extends IntEnum[TaskPriority] {
         "Planned",
         "Proactive maintenance, enhancements, or informational requests. " +
           "SLA: Acknowledge within 1 business day, resolve within 10 days.",
-          ChartColor.Green
+        ChartColor.Green
       )
 
   def namesToValuesMapString: Map[String, String] =

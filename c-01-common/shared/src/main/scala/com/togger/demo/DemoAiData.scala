@@ -90,7 +90,9 @@ object DemoAiData {
     PromptSpec(
       3,
       DemoIdentity.AccountId,
-      List("Risks and blockers" -> "List everything that slowed the team down in the period and what could still go wrong.")
+      List(
+        "Risks and blockers" -> "List everything that slowed the team down in the period and what could still go wrong."
+      )
     ),
     PromptSpec(
       4,
@@ -100,9 +102,30 @@ object DemoAiData {
   )
 
   private lazy val actionSpecs = List(
-    ActionSpec(1, DemoIdentity.AccountId, "Weekly summary", "Use a neutral tone and bullet points.", Some(prompts(0).id), "gpt-4.1-mini"),
-    ActionSpec(2, DemoIdentity.AccountId, "Executive brief", "Keep it under 120 words.", Some(prompts(1).id), "gpt-4.1"),
-    ActionSpec(3, DemoIdentity.AccountId, "Risk review", "Highlight the three biggest risks first.", Some(prompts(2).id), "gpt-4o"),
+    ActionSpec(
+      1,
+      DemoIdentity.AccountId,
+      "Weekly summary",
+      "Use a neutral tone and bullet points.",
+      Some(prompts(0).id),
+      "gpt-4.1-mini"
+    ),
+    ActionSpec(
+      2,
+      DemoIdentity.AccountId,
+      "Executive brief",
+      "Keep it under 120 words.",
+      Some(prompts(1).id),
+      "gpt-4.1"
+    ),
+    ActionSpec(
+      3,
+      DemoIdentity.AccountId,
+      "Risk review",
+      "Highlight the three biggest risks first.",
+      Some(prompts(2).id),
+      "gpt-4o"
+    ),
     ActionSpec(
       4,
       DemoIdentity.AccountId,
@@ -111,7 +134,14 @@ object DemoAiData {
       None,
       "gpt-4.1-nano"
     ),
-    ActionSpec(5, DemoIdentity.SecondAccountId, "Sprint recap", "Friendly tone please.", Some(prompts(3).id), "gpt-4o-mini")
+    ActionSpec(
+      5,
+      DemoIdentity.SecondAccountId,
+      "Sprint recap",
+      "Friendly tone please.",
+      Some(prompts(3).id),
+      "gpt-4o-mini"
+    )
   )
 
   private lazy val defaultSpecs = List(

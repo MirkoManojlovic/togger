@@ -20,14 +20,11 @@ object DefaultProgrammingFramework extends Enum[DefaultProgrammingFramework] {
       extends DefaultProgrammingFramework(5, "Akka", "Toolkit for building concurrent, distributed JVM applications")
   case object Django extends DefaultProgrammingFramework(6, "Django", "Full-stack web framework for Python")
   case object Flask extends DefaultProgrammingFramework(7, "Flask", "Lightweight web framework for Python")
-  case object FastApi
-      extends DefaultProgrammingFramework(8, "FastAPI", "Modern, high-performance Python web framework")
-  case object ExpressJs
-      extends DefaultProgrammingFramework(9, "Express.js", "Minimalist web framework for Node.js")
+  case object FastApi extends DefaultProgrammingFramework(8, "FastAPI", "Modern, high-performance Python web framework")
+  case object ExpressJs extends DefaultProgrammingFramework(9, "Express.js", "Minimalist web framework for Node.js")
   case object NestJs
       extends DefaultProgrammingFramework(10, "NestJS", "Opinionated, TypeScript-first Node.js framework")
-  case object Angular
-      extends DefaultProgrammingFramework(11, "Angular", "TypeScript-based web application framework")
+  case object Angular extends DefaultProgrammingFramework(11, "Angular", "TypeScript-based web application framework")
   case object React extends DefaultProgrammingFramework(12, "React", "JavaScript library for building user interfaces")
   case object VueJs
       extends DefaultProgrammingFramework(13, "Vue.js", "Progressive JavaScript framework for user interfaces")
@@ -53,8 +50,7 @@ object DefaultProgrammingFramework extends Enum[DefaultProgrammingFramework] {
         "Flutter",
         "UI toolkit for natively compiled multi-platform apps, using Dart"
       )
-  case object SwiftUi
-      extends DefaultProgrammingFramework(27, "SwiftUI", "Declarative UI framework for Apple platforms")
+  case object SwiftUi extends DefaultProgrammingFramework(27, "SwiftUI", "Declarative UI framework for Apple platforms")
   case object Vapor extends DefaultProgrammingFramework(28, "Vapor", "Server-side Swift web framework")
   case object Ktor
       extends DefaultProgrammingFramework(29, "Ktor", "Asynchronous framework for building servers/clients in Kotlin")

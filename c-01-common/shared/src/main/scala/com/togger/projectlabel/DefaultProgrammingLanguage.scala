@@ -19,8 +19,7 @@ object DefaultProgrammingLanguage extends Enum[DefaultProgrammingLanguage] {
         "JavaScript",
         "Dynamically typed language of the web browser and Node.js"
       )
-  case object TypeScript
-      extends DefaultProgrammingLanguage(5, "TypeScript", "Statically typed superset of JavaScript")
+  case object TypeScript extends DefaultProgrammingLanguage(5, "TypeScript", "Statically typed superset of JavaScript")
   case object Ruby
       extends DefaultProgrammingLanguage(6, "Ruby", "Dynamically typed, object-oriented scripting language")
   case object Go extends DefaultProgrammingLanguage(7, "Go", "Statically typed, compiled language from Google")
@@ -38,17 +37,21 @@ object DefaultProgrammingLanguage extends Enum[DefaultProgrammingLanguage] {
         "Object-oriented superset of C used historically on Apple platforms"
       )
   case object Php
-      extends DefaultProgrammingLanguage(14, "PHP", "Dynamically typed scripting language for server-side web development")
+      extends DefaultProgrammingLanguage(
+        14,
+        "PHP",
+        "Dynamically typed scripting language for server-side web development"
+      )
   case object Perl
       extends DefaultProgrammingLanguage(15, "Perl", "Dynamically typed scripting language known for text processing")
   case object Haskell extends DefaultProgrammingLanguage(16, "Haskell", "Statically typed, purely functional language")
   case object Elixir
       extends DefaultProgrammingLanguage(17, "Elixir", "Dynamically typed, functional language on the Erlang VM")
-  case object Erlang extends DefaultProgrammingLanguage(18, "Erlang", "Dynamically typed, functional, concurrent language")
+  case object Erlang
+      extends DefaultProgrammingLanguage(18, "Erlang", "Dynamically typed, functional, concurrent language")
   case object Clojure
       extends DefaultProgrammingLanguage(19, "Clojure", "Dynamically typed, functional Lisp dialect on the JVM")
-  case object FSharp
-      extends DefaultProgrammingLanguage(20, "F#", "Statically typed, functional-first .NET language")
+  case object FSharp extends DefaultProgrammingLanguage(20, "F#", "Statically typed, functional-first .NET language")
   case object Dart extends DefaultProgrammingLanguage(21, "Dart", "Statically typed language used by Flutter")
   case object R extends DefaultProgrammingLanguage(22, "R", "Dynamically typed language for statistical computing")
   case object Julia
@@ -68,7 +71,11 @@ object DefaultProgrammingLanguage extends Enum[DefaultProgrammingLanguage] {
       extends DefaultProgrammingLanguage(31, "MATLAB", "Language for numerical computing and matrix operations")
   case object Scheme extends DefaultProgrammingLanguage(32, "Scheme", "Minimalist dialect of Lisp")
   case object OCaml
-      extends DefaultProgrammingLanguage(33, "OCaml", "Statically typed, functional/imperative language of the ML family")
+      extends DefaultProgrammingLanguage(
+        33,
+        "OCaml",
+        "Statically typed, functional/imperative language of the ML family"
+      )
   case object Fortran
       extends DefaultProgrammingLanguage(34, "Fortran", "Statically typed language for scientific/numeric computing")
   case object Cobol
@@ -77,12 +84,14 @@ object DefaultProgrammingLanguage extends Enum[DefaultProgrammingLanguage] {
         "COBOL",
         "Statically typed language historically used in business/finance systems"
       )
-  case object Ada extends DefaultProgrammingLanguage(36, "Ada", "Statically typed language used in safety-critical systems")
+  case object Ada
+      extends DefaultProgrammingLanguage(36, "Ada", "Statically typed language used in safety-critical systems")
   case object Prolog extends DefaultProgrammingLanguage(37, "Prolog", "Declarative, logic programming language")
   case object Zig extends DefaultProgrammingLanguage(38, "Zig", "Statically typed systems programming language")
   case object Nim
       extends DefaultProgrammingLanguage(39, "Nim", "Statically typed, compiled language with Python-like syntax")
-  case object Crystal extends DefaultProgrammingLanguage(40, "Crystal", "Statically typed language with Ruby-like syntax")
+  case object Crystal
+      extends DefaultProgrammingLanguage(40, "Crystal", "Statically typed language with Ruby-like syntax")
   case object Elm
       extends DefaultProgrammingLanguage(41, "Elm", "Statically typed functional language that compiles to JavaScript")
   case object Solidity
