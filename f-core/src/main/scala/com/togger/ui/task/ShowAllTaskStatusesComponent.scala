@@ -11,7 +11,6 @@ import com.togger.routes.Pages.ShowAllTaskStatusesPage
 import com.togger.routes.TgRouter
 import com.togger.task.DefaultTaskStatus
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.TgHtmlTable.createTh
@@ -43,7 +42,6 @@ class ShowAllTaskStatusesComponent(
   taskStatusService: TaskStatusFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   projectId: UUID,
   params: ListParams,
   val toast: Toast,

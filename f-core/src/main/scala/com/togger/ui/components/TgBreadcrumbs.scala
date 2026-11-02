@@ -84,7 +84,7 @@ class TgBreadcrumbs(
   val element: HtmlElement =
     navTag(
       cls("flex"),
-      cls.toggle(solidCls) := variant == TgBreadcrumbVariant.Solid,
+      cls(solidCls) := variant == TgBreadcrumbVariant.Solid,
       aria.label("Breadcrumb"),
       onMountUnmountCallback(_ => listenToHistory(), _ => stopListeningToHistory()),
       div(
@@ -121,7 +121,7 @@ class TgBreadcrumbs(
     val crumbRole = TgBreadcrumbs.roleOf(index, items.size, item.page.isDefined)
     val body = crumbBody(item, crumbRole)
     li(
-      cls.toggle("inline-flex items-center") := index == 0,
+      cls("inline-flex items-center") := index == 0,
       Option.when(crumbRole == TgCrumbRole.Current)(aria.current("page")),
       if (index == 0) body else div(cls("flex items-center space-x-1.5"), separator, body)
     )

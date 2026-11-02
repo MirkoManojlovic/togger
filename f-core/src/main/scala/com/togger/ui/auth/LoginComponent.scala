@@ -60,7 +60,7 @@ class LoginComponent(
           .login(dto)
           .map { result =>
             result.fold(
-              error => modalFactory.alertModal("Wrong login credentials", "Login failed", PlainModalVariant.Danger),
+              _ => modalFactory.alertModal("Wrong login credentials", "Login failed", PlainModalVariant.Danger),
               _ => {
                 val currentPage = router.currentPageSignal.now()
                 if (currentPage == LoginPage) router.route(HomePage)

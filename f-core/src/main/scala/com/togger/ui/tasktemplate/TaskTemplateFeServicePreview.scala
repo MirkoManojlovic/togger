@@ -22,8 +22,8 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
         labelError(dto.projectId, dto.taskLabelId, None).fold {
           val template =
             PreviewTaskTemplate(UUID.randomUUID(), dto.projectId, dto.taskLabelId, callerId, ctx.clock.currentInstant)
-          data.templates.upsert(template)
-          data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
+          val _ = data.templates.upsert(template)
+          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
           PreviewResponses.ok(toDto(template))
         }(PreviewResponses.badRequest[FindTaskTemplateResp](_))
       )
@@ -37,7 +37,7 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
           labelError(template.projectId, dto.taskLabelId, Some(template.id)).fold {
             val updated = data.templates.upsert(template.copy(taskLabelId = dto.taskLabelId))
             val unchanged = data.latestVersion(template.id).exists(v => v.name == dto.name && v.body == dto.body)
-            if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
+            val _ = if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
             PreviewResponses.ok(toDto(updated))
           }(PreviewResponses.badRequest[FindTaskTemplateResp](_))
       })
@@ -79,7 +79,7 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
       IO.defer {
         if (data.templates.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](NotFoundMessage)
         else {
-          data.deleteTemplate(id)
+          val _ = data.deleteTemplate(id)
           PreviewResponses.okEmpty("Task template deleted successfully")
         }
       }

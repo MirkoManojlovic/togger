@@ -145,7 +145,7 @@ class TasksPreviewData(
 
   def deleteTaskVersion(version: UUID): Unit = {
     removeFromTimeboxes(Set(version))
-    taskVersions.delete(version)
+    val _ = taskVersions.delete(version)
   }
 
   def deleteTimebox(timeboxId: UUID): Boolean = {

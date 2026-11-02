@@ -12,7 +12,6 @@ import com.togger.routes.FrontendPage
 import com.togger.routes.ListParams
 import com.togger.routes.Pages._
 import com.togger.routes.TgRouter
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
@@ -42,7 +41,6 @@ class ShowAllProjectsTableComponent(
   organizationServiceFe: OrganizationServiceFe,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   dataExportService: DataExportFeService,
   modalFactory: ModalFactory,
   sidebarRefresh: SidebarRefresh,

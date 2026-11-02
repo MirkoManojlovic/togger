@@ -217,8 +217,8 @@ class TaskPreviewComponent(
           div(
             logDateAttr := day.toString,
             cls("mb-2 p-2 border rounded-base"),
-            cls.toggle("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
-            cls.toggle("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
+            cls("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
+            cls("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
             dayEntries
               .sortBy(_.createdAt)
               .reverse

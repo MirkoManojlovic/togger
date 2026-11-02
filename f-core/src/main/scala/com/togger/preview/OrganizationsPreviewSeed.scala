@@ -13,13 +13,13 @@ class OrganizationsPreviewSeed(
 
   override def seed(): Unit = {
     demoOrganizations.foreach { organization =>
-      organizations.organizations.upsert(
+      val _ = organizations.organizations.upsert(
         PreviewOrganization(organization.id, organization.name, organization.description, organization.icon)
       )
       organizations.addMembers(organization.id, organization.memberIds)
     }
     demoProjects.foreach { project =>
-      projects.projects.upsert(
+      val _ = projects.projects.upsert(
         PreviewProject(
           project.id,
           project.organizationId,

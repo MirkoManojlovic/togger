@@ -37,9 +37,9 @@ class McpSettingsComponent {
         aria.label(s"Copy the $what to the clipboard"),
         TgIcons.copyIcon("w-6 h-6"),
         onClick --> { _ =>
-          dom.window.navigator.clipboard.writeText(text)
+          val _ = dom.window.navigator.clipboard.writeText(text)
           copiedVar.set(true)
-          js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
+          val _ = js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
         }
       ),
       child <-- copiedVar.signal.map { copied =>

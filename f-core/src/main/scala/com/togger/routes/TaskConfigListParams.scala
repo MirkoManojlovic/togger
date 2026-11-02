@@ -3,7 +3,10 @@ package com.togger.routes
 /** The pages of the two lists on the task config screen, as carried by the URL: the export configs and the import
   * configs each have their own page and size.
   */
-case class TaskConfigListParams(export: ListParams = ListParams.default, importData: ListParams = ListParams.default) {
+case class TaskConfigListParams(
+  `export`: ListParams = ListParams.default,
+  importData: ListParams = ListParams.default
+) {
 
   /** Another page of the export config list, the import config list stays where it is. */
   def exportAtPage(newPage: Int, newSize: Int): TaskConfigListParams = copy(export = export.atPage(newPage, newSize))

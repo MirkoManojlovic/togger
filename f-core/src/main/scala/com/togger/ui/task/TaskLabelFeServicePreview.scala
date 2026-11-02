@@ -58,7 +58,7 @@ class TaskLabelFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewDa
       IO.defer {
         if (data.labels.find(id).isEmpty) PreviewResponses.notFound[TgEmptyBody]
         else {
-          data.deleteLabel(id)
+          val _ = data.deleteLabel(id)
           PreviewResponses.okEmpty("Task label deleted successfully")
         }
       }

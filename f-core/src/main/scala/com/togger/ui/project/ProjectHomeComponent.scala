@@ -260,7 +260,6 @@ class ProjectHomeComponent(
       router,
       tgDateFormater,
       tgClock,
-      projectId,
       allMilestonesVar.now(),
       workDays,
       tasks,

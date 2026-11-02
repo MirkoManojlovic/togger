@@ -24,7 +24,7 @@ class ProjectMappingFeServicePreview(ctx: PreviewContext, projects: ProjectsPrev
         else {
           val now = ctx.clock.currentInstant
           val mapping = ProjectMappingResp(dto.projectIdDb, dto.projectIdDump, now, now)
-          data.mappings.upsert(PreviewProjectMapping(UUID.randomUUID(), mapping))
+          val _ = data.mappings.upsert(PreviewProjectMapping(UUID.randomUUID(), mapping))
           PreviewResponses.ok(mapping)
         }
       }
@@ -49,7 +49,7 @@ class ProjectMappingFeServicePreview(ctx: PreviewContext, projects: ProjectsPrev
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
         find(projectIdDb, projectIdDump).fold(PreviewResponses.notFound[TgEmptyBody]) { existing =>
-          data.mappings.delete(existing.id)
+          val _ = data.mappings.delete(existing.id)
           PreviewResponses.okEmpty("Project mapping deleted successfully")
         }
       )

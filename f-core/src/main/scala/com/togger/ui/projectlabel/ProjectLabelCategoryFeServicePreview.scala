@@ -45,7 +45,7 @@ class ProjectLabelCategoryFeServicePreview(ctx: PreviewContext, data: ProjectLab
         else if (data.labels.all.exists(_.categoryId == id))
           PreviewResponses.badRequest[TgEmptyBody]("The category still has project labels and cannot be deleted")
         else {
-          data.categories.delete(id)
+          val _ = data.categories.delete(id)
           PreviewResponses.okEmpty("Project label category deleted successfully")
         }
       }

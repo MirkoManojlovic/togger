@@ -53,7 +53,9 @@ class ThemeStore(localStorage: LocalStorage) {
   }
 
   def applyToDocument(dark: Boolean): Unit =
-    dom.document.documentElement.classList.toggle("dark", dark)
+    locally {
+      val _ = dom.document.documentElement.classList.toggle("dark", dark)
+    }
 
   /** Keeps System mode live if the OS theme changes while the app is open. */
   def listenToSystemPreference(): Unit = {

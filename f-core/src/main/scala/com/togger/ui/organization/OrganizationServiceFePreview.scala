@@ -30,7 +30,7 @@ class OrganizationServiceFePreview(
           organization.description,
           organization.icon
         )
-        organizations.organizations.upsert(created)
+        val _ = organizations.organizations.upsert(created)
         organizations.addMembers(created.id, callerId +: organization.membersToAdd)
         PreviewResponses.ok(toResp(created))
       }
@@ -54,7 +54,7 @@ class OrganizationServiceFePreview(
         else {
           projects.projects.filter(_.organizationId == id).foreach(project => projects.deleteProject(project.id))
           organizations.members.deleteWhere(_.parentId == id)
-          organizations.organizations.delete(id)
+          val _ = organizations.organizations.delete(id)
           PreviewResponses.okEmpty("Organization deleted successfully")
         }
       }

@@ -25,7 +25,7 @@ class TaskConfigPreviewSeed(
       data.labels.upsert(FindTaskLabelResp(l.id, l.projectId, l.label.labelName, l.label.description, l.label.emoji))
     }
     templates.foreach { template =>
-      data.templates.upsert(
+      val _ = data.templates.upsert(
         PreviewTaskTemplate(
           template.id,
           template.projectId,

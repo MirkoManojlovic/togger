@@ -69,7 +69,10 @@ class ScrollableStepper(stepper: HtmlElement, stepsPerClick: Int, currentIndex: 
     }
 
   private def scrollTo(left: Double): Unit =
-    row.asInstanceOf[scalajs.js.Dynamic].scrollTo(scalajs.js.Dynamic.literal(left = left, behavior = "smooth"))
+    locally {
+      val _ =
+        row.asInstanceOf[scalajs.js.Dynamic].scrollTo(scalajs.js.Dynamic.literal(left = left, behavior = "smooth"))
+    }
 
   private val arrowCls =
     "shrink-0 inline-flex items-center justify-center w-8 h-8 text-body bg-neutral-secondary-medium border " +
@@ -103,7 +106,7 @@ class ScrollableStepper(stepper: HtmlElement, stepsPerClick: Int, currentIndex: 
         windowEvents(_.onResize) --> (_ => refresh()),
         // after the first layout, so the steps have their widths
         onMountCallback { _ =>
-          dom.window.setTimeout(
+          val _ = dom.window.setTimeout(
             () => {
               centreCurrent()
               refresh()

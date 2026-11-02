@@ -143,7 +143,7 @@ class TaskFeServicePreview(
     secured { _ =>
       if (data.tasks.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](TaskNotFound)
       else {
-        data.deleteTask(id)
+        val _ = data.deleteTask(id)
         PreviewResponses.okEmpty("Task deleted successfully")
       }
     }
@@ -254,7 +254,7 @@ class TaskFeServicePreview(
           if (isLast && data.latestLogEntryVersion(existing.logEntryId).exists(_.version == version))
             PreviewResponses.badRequest[TgEmptyBody]("Cannot delete the only remaining version of a log entry")
           else {
-            data.logEntryVersions.delete(version)
+            val _ = data.logEntryVersions.delete(version)
             PreviewResponses.okEmpty("Log entry version deleted successfully")
           }
       }
@@ -282,7 +282,7 @@ class TaskFeServicePreview(
           val onlyOne = data.linkVersions.filter(_.linkId == existing.linkId).size <= 1
           if (onlyOne) PreviewResponses.badRequest[TgEmptyBody]("Cannot delete the only remaining version of a link")
           else {
-            data.linkVersions.delete(version)
+            val _ = data.linkVersions.delete(version)
             PreviewResponses.okEmpty("Link version deleted successfully")
           }
       }
@@ -386,7 +386,7 @@ class TaskFeServicePreview(
         existingLabelIds(req.projectId, req.taskLabelIds)
       )
     )
-    data.taskVersions.upsert(
+    val _ = data.taskVersions.upsert(
       TaskVersionDto(
         UUID.randomUUID(),
         task.id,

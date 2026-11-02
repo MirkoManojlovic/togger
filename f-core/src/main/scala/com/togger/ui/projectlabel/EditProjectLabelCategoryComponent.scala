@@ -2,13 +2,11 @@ package com.togger.ui.projectlabel
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
@@ -26,8 +24,6 @@ case class EditProjectLabelCategoryForm(
 class EditProjectLabelCategoryComponent(
   projectLabelCategoryService: ProjectLabelCategoryFeService,
   spinnerService: SpinnerService,
-  tgClock: TgClock,
-  accountService: AccountService,
   projectLabelCategoryId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)

@@ -6,7 +6,7 @@ import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
 
 class UpdaterComponent {

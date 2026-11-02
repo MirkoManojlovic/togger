@@ -12,7 +12,7 @@ class TaskListRouteTest extends AsyncJsWordSpec {
   private val statusId = UUID.randomUUID().toString
   private val otherId = UUID.randomUUID().toString
 
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: ShowAllTasksPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

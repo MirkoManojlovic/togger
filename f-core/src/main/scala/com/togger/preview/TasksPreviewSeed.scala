@@ -21,7 +21,7 @@ class TasksPreviewSeed(data: TasksPreviewData, tasks: List[DemoTask], timeboxes:
     )
     data.logEntryVersions.replaceAll(tasks.flatMap(_.logEntries).flatMap(_.versions))
     timeboxes.foreach { timebox =>
-      data.timeboxes.upsert(PreviewTimebox(timebox.id, timebox.projectId, timebox.createdAt))
+      val _ = data.timeboxes.upsert(PreviewTimebox(timebox.id, timebox.projectId, timebox.createdAt))
       timebox.versions.foreach { v =>
         data.timeboxVersions.upsert(
           PreviewTimeboxVersion(

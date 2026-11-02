@@ -84,7 +84,7 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
     }
 
     "apply status, assignee, milestone, priority and label edits" in {
-      val edited = Seq(
+      val edited = Seq[Any](
         edit(bare, BulkEdit.SetStatus(done.id)).taskStatus,
         edit(bare, BulkEdit.SetAssignee(Some(member.id))).assignedTo,
         edit(bare, BulkEdit.SetMilestone(Some(milestone.id))).milestone,

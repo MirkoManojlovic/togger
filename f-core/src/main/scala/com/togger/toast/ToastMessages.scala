@@ -110,7 +110,7 @@ trait ToastMessageTgRespIO {
       )
 
     def toastBackendMessage: IO[Unit] =
-      resp.toastBackendMessageCodeBlock(())
+      toastBackendMessageCodeBlock(())
 
     def toastHandleErrorUnit(e: PartialFunction[TgJsonFailure, Unit])(successFn: DTO => Unit): IO[Unit] =
       resp.flatMap(

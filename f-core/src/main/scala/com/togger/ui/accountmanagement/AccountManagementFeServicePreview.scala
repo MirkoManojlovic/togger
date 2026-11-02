@@ -57,7 +57,7 @@ class AccountManagementFeServicePreview(
           email = email,
           accountTypeId = req.accountTypeId
         )
-        accounts.accounts.upsert(updated)
+        val _ = accounts.accounts.upsert(updated)
         PreviewResponses.ok(toDto(updated))
     }
   }

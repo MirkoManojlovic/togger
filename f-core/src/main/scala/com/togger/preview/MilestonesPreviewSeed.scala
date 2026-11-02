@@ -9,7 +9,7 @@ class MilestonesPreviewSeed(data: MilestonesPreviewData, milestones: List[DemoMi
 
   override def seed(): Unit =
     milestones.foreach { m =>
-      data.milestones.upsert(
+      val _ = data.milestones.upsert(
         PreviewMilestone(
           id = m.id,
           projectId = m.projectId,

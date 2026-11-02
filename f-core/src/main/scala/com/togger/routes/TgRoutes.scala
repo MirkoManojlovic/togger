@@ -47,7 +47,7 @@ class TgRoutes {
       Option[String]
     )
 
-  def routes(basePath: String): Seq[Route[_ <: FrontendPage, _ <: Any]] =
+  def routes(): Seq[Route[_ <: FrontendPage, _ <: Any]] =
     Seq(
       Route.static(
         HomePage,

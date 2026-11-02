@@ -11,7 +11,7 @@ class TaskConfigListRouteTest extends AsyncJsWordSpec {
   private val origin = "http://localhost:5173"
   private val path = s"/sync-config/project/$projectId"
 
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: SyncConfigPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

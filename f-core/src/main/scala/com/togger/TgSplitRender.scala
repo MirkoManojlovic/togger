@@ -81,7 +81,7 @@ import java.util.UUID
 class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig = PreviewConfig.disabled) {
 
   // FIXME
-  implicit val runtime = cats.effect.unsafe.implicits.global
+  implicit val runtime: cats.effect.unsafe.IORuntime = cats.effect.unsafe.implicits.global
 
   lazy val elementForSpinner = div()
   lazy val spinnerService = SpinnerService.globalSpinner(
@@ -208,7 +208,9 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
 
-  themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
+  locally {
+    val _ = themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
+  }
   themeStore.listenToSystemPreference()
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
@@ -475,8 +477,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   localStorage,
                   toast
@@ -486,7 +486,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   router,
                   spinnerService,
-                  accountService,
                   projectId,
                   listParams,
                   toast,
@@ -496,8 +495,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new EditTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskStatusId,
                   localStorage,
@@ -507,8 +504,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateTaskLabelComponent(
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   localStorage,
                   toast
@@ -518,17 +513,13 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskLabelService,
                   router,
                   spinnerService,
-                  accountService,
                   projectId,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) =>
                 new EditTaskLabelComponent(
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskLabelId,
                   localStorage,
@@ -539,8 +530,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateService,
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   toast
                 ).element
@@ -549,7 +538,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateService,
                   router,
                   spinnerService,
-                  accountService,
                   tgDateFormater,
                   modalFactory,
                   projectId,
@@ -563,8 +551,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   tgMarkdown,
                   tgDateFormater,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskTemplateId,
                   toast
@@ -691,7 +677,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   organizationService,
                   router,
                   spinnerService,
-                  accountService,
                   dataExportService,
                   modalFactory,
                   sidebarRefresh,
@@ -718,7 +703,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   accountService,
                   listParams,
-                  toast,
                   tgMarkdown
                 ).element
               case EditOrganizationPage(organizationId) =>
@@ -739,8 +723,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelService,
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   toast
                 ).element
               case ShowAllProjectLabelsPage(listParams) =>
@@ -749,7 +731,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService,
                   listParams
                 ).element
               case EditProjectLabelPage(projectLabelId) =>
@@ -757,8 +738,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelService,
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectLabelId,
                   toast
                 ).element
@@ -818,8 +797,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateProjectLabelCategoryComponent(
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   toast
                 ).element
               case ShowAllProjectLabelCategoriesPage(listParams) =>
@@ -827,16 +804,12 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case EditProjectLabelCategoryPage(projectLabelCategoryId) =>
                 new EditProjectLabelCategoryComponent(
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectLabelCategoryId,
                   toast
                 ).element
@@ -885,7 +858,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
-                  dateRangeValidation,
                   tgClock,
                   projectService,
                   id,
@@ -951,8 +923,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   tgDateFormater,
                   tgMarkdown,
                   projectId,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case ShowMilestoneHistoryPage(projectId: UUID, historyParams) =>
                 new MilestoneHistoryComponent(

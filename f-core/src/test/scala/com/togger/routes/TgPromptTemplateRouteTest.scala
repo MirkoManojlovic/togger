@@ -11,7 +11,7 @@ class TgPromptTemplateRouteTest extends AsyncJsWordSpec {
 
   private val promptId = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: FrontendPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

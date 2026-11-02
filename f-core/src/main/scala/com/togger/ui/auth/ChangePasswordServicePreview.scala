@@ -30,7 +30,7 @@ class ChangePasswordServicePreview(accounts: AccountsPreviewData, loginRepo: Log
       case Some(account) if account.password != dto.oldPassword =>
         PreviewResponses.badRequest("Old password is incorrect")
       case Some(account) =>
-        accounts.accounts.upsert(account.copy(password = dto.newPassword))
+        val _ = accounts.accounts.upsert(account.copy(password = dto.newPassword))
         PreviewResponses.okEmpty("Password successfully changed")
     }
 }

@@ -15,7 +15,6 @@ import com.togger.routes.Pages.EditProjectLabelPage
 import com.togger.routes.Pages.ShowAllProjectLabelCategoriesPage
 import com.togger.routes.Pages.ShowAllProjectLabelsPage
 import com.togger.routes.TgRouter
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.TgHtmlTable.createTh
@@ -43,7 +42,6 @@ class ShowAllProjectLabelsComponent(
   projectLabelCategoryService: ProjectLabelCategoryFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   params: ListParams
 )(implicit
   ioRuntime: IORuntime

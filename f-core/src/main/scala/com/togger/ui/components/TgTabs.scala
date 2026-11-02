@@ -89,7 +89,7 @@ class TgTabs(
     )
 
   private def tabListItem(buttonElement: HtmlButton, index: Int): HtmlLi =
-    li(cls.toggle("me-2") := index < tabs.size - 1, buttonElement)
+    li(cls("me-2") := index < tabs.size - 1, buttonElement)
 
   private def tabButton(tab: TgTab): HtmlButton =
     button(
@@ -101,7 +101,7 @@ class TgTabs(
       aria.selected <-- isSelected(tab),
       tabIndex <-- rovingTabIndex(tab),
       cls(tabBaseCls),
-      cls.toggle("relative") := tab.pendingLabel.isDefined,
+      cls("relative") := tab.pendingLabel.isDefined,
       cls <-- tabCls(tab),
       onClick.mapToUnit --> (_ => select(tab.id)),
       tab.icon.map(mkIcon => mkIcon(iconCls)),
@@ -122,7 +122,7 @@ class TgTabs(
       aria.labelledBy(tabId(tab)),
       tabIndex(0),
       hidden <-- isHidden,
-      cls.toggle("hidden") <-- isHidden,
+      cls("hidden") <-- isHidden,
       tab.content.amend(cls("mt-4"))
     )
   }

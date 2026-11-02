@@ -166,8 +166,7 @@ object TgCard {
 //    )
 
     def fromSignalElement(
-      paginationSig: Signal[Option[HtmlDiv]],
-      cardFooterStyle: Seq[StyleSetter] = List.empty
+      paginationSig: Signal[Option[HtmlDiv]]
     ): CardFooter = CardFooter.html(
       div(child.maybe <-- paginationSig),
       cardFooterStyle = Seq(display.flex, justifyContent.start)

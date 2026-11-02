@@ -9,7 +9,6 @@ import com.togger.routes.Pages.CreateProjectLabelCategoryPage
 import com.togger.routes.Pages.EditProjectLabelCategoryPage
 import com.togger.routes.Pages.ShowAllProjectLabelCategoriesPage
 import com.togger.routes.TgRouter
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.TgHtmlTable.createTh
@@ -21,7 +20,6 @@ import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
-import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
@@ -31,9 +29,7 @@ class ShowAllProjectLabelCategoriesComponent(
   projectLabelCategoryService: ProjectLabelCategoryFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
-  params: ListParams,
-  toast: Toast
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {

@@ -37,7 +37,8 @@ class ChangeAccountInfoServicePreview(accounts: AccountsPreviewData, loginRepo: 
       case None                                               => PreviewResponses.notFound
       case Some(_) if emailTakenByOther(accountId, dto.email) => PreviewResponses.badRequest(EmailAlreadyInUse.message)
       case Some(account) =>
-        accounts.accounts.upsert(account.copy(firstName = dto.firstName, lastName = dto.lastName, email = dto.email))
+        val _ =
+          accounts.accounts.upsert(account.copy(firstName = dto.firstName, lastName = dto.lastName, email = dto.email))
         PreviewResponses.ok(dto)
     }
 

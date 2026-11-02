@@ -77,7 +77,7 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
 
   override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     owned(id) { (_, action) =>
-      data.deleteAction(action.id)
+      val _ = data.deleteAction(action.id)
       PreviewResponses.okEmpty("AI action deleted successfully")
     }
 

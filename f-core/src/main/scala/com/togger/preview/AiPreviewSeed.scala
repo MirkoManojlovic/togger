@@ -14,7 +14,7 @@ class AiPreviewSeed(
 
   override def seed(): Unit = {
     prompts.foreach { prompt =>
-      data.promptTemplates.upsert(PreviewPromptTemplate(prompt.id, prompt.createdBy, prompt.createdAt))
+      val _ = data.promptTemplates.upsert(PreviewPromptTemplate(prompt.id, prompt.createdBy, prompt.createdAt))
       prompt.versions.foreach(data.promptVersions.upsert)
     }
     actions.foreach { a =>

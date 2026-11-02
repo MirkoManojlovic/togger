@@ -18,7 +18,6 @@ import com.togger.ui.components.TgStatColumn
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.task.TaskProgressComponent
-import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 
 import java.time.DayOfWeek
@@ -36,7 +35,6 @@ class StagedTasksComponent(
   projectId: UUID,
   workDays: Signal[Set[DayOfWeek]],
   timebox: Signal[Option[(LocalDate, LocalDate)]],
-  tgDateFormater: TgDateFormater,
   capacity: Signal[Option[TimeboxCapacity]],
   milestones: Signal[Seq[FindMilestoneResp]],
   isDark: Signal[Boolean],
@@ -58,7 +56,7 @@ class StagedTasksComponent(
   private def statElement(title: String, value: Modifier[HtmlElement]): HtmlElement =
     div(cls("flex flex-col gap-0.5"), span(cls("text-xs text-body-subtle"), title), value)
 
-  private def badges(items: Seq[HtmlElement], alignment: String = "items-start"): HtmlElement =
+  private def badges(items: Seq[HtmlElement], alignment: String): HtmlElement =
     if (items.isEmpty) span(cls("text-sm font-medium text-heading"), Empty)
     else div(cls(s"flex flex-col $alignment gap-1"), items)
 

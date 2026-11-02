@@ -25,7 +25,6 @@ import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
-import com.togger.ui.toast.Toast
 
 class ShowAllOrganizationsComponent(
   organizationService: OrganizationServiceFe,
@@ -33,7 +32,6 @@ class ShowAllOrganizationsComponent(
   spinnerService: SpinnerService,
   accountService: AccountService,
   params: ListParams,
-  toast: Toast,
   tgMarkdown: TgMarkdown
 )(implicit
   ioRuntime: IORuntime

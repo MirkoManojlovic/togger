@@ -12,7 +12,6 @@ import com.togger.ui.components.TgBadge
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
-import java.util.UUID
 
 /** What a place showing the active tasks leaves out or says.
   *
@@ -33,7 +32,6 @@ class ActiveTasksComponent(
   router: TgRouter[FrontendPage],
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
-  projectId: UUID,
   milestones: Seq[FindMilestoneResp],
   workDays: Set[DayOfWeek],
   tasks: Seq[FindTaskRespFull],

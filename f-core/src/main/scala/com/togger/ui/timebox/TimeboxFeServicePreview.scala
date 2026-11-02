@@ -100,7 +100,7 @@ class TimeboxFeServicePreview(
 
   override def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody] =
     secured {
-      data.deleteTimebox(id)
+      val _ = data.deleteTimebox(id)
       PreviewResponses.okEmpty("Timebox deleted successfully")
     }
 

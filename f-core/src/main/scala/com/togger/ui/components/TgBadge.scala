@@ -303,7 +303,7 @@ case class TgBadge(
     case Some(TgBadgeAction.Dismiss(observer)) =>
       span(
         cls(containerCls),
-        cls.toggle(TgBadgeStyles.dismissedCls) <-- dismissedVar.signal,
+        cls(TgBadgeStyles.dismissedCls) <-- dismissedVar.signal,
         iconNode,
         span(text),
         dismissButton(observer)

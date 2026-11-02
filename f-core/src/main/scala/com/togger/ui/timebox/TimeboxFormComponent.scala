@@ -515,7 +515,6 @@ class TimeboxFormComponent(
     projectId,
     lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
     formDatesSignal,
-    tgDateFormater,
     capacitySignal,
     lookups.milestonesVar.signal,
     isDark,

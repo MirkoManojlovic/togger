@@ -23,22 +23,22 @@ class ExportCheckFlow(
   ioRuntime: IORuntime
 ) {
 
-  def start(check: TgRespIO[DataExportStatusResp], export: TgRespIO[DataExportResp]): Unit =
+  def start(check: TgRespIO[DataExportStatusResp], exportCall: TgRespIO[DataExportResp]): Unit =
     spinnerService
       .runWithSpinner(check)
       .flatMap(
         _.fold(
           error => IO(toast.error(error)),
-          success => IO(showCheck(success.body.get, export))
+          success => IO(showCheck(success.body.get, exportCall))
         )
       )
       .unsafeRunAndForget()
 
-  private def showCheck(status: DataExportStatusResp, export: TgRespIO[DataExportResp]): Unit =
+  private def showCheck(status: DataExportStatusResp, exportCall: TgRespIO[DataExportResp]): Unit =
     showModal("Export check")(
       new ExportCheckComponent(
         status.pathStatuses,
-        onAll = _ => runExport(export),
+        onAll = _ => runExport(exportCall),
         onPath = path =>
           path.exportConfigId match {
             case Some(configId) => runExport(dataExportService.exportByConfig(configId))
@@ -47,9 +47,9 @@ class ExportCheckFlow(
       ).element
     )
 
-  private def runExport(export: TgRespIO[DataExportResp]): Unit =
+  private def runExport(exportCall: TgRespIO[DataExportResp]): Unit =
     spinnerService
-      .runWithSpinner(export)
+      .runWithSpinner(exportCall)
       .flatMap(
         _.fold(
           error => IO(toast.error(error)),

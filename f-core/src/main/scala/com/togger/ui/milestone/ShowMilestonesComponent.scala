@@ -32,7 +32,6 @@ import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.task.bulk.BulkTaskCard
-import com.togger.ui.toast.Toast
 import org.scalajs.dom.HTMLTableCellElement
 
 import java.util.UUID
@@ -45,8 +44,7 @@ class ShowMilestonesComponent(
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
   projectId: UUID,
-  params: MilestoneListParams,
-  toast: Toast
+  params: MilestoneListParams
 )(implicit
   ioRuntime: IORuntime
 ) {

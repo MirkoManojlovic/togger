@@ -66,7 +66,7 @@ class TaskStatusFeServicePreview(
         case Some(_) if stats.source.statusInUse(id) =>
           PreviewResponses.badRequest[TgEmptyBody]("Task status is used by tasks and cannot be deleted")
         case Some(_) =>
-          data.statuses.delete(id)
+          val _ = data.statuses.delete(id)
           PreviewResponses.okEmpty("Task status deleted successfully")
       })
     )

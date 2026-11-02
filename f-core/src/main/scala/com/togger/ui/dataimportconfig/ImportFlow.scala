@@ -106,7 +106,7 @@ class ImportFlow(
           )
         else if (failures.nonEmpty && successes.nonEmpty)
           toast.error(s"Imported from ${successes.size}/${importPaths.size} path(s); ${failures.size} failed")
-        modalFactory.previewModal(content(importPaths, outcomes), "Import results")
+        modalFactory.previewModal(content(outcomes), "Import results")
       }
       .unsafeRunAndForget()
   }
@@ -119,7 +119,7 @@ class ImportFlow(
         else new ImportResultsComponent(dto.results).element
     )
 
-  private def content(importPaths: List[String], outcomes: List[(String, Either[TgJsonFailure, DataImportResp])]) =
+  private def content(outcomes: List[(String, Either[TgJsonFailure, DataImportResp])]) =
     outcomes match {
       case Nil                 => div(cls("p-4 text-body"), "No import paths configured for this project")
       case ("", _) :: Nil      => div(cls("p-4 text-body"), "Could not load the import paths of this project")

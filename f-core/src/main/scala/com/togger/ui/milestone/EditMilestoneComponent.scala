@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.DateRangeValidation
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneDateReq
@@ -50,7 +49,6 @@ class EditMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
   spinnerService: SpinnerService,
-  dateRangeValidation: DateRangeValidation,
   tgClock: TgClock,
   projectService: ProjectService,
   milestoneId: UUID,

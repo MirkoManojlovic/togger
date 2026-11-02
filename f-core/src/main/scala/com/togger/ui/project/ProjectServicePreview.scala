@@ -36,7 +36,7 @@ class ProjectServicePreview(
             defaultWorkDays,
             dto.projectLabelIds.distinct.toList
           )
-          projects.projects.upsert(created)
+          val _ = projects.projects.upsert(created)
           projects.addMembers(created.id, callerId +: dto.membersToAdd)
           projects.notifyProjectCreated(created.id)
           PreviewResponses.ok(toResp(created))
@@ -74,7 +74,7 @@ class ProjectServicePreview(
       IO.defer {
         if (!projects.isMember(id, callerId) && !accounts.isAdmin(callerId)) IO.pure(Left(Forbidden))
         else {
-          projects.deleteProject(id)
+          val _ = projects.deleteProject(id)
           PreviewResponses.okEmpty("Project deleted successfully")
         }
       }

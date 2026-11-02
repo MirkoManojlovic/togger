@@ -11,7 +11,6 @@ import com.togger.routes.Pages.EditTaskTemplatePage
 import com.togger.routes.Pages.ShowAllTaskTemplatesPage
 import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
@@ -38,7 +37,6 @@ class ShowAllTaskTemplatesComponent(
   taskTemplateService: TaskTemplateFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   tgDateFormater: TgDateFormater,
   modalFactory: ModalFactory,
   projectId: UUID,

@@ -85,7 +85,7 @@ class MilestoneSummaryFeServicePreview(
 
   override def deleteMilestoneSummary(id: UUID): TgRespIO[TgEmptyBody] =
     asProjectMember(projectIdOfSummary(id), SummaryNotFound) {
-      data.summaries.delete(id)
+      val _ = data.summaries.delete(id)
       PreviewResponses.okEmpty("Milestone summary deleted successfully")
     }
 

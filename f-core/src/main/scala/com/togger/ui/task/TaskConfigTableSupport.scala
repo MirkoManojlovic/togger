@@ -80,9 +80,9 @@ object TaskConfigTableSupport {
         aria.label("Copy the path to the clipboard"),
         TgIcons.copyIcon("w-6 h-6"),
         onClick --> { _ =>
-          dom.window.navigator.clipboard.writeText(path)
+          val _ = dom.window.navigator.clipboard.writeText(path)
           copiedVar.set(true)
-          js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
+          val _ = js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
         }
       ),
       child <-- copiedVar.signal.map { copied =>

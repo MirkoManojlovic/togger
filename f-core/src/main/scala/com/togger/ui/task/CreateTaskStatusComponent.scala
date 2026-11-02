@@ -2,13 +2,11 @@ package com.togger.ui.task
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
@@ -30,8 +28,6 @@ case class CreateTaskStatusForm(
 class CreateTaskStatusComponent(
   taskStatusService: TaskStatusFeService,
   spinnerService: SpinnerService,
-  tgClock: TgClock,
-  accountService: AccountService,
   projectId: UUID,
   localStorage: LocalStorage,
   val toast: Toast
