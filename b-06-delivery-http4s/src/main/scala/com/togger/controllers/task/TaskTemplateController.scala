@@ -33,21 +33,21 @@ class TaskTemplateController(
     }
   }
 
-  val findById = findByIdEndpoint.serverLogic { auth => id =>
+  val findById = findByIdEndpoint.serverLogic { _ => id =>
     taskTemplateService.findById(id).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindTaskTemplateResp]
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     taskTemplateService.update(dto.id, dto.name, dto.body, dto.taskLabelId, tgClock.currentInstant).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindTaskTemplateResp]
     }
   }
 
-  val findByProjectId = findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       taskTemplateService
@@ -56,13 +56,13 @@ class TaskTemplateController(
     }
   }
 
-  val findByLabel = findByLabelEndpoint.serverLogic { auth => labelId =>
+  val findByLabel = findByLabelEndpoint.serverLogic { _ => labelId =>
     taskTemplateService
       .findByLabelId(labelId)
       .map(template => TgJsonSuccess.justBodyRight(template.map(toDto)))
   }
 
-  val listVersions = listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = listVersionsEndpoint.serverLogic { _ => request =>
     val (templateId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       taskTemplateService
@@ -71,7 +71,7 @@ class TaskTemplateController(
     }
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     taskTemplateService.delete(id).map {
       case Right(_)    => TgJsonSuccess.justMessageRight("Task template deleted successfully")
       case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]

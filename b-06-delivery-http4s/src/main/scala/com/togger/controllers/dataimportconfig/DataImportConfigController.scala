@@ -34,7 +34,7 @@ class DataImportConfigController(
     )
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => id =>
+    findByIdEndpoint.serverLogic { _ => id =>
       dataImportConfigService
         .findById(id)
         .map(dataImportConfig => TgJsonSuccess.justBodyRight(toResp(dataImportConfig)))
@@ -92,14 +92,14 @@ class DataImportConfigController(
 
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     dataImportConfigService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Import data config deleted successfully"))
   }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         dataImportConfigService

@@ -40,7 +40,7 @@ class LogArchive extends TgLogging {
 
         val zipLocation = logPath / s"$archiveName.zip"
         logger.info(s"Started zipping at location $zipLocation")
-        os.zip(
+        val _ = os.zip(
           dest = zipLocation,
           sources = Seq(archivePath)
         )

@@ -16,6 +16,7 @@ import liquibase.resource.DirectoryResourceAccessor
 import java.io.File
 import java.sql.DriverManager
 import java.sql.SQLException
+import scala.annotation.nowarn
 
 class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
   private val jdbcUrl = s"jdbc:postgresql:${dbMode.dbName}"
@@ -35,7 +36,7 @@ class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
       val liquibase = new Liquibase("changelog.yaml", resourceAccessor, database)
 
       liquibase.dropAll()
-      liquibase.update(new Contexts())
+      liquibase.update(new Contexts()): @nowarn("cat=deprecation")
     } finally {
       if (connection != null) {
         connection.rollback();

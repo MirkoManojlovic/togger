@@ -53,7 +53,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       projectLabels = projectLabels.map(toProjectLabelDto)
     )
 
-  val findByid = findByIdEndpoint.serverLogic { auth => id =>
+  val findByid = findByIdEndpoint.serverLogic { _ => id =>
     projectService
       .findById(id)
       .map { case (foundProject, members, projectLabels) =>
@@ -82,7 +82,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val workDays = dto.workDays.map(DayOfWeek.of)
 
     if (workDays.isEmpty) {
@@ -146,7 +146,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     }
   }
 
-  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => request =>
+  val findAllMembers = findAllMembersEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       projectService

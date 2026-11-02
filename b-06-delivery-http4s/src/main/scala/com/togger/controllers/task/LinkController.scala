@@ -12,13 +12,13 @@ class LinkController(
   linkService: LinkService
 ) {
 
-  val listVersions = linkEndpoints.listVersionsEndpoint.serverLogic { auth => linkId =>
+  val listVersions = linkEndpoints.listVersionsEndpoint.serverLogic { _ => linkId =>
     linkService
       .listVersions(linkId)
       .map(versions => TgJsonSuccess.justBodyRight(versions.map(toVersionDto)))
   }
 
-  val updateVersion = linkEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = linkEndpoints.updateVersionEndpoint.serverLogic { _ => dto =>
     linkService
       .updateVersionContent(dto.version, dto.name, dto.url)
       .map {
@@ -27,7 +27,7 @@ class LinkController(
       }
   }
 
-  val deleteVersion = linkEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = linkEndpoints.deleteVersionEndpoint.serverLogic { _ => version =>
     linkService
       .deleteVersion(version)
       .map {

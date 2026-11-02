@@ -35,7 +35,7 @@ class TaskController(
   import taskEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => taskId =>
+    findByIdEndpoint.serverLogic { _ => taskId =>
       taskService
         .findById(taskId)
         .flatMap { case (taskWithVersions, links, logEntries, taskLabels) =>
@@ -52,7 +52,7 @@ class TaskController(
     }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, filter, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         taskService
@@ -224,7 +224,7 @@ class TaskController(
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val taskDto = dto.task
     val linksForUpdate = dto.linksForUpdate
     val linksToCreate = LinkValidation.withoutBlankLinks(dto.linksToCreate)
@@ -312,7 +312,7 @@ class TaskController(
     }
   }
 
-  val delete = deleteEndpoint.serverLogic { auth => taskId =>
+  val delete = deleteEndpoint.serverLogic { _ => taskId =>
     taskService
       .deleteTask(taskId)
       .map {
@@ -321,7 +321,7 @@ class TaskController(
       }
   }
 
-  val listVersions = listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = listVersionsEndpoint.serverLogic { _ => request =>
     val (taskId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       taskVersionService
@@ -330,7 +330,7 @@ class TaskController(
     }
   }
 
-  val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = updateVersionEndpoint.serverLogic { _ => dto =>
     taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
       (projectService.findById(projectId), taskStatusService.findById(dto.taskStatusId)).flatMapN {
         case ((project, _, _), status) =>
@@ -367,7 +367,7 @@ class TaskController(
     }
   }
 
-  val deleteVersion = deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = deleteVersionEndpoint.serverLogic { _ => version =>
     taskVersionService
       .deleteVersion(version)
       .map {

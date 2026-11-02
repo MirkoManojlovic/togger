@@ -25,7 +25,7 @@ class MilestoneController(
   projectService: ProjectService
 ) {
 
-  val save = milestoneEndpoints.saveEndpoint.serverLogic { auth => dto =>
+  val save = milestoneEndpoints.saveEndpoint.serverLogic { _ => dto =>
     projectService.findById(dto.projectId).flatMap { case (project, _, _) =>
       dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), None, project.workDays) match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindMilestoneResp])
@@ -56,7 +56,7 @@ class MilestoneController(
     }
   }
 
-  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { _ => id =>
     milestoneService
       .getCurrent(id)
       .map {
@@ -65,7 +65,7 @@ class MilestoneController(
       }
   }
 
-  val findByProjectId = milestoneEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = milestoneEndpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, filter, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneService
@@ -76,7 +76,7 @@ class MilestoneController(
     }
   }
 
-  val update = milestoneEndpoints.updateEndpoint.serverLogic { auth => dto =>
+  val update = milestoneEndpoints.updateEndpoint.serverLogic { _ => dto =>
     milestoneService.getCurrent(dto.id).flatMap {
       case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
       case Right(current) =>
@@ -118,13 +118,13 @@ class MilestoneController(
     }
   }
 
-  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { _ => id =>
     milestoneService
       .deleteMilestone(id)
       .map(_ => TgJsonSuccess.justMessageRight("Milestone deleted successfully"))
   }
 
-  val listVersions = milestoneEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = milestoneEndpoints.listVersionsEndpoint.serverLogic { _ => request =>
     val (milestoneId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneService
@@ -133,7 +133,7 @@ class MilestoneController(
     }
   }
 
-  val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = milestoneEndpoints.updateVersionEndpoint.serverLogic { _ => dto =>
     milestoneService.findProjectIdByVersion(dto.version).flatMap { projectId =>
       projectService.findById(projectId).flatMap { case (project, _, _) =>
         val validation = for {
@@ -162,7 +162,7 @@ class MilestoneController(
     }
   }
 
-  val deleteVersion = milestoneEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = milestoneEndpoints.deleteVersionEndpoint.serverLogic { _ => version =>
     milestoneService
       .deleteVersion(version)
       .map {

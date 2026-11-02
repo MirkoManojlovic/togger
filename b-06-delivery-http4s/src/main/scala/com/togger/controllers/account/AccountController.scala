@@ -35,7 +35,7 @@ class AccountController(accountEndpoints: AccountEndpoints, accountServiceCore: 
   //      )
   //    }
   //
-  val searchByFirstNameLastNameEmail = accountEndpoints.searchByFirstNameLastNameEmail.serverLogic { auth => request =>
+  val searchByFirstNameLastNameEmail = accountEndpoints.searchByFirstNameLastNameEmail.serverLogic { _ => request =>
     val (searchTerm, pageRequest) = request
     AccountSearchTerm.validate(searchTerm) match {
       case Left(error) => error.toBadRequestLeftIO[PaginatedResponse[SearchAccountDto]]

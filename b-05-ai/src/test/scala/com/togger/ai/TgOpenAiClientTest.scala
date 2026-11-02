@@ -15,11 +15,16 @@ import sttp.client4.testing.StreamBackendStub
 import sttp.model.StatusCode
 import sttp.tapir.Schema
 
+object TgOpenAiClientTest {
+  final case class Greeting(text: String)
+}
+
 class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
+  import TgOpenAiClientTest.Greeting
+
   private val apiKey = TgAiApiKey("test-key")
   private val request = TgAiChatRequest(TgAiModel("gpt-4o-mini"), List(TgAiMessage.User("hello")))
 
-  final case class Greeting(text: String)
   private implicit val greetingCodec: Codec[Greeting] = deriveCodec
   private implicit val greetingSchema: Schema[Greeting] = Schema.derived
 

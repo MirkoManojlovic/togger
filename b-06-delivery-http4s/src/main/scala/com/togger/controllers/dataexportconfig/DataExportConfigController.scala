@@ -34,7 +34,7 @@ class DataExportConfigController(
     )
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => id =>
+    findByIdEndpoint.serverLogic { _ => id =>
       dataExportConfigService
         .findById(id)
         .map(dataExportConfig => TgJsonSuccess.justBodyRight(toResp(dataExportConfig)))
@@ -92,14 +92,14 @@ class DataExportConfigController(
 
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     dataExportConfigService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Task dump config deleted successfully"))
   }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         dataExportConfigService

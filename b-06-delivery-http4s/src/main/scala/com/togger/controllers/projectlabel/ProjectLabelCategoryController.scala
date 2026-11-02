@@ -17,7 +17,7 @@ class ProjectLabelCategoryController(
   import projectLabelCategoryEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => projectLabelCategoryId =>
+    findByIdEndpoint.serverLogic { _ => projectLabelCategoryId =>
       projectLabelCategoryService
         .findById(projectLabelCategoryId)
         .map { projectLabelCategory =>
@@ -28,7 +28,7 @@ class ProjectLabelCategoryController(
     }
 
   val findAll =
-    findAllEndpoint.serverLogic { auth => pageRequest =>
+    findAllEndpoint.serverLogic { _ => pageRequest =>
       PageRequestValidation.withPage(pageRequest) { page =>
         projectLabelCategoryService
           .findPaginated(page)
@@ -42,7 +42,7 @@ class ProjectLabelCategoryController(
       }
     }
 
-  val save = saveEndpoint.serverLogic { auth => dto =>
+  val save = saveEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabelCategory = ProjectLabelCategory(
@@ -59,7 +59,7 @@ class ProjectLabelCategoryController(
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabelCategory = ProjectLabelCategory(
@@ -76,7 +76,7 @@ class ProjectLabelCategoryController(
     }
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     projectLabelCategoryService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Project label category deleted successfully"))

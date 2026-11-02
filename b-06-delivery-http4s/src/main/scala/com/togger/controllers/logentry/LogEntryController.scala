@@ -22,7 +22,7 @@ class LogEntryController(
   accountNameLookup: AccountNameLookup
 ) {
 
-  val save = logEntryEndpoints.saveEndpoint.serverLogic { auth => dto =>
+  val save = logEntryEndpoints.saveEndpoint.serverLogic { _ => dto =>
     val logEntry = LogEntry(
       id = UUID.randomUUID(),
       taskId = dto.taskId,
@@ -51,7 +51,7 @@ class LogEntryController(
       }
   }
 
-  val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { auth => request =>
+  val findByTaskId = logEntryEndpoints.findByTaskId.serverLogic { _ => request =>
     val (taskId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       logEntryService
@@ -67,7 +67,7 @@ class LogEntryController(
     }
   }
 
-  val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = logEntryEndpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, filter, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       logEntryService
@@ -83,7 +83,7 @@ class LogEntryController(
     }
   }
 
-  val updateLogEntry = logEntryEndpoints.updateEndpoint.serverLogic { auth => dto =>
+  val updateLogEntry = logEntryEndpoints.updateEndpoint.serverLogic { _ => dto =>
     val newVersion = LogEntryVersion(
       version = UUID.randomUUID(),
       logEntryId = dto.id,
@@ -106,7 +106,7 @@ class LogEntryController(
       }
   }
 
-  val listVersions = logEntryEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = logEntryEndpoints.listVersionsEndpoint.serverLogic { _ => request =>
     val (logEntryId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       logEntryService
@@ -115,7 +115,7 @@ class LogEntryController(
     }
   }
 
-  val updateVersion = logEntryEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = logEntryEndpoints.updateVersionEndpoint.serverLogic { _ => dto =>
     logEntryService
       .updateVersionContent(dto.version, dto.textInternal, dto.textExternal, dto.status)
       .map {
@@ -124,7 +124,7 @@ class LogEntryController(
       }
   }
 
-  val deleteVersion = logEntryEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = logEntryEndpoints.deleteVersionEndpoint.serverLogic { _ => version =>
     logEntryService
       .deleteVersion(version)
       .map {

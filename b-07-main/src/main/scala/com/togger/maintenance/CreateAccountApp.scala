@@ -75,7 +75,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       ownerId: UUID,
       taskName: String,
       taskIndex: Int,
-      taskLabelIds: Seq[UUID] = Seq.empty
+      taskLabelIds: Seq[UUID]
     ): IO[Unit] =
       for {
         taskResult <- taskService.createTask(
@@ -125,7 +125,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       taskStatusId: UUID,
       ownerId: UUID,
       taskIndexOffset: Int,
-      labelPool: Seq[UUID] = Seq.empty
+      labelPool: Seq[UUID]
     ): IO[Unit] =
       for {
         milestoneResult <- milestoneService.createMilestone(
