@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
@@ -140,7 +141,7 @@ class TimeboxReviewComponent(
             div(
               p(
                 cls("mb-4 font-medium text-heading"),
-                s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}"
+                s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(version.endDate)}"
               ),
               version.description
                 .map[HtmlElement](tgMarkdown.toLaminarDiv)

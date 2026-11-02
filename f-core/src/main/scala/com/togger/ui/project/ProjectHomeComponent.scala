@@ -1,5 +1,6 @@
 package com.togger.ui.project
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
@@ -218,7 +219,7 @@ class ProjectHomeComponent(
       div(
         cls("mb-3"),
         pageLink(
-          s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}",
+          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
         version.description

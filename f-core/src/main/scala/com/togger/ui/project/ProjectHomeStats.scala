@@ -5,6 +5,7 @@ import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.FindTimeboxResp
 import com.togger.dto.SearchAccountDto
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
@@ -86,7 +87,7 @@ object ProjectHomeStats {
       Seq(BadgeSpec(task.priority.shortCode, task.priority.badgeColor)) ++
       Option.when(showAssignee)(task.assignedTo).flatten.map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray)) ++
       Seq(
-        BadgeSpec(formatDate(task.dueDate), TgBadgeColor.Gray),
+        BadgeSpec(s"${DateEmoji.Due} ${formatDate(task.dueDate)}", TgBadgeColor.Gray),
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
 

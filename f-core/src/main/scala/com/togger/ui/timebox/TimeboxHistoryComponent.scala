@@ -13,6 +13,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
 import java.util.UUID
@@ -43,7 +44,7 @@ class TimeboxHistoryComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText(
-          s"${tgDateFormater.asAmericanDate(dto.startDate)} - ${tgDateFormater.asAmericanDate(dto.endDate)}" +
+          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(dto.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(dto.endDate)}" +
             s" (saved ${dto.createdAt}${if (isLatest) ", latest" else ""})",
           TgCard.CardHeaderSize.H4
         ),
@@ -55,8 +56,8 @@ class TimeboxHistoryComponent(
                 Seq(
                   createTd(task.name),
                   createTd(task.description),
-                  createTd(tgDateFormater.asAmericanDate(task.startDate)),
-                  createTd(tgDateFormater.asAmericanDate(task.dueDate))
+                  createTd(s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(task.startDate)}"),
+                  createTd(s"${DateEmoji.Due} ${tgDateFormater.asAmericanDate(task.dueDate)}")
                 )
               }
             )

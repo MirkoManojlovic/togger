@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import com.togger.ui.task.DateEmoji
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.markdown.TgMarkdown
@@ -51,7 +52,7 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
           TgTab(
             id = summary.id.toString,
             label =
-              s"${tgDateFormater.asAmericanDate(summary.startDate)} - ${tgDateFormater.asAmericanDate(summary.endDate)}",
+              s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(summary.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(summary.endDate)}",
             content = summaryContent(summary, workDays)
           )
         },

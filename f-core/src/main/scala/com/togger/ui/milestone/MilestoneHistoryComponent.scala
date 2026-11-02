@@ -1,5 +1,6 @@
 package com.togger.ui.milestone
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
@@ -484,7 +485,7 @@ class MilestoneHistoryComponent(
                                 rowEnd = rowEnd,
                                 colIndex = idx + 1,
                                 tooltipText =
-                                  s"$milestoneName — due date: ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
+                                  s"$milestoneName — ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
                               )
                             )
                         }

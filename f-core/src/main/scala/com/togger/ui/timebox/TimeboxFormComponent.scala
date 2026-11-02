@@ -1,5 +1,6 @@
 package com.togger.ui.timebox
 
+import com.togger.ui.task.DateEmoji
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
@@ -214,7 +215,7 @@ class TimeboxFormComponent(
           .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
           .distinct
           .map(date =>
-            TgBadge(text = s"$labelValue: $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
+            TgBadge(text = s"$labelValue $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
           ),
         // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
         // listening synchronously within this same click when the picker opens
@@ -237,10 +238,10 @@ class TimeboxFormComponent(
     )
   }
 
-  private val startDateInput = dateField("Start date", _.startDate, (form, value) => form.copy(startDate = value), None)
+  private val startDateInput = dateField(DateEmoji.Start, _.startDate, (form, value) => form.copy(startDate = value), None)
 
   private val endDateInput = dateField(
-    "End date",
+    DateEmoji.End,
     _.endDate,
     (form, value) => form.copy(endDate = value),
     parsedDate(formState.now().startDate)
