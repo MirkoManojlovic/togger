@@ -23,6 +23,17 @@ import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.components.pagination.PaginatedLoader
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
+import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
+import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInputType
@@ -317,8 +328,45 @@ class CreateMilestoneComponent(
       child <-- milestoneStepsVar.signal.map(steps => if (steps.size > 1) spreadDatesBadge else emptyNode)
     )
 
+  private val selectedTabVar = Var(EditMilestoneTabsComponent.BasicInformationTabId)
+
+  private val basicInformation: HtmlElement =
+    div(
+        nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
+        div(
+          cls("mb-4 flex flex-col gap-4"),
+          dateBadges.element,
+          MilestoneSummaryRangeCalendar.element(
+            formState.signal.map(form => form.startDate -> form.dueDate).distinct,
+            workDaysVar.signal,
+            (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+          )
+        ),
+        descriptionEditor.htmlElement.amend(cls("mb-4")),
+        div(
+          cls("mb-4"),
+          h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
+          children <-- milestoneDatesVar.signal.map(dateComponents =>
+            dateComponents.map(
+              _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+            )
+          ),
+          addNewMilestoneDate
+        ),
+    )
+
+  private val tabs = new TgTabs(
+    Seq(
+      TgTab(EditMilestoneTabsComponent.BasicInformationTabId, "Basic Information", basicInformation),
+      TgTab(EditMilestoneTabsComponent.StepsTabId, "Steps", stepsSection)
+    ),
+    selectedTabVar
+  )
+
   val element = div(
-    justifyCenterFlex,
+    display.flex,
+    flexDirection.column,
+    alignItems.center,
     EventStream.merge(milestoneRange.changes.mapToUnit, workDaysVar.signal.changes.mapToUnit) --> followMilestoneRange,
     TgCard
       .headerNoFooter(
@@ -329,35 +377,14 @@ class CreateMilestoneComponent(
               onSubmit.preventDefault.mapTo(
                 (formState.now(), milestoneDatesVar.now(), milestoneStepsVar.now().map(_.formState.now()))
               ) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-              div(
-                cls("mb-4 flex flex-col gap-4"),
-                dateBadges.element,
-                MilestoneSummaryRangeCalendar.element(
-                  formState.signal.map(form => form.startDate -> form.dueDate).distinct,
-                  workDaysVar.signal,
-                  (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
-                )
-              ),
-              descriptionEditor.htmlElement.amend(cls("mb-4")),
-              div(
-                cls("mb-4"),
-                h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
-                children <-- milestoneDatesVar.signal.map(dateComponents =>
-                  dateComponents.map(
-                    _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
-                  )
-                ),
-                addNewMilestoneDate
-              ),
-              stepsSection,
+              tabs.element,
               div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(stepsHaveErrors.changes))
             )
           )
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
+      .amend(cls("w-full mb-4"))
   )
 
 }
