@@ -1,10 +1,11 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{DateHelpers, TgIds, TimeHelpers}
+import com.togger.common.DateHelpers
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.dto.login.DeviceInfo
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit

@@ -3,9 +3,11 @@ package com.togger.dep
 import cats.effect.IO
 import cats.implicits._
 import com.togger.account.AccountSessionRepo
-import com.togger.auth.{AuthAccount, SecurityLogic}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecurityLogic
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
 import com.togger.logging.TgLogging
 import doobie.Transactor
 import doobie.implicits._

@@ -2,8 +2,10 @@ package com.togger.auth
 
 import com.togger.TgWordSpecJvm
 import com.togger.auth.ChangePasswordError.PasswordsMustMatch
-import com.togger.common.Password.{DoesNotContainDigit, DoesNotContainSpecialChar}
-import com.togger.common.{NonEmptyChainHelpers, Password}
+import com.togger.common.NonEmptyChainHelpers
+import com.togger.common.Password
+import com.togger.common.Password.DoesNotContainDigit
+import com.togger.common.Password.DoesNotContainSpecialChar
 import com.togger.dto.login.ChangePasswordDto
 import org.scalatest.EitherValues
 

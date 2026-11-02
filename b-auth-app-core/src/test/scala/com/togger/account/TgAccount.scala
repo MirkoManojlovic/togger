@@ -1,11 +1,12 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{Password, TgIds, TimeHelpers}
+import com.togger.common.Password
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.db.TgTestDbDrops
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

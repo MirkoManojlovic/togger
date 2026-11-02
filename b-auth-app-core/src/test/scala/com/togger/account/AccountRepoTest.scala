@@ -1,10 +1,13 @@
 package com.togger.account
 
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PageRequest, TgIds, TimeHelpers}
-import com.togger.dto.login.{DeviceInfo, LoginDto}
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.LoginDto
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class AccountRepoTest extends AccountTgDbSpec with TimeHelpers with TgAccount {
 

@@ -1,8 +1,8 @@
 package com.togger.account
 
+import com.outr.scalapass.PBKDF2PasswordFactory
 import com.togger.account.HashedPasswordImpl.hashFactory
 import com.togger.common.Password
-import com.outr.scalapass.PBKDF2PasswordFactory
 
 abstract sealed case class HashedPasswordImpl private (value: String) extends HashedPassword {
   def verify(attemptedPassword: Password): Boolean =

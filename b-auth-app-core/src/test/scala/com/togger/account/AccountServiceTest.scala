@@ -5,7 +5,10 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common._
 import com.togger.db.MockedTransactor
-import com.togger.dto.login.{DeviceInfo, ExpireSessionResult, LoginDto, LoginResponseDto}
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.ExpireSessionResult
+import com.togger.dto.login.LoginDto
+import com.togger.dto.login.LoginResponseDto
 import com.togger.login.SessionTokenFactory
 import doobie.ConnectionIO
 import doobie.implicits._

@@ -1,17 +1,20 @@
 package com.togger.account
 
-import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
-import cats.effect.{IO, Resource}
+import cats.effect.IO
+import cats.effect.Resource
+import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.effect.testing.scalatest.CatsResourceIO
 import com.togger.TestLoggingJvm
-import com.togger.db.{TgTestDbDrops, TgTestTransactor}
+import com.togger.db.TgTestDbDrops
+import com.togger.db.TgTestTransactor
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
-import doobie.postgres.implicits._
+import org.scalatest.Checkpoints
+import org.scalatest.FutureOutcome
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.FixtureAsyncWordSpec
-import org.scalatest.{Checkpoints, FutureOutcome}
 
 import scala.util.chaining.scalaUtilChainingOps
 

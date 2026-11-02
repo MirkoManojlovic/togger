@@ -1,10 +1,12 @@
 package com.togger.accountType
 
 import cats.implicits._
-import com.togger.account.{AccountTgDbSpec, AccountType, AccountTypeRepo}
-import com.togger.common.{TgIds, TimeHelpers}
+import com.togger.account.AccountTgDbSpec
+import com.togger.account.AccountType
+import com.togger.account.AccountTypeRepo
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 trait TgAccount { self: TimeHelpers =>
   val password = "A!good_1_password_is_good"

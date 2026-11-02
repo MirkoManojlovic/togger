@@ -1,14 +1,15 @@
 package com.togger.account
 
-import java.time.Instant
-import java.util.UUID
-
 import com.togger.account.AccountTypeRepo.ACCOUNT_TYPE_TABLE_FRAG
 import com.togger.db.Util._
 import com.togger.logging.TgLogging
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment}
+
+import java.time.Instant
+import java.util.UUID
 
 case class AccountType(
   id: UUID,

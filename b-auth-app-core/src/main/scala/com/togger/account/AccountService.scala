@@ -1,16 +1,22 @@
 package com.togger.account
 
-import java.time.{Duration, Instant}
-import java.util.UUID
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeId
-import com.togger.common.{Password, TgClock, TgIds}
-import com.togger.dto.login.{ExpireSessionResult, LoginDto, LoginResponseDto}
+import com.togger.common.Password
+import com.togger.common.TgClock
+import com.togger.common.TgIds
+import com.togger.dto.login.ExpireSessionResult
+import com.togger.dto.login.LoginDto
+import com.togger.dto.login.LoginResponseDto
 import com.togger.logging.TgLogging
 import com.togger.login.SessionTokenFactory
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
+
+import java.time.Duration
+import java.time.Instant
 
 case object InvalidCredentials extends RuntimeException
 

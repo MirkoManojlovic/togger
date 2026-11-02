@@ -1,8 +1,8 @@
 package com.togger.account
 
-import com.togger.common.{TgIds, TimeHelpers}
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

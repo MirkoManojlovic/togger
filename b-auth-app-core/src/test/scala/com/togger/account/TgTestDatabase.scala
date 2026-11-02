@@ -2,11 +2,13 @@ package com.togger.account
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.togger.db.{PostgresConfig, TgTestTransactor}
+import com.togger.db.PostgresConfig
+import com.togger.db.TgTestTransactor
 import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 
-import java.sql.{DriverManager, SQLException}
+import java.sql.DriverManager
+import java.sql.SQLException
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.util.chaining.scalaUtilChainingOps

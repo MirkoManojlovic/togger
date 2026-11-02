@@ -1,13 +1,14 @@
 package com.togger.account
 
-import java.time.Instant
-import java.util.UUID
-
 import com.togger.account.AccountSessionRepo.ACCOUNT_SESSION_TABLE_FRAG
 import com.togger.db.Util._
 import com.togger.logging.TgLogging
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.implicits._
-import doobie.{ConnectionIO, Fragment}
+
+import java.time.Instant
+import java.util.UUID
 
 case class AccountSession(
   id: UUID,
@@ -112,7 +113,7 @@ class AccountSessionRepo extends TgLogging {
     logAroundInfoQuery(
       countStatement(ACCOUNT_SESSION_TABLE_FRAG).query[Long].unique
     )(
-      s"Counting account sessions",
+      "Counting account sessions",
       totalNumberOfSessions => s"[totalNumberOfSessions=$totalNumberOfSessions]"
     )
 
@@ -120,7 +121,7 @@ class AccountSessionRepo extends TgLogging {
     logAroundInfoQuery(
       softCountStatement(ACCOUNT_SESSION_TABLE_FRAG).query[Long].unique
     )(
-      s"Counting account sessions which are not soft deleted",
+      "Counting account sessions which are not soft deleted",
       totalNumberOfSessions => s"[totalNumberOfSessions=$totalNumberOfSessions]"
     )
 
@@ -128,7 +129,7 @@ class AccountSessionRepo extends TgLogging {
     logAroundInfoQuery(
       deleteStatement(ACCOUNT_SESSION_TABLE_FRAG).update.run
     )(
-      s"Deleting all account sessions",
+      "Deleting all account sessions",
       numberOfSessionsDeleted => s"[numberOfSessionsDeleted=$numberOfSessionsDeleted]"
     )
 
@@ -136,7 +137,7 @@ class AccountSessionRepo extends TgLogging {
     logAroundInfoQuery(
       softDeleteStatement(ACCOUNT_SESSION_TABLE_FRAG).update.run
     )(
-      s"Soft deleting all account sessions",
+      "Soft deleting all account sessions",
       numberOfSessionsDeleted => s"[numberOfSessionsDeleted=$numberOfSessionsDeleted]"
     )
 

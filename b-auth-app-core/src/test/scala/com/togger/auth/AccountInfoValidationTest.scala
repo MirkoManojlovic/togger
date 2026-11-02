@@ -1,7 +1,9 @@
 package com.togger.auth
 
 import com.togger.TgWordSpecJvm
-import com.togger.auth.AccountInfoError.{BlankField, FieldTooLong, InvalidEmail}
+import com.togger.auth.AccountInfoError.BlankField
+import com.togger.auth.AccountInfoError.FieldTooLong
+import com.togger.auth.AccountInfoError.InvalidEmail
 import com.togger.dto.login.AccountInfoDto
 
 class AccountInfoValidationTest extends TgWordSpecJvm {
