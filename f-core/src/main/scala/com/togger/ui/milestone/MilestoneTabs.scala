@@ -31,7 +31,7 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
       div(
         cls("flex flex-wrap items-center gap-1.5 mb-2"),
         dateBadge(DateEmoji.Start, summary.startDate),
-        dateBadge(DateEmoji.End, summary.endDate)
+        dateBadge(DateEmoji.Due, summary.endDate)
       ),
       MilestoneSummaryRangeCalendar
         .element(Val(summary.startDate.toString -> summary.endDate.toString), workDays)
@@ -52,7 +52,7 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
           TgTab(
             id = summary.id.toString,
             label =
-              s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(summary.startDate)} - ${DateEmoji.End} ${tgDateFormater.asAmericanDate(summary.endDate)}",
+              s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(summary.startDate)} - ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(summary.endDate)}",
             content = summaryContent(summary, workDays)
           )
         },

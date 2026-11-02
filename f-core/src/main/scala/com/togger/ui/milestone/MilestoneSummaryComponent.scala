@@ -47,6 +47,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import scala.collection.mutable
+import scala.util.Try
 
 /** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
 class MilestoneSummaryComponent(
@@ -464,6 +465,14 @@ class MilestoneSummaryComponent(
     )
   }
 
+  /** A date of a saved summary as a badge; text that is not a date is shown as it is. */
+  private def periodBadge(date: String, format: LocalDate => String): HtmlElement =
+    TgBadge(
+      text = Try(LocalDate.parse(date)).toOption.fold(date)(format),
+      bordered = true,
+      color = TgBadgeColor.Gray
+    ).element
+
   private def buildPreviousSummaryRow(component: MilestoneSummaryFormComponent): HtmlElement = {
     val selectedTab = Var("summary")
     div(
@@ -479,11 +488,11 @@ class MilestoneSummaryComponent(
             div(
               cls("mb-2 flex items-start justify-between gap-2"),
               child <-- component.formState.signal.map(form =>
-                TgBadge(
-                  text = s"${form.startDate} - ${form.endDate}",
-                  bordered = true,
-                  color = TgBadgeColor.Gray
-                ).element
+                div(
+                  cls("flex flex-wrap items-center gap-1.5"),
+                  periodBadge(form.startDate, tgDateFormater.asStartDate),
+                  periodBadge(form.endDate, tgDateFormater.asDueDate)
+                )
               ),
               summaryToggleButton(component, "Edit", TgIcons.editIcon("w-3 h-3"))
             ),
