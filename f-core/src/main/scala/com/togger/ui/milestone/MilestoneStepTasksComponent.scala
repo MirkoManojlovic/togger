@@ -368,7 +368,6 @@ class MilestoneStepTasksComponent(
       step.id,
       workDays,
       Val(Some(step.range)),
-      tgDateFormater,
       capacityOf(step),
       Val(Seq.empty),
       isDark,

@@ -147,7 +147,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     barTitle(task.name, start, due)
 
   def barTitle(name: String, start: LocalDate, due: LocalDate): String =
-    s"$name: ${tgDateFormater.asAmericanDate(start)} - ${tgDateFormater.asAmericanDate(due)}"
+    s"$name: ${DateEmoji.Start} ${tgDateFormater.asAmericanDate(start)} - ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(due)}"
 
   def barStyle(placed: GanttBar.Placed): String =
     s"grid-column: ${placed.startCol + 2} / span ${placed.width}; grid-row: 1"

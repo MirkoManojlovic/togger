@@ -184,17 +184,17 @@ class CreateTaskComponent(
           findTaskTemplateRespEither,
           findStepsRespEither
         ) =>
-          findTaskTemplateRespEither.map(success => templatesVar.set(success.body.get))
-          findTaskStatusRespEither.map(success => badges.setStatuses(success.body.get))
-          searchAccountDtoEither.map(success => badges.setMembers(success.body.get))
-          findTaskLabelRespEither.map(success => badges.setLabels(success.body.get))
-          findMilestoneRespEither.map { success =>
+          val _ = findTaskTemplateRespEither.map(success => templatesVar.set(success.body.get))
+          val _ = findTaskStatusRespEither.map(success => badges.setStatuses(success.body.get))
+          val _ = searchAccountDtoEither.map(success => badges.setMembers(success.body.get))
+          val _ = findTaskLabelRespEither.map(success => badges.setLabels(success.body.get))
+          val _ = findMilestoneRespEither.map { success =>
             badges.setMilestones(success.body.get)
-            findStepsRespEither.map(steps =>
+            val _ = findStepsRespEither.map(steps =>
               badges.setSteps(MilestoneStepLabels.ordered(steps.body.get, success.body.get))
             )
           }
-          findProjectRespEither.map(success => badges.setWorkDays(success.body.get.workDays.map(DayOfWeek.of)))
+          val _ = findProjectRespEither.map(success => badges.setWorkDays(success.body.get.workDays.map(DayOfWeek.of)))
           applyDefaults(findTaskStatusRespEither.map(_.body.get).getOrElse(Seq.empty))
       }
     }

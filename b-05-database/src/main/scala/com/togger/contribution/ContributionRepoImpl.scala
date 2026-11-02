@@ -12,10 +12,9 @@ import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_F
 import com.togger.task.TaskLabelRepoImpl.TASK_LABEL_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
+import com.togger.task.TaskVersionRepoImpl.milestoneStepJoin
 import com.togger.task.TaskVersionRepoImpl.taskPriorityCodec
 import com.togger.taskStatus.TaskStatusRepoImpl.TASK_STATUS_TABLE_FRAG
-import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
-import com.togger.task.TaskVersionRepoImpl.milestoneStepJoin
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.Fragment

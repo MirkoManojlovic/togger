@@ -991,7 +991,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                     milestoneService,
                     milestoneDateService,
                     spinnerService,
-                    dateRangeValidation,
                     tgClock,
                     projectService,
                     router,
