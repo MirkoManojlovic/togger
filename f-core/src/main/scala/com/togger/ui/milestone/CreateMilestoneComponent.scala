@@ -16,8 +16,12 @@ import com.togger.dto.MilestoneFilter
 import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.DefaultMilestoneStep
 import com.togger.milestone.MilestoneEndpoints
+import com.togger.routes.Pages.ShowMilestoneStepsPage
+import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgBadge
@@ -75,6 +79,8 @@ class CreateMilestoneComponent(
   tgClock: TgClock,
   tgDateFormater: TgDateFormater,
   projectService: ProjectService,
+  router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -198,6 +204,19 @@ class CreateMilestoneComponent(
       .sequence
       .void
 
+  private def offerToPlanTasks(milestone: FindMilestoneResp): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(
+        s"Milestone '${milestone.name}' was created. Open its steps now to add the tasks for it?"
+      ),
+      title = "Add tasks to the milestone",
+      confirmButtonMsg = "Open the steps",
+      cancelButtonMsg = "Not now"
+    ) { close =>
+      close()
+      router.route(ShowMilestoneStepsPage(projectId, milestone.id))
+    }
+
   lazy val submitter = Observer[(CreateMilestoneForm, Seq[CreateMilestoneDateComponent], Seq[MilestoneStepDraft])] {
     case (form, dateComponents, stepDrafts) =>
       val dto = CreateMilestoneReq(
@@ -210,7 +229,9 @@ class CreateMilestoneComponent(
       )
       spinnerService
         .runWithSpinner(milestoneService.createMilestone(dto))
-        .toastMessageDto(_ => "Milestone created successfully")(createMilestoneDates(_, dateComponents))
+        .toastMessageDto(_ => "Milestone created successfully")(milestone =>
+          createMilestoneDates(milestone, dateComponents) >> IO(offerToPlanTasks(milestone))
+        )
         .unsafeRunAndForget()
   }
 

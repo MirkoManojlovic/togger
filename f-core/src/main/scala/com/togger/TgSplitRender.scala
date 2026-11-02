@@ -980,6 +980,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   tgClock,
                   tgDateFormater,
                   projectService,
+                  router,
+                  modalFactory,
                   projectId,
                   toast
                 ).element
