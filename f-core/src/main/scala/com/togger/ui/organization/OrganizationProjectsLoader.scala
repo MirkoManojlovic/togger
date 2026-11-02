@@ -20,8 +20,8 @@ case class OrganizationWithProjects(
 
 /** The organizations of an account with the projects of each, for the sidebar and the task pickers. The backend pages
   * organizations and projects separately, so the organizations are read page by page, and then the projects of every
-  * organization through the paginated project call (see [[com.togger.ui.components.pagination.PaginatedLoader]] for
-  * the bound on each).
+  * organization through the paginated project call (see [[com.togger.ui.components.pagination.PaginatedLoader]] for the
+  * bound on each).
   */
 class OrganizationProjectsLoader(organizationService: OrganizationServiceFe, projectService: ProjectService) {
 

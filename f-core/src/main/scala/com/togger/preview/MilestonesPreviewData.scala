@@ -56,7 +56,9 @@ class MilestonesPreviewData(db: PreviewDb, projects: ProjectsPreviewData) {
   /** Lets the tasks domain detach the tasks of a deleted milestone. */
   def onMilestoneDeleted(hook: UUID => Unit): Unit = milestoneDeletionHooks = milestoneDeletionHooks :+ hook
 
-  projects.onProjectDeleted(projectId => milestones.filter(_.projectId == projectId).foreach(m => deleteMilestone(m.id)))
+  projects.onProjectDeleted(projectId =>
+    milestones.filter(_.projectId == projectId).foreach(m => deleteMilestone(m.id))
+  )
 
   def deleteMilestone(id: UUID): Boolean = {
     milestoneDeletionHooks.foreach(_(id))

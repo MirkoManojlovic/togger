@@ -58,9 +58,7 @@ class StagedTasksComponent(
     else div(cls(s"flex flex-col $alignment gap-1"), items)
 
   private def badgeColumn[A](counts: Signal[Seq[(A, Int)]])(badge: (A, Int) => HtmlElement): Modifier[HtmlElement] =
-    child <-- counts.map(items =>
-      badges(items.map { case (item, count) => badge(item, count) }, "items-center")
-    )
+    child <-- counts.map(items => badges(items.map { case (item, count) => badge(item, count) }, "items-center"))
 
   private def priorityBadge(priority: TaskPriority, count: Int): HtmlElement =
     TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
@@ -195,7 +193,9 @@ class StagedTasksComponent(
       badges.primary,
       badges.dates,
       // A click on a badge, or in the popup it opens, edits the task and must not unstage it.
-      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
+      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ =>
+        stagingStore.unstage(projectId, task.id)
+      )
     )
   }
 

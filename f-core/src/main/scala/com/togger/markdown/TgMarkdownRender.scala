@@ -13,12 +13,12 @@ import io.github.edadma.markdown.{`renderToHTML$package` => Markdown}
 /** Renders a parsed markdown [[Document]] as Tg components, instead of going through the library's HTML string
   * renderer.
   *
-  * This walk owns the markdown semantics — which node becomes which component, tight-list flattening, the code
-  * block's trailing newline, the raw-HTML policy — and [[TgMarkdownStyles]] owns what each one looks like.
+  * This walk owns the markdown semantics — which node becomes which component, tight-list flattening, the code block's
+  * trailing newline, the raw-HTML policy — and [[TgMarkdownStyles]] owns what each one looks like.
   *
-  * With `allowRawHtml` off, raw HTML in the source is escaped and shown as text, so markdown written by one user
-  * cannot inject markup into another user's page. Turning it on reproduces what `TgMarkdown.toHtml` does — the
-  * markup is inserted as-is — and is only safe for markdown the viewer wrote themselves.
+  * With `allowRawHtml` off, raw HTML in the source is escaped and shown as text, so markdown written by one user cannot
+  * inject markup into another user's page. Turning it on reproduces what `TgMarkdown.toHtml` does — the markup is
+  * inserted as-is — and is only safe for markdown the viewer wrote themselves.
   */
 class TgMarkdownRender(
   config: MarkdownConfig,
@@ -27,8 +27,8 @@ class TgMarkdownRender(
   onTaskToggle: Option[Observer[TaskToggle]] = None
 ) {
 
-  /** Numbers the document's task items as the walk meets them. Reset per call, so each render counts from zero —
-    * which also means `blocks` is not reentrant. Safe here: ScalaJS is single-threaded and the walk is synchronous.
+  /** Numbers the document's task items as the walk meets them. Reset per call, so each render counts from zero — which
+    * also means `blocks` is not reentrant. Safe here: ScalaJS is single-threaded and the walk is synchronous.
     */
   private var nextTaskIndex = 0
 
@@ -51,10 +51,10 @@ class TgMarkdownRender(
         rows.map(tableRow(_, alignments, header = false)),
         styles
       ).element
-    case row: TableRow              => tableRow(row, Nil, header = false)
-    case TableCell(content)         => tableCell(content, None, header = false)
-    case DefinitionListBlock(items) => definitionList(items)
-    case MathBlock(content)         => TgMarkdownCodeBlock(content, None, Nil, styles).element
+    case row: TableRow                   => tableRow(row, Nil, header = false)
+    case TableCell(content)              => tableCell(content, None, header = false)
+    case DefinitionListBlock(items)      => definitionList(items)
+    case MathBlock(content)              => TgMarkdownCodeBlock(content, None, Nil, styles).element
     case CalloutBlock(kind, t, children) => TgMarkdownCallout(kind, t, children.map(block), styles).element
     case CollapsibleBlock(t, isOpen, children) =>
       TgMarkdownCollapsible(inlineContent(t), isOpen, children.map(block), styles).element
@@ -65,8 +65,8 @@ class TgMarkdownRender(
     case other                              => TgMarkdownUnknownBlock(other.toString, styles).element
   }
 
-  /** Mirrors the string renderer: an indented block falls back to the configured language, and non-empty content
-    * always ends in a newline.
+  /** Mirrors the string renderer: an indented block falls back to the configured language, and non-empty content always
+    * ends in a newline.
     */
   private def codeBlock(c: Code): HtmlElement = {
     val language = c.infoString.orElse(if (c.indented) config.indentedCodeLanguage else None)
@@ -84,8 +84,8 @@ class TgMarkdownRender(
       styles = styles
     ).element
 
-  /** The item's index is taken before its content is rendered, so a task list nested inside a task item numbers
-    * after its parent — the order the source has them in, and the order [[TgMarkdownTasks]] scans them in.
+  /** The item's index is taken before its content is rendered, so a task list nested inside a task item numbers after
+    * its parent — the order the source has them in, and the order [[TgMarkdownTasks]] scans them in.
     */
   private def listItem(item: ListItem, tight: Boolean): HtmlLi = taskMarker(item) match {
     case Some(isChecked) =>
@@ -97,9 +97,9 @@ class TgMarkdownRender(
     case None => TgMarkdownListItem(itemContent(item, tight), styles).element
   }
 
-  /** The markdown library models no task item — `ListItem` has no checked flag, and `taskListItems` is read only
-    * by its HTML string renderer, never by the parser. The marker is therefore still sitting in the text, and is
-    * read back off it the same way `renderToHTML` does, so `toLaminar` and `toHtml` call the same things a task.
+  /** The markdown library models no task item — `ListItem` has no checked flag, and `taskListItems` is read only by its
+    * HTML string renderer, never by the parser. The marker is therefore still sitting in the text, and is read back off
+    * it the same way `renderToHTML` does, so `toLaminar` and `toHtml` call the same things a task.
     */
   private def taskMarker(item: ListItem): Option[Boolean] =
     if (!config.taskListItems) None
@@ -120,9 +120,9 @@ class TgMarkdownRender(
   private def toggleObserver(index: Int): Option[Observer[Boolean]] =
     onTaskToggle.map(_.contramap[Boolean](checked => TaskToggle(index, checked)))
 
-  /** A tight list item drops the `<p>` around its paragraphs, the way CommonMark renders them — which also keeps
-    * the paragraph's bottom margin out of a tight list. A list nested here is the only place one can appear, so
-    * this is where the indent gets applied.
+  /** A tight list item drops the `<p>` around its paragraphs, the way CommonMark renders them — which also keeps the
+    * paragraph's bottom margin out of a tight list. A list nested here is the only place one can appear, so this is
+    * where the indent gets applied.
     */
   private def itemContent(item: ListItem, tight: Boolean): Seq[Modifier[HtmlElement]] =
     item.content.flatMap {
@@ -167,10 +167,9 @@ class TgMarkdownRender(
         a.kvPairs.map { case (key, value) => htmlAttr(key, StringAsIsCodec) := value }
     }
 
-  /** Inserted raw HTML arrives as separate opening and closing fragments, so a run of inlines containing any of it
-    * can only be rendered as one string — element by element the fragments would nest instead of pairing up. It
-    * goes into whichever element hosts the run, so it comes out unwrapped. Escaped raw HTML is just text, and
-    * needs none of that.
+  /** Inserted raw HTML arrives as separate opening and closing fragments, so a run of inlines containing any of it can
+    * only be rendered as one string — element by element the fragments would nest instead of pairing up. It goes into
+    * whichever element hosts the run, so it comes out unwrapped. Escaped raw HTML is just text, and needs none of that.
     */
   private def inlineContent(is: List[Inline]): Seq[Modifier[HtmlElement]] =
     if (allowRawHtml && is.exists(_.isInstanceOf[RawHTML])) Seq(rawHtmlContent(Markdown.renderInlines(is)))

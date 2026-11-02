@@ -9,7 +9,8 @@ case class TaskConfigListParams(export: ListParams = ListParams.default, importD
   def exportAtPage(newPage: Int, newSize: Int): TaskConfigListParams = copy(export = export.atPage(newPage, newSize))
 
   /** Another page of the import config list, the export config list stays where it is. */
-  def importAtPage(newPage: Int, newSize: Int): TaskConfigListParams = copy(importData = importData.atPage(newPage, newSize))
+  def importAtPage(newPage: Int, newSize: Int): TaskConfigListParams =
+    copy(importData = importData.atPage(newPage, newSize))
 }
 
 object TaskConfigListParams {

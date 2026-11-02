@@ -11,9 +11,9 @@ object PaginationMath {
 
   private val ShowAllUpTo = 7
 
-  /** The page buttons to show: first and last page plus the current page +-1, with an ellipsis for each gap. A gap
-    * of a single page is filled with that page instead, since an ellipsis would not be shorter. The current page is
-    * clamped into `1..totalPages`.
+  /** The page buttons to show: first and last page plus the current page +-1, with an ellipsis for each gap. A gap of a
+    * single page is filled with that page instead, since an ellipsis would not be shorter. The current page is clamped
+    * into `1..totalPages`.
     */
   def pages(current: Int, totalPages: Int): Seq[PageItem] = {
     if (totalPages <= 0) return Seq.empty

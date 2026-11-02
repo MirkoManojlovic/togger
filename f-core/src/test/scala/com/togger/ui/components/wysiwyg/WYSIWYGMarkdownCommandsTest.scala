@@ -5,9 +5,9 @@ import com.togger.ui.components.wysiwyg.WYSIWYGMarkdownCommands._
 
 /** The commands are pure transforms of text plus selection, so this suite needs no DOM at all.
   *
-  * Cases are written in one marked-up notation: `{…}` is the selection, `|` is a caret. Both the input and the
-  * expected output use it, which is what makes a command's effect on the *selection* as readable as its effect on
-  * the text — and the selection is half of what these commands are for.
+  * Cases are written in one marked-up notation: `{…}` is the selection, `|` is a caret. Both the input and the expected
+  * output use it, which is what makes a command's effect on the *selection* as readable as its effect on the text — and
+  * the selection is half of what these commands are for.
   */
 class WYSIWYGMarkdownCommandsTest extends AsyncJsWordSpec {
 

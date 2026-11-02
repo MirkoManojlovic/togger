@@ -24,7 +24,12 @@ object TeamDailyTaskBadges {
       .toSeq :+ BadgeSpec(task.priority.shortCode, task.priority.badgeColor)
 
   /** The start and due date, and the work days left until the due date (or overdue). */
-  def dates(task: TeamDailyTaskPlan, today: LocalDate, workDays: Set[DayOfWeek], format: LocalDate => String): Seq[BadgeSpec] =
+  def dates(
+    task: TeamDailyTaskPlan,
+    today: LocalDate,
+    workDays: Set[DayOfWeek],
+    format: LocalDate => String
+  ): Seq[BadgeSpec] =
     Seq(
       BadgeSpec(format(task.startDate), TgBadgeColor.Gray),
       BadgeSpec(format(task.dueDate), TgBadgeColor.Gray),

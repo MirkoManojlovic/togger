@@ -118,7 +118,7 @@ class ShowAllDataExportConfigsComponent(
             rowIconButtonCls,
             lastRowButtonMarginCls,
             onClick.mapToUnit --> (_ => exportByConfig(dto))
-          ),
+          )
         )
       )
     )

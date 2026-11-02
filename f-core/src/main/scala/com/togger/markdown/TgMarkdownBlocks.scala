@@ -10,10 +10,10 @@ import org.scalajs.dom.HTMLHeadingElement
 
 /** Block-level markdown nodes as Tg components.
   *
-  * Each takes children that are already rendered, so nothing here touches the markdown AST or has to know about
-  * the renderer's raw-HTML policy. `content` is a modifier list rather than an element list because the renderer
-  * passes it whatever the node needs — rendered inlines, the node's own attributes, or, for inserted raw HTML,
-  * a single mount callback.
+  * Each takes children that are already rendered, so nothing here touches the markdown AST or has to know about the
+  * renderer's raw-HTML policy. `content` is a modifier list rather than an element list because the renderer passes it
+  * whatever the node needs — rendered inlines, the node's own attributes, or, for inserted raw HTML, a single mount
+  * callback.
   */
 case class TgMarkdownHeading(level: Int, content: Seq[Modifier[HtmlElement]], styles: TgMarkdownStyles) {
 
@@ -89,8 +89,8 @@ case class TgMarkdownListItem(content: Seq[Modifier[HtmlElement]], styles: TgMar
 /** A `- [ ]` / `- [x]` item. The marker has already been taken off `content` by the renderer.
   *
   * @param toggle
-  *   `None` renders the checkbox disabled, which is what the markdown library's own HTML renderer emits and the
-  *   right default for a rendering of someone else's text. `Some` makes it live.
+  *   `None` renders the checkbox disabled, which is what the markdown library's own HTML renderer emits and the right
+  *   default for a rendering of someone else's text. `Some` makes it live.
   */
 case class TgMarkdownTaskListItem(
   isChecked: Boolean,
@@ -119,9 +119,9 @@ case class TgMarkdownTaskListItem(
 
 object TgMarkdownTaskListItem {
 
-  /** The content attribute, not Laminar's `checked` *prop*. A prop assigns `element.checked` and leaves nothing in
-    * the markup, so the rendered document would not say which boxes are ticked — the state would exist only as
-    * live DOM, invisible to anything reading the HTML back.
+  /** The content attribute, not Laminar's `checked` *prop*. A prop assigns `element.checked` and leaves nothing in the
+    * markup, so the rendered document would not say which boxes are ticked — the state would exist only as live DOM,
+    * invisible to anything reading the HTML back.
     */
   val checkedAttr: HtmlAttr[Boolean] = htmlAttr("checked", BooleanAsAttrPresenceCodec)
 }
@@ -132,9 +132,9 @@ case class TgMarkdownThematicBreak(styles: TgMarkdownStyles) {
 
 /** The wrapper `<div>` is what scrolls a wide table, so the component owns it rather than the caller.
   *
-  * Not routed through `TgHtmlTable.tableElement`: that takes `headers: Seq[String]`, and a markdown header cell
-  * holds inlines (`| **a** | [b](…) |`). The classes are lifted from it instead, so markdown tables and the app's
-  * own tables still match.
+  * Not routed through `TgHtmlTable.tableElement`: that takes `headers: Seq[String]`, and a markdown header cell holds
+  * inlines (`| **a** | [b](…) |`). The classes are lifted from it instead, so markdown tables and the app's own tables
+  * still match.
   */
 case class TgMarkdownTable(header: Option[HtmlTableRow], rows: Seq[HtmlTableRow], styles: TgMarkdownStyles) {
 
@@ -211,8 +211,8 @@ case class TgMarkdownFootnote(id: String, content: Seq[HtmlElement], styles: TgM
   val element: HtmlDiv = div(idAttr(id), cls(styles.footnote), content)
 }
 
-/** `doc-tag-<name>` stays on the element as a hook for whatever consumes doc tags. It is not a Tailwind class —
-  * an interpolated name could never be scanned — so the visual styling comes from `styles.docTag`.
+/** `doc-tag-<name>` stays on the element as a hook for whatever consumes doc tags. It is not a Tailwind class — an
+  * interpolated name could never be scanned — so the visual styling comes from `styles.docTag`.
   */
 case class TgMarkdownDocTag(
   name: String,
@@ -231,8 +231,8 @@ case class TgMarkdownDocTag(
 }
 
 /** An `HTMLBlock`. Laminar has no raw-HTML child node, so inserted markup gains this wrapping `<div>`, which the
-  * library's string renderer does not emit. Escaped markup is plain text and needs no wrapper of its own, but
-  * keeps one so both modes produce the same shape.
+  * library's string renderer does not emit. Escaped markup is plain text and needs no wrapper of its own, but keeps one
+  * so both modes produce the same shape.
   */
 case class TgMarkdownRawHtmlBlock(content: String, allowRawHtml: Boolean, styles: TgMarkdownStyles) {
 
@@ -241,8 +241,8 @@ case class TgMarkdownRawHtmlBlock(content: String, allowRawHtml: Boolean, styles
     else div(cls(styles.rawHtmlBlock), content)
 }
 
-/** Whatever the parser produced that has no component of its own, rendered as its own description rather than
-  * dropped, so an unhandled node shows up instead of vanishing.
+/** Whatever the parser produced that has no component of its own, rendered as its own description rather than dropped,
+  * so an unhandled node shows up instead of vanishing.
   */
 case class TgMarkdownUnknownBlock(description: String, styles: TgMarkdownStyles) {
   val element: HtmlDiv = div(cls(styles.fallback), description)

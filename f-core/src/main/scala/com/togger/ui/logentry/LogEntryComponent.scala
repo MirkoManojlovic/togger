@@ -85,15 +85,14 @@ object ActivePopup {
 /** @param taskStartDate
   *   the earliest date selectable in the date picker — a log entry can't predate its task's start date.
   * @param taskEndDate
-  *   the latest date selectable in the date picker, if the task has one — a log entry can't come after its task's
-  *   end date.
-  * @param takenDates
-  *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's
-  *   own date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in
-  *   that status's badge color so it's visibly distinct from a plain disabled (non-work-day) day.
-  * @param workDays
-  *   the owning project's configured work days — non-work days are disabled in the date picker, same as a taken
+  *   the latest date selectable in the date picker, if the task has one — a log entry can't come after its task's end
   *   date.
+  * @param takenDates
+  *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's own
+  *   date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in that
+  *   status's badge color so it's visibly distinct from a plain disabled (non-work-day) day.
+  * @param workDays
+  *   the owning project's configured work days — non-work days are disabled in the date picker, same as a taken date.
   */
 class LogEntryComponent(
   logEntryForm: LogEntryForm,

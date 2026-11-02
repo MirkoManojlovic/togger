@@ -144,9 +144,7 @@ class ShowAllOrganizationsComponent(
           ),
           body = TgCard.HtmlCardContent(
             div(
-              child <-- stateFormVar.signal.map(dtos =>
-                div(cls("flex flex-col gap-4"), dtos.map(organizationCard))
-              ),
+              child <-- stateFormVar.signal.map(dtos => div(cls("flex flex-col gap-4"), dtos.map(organizationCard))),
               TgPaginationComponent(
                 paginationVar.signal,
                 (newPage, newSize) => showList(params.atPage(newPage, newSize))

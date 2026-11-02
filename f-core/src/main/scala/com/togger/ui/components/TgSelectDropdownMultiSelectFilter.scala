@@ -98,7 +98,11 @@ case class TgSelectDropdownMultiSelectFilter(
             if (filtered.isEmpty) Seq(li(cls("p-2 text-center text-body"), "No matching options"))
             else
               filtered.map(option =>
-                TgSelectDropdown.optionRow(option, inputSignal.map(_.contains(option.value)), () => toggle(option.value))
+                TgSelectDropdown.optionRow(
+                  option,
+                  inputSignal.map(_.contains(option.value)),
+                  () => toggle(option.value)
+                )
               )
           )
         }

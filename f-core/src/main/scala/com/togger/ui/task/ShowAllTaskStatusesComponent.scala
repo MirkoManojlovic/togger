@@ -133,8 +133,7 @@ class ShowAllTaskStatusesComponent(
                       )
                     ),
                     tbody(
-                      dtos
-                        .zipWithIndex
+                      dtos.zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
                             "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"

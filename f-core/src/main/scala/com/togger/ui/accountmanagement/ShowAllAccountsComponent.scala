@@ -14,7 +14,12 @@ import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls, rowIconButtonDangerCls}
+import com.togger.ui.task.TaskConfigTableSupport.{
+  iconButton,
+  rowButtonMarginCls,
+  rowIconButtonCls,
+  rowIconButtonDangerCls
+}
 import com.togger.ui.toast.Toast
 
 class ShowAllAccountsComponent(

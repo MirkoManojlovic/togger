@@ -4,7 +4,8 @@ import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 
-/** A search box with a button: nothing happens while typing, `onSearch` gets the term when the button or Enter is hit. */
+/** A search box with a button: nothing happens while typing, `onSearch` gets the term when the button or Enter is hit.
+  */
 case class TableServerSearchComponent(
   initialTerm: String,
   placeholderValue: String,

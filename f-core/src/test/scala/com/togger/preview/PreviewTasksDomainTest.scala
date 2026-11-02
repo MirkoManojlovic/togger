@@ -34,7 +34,11 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
     val todoStatus: UUID = DemoTaskConfigData.statusId(0, 4)
     val doneStatus: UUID = DemoTaskConfigData.statusId(0, 6)
 
-    def newTask(name: String, start: LocalDate = monday.plusDays(1), due: LocalDate = monday.plusDays(3)): CreateTaskAndLinksReq =
+    def newTask(
+      name: String,
+      start: LocalDate = monday.plusDays(1),
+      due: LocalDate = monday.plusDays(3)
+    ): CreateTaskAndLinksReq =
       CreateTaskAndLinksReq(
         CreateTaskReq(
           DemoIdentity.ProjectId,
@@ -61,8 +65,11 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
 
     "answer unauthenticated without a session" in { _ =>
       val env = new PreviewTestEnv
-      val tasks = new TaskFeServicePreview(env.module.context, env.module.projects, env.module.taskConfig, env.module.tasks)
-      env.run(tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, firstPage)).map(_ shouldBe Left(Unauthenticated))
+      val tasks =
+        new TaskFeServicePreview(env.module.context, env.module.projects, env.module.taskConfig, env.module.tasks)
+      env
+        .run(tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, firstPage))
+        .map(_ shouldBe Left(Unauthenticated))
     }
 
     "list the seeded tasks newest first without the archived ones" in { _ =>
@@ -75,7 +82,8 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         paged <- s.env.run(s.tasks.findByProjectId(DemoIdentity.ProjectId, TaskFilter.empty, PageRequest(2, 10)))
       } yield {
         all.map(_.totalNumberOfItems) shouldBe Right(21L)
-        all.toOption.get.items.map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.items.map(_.createdAt.toEpochMilli).sorted.reverse
+        all.toOption.get.items
+          .map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.items.map(_.createdAt.toEpochMilli).sorted.reverse
         withArchived.map(_.totalNumberOfItems) shouldBe Right(22L)
         paged.map(r => (r.items.size, r.totalNumberOfPages)) shouldBe Right((10, 3L))
       }
@@ -98,7 +106,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         done.nonEmpty shouldBe true
         critical.map(_.priority).distinct shouldBe List(TaskPriority.Critical)
         bugs.forall(_.taskLabels.exists(_.name == "bug")) shouldBe true
-        unassigned.map(_.assignedTo) .distinct shouldBe List(None)
+        unassigned.map(_.assignedTo).distinct shouldBe List(None)
         noMilestone.forall(_.milestone.isEmpty) shouldBe true
         beta.forall(_.milestone.contains(DemoMilestonesData.BetaId)) shouldBe true
         searched.map(_.name) shouldBe List("Fix the timezone bug in the daily log")
@@ -125,7 +133,9 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         updated <- s.env.run(
           s.tasks.updateTask(
             UpdateTaskReq(
-              created.toOption.get.task.copy(name = "Renamed", taskStatusId = s.doneStatus, endDate = Some(monday.plusDays(2))).into,
+              created.toOption.get.task
+                .copy(name = "Renamed", taskStatusId = s.doneStatus, endDate = Some(monday.plusDays(2)))
+                .into,
               Seq.empty,
               Seq(CreateLinkReq("Second", "https://example.org")),
               created.toOption.get.links.map(_.id)
@@ -151,8 +161,9 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
 
     "reject a task on a day that is not a work day" in { _ =>
       val s = new Services
-      s.env.run(s.tasks.createTask(s.newTask("Weekend", start = monday.plusDays(5), due = monday.plusDays(6)))).map { result =>
-        isBadRequest(result) shouldBe true
+      s.env.run(s.tasks.createTask(s.newTask("Weekend", start = monday.plusDays(5), due = monday.plusDays(6)))).map {
+        result =>
+          isBadRequest(result) shouldBe true
       }
     }
 
@@ -204,10 +215,14 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       for {
         saved <- s.env.run(s.tasks.saveLogEntry(entry))
         again <- s.env.run(s.tasks.saveLogEntry(entry))
-        updated <- s.env.run(s.tasks.updateLogEntry(saved.toOption.get.copy(textInternal = "changed", status = LogEntryStatus.Blocked)))
+        updated <- s.env.run(
+          s.tasks.updateLogEntry(saved.toOption.get.copy(textInternal = "changed", status = LogEntryStatus.Blocked))
+        )
         versions <- s.env.run(s.tasks.listLogEntryVersions(saved.toOption.get.id, firstPage))
         editLatest <- s.env.run(s.tasks.updateLogEntryVersion(versions.toOption.get.items.head))
-        editOld <- s.env.run(s.tasks.updateLogEntryVersion(versions.toOption.get.items.last.copy(textInternal = "fixed")))
+        editOld <- s.env.run(
+          s.tasks.updateLogEntryVersion(versions.toOption.get.items.last.copy(textInternal = "fixed"))
+        )
         deleteLatest <- s.env.runEmpty(s.tasks.deleteLogEntryVersion(versions.toOption.get.items.head.version))
         byTask <- s.env.run(s.tasks.findLogEntriesByTaskId(taskId, firstPage))
       } yield {
@@ -218,7 +233,9 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         isBadRequest(editLatest) shouldBe true
         editOld.map(_.textInternal) shouldBe Right("fixed")
         deleteLatest.isRight shouldBe true
-        byTask.map(_.items.headOption.map(_.latestVersion)) shouldBe Right(Some(versions.toOption.get.items.last.version))
+        byTask.map(_.items.headOption.map(_.latestVersion)) shouldBe Right(
+          Some(versions.toOption.get.items.last.version)
+        )
       }
     }
 
@@ -228,12 +245,15 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       val to = Instant.parse("2026-06-15T00:00:00Z")
       for {
         all <- s.env.run(s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId))
-        week <- s.env.run(s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId, LogEntryFilter(Some(from), Some(to))))
+        week <- s.env.run(
+          s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId, LogEntryFilter(Some(from), Some(to)))
+        )
       } yield {
         week.toOption.get.nonEmpty shouldBe true
         all.toOption.get.size should be > week.toOption.get.size
         week.toOption.get.forall(e => !e.createdAt.isBefore(from) && e.createdAt.isBefore(to)) shouldBe true
-        all.toOption.get.map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.map(_.createdAt.toEpochMilli).sorted.reverse
+        all.toOption.get
+          .map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.map(_.createdAt.toEpochMilli).sorted.reverse
       }
     }
 
@@ -296,19 +316,33 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         )
         created <- s.env.run(
           s.timeboxes.createTimebox(
-            CreateTimeboxReq(DemoIdentity.ProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(DemoSeedIds.id(DemoSeedIds.Task, 13)))
+            CreateTimeboxReq(
+              DemoIdentity.ProjectId,
+              monday.plusDays(60),
+              monday.plusDays(70),
+              None,
+              Seq(DemoSeedIds.id(DemoSeedIds.Task, 13))
+            )
           )
         )
         wrongProject <- s.env.run(
           s.timeboxes.createTimebox(
-            CreateTimeboxReq(DemoIdentity.SecondProjectId, monday.plusDays(60), monday.plusDays(70), None, Seq(DemoSeedIds.id(DemoSeedIds.Task, 13)))
+            CreateTimeboxReq(
+              DemoIdentity.SecondProjectId,
+              monday.plusDays(60),
+              monday.plusDays(70),
+              None,
+              Seq(DemoSeedIds.id(DemoSeedIds.Task, 13))
+            )
           )
         )
         deleted <- s.env.runEmpty(s.timeboxes.deleteTimebox(current.id))
         gone <- s.env.run(s.timeboxes.findById(current.id))
       } yield {
         seeded.map(_.totalNumberOfItems) shouldBe Right(2L)
-        versions.map(_.map(_.changeComment)) shouldBe Right(Seq("Dropped the CSV export, pulled in the beta invite template", ""))
+        versions.map(_.map(_.changeComment)) shouldBe Right(
+          Seq("Dropped the CSV export, pulled in the beta invite template", "")
+        )
         planned.toOption.get.size shouldBe 6
         isBadRequest(overlapping) shouldBe true
         isBadRequest(noComment) shouldBe true
@@ -340,7 +374,9 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         dto.milestones.map(_.name) should contain("Beta release")
         dto.generalTasks.byStatus.map(_.count).sum shouldBe 22
         val week = ranged.toOption.get
-        week.general.flatMap(_.dailyEntries).forall(d => !d.date.isBefore(monday.minusDays(7)) && !d.date.isAfter(monday)) shouldBe true
+        week.general
+          .flatMap(_.dailyEntries)
+          .forall(d => !d.date.isBefore(monday.minusDays(7)) && !d.date.isAfter(monday)) shouldBe true
         week.general.map(_.activeDays).sum should be < dto.general.map(_.activeDays).sum
         missing.isLeft shouldBe true
       }

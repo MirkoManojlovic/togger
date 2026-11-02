@@ -16,13 +16,19 @@ object HiddenAccounts {
     accounts.filter(isVisible)
 
   def visiblePage(resp: TgRespIO[PaginatedResponse[SearchAccountDto]]): TgRespIO[PaginatedResponse[SearchAccountDto]] =
-    resp.map(_.map(success => success.copy(body = success.body.map(page => page.copy(items = page.items.filter(isVisible))))))
+    resp.map(
+      _.map(success => success.copy(body = success.body.map(page => page.copy(items = page.items.filter(isVisible)))))
+    )
 
   def visibleProject(project: FindProjectResp): FindProjectResp =
     project.copy(members = visible(project.members))
 
-  def visibleProjects(resp: TgRespIO[PaginatedResponse[FindProjectResp]]): TgRespIO[PaginatedResponse[FindProjectResp]] =
-    resp.map(_.map(success => success.copy(body = success.body.map(page => page.copy(items = page.items.map(visibleProject))))))
+  def visibleProjects(
+    resp: TgRespIO[PaginatedResponse[FindProjectResp]]
+  ): TgRespIO[PaginatedResponse[FindProjectResp]] =
+    resp.map(
+      _.map(success => success.copy(body = success.body.map(page => page.copy(items = page.items.map(visibleProject)))))
+    )
 
   def visibleProjectResp(resp: TgRespIO[FindProjectResp]): TgRespIO[FindProjectResp] =
     resp.map(_.map(success => success.copy(body = success.body.map(visibleProject))))

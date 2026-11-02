@@ -10,7 +10,13 @@ import java.util.UUID
 class TgPromptTemplateFormSupportTest extends AnyWordSpec with Matchers {
 
   private def version(createdAt: Long) =
-    TgPromptTemplateVersionDto(UUID.randomUUID(), UUID.randomUUID(), "title", "prompt", Instant.ofEpochSecond(createdAt))
+    TgPromptTemplateVersionDto(
+      UUID.randomUUID(),
+      UUID.randomUUID(),
+      "title",
+      "prompt",
+      Instant.ofEpochSecond(createdAt)
+    )
 
   "TgPromptTemplateFormSupport.preview" should {
 

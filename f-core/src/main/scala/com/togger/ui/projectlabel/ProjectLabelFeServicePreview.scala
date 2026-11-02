@@ -29,7 +29,9 @@ class ProjectLabelFeServicePreview(ctx: PreviewContext, data: ProjectLabelsPrevi
         if (data.categories.find(dto.categoryId).isEmpty) PreviewResponses.notFound[FindProjectLabelResp]
         else
           PreviewResponses.fromOption(
-            data.labels.update(dto.id)(_.copy(name = dto.name, description = dto.description, categoryId = dto.categoryId))
+            data.labels.update(dto.id)(
+              _.copy(name = dto.name, description = dto.description, categoryId = dto.categoryId)
+            )
           )
       }
     )

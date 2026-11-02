@@ -84,8 +84,7 @@ object ProjectHomeStats {
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
 
-  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left
-    * out.
+  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left out.
     */
   def byColumn(tasks: Seq[FindTaskRespFull]): Seq[Seq[FindTaskRespFull]] = {
     val ranked = tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))

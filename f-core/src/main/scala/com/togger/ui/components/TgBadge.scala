@@ -22,9 +22,9 @@ object TgBadgeAction {
 /** A badge color, as the five class fragments a badge needs.
   *
   * Two families live here. The **semantic six** (`Brand` .. `Warning`) use Flowbite's theme tokens, which swap
-  * themselves under `.dark`, so they carry no `dark:` class. The **palette colors** (`Blue` .. `Rose`) are raw
-  * Tailwind shades, which do not, so each spells out its own `dark:` pair. `style.css` points the `dark:` variant at
-  * the same `.dark` class the theme uses, so both families flip together.
+  * themselves under `.dark`, so they carry no `dark:` class. The **palette colors** (`Blue` .. `Rose`) are raw Tailwind
+  * shades, which do not, so each spells out its own `dark:` pair. `style.css` points the `dark:` variant at the same
+  * `.dark` class the theme uses, so both families flip together.
   *
   * Every class is a literal string on purpose: Tailwind scans source text for whole class names, so a fragment built
   * with interpolation (`s"bg-$hue-100"`) would generate no CSS at all.

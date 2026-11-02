@@ -14,7 +14,14 @@ class MilestoneSummaryAiTest extends AsyncJsWordSpec {
       val start = LocalDate.of(2026, 10, 26)
       val end = LocalDate.of(2026, 10, 30)
       val request = MilestoneSummaryAi.request(milestoneId, start, end)
-      (request.model, request.promptId, request.summarizePrompt, request.milestoneId, request.startDate, request.endDate) shouldBe
+      (
+        request.model,
+        request.promptId,
+        request.summarizePrompt,
+        request.milestoneId,
+        request.startDate,
+        request.endDate
+      ) shouldBe
         ("gemma4:e4b", None, MilestoneSummaryAi.DefaultPrompt, milestoneId, start, end)
     }
   }

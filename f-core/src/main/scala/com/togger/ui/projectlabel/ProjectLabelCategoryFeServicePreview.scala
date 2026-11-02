@@ -29,7 +29,9 @@ class ProjectLabelCategoryFeServicePreview(ctx: PreviewContext, data: ProjectLab
 
   override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindProjectLabelCategoryResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
-      IO.defer(PreviewResponses.paged(data.categories.all.sortBy(category => (category.name, category.id.toString)), page))
+      IO.defer(
+        PreviewResponses.paged(data.categories.all.sortBy(category => (category.name, category.id.toString)), page)
+      )
     )
 
   override def findProjectLabelCategoryById(id: UUID): TgRespIO[FindProjectLabelCategoryResp] =

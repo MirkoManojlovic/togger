@@ -10,7 +10,11 @@ object GanttRowOrder {
     * after, grouped by assignee in the order of the members (the order of their colours) with the unassigned last, and
     * in the order they were staged within a group. The ones no longer staged disappear from the arranged order.
     */
-  def ordered(tasks: Seq[FindTaskRespFull], order: Seq[UUID], memberIds: Seq[UUID] = Seq.empty): Seq[FindTaskRespFull] = {
+  def ordered(
+    tasks: Seq[FindTaskRespFull],
+    order: Seq[UUID],
+    memberIds: Seq[UUID] = Seq.empty
+  ): Seq[FindTaskRespFull] = {
     val byId = tasks.map(task => task.id -> task).toMap
     val rest = tasks
       .filterNot(task => order.contains(task.id))

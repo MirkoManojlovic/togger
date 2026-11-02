@@ -11,9 +11,9 @@ import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 import scala.util.Try
 
-/** The date of one additional milestone date, as a badge that opens the date popup the task badges use. The popup is the
-  * due date one of a task starting on the milestone's start date, so it offers no day before it; the date is optional,
-  * so it can fall on any day of the week.
+/** The date of one additional milestone date, as a badge that opens the date popup the task badges use. The popup is
+  * the due date one of a task starting on the milestone's start date, so it offers no day before it; the date is
+  * optional, so it can fall on any day of the week.
   */
 class MilestoneDateBadge(
   date: Signal[String],

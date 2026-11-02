@@ -5,7 +5,9 @@ import com.togger.ui.organization.TgIcons
 import org.scalajs.dom.HTMLElement
 import com.raquo.laminar.tags.HtmlTag
 
-/** One step. The first word of `label` is always shown, the rest only from the `sm` breakpoint up. A `done` step is green. */
+/** One step. The first word of `label` is always shown, the rest only from the `sm` breakpoint up. A `done` step is
+  * green.
+  */
 case class TgStep(label: String, done: Boolean = false)
 
 sealed trait TgStepState
@@ -17,8 +19,8 @@ object TgStepState {
 
 /** Flowbite breadcrumb stepper for Laminar.
   *
-  * Steps up to and including `current` (0-based) are brand coloured, except the done ones, which are green. Clicking any step reports its index to `onSelect`;
-  * the caller updates `current`.
+  * Steps up to and including `current` (0-based) are brand coloured, except the done ones, which are green. Clicking
+  * any step reports its index to `onSelect`; the caller updates `current`.
   */
 class TgStepperBreadcrumb(steps: Seq[TgStep], current: Signal[Int], onSelect: Observer[Int]) {
 

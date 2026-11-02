@@ -10,7 +10,8 @@ import java.util.UUID
 
 class TeamDailyPlanTest extends AsyncJsWordSpec {
 
-  private def member(first: String) = SearchAccountDto(UUID.randomUUID(), first, "Test", s"$first@test", UUID.randomUUID())
+  private def member(first: String) =
+    SearchAccountDto(UUID.randomUUID(), first, "Test", s"$first@test", UUID.randomUUID())
   private def task(name: String, status: String) =
     TeamDailyTaskPlan(
       UUID.randomUUID(),

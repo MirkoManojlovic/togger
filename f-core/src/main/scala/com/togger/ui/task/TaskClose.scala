@@ -23,7 +23,9 @@ object TaskClose {
     endDate.fold(Seq("Pick an end date")) { date =>
       Seq(
         Option.when(date.isBefore(startDate))("End date must be on or after start date"),
-        Option.when(!workDays.contains(date.getDayOfWeek))("End date must be one of this project's configured work days")
+        Option.when(!workDays.contains(date.getDayOfWeek))(
+          "End date must be one of this project's configured work days"
+        )
       ).flatten
     }
 }

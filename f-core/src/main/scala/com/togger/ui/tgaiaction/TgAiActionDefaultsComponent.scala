@@ -59,7 +59,9 @@ class TgAiActionDefaultsComponent(
   private def changeDefault(projectId: String, endpointId: Int, actionId: String): Unit = {
     val call =
       if (actionId.isEmpty)
-        tgAiActionService.clearDefault(UUID.fromString(projectId), endpointId).toastMessageJustMessage("Default cleared")
+        tgAiActionService
+          .clearDefault(UUID.fromString(projectId), endpointId)
+          .toastMessageJustMessage("Default cleared")
       else
         tgAiActionService
           .setDefault(SetTgAiActionDefaultReq(UUID.fromString(projectId), endpointId, UUID.fromString(actionId)))
@@ -86,7 +88,8 @@ class TgAiActionDefaultsComponent(
       inputStateUpdater = Observer[String](actionId => changeDefault(projectId, endpoint.id, actionId)),
       labelValue = endpoint.name,
       emptyValue = Some("No default"),
-      valuesAndDisplays = ListMap(actions.filter(_.endpointIds.contains(endpoint.id)).map(a => a.id.toString -> a.name): _*)
+      valuesAndDisplays =
+        ListMap(actions.filter(_.endpointIds.contains(endpoint.id)).map(a => a.id.toString -> a.name): _*)
     ).htmlElement.amend(cls("mb-4"))
 
   val element = div(

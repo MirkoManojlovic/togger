@@ -17,8 +17,8 @@ object GanttBar {
   /** The task lies completely before or after the visible days. */
   case class Outside(side: GanttClamp) extends GanttBar
 
-  /** A start on a day off begins on the next work day and a due date on a day off ends on the previous one. A task
-    * that lies only on days off between two columns still gets its one column. An axis without columns has no bars.
+  /** A start on a day off begins on the next work day and a due date on a day off ends on the previous one. A task that
+    * lies only on days off between two columns still gets its one column. An axis without columns has no bars.
     */
   def of(start: LocalDate, due: LocalDate, axis: GanttAxis): Option[GanttBar] = {
     if (axis.isEmpty) return None

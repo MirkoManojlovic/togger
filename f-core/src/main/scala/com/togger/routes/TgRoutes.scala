@@ -36,7 +36,16 @@ class TgRoutes {
     )
 
   private type TaskListQuery =
-    (Option[String], Option[String], List[String], List[String], List[String], List[String], List[String], Option[String])
+    (
+      Option[String],
+      Option[String],
+      List[String],
+      List[String],
+      List[String],
+      List[String],
+      List[String],
+      Option[String]
+    )
 
   def routes(basePath: String): Seq[Route[_ <: FrontendPage, _ <: Any]] =
     Seq(
@@ -157,8 +166,8 @@ class TgRoutes {
         ] / endOfSegments
       ),
       Route.withQuery[ShowAllTaskLabelsPage, String, ListQuery](
-        encode = (page: ShowAllTaskLabelsPage) =>
-          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        encode =
+          (page: ShowAllTaskLabelsPage) => PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
         decode = (args: PatternArgs[String, ListQuery]) =>
           ShowAllTaskLabelsPage(UUID.fromString(args.path), listFromQuery(args.params)),
         pattern = (root / "task-label" / segment[String] / endOfSegments) ? listQueryParams
@@ -343,8 +352,9 @@ class TgRoutes {
         decode = { (projectIdAndId: (String, String)) =>
           EditDataExportConfigPage(UUID.fromString(projectIdAndId._1), UUID.fromString(projectIdAndId._2))
         },
-        pattern =
-          root / "data-export-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[String] / endOfSegments
+        pattern = root / "data-export-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[
+          String
+        ] / endOfSegments
       ),
       Route(
         encode = (page: DataExportStatusPage) => page.projectId.toString,
@@ -361,8 +371,9 @@ class TgRoutes {
         decode = { (projectIdAndId: (String, String)) =>
           EditDataImportConfigPage(UUID.fromString(projectIdAndId._1), UUID.fromString(projectIdAndId._2))
         },
-        pattern =
-          root / "data-import-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[String] / endOfSegments
+        pattern = root / "data-import-config" / "edit" / "project-id" / segment[String] / "config-id" / segment[
+          String
+        ] / endOfSegments
       ),
       Route(
         encode = (page: CreateProjectMappingPage) => page.projectId.toString,
@@ -435,7 +446,8 @@ class TgRoutes {
           val (mode, months, start, stop, taskStatuses, milestones, milestoneStatuses, search) = args.params
           ShowMilestoneHistoryPage(
             UUID.fromString(args.path),
-            MilestoneHistoryParams.fromQuery(mode, months, start, stop, taskStatuses, milestones, milestoneStatuses, search)
+            MilestoneHistoryParams
+              .fromQuery(mode, months, start, stop, taskStatuses, milestones, milestoneStatuses, search)
           )
         },
         pattern = (root / "milestone-history" / segment[String] / endOfSegments) ? (
@@ -450,8 +462,8 @@ class TgRoutes {
         )
       ),
       Route.withQuery[ShowTimeboxesPage, String, ListQuery](
-        encode = (page: ShowTimeboxesPage) =>
-          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        encode =
+          (page: ShowTimeboxesPage) => PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
         decode = (args: PatternArgs[String, ListQuery]) =>
           ShowTimeboxesPage(UUID.fromString(args.path), listFromQuery(args.params)),
         pattern = (root / "show-timeboxes" / segment[String] / endOfSegments) ? listQueryParams
@@ -464,7 +476,8 @@ class TgRoutes {
       Route(
         encode = (page: EditTimeboxPage) => page.projectId.toString -> page.timeboxId.toString,
         decode = { (ids: (String, String)) => EditTimeboxPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
-        pattern = root / "edit-timebox" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
+        pattern =
+          root / "edit-timebox" / "project-id" / segment[String] / "timebox-id" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: TimeboxHistoryPage) => page.projectId.toString -> page.timeboxId.toString,

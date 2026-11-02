@@ -28,7 +28,9 @@ case class TeamDailyDraft(
   def isEmpty: Boolean = entries.isEmpty
 }
 
-/** The draft in the browser's local storage, one per account and project, so an unfinished team daily survives a refresh. */
+/** The draft in the browser's local storage, one per account and project, so an unfinished team daily survives a
+  * refresh.
+  */
 class TeamDailyDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
 
   import TeamDailyDraftStore._

@@ -53,9 +53,9 @@ class MilestoneFeServicePreview(
   override def findMilestoneById(id: UUID): TgRespIO[FindMilestoneResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        data.milestones.find(id).fold(PreviewResponses.badRequest[FindMilestoneResp](NotFoundMessage))(m =>
-          PreviewResponses.ok(m.toDto)
-        )
+        data.milestones
+          .find(id)
+          .fold(PreviewResponses.badRequest[FindMilestoneResp](NotFoundMessage))(m => PreviewResponses.ok(m.toDto))
       )
     )
 
@@ -99,7 +99,9 @@ class MilestoneFeServicePreview(
         val matching = data.milestones
           .filter(_.projectId == projectId)
           .filter(m => filter.statuses.isEmpty || filter.statuses.contains(m.status))
-          .filter(m => search.forall(term => m.name.toLowerCase.contains(term) || m.description.toLowerCase.contains(term)))
+          .filter(m =>
+            search.forall(term => m.name.toLowerCase.contains(term) || m.description.toLowerCase.contains(term))
+          )
           .sortBy(m => (m.dueDate.toEpochDay, m.id.toString))
         PreviewResponses.paged(matching.map(_.toDto), page)
       }

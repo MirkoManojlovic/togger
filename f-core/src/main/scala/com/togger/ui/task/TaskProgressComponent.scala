@@ -16,9 +16,9 @@ object TaskProgressVariant {
 
 /** Renders a task's checkbox progress, in whichever shape `variant` asks for.
   *
-  * Nothing renders when the description has no task list (`TaskProgress.total == 0`) — that is "no progress to
-  * show", not "0%". `ringSizeCls` and `textSizeCls` size the ring and the label, "n of m tasks" unless `labelOf` says otherwise.
-  * `containerCls` and `labelCls` lay the ring and the label out, beside each other unless told otherwise.
+  * Nothing renders when the description has no task list (`TaskProgress.total == 0`) — that is "no progress to show",
+  * not "0%". `ringSizeCls` and `textSizeCls` size the ring and the label, "n of m tasks" unless `labelOf` says
+  * otherwise. `containerCls` and `labelCls` lay the ring and the label out, beside each other unless told otherwise.
   */
 case class TaskProgressComponent(
   progressSignal: Signal[TaskProgress],
@@ -49,9 +49,8 @@ case class TaskProgressComponent(
           )
       }
 
-  /** `r = 15.9155` makes the circle's circumference exactly 100, so a percent maps straight onto
-    * `strokeDashArray` with no extra math. `-rotate-90` on the wrapper starts the fill at 12 o'clock instead of
-    * SVG's default 3 o'clock.
+  /** `r = 15.9155` makes the circle's circumference exactly 100, so a percent maps straight onto `strokeDashArray` with
+    * no extra math. `-rotate-90` on the wrapper starts the fill at 12 o'clock instead of SVG's default 3 o'clock.
     */
   private def doughnutRing(percent: Int) =
     svg.svg(

@@ -51,9 +51,9 @@ import java.util.UUID
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
 /** The paged, searchable and filtered task table with its bulk editing, selection and deleting, shared by the task
-  * screens. The page, filters and search term live in `paramsVar`; a change is handed to `navigate`, which stores the new
-  * params and reads the page again (the task screen routes to its URL, a screen that keeps the params itself sets them
-  * and calls [[loadPage]]).
+  * screens. The page, filters and search term live in `paramsVar`; a change is handed to `navigate`, which stores the
+  * new params and reads the page again (the task screen routes to its URL, a screen that keeps the params itself sets
+  * them and calls [[loadPage]]).
   *
   * @param lockedMilestoneId
   *   when set, the table only shows the tasks of that milestone and has no milestone filter.
@@ -100,9 +100,12 @@ class TaskListTable(
   private object taskBadges {
 
     def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
-      if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
+      if (dto.taskLabels.isEmpty)
+        Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
       else
-        dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
+        dto.taskLabels
+          .sortBy(_.name)
+          .map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
     def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(
@@ -235,7 +238,9 @@ class TaskListTable(
       onClick --> (event => onSelectClick(id, event.shiftKey))
     )
 
-  /** A click on the row selects it, like its checkbox, and every cell of a selected row is highlighted; checkboxes, badges, buttons and links keep their own click. */
+  /** A click on the row selects it, like its checkbox, and every cell of a selected row is highlighted; checkboxes,
+    * badges, buttons and links keep their own click.
+    */
   private def selectOnClick(id: UUID): Seq[Modifier[HtmlElement]] =
     Seq(
       cls("cursor-pointer"),
@@ -350,67 +355,69 @@ class TaskListTable(
     )
 
   val element: HtmlElement =
-              div(
-                browser.searchBar,
-                selectionArea,
-                TgHtmlTable.tableElement(
-                  Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+    div(
+      browser.searchBar,
+      selectionArea,
+      TgHtmlTable.tableElement(
+        Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+          div(
+            cls("flex items-center justify-between gap-4"),
+            div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
+            browser.filterButtons
+          ),
+          Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
+            cls("!px-2 w-0 whitespace-nowrap text-center"),
+            "Action"
+          )
+        ),
+        striped = false
+      )(
+        visibleRowsSignal.map(rows =>
+          if (rows.isEmpty) Seq(noTasksRow)
+          else
+            rows.map { dto =>
+              Seq(
+                createTd(
+                  div(
+                    cls("flex items-start gap-2 rounded-base"),
+                    cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)),
+                    selectCheckbox(dto.id),
                     div(
-                      cls("flex items-center justify-between gap-4"),
-                      div(cls("flex items-center gap-2"), selectAllCheckbox, "Name"),
-                      browser.filterButtons
-                    ),
-                    Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
-                      cls("!px-2 w-0 whitespace-nowrap text-center"),
-                      "Action"
+                      cls("flex flex-col gap-1"),
+                      div(
+                        cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
+                        a(
+                          cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
+                          dto.name,
+                          router.navigateTo(EditTaskPage(dto.projectId, dto.id))
+                        ),
+                        badgeRow(dto.id, taskBadges.labelRow(dto)),
+                        TaskProgressComponent
+                          .fromDescription(Val(dto.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
+                          .element
+                      ),
+                      badgeRow(dto.id, taskBadges.primaryRow(dto)),
+                      badgeRow(dto.id, taskBadges.dateRow(dto))
                     )
-                  ),
-                  striped = false
-                )(
-                  visibleRowsSignal.map(
-                    rows => if (rows.isEmpty) Seq(noTasksRow) else rows.map { dto =>
-                        Seq(
-                          createTd(
-                            div(
-                              cls("flex items-start gap-2 rounded-base"),
-                              cls("opacity-60 pointer-events-none") <-- savingVar.signal.map(_.contains(dto.id)),
-                              selectCheckbox(dto.id),
-                              div(
-                                cls("flex flex-col gap-1"),
-                                div(
-                                  cls("flex flex-wrap items-center gap-x-2 gap-y-1"),
-                                  a(
-                                    cls("text-base font-semibold text-heading hover:text-fg-brand hover:underline"),
-                                    dto.name,
-                                    router.navigateTo(EditTaskPage(dto.projectId, dto.id))
-                                  ),
-                                  badgeRow(dto.id, taskBadges.labelRow(dto)),
-                                  TaskProgressComponent
-                                    .fromDescription(Val(dto.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
-                                    .element
-                                ),
-                                badgeRow(dto.id, taskBadges.primaryRow(dto)),
-                                badgeRow(dto.id, taskBadges.dateRow(dto))
-                              )
-                            )
-                          ).amend(selectOnClick(dto.id)),
-                          td(
-                            cls("!px-2 w-0 whitespace-nowrap"),
-                            selectOnClick(dto.id),
-                            div(
-                              iconButton(
-                                "Delete",
-                                TgIcons.trashIcon(className = "w-4 h-4"),
-                                rowIconButtonDangerCls,
-                                rowButtonMarginCls,
-                                onClick.mapToUnit --> (_ => deleteTask(dto))
-                              )
-                            )
-                          )
-                        )
-                      }
                   )
-                ),
-                browser.pagination
+                ).amend(selectOnClick(dto.id)),
+                td(
+                  cls("!px-2 w-0 whitespace-nowrap"),
+                  selectOnClick(dto.id),
+                  div(
+                    iconButton(
+                      "Delete",
+                      TgIcons.trashIcon(className = "w-4 h-4"),
+                      rowIconButtonDangerCls,
+                      rowButtonMarginCls,
+                      onClick.mapToUnit --> (_ => deleteTask(dto))
+                    )
+                  )
+                )
               )
+            }
+        )
+      ),
+      browser.pagination
+    )
 }

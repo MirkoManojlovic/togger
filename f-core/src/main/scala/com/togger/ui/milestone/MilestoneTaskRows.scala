@@ -49,7 +49,9 @@ object MilestoneTaskRows {
 
   private def column(title: String, content: HtmlElement): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-2 text-center px-3 first:pl-0 min-w-0 border-r border-default last:border-r-0"),
+      cls(
+        "flex flex-col items-center gap-2 text-center px-3 first:pl-0 min-w-0 border-r border-default last:border-r-0"
+      ),
       span(cls("text-base font-semibold text-heading"), title),
       content
     )

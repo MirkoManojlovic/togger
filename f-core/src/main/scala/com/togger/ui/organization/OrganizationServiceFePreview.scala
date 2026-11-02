@@ -59,7 +59,9 @@ class OrganizationServiceFePreview(
   override def update(dto: UpdateOrganizationReq): TgRespIO[FindOrganizationResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer {
-        val updated = organizations.organizations.update(dto.id)(_.copy(name = dto.name, description = dto.description, icon = dto.icon))
+        val updated = organizations.organizations.update(dto.id)(
+          _.copy(name = dto.name, description = dto.description, icon = dto.icon)
+        )
         updated.foreach { _ =>
           organizations.removeMembers(dto.id, dto.membersToRemove)
           organizations.addMembers(dto.id, dto.membersToAdd)

@@ -31,9 +31,7 @@ object ApexChartJs {
     if (options.chartType == ApexChartType.Column || options.chartType == ApexChartType.Bar)
       result.updateDynamic("plotOptions")(literal("bar" -> literal("horizontal" -> options.chartType.horizontal)))
     options.stroke.foreach(stroke => result.updateDynamic("stroke")(strokeToJs(stroke)))
-    options.legendPosition.foreach(position =>
-      result.updateDynamic("legend")(literal("position" -> position.jsValue))
-    )
+    options.legendPosition.foreach(position => result.updateDynamic("legend")(literal("position" -> position.jsValue)))
     result
   }
 

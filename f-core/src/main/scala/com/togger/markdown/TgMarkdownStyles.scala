@@ -3,16 +3,16 @@ package com.togger.markdown
 /** Flowbite classes for each markdown node kind, as one overridable bag of class strings.
   *
   * Sizes follow the app rather than Flowbite's typography docs, which are scaled for marketing pages (`h1` is
-  * `text-5xl` there). The tokens are Flowbite's — `text-heading`, `text-body`, `border-default` — so every value
-  * swaps itself under `.dark` and none of them spells out a `dark:` class.
+  * `text-5xl` there). The tokens are Flowbite's — `text-heading`, `text-body`, `border-default` — so every value swaps
+  * itself under `.dark` and none of them spells out a `dark:` class.
   *
-  * Every string is a literal on purpose: Tailwind scans source text for whole class names, so a fragment built
-  * with interpolation (`s"mb-$n"`) would generate no CSS at all — the same rule
-  * [[com.togger.ui.components.TgBadgeColor]] documents.
+  * Every string is a literal on purpose: Tailwind scans source text for whole class names, so a fragment built with
+  * interpolation (`s"mb-$n"`) would generate no CSS at all — the same rule [[com.togger.ui.components.TgBadgeColor]]
+  * documents.
   *
-  * Block spacing rides on `mb-*` per block rather than `space-y-*` on a wrapper, because `TgMarkdown.toLaminar`
-  * hands back a bare `Seq[HtmlElement]` — a caller splicing those into its own container would get no spacing
-  * from a wrapper class that is not there.
+  * Block spacing rides on `mb-*` per block rather than `space-y-*` on a wrapper, because `TgMarkdown.toLaminar` hands
+  * back a bare `Seq[HtmlElement]` — a caller splicing those into its own container would get no spacing from a wrapper
+  * class that is not there.
   */
 case class TgMarkdownStyles(
   heading1: String = "text-2xl font-bold text-heading mb-3",
@@ -34,13 +34,13 @@ case class TgMarkdownStyles(
   orderedList: String = "mb-3 space-y-1 text-sm text-body list-decimal list-inside",
   nestedList: String = "ps-5 mt-2 space-y-1",
   listItem: String = "",
-  /** Per item rather than per list: one list can hold task items and plain ones, and only the task items lose
-    * their bullet.
+  /** Per item rather than per list: one list can hold task items and plain ones, and only the task items lose their
+    * bullet.
     */
   taskListItem: String = "list-none",
-  /** Lifted from `TgCheckbox`, so a markdown checkbox and a form checkbox are the same control. `me-2
-    * align-middle` rather than a flex row — a tight list item's content is a run of inline nodes, and making the
-    * `<li>` a flex container would turn every word into a flex item.
+  /** Lifted from `TgCheckbox`, so a markdown checkbox and a form checkbox are the same control. `me-2 align-middle`
+    * rather than a flex row — a tight list item's content is a run of inline nodes, and making the `<li>` a flex
+    * container would turn every word into a flex item.
     */
   taskCheckbox: String =
     "w-4 h-4 me-2 align-middle border border-default-strong rounded-xs bg-neutral-secondary-strong " +

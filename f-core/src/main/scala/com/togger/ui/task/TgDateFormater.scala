@@ -1,6 +1,12 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.{AmericanDashes, DayOnlyFormat, LogEntryFormat, MonthNameFormat, YearMonthDayTimeFormat}
+import com.togger.ui.task.TgDateFormat.{
+  AmericanDashes,
+  DayOnlyFormat,
+  LogEntryFormat,
+  MonthNameFormat,
+  YearMonthDayTimeFormat
+}
 import enumeratum.{Enum, EnumEntry}
 
 import java.time.format.DateTimeFormatter

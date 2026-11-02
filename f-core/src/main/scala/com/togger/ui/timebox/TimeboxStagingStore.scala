@@ -101,7 +101,10 @@ class TimeboxStagingStore(localStorage: LocalStorage) {
       else
         localStorage.setItem(
           overridesKey(projectId),
-          OverridesEnvelope(Version, overrides.map { case (id, dates) => StoredOverride(id, dates) }.toSeq).asJson.noSpaces
+          OverridesEnvelope(
+            Version,
+            overrides.map { case (id, dates) => StoredOverride(id, dates) }.toSeq
+          ).asJson.noSpaces
         )
     ): Unit
 

@@ -31,8 +31,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
     emitted: mutable.Buffer[String]
   )
 
-  /** Mounts a real editor over a caller-owned `Var`, wired the way a form would wire it — the observer writes back
-    * into the same `Var` the signal is read from, which is exactly the loop the editor has to absorb.
+  /** Mounts a real editor over a caller-owned `Var`, wired the way a form would wire it — the observer writes back into
+    * the same `Var` the signal is read from, which is exactly the loop the editor has to absorb.
     */
   private def mounted(initial: String)(body: Mounted => Future[Assertion]): Future[Assertion] = {
     val state = Var(initial)
@@ -69,7 +69,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
     }
   }
 
-  /** jsdom has no `ResizeObserver` and no layout, so the editor never stacks; this one reports a zero width on observe. */
+  /** jsdom has no `ResizeObserver` and no layout, so the editor never stacks; this one reports a zero width on observe.
+    */
   private def withResizeObserverReportingNoWidth(body: => Future[Assertion]): Future[Assertion] = {
     js.eval(
       "globalThis.ResizeObserver = class { constructor(cb) { this.cb = cb } observe() { this.cb([], this) } disconnect() {} }"
@@ -93,9 +94,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
   private def toolbarButton(editor: dom.Element, label: String): dom.Element =
     editor.querySelector(s"button[aria-label='$label']")
 
-  /** jsdom has no native textarea behind it, so pressing Enter inserts nothing on its own — a test that stayed
-    * quiet about the event either way would prove nothing. `defaultPrevented` says whether the component actually
-    * stepped in.
+  /** jsdom has no native textarea behind it, so pressing Enter inserts nothing on its own — a test that stayed quiet
+    * about the event either way would prove nothing. `defaultPrevented` says whether the component actually stepped in.
     */
   private def pressEnter(source: dom.html.TextArea, shiftKey: Boolean = false): dom.KeyboardEvent = {
     val init = js.Dynamic
@@ -148,8 +148,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
       }
     }
 
-    /** The editor's central promise: the value is the author's text, not a rendering of a rendering of it. An
-      * editor that parsed and re-serialized would hand back `*a*` for `_a_` and `- x` for `+ x`.
+    /** The editor's central promise: the value is the author's text, not a rendering of a rendering of it. An editor
+      * that parsed and re-serialized would hand back `*a*` for `_a_` and `- x` for `+ x`.
       */
     "report the author's own markdown rather than a canonical form of it" in { _ =>
       mounted("_italic_ and + a list marker") { view =>
@@ -378,8 +378,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
       }
     }
 
-    /** The shape `CreateTaskComponent` and `EditTaskComponent` use: a form `Var`, a field selected by macro, and
-      * the editor writing back into that field.
+    /** The shape `CreateTaskComponent` and `EditTaskComponent` use: a form `Var`, a field selected by macro, and the
+      * editor writing back into that field.
       */
     "write back into a form field through the syntax helper" in { _ =>
       val formState = Var(TestForm(description = "start"))

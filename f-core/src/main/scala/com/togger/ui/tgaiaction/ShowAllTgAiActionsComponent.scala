@@ -4,7 +4,12 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.{FindTgAiActionResp, TgAiEndpointDto}
-import com.togger.routes.Pages.{CreateTgAiActionPage, EditTgAiActionPage, ShowAllTgAiActionsPage, TgAiActionDefaultsPage}
+import com.togger.routes.Pages.{
+  CreateTgAiActionPage,
+  EditTgAiActionPage,
+  ShowAllTgAiActionsPage,
+  TgAiActionDefaultsPage
+}
 import com.togger.routes.{FrontendPage, ListParams, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -120,7 +125,13 @@ class ShowAllTgAiActionsComponent(
                     cls("w-full text-sm text-left rtl:text-right text-body"),
                     thead(
                       cls("text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default"),
-                      tr(createTh("name"), createTh("model"), createTh("endpoints"), createTh("last updated"), createTh("Action"))
+                      tr(
+                        createTh("name"),
+                        createTh("model"),
+                        createTh("endpoints"),
+                        createTh("last updated"),
+                        createTh("Action")
+                      )
                     ),
                     tbody(
                       dtos.map { dto =>

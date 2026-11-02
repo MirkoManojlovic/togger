@@ -9,8 +9,8 @@ import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
 import com.togger.ui.task.TaskConfigTableSupport
 
-/** The entities an import went through: a summary of the statuses that doubles as a filter, then the entities a page
-  * at a time.
+/** The entities an import went through: a summary of the statuses that doubles as a filter, then the entities a page at
+  * a time.
   */
 class ImportResultsComponent(results: Seq[DataImportEntityResultResp]) {
 

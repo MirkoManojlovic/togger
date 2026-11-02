@@ -52,7 +52,8 @@ class TgBreadcrumbs(
   private val currentCls = "inline-flex items-center text-sm font-medium text-body-subtle"
   private val separatorCls = "w-3.5 h-3.5 rtl:rotate-180 text-body"
   private val iconCls = "w-4 h-4 me-1.5"
-  private val historyButtonCls = "inline-flex items-center text-body enabled:hover:text-fg-brand enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+  private val historyButtonCls =
+    "inline-flex items-center text-body enabled:hover:text-fg-brand enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 
   // The Navigation API is the only way to know if history has entries; where it is missing both buttons stay enabled.
   private val canGoBack = Var(true)

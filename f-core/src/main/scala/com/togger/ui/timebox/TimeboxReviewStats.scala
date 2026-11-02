@@ -45,8 +45,8 @@ object TimeboxReviewStats {
   def tasksProgress(tasks: Seq[FindTaskRespFull]): TasksProgress =
     TasksProgress(done = tasks.count(isDone), total = tasks.size)
 
-  /** The work days the tasks not done span, a day shared by several tasks counted once: those before today are
-    * worked, those from today on are left.
+  /** The work days the tasks not done span, a day shared by several tasks counted once: those before today are worked,
+    * those from today on are left.
     */
   def workDaysProgress(tasks: Seq[FindTaskRespFull], today: LocalDate, workDays: Set[DayOfWeek]): DaysProgress = {
     val days = tasks
@@ -78,7 +78,5 @@ object TimeboxReviewStats {
     tasks: Seq[FindTaskRespFull],
     milestones: Seq[FindMilestoneResp]
   ): Seq[ReviewPie] =
-    groupings.map(grouping =>
-      ReviewPie(grouping.label, StagedCharts.pieOfGroups(grouping.group(tasks, milestones)))
-    )
+    groupings.map(grouping => ReviewPie(grouping.label, StagedCharts.pieOfGroups(grouping.group(tasks, milestones))))
 }

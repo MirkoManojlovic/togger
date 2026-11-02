@@ -19,7 +19,8 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(
         labelError(dto.projectId, dto.taskLabelId, None).fold {
-          val template = PreviewTaskTemplate(UUID.randomUUID(), dto.projectId, dto.taskLabelId, callerId, ctx.clock.currentInstant)
+          val template =
+            PreviewTaskTemplate(UUID.randomUUID(), dto.projectId, dto.taskLabelId, callerId, ctx.clock.currentInstant)
           data.templates.upsert(template)
           data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
           PreviewResponses.ok(toDto(template))
@@ -58,9 +59,12 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
   override def findTaskTemplateById(id: UUID): TgRespIO[FindTaskTemplateResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        data.templates.find(id).flatMap(toDtoOpt).fold(PreviewResponses.badRequest[FindTaskTemplateResp](NotFoundMessage))(
-          PreviewResponses.ok(_)
-        )
+        data.templates
+          .find(id)
+          .flatMap(toDtoOpt)
+          .fold(PreviewResponses.badRequest[FindTaskTemplateResp](NotFoundMessage))(
+            PreviewResponses.ok(_)
+          )
       )
     )
 

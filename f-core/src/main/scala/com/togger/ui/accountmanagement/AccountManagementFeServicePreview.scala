@@ -21,9 +21,11 @@ class AccountManagementFeServicePreview(
 
   override def findById(id: UUID): TgRespIO[AccountManagementDto] =
     adminOnly(_ =>
-      accounts.accounts.find(id).fold(PreviewResponses.badRequest[AccountManagementDto]("Account not found"))(a =>
-        PreviewResponses.ok(toDto(a))
-      )
+      accounts.accounts
+        .find(id)
+        .fold(PreviewResponses.badRequest[AccountManagementDto]("Account not found"))(a =>
+          PreviewResponses.ok(toDto(a))
+        )
     )
 
   override def findAccountTypes: TgRespIO[List[AccountTypeDto]] =

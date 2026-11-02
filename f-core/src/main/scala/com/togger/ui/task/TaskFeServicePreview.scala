@@ -38,10 +38,13 @@ class TaskFeServicePreview(
             .flatMap(_ => LinkValidation.validateAll(dto.links, Seq.empty)) match {
             case Left(errors) => errors.toBadRequestLeftIO[FindTaskResp]
             case Right(_) =>
-              checkStatus(task.projectId, task.taskStatusId).fold(PreviewResponses.badRequest[FindTaskResp](_), _ => {
-                val (created, links) = insertTask(accountId, dto, task.createdAt, ctx.clock.currentInstant)
-                PreviewResponses.ok(savedDto(created, links))
-              })
+              checkStatus(task.projectId, task.taskStatusId).fold(
+                PreviewResponses.badRequest[FindTaskResp](_),
+                _ => {
+                  val (created, links) = insertTask(accountId, dto, task.createdAt, ctx.clock.currentInstant)
+                  PreviewResponses.ok(savedDto(created, links))
+                }
+              )
           }
       }
     }
@@ -60,7 +63,11 @@ class TaskFeServicePreview(
                 .flatMap(_ => BulkTaskValidation.validateLinks(dto)) match {
                 case Left(errors) => errors.toBadRequestLeftIO[Seq[FindTaskResp]]
                 case Right(_) =>
-                  dto.tasks.map(_.task.taskStatusId).distinct.flatMap(checkStatus(projectId, _).left.toOption).headOption match {
+                  dto.tasks
+                    .map(_.task.taskStatusId)
+                    .distinct
+                    .flatMap(checkStatus(projectId, _).left.toOption)
+                    .headOption match {
                     case Some(error) => PreviewResponses.badRequest[Seq[FindTaskResp]](error)
                     case None =>
                       val now = ctx.clock.currentInstant
@@ -181,7 +188,10 @@ class TaskFeServicePreview(
             FindTaskResp(
               toDto(task, version),
               data.linksOf(id).flatMap(link => data.latestLinkVersion(link.id).map(toLinkDto(link, _))),
-              data.logEntriesOf(id).sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString)).flatMap(toLogEntryDto)
+              data
+                .logEntriesOf(id)
+                .sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+                .flatMap(toLogEntryDto)
             )
           )
       }
@@ -222,7 +232,9 @@ class TaskFeServicePreview(
         case Some(existing) =>
           PreviewResponses.ok(
             data.logEntryVersions
-              .upsert(existing.copy(textInternal = dto.textInternal, textExternal = dto.textExternal, status = dto.status))
+              .upsert(
+                existing.copy(textInternal = dto.textInternal, textExternal = dto.textExternal, status = dto.status)
+              )
           )
       }
     }
@@ -344,7 +356,8 @@ class TaskFeServicePreview(
     labelIds.distinct.filter(id => taskConfig.labels.find(id).exists(_.projectId == projectId)).toList
 
   private def closedByFor(statusId: UUID, previous: Option[UUID], accountId: UUID): Option[UUID] =
-    if (taskConfig.statuses.find(statusId).exists(found => DefaultTaskStatus.isTerminalName(found.name))) previous.orElse(Some(accountId))
+    if (taskConfig.statuses.find(statusId).exists(found => DefaultTaskStatus.isTerminalName(found.name)))
+      previous.orElse(Some(accountId))
     else None
 
   private def sameContent(a: TaskVersionDto, b: TaskVersionDto): Boolean =
@@ -397,7 +410,9 @@ class TaskFeServicePreview(
     data.links.find(req.id).filter(_.taskId == taskId).flatMap { link =>
       data.latestLinkVersion(link.id).map { current =>
         val changed = current.name != req.name || current.url != req.url
-        link -> (if (changed) data.linkVersions.upsert(LinkVersionDto(UUID.randomUUID(), link.id, req.name, req.url, now, now)) else current)
+        link -> (if (changed)
+                   data.linkVersions.upsert(LinkVersionDto(UUID.randomUUID(), link.id, req.name, req.url, now, now))
+                 else current)
       }
     }
 
@@ -480,7 +495,10 @@ class TaskFeServicePreview(
         createdAt = task.createdAt,
         updatedAt = version.updatedAt,
         latestVersion = version.version,
-        logEntries = data.logEntriesOf(task.id).sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString)).flatMap(toLogEntryDto),
+        logEntries = data
+          .logEntriesOf(task.id)
+          .sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+          .flatMap(toLogEntryDto),
         links = data.linksOf(task.id).flatMap(link => data.latestLinkVersion(link.id).map(toLinkDto(link, _))),
         milestone = version.milestone,
         startDate = version.startDate,

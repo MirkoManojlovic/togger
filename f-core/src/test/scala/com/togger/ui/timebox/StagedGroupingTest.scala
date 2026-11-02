@@ -81,7 +81,9 @@ class StagedGroupingTest extends AnyWordSpec with Matchers {
     }
 
     "put tasks without a known milestone under no milestone" in {
-      names(StagedGrouping.ByMilestone.group(Seq(task("a").copy(milestone = Some(UUID.randomUUID()))), Seq.empty)) shouldBe
+      names(
+        StagedGrouping.ByMilestone.group(Seq(task("a").copy(milestone = Some(UUID.randomUUID()))), Seq.empty)
+      ) shouldBe
         Seq("No milestone" -> Seq("a"))
     }
   }

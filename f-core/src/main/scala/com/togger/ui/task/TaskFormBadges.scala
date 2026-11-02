@@ -13,8 +13,8 @@ import java.time.{DayOfWeek, LocalDate}
 import java.util.UUID
 
 /** The attributes of the task a form edits, as badges that open the same popups the task list uses; the form reads the
-  * edited task from [[taskVar]] when it is submitted. Choosing a closing status (Done or Won't do) is handed to [[onClosingChosen]]
-  * instead of being applied, as a closed task needs an end date.
+  * edited task from [[taskVar]] when it is submitted. Choosing a closing status (Done or Won't do) is handed to
+  * [[onClosingChosen]] instead of being applied, as a closed task needs an end date.
   */
 class TaskFormBadges(
   initial: BulkTask,

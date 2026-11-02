@@ -8,8 +8,8 @@ import com.togger.ui.task.TaskConfigTableSupport
 
 /** What an export would change, one tab for each export path. Two buttons in the top right corner: one for all the
   * paths, with the number of paths that still need it, and one for the path of the open tab. A path needs the action
-  * while some of its entities are not in sync. An import check reuses it with its own button label and its own idea
-  * of which entities still need the action.
+  * while some of its entities are not in sync. An import check reuses it with its own button label and its own idea of
+  * which entities still need the action.
   */
 class ExportCheckComponent(
   pathStatuses: Seq[DataExportPathStatusResp],
@@ -46,7 +46,9 @@ class ExportCheckComponent(
       "disabled:opacity-40 disabled:cursor-not-allowed"
 
   private val selectedPath: Signal[Option[DataExportPathStatusResp]] =
-    selectedTabVar.signal.map(id => pathStatuses.zipWithIndex.collectFirst { case (path, index) if tabId(index) == id => path })
+    selectedTabVar.signal.map(id =>
+      pathStatuses.zipWithIndex.collectFirst { case (path, index) if tabId(index) == id => path }
+    )
 
   private val allButton =
     button(
@@ -78,7 +80,7 @@ class ExportCheckComponent(
   private val paths: HtmlElement =
     pathStatuses match {
       case Seq() => div(cls("text-body"), "No export paths configured for this project")
-      case _ => new TgTabs(pathStatuses.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
+      case _     => new TgTabs(pathStatuses.zipWithIndex.map((pathTab _).tupled), selectedTabVar).element
     }
 
   val element =

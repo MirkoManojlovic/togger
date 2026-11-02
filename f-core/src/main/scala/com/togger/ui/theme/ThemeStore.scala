@@ -14,7 +14,7 @@ object ThemeMode {
   def fromStorage(value: Option[String]): ThemeMode = value match {
     case Some("light") => Light
     case Some("dark")  => Dark
-    case _              => System
+    case _             => System
   }
 
   def toStorage(mode: ThemeMode): String = mode match {

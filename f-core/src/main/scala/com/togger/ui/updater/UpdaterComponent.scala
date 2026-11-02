@@ -81,7 +81,12 @@ class UpdaterComponent {
       p(cls("mt-3 text-sm text-body"), role("status"), child.text <-- stateVar.signal.map(statusText)),
       child.maybe <-- stateVar.signal.map {
         case Available(_, notes) if notes.nonEmpty =>
-          Some(pre(cls("mt-3 p-2 rounded-base bg-neutral-secondary-medium text-sm text-heading whitespace-pre-wrap"), notes))
+          Some(
+            pre(
+              cls("mt-3 p-2 rounded-base bg-neutral-secondary-medium text-sm text-heading whitespace-pre-wrap"),
+              notes
+            )
+          )
         case _ => None
       }
     )

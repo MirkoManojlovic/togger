@@ -30,13 +30,15 @@ object StagedCharts {
     * and badge. The other groups get a color each, round and round; the tasks that are in no group are gray.
     */
   private def sliceColors(slices: Seq[Slice]): Seq[SliceColor] =
-    slices.foldLeft((Seq.empty[SliceColor], 0)) { case ((colors, used), slice) =>
-      slice.chartColor match {
-        case Some(color)                                   => (colors :+ SliceColor(color.dark, color.light), used)
-        case None if NoGroupTitles.contains(slice.title) => (colors :+ NoGroupColor, used)
-        case None => (colors :+ SliceColors(used % SliceColors.size), used + 1)
+    slices
+      .foldLeft((Seq.empty[SliceColor], 0)) { case ((colors, used), slice) =>
+        slice.chartColor match {
+          case Some(color)                                 => (colors :+ SliceColor(color.dark, color.light), used)
+          case None if NoGroupTitles.contains(slice.title) => (colors :+ NoGroupColor, used)
+          case None                                        => (colors :+ SliceColors(used % SliceColors.size), used + 1)
+        }
       }
-    }._1
+      ._1
 
   case class Slice(title: String, size: Int, chartColor: Option[ChartColor])
 

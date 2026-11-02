@@ -36,7 +36,9 @@ class PreviewDataSyncDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         seeded <- s.env.run(s.exportConfigs.findByProjectId(DemoIdentity.ProjectId, firstPage))
-        created <- s.env.run(s.exportConfigs.create(CreateDataExportConfigReq(DemoIdentity.ProjectId, "Zip", "/tmp/zip")))
+        created <- s.env.run(
+          s.exportConfigs.create(CreateDataExportConfigReq(DemoIdentity.ProjectId, "Zip", "/tmp/zip"))
+        )
         id = created.toOption.get.id
         updated <- s.env.run(
           s.exportConfigs.update(UpdateDataExportConfigReq(id, DemoIdentity.ProjectId, "Zip 2", "/tmp/zip2"))
@@ -99,7 +101,11 @@ class PreviewDataSyncDomainTest extends AsyncJsWordSpec {
         status.map(_.pathStatuses.size) shouldBe Right(2)
         isBadRequest(exported) shouldBe true
         isBadRequest(imported) shouldBe true
-        exported.left.map(_.toString).left.toOption.exists(_.contains(DataExportFeServicePreview.UnavailableMessage)) shouldBe true
+        exported.left
+          .map(_.toString)
+          .left
+          .toOption
+          .exists(_.contains(DataExportFeServicePreview.UnavailableMessage)) shouldBe true
       }
     }
 

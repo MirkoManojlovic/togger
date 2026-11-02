@@ -18,8 +18,12 @@ class TaskLabelFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewDa
         if (projects.projects.find(dto.projectId).isEmpty) PreviewResponses.notFound[CreateTaskLabelResp]
         else {
           val created =
-            data.labels.upsert(FindTaskLabelResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji))
-          PreviewResponses.ok(CreateTaskLabelResp(created.id, created.projectId, created.name, created.description, created.emoji))
+            data.labels.upsert(
+              FindTaskLabelResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji)
+            )
+          PreviewResponses.ok(
+            CreateTaskLabelResp(created.id, created.projectId, created.name, created.description, created.emoji)
+          )
         }
       }
     )

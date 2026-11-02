@@ -42,7 +42,5 @@ object MemberContributionSection {
     contributions: ContributionsDto,
     memberId: UUID
   ): Seq[(MilestoneContributionsDto, MemberContributionDto)] =
-    contributions.milestones.flatMap(milestone =>
-      milestone.members.find(_.memberId == memberId).map(milestone -> _)
-    )
+    contributions.milestones.flatMap(milestone => milestone.members.find(_.memberId == memberId).map(milestone -> _))
 }

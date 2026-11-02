@@ -13,8 +13,8 @@ object ContributionsFilterMapping {
   /** The months a page opened without a range looks back, up to the day it is opened. */
   val DefaultMonths = 3
 
-  /** A URL without a range is the last [[DefaultMonths]] months. The range is then in the address bar, so a reload or
-    * a shared link shows the same days. Every day is still one pick away, by ticking no month.
+  /** A URL without a range is the last [[DefaultMonths]] months. The range is then in the address bar, so a reload or a
+    * shared link shows the same days. Every day is still one pick away, by ticking no month.
     */
   def withDefaultRange(params: ContributionsParams, today: LocalDate): ContributionsParams =
     if (params == ContributionsParams.default)

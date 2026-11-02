@@ -652,9 +652,8 @@ class EditTaskComponent(
                 badges.element,
                 MilestoneSummaryRangeCalendar.element(
                   badges.taskVar.signal.map(task => task.startDate.toString -> task.dueDate.toString).distinct,
-badges.workDaysSignal,
-                  (start, due) =>
-                    badges.taskVar.update(_.copy(startDate = start, dueDate = due, dueDateManual = true))
+                  badges.workDaysSignal,
+                  (start, due) => badges.taskVar.update(_.copy(startDate = start, dueDate = due, dueDateManual = true))
                 )
               ),
               linksSection.element.amend(cls("mb-4")),
@@ -689,7 +688,9 @@ badges.workDaysSignal,
         editTaskCard.amend(cls("min-w-0")),
         div(
           cls("flex w-full min-w-0 items-start gap-8"),
-          child.maybe <-- logEntryPanelVar.signal.map(_.newEntryComponent.map(_.element.amend(cls("w-[44rem] shrink-0")))),
+          child.maybe <-- logEntryPanelVar.signal.map(
+            _.newEntryComponent.map(_.element.amend(cls("w-[44rem] shrink-0")))
+          ),
           child <-- logEntryPanelVar.signal.map(logEntriesCard)
         )
       )

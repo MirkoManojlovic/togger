@@ -89,8 +89,9 @@ case class SlackerState(
       .flatMap(key => entries.get(key).map(key -> _))
 }
 
-/** The slacker: the missing log entries of the tasks of the current user, filled in from today into the past or from the
-  * past up to today, then accepted and submitted at once. Looks and works like [[com.togger.ui.teamdaily.TeamDailyComponent]].
+/** The slacker: the missing log entries of the tasks of the current user, filled in from today into the past or from
+  * the past up to today, then accepted and submitted at once. Looks and works like
+  * [[com.togger.ui.teamdaily.TeamDailyComponent]].
   */
 class SlackerComponent(
   taskService: TaskFeService,
@@ -249,7 +250,9 @@ class SlackerComponent(
     )
 
   private def setPastFirst(taskId: UUID, on: Boolean): Unit =
-    state.update(current => current.copy(pastFirst = if (on) current.pastFirst + taskId else current.pastFirst - taskId))
+    state.update(current =>
+      current.copy(pastFirst = if (on) current.pastFirst + taskId else current.pastFirst - taskId)
+    )
 
   // ---- submit
 
@@ -322,10 +325,10 @@ class SlackerComponent(
         ProcessSteps.map(TgStep(_)),
         current,
         {
-          case 0                  => jumpTo(_ == SlackerPosition.ChooseTasks)
-          case 1 if isLoaded      => jumpTo(_.isInstanceOf[SlackerPosition.Fill])
-          case 2 if isLoaded      => jumpTo(_ == SlackerPosition.Review)
-          case _                  => ()
+          case 0             => jumpTo(_ == SlackerPosition.ChooseTasks)
+          case 1 if isLoaded => jumpTo(_.isInstanceOf[SlackerPosition.Fill])
+          case 2 if isLoaded => jumpTo(_ == SlackerPosition.Review)
+          case _             => ()
         }
       )
     }
@@ -349,7 +352,9 @@ class SlackerComponent(
         plan.find(_.taskId == taskId).map { task =>
           val days = SlackerPlan.daysOf(task, pastFirst)
           breadcrumb(
-            days.map(day => TgStep(tgDateFormater.asAmericanDateWithDayAbrv(day), entries.contains(SlackerEntryKey(taskId, day)))),
+            days.map(day =>
+              TgStep(tgDateFormater.asAmericanDateWithDayAbrv(day), entries.contains(SlackerEntryKey(taskId, day)))
+            ),
             days.indexOf(date),
             index => jumpTo(_ == SlackerPosition.Fill(taskId, days(index)))
           )
@@ -385,7 +390,12 @@ class SlackerComponent(
       cls("flex flex-wrap items-center gap-1.5"),
       specs.map { spec =>
         val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
-        TgBadge(text = spec.text, color = spec.color, bordered = true, extraCls = if (neutral) "dark:text-body" else "").element
+        TgBadge(
+          text = spec.text,
+          color = spec.color,
+          bordered = true,
+          extraCls = if (neutral) "dark:text-body" else ""
+        ).element
       }
     )
 
@@ -475,10 +485,14 @@ class SlackerComponent(
       div(
         cls("rounded-base border border-default-medium p-3"),
         child.maybe <-- state.signal.map(s => (s.loaded, s.candidates.isEmpty)).distinct.map {
-          case (true, true) => Some(p(cls("text-sm text-body"), "You are all caught up: none of your open tasks misses a log entry."))
-          case _            => None
+          case (true, true) =>
+            Some(p(cls("text-sm text-body"), "You are all caught up: none of your open tasks misses a log entry."))
+          case _ => None
         },
-        children <-- state.signal.map(_.candidates).distinct.map(candidates => SlackerPlan.byStatus(candidates).map(statusGroup))
+        children <-- state.signal
+          .map(_.candidates)
+          .distinct
+          .map(candidates => SlackerPlan.byStatus(candidates).map(statusGroup))
       )
     )
 
@@ -512,15 +526,28 @@ class SlackerComponent(
           BadgeSpec(task.statusLabel, TaskStatusBadgeColor.of(task.statusName))
       ),
       badgeRow(
-        TeamDailyTaskBadges.dates(task, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)
+        TeamDailyTaskBadges.dates(
+          task,
+          tgClock.currentDate(),
+          projectWorkDays,
+          tgDateFormater.asAmericanDateWithDayAbrv
+        )
       )
     )
 
   private def directionTabs(taskId: UUID): HtmlElement =
     div(
       cls("flex flex-wrap items-center gap-1.5"),
-      statusTab("Today → past", state.signal.map(!_.pastFirst.contains(taskId)).distinct, () => setPastFirst(taskId, on = false)),
-      statusTab("Past → today", state.signal.map(_.pastFirst.contains(taskId)).distinct, () => setPastFirst(taskId, on = true))
+      statusTab(
+        "Today → past",
+        state.signal.map(!_.pastFirst.contains(taskId)).distinct,
+        () => setPastFirst(taskId, on = false)
+      ),
+      statusTab(
+        "Past → today",
+        state.signal.map(_.pastFirst.contains(taskId)).distinct,
+        () => setPastFirst(taskId, on = true)
+      )
     )
 
   /** Counts the repeats, each one builds the fill form again from the entry it has just been given. */
@@ -565,13 +592,18 @@ class SlackerComponent(
       div(
         div(
           cls("flex items-center gap-2 mb-2"),
-          TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element
+          TgBadge(
+            text = tgDateFormater.asAmericanDateWithDayAbrv(day),
+            bordered = true,
+            color = TgBadgeColor.Gray
+          ).element
         ),
         p(cls("text-sm text-body-subtle"), "No status update")
       )
     else div(entries.map(entryView))
 
-  /** What was logged last above the form; a day of the tiny calendar beside it shows what was logged that day instead. */
+  /** What was logged last above the form; a day of the tiny calendar beside it shows what was logged that day instead.
+    */
   private def lastStatus(
     key: SlackerEntryKey,
     task: TeamDailyTaskPlan,
@@ -589,9 +621,9 @@ class SlackerComponent(
         div(
           cls("mb-2 flex flex-wrap items-center gap-1.5"),
           statusTab("Last status", selectedDay.signal.map(_.isEmpty), () => selectedDay.set(None)),
-          child.maybe <-- selectedDay.signal.map(_.map(day =>
-            statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ())
-          )),
+          child.maybe <-- selectedDay.signal.map(
+            _.map(day => statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ()))
+          ),
           child.maybe <-- selectedDay.signal.map(selected =>
             Option.when(canRepeat && selected.isEmpty)(repeatButton(key, entry, focusRepeat))
           )
@@ -642,7 +674,8 @@ class SlackerComponent(
               title = s"Status for ${task.name}"
             ).element
           ),
-          latest.map(entry => div(cls("lg:w-[34rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
+          latest
+            .map(entry => div(cls("lg:w-[34rem] lg:shrink-0"), lastStatus(key, task, entry, canRepeat, focusRepeat)))
         )
       )
     }
@@ -652,7 +685,8 @@ class SlackerComponent(
 
   private def reviewView(s: SlackerState): HtmlElement = {
     val toSave = s.toSave.toMap
-    if (s.plan.isEmpty) div(cls("text-sm text-body"), "Nothing to fill in: none of the chosen tasks misses a log entry.")
+    if (s.plan.isEmpty)
+      div(cls("text-sm text-body"), "Nothing to fill in: none of the chosen tasks misses a log entry.")
     else
       div(
         s.plan.map { task =>
@@ -662,18 +696,32 @@ class SlackerComponent(
             task.missingDays.sortBy(_.toEpochDay).map { date =>
               val key = SlackerEntryKey(task.taskId, date)
               div(
-                cls("mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"),
+                cls(
+                  "mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"
+                ),
                 div(
                   cls("flex items-center gap-2 mb-2"),
-                  TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,
-                  toSave.get(key).map(entry =>
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
-                  ),
+                  TgBadge(
+                    text = tgDateFormater.asAmericanDateWithDayAbrv(date),
+                    bordered = true,
+                    color = TgBadgeColor.Gray
+                  ).element,
+                  toSave
+                    .get(key)
+                    .map(entry =>
+                      TgBadge(
+                        text = entry.status.toStringWithEmoji,
+                        color = entry.status.badgeColor,
+                        bordered = true
+                      ).element
+                    ),
                   LogEntryMemberBadge(currentAccountName)
                 ),
-                toSave.get(key).fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
-                  tgMarkdown.toLaminarDiv(entry.textExternal)
-                ),
+                toSave
+                  .get(key)
+                  .fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
+                    tgMarkdown.toLaminarDiv(entry.textExternal)
+                  ),
                 onClick.mapToUnit --> (_ => jumpTo(_ == SlackerPosition.Fill(task.taskId, date)))
               )
             }
@@ -750,7 +798,9 @@ class SlackerComponent(
 
   val element: HtmlElement =
     div(
-      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
+      cls(
+        "fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"
+      ),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
       onMountCallback { _ =>
         projectDataLoader.loadProjects().map(projects => state.update(_.copy(projects = projects))).unsafeRunAndForget()

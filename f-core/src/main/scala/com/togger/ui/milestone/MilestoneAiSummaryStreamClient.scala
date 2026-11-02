@@ -42,9 +42,13 @@ class MilestoneAiSummaryStreamClientImpl(loginRepo: LoginRepo, baseUrl: String)
       case None => IO(onEvent(Failed("Please log in again")))
       case Some(account) =>
         IO.fromPromise(IO(dom.fetch(url, requestInit(dto, account.sessionId))))
-          .flatMap(response => if (response.ok) read(response, onEvent) else IO(onEvent(Failed(failureMessage(response.status)))))
+          .flatMap(response =>
+            if (response.ok) read(response, onEvent) else IO(onEvent(Failed(failureMessage(response.status))))
+          )
           .handleErrorWith { error =>
-            IO(logger.error(s"The AI summary request failed: $error")) *> IO(onEvent(Failed("Could not reach the server")))
+            IO(logger.error(s"The AI summary request failed: $error")) *> IO(
+              onEvent(Failed("Could not reach the server"))
+            )
           }
     }
 

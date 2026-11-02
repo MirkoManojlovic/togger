@@ -15,12 +15,10 @@ case class PreviewModal(title: String, content: HtmlElement, maxWidthCls: String
 
   /** A link in the content navigates away from the page the modal is shown over, so the modal goes with it. */
   private val closeOnLinkClick: Modifier[HtmlElement] =
-    onClick
-      .filter { ev =>
-        val link = ev.target.asInstanceOf[dom.Element].closest("a[href]")
-        link != null && !(ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)
-      }
-      .mapToUnit --> closeObserver
+    onClick.filter { ev =>
+      val link = ev.target.asInstanceOf[dom.Element].closest("a[href]")
+      link != null && !(ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)
+    }.mapToUnit --> closeObserver
 
   val element: HtmlDiv =
     div(

@@ -25,7 +25,9 @@ class TaskStatusFeServicePreview(
           val created = data.statuses.upsert(
             FindTaskStatusResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji)
           )
-          PreviewResponses.ok(CreateTaskStatusResp(created.id, created.projectId, created.name, created.description, created.emoji))
+          PreviewResponses.ok(
+            CreateTaskStatusResp(created.id, created.projectId, created.name, created.description, created.emoji)
+          )
         }
       }
     )

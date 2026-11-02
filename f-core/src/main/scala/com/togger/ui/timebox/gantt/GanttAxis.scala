@@ -38,7 +38,8 @@ case class GanttAxis(days: Vector[LocalDate]) {
     if (date.isAfter(days.last)) return Some(ClampedColumn(size - 1, GanttClamp.After))
     val before = lastIndexOnOrBefore(date).get
     val after = firstIndexOnOrAfter(date).get
-    val nearest = if (days(after).toEpochDay - date.toEpochDay < date.toEpochDay - days(before).toEpochDay) after else before
+    val nearest =
+      if (days(after).toEpochDay - date.toEpochDay < date.toEpochDay - days(before).toEpochDay) after else before
     Some(ClampedColumn(nearest, GanttClamp.Inside))
   }
 }

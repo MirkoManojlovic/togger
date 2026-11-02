@@ -59,7 +59,9 @@ class CreateMilestoneComponent(
     .runWithSpinner(
       projectService
         .findById(projectId)
-        .map(_.fold(error => println(error), success => applyProjectWorkDays(success.body.get.workDays.map(DayOfWeek.of))))
+        .map(
+          _.fold(error => println(error), success => applyProjectWorkDays(success.body.get.workDays.map(DayOfWeek.of)))
+        )
     )
     .unsafeRunAndForget()
 
@@ -86,7 +88,12 @@ class CreateMilestoneComponent(
     milestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
 
   lazy val addNewMilestoneDate: HtmlElement =
-    TgBadge(text = "+ Add additional date", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
+    TgBadge(
+      text = "+ Add additional date",
+      color = TgBadgeColor.Alternative,
+      bordered = true,
+      extraCls = "cursor-pointer"
+    ).element
       .amend(
         role("button"),
         tabIndex(0),

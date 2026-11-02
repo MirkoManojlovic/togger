@@ -49,7 +49,8 @@ object WYSIWYGTextEditorStyles {
   /** `flex-1` rather than `h-full`: the pane has no definite height to take a percentage of, so the textarea would
     * shrink to its intrinsic rows and scroll on its own.
     *
-    * `resize-none` because the pane owns the height; the textarea's own grip would desynchronise the two sides. */
+    * `resize-none` because the pane owns the height; the textarea's own grip would desynchronise the two sides.
+    */
   val splitSource =
     "w-full flex-1 p-3 text-sm font-mono text-body bg-transparent resize-none " +
       "border-0 focus:outline-none focus:ring-0"

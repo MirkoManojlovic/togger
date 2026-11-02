@@ -94,9 +94,9 @@ class MilestoneSummaryFeServicePreview(
   private def asProjectMember[A](projectId: => Option[UUID], notFound: String)(onMember: => TgRespIO[A]): TgRespIO[A] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(projectId match {
-        case None                                           => PreviewResponses.badRequest[A](notFound)
+        case None                                         => PreviewResponses.badRequest[A](notFound)
         case Some(id) if !projects.isMember(id, callerId) => IO.pure(Left(Forbidden))
-        case Some(_)                                        => onMember
+        case Some(_)                                      => onMember
       })
     )
 

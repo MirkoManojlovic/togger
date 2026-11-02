@@ -4,8 +4,8 @@ import com.togger.chart.{ChartColor, TaskLabelChartable, TaskStatusChartable}
 import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
 import com.togger.task.TaskPriority
 
-/** A group of staged tasks under one heading; `title` is empty when the tasks are not grouped. `chartColor` is the color
-  * the group has in charts, when what it groups by has one.
+/** A group of staged tasks under one heading; `title` is empty when the tasks are not grouped. `chartColor` is the
+  * color the group has in charts, when what it groups by has one.
   */
 case class StagedGroup(title: String, tasks: Seq[FindTaskRespFull], chartColor: Option[ChartColor] = None)
 
@@ -21,7 +21,8 @@ object StagedGrouping {
   val NoMilestone = "No milestone"
   val NoLabel = "No label"
 
-  /** Groups in the order of `keys`, with the tasks that have no key last. A task lands in every group it has a key for. */
+  /** Groups in the order of `keys`, with the tasks that have no key last. A task lands in every group it has a key for.
+    */
   private def grouped(
     tasks: Seq[FindTaskRespFull],
     emptyTitle: String,
@@ -71,7 +72,9 @@ object StagedGrouping {
 
   case object ByStatus extends StagedGrouping("status", "Status") {
     def group(tasks: Seq[FindTaskRespFull], milestones: Seq[FindMilestoneResp]): Seq[StagedGroup] =
-      grouped(tasks, "", title => Some(TaskStatusChartable.of(title).chartColor))(task => Seq(0 -> task.taskStatus.name))
+      grouped(tasks, "", title => Some(TaskStatusChartable.of(title).chartColor))(task =>
+        Seq(0 -> task.taskStatus.name)
+      )
   }
 
   val all: Seq[StagedGrouping] = Seq(NotGrouped, ByAssignee, ByMilestone, ByPriority, ByLabel, ByStatus)

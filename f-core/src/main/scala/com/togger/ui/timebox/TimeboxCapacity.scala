@@ -34,8 +34,8 @@ case class CapacityLine(name: String, usedDays: Int, capacityDays: Int, overlapD
   def hasOverlap: Boolean = overlapDays > 0
 }
 
-/** What a timebox can hold: its work days for each person on the project. Tasks can't add up to more work days than
-  * the timebox has times the people, nor can one person's tasks to more than the timebox has.
+/** What a timebox can hold: its work days for each person on the project. Tasks can't add up to more work days than the
+  * timebox has times the people, nor can one person's tasks to more than the timebox has.
   *
   * A task's size is its own work days, from its start to its due date, wherever they fall relative to the timebox.
   * Tasks that share a work day split it between them, so a day counts once however many tasks fall on it; such days

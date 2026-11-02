@@ -16,7 +16,13 @@ class ChangeAccountInfoServicePreview(accounts: AccountsPreviewData, loginRepo: 
     PreviewResponses
       .authenticated(loginRepo) { accountId =>
         AccountInfoValidation.validate(dto).map(_.message) match {
-          case Nil    => IO.defer(save(accountId, dto.copy(firstName = dto.firstName.trim, lastName = dto.lastName.trim, email = dto.email.trim)))
+          case Nil =>
+            IO.defer(
+              save(
+                accountId,
+                dto.copy(firstName = dto.firstName.trim, lastName = dto.lastName.trim, email = dto.email.trim)
+              )
+            )
           case errors => PreviewResponses.badRequest(errors: _*)
         }
       }
@@ -27,7 +33,7 @@ class ChangeAccountInfoServicePreview(accounts: AccountsPreviewData, loginRepo: 
 
   private def save(accountId: UUID, dto: AccountInfoDto): TgRespIO[AccountInfoDto] =
     accounts.accounts.find(accountId) match {
-      case None => PreviewResponses.notFound
+      case None                                               => PreviewResponses.notFound
       case Some(_) if emailTakenByOther(accountId, dto.email) => PreviewResponses.badRequest(EmailAlreadyInUse.message)
       case Some(account) =>
         accounts.accounts.upsert(account.copy(firstName = dto.firstName, lastName = dto.lastName, email = dto.email))

@@ -118,7 +118,7 @@ class ShowAllProjectsTableComponent(
   private def importProject(importPath: String): Unit =
     spinnerService
       .runWithSpinner(dataExportService.importNewProject(organizationId, importPath).flatMap {
-        case Left(failure) => IO.pure(Left(failure))
+        case Left(failure)  => IO.pure(Left(failure))
         case Right(success) => loadPage().as(Right(success.body.get))
       })
       .map {

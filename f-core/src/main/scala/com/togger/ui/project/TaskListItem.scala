@@ -10,8 +10,8 @@ import com.togger.ui.task.bulk.BulkTaskCard
 
 import java.time.DayOfWeek
 
-/** A task as the active tasks of the project home list it: its name linked to its page with its labels and progress, and
-  * its badges under them. Clicking the task previews it.
+/** A task as the active tasks of the project home list it: its name linked to its page with its labels and progress,
+  * and its badges under them. Clicking the task previews it.
   *
   * @param milestones
   *   to name the milestone of the task in its badges; empty where the milestone is already known

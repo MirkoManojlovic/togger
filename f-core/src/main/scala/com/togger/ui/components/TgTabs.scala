@@ -64,8 +64,8 @@ class TgTabs(
       tabPanels
     )
 
-  /** The row of tabs alone, for a page that puts the panels of several rows of tabs in one place. The caller then
-    * also keeps the selection selectable: only [[element]] does that.
+  /** The row of tabs alone, for a page that puts the panels of several rows of tabs in one place. The caller then also
+    * keeps the selection selectable: only [[element]] does that.
     */
   lazy val tabBar: HtmlDiv = div(cls(barCls), tabList)
 

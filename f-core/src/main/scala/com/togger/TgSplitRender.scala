@@ -17,10 +17,21 @@ import com.togger.ui.auth._
 import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
 import com.togger.ui.localstorage.{LocalStorage, LocalStorageBrowser}
 import com.togger.ui.milestone._
-import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService, ContributionsFeServiceImpl, ContributionsFeServicePreview}
+import com.togger.ui.contributions.{
+  ContributionsComponent,
+  ContributionsFeService,
+  ContributionsFeServiceImpl,
+  ContributionsFeServicePreview
+}
 import com.togger.ui.timebox._
 import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
-import com.togger.ui.accountmanagement.{AccountManagementFeService, AccountManagementFeServiceImpl, AccountManagementFeServicePreview, EditAccountComponent, ShowAllAccountsComponent}
+import com.togger.ui.accountmanagement.{
+  AccountManagementFeService,
+  AccountManagementFeServiceImpl,
+  AccountManagementFeServicePreview,
+  EditAccountComponent,
+  ShowAllAccountsComponent
+}
 import com.togger.ui.mcp.McpSettingsComponent
 import com.togger.ui.updater.UpdaterComponent
 import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
@@ -408,10 +419,15 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService, modalFactory).element
               case ChangeAccountInfoPage =>
-                new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
+                new ChangeAccountInfoComponent(
+                  changeAccountInfoService,
+                  accountService,
+                  spinnerService,
+                  modalFactory
+                ).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
-              case McpSettingsPage => new McpSettingsComponent().element
-              case UpdaterSettingsPage => new UpdaterComponent().element
+              case McpSettingsPage       => new McpSettingsComponent().element
+              case UpdaterSettingsPage   => new UpdaterComponent().element
               case ShowAllAccountsPage(listParams) =>
                 new ShowAllAccountsComponent(
                   accountManagementService,
@@ -1058,31 +1074,41 @@ case class NavigationSelection(
   lazy val navigationSignal: Signal[ReactiveHtmlElement[HTMLDivElement]] = {
     loginRepo.authenticatedSignal.map(returnedAuthAccount =>
       returnedAuthAccount
-        .map(_ =>
-          {
-            val sidebar = new Sidebar(
+        .map(_ => {
+          val sidebar = new Sidebar(
+            router,
+            organizationProjectsLoader,
+            accountService,
+            dataExportService,
+            dataImportConfigService,
+            spinnerService,
+            modalFactory,
+            sidebarCollapseStore,
+            sidebarRefresh,
+            syncPendingStore,
+            onQuickCreate,
+            onBulkCreate,
+            onTeamDaily,
+            onSlacker,
+            toast
+          )
+          div(
+            new NavbarComponent(
               router,
-              organizationProjectsLoader,
-              accountService,
-              dataExportService,
-              dataImportConfigService,
-              spinnerService,
-              modalFactory,
-              sidebarCollapseStore,
-              sidebarRefresh,
+              Logout(loginRepo, router),
+              loginRepo,
+              themeStore,
+              sidebar.organizations,
+              sidebarCollapseStore.current,
+              sidebar.exportProject,
+              sidebar.importProject,
               syncPendingStore,
-              onQuickCreate,
-              onBulkCreate,
-              onTeamDaily,
-              onSlacker,
-              toast
-            )
-            div(
-              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject, syncPendingStore, previewConfig, onResetPreview).element,
-              sidebar.element
-            )
-          }
-        )
+              previewConfig,
+              onResetPreview
+            ).element,
+            sidebar.element
+          )
+        })
         .getOrElse(div())
     )
   }

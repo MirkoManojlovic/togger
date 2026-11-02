@@ -57,10 +57,12 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
               intervalInput.amend(cls("mb-4")),
               div(
                 cls("flex justify-end"),
-                TgHtmlButton.extraSmall("Reset to default").amend(onClick.mapToUnit --> (_ => {
-                  inputError.set(None)
-                  settings.reset()
-                }))
+                TgHtmlButton
+                  .extraSmall("Reset to default")
+                  .amend(onClick.mapToUnit --> (_ => {
+                    inputError.set(None)
+                    settings.reset()
+                  }))
               )
             )
           )

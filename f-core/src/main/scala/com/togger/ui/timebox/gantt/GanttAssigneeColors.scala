@@ -2,8 +2,8 @@ package com.togger.ui.timebox.gantt
 
 import java.util.UUID
 
-/** The colour of a task's bar, by who it is assigned to. Members are ordered by id, which the project's members keep
-  * as they come and go, so the first member is always blue, the second green and so on, past twenty it starts over.
+/** The colour of a task's bar, by who it is assigned to. Members are ordered by id, which the project's members keep as
+  * they come and go, so the first member is always blue, the second green and so on, past twenty it starts over.
   */
 object GanttAssigneeColors {
 

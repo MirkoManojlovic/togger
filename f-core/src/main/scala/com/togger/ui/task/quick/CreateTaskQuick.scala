@@ -93,8 +93,8 @@ case class QuickState(
   def effectiveAssigneeId: Option[UUID] = assigneeId.orElse(currentAccountId)
   def effectivePriority: TaskPriority = priority.getOrElse(TaskPriority.Medium)
 
-  /** The selected project's configured work days, or a Mon-Fri fallback when no project is selected yet (this
-    * module has no access to the backend-only `Project.DefaultWorkDays` constant).
+  /** The selected project's configured work days, or a Mon-Fri fallback when no project is selected yet (this module
+    * has no access to the backend-only `Project.DefaultWorkDays` constant).
     */
   def effectiveWorkDays: Set[DayOfWeek] =
     projectId
@@ -364,7 +364,12 @@ class CreateTaskQuick(
         .map { data =>
           if (state.now().projectId.contains(id)) {
             state.update(
-              _.copy(statuses = data.statuses, labels = data.labels, members = data.members, milestones = data.milestones)
+              _.copy(
+                statuses = data.statuses,
+                labels = data.labels,
+                members = data.members,
+                milestones = data.milestones
+              )
             )
           }
         }
@@ -700,7 +705,9 @@ class CreateTaskQuick(
 
   val element: HtmlElement =
     div(
-      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
+      cls(
+        "fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"
+      ),
       onKeyDown --> (event => onWrapperKeyDown(event)),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => onClose()),
       onMountCallback { _ =>

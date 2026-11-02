@@ -6,7 +6,15 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.{TgClock, WorkDayCalendar}
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindMilestoneSummaryResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
+import com.togger.dto.{
+  SearchAccountDto,
+  FindMilestoneResp,
+  FindMilestoneSummaryResp,
+  FindProjectResp,
+  FindTaskRespFull,
+  FindTaskStatusResp,
+  FindTimeboxResp
+}
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.Pages._
@@ -60,14 +68,18 @@ class ProjectHomeComponent(
     }
 
   /** The tasks of each parent, loaded one parent after the other; a failure leaves the parent without tasks. */
-  private def withTasks[P](parents: Seq[P])(tasksOf: P => TgRespIO[Seq[FindTaskRespFull]]): IO[Seq[(P, Seq[FindTaskRespFull])]] =
+  private def withTasks[P](
+    parents: Seq[P]
+  )(tasksOf: P => TgRespIO[Seq[FindTaskRespFull]]): IO[Seq[(P, Seq[FindTaskRespFull])]] =
     parents.toList.traverse { parent =>
       tasksOf(parent).map(_.fold(_ => parent -> Seq.empty, success => parent -> success.body.getOrElse(Seq.empty)))
     }
 
   private def loadMilestones(): IO[Unit] =
     PaginatedLoader
-      .loadAll(milestoneService.findByProjectId(projectId, MilestoneFilter(statuses = List(MilestoneStatus.InProgress)), _))
+      .loadAll(
+        milestoneService.findByProjectId(projectId, MilestoneFilter(statuses = List(MilestoneStatus.InProgress)), _)
+      )
       .flatMap {
         case Left(failure) => IO.println(failure)
         case Right(success) =>
@@ -78,12 +90,17 @@ class ProjectHomeComponent(
 
   /** The summaries of each active milestone, newest period first; a failure leaves the milestone without summaries. */
   private def loadSummaries(): IO[Unit] =
-    milestonesVar.now().map(_._1).toList.traverse { milestone =>
-      milestoneSummaryService.findAllByMilestoneId(milestone.id).map { response =>
-        val summaries = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
-        milestone.id -> summaries.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
+    milestonesVar
+      .now()
+      .map(_._1)
+      .toList
+      .traverse { milestone =>
+        milestoneSummaryService.findAllByMilestoneId(milestone.id).map { response =>
+          val summaries = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
+          milestone.id -> summaries.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
+        }
       }
-    }.map(loaded => summariesVar.set(loaded.toMap))
+      .map(loaded => summariesVar.set(loaded.toMap))
 
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
   private def loadAllMilestones(): IO[Unit] =
@@ -96,8 +113,8 @@ class ProjectHomeComponent(
     PaginatedLoader.loadAll(timeboxService.findByProjectId(projectId, _)).flatMap {
       case Left(failure) => IO.println(failure)
       case Right(success) =>
-        withTasks(ProjectHomeStats.activeTimeboxes(success.body.getOrElse(Seq.empty), tgClock.currentDate()))(
-          timebox => taskService.findAllByTimebox(projectId, timebox.id)
+        withTasks(ProjectHomeStats.activeTimeboxes(success.body.getOrElse(Seq.empty), tgClock.currentDate()))(timebox =>
+          taskService.findAllByTimebox(projectId, timebox.id)
         ).map(timeboxesVar.set)
     }
 
@@ -150,7 +167,6 @@ class ProjectHomeComponent(
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
-
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
@@ -194,7 +210,9 @@ class ProjectHomeComponent(
           s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
-        version.description.filter(_.nonEmpty).map(description => tgMarkdown.toLaminarDiv(description).amend(cls("mt-1")))
+        version.description
+          .filter(_.nonEmpty)
+          .map(description => tgMarkdown.toLaminarDiv(description).amend(cls("mt-1")))
       ),
       gantt.element,
       gantt.detailElement
@@ -212,7 +230,16 @@ class ProjectHomeComponent(
 
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
-      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now()).element,
+      new TaskPreviewComponent(
+        task,
+        workDays,
+        router,
+        tgDateFormater,
+        tgMarkdown,
+        tgClock,
+        showName = true,
+        allMilestonesVar.now()
+      ).element,
       title = "Task preview",
       maxWidthCls = "max-w-[112rem]"
     )

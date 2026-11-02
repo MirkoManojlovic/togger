@@ -22,8 +22,17 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
   private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "", "")
 
   private def milestone(name: String) = FindMilestoneResp(
-    UUID.randomUUID(), projectId, Instant.EPOCH, UUID.randomUUID(), name, "", MilestoneStatus.InProgress, monday,
-    monday.plusDays(4), None, Instant.EPOCH
+    UUID.randomUUID(),
+    projectId,
+    Instant.EPOCH,
+    UUID.randomUUID(),
+    name,
+    "",
+    MilestoneStatus.InProgress,
+    monday,
+    monday.plusDays(4),
+    None,
+    Instant.EPOCH
   )
   private val first = milestone("Milestone 01")
   private val second = milestone("Milestone 02")
@@ -60,7 +69,8 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
     }
 
     "find the date range the tasks cover" in {
-      val summary = StagedSummary.of(Seq(task(), task(monday.plusDays(7), monday.plusDays(11))), workDays, None, Seq.empty)
+      val summary =
+        StagedSummary.of(Seq(task(), task(monday.plusDays(7), monday.plusDays(11))), workDays, None, Seq.empty)
       (summary.earliestStart, summary.lastDueDate, summary.calendarSpanDays) shouldBe
         (Some(monday), Some(monday.plusDays(11)), Some(12))
     }
@@ -110,7 +120,9 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
       val ada = breakdown.head
       (ada.taskCount, ada.workDays) shouldBe (2, 10)
       (ada.byPriority.toMap, ada.byLabel, ada.byStatus.toMap, ada.byMilestone) shouldBe
-        (Map(TaskPriority.High -> 1, TaskPriority.Medium -> 1), Seq(bug -> 1), Map(backlog -> 1, done -> 1), Seq(first -> 1))
+        (Map(TaskPriority.High -> 1, TaskPriority.Medium -> 1), Seq(bug -> 1), Map(backlog -> 1, done -> 1), Seq(
+          first -> 1
+        ))
     }
 
     "count the tasks that stick out of the timebox" in {

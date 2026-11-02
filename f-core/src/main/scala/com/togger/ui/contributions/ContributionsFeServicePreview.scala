@@ -53,13 +53,17 @@ class ContributionsFeServicePreview(
 
     val taskById = taskRows.map(row => row.task.id -> row).toMap
     val activity = data.logEntries.all
-      .flatMap(entry => taskById.get(entry.taskId).zip(data.latestLogEntryVersion(entry.id)).map { case (row, version) =>
-        Activity(entry.createdBy, row.milestoneId, data.dayOf(entry.createdAt), version.status)
-      })
+      .flatMap(entry =>
+        taskById.get(entry.taskId).zip(data.latestLogEntryVersion(entry.id)).map { case (row, version) =>
+          Activity(entry.createdBy, row.milestoneId, data.dayOf(entry.createdAt), version.status)
+        }
+      )
       .filter(row => memberIds.contains(row.memberId) && inRange(row.day))
     val started = taskRows.filter(row => inRange(row.version.startDate))
-    val assigned = taskRows.filter(row => row.version.assignedTo.exists(memberIds.contains) && inRange(row.version.startDate))
-    val closed = taskRows.filter(row => row.version.closedBy.exists(memberIds.contains) && row.version.endDate.exists(inRange))
+    val assigned =
+      taskRows.filter(row => row.version.assignedTo.exists(memberIds.contains) && inRange(row.version.startDate))
+    val closed =
+      taskRows.filter(row => row.version.closedBy.exists(memberIds.contains) && row.version.endDate.exists(inRange))
 
     val workDays = project.workDays.map(DayOfWeek.of)
     val days = activity.map(_.day)
@@ -69,7 +73,11 @@ class ContributionsFeServicePreview(
     }
     val sortedMembers = members.sortBy(member => (nameOf(member).toLowerCase, member.id.toString))
 
-    def tasksIn(rows: List[TaskRow], inScope: Option[UUID] => Boolean, ofAssignee: Option[UUID] => Boolean = _ => true) = {
+    def tasksIn(
+      rows: List[TaskRow],
+      inScope: Option[UUID] => Boolean,
+      ofAssignee: Option[UUID] => Boolean = _ => true
+    ) = {
       val scoped = rows.filter(row => inScope(row.milestoneId) && ofAssignee(row.version.assignedTo))
       TaskAttributesDto(
         byStatus = scoped
@@ -101,7 +109,8 @@ class ContributionsFeServicePreview(
     def membersIn(inScope: Option[UUID] => Boolean, onlyActive: Boolean): List[MemberContributionDto] =
       sortedMembers.flatMap { member =>
         val memberActivity = activity.filter(row => row.memberId == member.id && inScope(row.milestoneId))
-        val memberAssigned = assigned.filter(row => row.version.assignedTo.contains(member.id) && inScope(row.milestoneId))
+        val memberAssigned =
+          assigned.filter(row => row.version.assignedTo.contains(member.id) && inScope(row.milestoneId))
         val memberClosed = closed.filter(row => row.version.closedBy.contains(member.id) && inScope(row.milestoneId))
         val hasNothing = memberActivity.isEmpty && memberAssigned.isEmpty && memberClosed.isEmpty
         Option.when(!(onlyActive && hasNothing))(

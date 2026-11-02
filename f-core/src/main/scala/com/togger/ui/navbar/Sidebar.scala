@@ -71,8 +71,8 @@ case class SidebarLink(
     }
   }
 
-  /** The icons of the tasks, milestones, timeboxes, export and import buttons, right of the row; it is closed by any click outside of
-    * it, a pick or Escape.
+  /** The icons of the tasks, milestones, timeboxes, export and import buttons, right of the row; it is closed by any
+    * click outside of it, a pick or Escape.
     */
   private def contextMenu(x: Double, y: Double): HtmlElement =
     div(
@@ -212,7 +212,8 @@ class Sidebar(
       toast.error(s"Could not show the ${title.toLowerCase}: ${error.getMessage}")
     }
 
-  private val exportCheckFlow = new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast, () => syncPendingStore.refresh())
+  private val exportCheckFlow =
+    new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast, () => syncPendingStore.refresh())
 
   def exportProject(projectId: UUID): Unit =
     exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
@@ -294,7 +295,9 @@ class Sidebar(
 //        aria-label="Sidebar"
 
         div(
-          cls("h-full px-3 py-4 pb-24 overflow-y-auto overflow-x-hidden bg-neutral-primary-soft border-e border-default"),
+          cls(
+            "h-full px-3 py-4 pb-24 overflow-y-auto overflow-x-hidden bg-neutral-primary-soft border-e border-default"
+          ),
           div(
             cls("flex items-center mb-5"),
             cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq("justify-end")),
@@ -315,12 +318,11 @@ class Sidebar(
             children <-- organizationState.signal
               .combineWith(router.currentPageSignal, organizationsLoaded.signal)
               .map {
-              case (organizations, _, true) if organizations.isEmpty => Seq(createOrganizationLink)
-              case (organizations, page, _) =>
-                organizations
-                  .sortBy(_.name)
-                  .flatMap {
-                    organization =>
+                case (organizations, _, true) if organizations.isEmpty => Seq(createOrganizationLink)
+                case (organizations, page, _) =>
+                  organizations
+                    .sortBy(_.name)
+                    .flatMap { organization =>
                       val orgLink = SidebarLink(
                         linkName = organization.name,
                         link = router.navigateTo(ShowProjectsForOrganizationIdTable(organization.id)),
@@ -349,8 +351,8 @@ class Sidebar(
                             if (isProjectSelected(project, page)) projectLink.selectedProject
                             else projectLink.deselectedProject
                           }
-                  }
-            }
+                    }
+              }
           )
         ),
         button(
@@ -401,40 +403,40 @@ class Sidebar(
 
 object Sidebar {
   def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
-    case ProjectHomePage(projectId)          => Some(projectId)
-    case CreateTaskPage(projectId)           => Some(projectId)
-    case CreateTaskStatusPage(projectId)     => Some(projectId)
-    case EditTaskStatusPage(projectId, _)    => Some(projectId)
-    case ShowAllTasksPage(projectId, _)      => Some(projectId)
-    case ShowAllTaskStatusesPage(projectId, _) => Some(projectId)
-    case CreateTaskLabelPage(projectId)        => Some(projectId)
-    case EditTaskLabelPage(projectId, _)       => Some(projectId)
-    case ShowAllTaskLabelsPage(projectId, _)   => Some(projectId)
-    case CreateTaskTemplatePage(projectId)     => Some(projectId)
-    case EditTaskTemplatePage(projectId, _)    => Some(projectId)
+    case ProjectHomePage(projectId)             => Some(projectId)
+    case CreateTaskPage(projectId)              => Some(projectId)
+    case CreateTaskStatusPage(projectId)        => Some(projectId)
+    case EditTaskStatusPage(projectId, _)       => Some(projectId)
+    case ShowAllTasksPage(projectId, _)         => Some(projectId)
+    case ShowAllTaskStatusesPage(projectId, _)  => Some(projectId)
+    case CreateTaskLabelPage(projectId)         => Some(projectId)
+    case EditTaskLabelPage(projectId, _)        => Some(projectId)
+    case ShowAllTaskLabelsPage(projectId, _)    => Some(projectId)
+    case CreateTaskTemplatePage(projectId)      => Some(projectId)
+    case EditTaskTemplatePage(projectId, _)     => Some(projectId)
     case ShowAllTaskTemplatesPage(projectId, _) => Some(projectId)
-    case EditTaskPage(projectId, _)          => Some(projectId)
-    case SyncConfigPage(projectId, _) => Some(projectId)
-    case CreateDataExportConfigPage(projectId) => Some(projectId)
-    case DataExportStatusPage(projectId)       => Some(projectId)
+    case EditTaskPage(projectId, _)             => Some(projectId)
+    case SyncConfigPage(projectId, _)           => Some(projectId)
+    case CreateDataExportConfigPage(projectId)  => Some(projectId)
+    case DataExportStatusPage(projectId)        => Some(projectId)
     case EditDataExportConfigPage(projectId, _) => Some(projectId)
-    case CreateDataImportConfigPage(projectId) => Some(projectId)
+    case CreateDataImportConfigPage(projectId)  => Some(projectId)
     case EditDataImportConfigPage(projectId, _) => Some(projectId)
-    case CreateProjectMappingPage(projectId) => Some(projectId)
-    case CreateMilestonePage(projectId)      => Some(projectId)
-    case ShowMilestonesPage(projectId, _)    => Some(projectId)
-    case EditMilestonePage(projectId, _)     => Some(projectId)
+    case CreateProjectMappingPage(projectId)    => Some(projectId)
+    case CreateMilestonePage(projectId)         => Some(projectId)
+    case ShowMilestonesPage(projectId, _)       => Some(projectId)
+    case EditMilestonePage(projectId, _)        => Some(projectId)
     case ShowMilestoneHistoryPage(projectId, _) => Some(projectId)
-    case MilestoneReviewPage(projectId, _)   => Some(projectId)
-    case MilestoneSummaryPage(projectId, _)  => Some(projectId)
-    case ShowTimeboxesPage(projectId, _)     => Some(projectId)
-    case CreateTimeboxPage(projectId)        => Some(projectId)
-    case EditTimeboxPage(projectId, _)       => Some(projectId)
-    case TimeboxHistoryPage(projectId, _)    => Some(projectId)
-    case TimeboxReviewPage(projectId, _)     => Some(projectId)
-    case ShowContributionsPage(projectId, _) => Some(projectId)
-    case EditProjectPage(id)                 => Some(id)
-    case _                                   => None
+    case MilestoneReviewPage(projectId, _)      => Some(projectId)
+    case MilestoneSummaryPage(projectId, _)     => Some(projectId)
+    case ShowTimeboxesPage(projectId, _)        => Some(projectId)
+    case CreateTimeboxPage(projectId)           => Some(projectId)
+    case EditTimeboxPage(projectId, _)          => Some(projectId)
+    case TimeboxHistoryPage(projectId, _)       => Some(projectId)
+    case TimeboxReviewPage(projectId, _)        => Some(projectId)
+    case ShowContributionsPage(projectId, _)    => Some(projectId)
+    case EditProjectPage(id)                    => Some(id)
+    case _                                      => None
   }
 
   val sideBarLinkStyle =

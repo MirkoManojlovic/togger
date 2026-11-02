@@ -78,8 +78,8 @@ object ContributionCharts {
     )
   }
 
-  /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without
-    * a status is a zero.
+  /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without a
+    * status is a zero.
     */
   def dailyTrend(
     members: Seq[MemberContributionDto],

@@ -69,7 +69,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     protectedBackendClient.protectedHttpCall(organizationEndpoints.saveEndpoint)(req)
 
   override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
-    HiddenAccounts.visibleOrganizations(protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page))
+    HiddenAccounts.visibleOrganizations(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page)
+    )
 
   override def findByAccountId(
     accountId: UUID,
@@ -80,7 +82,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     )
 
   override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
-    HiddenAccounts.visibleOrganization(protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id))
+    HiddenAccounts.visibleOrganization(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
+    )
 
   override def deleteOrganization(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.deleteByIdEndpoint)(id)

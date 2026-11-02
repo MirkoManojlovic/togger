@@ -102,7 +102,8 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
         val action = data.actions.find(dto.actionId).filter(_.createdBy == callerId)
-        if (!projects.isMember(dto.projectId, callerId)) PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotAMemberMessage)
+        if (!projects.isMember(dto.projectId, callerId))
+          PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotAMemberMessage)
         else if (action.isEmpty) PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotFoundMessage)
         else if (!action.exists(_.endpointIds.contains(dto.endpointId)))
           PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotBoundMessage)
@@ -127,7 +128,9 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
   override def clearDefault(projectId: UUID, endpointId: Int): TgRespIO[TgEmptyBody] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
-        data.defaults.deleteWhere(d => d.accountId == callerId && d.projectId == projectId && d.endpointId == endpointId)
+        data.defaults.deleteWhere(d =>
+          d.accountId == callerId && d.projectId == projectId && d.endpointId == endpointId
+        )
         PreviewResponses.okEmpty("AI action default cleared successfully")
       }
     )
@@ -135,9 +138,12 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
   private def owned[A](id: UUID)(f: (UUID, PreviewAiAction) => TgRespIO[A]): TgRespIO[A] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(
-        data.actions.find(id).filter(_.createdBy == callerId).fold(PreviewResponses.badRequest[A](NotFoundMessage))(
-          f(callerId, _)
-        )
+        data.actions
+          .find(id)
+          .filter(_.createdBy == callerId)
+          .fold(PreviewResponses.badRequest[A](NotFoundMessage))(
+            f(callerId, _)
+          )
       )
     )
 

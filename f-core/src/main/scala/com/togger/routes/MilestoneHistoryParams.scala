@@ -21,7 +21,8 @@ case class MilestoneHistoryParams(
 ) {
 
   /** The milestone status values ticked: what the URL picked, or the default. */
-  def selectedMilestoneStatuses: Set[String] = milestoneStatuses.getOrElse(MilestoneHistoryParams.DefaultMilestoneStatuses)
+  def selectedMilestoneStatuses: Set[String] =
+    milestoneStatuses.getOrElse(MilestoneHistoryParams.DefaultMilestoneStatuses)
 }
 
 object MilestoneHistoryParams {

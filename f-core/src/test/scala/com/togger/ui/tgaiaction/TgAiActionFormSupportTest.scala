@@ -71,7 +71,8 @@ class TgAiActionFormSupportTest extends AnyWordSpec with Matchers {
     }
 
     "list the names of the bound endpoints in endpoint order" in {
-      val endpoints = Seq(TgAiEndpointDto(0, "milestone-summary"), TgAiEndpointDto(1, "other"), TgAiEndpointDto(2, "third"))
+      val endpoints =
+        Seq(TgAiEndpointDto(0, "milestone-summary"), TgAiEndpointDto(1, "other"), TgAiEndpointDto(2, "third"))
       TgAiActionFormSupport.endpointNames(List(2, 0), endpoints) shouldBe "milestone-summary, third"
     }
   }

@@ -52,7 +52,10 @@ class MilestoneDateFeServicePreview(
   override def findByProjectId(projectId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[FindMilestoneDateResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        PreviewResponses.paged(sorted(data.dates.filter(d => data.projectIdOf(d.milestoneId).contains(projectId))), page)
+        PreviewResponses.paged(
+          sorted(data.dates.filter(d => data.projectIdOf(d.milestoneId).contains(projectId))),
+          page
+        )
       )
     )
 

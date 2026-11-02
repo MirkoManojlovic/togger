@@ -42,7 +42,9 @@ class SlackerPlanTest extends AsyncJsWordSpec {
 
     "walk the days of a task from today into the past by default" in { _ =>
       SlackerPlan.positions(Seq(longer), Set.empty) shouldBe
-        SlackerPosition.ChooseTasks +: days.reverse.map(SlackerPosition.Fill(longer.taskId, _)) :+ SlackerPosition.Review
+        SlackerPosition.ChooseTasks +: days.reverse.map(
+          SlackerPosition.Fill(longer.taskId, _)
+        ) :+ SlackerPosition.Review
     }
 
     "walk the days of a task from the past when it was asked for" in { _ =>

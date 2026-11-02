@@ -58,15 +58,15 @@ object TaskConfigTableSupport {
     )
 
   private def exportSyncStatusBadgeColor(status: DataExportSyncStatusResp): TgBadgeColor = status match {
-    case DataExportSyncStatusResp.InSync          => TgBadgeColor.Green
-    case DataExportSyncStatusResp.OutOfSync       => TgBadgeColor.Yellow
+    case DataExportSyncStatusResp.InSync            => TgBadgeColor.Green
+    case DataExportSyncStatusResp.OutOfSync         => TgBadgeColor.Yellow
     case DataExportSyncStatusResp.MissingFromExport => TgBadgeColor.Red
-    case DataExportSyncStatusResp.MissingFromDb   => TgBadgeColor.Red
-    case DataExportSyncStatusResp.Malformed       => TgBadgeColor.Red
+    case DataExportSyncStatusResp.MissingFromDb     => TgBadgeColor.Red
+    case DataExportSyncStatusResp.Malformed         => TgBadgeColor.Red
   }
 
-  /** One export path with its entities: a summary of the statuses that doubles as a filter, then the entity rows a
-    * page at a time.
+  /** One export path with its entities: a summary of the statuses that doubles as a filter, then the entity rows a page
+    * at a time.
     */
   private def copyPathButton(path: String) = {
     val copiedVar = Var(false)

@@ -54,7 +54,9 @@ case class TeamDailyState(
   def plan: Seq[TeamDailyMemberPlan] = TeamDailyPlan.chosen(candidates, selectedTasks)
 
   def isFilled(memberId: UUID, task: TeamDailyTaskPlan): Boolean =
-    task.todayEntry.nonEmpty || task.missingDays.forall(date => entries.contains(TeamDailyEntryKey(memberId, task.taskId, date)))
+    task.todayEntry.nonEmpty || task.missingDays.forall(date =>
+      entries.contains(TeamDailyEntryKey(memberId, task.taskId, date))
+    )
 
   def isFilled(member: TeamDailyMemberPlan): Boolean = member.tasks.forall(isFilled(member.member.id, _))
 
@@ -63,10 +65,18 @@ case class TeamDailyState(
   def positions: Seq[TeamDailyPosition] = TeamDailyPlan.positions(plan)
 
   def draft: TeamDailyDraft =
-    TeamDailyDraft(projectId, selected.toSeq, selectedTasks.map(_.toSeq), entries.map { case (key, draft) => TeamDailyEntryRecord(key, draft) }.toSeq)
+    TeamDailyDraft(
+      projectId,
+      selected.toSeq,
+      selectedTasks.map(_.toSeq),
+      entries.map { case (key, draft) => TeamDailyEntryRecord(key, draft) }.toSeq
+    )
 
   def toSave: Seq[(TeamDailyEntryKey, TeamDailyEntryDraft)] =
-    plan.flatMap(member => member.tasks.flatMap(task => task.missingDays.map(TeamDailyEntryKey(member.member.id, task.taskId, _))))
+    plan
+      .flatMap(member =>
+        member.tasks.flatMap(task => task.missingDays.map(TeamDailyEntryKey(member.member.id, task.taskId, _)))
+      )
       .flatMap(key => entries.get(key).map(key -> _))
 }
 
@@ -88,6 +98,7 @@ class TeamDailyComponent(
 )(implicit ioRuntime: IORuntime) {
 
   private val DraftSaveDebounce = 300.millis
+
   /** A row with more steps than fit scrolls sideways instead of overflowing: the steps keep their size and the list
     * grows to its content, but never narrower than the row.
     */
@@ -158,7 +169,8 @@ class TeamDailyComponent(
         members = data.members,
         milestones = milestones.toOption.flatMap(_.body).getOrElse(Seq.empty),
         selected = restored.fold(memberIds)(_.memberIds.toSet.intersect(memberIds)),
-        entries = restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
+        entries =
+          restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
         candidates = Seq.empty,
         selectedTasks = restored.flatMap(_.taskIds.map(_.toSet)),
         position = TeamDailyPosition.ChooseMembers
@@ -212,7 +224,8 @@ class TeamDailyComponent(
   private def jumpTo(find: TeamDailyPosition => Boolean): Unit =
     state.now().positions.find(find).foreach(target => state.update(_.copy(position = target)))
 
-  private def isPlanned: Boolean = state.now().position != TeamDailyPosition.ChooseMembers || state.now().candidates.nonEmpty
+  private def isPlanned: Boolean =
+    state.now().position != TeamDailyPosition.ChooseMembers || state.now().candidates.nonEmpty
 
   // ---- editing
 
@@ -220,7 +233,7 @@ class TeamDailyComponent(
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == key.taskId)
     task.flatMap(_.todayEntry) match {
       case Some(existing) => TeamDailyEntryDraft(existing.status, existing.textExternal)
-      case None           => TeamDailyEntryDraft(task.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus), "")
+      case None => TeamDailyEntryDraft(task.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus), "")
     }
   }
 
@@ -272,8 +285,10 @@ class TeamDailyComponent(
         .runWithSpinner(
           toSave.toList.traverse { case (key, draft) =>
             val dto = logEntryOf(key, draft)
-            val isUpdate = state.now().plan.flatMap(_.tasks).exists(t => t.taskId == key.taskId && t.todayEntry.nonEmpty)
-            (if (isUpdate) taskService.updateLogEntry(dto).map(_.isRight) else taskService.saveLogEntry(dto).map(_.isRight))
+            val isUpdate =
+              state.now().plan.flatMap(_.tasks).exists(t => t.taskId == key.taskId && t.todayEntry.nonEmpty)
+            (if (isUpdate) taskService.updateLogEntry(dto).map(_.isRight)
+             else taskService.saveLogEntry(dto).map(_.isRight))
               .map(ok => key -> ok)
           }
         )
@@ -312,15 +327,19 @@ class TeamDailyComponent(
         case _: TeamDailyPosition.Fill       => 2
         case TeamDailyPosition.Review        => 3
       }
-      breadcrumb(ProcessSteps.map(TgStep(_)), current, {
-        case 0                 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
-        // from choosing members this is the Next button, which loads the tasks of the members chosen now
-        case 1 if state.now().position == TeamDailyPosition.ChooseMembers => if (state.now().selected.nonEmpty) next()
-        case 1 if isPlanned    => jumpTo(_ == TeamDailyPosition.ChooseTasks)
-        case 2 if isPlanned    => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
-        case 3 if isPlanned    => jumpTo(_ == TeamDailyPosition.Review)
-        case _                 => ()
-      })
+      breadcrumb(
+        ProcessSteps.map(TgStep(_)),
+        current,
+        {
+          case 0 => jumpTo(_ == TeamDailyPosition.ChooseMembers)
+          // from choosing members this is the Next button, which loads the tasks of the members chosen now
+          case 1 if state.now().position == TeamDailyPosition.ChooseMembers => if (state.now().selected.nonEmpty) next()
+          case 1 if isPlanned => jumpTo(_ == TeamDailyPosition.ChooseTasks)
+          case 2 if isPlanned => jumpTo(_.isInstanceOf[TeamDailyPosition.Fill])
+          case 3 if isPlanned => jumpTo(_ == TeamDailyPosition.Review)
+          case _              => ()
+        }
+      )
     }
 
   private def levelTwo: Signal[Option[HtmlElement]] =
@@ -338,18 +357,22 @@ class TeamDailyComponent(
     }
 
   private def levelThree: Signal[Option[HtmlElement]] =
-    state.signal.map(s => (s.plan, s.plan.flatMap(m => m.tasks.map(s.isFilled(m.member.id, _))), s.position)).distinct.map {
-      case (plan, _, TeamDailyPosition.Fill(memberId, taskId, _)) =>
-        plan.find(_.member.id == memberId).map { member =>
-          val filled = state.now()
-          breadcrumb(
-            member.tasks.map(task => TgStep(task.name, filled.isFilled(member.member.id, task))),
-            member.tasks.indexWhere(_.taskId == taskId),
-            index => jumpTo { case TeamDailyPosition.Fill(_, t, _) => t == member.tasks(index).taskId; case _ => false }
-          )
-        }
-      case _ => None
-    }
+    state.signal
+      .map(s => (s.plan, s.plan.flatMap(m => m.tasks.map(s.isFilled(m.member.id, _))), s.position))
+      .distinct
+      .map {
+        case (plan, _, TeamDailyPosition.Fill(memberId, taskId, _)) =>
+          plan.find(_.member.id == memberId).map { member =>
+            val filled = state.now()
+            breadcrumb(
+              member.tasks.map(task => TgStep(task.name, filled.isFilled(member.member.id, task))),
+              member.tasks.indexWhere(_.taskId == taskId),
+              index =>
+                jumpTo { case TeamDailyPosition.Fill(_, t, _) => t == member.tasks(index).taskId; case _ => false }
+            )
+          }
+        case _ => None
+      }
 
   private val stepper: HtmlElement =
     div(
@@ -446,7 +469,12 @@ class TeamDailyComponent(
       cls("flex flex-wrap items-center gap-1.5"),
       specs.map { spec =>
         val neutral = spec.color == TgBadgeColor.Gray || spec.color == TgBadgeColor.Alternative
-        TgBadge(text = spec.text, color = spec.color, bordered = true, extraCls = if (neutral) "dark:text-body" else "").element
+        TgBadge(
+          text = spec.text,
+          color = spec.color,
+          bordered = true,
+          extraCls = if (neutral) "dark:text-body" else ""
+        ).element
       }
     )
 
@@ -520,11 +548,14 @@ class TeamDailyComponent(
       ),
       div(
         cls("rounded-base border border-default-medium p-3"),
-        child.maybe <-- state.signal.map(_.candidates).distinct.map(candidates =>
-          Option.when(candidates.isEmpty)(
-            p(cls("text-sm text-body"), "The chosen members have no open tasks.")
-          )
-        ),
+        child.maybe <-- state.signal
+          .map(_.candidates)
+          .distinct
+          .map(candidates =>
+            Option.when(candidates.isEmpty)(
+              p(cls("text-sm text-body"), "The chosen members have no open tasks.")
+            )
+          ),
         children <-- state.signal.map(_.candidates).distinct.map(_.map(memberGroup))
       )
     )
@@ -563,7 +594,9 @@ class TeamDailyComponent(
     )
   }
 
-  /** The task as the fill form and the review show it: name and labels, then milestone, priority and status, then dates. */
+  /** The task as the fill form and the review show it: name and labels, then milestone, priority and status, then
+    * dates.
+    */
   private def taskHeader(task: TeamDailyTaskPlan, headingCls: String): HtmlElement =
     div(
       cls("mb-3 flex flex-col gap-1.5"),
@@ -581,7 +614,12 @@ class TeamDailyComponent(
           BadgeSpec(task.statusLabel, TaskStatusBadgeColor.of(task.statusName))
       ),
       badgeRow(
-        TeamDailyTaskBadges.dates(task, tgClock.currentDate(), projectWorkDays, tgDateFormater.asAmericanDateWithDayAbrv)
+        TeamDailyTaskBadges.dates(
+          task,
+          tgClock.currentDate(),
+          projectWorkDays,
+          tgDateFormater.asAmericanDateWithDayAbrv
+        )
       )
     )
 
@@ -595,7 +633,8 @@ class TeamDailyComponent(
       .getOrElse(WorkDayCalendar.DefaultWorkDays)
   }
 
-  /** The last entry is worth repeating when it says blocked or paused, or when the task itself is waiting or blocked. */
+  /** The last entry is worth repeating when it says blocked or paused, or when the task itself is waiting or blocked.
+    */
   private def isRepeatable(task: Option[TeamDailyTaskPlan], entry: LogEntryDto): Boolean =
     TeamDailyComponent.RepeatableStatuses.contains(entry.status) ||
       task.exists(t => TeamDailyStatusOrder.isOnHold(t.statusName))
@@ -618,7 +657,9 @@ class TeamDailyComponent(
   ): HtmlElement = {
     val selectedDay = Var(Option.empty[LocalDate])
     val dayEntries = (day: LocalDate) =>
-      task.fold(Seq.empty[LogEntryDto])(_.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt))
+      task.fold(Seq.empty[LogEntryDto])(
+        _.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
+      )
     div(
       cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3"),
       div(
@@ -626,9 +667,9 @@ class TeamDailyComponent(
         div(
           cls("mb-2 flex flex-wrap items-center gap-1.5"),
           statusTab("Last status", selectedDay.signal.map(_.isEmpty), () => selectedDay.set(None)),
-          child.maybe <-- selectedDay.signal.map(_.map(day =>
-            statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ())
-          )),
+          child.maybe <-- selectedDay.signal.map(
+            _.map(day => statusTab(tgDateFormater.asAmericanDateWithDayAbrv(day), Val(true), () => ()))
+          ),
           // only the last status can be repeated, so the button goes with its tab
           child.maybe <-- selectedDay.signal.map(selected =>
             Option.when(canRepeat && selected.isEmpty)(repeatButton(key, entry, focusRepeat))
@@ -696,7 +737,11 @@ class TeamDailyComponent(
       div(
         div(
           cls("flex items-center gap-2 mb-2"),
-          TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(day), bordered = true, color = TgBadgeColor.Gray).element
+          TgBadge(
+            text = tgDateFormater.asAmericanDateWithDayAbrv(day),
+            bordered = true,
+            color = TgBadgeColor.Gray
+          ).element
         ),
         p(cls("text-sm text-body-subtle"), "No status update")
       )
@@ -720,19 +765,35 @@ class TeamDailyComponent(
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)
                   div(
-                    cls("mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"),
+                    cls(
+                      "mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"
+                    ),
                     div(
                       cls("flex items-center gap-2 mb-2"),
-                      TgBadge(text = tgDateFormater.asAmericanDateWithDayAbrv(date), bordered = true, color = TgBadgeColor.Gray).element,
-                      toSave.get(key).map(entry =>
-                        TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element
-                      ),
+                      TgBadge(
+                        text = tgDateFormater.asAmericanDateWithDayAbrv(date),
+                        bordered = true,
+                        color = TgBadgeColor.Gray
+                      ).element,
+                      toSave
+                        .get(key)
+                        .map(entry =>
+                          TgBadge(
+                            text = entry.status.toStringWithEmoji,
+                            color = entry.status.badgeColor,
+                            bordered = true
+                          ).element
+                        ),
                       LogEntryMemberBadge(currentAccountName)
                     ),
-                    toSave.get(key).fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
-                      tgMarkdown.toLaminarDiv(entry.textExternal)
-                    ),
-                    onClick.mapToUnit --> (_ => jumpTo(_ == TeamDailyPosition.Fill(member.member.id, task.taskId, date)))
+                    toSave
+                      .get(key)
+                      .fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(
+                        entry => tgMarkdown.toLaminarDiv(entry.textExternal)
+                      ),
+                    onClick.mapToUnit --> (_ =>
+                      jumpTo(_ == TeamDailyPosition.Fill(member.member.id, task.taskId, date))
+                    )
                   )
                 }
               )
@@ -748,10 +809,10 @@ class TeamDailyComponent(
 
   private val body: Signal[HtmlElement] =
     state.signal.map(_.position).distinct.flatMapSwitch {
-      case TeamDailyPosition.ChooseMembers   => Val(chooseMembers)
-      case TeamDailyPosition.ChooseTasks     => Val(chooseTasks)
-      case TeamDailyPosition.Fill(m, t, d)   => formRefresh.signal.map(_ => fillForm(m, t, d))
-      case TeamDailyPosition.Review          => state.signal.map(reviewView)
+      case TeamDailyPosition.ChooseMembers => Val(chooseMembers)
+      case TeamDailyPosition.ChooseTasks   => Val(chooseTasks)
+      case TeamDailyPosition.Fill(m, t, d) => formRefresh.signal.map(_ => fillForm(m, t, d))
+      case TeamDailyPosition.Review        => state.signal.map(reviewView)
     }
 
   // ---- footer
@@ -820,7 +881,9 @@ class TeamDailyComponent(
 
   val element: HtmlElement =
     div(
-      cls("fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"),
+      cls(
+        "fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto pt-4 pb-8 px-4 bg-white/90 dark:bg-neutral-primary/90"
+      ),
       onClick.filter(event => event.target == event.currentTarget).mapToUnit --> (_ => requestClose()),
       onMountCallback { _ =>
         loadProjects()

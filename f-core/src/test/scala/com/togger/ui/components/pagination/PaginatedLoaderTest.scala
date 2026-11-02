@@ -14,7 +14,9 @@ class PaginatedLoaderTest extends AsyncJsWordSpec {
     (request: PageRequest) => {
       requested += request
       val slice = items.slice((request.page - 1) * request.size, request.page * request.size)
-      TgJsonSuccess.justBodyRightIO(PaginatedResponse.of(request.page, request.size, slice, items.size.toLong)): TgRespIO[PaginatedResponse[Int]]
+      TgJsonSuccess.justBodyRightIO(
+        PaginatedResponse.of(request.page, request.size, slice, items.size.toLong)
+      ): TgRespIO[PaginatedResponse[Int]]
     }
 
   testNameFromClassName should {

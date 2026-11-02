@@ -99,7 +99,9 @@ class EditTgAiActionComponent(
                     cls("flex justify-between"),
                     button(
                       `type` := "button",
-                      cls("text-white bg-danger box-border border border-transparent hover:bg-danger-strong font-medium rounded-base text-sm px-4 py-2.5"),
+                      cls(
+                        "text-white bg-danger box-border border border-transparent hover:bg-danger-strong font-medium rounded-base text-sm px-4 py-2.5"
+                      ),
                       "Delete",
                       onClick.mapToUnit --> (_ => deleteAction())
                     ),

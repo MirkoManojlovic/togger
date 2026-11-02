@@ -38,7 +38,8 @@ object MilestoneListParams {
   ): MilestoneListParams =
     MilestoneListParams(
       page = page.flatMap(_.trim.toIntOption).filter(_ >= 1).getOrElse(PageRequest.DefaultPage),
-      size = size.flatMap(_.trim.toIntOption).filter(PageRequest.SizeOptions.contains).getOrElse(PageRequest.DefaultSize),
+      size =
+        size.flatMap(_.trim.toIntOption).filter(PageRequest.SizeOptions.contains).getOrElse(PageRequest.DefaultSize),
       statuses = TaskListParams.selectionFromQuery(statuses),
       search = search.map(_.trim).getOrElse("")
     )

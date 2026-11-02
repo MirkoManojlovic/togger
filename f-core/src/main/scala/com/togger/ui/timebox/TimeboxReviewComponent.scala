@@ -5,13 +5,7 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.{
-  FindMilestoneResp,
-  FindTaskRespFull,
-  FindTimeboxResp,
-  SearchAccountDto,
-  TimeboxVersionDto
-}
+import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.Pages._
 import com.togger.routes.{FrontendPage, TgRouter}
@@ -101,15 +95,18 @@ class TimeboxReviewComponent(
 
   private def progressRow(state: TimeboxReviewState) = {
     val timebox = state.timebox.map(_.latestVersion)
-    val days = timebox.map(version =>
-      TimeboxReviewStats.daysProgress(version.startDate, version.endDate, tgClock.currentDate())
-    )
+    val days =
+      timebox.map(version => TimeboxReviewStats.daysProgress(version.startDate, version.endDate, tgClock.currentDate()))
     val tasks = TimeboxReviewStats.tasksProgress(state.tasks)
     div(
       cls("grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"),
       card(
         "Days left",
-        div(days.map[HtmlElement](d => progressBar(d.elapsed, d.total, s"${d.left} of ${d.total} days left")).getOrElse(p(cls("text-body"), "No dates")))
+        div(
+          days
+            .map[HtmlElement](d => progressBar(d.elapsed, d.total, s"${d.left} of ${d.total} days left"))
+            .getOrElse(p(cls("text-body"), "No dates"))
+        )
       ),
       card(
         "Tasks left to do",
@@ -131,15 +128,20 @@ class TimeboxReviewComponent(
     card(
       "Timebox",
       div(
-        state.timebox.map(_.latestVersion).map[HtmlElement](version =>
-          div(
-            p(
-              cls("mb-4 font-medium text-heading"),
-              s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}"
-            ),
-            version.description.map[HtmlElement](tgMarkdown.toLaminarDiv).getOrElse(p(cls("text-body"), "No description"))
+        state.timebox
+          .map(_.latestVersion)
+          .map[HtmlElement](version =>
+            div(
+              p(
+                cls("mb-4 font-medium text-heading"),
+                s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}"
+              ),
+              version.description
+                .map[HtmlElement](tgMarkdown.toLaminarDiv)
+                .getOrElse(p(cls("text-body"), "No description"))
+            )
           )
-        ).getOrElse(p(cls("text-body"), "No timebox"))
+          .getOrElse(p(cls("text-body"), "No timebox"))
       )
     )
 
@@ -156,7 +158,8 @@ class TimeboxReviewComponent(
               div(
                 cls("flex items-center gap-2 mb-2"),
                 TgBadge(
-                  text = tgDateFormater.asAmericanDateWithDayAbrv(version.createdAt.atOffset(ZoneOffset.UTC).toLocalDate),
+                  text =
+                    tgDateFormater.asAmericanDateWithDayAbrv(version.createdAt.atOffset(ZoneOffset.UTC).toLocalDate),
                   bordered = true,
                   color = TgBadgeColor.Gray
                 ).element

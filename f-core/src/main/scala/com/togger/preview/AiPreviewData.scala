@@ -50,7 +50,9 @@ class AiPreviewData(db: PreviewDb, projects: ProjectsPreviewData) {
     promptVersions.filter(_.tgPromptTemplateId == promptId).lastOption
 
   def deletePromptTemplate(id: UUID): Boolean = {
-    actions.all.filter(_.tgPromptTemplateId.contains(id)).foreach(action => actions.upsert(action.copy(tgPromptTemplateId = None)))
+    actions.all
+      .filter(_.tgPromptTemplateId.contains(id))
+      .foreach(action => actions.upsert(action.copy(tgPromptTemplateId = None)))
     promptVersions.deleteWhere(_.tgPromptTemplateId == id)
     promptTemplates.delete(id)
   }

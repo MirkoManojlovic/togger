@@ -24,7 +24,11 @@ class CreateTgPromptTemplateComponent(
 
   lazy val submitter = Observer[TgPromptTemplateForm] { form =>
     spinnerService
-      .runWithSpinner(tgPromptTemplateService.createTgPromptTemplate(CreateTgPromptTemplateReq(title = form.title, prompt = form.prompt)))
+      .runWithSpinner(
+        tgPromptTemplateService.createTgPromptTemplate(
+          CreateTgPromptTemplateReq(title = form.title, prompt = form.prompt)
+        )
+      )
       .toastMessageJustMessage("Prompt template created successfully")
       .unsafeRunAndForget()
   }

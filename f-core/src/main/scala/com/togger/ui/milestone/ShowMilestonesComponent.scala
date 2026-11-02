@@ -217,7 +217,11 @@ class ShowMilestonesComponent(
           body = TgCard
             .HtmlCardContent(
               div(
-                div(cls("mb-4 flex flex-wrap items-center justify-between gap-3"), searchBox.element, localFilterBox.element),
+                div(
+                  cls("mb-4 flex flex-wrap items-center justify-between gap-3"),
+                  searchBox.element,
+                  localFilterBox.element
+                ),
                 navigateOnStatusChange,
                 TgHtmlTable.tableElement(
                   Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]](
@@ -229,7 +233,9 @@ class ShowMilestonesComponent(
                   ),
                   striped = false
                 )(
-                  visibleRowsSignal.map(milestones => if (milestones.isEmpty) Seq(noMilestonesRow) else milestones.map(row))
+                  visibleRowsSignal.map(milestones =>
+                    if (milestones.isEmpty) Seq(noMilestonesRow) else milestones.map(row)
+                  )
                 ),
                 TgPaginationComponent(
                   paginationVar.signal,

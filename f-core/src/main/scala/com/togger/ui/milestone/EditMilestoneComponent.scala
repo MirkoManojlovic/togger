@@ -6,11 +6,7 @@ import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.{DateRangeValidation, TgClock}
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{
-  CreateMilestoneDateReq,
-  UpdateMilestoneDateReq,
-  UpdateMilestoneReq
-}
+import com.togger.dto.{CreateMilestoneDateReq, UpdateMilestoneDateReq, UpdateMilestoneReq}
 import com.togger.milestone.MilestoneStatus
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
@@ -79,7 +75,12 @@ class EditMilestoneComponent(
     newMilestoneDatesVar.update(state => state :+ new CreateMilestoneDateComponent(milestoneStartDate, tgClock))
 
   lazy val addNewMilestoneDate: HtmlElement =
-    TgBadge(text = "+ Add additional date", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
+    TgBadge(
+      text = "+ Add additional date",
+      color = TgBadgeColor.Alternative,
+      bordered = true,
+      extraCls = "cursor-pointer"
+    ).element
       .amend(
         role("button"),
         tabIndex(0),

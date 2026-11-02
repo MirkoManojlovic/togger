@@ -199,9 +199,7 @@ class TimeboxFormComponent(
         typ("button"),
         cls("rounded-base cursor-pointer hover:ring-2 hover:ring-blue-300"),
         child <-- formState.signal
-          .map(form =>
-            parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv)
-          )
+          .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
           .distinct
           .map(date =>
             TgBadge(text = s"$labelValue: $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
@@ -320,7 +318,10 @@ class TimeboxFormComponent(
 
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
-    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
+    else
+      dto.taskLabels
+        .sortBy(_.name)
+        .map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
   private def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
@@ -557,7 +558,12 @@ class TimeboxFormComponent(
               cls("mb-4 flex flex-col gap-4"),
               div(
                 cls("min-w-0"),
-                div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
+                div(
+                  cls("mb-2 flex flex-wrap items-center gap-1.5"),
+                  startDateInput,
+                  endDateInput,
+                  child.maybe <-- daysLeftBadge
+                ),
                 presetButtons,
                 child.maybe <-- endBeforeStartError.map(
                   _.map(message => p(cls("mt-4 text-xs text-fg-danger-strong"), message))

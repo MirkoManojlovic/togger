@@ -10,8 +10,8 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import scala.collection.immutable.ListMap
 
-/** The fields shared by the create and the edit form. The prompt templates, the models and the endpoints are read before
-  * the form is shown, because the selects and the checkboxes are built from them.
+/** The fields shared by the create and the edit form. The prompt templates, the models and the endpoints are read
+  * before the form is shown, because the selects and the checkboxes are built from them.
   */
 class TgAiActionFormFields(
   formState: Var[TgAiActionForm],

@@ -35,7 +35,8 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
     )
 
   // One tab per summary, newest first; the selected tab survives the summaries being reloaded.
-  private def summaryTabs(summaries: Seq[FindMilestoneSummaryResp],
+  private def summaryTabs(
+    summaries: Seq[FindMilestoneSummaryResp],
     workDays: Signal[Set[DayOfWeek]],
     selectedVar: Var[String]
   ): HtmlElement =

@@ -42,8 +42,8 @@ object MemberContributionViews {
       chartCard(s"Tasks by label: ${member.memberName}", ContributionCharts.tasksByLabel(member.tasks), isDark)
     )
 
-  /** The tasks of a scope by their status, priority and label, side by side, then a row of the same for each member
-    * the tasks are assigned to. The tasks of nobody are only in the first row, and a member without tasks has no row.
+  /** The tasks of a scope by their status, priority and label, side by side, then a row of the same for each member the
+    * tasks are assigned to. The tasks of nobody are only in the first row, and a member without tasks has no row.
     */
   def taskAttributeCharts(
     tasks: TaskAttributesDto,

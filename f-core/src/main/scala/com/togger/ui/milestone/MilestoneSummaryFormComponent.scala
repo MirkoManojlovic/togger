@@ -85,7 +85,8 @@ class MilestoneSummaryFormComponent(
 
   /** The text of the tab being shown, which is the one that gets saved. */
   def textToSave: String =
-    if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId) formState.now().aiSummary
+    if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId)
+      formState.now().aiSummary
     else formState.now().summary
 
   private val aiActionList = Var(Seq.empty[FindTgAiActionResp])
@@ -218,7 +219,9 @@ class MilestoneSummaryFormComponent(
             )
           )
         case AiSummaryState.Finished =>
-          Some(span(cls("flex items-center gap-1.5 text-green-600 dark:text-green-400"), "✓ The AI finished the summary"))
+          Some(
+            span(cls("flex items-center gap-1.5 text-green-600 dark:text-green-400"), "✓ The AI finished the summary")
+          )
       }
     )
 
@@ -235,7 +238,9 @@ class MilestoneSummaryFormComponent(
           ),
           div(
             cls("flex flex-col gap-1.5"),
-            MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
+            MilestoneSummaryPreset.rows.map(row =>
+              div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge))
+            )
           )
         ),
         MilestoneSummaryRangeCalendar.element(

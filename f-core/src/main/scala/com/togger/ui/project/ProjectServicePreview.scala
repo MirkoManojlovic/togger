@@ -83,7 +83,9 @@ class ProjectServicePreview(
     page: PageRequest
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
-      IO.defer(PreviewResponses.paged(memberProjects(callerId).filter(_.organizationId == organizationId).map(toResp), page))
+      IO.defer(
+        PreviewResponses.paged(memberProjects(callerId).filter(_.organizationId == organizationId).map(toResp), page)
+      )
     )
 
   override def findById(id: UUID): TgRespIO[FindProjectResp] =
@@ -102,7 +104,8 @@ class ProjectServicePreview(
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
-        val matching = memberProjects(callerId).filter(project => projectLabelIds.forall(project.projectLabelIds.contains))
+        val matching =
+          memberProjects(callerId).filter(project => projectLabelIds.forall(project.projectLabelIds.contains))
         PreviewResponses.paged(matching.map(toResp), page)
       }
     )

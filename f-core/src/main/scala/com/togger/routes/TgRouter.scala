@@ -35,7 +35,9 @@ trait TgRouter[PAGE <: FrontendPage] {
 class TgRouterImpl(
   appRoutes: Seq[Route[_ <: FrontendPage, _]],
   origin: String,
-  initialUrl: Option[String] // FIXME: this is a fix, because app reloads and always loads the initialUrl for some reason. Works in QC.
+  initialUrl: Option[
+    String
+  ] // FIXME: this is a fix, because app reloads and always loads the initialUrl for some reason. Works in QC.
 ) extends TgRouter[FrontendPage] {
   val pageSerializer = new PageSerializer
 

@@ -100,7 +100,9 @@ class ShowTimeboxesComponent(
         header = TgCard.CardHeader.html(
           div(
             cls("flex justify-between"),
-            div(child.text <-- projectNameVar.signal.map(name => if (name.isEmpty) "Timeboxes" else s"$name timeboxes")),
+            div(
+              child.text <-- projectNameVar.signal.map(name => if (name.isEmpty) "Timeboxes" else s"$name timeboxes")
+            ),
             div(
               cls("flex"),
               iconButton(

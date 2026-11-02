@@ -23,7 +23,8 @@ case class SlackerDraft(
   def isEmpty: Boolean = entries.isEmpty
 }
 
-/** The draft in the browser's local storage, one per account and project, so an unfinished slacker survives a refresh. */
+/** The draft in the browser's local storage, one per account and project, so an unfinished slacker survives a refresh.
+  */
 class SlackerDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
 
   import SlackerDraftStore._

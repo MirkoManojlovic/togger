@@ -61,9 +61,11 @@ class ShowAllDataImportConfigsComponent(
 
   reload()
 
-  private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
+  private val importFlow =
+    new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
 
-  private def importFrom(importPath: String, name: String): Unit = importFlow.importFrom(projectId, importPath, Some(name))
+  private def importFrom(importPath: String, name: String): Unit =
+    importFlow.importFrom(projectId, importPath, Some(name))
 
   private def loadAll(): Unit = importFlow.importAll(projectId)
 

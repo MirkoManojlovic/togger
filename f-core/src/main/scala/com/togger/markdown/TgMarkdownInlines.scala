@@ -7,8 +7,8 @@ import com.togger.ui.auth.TgHtmlTypes.{HtmlAnchor, HtmlImage}
 
 /** Inline markdown nodes that carry structure of their own — a tag choice, an attribute, a wrapper.
   *
-  * `Emphasis`, `Strong` and `Strikethrough` have none of that: they are a tag and a class, and the renderer
-  * applies them directly from [[TgMarkdownStyles]] rather than through a component whose whole body would be
+  * `Emphasis`, `Strong` and `Strikethrough` have none of that: they are a tag and a class, and the renderer applies
+  * them directly from [[TgMarkdownStyles]] rather than through a component whose whole body would be
   * `em(cls(styles.emphasis), content)`.
   */
 case class TgMarkdownLink(

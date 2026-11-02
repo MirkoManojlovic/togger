@@ -108,16 +108,15 @@ class NavbarComponent(
           "MCP" -> McpSettingsPage,
           "Updates" -> UpdaterSettingsPage,
           "Accounts" -> ShowAllAccountsPage()
-        ).map {
-          case (label, page) =>
-            li(
-              a(
-                cls(NavbarComponent.dropdownItemClass),
-                label,
-                router.navigateTo(page),
-                onClick.mapToUnit --> closeSettingsMenu
-              )
+        ).map { case (label, page) =>
+          li(
+            a(
+              cls(NavbarComponent.dropdownItemClass),
+              label,
+              router.navigateTo(page),
+              onClick.mapToUnit --> closeSettingsMenu
             )
+          )
         } ++ resetPreviewItem
       )
     )
@@ -174,15 +173,17 @@ class NavbarComponent(
 
     def selectItem(page: FrontendPage): NavbarItems = {
       page match {
-        case ChangePasswordPage => NavbarItems.changePasswordSelected
+        case ChangePasswordPage    => NavbarItems.changePasswordSelected
         case ChangeAccountInfoPage => NavbarItems.accountInfoSelected
-        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) | SearchProjectsByLabelPage |
-            CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(_) =>
+        case CreateOrganizationPage | ShowAllOrganizationsPage(_) | EditOrganizationPage(_) |
+            SearchProjectsByLabelPage | CreateProjectLabelPage | ShowAllProjectLabelsPage(_) | EditProjectLabelPage(
+              _
+            ) =>
           NavbarItems.organizationSelected
-        case SyncCheckSettingsPage | McpSettingsPage | UpdaterSettingsPage | ShowAllAccountsPage(_) | EditAccountPage(_) |
-            CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) |
-            EditTgPromptTemplatePage(_) | CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) |
-            TgAiActionDefaultsPage =>
+        case SyncCheckSettingsPage | McpSettingsPage | UpdaterSettingsPage | ShowAllAccountsPage(_) | EditAccountPage(
+              _
+            ) | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) | EditTgPromptTemplatePage(_) |
+            CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) | TgAiActionDefaultsPage =>
           NavbarItems.settingsSelected
         case _ => NavbarItems.allDeselected
       }
@@ -223,7 +224,9 @@ class NavbarComponent(
             div(
               cls("flex items-center justify-start rtl:justify-end"),
               div(
-                cls("flex items-center sm:shrink-0 sm:overflow-hidden whitespace-nowrap transition-[width] duration-200"),
+                cls(
+                  "flex items-center sm:shrink-0 sm:overflow-hidden whitespace-nowrap transition-[width] duration-200"
+                ),
                 cls <-- collapsed.map(isCollapsed => if (isCollapsed) "sm:w-16" else "sm:w-64"),
                 mobileSidebarButton,
                 a(

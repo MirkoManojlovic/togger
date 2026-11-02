@@ -16,7 +16,10 @@ object SseParser {
     val fields = block.split("\n").toList.filterNot(_.startsWith(":")).flatMap(parseField)
     val data = fields.collect { case ("data", value) => value }
     Option.when(data.nonEmpty || fields.exists(_._1 == "event")) {
-      SseEvent(fields.collect { case ("event", value) => value }.lastOption.getOrElse(DefaultEvent), data.mkString("\n"))
+      SseEvent(
+        fields.collect { case ("event", value) => value }.lastOption.getOrElse(DefaultEvent),
+        data.mkString("\n")
+      )
     }
   }
 

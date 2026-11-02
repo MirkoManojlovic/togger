@@ -10,11 +10,7 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.routes.Pages.{EditMilestonePage, MilestoneSummaryPage}
 import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{
-  ChartColorBadgeColor,
-  TgBadge,
-  TgBadgeColor
-}
+import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
@@ -231,11 +227,13 @@ class MilestoneReviewComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Milestone", TgCard.CardHeaderSize.H4),
-        body = TgCard.HtmlCardContent(milestoneTabs(
+        body = TgCard.HtmlCardContent(
+          milestoneTabs(
             statusTabContent,
             summariesVar.signal,
             lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of))
-          ))
+          )
+        )
       )
       .element
       .amend(cls("w-full mb-4"))

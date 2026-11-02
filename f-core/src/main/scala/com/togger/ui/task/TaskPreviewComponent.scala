@@ -22,8 +22,8 @@ import java.time.{DayOfWeek, LocalDate, ZoneOffset}
   * day selected in the calendar or by a range of weeks, and the calendar of the log entries on the right.
   *
   * @param showName
-  *   the name of the task, linked to its page, with its labels beside it and the other badges of the task under it, over the description; left out
-  *   where the name is shown by the caller
+  *   the name of the task, linked to its page, with its labels beside it and the other badges of the task under it,
+  *   over the description; left out where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
   * @param summaryPeriod
@@ -104,8 +104,8 @@ class TaskPreviewComponent(
       .toSeq
       .collectFirst { case entry: dom.html.Element if entry.offsetParent != null => entry }
       .foreach { entry =>
-      pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
-    }
+        pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
+      }
 
   /** The log entries in a pane that scrolls and the calendar beside it, outside of the pane, so the calendar stays
     * where it is; a click on a day of the calendar scrolls the pane to the entries of that day.
@@ -177,7 +177,11 @@ class TaskPreviewComponent(
                   div(
                     cls("flex items-center gap-2 mb-2"),
                     dateBadge(),
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    TgBadge(
+                      text = entry.status.toStringWithEmoji,
+                      color = entry.status.badgeColor,
+                      bordered = true
+                    ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
@@ -223,7 +227,11 @@ class TaskPreviewComponent(
                       bordered = true,
                       color = TgBadgeColor.Gray
                     ).element,
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    TgBadge(
+                      text = entry.status.toStringWithEmoji,
+                      color = entry.status.badgeColor,
+                      bordered = true
+                    ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)

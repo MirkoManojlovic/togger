@@ -29,8 +29,10 @@ trait ProjectLabelCategoryFeService {
   def deleteProjectLabelCategoryById(id: UUID): TgRespIO[TgEmptyBody]
 }
 
-class ProjectLabelCategoryFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
-    extends ProjectLabelCategoryFeService {
+class ProjectLabelCategoryFeServiceImpl(
+  securedEndpoint: SecuredEndpoint,
+  protectedBackendClient: ProtectedBackendClient
+) extends ProjectLabelCategoryFeService {
   val projectLabelCategoryEndpoints = new ProjectLabelCategoryEndpoints(securedEndpoint)
 
   override def createProjectLabelCategory(

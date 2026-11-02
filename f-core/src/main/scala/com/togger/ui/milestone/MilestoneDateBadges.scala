@@ -72,16 +72,16 @@ class MilestoneDateBadges(
       cls("flex flex-wrap items-center gap-1.5"),
       children <-- dates.combineWith(endDate, daysLeftWorkDays.getOrElse(Val(Set.empty[DayOfWeek]))).map {
         case (start, due, end, workDays) =>
-        BulkTaskCard.row(
-          key,
-          Seq(
-            badge(parse(start), "Start", BulkEditKind.StartDate),
-            badge(parse(due), dueLabel, BulkEditKind.DueDate)
-          ) ++ parse(end).map(endBadge) ++ Option
-            .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
-            .flatten,
-          popups
-        )
+          BulkTaskCard.row(
+            key,
+            Seq(
+              badge(parse(start), "Start", BulkEditKind.StartDate),
+              badge(parse(due), dueLabel, BulkEditKind.DueDate)
+            ) ++ parse(end).map(endBadge) ++ Option
+              .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
+              .flatten,
+            popups
+          )
       }
     )
 }

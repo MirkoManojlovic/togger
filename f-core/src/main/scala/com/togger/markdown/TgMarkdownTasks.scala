@@ -15,21 +15,20 @@ case class TaskMarker(line: Int, checked: Boolean)
 
 /** Finds task markers in markdown source and flips them.
   *
-  * The counterpart to the detection in [[TgMarkdownRender]]: that one reads markers out of the parsed document,
-  * this one out of the raw text, and the two have to agree on both *what* is a task item and *what order* they
-  * come in, since an index from the renderer is looked up here.
+  * The counterpart to the detection in [[TgMarkdownRender]]: that one reads markers out of the parsed document, this
+  * one out of the raw text, and the two have to agree on both *what* is a task item and *what order* they come in,
+  * since an index from the renderer is looked up here.
   *
-  * Order agrees for free — the renderer walks the document depth-first in source order. Recognition is a line
-  * scanner, which agrees with the parser everywhere except inside an indented code block, where four spaces make
-  * text that looks like a task item into code. Rather than reimplement block parsing for that,
-  * [[setChecked]] verifies the state it is about to change and declines when it does not match, so a
-  * disagreement costs a click rather than the document.
+  * Order agrees for free — the renderer walks the document depth-first in source order. Recognition is a line scanner,
+  * which agrees with the parser everywhere except inside an indented code block, where four spaces make text that looks
+  * like a task item into code. Rather than reimplement block parsing for that, [[setChecked]] verifies the state it is
+  * about to change and declines when it does not match, so a disagreement costs a click rather than the document.
   */
 object TgMarkdownTasks {
 
-  /** Deliberately close to what the parser accepts: any bullet or ordered marker, any indent, inside any depth of
-    * block quote, and a space after the brackets — `- [x]` with nothing following it is not a task item to the
-    * library either.
+  /** Deliberately close to what the parser accepts: any bullet or ordered marker, any indent, inside any depth of block
+    * quote, and a space after the brackets — `- [x]` with nothing following it is not a task item to the library
+    * either.
     */
   private val marker: Regex = """^[ \t]*(?:>[ \t]*)*(?:[-*+]|\d+[.)])[ \t]+\[([ xX])\][ \t]""".r
 
@@ -49,8 +48,8 @@ object TgMarkdownTasks {
 
   /** The document with task item `index` set to `checked`.
     *
-    * `None` when the index resolves to nothing, or to a marker already in that state — which is what an index
-    * the renderer and the scanner disagree about looks like from here.
+    * `None` when the index resolves to nothing, or to a marker already in that state — which is what an index the
+    * renderer and the scanner disagree about looks like from here.
     */
   def setChecked(markdown: String, index: Int, checked: Boolean): Option[String] =
     markers(markdown)
@@ -62,8 +61,8 @@ object TgMarkdownTasks {
         source.updated(found.line, withState(source(found.line), checked)).mkString("\n")
       }
 
-  /** `split` with a negative limit, so a trailing newline survives as a final empty line and the document comes
-    * back with the whitespace it went in with.
+  /** `split` with a negative limit, so a trailing newline survives as a final empty line and the document comes back
+    * with the whitespace it went in with.
     */
   private def lines(markdown: String): Vector[String] = markdown.split("\n", -1).toVector
 

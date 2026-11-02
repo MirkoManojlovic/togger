@@ -28,7 +28,8 @@ class ApexChartThemeSpec extends AnyFunSuite {
       ApexSeries.Slices(Seq(1, 2), Seq("a", "b")),
       colors = Some(Seq("#000"))
     )
-    val js1 = ApexChartJs.toJs(options, ApexChartTheme(ApexChartPalette.fallback, isDark = true)).asInstanceOf[js.Dynamic]
+    val js1 =
+      ApexChartJs.toJs(options, ApexChartTheme(ApexChartPalette.fallback, isDark = true)).asInstanceOf[js.Dynamic]
 
     assert(js1.colors.asInstanceOf[js.Array[String]].toList == List("#000"))
     assert(js1.series.asInstanceOf[js.Array[Int]].toList == List(1, 2))

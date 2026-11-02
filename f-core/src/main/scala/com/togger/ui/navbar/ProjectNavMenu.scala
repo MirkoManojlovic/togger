@@ -106,8 +106,18 @@ class ProjectNavMenu(
     Seq(
       directLink("Contributions", ShowContributionsPage(projectId), contributionsSelected),
       directLink("Sync", SyncConfigPage(projectId), syncSelected),
-      actionButton("Import", TgIcons.uploadIcon("w-4 h-4"), () => onImport(projectId), syncPendingStore.importPending(projectId)),
-      actionButton("Export", TgIcons.downloadIcon("w-4 h-4"), () => onExport(projectId), syncPendingStore.exportPending(projectId))
+      actionButton(
+        "Import",
+        TgIcons.uploadIcon("w-4 h-4"),
+        () => onImport(projectId),
+        syncPendingStore.importPending(projectId)
+      ),
+      actionButton(
+        "Export",
+        TgIcons.downloadIcon("w-4 h-4"),
+        () => onExport(projectId),
+        syncPendingStore.exportPending(projectId)
+      )
     )
   }
 

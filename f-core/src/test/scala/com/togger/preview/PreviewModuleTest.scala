@@ -39,7 +39,8 @@ class PreviewModuleTest extends AsyncJsWordSpec {
       val env = new PreviewTestEnv
       env.loginAsDemo()
       val m = env.module
-      val projects = new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
+      val projects =
+        new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
       val before = snapshot(env)
       m.projects.deleteProject(DemoIdentity.ProjectId)
       snapshot(env) should not be before
