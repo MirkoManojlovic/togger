@@ -1,6 +1,7 @@
 package com.togger.dump
 
-import cats.data.{EitherNec, ValidatedNec}
+import cats.data.EitherNec
+import cats.data.ValidatedNec
 import cats.implicits._
 import com.togger.common.TgError
 import com.togger.logging.TgLogging

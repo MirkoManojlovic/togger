@@ -1,6 +1,8 @@
 package com.togger.ui.task.bulk
 
-import com.togger.dto.{CreateTaskAndLinksReq, CreateTaskReq, CreateTasksBulkReq}
+import com.togger.dto.CreateTaskAndLinksReq
+import com.togger.dto.CreateTaskReq
+import com.togger.dto.CreateTasksBulkReq
 import com.togger.task.BulkTaskValidation
 
 import java.time.Instant

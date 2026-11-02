@@ -6,12 +6,16 @@ import com.togger.ai.TgAiError._
 import com.togger.logging.TgLogging
 import io.circe.Decoder
 import io.circe.parser.{decode => decodeJson}
-import sttp.ai.openai.{OpenAI, OpenAIUris}
+import sttp.ai.openai.OpenAI
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException._
-import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
+import sttp.ai.openai.OpenAIUris
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
+import sttp.ai.openai.requests.completions.chat.message.Content
+import sttp.ai.openai.requests.completions.chat.message.Message
 import sttp.ai.openai.streaming.fs2._
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client4.StreamBackend
@@ -45,13 +49,17 @@ class TgOpenAiClient(
   }
 
   override def chatStream(
-      apiKey: TgAiApiKey,
-      request: TgAiChatRequest
+    apiKey: TgAiApiKey,
+    request: TgAiChatRequest
   ): IO[Either[TgAiError, fs2.Stream[IO, TgAiChunk]]] =
     openAI(apiKey)
       .createStreamedChatCompletion[IO](toChatBody(request))
       .send(backend)
-      .map(_.body.leftMap(toTgAiError).map(_.map(_.choices.flatMap(_.delta.content).mkString).filter(_.nonEmpty).map(TgAiChunk)))
+      .map(
+        _.body
+          .leftMap(toTgAiError)
+          .map(_.map(_.choices.flatMap(_.delta.content).mkString).filter(_.nonEmpty).map(TgAiChunk))
+      )
       .handleError(unavailable)
       .flatTap(logOutcome("chatStream"))
 

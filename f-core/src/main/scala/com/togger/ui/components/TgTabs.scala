@@ -2,9 +2,13 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv, HtmlLi, HtmlUl}
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgHtmlTypes.HtmlLi
+import com.togger.ui.auth.TgHtmlTypes.HtmlUl
 import com.togger.ui.synccheck.SyncPendingDot
-import org.scalajs.dom.{KeyboardEvent, SVGSVGElement}
+import org.scalajs.dom.KeyboardEvent
+import org.scalajs.dom.SVGSVGElement
 
 import scala.annotation.tailrec
 
@@ -64,8 +68,8 @@ class TgTabs(
       tabPanels
     )
 
-  /** The row of tabs alone, for a page that puts the panels of several rows of tabs in one place. The caller then
-    * also keeps the selection selectable: only [[element]] does that.
+  /** The row of tabs alone, for a page that puts the panels of several rows of tabs in one place. The caller then also
+    * keeps the selection selectable: only [[element]] does that.
     */
   lazy val tabBar: HtmlDiv = div(cls(barCls), tabList)
 
@@ -85,7 +89,7 @@ class TgTabs(
     )
 
   private def tabListItem(buttonElement: HtmlButton, index: Int): HtmlLi =
-    li(cls.toggle("me-2") := index < tabs.size - 1, buttonElement)
+    li(cls("me-2") := index < tabs.size - 1, buttonElement)
 
   private def tabButton(tab: TgTab): HtmlButton =
     button(
@@ -97,7 +101,7 @@ class TgTabs(
       aria.selected <-- isSelected(tab),
       tabIndex <-- rovingTabIndex(tab),
       cls(tabBaseCls),
-      cls.toggle("relative") := tab.pendingLabel.isDefined,
+      cls("relative") := tab.pendingLabel.isDefined,
       cls <-- tabCls(tab),
       onClick.mapToUnit --> (_ => select(tab.id)),
       tab.icon.map(mkIcon => mkIcon(iconCls)),
@@ -118,7 +122,7 @@ class TgTabs(
       aria.labelledBy(tabId(tab)),
       tabIndex(0),
       hidden <-- isHidden,
-      cls.toggle("hidden") <-- isHidden,
+      cls("hidden") <-- isHidden,
       tab.content.amend(cls("mt-4"))
     )
   }

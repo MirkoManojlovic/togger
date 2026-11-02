@@ -4,10 +4,12 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -24,7 +26,11 @@ class CreateTgPromptTemplateComponent(
 
   lazy val submitter = Observer[TgPromptTemplateForm] { form =>
     spinnerService
-      .runWithSpinner(tgPromptTemplateService.createTgPromptTemplate(CreateTgPromptTemplateReq(title = form.title, prompt = form.prompt)))
+      .runWithSpinner(
+        tgPromptTemplateService.createTgPromptTemplate(
+          CreateTgPromptTemplateReq(title = form.title, prompt = form.prompt)
+        )
+      )
       .toastMessageJustMessage("Prompt template created successfully")
       .unsafeRunAndForget()
   }

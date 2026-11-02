@@ -3,7 +3,8 @@ package com.togger.ui.timebox.gantt
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class GanttAxisTest extends AsyncJsWordSpec {
 
@@ -18,7 +19,8 @@ class GanttAxisTest extends AsyncJsWordSpec {
     }
 
     "follow custom work days" in { _ =>
-      val sundayToThursday = Set(DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY)
+      val sundayToThursday =
+        Set(DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY)
       val axis = GanttAxis.of(monday, monday.plusDays(6), sundayToThursday)
       axis.days.map(_.getDayOfWeek) shouldBe Vector(
         DayOfWeek.MONDAY,

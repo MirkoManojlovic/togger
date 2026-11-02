@@ -1,14 +1,20 @@
 package com.togger.logentry
-import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
-import com.togger.account.TgAccount
+import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits.toTraverseOps
 import com.togger.account.Account
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TgIds, TimeHelpers}
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.dto.LogEntryFilter
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import com.togger.project.Project
-import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.task.{Task, TaskRepoImpl}
+import com.togger.task.Task
+import com.togger.task.TaskRepoImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -69,7 +75,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(index =>
+    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(_ =>
       LogEntry(
         id = UUID.randomUUID(),
         taskId = taskId,

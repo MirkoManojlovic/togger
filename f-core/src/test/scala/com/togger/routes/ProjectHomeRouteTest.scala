@@ -9,7 +9,7 @@ class ProjectHomeRouteTest extends AsyncJsWordSpec {
 
   private val projectId = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   testNameFromClassName should {
 

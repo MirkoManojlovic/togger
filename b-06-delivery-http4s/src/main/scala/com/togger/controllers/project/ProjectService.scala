@@ -1,23 +1,28 @@
 package com.togger.controllers.project
 import cats.effect.IO
-import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps, toTraverseOps}
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.toFunctorOps
+import cats.implicits.toTraverseOps
 import com.togger.account.Account
-import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
 import com.togger.logging.TgLogging
-import com.togger.project.{
-  Project,
-  ProjectAccount,
-  ProjectAccountRepo,
-  ProjectRepo,
-  ProjectLabelAssignment,
-  ProjectLabelAssignmentRepo
-}
-import com.togger.task.{TaskLabelRepo, TaskStatusRepo}
-import com.togger.tasktemplate.{TaskTemplateRepo, TaskTemplateVersionRepo}
+import com.togger.project.Project
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectAccountRepo
+import com.togger.project.ProjectLabelAssignment
+import com.togger.project.ProjectLabelAssignmentRepo
+import com.togger.project.ProjectRepo
 import com.togger.projectlabel.ProjectLabel
+import com.togger.task.TaskLabelRepo
+import com.togger.task.TaskStatusRepo
+import com.togger.tasktemplate.TaskTemplateRepo
+import com.togger.tasktemplate.TaskTemplateVersionRepo
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
 
@@ -146,10 +151,13 @@ class ProjectService(
 
   /** Deletes the project and all of its data, if the account is a member of it; false when it is not. */
   def deleteWithAllData(projectId: UUID, accountId: UUID): IO[Boolean] =
-    (projectAccountRepo.isMember(projectId, accountId).flatMap {
-      case false => false.pure[ConnectionIO]
-      case true  => projectRepo.deleteWithAllData(projectId).as(true)
-    }).transact(transactor)
+    (projectAccountRepo
+      .isMember(projectId, accountId)
+      .flatMap {
+        case false => false.pure[ConnectionIO]
+        case true  => projectRepo.deleteWithAllData(projectId).as(true)
+      })
+      .transact(transactor)
 
   def findPaginatedByOrganizationIdAndAccountId(
     organizationId: UUID,

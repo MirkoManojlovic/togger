@@ -3,7 +3,10 @@ package com.togger.task
 import cats.effect.IO
 import cats.implicits._
 import com.togger.logging.TgLogging
-import com.togger.task.LinkError.{CannotDeleteLastVersion, CannotEditLatestVersion, LinkError, VersionNotFound}
+import com.togger.task.LinkError.CannotDeleteLastVersion
+import com.togger.task.LinkError.CannotEditLatestVersion
+import com.togger.task.LinkError.LinkError
+import com.togger.task.LinkError.VersionNotFound
 import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd

@@ -1,9 +1,9 @@
 package com.togger.ui.spinner
 
 import cats.effect.IO
-import com.raquo.laminar.api.L.{span, _}
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.api.L.span
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import cats.syntax.apply._
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 

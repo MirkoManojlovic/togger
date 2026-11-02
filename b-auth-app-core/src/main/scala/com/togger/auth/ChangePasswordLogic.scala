@@ -2,8 +2,11 @@ package com.togger.auth
 
 import cats.data.NonEmptyChain
 import cats.effect.IO
-import com.togger.account.{Account, AccountRepoImpl, HashedPasswordImpl}
-import com.togger.auth.ChangePasswordError.{InvalidAccountId, OldPasswordIncorrect}
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
+import com.togger.account.HashedPasswordImpl
+import com.togger.auth.ChangePasswordError.InvalidAccountId
+import com.togger.auth.ChangePasswordError.OldPasswordIncorrect
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
 import com.togger.common._

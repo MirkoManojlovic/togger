@@ -1,14 +1,17 @@
 package com.togger.desktop
 
-import java.util.UUID
-
 import cats.effect.IO
 import cats.implicits._
 import com.togger.account._
-import com.togger.common.{Password, TgClockImpl, TgIds}
+import com.togger.common.Password
+import com.togger.common.TgClockImpl
+import com.togger.common.TgIds
 import com.togger.login.SessionTokenFactoryImpl
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
+
+import java.util.UUID
 
 class CreateAdminAccount(transactor: Transactor[IO]) {
   private val accountTypeRepo = new AccountTypeRepo()

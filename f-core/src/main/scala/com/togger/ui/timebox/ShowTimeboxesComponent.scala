@@ -4,24 +4,27 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindTimeboxResp
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgHtmlTable
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{TgHtmlTable, TgPaginationComponent}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTdOverflow}
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{
-  headerIconButtonCls,
-  iconButton,
-  rowButtonMarginCls,
-  rowIconButtonCls,
-  rowIconButtonDangerCls
-}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
@@ -100,7 +103,9 @@ class ShowTimeboxesComponent(
         header = TgCard.CardHeader.html(
           div(
             cls("flex justify-between"),
-            div(child.text <-- projectNameVar.signal.map(name => if (name.isEmpty) "Timeboxes" else s"$name timeboxes")),
+            div(
+              child.text <-- projectNameVar.signal.map(name => if (name.isEmpty) "Timeboxes" else s"$name timeboxes")
+            ),
             div(
               cls("flex"),
               iconButton(

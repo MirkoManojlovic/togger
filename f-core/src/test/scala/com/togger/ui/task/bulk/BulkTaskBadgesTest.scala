@@ -1,14 +1,19 @@
 package com.togger.ui.task.bulk
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.TgBadgeColor
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class BulkTaskBadgesTest extends AnyWordSpec with Matchers {

@@ -1,10 +1,14 @@
 package com.togger.ui.project
 
 import cats.effect.IO
+import com.togger.common.AccountSearchTerm
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{AccountSearchTerm, PageRequest, PaginatedResponse}
 import com.togger.dto.SearchAccountDto
-import com.togger.preview.{AccountsPreviewData, PreviewContext, PreviewResponses}
+import com.togger.preview.AccountsPreviewData
+import com.togger.preview.PreviewContext
+import com.togger.preview.PreviewResponses
 
 class FindAccountServicePreview(ctx: PreviewContext, accounts: AccountsPreviewData) extends FindAccountService {
 

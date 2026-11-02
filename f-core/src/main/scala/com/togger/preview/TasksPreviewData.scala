@@ -1,12 +1,23 @@
 package com.togger.preview
 
-import com.togger.dto.{LinkVersionDto, LogEntryVersionDto, SearchAccountDto, TaskVersionDto}
+import com.togger.dto.LinkVersionDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TaskVersionDto
 import io.circe.generic.auto._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
-case class PreviewTask(id: UUID, projectId: UUID, createdBy: UUID, createdAt: Instant, archived: Boolean, labelIds: List[UUID])
+case class PreviewTask(
+  id: UUID,
+  projectId: UUID,
+  createdBy: UUID,
+  createdAt: Instant,
+  archived: Boolean,
+  labelIds: List[UUID]
+)
 
 case class PreviewLink(id: UUID, taskId: UUID, createdAt: Instant)
 
@@ -83,7 +94,9 @@ class TasksPreviewData(
   )
 
   taskConfig.onTaskLabelDeleted(labelId =>
-    tasks.all.filter(_.labelIds.contains(labelId)).foreach(task => tasks.upsert(task.copy(labelIds = task.labelIds.filterNot(_ == labelId))))
+    tasks.all
+      .filter(_.labelIds.contains(labelId))
+      .foreach(task => tasks.upsert(task.copy(labelIds = task.labelIds.filterNot(_ == labelId))))
   )
 
   projects.onProjectDeleted { projectId =>
@@ -132,7 +145,7 @@ class TasksPreviewData(
 
   def deleteTaskVersion(version: UUID): Unit = {
     removeFromTimeboxes(Set(version))
-    taskVersions.delete(version)
+    val _ = taskVersions.delete(version)
   }
 
   def deleteTimebox(timeboxId: UUID): Boolean = {
@@ -143,7 +156,9 @@ class TasksPreviewData(
   private def removeFromTimeboxes(versionIds: Set[UUID]): Unit =
     timeboxVersions.all
       .filter(_.taskVersionIds.exists(versionIds.contains))
-      .foreach(version => timeboxVersions.upsert(version.copy(taskVersionIds = version.taskVersionIds.filterNot(versionIds.contains))))
+      .foreach(version =>
+        timeboxVersions.upsert(version.copy(taskVersionIds = version.taskVersionIds.filterNot(versionIds.contains)))
+      )
 }
 
 object TasksPreviewData {

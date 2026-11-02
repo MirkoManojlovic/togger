@@ -2,9 +2,10 @@ package com.togger.ui.projectlabel
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.projectlabel.ProjectLabelCategoryEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader
@@ -29,8 +30,10 @@ trait ProjectLabelCategoryFeService {
   def deleteProjectLabelCategoryById(id: UUID): TgRespIO[TgEmptyBody]
 }
 
-class ProjectLabelCategoryFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
-    extends ProjectLabelCategoryFeService {
+class ProjectLabelCategoryFeServiceImpl(
+  securedEndpoint: SecuredEndpoint,
+  protectedBackendClient: ProtectedBackendClient
+) extends ProjectLabelCategoryFeService {
   val projectLabelCategoryEndpoints = new ProjectLabelCategoryEndpoints(securedEndpoint)
 
   override def createProjectLabelCategory(

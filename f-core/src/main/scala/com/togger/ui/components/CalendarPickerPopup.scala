@@ -20,12 +20,11 @@ import java.time.LocalDate
   * caller owns (e.g. opened by clicking a badge), not mounted standalone.
   *
   * @param isDisabled
-  *   an extra, caller-defined exclusion on top of `minDate`/`maxDate` (e.g. weekends, or dates already taken by
-  *   another record) — a disabled day can't be typed, quick-picked, or clicked, same as one outside the min/max
-  *   range.
+  *   an extra, caller-defined exclusion on top of `minDate`/`maxDate` (e.g. weekends, or dates already taken by another
+  *   record) — a disabled day can't be typed, quick-picked, or clicked, same as one outside the min/max range.
   * @param dayMarkerEmoji
-  *   an optional single emoji shown under a marked day's number, in a line every cell reserves (blank on an
-  *   unmarked day) so the grid's row heights stay uniform regardless of which days are marked.
+  *   an optional single emoji shown under a marked day's number, in a line every cell reserves (blank on an unmarked
+  *   day) so the grid's row heights stay uniform regardless of which days are marked.
   */
 case class CalendarPickerPopup(
   initialMonth: LocalDate,

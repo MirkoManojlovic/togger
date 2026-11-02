@@ -1,6 +1,5 @@
 package com.togger.mcp.tools
 
-import chimp.server.*
 import com.togger.mcp.TgBackendClient
 import com.togger.mcp.ToolSupport.*
 import io.circe.{Codec, Json}

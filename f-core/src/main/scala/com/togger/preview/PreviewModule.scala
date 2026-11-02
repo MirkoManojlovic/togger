@@ -26,7 +26,7 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
 
   /** Throws every stored preview row away and seeds the demo data again. */
   def resetAndReseed(): Unit = {
-    allHolders
+    val _ = allHolders
     db.reset()
     ensureSeeded()
   }

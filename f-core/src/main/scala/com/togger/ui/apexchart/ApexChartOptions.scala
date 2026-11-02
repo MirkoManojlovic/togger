@@ -40,8 +40,8 @@ object ApexLegendPosition {
 /** @param colors
   *   the series colors; the theme's own when empty
   * @param lightColors
-  *   the series colors in light mode, where `colors` (made for a dark background) would be too dark to read the
-  *   labels on; `colors` again when empty
+  *   the series colors in light mode, where `colors` (made for a dark background) would be too dark to read the labels
+  *   on; `colors` again when empty
   * @param stacked
   *   stack the series of a column or bar chart on top of each other instead of side by side
   */

@@ -1,12 +1,19 @@
 package com.togger.controllers.tgaiaction
 
 import com.togger.ai.TgAiEndpoints
+import com.togger.common.TgClock
 import com.togger.common.TgError._
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.tgaiaction.TgAiActionDtoMapper.{toDefaultDto, toDto}
-import com.togger.dto.{FindTgAiActionDefaultResp, FindTgAiActionResp, TgAiEndpointDto}
-import com.togger.tgaiaction.{TgAiAction, TgAiActionDefault, TgAiActionEndpoints, TgAiActionService}
+import com.togger.controllers.tgaiaction.TgAiActionDtoMapper.toDefaultDto
+import com.togger.controllers.tgaiaction.TgAiActionDtoMapper.toDto
+import com.togger.dto.FindTgAiActionDefaultResp
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.tgaiaction.TgAiAction
+import com.togger.tgaiaction.TgAiActionDefault
+import com.togger.tgaiaction.TgAiActionEndpoints
+import com.togger.tgaiaction.TgAiActionService
 
 import java.util.UUID
 
@@ -20,7 +27,8 @@ class TgAiActionController(
 
   val save = saveEndpoint.serverLogic { auth => dto =>
     val now = tgClock.currentInstant
-    val action = TgAiAction(UUID.randomUUID(), auth.body.get.id, dto.name, dto.prompt, dto.tgPromptTemplateId, dto.model, now, now)
+    val action =
+      TgAiAction(UUID.randomUUID(), auth.body.get.id, dto.name, dto.prompt, dto.tgPromptTemplateId, dto.model, now, now)
     tgAiActionService.create(action, dto.endpointIds).map {
       case Right(saved) => TgJsonSuccess.justBodyRight(toDto(saved))
       case Left(error)  => error.toBadRequestLeft[FindTgAiActionResp]

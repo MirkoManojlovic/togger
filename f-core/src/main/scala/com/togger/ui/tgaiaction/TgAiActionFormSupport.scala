@@ -1,7 +1,11 @@
 package com.togger.ui.tgaiaction
 
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.{CreateTgAiActionReq, FindTgAiActionResp, TgAiEndpointDto, TgAiModelDto, UpdateTgAiActionReq}
+import com.togger.dto.CreateTgAiActionReq
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
+import com.togger.dto.UpdateTgAiActionReq
 
 import java.util.UUID
 

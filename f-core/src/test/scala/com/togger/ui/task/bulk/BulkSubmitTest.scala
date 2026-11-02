@@ -1,10 +1,12 @@
 package com.togger.ui.task.bulk
 
-import com.togger.task.{BulkTaskValidation, TaskPriority}
+import com.togger.task.BulkTaskValidation
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class BulkSubmitTest extends AnyWordSpec with Matchers {

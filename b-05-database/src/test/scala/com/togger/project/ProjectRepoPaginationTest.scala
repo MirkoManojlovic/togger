@@ -2,12 +2,19 @@ package com.togger.project
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
-import com.togger.organization.{Organization, TgProject}
-import com.togger.projectlabel.{ProjectLabel, ProjectLabelCategory, ProjectLabelCategoryRepoImpl, ProjectLabelRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
+import com.togger.organization.Organization
+import com.togger.organization.TgProject
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -20,8 +27,8 @@ class ProjectRepoPaginationTest extends BusinessTgDbSpec with TgAccount with TgP
 
   /** Eleven projects "Project 00".."Project 10" of the account in `organization`, inserted in reverse so the order is
     * by name and not by insertion. Labelled with both labels for 0-5, with `scala` only for 6-8, unlabelled for 9-10.
-    * Besides: one more project of the account in another organization, and one project of the organization the
-    * account is not a member of.
+    * Besides: one more project of the account in another organization, and one project of the organization the account
+    * is not a member of.
     */
   private case class Seeded(
     accountId: UUID,

@@ -1,10 +1,13 @@
 package com.togger.preview
 
-import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindMilestoneSummaryResp}
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.milestone.MilestoneStatus
 import io.circe.generic.auto._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** The status is kept as its int value, so that no codec of the enum is needed in the storage. */
@@ -56,7 +59,9 @@ class MilestonesPreviewData(db: PreviewDb, projects: ProjectsPreviewData) {
   /** Lets the tasks domain detach the tasks of a deleted milestone. */
   def onMilestoneDeleted(hook: UUID => Unit): Unit = milestoneDeletionHooks = milestoneDeletionHooks :+ hook
 
-  projects.onProjectDeleted(projectId => milestones.filter(_.projectId == projectId).foreach(m => deleteMilestone(m.id)))
+  projects.onProjectDeleted(projectId =>
+    milestones.filter(_.projectId == projectId).foreach(m => deleteMilestone(m.id))
+  )
 
   def deleteMilestone(id: UUID): Boolean = {
     milestoneDeletionHooks.foreach(_(id))

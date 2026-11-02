@@ -6,45 +6,72 @@ import com.raquo.airstream.ownership.OneTimeOwner
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.raquo.waypoint.SplitRender
-import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
-import com.togger.backendcalls.{ProtectedBackendClient, SecurityLogicJs, UnprotectedBackendClient}
-import com.togger.common.{DateRangeValidation, TgClockImpl}
+import com.togger.auth.BaseEndpoint
+import com.togger.auth.SecuredEndpoint
+import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.backendcalls.SecurityLogicJs
+import com.togger.backendcalls.UnprotectedBackendClient
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClockImpl
 import com.togger.markdown.TgMarkdown
-import com.togger.preview.{PrefixedLocalStorage, PreviewConfig, PreviewModule}
+import com.togger.preview.PrefixedLocalStorage
+import com.togger.preview.PreviewConfig
+import com.togger.preview.PreviewModule
+import com.togger.routes.AuthenticationRouteGuard
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{AuthenticationRouteGuard, FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
+import com.togger.ui.accountmanagement.AccountManagementFeService
+import com.togger.ui.accountmanagement.AccountManagementFeServiceImpl
+import com.togger.ui.accountmanagement.AccountManagementFeServicePreview
+import com.togger.ui.accountmanagement.EditAccountComponent
+import com.togger.ui.accountmanagement.ShowAllAccountsComponent
+import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.auth._
-import com.togger.ui.components.{TgBreadcrumbTrail, TgBreadcrumbs}
-import com.togger.ui.localstorage.{LocalStorage, LocalStorageBrowser}
-import com.togger.ui.milestone._
-import com.togger.ui.contributions.{ContributionsComponent, ContributionsFeService, ContributionsFeServiceImpl, ContributionsFeServicePreview}
-import com.togger.ui.timebox._
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
-import com.togger.ui.accountmanagement.{AccountManagementFeService, AccountManagementFeServiceImpl, AccountManagementFeServicePreview, EditAccountComponent, ShowAllAccountsComponent}
-import com.togger.ui.mcp.McpSettingsComponent
-import com.togger.ui.updater.UpdaterComponent
-import com.togger.ui.synccheck.{SyncCheckSettingsComponent, SyncCheckSettingsStore, SyncPendingStore}
-import com.togger.ui.navbar.{Logout, NavbarComponent, Sidebar, SidebarCollapseStore, SidebarRefresh}
-import com.togger.ui.organization._
-import com.togger.ui.project._
-import com.togger.ui.projectmapping._
-import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task._
-import com.togger.ui.syncconfig._
-import com.togger.ui.tasktemplate._
-import com.togger.ui.tgaiaction._
-import com.togger.ui.tgprompttemplate._
+import com.togger.ui.components.TgBreadcrumbTrail
+import com.togger.ui.components.TgBreadcrumbs
+import com.togger.ui.contributions.ContributionsComponent
+import com.togger.ui.contributions.ContributionsFeService
+import com.togger.ui.contributions.ContributionsFeServiceImpl
+import com.togger.ui.contributions.ContributionsFeServicePreview
 import com.togger.ui.dataexportconfig._
 import com.togger.ui.dataexportstatus._
 import com.togger.ui.dataimportconfig._
-import com.togger.ui.task.quick.{CreateTaskQuick, QuickCreateHost}
-import com.togger.ui.task.bulk.BulkAddTasks
+import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.localstorage.LocalStorageBrowser
+import com.togger.ui.mcp.McpSettingsComponent
+import com.togger.ui.milestone._
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
+import com.togger.ui.navbar.Logout
+import com.togger.ui.navbar.NavbarComponent
+import com.togger.ui.navbar.Sidebar
+import com.togger.ui.navbar.SidebarCollapseStore
+import com.togger.ui.navbar.SidebarRefresh
+import com.togger.ui.organization._
+import com.togger.ui.project._
 import com.togger.ui.projectlabel._
-import com.togger.ui.apexchart.ApexChartDemoComponent
-import com.togger.ui.theme.ThemeStore
+import com.togger.ui.projectmapping._
 import com.togger.ui.slacker.SlackerComponent
+import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.synccheck.SyncCheckSettingsComponent
+import com.togger.ui.synccheck.SyncCheckSettingsStore
+import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.syncconfig._
+import com.togger.ui.task._
+import com.togger.ui.task.bulk.BulkAddTasks
+import com.togger.ui.task.quick.CreateTaskQuick
+import com.togger.ui.task.quick.QuickCreateHost
+import com.togger.ui.tasktemplate._
 import com.togger.ui.teamdaily.TeamDailyComponent
-import com.togger.ui.toast.{Toast, ToastMessagesService}
+import com.togger.ui.tgaiaction._
+import com.togger.ui.tgprompttemplate._
+import com.togger.ui.theme.ThemeStore
+import com.togger.ui.timebox._
+import com.togger.ui.toast.Toast
+import com.togger.ui.toast.ToastMessagesService
+import com.togger.ui.updater.UpdaterComponent
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -54,7 +81,7 @@ import java.util.UUID
 class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig = PreviewConfig.disabled) {
 
   // FIXME
-  implicit val runtime = cats.effect.unsafe.implicits.global
+  implicit val runtime: cats.effect.unsafe.IORuntime = cats.effect.unsafe.implicits.global
 
   lazy val elementForSpinner = div()
   lazy val spinnerService = SpinnerService.globalSpinner(
@@ -181,7 +208,9 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
 
-  themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
+  locally {
+    val _ = themeStore.isDark.foreach(themeStore.applyToDocument)(new OneTimeOwner(() => ()))
+  }
   themeStore.listenToSystemPreference()
 
   lazy val loginRepo = new LoginRepo(localStorage, tokenStorageKeys)
@@ -408,10 +437,15 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService, modalFactory).element
               case ChangeAccountInfoPage =>
-                new ChangeAccountInfoComponent(changeAccountInfoService, accountService, spinnerService, modalFactory).element
+                new ChangeAccountInfoComponent(
+                  changeAccountInfoService,
+                  accountService,
+                  spinnerService,
+                  modalFactory
+                ).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
-              case McpSettingsPage => new McpSettingsComponent().element
-              case UpdaterSettingsPage => new UpdaterComponent().element
+              case McpSettingsPage       => new McpSettingsComponent().element
+              case UpdaterSettingsPage   => new UpdaterComponent().element
               case ShowAllAccountsPage(listParams) =>
                 new ShowAllAccountsComponent(
                   accountManagementService,
@@ -443,8 +477,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   localStorage,
                   toast
@@ -454,7 +486,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   router,
                   spinnerService,
-                  accountService,
                   projectId,
                   listParams,
                   toast,
@@ -464,8 +495,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new EditTaskStatusComponent(
                   taskStatusService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskStatusId,
                   localStorage,
@@ -475,8 +504,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateTaskLabelComponent(
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   localStorage,
                   toast
@@ -486,17 +513,13 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskLabelService,
                   router,
                   spinnerService,
-                  accountService,
                   projectId,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case EditTaskLabelPage(projectId: UUID, taskLabelId: UUID) =>
                 new EditTaskLabelComponent(
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskLabelId,
                   localStorage,
@@ -507,8 +530,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateService,
                   taskLabelService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectId,
                   toast
                 ).element
@@ -517,7 +538,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateService,
                   router,
                   spinnerService,
-                  accountService,
                   tgDateFormater,
                   modalFactory,
                   projectId,
@@ -531,8 +551,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   tgMarkdown,
                   tgDateFormater,
-                  tgClock,
-                  accountService,
                   projectId,
                   taskTemplateId,
                   toast
@@ -659,7 +677,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   organizationService,
                   router,
                   spinnerService,
-                  accountService,
                   dataExportService,
                   modalFactory,
                   sidebarRefresh,
@@ -686,7 +703,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   accountService,
                   listParams,
-                  toast,
                   tgMarkdown
                 ).element
               case EditOrganizationPage(organizationId) =>
@@ -707,8 +723,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelService,
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   toast
                 ).element
               case ShowAllProjectLabelsPage(listParams) =>
@@ -717,7 +731,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService,
                   listParams
                 ).element
               case EditProjectLabelPage(projectLabelId) =>
@@ -725,8 +738,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelService,
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectLabelId,
                   toast
                 ).element
@@ -786,8 +797,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateProjectLabelCategoryComponent(
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   toast
                 ).element
               case ShowAllProjectLabelCategoriesPage(listParams) =>
@@ -795,16 +804,12 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectLabelCategoryService,
                   router,
                   spinnerService,
-                  accountService,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case EditProjectLabelCategoryPage(projectLabelCategoryId) =>
                 new EditProjectLabelCategoryComponent(
                   projectLabelCategoryService,
                   spinnerService,
-                  tgClock,
-                  accountService,
                   projectLabelCategoryId,
                   toast
                 ).element
@@ -853,7 +858,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   milestoneService,
                   milestoneDateService,
                   spinnerService,
-                  dateRangeValidation,
                   tgClock,
                   projectService,
                   id,
@@ -919,8 +923,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   tgDateFormater,
                   tgMarkdown,
                   projectId,
-                  listParams,
-                  toast
+                  listParams
                 ).element
               case ShowMilestoneHistoryPage(projectId: UUID, historyParams) =>
                 new MilestoneHistoryComponent(
@@ -1058,31 +1061,41 @@ case class NavigationSelection(
   lazy val navigationSignal: Signal[ReactiveHtmlElement[HTMLDivElement]] = {
     loginRepo.authenticatedSignal.map(returnedAuthAccount =>
       returnedAuthAccount
-        .map(_ =>
-          {
-            val sidebar = new Sidebar(
+        .map(_ => {
+          val sidebar = new Sidebar(
+            router,
+            organizationProjectsLoader,
+            accountService,
+            dataExportService,
+            dataImportConfigService,
+            spinnerService,
+            modalFactory,
+            sidebarCollapseStore,
+            sidebarRefresh,
+            syncPendingStore,
+            onQuickCreate,
+            onBulkCreate,
+            onTeamDaily,
+            onSlacker,
+            toast
+          )
+          div(
+            new NavbarComponent(
               router,
-              organizationProjectsLoader,
-              accountService,
-              dataExportService,
-              dataImportConfigService,
-              spinnerService,
-              modalFactory,
-              sidebarCollapseStore,
-              sidebarRefresh,
+              Logout(loginRepo, router),
+              loginRepo,
+              themeStore,
+              sidebar.organizations,
+              sidebarCollapseStore.current,
+              sidebar.exportProject,
+              sidebar.importProject,
               syncPendingStore,
-              onQuickCreate,
-              onBulkCreate,
-              onTeamDaily,
-              onSlacker,
-              toast
-            )
-            div(
-              new NavbarComponent(router, Logout(loginRepo, router), loginRepo, themeStore, sidebar.organizations, sidebarCollapseStore.current, sidebar.exportProject, sidebar.importProject, syncPendingStore, previewConfig, onResetPreview).element,
-              sidebar.element
-            )
-          }
-        )
+              previewConfig,
+              onResetPreview
+            ).element,
+            sidebar.element
+          )
+        })
         .getOrElse(div())
     )
   }

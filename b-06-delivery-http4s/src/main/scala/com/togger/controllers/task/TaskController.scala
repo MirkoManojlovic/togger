@@ -2,14 +2,18 @@ package com.togger.controllers.task
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.account.{Account, AccountNameLookup}
+import com.togger.account.Account
+import com.togger.account.AccountNameLookup
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
 import com.togger.common.TgError._
-import com.togger.common.{DateRangeValidation, TgClock, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
-import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
-import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto, toVersionDto}
 import com.togger.controllers.project.ProjectService
+import com.togger.controllers.task.LinkDtoMapper.{toDto => toLinkDto}
+import com.togger.controllers.task.TaskDtoMapper.toVersionDto
+import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto}
 import com.togger.dto._
 import com.togger.logentry.LogEntryWithVersions
 import com.togger.task._
@@ -31,7 +35,7 @@ class TaskController(
   import taskEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => taskId =>
+    findByIdEndpoint.serverLogic { _ => taskId =>
       taskService
         .findById(taskId)
         .flatMap { case (taskWithVersions, links, logEntries, taskLabels) =>
@@ -48,7 +52,7 @@ class TaskController(
     }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, filter, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         taskService
@@ -202,7 +206,12 @@ class TaskController(
               val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
                 val (task, firstVersion) =
                   newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
-                NewTask(task, firstVersion, newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now), taskAndLinks.task.taskLabelIds)
+                NewTask(
+                  task,
+                  firstVersion,
+                  newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now),
+                  taskAndLinks.task.taskLabelIds
+                )
               }
 
               taskService.createTasks(newTasks).map { saved =>
@@ -215,7 +224,7 @@ class TaskController(
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val taskDto = dto.task
     val linksForUpdate = dto.linksForUpdate
     val linksToCreate = LinkValidation.withoutBlankLinks(dto.linksToCreate)
@@ -303,7 +312,7 @@ class TaskController(
     }
   }
 
-  val delete = deleteEndpoint.serverLogic { auth => taskId =>
+  val delete = deleteEndpoint.serverLogic { _ => taskId =>
     taskService
       .deleteTask(taskId)
       .map {
@@ -312,7 +321,7 @@ class TaskController(
       }
   }
 
-  val listVersions = listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = listVersionsEndpoint.serverLogic { _ => request =>
     val (taskId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       taskVersionService
@@ -321,44 +330,44 @@ class TaskController(
     }
   }
 
-  val updateVersion = updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = updateVersionEndpoint.serverLogic { _ => dto =>
     taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
       (projectService.findById(projectId), taskStatusService.findById(dto.taskStatusId)).flatMapN {
         case ((project, _, _), status) =>
-        val validation = for {
-          _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
-          _ <- dateRangeValidation.validateEndDateWhenDone(
-            DefaultTaskStatus.isTerminalName(status.name),
-            dto.endDate
-          )
-        } yield ()
-        validation match {
-          case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
-          case Right(_) =>
-            taskVersionService
-              .updateVersionContent(
-                dto.version,
-                dto.name,
-                dto.description,
-                dto.assignedTo,
-                dto.closedBy,
-                dto.taskStatusId,
-                dto.priority,
-                dto.milestone,
-                dto.startDate,
-                dto.dueDate,
-                dto.endDate
-              )
-              .map {
-                case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
-                case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
-              }
-        }
+          val validation = for {
+            _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
+            _ <- dateRangeValidation.validateEndDateWhenDone(
+              DefaultTaskStatus.isTerminalName(status.name),
+              dto.endDate
+            )
+          } yield ()
+          validation match {
+            case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
+            case Right(_) =>
+              taskVersionService
+                .updateVersionContent(
+                  dto.version,
+                  dto.name,
+                  dto.description,
+                  dto.assignedTo,
+                  dto.closedBy,
+                  dto.taskStatusId,
+                  dto.priority,
+                  dto.milestone,
+                  dto.startDate,
+                  dto.dueDate,
+                  dto.endDate
+                )
+                .map {
+                  case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
+                  case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
+                }
+          }
       }
     }
   }
 
-  val deleteVersion = deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = deleteVersionEndpoint.serverLogic { _ => version =>
     taskVersionService
       .deleteVersion(version)
       .map {

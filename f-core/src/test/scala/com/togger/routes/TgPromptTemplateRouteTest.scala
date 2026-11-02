@@ -1,7 +1,9 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{CreateTgPromptTemplatePage, EditTgPromptTemplatePage, ShowAllTgPromptTemplatesPage}
+import com.togger.routes.Pages.CreateTgPromptTemplatePage
+import com.togger.routes.Pages.EditTgPromptTemplatePage
+import com.togger.routes.Pages.ShowAllTgPromptTemplatesPage
 
 import java.util.UUID
 
@@ -9,7 +11,7 @@ class TgPromptTemplateRouteTest extends AsyncJsWordSpec {
 
   private val promptId = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: FrontendPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

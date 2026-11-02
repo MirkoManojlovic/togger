@@ -4,17 +4,20 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindMilestoneSummaryResp, FindTgAiActionResp}
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.FindTgAiActionResp
 import com.togger.ui.auth.TgSelect
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLFormElement
 
-import scala.collection.immutable.ListMap
-
 import java.time.DayOfWeek
 import java.util.UUID
+import scala.collection.immutable.ListMap
 
 /** `id` is empty until the summary is saved. */
 case class MilestoneSummaryForm(
@@ -85,7 +88,8 @@ class MilestoneSummaryFormComponent(
 
   /** The text of the tab being shown, which is the one that gets saved. */
   def textToSave: String =
-    if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId) formState.now().aiSummary
+    if (aiActions.isDefined && selectedTabVar.now() == MilestoneSummaryFormComponent.AiSummaryTabId)
+      formState.now().aiSummary
     else formState.now().summary
 
   private val aiActionList = Var(Seq.empty[FindTgAiActionResp])
@@ -218,7 +222,9 @@ class MilestoneSummaryFormComponent(
             )
           )
         case AiSummaryState.Finished =>
-          Some(span(cls("flex items-center gap-1.5 text-green-600 dark:text-green-400"), "✓ The AI finished the summary"))
+          Some(
+            span(cls("flex items-center gap-1.5 text-green-600 dark:text-green-400"), "✓ The AI finished the summary")
+          )
       }
     )
 
@@ -235,7 +241,9 @@ class MilestoneSummaryFormComponent(
           ),
           div(
             cls("flex flex-col gap-1.5"),
-            MilestoneSummaryPreset.rows.map(row => div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge)))
+            MilestoneSummaryPreset.rows.map(row =>
+              div(cls("flex flex-wrap items-center gap-1.5"), row.map(presetBadge))
+            )
           )
         ),
         MilestoneSummaryRangeCalendar.element(

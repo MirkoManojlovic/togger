@@ -1,7 +1,10 @@
 package com.togger.ui.tgaiaction
 
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
-import com.togger.dto.{FindTgAiActionResp, TgAiEndpointDto, TgAiModelDto}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -71,7 +74,8 @@ class TgAiActionFormSupportTest extends AnyWordSpec with Matchers {
     }
 
     "list the names of the bound endpoints in endpoint order" in {
-      val endpoints = Seq(TgAiEndpointDto(0, "milestone-summary"), TgAiEndpointDto(1, "other"), TgAiEndpointDto(2, "third"))
+      val endpoints =
+        Seq(TgAiEndpointDto(0, "milestone-summary"), TgAiEndpointDto(1, "other"), TgAiEndpointDto(2, "third"))
       TgAiActionFormSupport.endpointNames(List(2, 0), endpoints) shouldBe "milestone-summary, third"
     }
   }

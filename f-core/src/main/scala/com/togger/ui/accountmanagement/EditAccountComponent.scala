@@ -5,14 +5,19 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.auth.AccountInfoValidation
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{AccountManagementDto, AccountTypeDto, UpdateAccountReq}
+import com.togger.dto.AccountManagementDto
+import com.togger.dto.AccountTypeDto
+import com.togger.dto.UpdateAccountReq
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowAllAccountsPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.FormErrors
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.auth.{FormErrors, TgCard}
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro

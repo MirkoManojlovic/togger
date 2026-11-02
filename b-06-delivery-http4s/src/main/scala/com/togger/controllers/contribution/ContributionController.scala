@@ -1,8 +1,10 @@
 package com.togger.controllers.contribution
 
 import cats.effect.IO
-import com.togger.common.{Forbidden, TgJsonSuccess}
-import com.togger.contribution.{ContributionEndpoints, ContributionService}
+import com.togger.common.Forbidden
+import com.togger.common.TgJsonSuccess
+import com.togger.contribution.ContributionEndpoints
+import com.togger.contribution.ContributionService
 
 class ContributionController(
   contributionEndpoints: ContributionEndpoints,

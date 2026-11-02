@@ -2,10 +2,13 @@ package com.togger.ui.navbar
 
 import com.raquo.laminar.api.L._
 import com.togger.dto.organization.OrganizationProjectResp
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.organization.{OrganizationWithProjects, TgIcons}
-import com.togger.ui.synccheck.{SyncPendingDot, SyncPendingStore}
+import com.togger.routes.TgRouter
+import com.togger.ui.organization.OrganizationWithProjects
+import com.togger.ui.organization.TgIcons
+import com.togger.ui.synccheck.SyncPendingDot
+import com.togger.ui.synccheck.SyncPendingStore
 import org.scalajs.dom
 
 import java.util.UUID
@@ -106,8 +109,18 @@ class ProjectNavMenu(
     Seq(
       directLink("Contributions", ShowContributionsPage(projectId), contributionsSelected),
       directLink("Sync", SyncConfigPage(projectId), syncSelected),
-      actionButton("Import", TgIcons.uploadIcon("w-4 h-4"), () => onImport(projectId), syncPendingStore.importPending(projectId)),
-      actionButton("Export", TgIcons.downloadIcon("w-4 h-4"), () => onExport(projectId), syncPendingStore.exportPending(projectId))
+      actionButton(
+        "Import",
+        TgIcons.uploadIcon("w-4 h-4"),
+        () => onImport(projectId),
+        syncPendingStore.importPending(projectId)
+      ),
+      actionButton(
+        "Export",
+        TgIcons.downloadIcon("w-4 h-4"),
+        () => onExport(projectId),
+        syncPendingStore.exportPending(projectId)
+      )
     )
   }
 

@@ -1,9 +1,10 @@
 package com.togger.ui.projectlabel
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -29,7 +30,9 @@ class ProjectLabelCategoryFeServicePreview(ctx: PreviewContext, data: ProjectLab
 
   override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindProjectLabelCategoryResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
-      IO.defer(PreviewResponses.paged(data.categories.all.sortBy(category => (category.name, category.id.toString)), page))
+      IO.defer(
+        PreviewResponses.paged(data.categories.all.sortBy(category => (category.name, category.id.toString)), page)
+      )
     )
 
   override def findProjectLabelCategoryById(id: UUID): TgRespIO[FindProjectLabelCategoryResp] =
@@ -42,7 +45,7 @@ class ProjectLabelCategoryFeServicePreview(ctx: PreviewContext, data: ProjectLab
         else if (data.labels.all.exists(_.categoryId == id))
           PreviewResponses.badRequest[TgEmptyBody]("The category still has project labels and cannot be deleted")
         else {
-          data.categories.delete(id)
+          val _ = data.categories.delete(id)
           PreviewResponses.okEmpty("Project label category deleted successfully")
         }
       }

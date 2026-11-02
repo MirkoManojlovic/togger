@@ -1,10 +1,13 @@
 package com.togger.ui.tasktemplate
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindTaskLabelResp, FindTaskTemplateResp}
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskTemplateResp
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.components.DropdownMeta
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
+import com.togger.ui.components.TgSelectDropdown
+import com.togger.ui.components.TgSelectDropdownOption
 
 import java.util.UUID
 

@@ -1,10 +1,13 @@
 package com.togger.ui.dataimportconfig
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.dataimportconfig.{CreateDataImportConfigReq, DataImportConfigResp, UpdateDataImportConfigReq}
+import com.togger.dto.dataimportconfig.CreateDataImportConfigReq
+import com.togger.dto.dataimportconfig.DataImportConfigResp
+import com.togger.dto.dataimportconfig.UpdateDataImportConfigReq
 import com.togger.preview._
 import com.togger.ui.components.pagination.PaginatedLoader
 
@@ -17,26 +20,28 @@ class DataImportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
     PreviewResponses.authenticated(ctx.loginRepo)(accountId =>
       IO.defer(
         validated(dto.projectId, dto.name, dto.importPath) {
-            val now = ctx.clock.currentInstant
-            PreviewResponses.ok(
-              data.importConfigs.upsert(
-                DataImportConfigResp(
-                  UUID.randomUUID(),
-                  dto.name.trim,
-                  dto.projectId,
-                  accountId,
-                  dto.importPath.trim,
-                  now,
-                  now
-                )
+          val now = ctx.clock.currentInstant
+          PreviewResponses.ok(
+            data.importConfigs.upsert(
+              DataImportConfigResp(
+                UUID.randomUUID(),
+                dto.name.trim,
+                dto.projectId,
+                accountId,
+                dto.importPath.trim,
+                now,
+                now
               )
             )
+          )
         }
       )
     )
 
   override def findById(id: UUID): TgRespIO[DataImportConfigResp] =
-    PreviewResponses.authenticated(ctx.loginRepo)(_ => IO.defer(PreviewResponses.fromOption(data.importConfigs.find(id))))
+    PreviewResponses.authenticated(ctx.loginRepo)(_ =>
+      IO.defer(PreviewResponses.fromOption(data.importConfigs.find(id)))
+    )
 
   override def update(dto: UpdateDataImportConfigReq): TgRespIO[DataImportConfigResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
@@ -44,16 +49,16 @@ class DataImportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
         if (data.importConfigs.find(dto.id).isEmpty) PreviewResponses.notFound[DataImportConfigResp]
         else
           validated(dto.projectId, dto.name, dto.importPath) {
-              PreviewResponses.fromOption(
-                data.importConfigs.update(dto.id)(
-                  _.copy(
-                    projectId = dto.projectId,
-                    name = dto.name.trim,
-                    importPath = dto.importPath.trim,
-                    updatedAt = ctx.clock.currentInstant
-                  )
+            PreviewResponses.fromOption(
+              data.importConfigs.update(dto.id)(
+                _.copy(
+                  projectId = dto.projectId,
+                  name = dto.name.trim,
+                  importPath = dto.importPath.trim,
+                  updatedAt = ctx.clock.currentInstant
                 )
               )
+            )
           }
       )
     )
@@ -85,7 +90,9 @@ class DataImportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
   private def validated(projectId: UUID, name: String, importPath: String)(
     onValid: => TgRespIO[DataImportConfigResp]
   ): TgRespIO[DataImportConfigResp] =
-    validate(projectId, name, importPath).fold(onValid)(error => PreviewResponses.badRequest[DataImportConfigResp](error))
+    validate(projectId, name, importPath).fold(onValid)(error =>
+      PreviewResponses.badRequest[DataImportConfigResp](error)
+    )
 
   private def validate(projectId: UUID, name: String, importPath: String): Option[String] =
     if (projects.projects.find(projectId).isEmpty) Some("The project does not exist")

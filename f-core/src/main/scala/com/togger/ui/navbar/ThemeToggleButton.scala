@@ -2,7 +2,8 @@ package com.togger.ui.navbar
 
 import com.raquo.laminar.api.L._
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.theme.{ThemeMode, ThemeStore}
+import com.togger.ui.theme.ThemeMode
+import com.togger.ui.theme.ThemeStore
 
 class ThemeToggleButton(themeStore: ThemeStore) {
 

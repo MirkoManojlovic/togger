@@ -3,8 +3,9 @@ package com.togger.timebox
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, LocalDate}
 
 class TimeboxDefaultsTest extends AnyWordSpec with Matchers {
 

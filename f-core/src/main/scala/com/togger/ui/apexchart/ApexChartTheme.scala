@@ -7,7 +7,8 @@ object ApexChartPalette {
   val fallback: ApexChartPalette = ApexChartPalette("#1447E6", "#4b5563", "#111827", "#e5e7eb")
 
   def fromVariables(read: String => String): ApexChartPalette = {
-    def value(name: String, default: String): String = Option(read(name)).map(_.trim).filter(_.nonEmpty).getOrElse(default)
+    def value(name: String, default: String): String =
+      Option(read(name)).map(_.trim).filter(_.nonEmpty).getOrElse(default)
 
     ApexChartPalette(
       brand = value("--color-fg-brand", fallback.brand),

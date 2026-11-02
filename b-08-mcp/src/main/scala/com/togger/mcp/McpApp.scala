@@ -39,7 +39,7 @@ object McpApp:
 
     if args.headOption.contains(DesktopMode) then
       scribe.info("Desktop mode: stopping when the Togger desktop app is no longer running")
-      CheckDesktopAppRunning(onStopped = () => sys.exit(0)).start()
+      val _ = CheckDesktopAppRunning(onStopped = () => sys.exit(0)).start()
 
     scribe.info(s"Togger MCP listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools")
     NettySyncServer()

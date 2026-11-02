@@ -3,8 +3,8 @@ package com.togger.ui.components
 import com.togger.chart.TaskLabelChartable
 import com.togger.dto.FindTaskLabelResp
 
-/** The [[TgBadgeColor]] of a task label, the same hue as it has in charts. A label name that is not one of the
-  * default labels is [[TgBadgeColor.Gray]], see [[TaskLabelChartable]].
+/** The [[TgBadgeColor]] of a task label, the same hue as it has in charts. A label name that is not one of the default
+  * labels is [[TgBadgeColor.Gray]], see [[TaskLabelChartable]].
   */
 object TaskLabelBadgeColor {
 

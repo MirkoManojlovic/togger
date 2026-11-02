@@ -2,16 +2,18 @@ package com.togger.tasktemplate
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, PaginationTestSupport, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.PaginationTestSupport
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
-import com.togger.task.{TaskLabel, TaskLabelRepoImpl}
-import doobie.ConnectionIO
+import com.togger.task.TaskLabel
+import com.togger.task.TaskLabelRepoImpl
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TaskTemplateRepoTest extends BusinessTgDbSpec
+class TaskTemplateRepoTest
+    extends BusinessTgDbSpec
     with PaginationTestSupport
     with TgAccount
     with TgProject

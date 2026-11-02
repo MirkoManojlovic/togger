@@ -1,5 +1,6 @@
 package com.togger.project
-import java.time.{DayOfWeek, Instant}
+import java.time.DayOfWeek
+import java.time.Instant
 import java.util.UUID
 
 case class Project(

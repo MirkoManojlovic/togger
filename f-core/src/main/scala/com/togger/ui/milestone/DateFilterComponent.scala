@@ -1,9 +1,11 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.common.TgClock
-import com.togger.ui.components.{CalendarPickerPopup, MultiSelectItem, TableFilterComponent}
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.components.CalendarPickerPopup
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableFilterComponent
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 
@@ -57,7 +59,7 @@ class DateFilterComponent(
   private def parseMonthId(id: String): Option[(Int, Int)] =
     id.split("-", 2) match {
       case Array(year, month) => Try((year.toInt, month.toInt)).toOption
-      case _ => None
+      case _                  => None
     }
 
   private val monthSelectionSignal: Signal[Set[(Int, Int)]] =
@@ -130,7 +132,7 @@ class DateFilterComponent(
   val activeFilter: Signal[ActiveDateFilter] =
     modeVar.signal.combineWith(monthSelectionSignal, rangeSelectionSignal).map {
       case (DateFilterMode.Month, monthSelection, _) => ActiveDateFilter.ByMonth(monthSelection)
-      case (DateFilterMode.Range, _, (start, end)) => ActiveDateFilter.ByRange(start, end)
+      case (DateFilterMode.Range, _, (start, end))   => ActiveDateFilter.ByRange(start, end)
     }
 
   private val modeButtonBaseCls =
@@ -150,7 +152,11 @@ class DateFilterComponent(
   val element: HtmlDiv =
     div(
       cls("flex items-center gap-3 mb-4"),
-      div(cls("flex items-center gap-2"), modeButton(DateFilterMode.Month, "Month"), modeButton(DateFilterMode.Range, "Date range")),
+      div(
+        cls("flex items-center gap-2"),
+        modeButton(DateFilterMode.Month, "Month"),
+        modeButton(DateFilterMode.Range, "Date range")
+      ),
       child <-- modeVar.signal.map {
         case DateFilterMode.Month =>
           monthFilterComponent.element

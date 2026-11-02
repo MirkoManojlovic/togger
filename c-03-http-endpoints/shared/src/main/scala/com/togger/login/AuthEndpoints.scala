@@ -1,9 +1,13 @@
 package com.togger.login
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.{TgBaseEndpoint, TgPublicEndpoint, TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
+import com.togger.common.TgEndpoints.TgBaseEndpoint
+import com.togger.common.TgEndpoints.TgPublicEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
 import com.togger.dto.login._
 import io.circe.generic.auto._
 import sttp.tapir._
@@ -51,7 +55,6 @@ class AuthEndpoints(baseEndpoint: TgBaseEndpoint, securedEndpoint: SecuredEndpoi
 //      tag = topic,
 //      topic = "Change password for business account",
 //      description = "Change password"
-
 
   val updateAccountInfo: TgSecuredEndpoint[AccountInfoDto, AccountInfoDto] =
     securedEndpoint.endpoint.put

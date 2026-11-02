@@ -2,20 +2,26 @@ package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
 import com.togger.task.TaskPriority
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.apexchart.ApexChartComponent
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgStatColumn, TgTab, TgTabs}
-import com.togger.ui.task.TgDateFormater
-
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgStatColumn
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.task.TaskProgressComponent
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The badges of a staged task as three rows, each of which can edit what its badges show. */
@@ -29,7 +35,6 @@ class StagedTasksComponent(
   projectId: UUID,
   workDays: Signal[Set[DayOfWeek]],
   timebox: Signal[Option[(LocalDate, LocalDate)]],
-  tgDateFormater: TgDateFormater,
   capacity: Signal[Option[TimeboxCapacity]],
   milestones: Signal[Seq[FindMilestoneResp]],
   isDark: Signal[Boolean],
@@ -45,22 +50,18 @@ class StagedTasksComponent(
       .map { case (tasks, days, range, all) => StagedSummary.of(tasks, days, range, all) }
       .distinct
 
-  private def date(day: Option[LocalDate]): String = day.fold(Empty)(tgDateFormater.asAmericanDateWithDayAbrv)
-
   private def stat(title: String, value: Signal[String]): HtmlElement =
     statElement(title, span(cls("text-sm font-medium text-heading"), child.text <-- value))
 
   private def statElement(title: String, value: Modifier[HtmlElement]): HtmlElement =
     div(cls("flex flex-col gap-0.5"), span(cls("text-xs text-body-subtle"), title), value)
 
-  private def badges(items: Seq[HtmlElement], alignment: String = "items-start"): HtmlElement =
+  private def badges(items: Seq[HtmlElement], alignment: String): HtmlElement =
     if (items.isEmpty) span(cls("text-sm font-medium text-heading"), Empty)
     else div(cls(s"flex flex-col $alignment gap-1"), items)
 
   private def badgeColumn[A](counts: Signal[Seq[(A, Int)]])(badge: (A, Int) => HtmlElement): Modifier[HtmlElement] =
-    child <-- counts.map(items =>
-      badges(items.map { case (item, count) => badge(item, count) }, "items-center")
-    )
+    child <-- counts.map(items => badges(items.map { case (item, count) => badge(item, count) }, "items-center"))
 
   private def priorityBadge(priority: TaskPriority, count: Int): HtmlElement =
     TgBadge(s"${priority.shortCode} × $count", priority.badgeColor).element
@@ -195,7 +196,9 @@ class StagedTasksComponent(
       badges.primary,
       badges.dates,
       // A click on a badge, or in the popup it opens, edits the task and must not unstage it.
-      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ => stagingStore.unstage(projectId, task.id))
+      onClick.filter(event => !isInteractive(event.target)).mapToUnit --> (_ =>
+        stagingStore.unstage(projectId, task.id)
+      )
     )
   }
 

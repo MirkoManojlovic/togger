@@ -1,11 +1,10 @@
 package com.togger.tgaiaction
 
-import cats.implicits._
 import com.togger.account.TgAccount
 import com.togger.ai.TgAiEndpoints
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

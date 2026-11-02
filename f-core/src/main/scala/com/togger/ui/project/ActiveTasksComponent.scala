@@ -2,14 +2,16 @@ package com.togger.ui.project
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.task.DefaultTaskStatus
-import com.togger.ui.components.{TaskStatusBadgeColor, TgBadge}
+import com.togger.ui.components.TaskStatusBadgeColor
+import com.togger.ui.components.TgBadge
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
-import java.util.UUID
 
 /** What a place showing the active tasks leaves out or says.
   *
@@ -30,7 +32,6 @@ class ActiveTasksComponent(
   router: TgRouter[FrontendPage],
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
-  projectId: UUID,
   milestones: Seq[FindMilestoneResp],
   workDays: Set[DayOfWeek],
   tasks: Seq[FindTaskRespFull],

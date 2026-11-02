@@ -5,15 +5,20 @@ import com.raquo.airstream.core.EventStream
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.login.{DeviceInfo, LoginDto}
-import com.togger.routes.Pages.{HomePage, LoginPage}
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.LoginDto
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.HomePage
+import com.togger.routes.Pages.LoginPage
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.icons.TgSvgIcons
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.spinner.SpinnerService
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant}
 import org.scalajs.dom
 case class LoginFormState(email: String = "admin@email.com", password: String = "A!good_1_password_is_good") {}
 
@@ -55,7 +60,7 @@ class LoginComponent(
           .login(dto)
           .map { result =>
             result.fold(
-              error => modalFactory.alertModal("Wrong login credentials", "Login failed", PlainModalVariant.Danger),
+              _ => modalFactory.alertModal("Wrong login credentials", "Login failed", PlainModalVariant.Danger),
               _ => {
                 val currentPage = router.currentPageSignal.now()
                 if (currentPage == LoginPage) router.route(HomePage)

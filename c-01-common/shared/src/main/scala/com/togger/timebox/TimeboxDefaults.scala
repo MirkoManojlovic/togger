@@ -1,7 +1,8 @@
 package com.togger.timebox
 
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
-import java.time.{DayOfWeek, LocalDate}
 
 case class TimeboxDefault(label: String, startDate: LocalDate, endDate: LocalDate)
 

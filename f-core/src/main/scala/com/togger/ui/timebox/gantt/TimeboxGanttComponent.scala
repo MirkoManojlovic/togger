@@ -3,21 +3,23 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.reorder.{ListReorder, RowReorder}
+import com.togger.ui.components.reorder.ListReorder
+import com.togger.ui.components.reorder.RowReorder
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkLookups
-import com.togger.ui.timebox.{StagedTaskBadges, TimeboxStagingStore}
-
+import com.togger.ui.timebox.StagedTaskBadges
+import com.togger.ui.timebox.TimeboxStagingStore
 import org.scalajs.dom
 
-import scala.scalajs.js
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
+import scala.scalajs.js
 
-/** The staged tasks as a Gantt chart: one column per work day of the timebox, one row per task, each task as a bar
-  * from its start date to its due date.
+/** The staged tasks as a Gantt chart: one column per work day of the timebox, one row per task, each task as a bar from
+  * its start date to its due date.
   */
 class TimeboxGanttComponent(
   stagingStore: TimeboxStagingStore,
@@ -147,14 +149,22 @@ class TimeboxGanttComponent(
     axis: GanttAxis,
     taskLookups: BulkLookups
   ): HtmlElement =
-    layout.barElement(task, placed, taskLookups.members.map(_.id)).amend(
-      // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
-      if (placed.clippedLeft || placed.clippedRight) emptyMod
-      else Seq[Modifier[HtmlElement]](cls("cursor-grab select-none")) ++ dragModifiers(task, placed, axis, GanttEdge.Body),
-      // A clipped end has its real date out of sight, so it can't be dragged from here.
-      if (placed.clippedLeft) emptyNode else resizeHandle(task, placed, axis, GanttEdge.Start),
-      if (placed.clippedRight) emptyNode else resizeHandle(task, placed, axis, GanttEdge.End)
-    )
+    layout
+      .barElement(task, placed, taskLookups.members.map(_.id))
+      .amend(
+        // Moving needs both real dates in sight, so a clipped bar can only be resized from its other end.
+        if (placed.clippedLeft || placed.clippedRight) emptyMod
+        else
+          Seq[Modifier[HtmlElement]](cls("cursor-grab select-none")) ++ dragModifiers(
+            task,
+            placed,
+            axis,
+            GanttEdge.Body
+          ),
+        // A clipped end has its real date out of sight, so it can't be dragged from here.
+        if (placed.clippedLeft) emptyNode else resizeHandle(task, placed, axis, GanttEdge.Start),
+        if (placed.clippedRight) emptyNode else resizeHandle(task, placed, axis, GanttEdge.End)
+      )
 
   /** Laid out as in the bulk add: the name with the labels right after it, and the other badges in a row below. The
     * badges edit the task like everywhere else.
@@ -191,7 +201,9 @@ class TimeboxGanttComponent(
       onMouseUp --> (event => setDraggable(event.currentTarget, draggable = false)),
       div(
         cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
-        onPointerDown --> (event => setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)),
+        onPointerDown --> (event =>
+          setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)
+        ),
         taskDetails(task)
       ),
       layout.dayCells(axis, "1"),
@@ -199,7 +211,8 @@ class TimeboxGanttComponent(
     )
 
   private def chart(axis: GanttAxis, tasks: Seq[FindTaskRespFull], taskLookups: BulkLookups): HtmlElement =
-    if (axis.isEmpty) layout.emptyMessage("Pick a valid start and end date with at least one work day to see the Gantt chart.")
+    if (axis.isEmpty)
+      layout.emptyMessage("Pick a valid start and end date with at least one work day to see the Gantt chart.")
     else if (tasks.isEmpty) layout.emptyMessage("Stage some tasks to see them on the Gantt chart.")
     else layout.frame(axis, tasks.map(taskRow(_, axis, taskLookups)))
 

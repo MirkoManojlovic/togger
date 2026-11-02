@@ -1,9 +1,13 @@
 package com.togger.maintenance
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import cats.implicits._
-import com.togger.account.{Account, AccountType}
-import com.togger.common.{DbPageRequest, TgIds}
+import com.togger.account.Account
+import com.togger.account.AccountType
+import com.togger.common.DbPageRequest
+import com.togger.common.TgIds
 import com.togger.db.TgPages
 import com.togger.organization.Organization
 import com.togger.project.Project
@@ -19,13 +23,16 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
   private def ensureAccountType(name: String): ConnectionIO[AccountType] =
     accountTypeRepo.findByName(name).attempt.flatMap {
       case Right(accountType) => accountType.pure[ConnectionIO]
-      case Left(_)            => accountTypeRepo.insert(AccountType(id = UUID.randomUUID(), name = name, createdAt = now, updatedAt = now))
+      case Left(_) =>
+        accountTypeRepo.insert(AccountType(id = UUID.randomUUID(), name = name, createdAt = now, updatedAt = now))
     }
 
   private def createOrganizationWithNewOwner: IO[(Organization, Account)] =
     for {
       accountType <- ensureAccountType("developer").transact(xa)
-      ownerAccount <- accountService.createAccount(createAccount("Maths", "Owner", "mathsowner@email.com", accountType.id))
+      ownerAccount <- accountService.createAccount(
+        createAccount("Maths", "Owner", "mathsowner@email.com", accountType.id)
+      )
       savedOrgResult <- organizationService.saveOrganization(
         Organization(
           id = TgIds.UNASSIGNED_UUID,
@@ -46,7 +53,9 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
       .transact(xa)
       .map { membersPage =>
         val owner = membersPage.items.headOption
-          .getOrElse(throw new RuntimeException(s"""Organization "$ORGANIZATION_NAME" (${organization.id}) has no members"""))
+          .getOrElse(
+            throw new RuntimeException(s"""Organization "$ORGANIZATION_NAME" (${organization.id}) has no members""")
+          )
         (organization, owner)
       }
 
@@ -57,7 +66,7 @@ object CreateGammaProjectApp extends IOApp with SeedAppModule {
 
       organizationAndOwner <- existingOrganization match {
         case Some(organization) => findExistingOrganizationOwner(organization)
-        case None                => createOrganizationWithNewOwner
+        case None               => createOrganizationWithNewOwner
       }
       (organization, owner) = organizationAndOwner
 

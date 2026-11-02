@@ -1,11 +1,18 @@
 package com.togger.milestone
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{CreateMilestoneReq, FindMilestoneResp, MilestoneFilter, MilestoneVersionDto, UpdateMilestoneReq}
+import com.togger.dto.CreateMilestoneReq
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.MilestoneFilter
+import com.togger.dto.MilestoneVersionDto
+import com.togger.dto.UpdateMilestoneReq
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

@@ -1,7 +1,8 @@
 package com.togger.ui.components
 
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.TextStyle
-import java.time.{DayOfWeek, LocalDate}
 import java.util.Locale
 import scala.util.Try
 

@@ -1,10 +1,14 @@
 package com.togger.task
 
-import cats.effect.{IO, Sync}
-import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
+import cats.effect.IO
+import cats.effect.Sync
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Transactor}
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 
 import java.util.UUID

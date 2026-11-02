@@ -40,7 +40,10 @@ object ExportJsonDiff {
         },
       obj =>
         if (obj.isEmpty) List(path -> json)
-        else obj.toList.sortBy(_._1).flatMap { case (key, value) => leaves(value, if (path.isEmpty) key else s"$path.$key") }
+        else
+          obj.toList.sortBy(_._1).flatMap { case (key, value) =>
+            leaves(value, if (path.isEmpty) key else s"$path.$key")
+          }
     )
 
   private def orderedElements(values: Vector[Json]): Vector[Json] =

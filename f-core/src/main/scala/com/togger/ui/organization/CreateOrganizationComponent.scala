@@ -4,14 +4,18 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
-import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, UpdateOrganizationReq}
+import com.togger.dto.organization.CreateOrganizationReq
+import com.togger.dto.organization.FindOrganizationResp
+import com.togger.dto.organization.UpdateOrganizationReq
 import com.togger.organization.OrganizationEndpoints
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.account.HiddenAccounts
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -21,7 +25,8 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.navbar.SidebarRefresh
-import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
+import com.togger.ui.project.FindAccountService
+import com.togger.ui.project.FindAccountsComponent
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -69,7 +74,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     protectedBackendClient.protectedHttpCall(organizationEndpoints.saveEndpoint)(req)
 
   override def findAll(page: PageRequest): TgRespIO[PaginatedResponse[FindOrganizationResp]] =
-    HiddenAccounts.visibleOrganizations(protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page))
+    HiddenAccounts.visibleOrganizations(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findAllEndpoint)(page)
+    )
 
   override def findByAccountId(
     accountId: UUID,
@@ -80,7 +87,9 @@ class OrganizationServiceFeImpl(securedEndpoint: SecuredEndpoint, protectedBacke
     )
 
   override def findById(id: UUID): TgRespIO[FindOrganizationResp] =
-    HiddenAccounts.visibleOrganization(protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id))
+    HiddenAccounts.visibleOrganization(
+      protectedBackendClient.protectedHttpCall(organizationEndpoints.findByIdEndpoint)(id)
+    )
 
   override def deleteOrganization(id: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(organizationEndpoints.deleteByIdEndpoint)(id)

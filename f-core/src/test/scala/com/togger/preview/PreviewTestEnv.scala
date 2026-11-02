@@ -1,16 +1,21 @@
 package com.togger.preview
 
-import com.togger.demo.DemoIdentity
-
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.togger.common.TgClock
+import com.togger.common.TgJsonFailure
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{TgClock, TgJsonFailure}
+import com.togger.demo.DemoIdentity
 import com.togger.dto.login.LoginResponseDto
-import com.togger.ui.auth.{LoginRepo, TokenStorageKeys}
+import com.togger.ui.auth.LoginRepo
+import com.togger.ui.auth.TokenStorageKeys
 import com.togger.ui.localstorage.LocalStorageTest
 
-import java.time.{Instant, LocalDate, LocalTime, OffsetDateTime, ZoneOffset}
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import scala.concurrent.Future
 
 class FixedTestClock(instant: Instant = Instant.parse("2026-06-15T10:00:00Z")) extends TgClock {

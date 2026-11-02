@@ -1,6 +1,7 @@
 package com.togger.ai
 
-import enumeratum.values.{IntEnum, IntEnumEntry}
+import enumeratum.values.IntEnum
+import enumeratum.values.IntEnumEntry
 
 sealed abstract class TgAiEndpoints(val value: Int, val endpointName: String) extends IntEnumEntry
 

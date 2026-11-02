@@ -2,7 +2,8 @@ package com.togger.task
 
 import cats.data.EitherNec
 import cats.implicits._
-import com.togger.common.{DateRangeValidation, TgError}
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgError
 import com.togger.dto.CreateTasksBulkReq
 
 import java.time.DayOfWeek

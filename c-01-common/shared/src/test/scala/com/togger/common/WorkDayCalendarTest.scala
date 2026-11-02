@@ -3,7 +3,8 @@ package com.togger.common
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class WorkDayCalendarTest extends AnyWordSpec with Matchers {
 

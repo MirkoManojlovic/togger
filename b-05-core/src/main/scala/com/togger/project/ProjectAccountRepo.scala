@@ -1,7 +1,8 @@
 package com.togger.project
 
 import com.togger.account.Account
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import doobie.ConnectionIO
 
 import java.util.UUID

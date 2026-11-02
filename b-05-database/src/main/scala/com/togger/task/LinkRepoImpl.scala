@@ -5,10 +5,11 @@ import com.togger.logging.TgLogging
 import com.togger.task.LinkRepoImpl.LINK_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.update.Update
-import doobie.{ConnectionIO, Fragment}
 
 import java.time.Instant
 import java.util.UUID

@@ -1,8 +1,8 @@
 package com.togger.backendcalls
 
 import cats.effect.IO
-import com.togger.common.TgJsonFailure
 import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgJsonFailure
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.logging.TgLogging
 import com.togger.ui.auth.LoginRepo
@@ -23,7 +23,7 @@ class ProtectedBackendClient(
   ): INPUT => TgRespIO[OUTPUT] = { input =>
     loginRepo.account
       .map { authAccount =>
-        logger.debug(s"Calling endpoint with initial access token")
+        logger.debug("Calling endpoint with initial access token")
         val httpCall = callEndpointWithAccessToken(input, secureEndpoint)
         httpCall(authAccount.sessionId).flatMap { response =>
           logger.debug(s"Response is ${(response)}")
@@ -47,7 +47,7 @@ class ProtectedBackendClient(
 
       }
       .getOrElse {
-        logger.error(s"Initial access token not found, logging out.")
+        logger.error("Initial access token not found, logging out.")
         loginRepo.delete()
         TgJsonFailure.unauthenticatedLeftIO(None)
       }

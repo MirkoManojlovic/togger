@@ -3,9 +3,14 @@ package com.togger.logentry
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{DbPageRequest, PaginatedResponse, TgIds, TimeHelpers}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.logentry.LogEntryError.{CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryAlreadyExistsForDay}
+import com.togger.logentry.LogEntryError.CannotDeleteLastVersion
+import com.togger.logentry.LogEntryError.CannotEditLatestVersion
+import com.togger.logentry.LogEntryError.LogEntryAlreadyExistsForDay
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._

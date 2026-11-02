@@ -26,7 +26,9 @@ case class ExportIndex(
 
 }
 
-/** Hashes an entity by the canonical form of its json, so key order, whitespace and the order of array elements never change a hash. */
+/** Hashes an entity by the canonical form of its json, so key order, whitespace and the order of array elements never
+  * change a hash.
+  */
 object ExportHasher {
 
   def hashJson(json: Json): String = sha256(canonical(json).noSpaces)
@@ -59,9 +61,12 @@ object ExportHasher {
 
   def rootHash(entities: Map[String, Map[String, ExportIndexEntry]]): String =
     sha256(
-      entities.toList.sortBy(_._1).flatMap { case (folder, entries) =>
-        entries.toList.sortBy(_._1).map { case (id, entry) => s"$folder/$id:${entry.hash}" }
-      }.mkString("\n")
+      entities.toList
+        .sortBy(_._1)
+        .flatMap { case (folder, entries) =>
+          entries.toList.sortBy(_._1).map { case (id, entry) => s"$folder/$id:${entry.hash}" }
+        }
+        .mkString("\n")
     )
 
   private def sha256(value: String): String =

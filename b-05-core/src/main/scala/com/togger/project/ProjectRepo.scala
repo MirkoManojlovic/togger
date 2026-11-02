@@ -1,6 +1,7 @@
 package com.togger.project
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import doobie.ConnectionIO
 
 import java.time.Instant
@@ -19,7 +20,8 @@ trait ProjectRepo {
     */
   def deleteWithAllData(id: UUID): ConnectionIO[Int]
 
-  /** Deletes every project of the organization together with all of its data; returns the number of projects deleted. */
+  /** Deletes every project of the organization together with all of its data; returns the number of projects deleted.
+    */
   def deleteAllByOrganizationId(organizationId: UUID): ConnectionIO[Int]
 
   def update(project: Project, updatedAt: Instant): ConnectionIO[Project]

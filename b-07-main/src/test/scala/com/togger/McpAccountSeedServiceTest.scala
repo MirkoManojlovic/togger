@@ -1,14 +1,18 @@
 package com.togger
 
-import java.time.Instant
-
 import cats.implicits._
 import com.togger.account._
-import com.togger.common.{BusinessTgDbSpec, Password, TgIds}
-import com.togger.organization.{Organization, OrganizationRepoImpl}
-import com.togger.project.{Project, ProjectRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.Password
+import com.togger.common.TgIds
+import com.togger.organization.Organization
+import com.togger.organization.OrganizationRepoImpl
+import com.togger.project.Project
+import com.togger.project.ProjectRepoImpl
 import doobie.implicits._
 import doobie.postgres.implicits._
+
+import java.time.Instant
 
 class McpAccountSeedServiceTest extends BusinessTgDbSpec {
 

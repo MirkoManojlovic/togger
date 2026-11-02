@@ -1,14 +1,17 @@
 package com.togger.timebox
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.timebox.TimeboxRepoImpl.TIMEBOX_TABLE_FRAG
 import com.togger.timebox.TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment}
 
 import java.util.UUID
 

@@ -2,7 +2,8 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
 /** Where the percentage is shown. An ADT, not a flag plus an optional title: only `Outside` has a title. */
 sealed trait TgProgressLabel

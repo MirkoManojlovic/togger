@@ -1,18 +1,29 @@
 package com.togger.preview
 
-import com.togger.demo.DemoAccountsData
-
-import com.togger.demo.DemoIdentity
-
+import com.togger.common.BadRequest
+import com.togger.common.Forbidden
+import com.togger.common.NotFound
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, Forbidden, NotFound, PageRequest, Unauthenticated}
-import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, DeviceInfo, LoginDto}
-import com.togger.dto.organization.{CreateOrganizationReq, UpdateOrganizationReq}
-import com.togger.dto.{CreateProjectReq, UpdateAccountReq, UpdateProjectReq}
+import com.togger.demo.DemoAccountsData
+import com.togger.demo.DemoIdentity
+import com.togger.dto.CreateProjectReq
+import com.togger.dto.UpdateAccountReq
+import com.togger.dto.UpdateProjectReq
+import com.togger.dto.login.AccountInfoDto
+import com.togger.dto.login.ChangePasswordDto
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.LoginDto
+import com.togger.dto.organization.CreateOrganizationReq
+import com.togger.dto.organization.UpdateOrganizationReq
 import com.togger.ui.accountmanagement.AccountManagementFeServicePreview
-import com.togger.ui.auth.{ChangeAccountInfoServicePreview, ChangePasswordServicePreview, LoginServicePreview}
+import com.togger.ui.auth.ChangeAccountInfoServicePreview
+import com.togger.ui.auth.ChangePasswordServicePreview
+import com.togger.ui.auth.LoginServicePreview
 import com.togger.ui.organization.OrganizationServiceFePreview
-import com.togger.ui.project.{FindAccountServicePreview, ProjectServicePreview}
+import com.togger.ui.project.FindAccountServicePreview
+import com.togger.ui.project.ProjectServicePreview
 
 class PreviewAccountsDomainTest extends AsyncJsWordSpec {
 
@@ -56,7 +67,9 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
 
     "answer unauthenticated without a session" in { _ =>
       val s = new Services
-      s.env.run(s.organizations.findByAccountId(DemoIdentity.AccountId, firstPage)).map(_ shouldBe Left(Unauthenticated))
+      s.env
+        .run(s.organizations.findByAccountId(DemoIdentity.AccountId, firstPage))
+        .map(_ shouldBe Left(Unauthenticated))
     }
 
     "change the password only with the right old password" in { _ =>
@@ -96,7 +109,13 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
         page <- s.env.run(s.management.findAll(PageRequest(1, 2)))
         updated <- s.env.run(
           s.management.update(
-            UpdateAccountReq(DemoIdentity.SecondAccountId, "Samantha", "Rivera", "sam.rivera@togger.preview", PreviewAccountTypes.AdminId)
+            UpdateAccountReq(
+              DemoIdentity.SecondAccountId,
+              "Samantha",
+              "Rivera",
+              "sam.rivera@togger.preview",
+              PreviewAccountTypes.AdminId
+            )
           )
         )
         self <- s.env.runEmpty(s.management.deleteById(DemoIdentity.AccountId))
@@ -130,12 +149,21 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
       s.env.loginAsDemo()
       for {
         created <- s.env.run(
-          s.organizations.createOrganization(CreateOrganizationReq("Zeta", "d", "🔥", Seq(DemoIdentity.SecondAccountId)))
+          s.organizations.createOrganization(
+            CreateOrganizationReq("Zeta", "d", "🔥", Seq(DemoIdentity.SecondAccountId))
+          )
         )
         id = created.toOption.get.id
         updated <- s.env.run(
           s.organizations.update(
-            UpdateOrganizationReq(id, "Zeta 2", "d", "🔥", Seq(DemoAccountsData.ThirdAccountId), Seq(DemoIdentity.SecondAccountId))
+            UpdateOrganizationReq(
+              id,
+              "Zeta 2",
+              "d",
+              "🔥",
+              Seq(DemoAccountsData.ThirdAccountId),
+              Seq(DemoIdentity.SecondAccountId)
+            )
           )
         )
         mine <- s.env.run(s.organizations.findByAccountId(DemoIdentity.AccountId, PageRequest(1, 2)))
@@ -145,7 +173,9 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
       } yield {
         created.map(_.members.size) shouldBe Right(2)
         updated.map(_.name) shouldBe Right("Zeta 2")
-        mine.map(p => (p.items.map(_.name), p.totalNumberOfItems)) shouldBe Right((List("Acme Software", "Open Source Corner"), 3L))
+        mine.map(p => (p.items.map(_.name), p.totalNumberOfItems)) shouldBe Right(
+          (List("Acme Software", "Open Source Corner"), 3L)
+        )
         members.map(_.items.map(_.firstName).toSet) shouldBe Right(Set("Alex", "Jordan"))
         gone shouldBe Left(NotFound)
       }
@@ -157,15 +187,28 @@ class PreviewAccountsDomainTest extends AsyncJsWordSpec {
       for {
         acme <- s.env.run(s.projects.findByOrganizationId(DemoIdentity.OrganizationId, firstPage))
         created <- s.env.run(
-          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Seq(DemoIdentity.AccountId)))
+          s.projects.createProject(
+            CreateProjectReq(DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Seq(DemoIdentity.AccountId))
+          )
         )
         id = created.toOption.get.id
         noWorkDays <- s.env.run(
-          s.projects.updateProject(UpdateProjectReq(id, DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Set.empty, Seq.empty, Seq.empty))
+          s.projects.updateProject(
+            UpdateProjectReq(id, DemoIdentity.OrganizationId, "Alpha", "d", "🅰", Set.empty, Seq.empty, Seq.empty)
+          )
         )
         updated <- s.env.run(
           s.projects.updateProject(
-            UpdateProjectReq(id, DemoIdentity.OrganizationId, "Alpha 2", "d", "🅰", Set(1, 2), Seq.empty, Seq(DemoIdentity.AccountId))
+            UpdateProjectReq(
+              id,
+              DemoIdentity.OrganizationId,
+              "Alpha 2",
+              "d",
+              "🅰",
+              Set(1, 2),
+              Seq.empty,
+              Seq(DemoIdentity.AccountId)
+            )
           )
         )
         members <- s.env.run(s.projects.findAllMembers(id))

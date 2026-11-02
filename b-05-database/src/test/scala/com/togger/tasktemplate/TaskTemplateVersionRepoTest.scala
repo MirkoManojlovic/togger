@@ -2,11 +2,12 @@ package com.togger.tasktemplate
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, PaginationTestSupport, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.PaginationTestSupport
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

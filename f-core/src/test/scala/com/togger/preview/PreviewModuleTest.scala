@@ -1,13 +1,13 @@
 package com.togger.preview
 
-import com.togger.demo.DemoIdentity
-
-import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.PageRequest
+import com.togger.common.suites.AsyncJsWordSpec
+import com.togger.demo.DemoIdentity
 import com.togger.ui.dataexportconfig.DataExportConfigFeServicePreview
 import com.togger.ui.organization.OrganizationServiceFePreview
 import com.togger.ui.project.ProjectServicePreview
-import com.togger.ui.task.{TaskLabelFeServicePreview, TaskStatusFeServicePreview}
+import com.togger.ui.task.TaskLabelFeServicePreview
+import com.togger.ui.task.TaskStatusFeServicePreview
 
 class PreviewModuleTest extends AsyncJsWordSpec {
 
@@ -39,7 +39,8 @@ class PreviewModuleTest extends AsyncJsWordSpec {
       val env = new PreviewTestEnv
       env.loginAsDemo()
       val m = env.module
-      val projects = new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
+      val projects =
+        new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
       val before = snapshot(env)
       m.projects.deleteProject(DemoIdentity.ProjectId)
       snapshot(env) should not be before

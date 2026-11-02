@@ -1,28 +1,38 @@
 package com.togger.contribution
 
 import cats.implicits._
-import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
 import com.togger.dto.ContributionsFilter
-import com.togger.logentry.{LogEntry, LogEntryRepoImpl, LogEntryStatus, LogEntryVersion, LogEntryVersionRepoImpl}
-import com.togger.milestone.{Milestone, MilestoneRepoImpl, MilestoneStatus, MilestoneVersion, MilestoneVersionRepoImpl}
-import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.task.{
-  Task,
-  TaskLabel,
-  TaskLabelAssignment,
-  TaskLabelAssignmentRepoImpl,
-  TaskLabelRepoImpl,
-  TaskPriority,
-  TaskRepoImpl,
-  TaskVersion,
-  TaskVersionRepoImpl
-}
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryRepoImpl
+import com.togger.logentry.LogEntryStatus
+import com.togger.logentry.LogEntryVersion
+import com.togger.logentry.LogEntryVersionRepoImpl
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneRepoImpl
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneVersion
+import com.togger.milestone.MilestoneVersionRepoImpl
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
+import com.togger.task.Task
+import com.togger.task.TaskLabel
+import com.togger.task.TaskLabelAssignment
+import com.togger.task.TaskLabelAssignmentRepoImpl
+import com.togger.task.TaskLabelRepoImpl
+import com.togger.task.TaskPriority
+import com.togger.task.TaskRepoImpl
+import com.togger.task.TaskVersion
+import com.togger.task.TaskVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
@@ -45,10 +55,10 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
   // the repos give every inserted version a new time ordered id, so versions inserted later are the newer ones
   private def versionId(number: Long): UUID = new UUID(number, 0L)
 
-  /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without
-    * a milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to
-    * `first`, still open. t2 is "Done" and critical, the others are in the first status and medium. t1 is labelled
-    * "bug", t2 "bug" and "feature", t3 has no label.
+  /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without a
+    * milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to `first`,
+    * still open. t2 is "Done" and critical, the others are in the first status and medium. t1 is labelled "bug", t2
+    * "bug" and "feature", t3 has no label.
     *
     * Log entries: e1 of t1 by `first` on the 13th, completed by its latest version (an older one was in progress); e2
     * of t1 by `first` on the 13th, in progress; e3 of t2 by `second` on the 14th at 23:30 UTC, completed; e4 of t3 by
@@ -120,7 +130,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     task: Task,
     statusId: UUID,
     number: Long,
-    assignedTo: Option[UUID] = None,
+    assignedTo: Option[UUID],
     closedBy: Option[UUID] = None,
     milestone: Option[UUID] = None,
     priority: TaskPriority = TaskPriority.Medium,
@@ -151,7 +161,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     name: String,
     status: MilestoneStatus,
     dueDate: LocalDate,
-    startDate: LocalDate = day(1)
+    startDate: LocalDate
   ): ConnectionIO[MilestoneVersion] =
     milestoneVersionRepo.insert(
       MilestoneVersion(

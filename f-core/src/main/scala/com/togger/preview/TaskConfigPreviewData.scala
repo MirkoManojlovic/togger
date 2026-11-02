@@ -1,6 +1,8 @@
 package com.togger.preview
 
-import com.togger.dto.{FindTaskLabelResp, FindTaskStatusResp, TaskTemplateVersionDto}
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.TaskTemplateVersionDto
 import com.togger.task.DefaultTaskStatus
 import io.circe.generic.auto._
 
@@ -51,7 +53,9 @@ class TaskConfigPreviewData(db: PreviewDb, projects: ProjectsPreviewData) {
 
   def deleteLabel(id: UUID): Boolean = {
     labelDeletionHooks.foreach(_(id))
-    templates.all.filter(_.taskLabelId.contains(id)).foreach(template => templates.upsert(template.copy(taskLabelId = None)))
+    templates.all
+      .filter(_.taskLabelId.contains(id))
+      .foreach(template => templates.upsert(template.copy(taskLabelId = None)))
     labels.delete(id)
   }
 

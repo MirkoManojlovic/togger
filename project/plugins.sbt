@@ -22,3 +22,5 @@ libraryDependencies += ("org.scala-js" % "scalajs-env-jsdom-nodejs" % "1.1.0")
     ExclusionRule("org.scala-js", "scalajs-js-envs_2.13"),
     ExclusionRule("org.scala-js", "scalajs-logging_2.13")
   )
+
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")

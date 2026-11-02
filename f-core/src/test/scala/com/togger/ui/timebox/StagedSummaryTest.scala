@@ -1,13 +1,19 @@
 package com.togger.ui.timebox
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class StagedSummaryTest extends AnyWordSpec with Matchers {
@@ -22,8 +28,17 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
   private val feature = FindTaskLabelResp(UUID.randomUUID(), projectId, "feature", "", "")
 
   private def milestone(name: String) = FindMilestoneResp(
-    UUID.randomUUID(), projectId, Instant.EPOCH, UUID.randomUUID(), name, "", MilestoneStatus.InProgress, monday,
-    monday.plusDays(4), None, Instant.EPOCH
+    UUID.randomUUID(),
+    projectId,
+    Instant.EPOCH,
+    UUID.randomUUID(),
+    name,
+    "",
+    MilestoneStatus.InProgress,
+    monday,
+    monday.plusDays(4),
+    None,
+    Instant.EPOCH
   )
   private val first = milestone("Milestone 01")
   private val second = milestone("Milestone 02")
@@ -60,7 +75,8 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
     }
 
     "find the date range the tasks cover" in {
-      val summary = StagedSummary.of(Seq(task(), task(monday.plusDays(7), monday.plusDays(11))), workDays, None, Seq.empty)
+      val summary =
+        StagedSummary.of(Seq(task(), task(monday.plusDays(7), monday.plusDays(11))), workDays, None, Seq.empty)
       (summary.earliestStart, summary.lastDueDate, summary.calendarSpanDays) shouldBe
         (Some(monday), Some(monday.plusDays(11)), Some(12))
     }
@@ -110,7 +126,9 @@ class StagedSummaryTest extends AnyWordSpec with Matchers {
       val ada = breakdown.head
       (ada.taskCount, ada.workDays) shouldBe (2, 10)
       (ada.byPriority.toMap, ada.byLabel, ada.byStatus.toMap, ada.byMilestone) shouldBe
-        (Map(TaskPriority.High -> 1, TaskPriority.Medium -> 1), Seq(bug -> 1), Map(backlog -> 1, done -> 1), Seq(first -> 1))
+        (Map(TaskPriority.High -> 1, TaskPriority.Medium -> 1), Seq(bug -> 1), Map(backlog -> 1, done -> 1), Seq(
+          first -> 1
+        ))
     }
 
     "count the tasks that stick out of the timebox" in {

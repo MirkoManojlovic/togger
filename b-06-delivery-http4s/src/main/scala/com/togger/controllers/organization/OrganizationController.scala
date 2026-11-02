@@ -2,7 +2,9 @@ package com.togger.controllers.organization
 
 import cats.effect.IO
 import com.togger.account.AdminCheck
-import com.togger.common.{Forbidden, TgClock, TgJsonSuccess}
+import com.togger.common.Forbidden
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.FindOrganizationResp
@@ -20,7 +22,7 @@ class OrganizationController(
   import organizationEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => organizationId =>
+    findByIdEndpoint.serverLogic { _ => organizationId =>
       organizationService
         .findBy(organizationId)
         .map { case (organization, members) =>
@@ -78,7 +80,7 @@ class OrganizationController(
       }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val organizationToUpdate = Organization(
@@ -137,7 +139,7 @@ class OrganizationController(
     }
   }
 
-  val findByAccountId = findByAccountIdEndpoint.serverLogic { auth => request =>
+  val findByAccountId = findByAccountIdEndpoint.serverLogic { _ => request =>
     val (accountId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       organizationService
@@ -146,7 +148,7 @@ class OrganizationController(
     }
   }
 
-  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => request =>
+  val findAllMembers = findAllMembersEndpoint.serverLogic { _ => request =>
     val (organizationId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       organizationService

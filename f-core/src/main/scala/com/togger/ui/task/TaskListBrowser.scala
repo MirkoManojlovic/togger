@@ -5,27 +5,31 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
-import com.togger.dto.{FindMilestoneResp, FindProjectResp, FindTaskRespFull, SearchAccountDto, TaskFilter}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TaskFilter
 import com.togger.routes.TaskListParams
 import com.togger.task.DefaultTaskStatus
-import com.togger.task.DefaultTaskStatus.{Backlog, Done, WontDo}
+import com.togger.task.DefaultTaskStatus.Backlog
+import com.togger.task.DefaultTaskStatus.Done
+import com.togger.task.DefaultTaskStatus.WontDo
 import com.togger.task.TaskPriority
+import com.togger.ui.auth.TgCheckbox
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableFilterComponent
+import com.togger.ui.components.TableSearchComponent
+import com.togger.ui.components.TableServerSearchComponent
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.auth.TgCheckbox
-import com.togger.ui.components.{
-  MultiSelectItem,
-  TableFilterComponent,
-  TableSearchComponent,
-  TableServerSearchComponent,
-  TgPaginationComponent
-}
 
 import java.util.UUID
 
-/** The paged, searchable and filtered task list shared by the task screens: the current page of tasks, the backend search,
-  * the local filter, the column filters and the pagination widget. The screen puts them in its own table.
+/** The paged, searchable and filtered task list shared by the task screens: the current page of tasks, the backend
+  * search, the local filter, the column filters and the pagination widget. The screen puts them in its own table.
   *
   * The page, the filters and the search term live in `paramsVar`. A change is not applied by the browser itself: it is
   * handed to `navigate`, which stores the new params in `paramsVar` (a screen that keeps them in the URL routes there,
@@ -113,7 +117,8 @@ class TaskListBrowser(
 
   private val priorityFilter = new FilterSpec[Unit](
     source = Var(()),
-    optionsOf = _ => TaskPriority.values.sortBy(_.value).map(priority => priority.value.toString -> priority.priorityName),
+    optionsOf = _ =>
+      TaskPriority.values.sortBy(_.value).map(priority => priority.value.toString -> priority.priorityName),
     defaultSelectedOf = allOptions,
     chosenIn = _.priorities,
     withChosen = (listParams, chosen) => listParams.copy(priorities = chosen)
@@ -130,7 +135,9 @@ class TaskListBrowser(
   private val assigneeFilter = new FilterSpec[FindProjectResp](
     source = projectVar,
     optionsOf = project =>
-      (unassignedDto +: project.members).sortBy(_.fullName.toLowerCase).map(member => member.id.toString -> member.fullName),
+      (unassignedDto +: project.members)
+        .sortBy(_.fullName.toLowerCase)
+        .map(member => member.id.toString -> member.fullName),
     defaultSelectedOf = allOptions,
     chosenIn = _.assignees,
     withChosen = (listParams, chosen) => listParams.copy(assignees = chosen)
@@ -217,7 +224,11 @@ class TaskListBrowser(
       new TableFilterComponent(assigneeFilter.itemsSignal, label = "Assignee", assigneeFilter.selectedIdsVar).element,
       Option
         .when(lockedMilestoneId.isEmpty)(
-          new TableFilterComponent(milestoneFilter.itemsSignal, label = "Milestone", milestoneFilter.selectedIdsVar).element
+          new TableFilterComponent(
+            milestoneFilter.itemsSignal,
+            label = "Milestone",
+            milestoneFilter.selectedIdsVar
+          ).element
         )
         .toSeq,
       TgCheckbox

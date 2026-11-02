@@ -2,10 +2,21 @@ package com.togger.login
 
 import cats.effect.IO
 import com.togger.account.AccountService
-import com.togger.auth.{BaseEndpoint, ChangePasswordLogic, SecuredEndpoint, UpdateAccountInfoLogic}
-import com.togger.common.TgResponseTypes.{TgAuth, TgRespEmptyBodyIO, TgRespIO}
-import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
-import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, ExpireSessionResult, LoginResponseDto, LogoutEveryoneDto}
+import com.togger.auth.BaseEndpoint
+import com.togger.auth.ChangePasswordLogic
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.UpdateAccountInfoLogic
+import com.togger.common.TgClock
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
+import com.togger.common.TgResponseTypes.TgAuth
+import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
+import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.dto.login.AccountInfoDto
+import com.togger.dto.login.ChangePasswordDto
+import com.togger.dto.login.ExpireSessionResult
+import com.togger.dto.login.LoginResponseDto
+import com.togger.dto.login.LogoutEveryoneDto
 import com.togger.logging.TgLogging
 
 import java.time.temporal.ChronoUnit

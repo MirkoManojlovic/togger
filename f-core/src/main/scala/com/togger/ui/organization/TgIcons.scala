@@ -458,7 +458,9 @@ object TgIcons {
         svg.strokeLineCap("round"),
         svg.strokeLineJoin("round"),
         svg.strokeWidth("2"),
-        svg.d("M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4")
+        svg.d(
+          "M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4"
+        )
       )
     )
 
@@ -517,7 +519,10 @@ object TgIcons {
     )
 
   def tagIcon(className: String) =
-    strokeIcon(className, "M7 7h.01M3 5v5.17a2 2 0 0 0 .59 1.42l8.82 8.82a2 2 0 0 0 2.83 0l5.17-5.17a2 2 0 0 0 0-2.83l-8.82-8.82A2 2 0 0 0 10.17 3H5a2 2 0 0 0-2 2Z")
+    strokeIcon(
+      className,
+      "M7 7h.01M3 5v5.17a2 2 0 0 0 .59 1.42l8.82 8.82a2 2 0 0 0 2.83 0l5.17-5.17a2 2 0 0 0 0-2.83l-8.82-8.82A2 2 0 0 0 10.17 3H5a2 2 0 0 0-2 2Z"
+    )
 
   def boldIcon(className: String) =
     strokeIcon(className, "M8 5h4.5a3.5 3.5 0 1 1 0 7H8V5Zm0 7h5.5a3.5 3.5 0 1 1 0 7H8v-7Z")
@@ -566,7 +571,10 @@ object TgIcons {
     strokeIcon(className, "M9 8h10M9 12h10M9 16h5M4.99 8H5m-.02 4h.01m0 4H5m12-.5v5m-2.5-2.5h5")
 
   def teamDailyIcon(className: String) =
-    strokeIcon(className, "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 10 2 2 4-4")
+    strokeIcon(
+      className,
+      "M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 10 2 2 4-4"
+    )
 
   /** A clock with an arrow back: catching up on the days gone by. */
   def slackerIcon(className: String) =

@@ -1,7 +1,9 @@
 package com.togger.dump
 
 import com.togger.common.TgClockImpl
-import com.togger.dataimportconfig.{DataImportConfig, DataImportConfigRepoImpl, DataImportConfigService}
+import com.togger.dataimportconfig.DataImportConfig
+import com.togger.dataimportconfig.DataImportConfigRepoImpl
+import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.project.ProjectAccount
 import doobie.implicits._
 
@@ -19,7 +21,15 @@ class DataSyncPendingServiceTest extends ExportImportTestSupport {
 
   private def insertImportConfig(projectId: UUID, accountId: UUID, importPath: os.Path) =
     dataImportConfigRepo.insert(
-      DataImportConfig(UUID.randomUUID(), "Import config", importPath.toString, projectId, accountId, nowAsInstant, nowAsInstant)
+      DataImportConfig(
+        UUID.randomUUID(),
+        "Import config",
+        importPath.toString,
+        projectId,
+        accountId,
+        nowAsInstant,
+        nowAsInstant
+      )
     )
 
   testNameFromClassName should {
@@ -85,10 +95,14 @@ class DataSyncPendingServiceTest extends ExportImportTestSupport {
         exported <- exportToFolder(transactor, savedProject.id, savedAccount.id)
         _ <- insertImportConfig(savedProject.id, savedAccount.id, exported).transact(transactor)
         service = pendingService(transactor)
-        _ <- taskLabelRepo.update(label.copy(name = "Changed in db"), nowAsInstant.plusSeconds(3600)).transact(transactor)
+        _ <- taskLabelRepo
+          .update(label.copy(name = "Changed in db"), nowAsInstant.plusSeconds(3600))
+          .transact(transactor)
         dbNewer <- service.importPending(savedProject.id, savedAccount.id)
         _ <- newExportService(transactor).exportProject(savedProject.id, savedAccount.id)
-        _ <- taskLabelRepo.update(label.copy(name = "Changed again"), nowAsInstant.plusSeconds(1800)).transact(transactor)
+        _ <- taskLabelRepo
+          .update(label.copy(name = "Changed again"), nowAsInstant.plusSeconds(1800))
+          .transact(transactor)
         diskNewer <- service.importPending(savedProject.id, savedAccount.id)
       } yield {
         dbNewer shouldBe Right(false)

@@ -1,12 +1,17 @@
 package com.togger.ui.timebox
 
 import com.togger.chart.ChartColor
-import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class StagedGroupingTest extends AnyWordSpec with Matchers {
@@ -81,7 +86,9 @@ class StagedGroupingTest extends AnyWordSpec with Matchers {
     }
 
     "put tasks without a known milestone under no milestone" in {
-      names(StagedGrouping.ByMilestone.group(Seq(task("a").copy(milestone = Some(UUID.randomUUID()))), Seq.empty)) shouldBe
+      names(
+        StagedGrouping.ByMilestone.group(Seq(task("a").copy(milestone = Some(UUID.randomUUID()))), Seq.empty)
+      ) shouldBe
         Seq("No milestone" -> Seq("a"))
     }
   }

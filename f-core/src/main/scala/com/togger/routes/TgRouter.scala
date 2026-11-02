@@ -2,7 +2,8 @@ package com.togger.routes
 
 import com.raquo.airstream.state.StrictSignal
 import com.raquo.laminar.api.L._
-import com.raquo.waypoint.{Route, Router}
+import com.raquo.waypoint.Route
+import com.raquo.waypoint.Router
 import com.togger.routes.Pages.NotFoundPage
 import org.scalajs.dom
 
@@ -35,7 +36,9 @@ trait TgRouter[PAGE <: FrontendPage] {
 class TgRouterImpl(
   appRoutes: Seq[Route[_ <: FrontendPage, _]],
   origin: String,
-  initialUrl: Option[String] // FIXME: this is a fix, because app reloads and always loads the initialUrl for some reason. Works in QC.
+  initialUrl: Option[
+    String
+  ] // FIXME: this is a fix, because app reloads and always loads the initialUrl for some reason. Works in QC.
 ) extends TgRouter[FrontendPage] {
   val pageSerializer = new PageSerializer
 

@@ -2,21 +2,21 @@ package com.togger
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{TgClockImpl, TgIds}
+import com.togger.common.TgClockImpl
+import com.togger.common.TgIds
 import com.togger.db.TgPages
-import com.togger.projectlabel.{
-  DefaultDomain,
-  DefaultInfrastructure,
-  DefaultProgrammingFramework,
-  DefaultProgrammingLanguage,
-  DefaultProjectLabelCategory,
-  ProjectLabel,
-  ProjectLabelCategory,
-  ProjectLabelCategoryRepoImpl,
-  ProjectLabelRepoImpl
-}
+import com.togger.projectlabel.DefaultDomain
+import com.togger.projectlabel.DefaultInfrastructure
+import com.togger.projectlabel.DefaultProgrammingFramework
+import com.togger.projectlabel.DefaultProgrammingLanguage
+import com.togger.projectlabel.DefaultProjectLabelCategory
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
+import com.togger.projectlabel.ProjectLabelCategoryRepoImpl
+import com.togger.projectlabel.ProjectLabelRepoImpl
 import doobie.Transactor
 import doobie.implicits._
+
 import java.util.UUID
 
 class ProjectLabelSeedService(transactor: Transactor[IO]) {

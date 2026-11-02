@@ -4,11 +4,14 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.dump.DayOfWeekCodec._
 import com.togger.logging.TgLogging
-import com.togger.project.ProjectError.{DumpManifestMissing, NotAssignedToProject, ProjectError}
-import com.togger.task.{TaskLabel, TaskStatus}
+import com.togger.project.ProjectError.DumpManifestMissing
+import com.togger.project.ProjectError.NotAssignedToProject
+import com.togger.project.ProjectError.ProjectError
+import com.togger.task.TaskLabel
+import com.togger.task.TaskStatus
 import com.togger.util.SplunkMacro.sp
-import doobie.implicits._
 import doobie.Transactor
+import doobie.implicits._
 import io.circe.Decoder
 import io.circe.generic.auto._
 
@@ -23,7 +26,11 @@ class DataImportService(
 
   private type Maybe[A] = Either[DataImportEntityResult, A]
 
-  def importProject(projectId: UUID, accountId: UUID, projectFolderPath: String): IO[Either[ProjectError, DataImportResult]] = {
+  def importProject(
+    projectId: UUID,
+    accountId: UUID,
+    projectFolderPath: String
+  ): IO[Either[ProjectError, DataImportResult]] = {
     logger.info(s"Importing project ${sp(projectId)} from ${sp(projectFolderPath)} requested by ${sp(accountId)}")
     timed("import total", projectId)(importProjectSteps(projectId, accountId, projectFolderPath))
   }
@@ -33,23 +40,28 @@ class DataImportService(
     accountId: UUID,
     projectFolderPath: String
   ): IO[Either[ProjectError, DataImportResult]] =
-    timed("check assignment", projectId)(dataExportRepo.isAssigned(projectId, accountId).transact(transactor)).flatMap { assigned =>
-      if (!assigned) IO.pure(Left(NotAssignedToProject))
-      else
-        readTree(projectId, projectFolderPath) match {
-          case None => IO.pure(Left(DumpManifestMissing))
-          case Some((importPath, index, projectDump)) =>
-            importFromTree(projectId, accountId, importPath, index, projectDump)
-        }
+    timed("check assignment", projectId)(dataExportRepo.isAssigned(projectId, accountId).transact(transactor)).flatMap {
+      assigned =>
+        if (!assigned) IO.pure(Left(NotAssignedToProject))
+        else
+          readTree(projectId, projectFolderPath) match {
+            case None => IO.pure(Left(DumpManifestMissing))
+            case Some((importPath, index, projectDump)) =>
+              importFromTree(projectId, accountId, importPath, index, projectDump)
+          }
     }
 
-  /** Creates the project in the organization from the exported `project.json`, then imports the rest of the tree into it. */
+  /** Creates the project in the organization from the exported `project.json`, then imports the rest of the tree into
+    * it.
+    */
   def importNewProject(
     organizationId: UUID,
     accountId: UUID,
     projectFolderPath: String
   ): IO[Either[ProjectError, (UUID, DataImportResult)]] = {
-    logger.info(s"Importing a new project into ${sp(organizationId)} from ${sp(projectFolderPath)} requested by ${sp(accountId)}")
+    logger.info(
+      s"Importing a new project into ${sp(organizationId)} from ${sp(projectFolderPath)} requested by ${sp(accountId)}"
+    )
     readTree(organizationId, projectFolderPath) match {
       case None => IO.pure(Left(DumpManifestMissing))
       case Some((importPath, index, projectDump)) =>
@@ -57,7 +69,9 @@ class DataImportService(
           project <- timed("create project", organizationId)(
             dataImportRepo.createProject(organizationId, accountId, projectDump.project).transact(transactor)
           )
-          result <- timed("import total", project.id)(importFromTree(project.id, accountId, importPath, index, projectDump))
+          result <- timed("import total", project.id)(
+            importFromTree(project.id, accountId, importPath, index, projectDump)
+          )
         } yield result.map(project.id -> _)
     }
   }
@@ -110,53 +124,55 @@ class DataImportService(
         .resolveAccountMappings(index.exportedBy :: projectDump.referencedAccounts)
         .transact(transactor)
     ).flatMap {
-        case Left(error) => IO.pure(Left(error))
-        case Right(accountIdMap) =>
-          timed("reconcile statuses and labels", projectId)(
-            dataImportRepo
-              .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
-              .transact(transactor)
-          ).flatMap { prepared =>
-              val remap = new Remapper(projectId, accountId, accountIdMap, prepared.ids)
-              for {
-                state <- timed("load existing project state", projectId)(dataImportRepo.loadImportState(projectId).transact(transactor))
-                milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(
-                  m => dataImportRepo.mergeMilestone(remap.milestone(m))
-                )
-                tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(
-                  t => dataImportRepo.mergeTask(remap.task(t), state)
-                )
-                logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(
-                  le => dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
-                )
-                templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(
-                  t => dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
-                )
-                timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(
-                  t => dataImportRepo.mergeTimebox(remap.timebox(t))
-                )
-                prompts <- mergeAll[TgPromptTemplateDumpData](projectId, read, DataExportEntityType.TgPromptTemplate)(
-                  p => dataImportRepo.mergeTgPromptTemplate(remap.tgPromptTemplate(p))
-                )
-                members <- readMembers(read).fold(
-                  malformed => IO.pure(List(malformed)),
-                  members =>
-                    dataImportRepo
-                      .mergeMembers(projectId, members.accountIds.map(remap.account))
-                      .transact(transactor)
-                      .attempt
-                      .map(_.fold(e => failed(DataExportEntityType.Members, projectId, e), identity))
-                      .map(List(_))
-                )
-              } yield Right(
-                DataImportResult(
-                  importPath,
-                  statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                    milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ prompts ++ members
-                )
-              )
-            }
-      }
+      case Left(error) => IO.pure(Left(error))
+      case Right(accountIdMap) =>
+        timed("reconcile statuses and labels", projectId)(
+          dataImportRepo
+            .prepareImport(projectId, projectDump, statuses, labels, projectLabels)
+            .transact(transactor)
+        ).flatMap { prepared =>
+          val remap = new Remapper(projectId, accountId, accountIdMap, prepared.ids)
+          for {
+            state <- timed("load existing project state", projectId)(
+              dataImportRepo.loadImportState(projectId).transact(transactor)
+            )
+            milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(m =>
+              dataImportRepo.mergeMilestone(remap.milestone(m))
+            )
+            tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(t =>
+              dataImportRepo.mergeTask(remap.task(t), state)
+            )
+            logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(le =>
+              dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
+            )
+            templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(t =>
+              dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
+            )
+            timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(t =>
+              dataImportRepo.mergeTimebox(remap.timebox(t))
+            )
+            prompts <- mergeAll[TgPromptTemplateDumpData](projectId, read, DataExportEntityType.TgPromptTemplate)(p =>
+              dataImportRepo.mergeTgPromptTemplate(remap.tgPromptTemplate(p))
+            )
+            members <- readMembers(read).fold(
+              malformed => IO.pure(List(malformed)),
+              members =>
+                dataImportRepo
+                  .mergeMembers(projectId, members.accountIds.map(remap.account))
+                  .transact(transactor)
+                  .attempt
+                  .map(_.fold(e => failed(DataExportEntityType.Members, projectId, e), identity))
+                  .map(List(_))
+            )
+          } yield Right(
+            DataImportResult(
+              importPath,
+              statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
+                milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ prompts ++ members
+            )
+          )
+        }
+    }
   }
 
   private def readMembers(read: TreeReader): Maybe[MembersDumpData] =
@@ -166,7 +182,11 @@ class DataImportService(
   private def mergeAll[A: Decoder](projectId: UUID, read: TreeReader, entityType: DataExportEntityType)(
     merge: A => doobie.ConnectionIO[DataImportEntityResult]
   ): IO[List[DataImportEntityResult]] =
-    read.index.entriesOf(entityType).keys.toList.sorted
+    read.index
+      .entriesOf(entityType)
+      .keys
+      .toList
+      .sorted
       .traverse { id =>
         for {
           readStart <- IO(System.nanoTime())
@@ -213,7 +233,12 @@ class DataImportService(
   }
 
   /** Points exported entities at the target project, the mapped accounts and the reconciled statuses and labels. */
-  private class Remapper(projectIdDb: UUID, importingAccountId: UUID, accountIdMap: Map[UUID, UUID], ids: DataImportRepo#ReconciledIds) {
+  private class Remapper(
+    projectIdDb: UUID,
+    importingAccountId: UUID,
+    accountIdMap: Map[UUID, UUID],
+    ids: DataImportRepo#ReconciledIds
+  ) {
 
     def account(id: UUID): UUID = accountIdMap.getOrElse(id, id)
     private def accountOpt(id: Option[UUID]): Option[UUID] = id.map(account)

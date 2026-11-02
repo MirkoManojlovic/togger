@@ -1,16 +1,17 @@
 package com.togger.db
 
-import java.util.UUID
-
 import cats.effect.IO
 import cats.free.Free
 import com.togger.common.TgIds
 import com.togger.logging.TgLogging
+import doobie.ConnectionIO
+import doobie.Fragment
 import doobie.free.connection
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment}
 import scribe.mdc.MDC
+
+import java.util.UUID
 
 object Util extends TgLogging {
 

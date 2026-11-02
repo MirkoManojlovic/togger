@@ -1,12 +1,18 @@
 package com.togger.ui.project
 
-import com.togger.dto.{FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto, TimeboxVersionDto}
 import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TimeboxVersionDto
 import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
@@ -118,14 +124,27 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
 
   "ProjectHomeStats.taskBadges" should {
     "give a task without milestone, assignee and labels its priority, due date and days left" in {
-      ProjectHomeStats.taskBadges(task("t", status("Testing")), Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) shouldBe
+      ProjectHomeStats
+        .taskBadges(
+          task("t", status("Testing")),
+          Seq.empty,
+          showAssignee = true,
+          today,
+          WorkDayCalendar.DefaultWorkDays,
+          _.toString
+        )
+        .map(_.text) shouldBe
         Seq(TaskPriority.Medium.shortCode, friday.toString, "5 days left")
     }
 
     "add the assignee only when asked to" in {
       val assigned = task("t", status("Testing")).copy(assignedTo = Some(ada))
-      ProjectHomeStats.taskBadges(assigned, Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) should contain(ada.fullName)
-      ProjectHomeStats.taskBadges(assigned, Seq.empty, showAssignee = false, today, WorkDayCalendar.DefaultWorkDays, _.toString).map(_.text) should not contain ada.fullName
+      ProjectHomeStats
+        .taskBadges(assigned, Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .map(_.text) should contain(ada.fullName)
+      ProjectHomeStats
+        .taskBadges(assigned, Seq.empty, showAssignee = false, today, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .map(_.text) should not contain ada.fullName
     }
   }
 

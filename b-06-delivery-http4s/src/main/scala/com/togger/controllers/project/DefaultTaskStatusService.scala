@@ -1,7 +1,8 @@
 package com.togger.controllers.project
 
 import com.togger.common.TgClock
-import com.togger.task.{DefaultTaskStatus, TaskStatus}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskStatus
 
 import java.util.UUID
 

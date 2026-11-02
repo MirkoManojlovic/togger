@@ -1,9 +1,9 @@
 package com.togger.projectlabel
 
 import cats.implicits.catsSyntaxApplicativeError
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -12,8 +12,10 @@ class ProjectLabelRepoTest extends BusinessTgDbSpec with TimeHelpers {
   val projectLabelRepo = new ProjectLabelRepoImpl
   val projectLabelCategoryRepo = new ProjectLabelCategoryRepoImpl
 
-  val category1 = ProjectLabelCategory(id = UUID.randomUUID(), name = "Language", createdAt = nowAsInstant, updatedAt = nowAsInstant)
-  val category2 = ProjectLabelCategory(id = UUID.randomUUID(), name = "Framework", createdAt = nowAsInstant, updatedAt = nowAsInstant)
+  val category1 =
+    ProjectLabelCategory(id = UUID.randomUUID(), name = "Language", createdAt = nowAsInstant, updatedAt = nowAsInstant)
+  val category2 =
+    ProjectLabelCategory(id = UUID.randomUUID(), name = "Framework", createdAt = nowAsInstant, updatedAt = nowAsInstant)
 
   testNameFromClassName should {
 

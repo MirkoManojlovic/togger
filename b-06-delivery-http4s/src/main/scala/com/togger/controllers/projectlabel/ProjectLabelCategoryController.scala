@@ -1,6 +1,7 @@
 package com.togger.controllers.projectlabel
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.projectlabel._
@@ -16,7 +17,7 @@ class ProjectLabelCategoryController(
   import projectLabelCategoryEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => projectLabelCategoryId =>
+    findByIdEndpoint.serverLogic { _ => projectLabelCategoryId =>
       projectLabelCategoryService
         .findById(projectLabelCategoryId)
         .map { projectLabelCategory =>
@@ -27,7 +28,7 @@ class ProjectLabelCategoryController(
     }
 
   val findAll =
-    findAllEndpoint.serverLogic { auth => pageRequest =>
+    findAllEndpoint.serverLogic { _ => pageRequest =>
       PageRequestValidation.withPage(pageRequest) { page =>
         projectLabelCategoryService
           .findPaginated(page)
@@ -41,7 +42,7 @@ class ProjectLabelCategoryController(
       }
     }
 
-  val save = saveEndpoint.serverLogic { auth => dto =>
+  val save = saveEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabelCategory = ProjectLabelCategory(
@@ -52,11 +53,13 @@ class ProjectLabelCategoryController(
     )
 
     projectLabelCategoryService.createProjectLabelCategory(projectLabelCategory).map { projectLabelCategory =>
-      TgJsonSuccess.justBodyRight(CreateProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name))
+      TgJsonSuccess.justBodyRight(
+        CreateProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name)
+      )
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabelCategory = ProjectLabelCategory(
@@ -67,11 +70,13 @@ class ProjectLabelCategoryController(
     )
 
     projectLabelCategoryService.updateProjectLabelCategory(projectLabelCategory).map { projectLabelCategory =>
-      TgJsonSuccess.justBodyRight(FindProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name))
+      TgJsonSuccess.justBodyRight(
+        FindProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name)
+      )
     }
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     projectLabelCategoryService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Project label category deleted successfully"))

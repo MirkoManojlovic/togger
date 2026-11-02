@@ -1,7 +1,9 @@
 package com.togger.ui.timebox
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.components.{TgProgressColor, TgProgressComponent, TgProgressSize}
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressComponent
+import com.togger.ui.components.TgProgressSize
 
 /** The capacity bars of the timebox: one for the whole team and one for each person. Rendering only: what a bar holds
   * is worked out by [[TimeboxCapacity]].

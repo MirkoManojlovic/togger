@@ -1,23 +1,30 @@
 package com.togger.timebox
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.task.TaskVersion
-import com.togger.task.TaskVersionRepoImpl.{taskPriorityCodec, TASK_VERSION_TABLE_FRAG}
+import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
+import com.togger.task.TaskVersionRepoImpl.taskPriorityCodec
 import com.togger.timebox.TimeboxRepoImpl.TIMEBOX_TABLE_FRAG
-import com.togger.timebox.TimeboxVersionRepoImpl.{TIMEBOX_VERSION_TABLE_FRAG, TIMEBOX_VERSION_TASK_TABLE_FRAG}
+import com.togger.timebox.TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE_FRAG
+import com.togger.timebox.TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Update
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Update}
 
 import java.time.LocalDate
 import java.util.UUID
 
 class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
 
-  private lazy val returnFields = List("version", "timebox_id", "start_date", "end_date", "description", "created_at", "change_comment")
+  private lazy val returnFields =
+    List("version", "timebox_id", "start_date", "end_date", "description", "created_at", "change_comment")
 
   override def insert(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion] = {
     import timeboxVersion._

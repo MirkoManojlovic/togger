@@ -1,9 +1,10 @@
 package com.togger.ui.tasktemplate
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -19,9 +20,10 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(
         labelError(dto.projectId, dto.taskLabelId, None).fold {
-          val template = PreviewTaskTemplate(UUID.randomUUID(), dto.projectId, dto.taskLabelId, callerId, ctx.clock.currentInstant)
-          data.templates.upsert(template)
-          data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
+          val template =
+            PreviewTaskTemplate(UUID.randomUUID(), dto.projectId, dto.taskLabelId, callerId, ctx.clock.currentInstant)
+          val _ = data.templates.upsert(template)
+          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
           PreviewResponses.ok(toDto(template))
         }(PreviewResponses.badRequest[FindTaskTemplateResp](_))
       )
@@ -35,7 +37,7 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
           labelError(template.projectId, dto.taskLabelId, Some(template.id)).fold {
             val updated = data.templates.upsert(template.copy(taskLabelId = dto.taskLabelId))
             val unchanged = data.latestVersion(template.id).exists(v => v.name == dto.name && v.body == dto.body)
-            if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
+            val _ = if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.body))
             PreviewResponses.ok(toDto(updated))
           }(PreviewResponses.badRequest[FindTaskTemplateResp](_))
       })
@@ -58,9 +60,12 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
   override def findTaskTemplateById(id: UUID): TgRespIO[FindTaskTemplateResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        data.templates.find(id).flatMap(toDtoOpt).fold(PreviewResponses.badRequest[FindTaskTemplateResp](NotFoundMessage))(
-          PreviewResponses.ok(_)
-        )
+        data.templates
+          .find(id)
+          .flatMap(toDtoOpt)
+          .fold(PreviewResponses.badRequest[FindTaskTemplateResp](NotFoundMessage))(
+            PreviewResponses.ok(_)
+          )
       )
     )
 
@@ -74,7 +79,7 @@ class TaskTemplateFeServicePreview(ctx: PreviewContext, data: TaskConfigPreviewD
       IO.defer {
         if (data.templates.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](NotFoundMessage)
         else {
-          data.deleteTemplate(id)
+          val _ = data.deleteTemplate(id)
           PreviewResponses.okEmpty("Task template deleted successfully")
         }
       }

@@ -1,9 +1,11 @@
 package com.togger.ui.project
 
 import cats.effect.IO
+import com.togger.common.Forbidden
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{Forbidden, PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -34,7 +36,7 @@ class ProjectServicePreview(
             defaultWorkDays,
             dto.projectLabelIds.distinct.toList
           )
-          projects.projects.upsert(created)
+          val _ = projects.projects.upsert(created)
           projects.addMembers(created.id, callerId +: dto.membersToAdd)
           projects.notifyProjectCreated(created.id)
           PreviewResponses.ok(toResp(created))
@@ -72,7 +74,7 @@ class ProjectServicePreview(
       IO.defer {
         if (!projects.isMember(id, callerId) && !accounts.isAdmin(callerId)) IO.pure(Left(Forbidden))
         else {
-          projects.deleteProject(id)
+          val _ = projects.deleteProject(id)
           PreviewResponses.okEmpty("Project deleted successfully")
         }
       }
@@ -83,7 +85,9 @@ class ProjectServicePreview(
     page: PageRequest
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
-      IO.defer(PreviewResponses.paged(memberProjects(callerId).filter(_.organizationId == organizationId).map(toResp), page))
+      IO.defer(
+        PreviewResponses.paged(memberProjects(callerId).filter(_.organizationId == organizationId).map(toResp), page)
+      )
     )
 
   override def findById(id: UUID): TgRespIO[FindProjectResp] =
@@ -102,7 +106,8 @@ class ProjectServicePreview(
   ): TgRespIO[PaginatedResponse[FindProjectResp]] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
-        val matching = memberProjects(callerId).filter(project => projectLabelIds.forall(project.projectLabelIds.contains))
+        val matching =
+          memberProjects(callerId).filter(project => projectLabelIds.forall(project.projectLabelIds.contains))
         PreviewResponses.paged(matching.map(toResp), page)
       }
     )

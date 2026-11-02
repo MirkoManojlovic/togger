@@ -2,7 +2,9 @@ package com.togger.ui.auth
 
 import com.togger.auth.AuthAccountFe
 import com.togger.auth.UserRole.NoPermissionsUserRole
-import com.togger.common.suites.{AsyncJsWordSpec, OwnerForTestingTrait, TestEvents}
+import com.togger.common.suites.AsyncJsWordSpec
+import com.togger.common.suites.OwnerForTestingTrait
+import com.togger.common.suites.TestEvents
 import com.togger.dto.login.LoginResponseDto
 import com.togger.ui.localstorage.LocalStorageTest
 import io.circe.generic.auto._

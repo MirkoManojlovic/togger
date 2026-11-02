@@ -4,20 +4,33 @@ import cats.effect.IO
 import cats.syntax.parallel._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneDateResp, FindMilestoneResp, FindProjectResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
+import com.togger.routes.FrontendPage
+import com.togger.routes.MilestoneHistoryParams
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, MilestoneHistoryParams, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.LogEntryStatusSquare
+import com.togger.ui.components.MultiSelectItem
+import com.togger.ui.components.TableSearchComponent
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{LogEntryStatusSquare, MultiSelectItem, TableSearchComponent, TgTooltip}
+import com.togger.ui.components.TgTooltip
 import com.togger.ui.project.ProjectService
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 import org.scalajs.dom.MouseEvent
 
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 /** The Gantt chart of the log entries of the tasks of one milestone, built like [[MilestoneHistoryComponent]]. It reads
@@ -122,8 +135,8 @@ class SingleMilestoneHistoryComponent(
   private def showHistory(change: MilestoneHistoryParams => MilestoneHistoryParams): Unit =
     currentParamsVar.update(change)
 
-  /** Keeps the params in step when the user changes a multi-select widget. Picking exactly the widget's default is spelled by
-    * leaving it out of the URL.
+  /** Keeps the params in step when the user changes a multi-select widget. Picking exactly the widget's default is
+    * spelled by leaving it out of the URL.
     */
   private def navigateOnSelection(
     selectedIds: Signal[Set[String]],
@@ -155,14 +168,14 @@ class SingleMilestoneHistoryComponent(
   )
 
   private val navigateOnChange: Seq[Modifier[HtmlElement]] = Seq(
-    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)((current, selection) =>
-      current.copy(months = selection)
+    navigateOnSelection(dateFilterComponent.selectedMonthIds, dateFilterComponent.monthItemsSignal, allIds)(
+      (current, selection) => current.copy(months = selection)
     ),
     dateFilterComponent.modeSignal.changes --> Observer[DateFilterMode](mode =>
       showHistory(_.copy(byRange = mode == DateFilterMode.Range))
     ),
-    dateFilterComponent.rangeSignal.changes --> Observer[(Option[LocalDate], Option[LocalDate])] {
-      case (start, stop) => showHistory(_.copy(start = start, stop = stop))
+    dateFilterComponent.rangeSignal.changes --> Observer[(Option[LocalDate], Option[LocalDate])] { case (start, stop) =>
+      showHistory(_.copy(start = start, stop = stop))
     },
     searchTermVar.signal.changes --> Observer[String](term => showHistory(_.copy(search = term.trim)))
   )
@@ -241,9 +254,7 @@ class SingleMilestoneHistoryComponent(
           val tasks: Seq[FindTaskRespFull] =
             if (needle.isEmpty) allTasks
             else
-              allTasks.filter(t =>
-                t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle)
-              )
+              allTasks.filter(t => t.name.toLowerCase.contains(needle) || t.description.toLowerCase.contains(needle))
 
           val allDays: Seq[LocalDate] =
             if (allLogEntries.isEmpty) Seq.empty
@@ -309,8 +320,7 @@ class SingleMilestoneHistoryComponent(
           val orderedTasks: Seq[FindTaskRespFull] = orderedGroups.flatMap(_._2)
 
           var rowCursor = 0
-          val (milestoneBoxes, milestoneDateMarkers)
-            : (Seq[MilestoneBox], Seq[MilestoneDateMarker]) =
+          val (milestoneBoxes, milestoneDateMarkers): (Seq[MilestoneBox], Seq[MilestoneDateMarker]) =
             orderedGroups.foldLeft((Seq.empty[MilestoneBox], Seq.empty[MilestoneDateMarker])) {
               case ((boxAcc, markerAcc), (milestoneIdOpt, groupTasks)) =>
                 val rowStart = rowCursor + 3
@@ -376,8 +386,8 @@ class SingleMilestoneHistoryComponent(
                         // Custom, user-defined dates attached to this milestone (distinct from its own
                         // startDate/dueDate/endDate fields) — each gets its own marker when its
                         // day is currently visible.
-                        val customDateMarkers = milestoneDatesByMilestoneId.getOrElse(milestoneId, Seq.empty).flatMap {
-                          milestoneDate =>
+                        val customDateMarkers =
+                          milestoneDatesByMilestoneId.getOrElse(milestoneId, Seq.empty).flatMap { milestoneDate =>
                             val date = toLocalDate(milestoneDate.date)
                             days.indexOf(date) match {
                               case -1 => None
@@ -392,7 +402,7 @@ class SingleMilestoneHistoryComponent(
                                   )
                                 )
                             }
-                        }
+                          }
                         (boxAcc ++ newBoxes, markerAcc ++ dueDateMarker ++ customDateMarkers)
                       case None => (boxAcc, markerAcc)
                     }
@@ -427,7 +437,11 @@ class SingleMilestoneHistoryComponent(
     )
 
   private def milestoneDateMarkerElement(marker: MilestoneDateMarker) = {
-    val trigger = div(cls("w-full h-full border-2 border-black dark:border-default-strong rounded-sm hover:bg-black dark:hover:bg-neutral-quaternary-medium"))
+    val trigger = div(
+      cls(
+        "w-full h-full border-2 border-black dark:border-default-strong rounded-sm hover:bg-black dark:hover:bg-neutral-quaternary-medium"
+      )
+    )
     TgTooltip(trigger = trigger, text = marker.tooltipText).element.amend(
       styleAttr := gridPlacement(marker.colIndex, marker.colIndex + 1, marker.rowStart, marker.rowEnd)
     )
@@ -505,7 +519,9 @@ class SingleMilestoneHistoryComponent(
       cls("pointer-events-none flex items-center justify-end"),
       styleAttr := s"grid-column: 1 / 2; grid-row: $rowStart / $rowEnd;",
       div(
-        cls("w-2 h-20 bg-neutral-quaternary-medium hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"),
+        cls(
+          "w-2 h-20 bg-neutral-quaternary-medium hover:bg-fg-brand cursor-col-resize pointer-events-auto rounded-full"
+        ),
         cls <-- dragStateVar.signal.map(state => if (state.isDefined) "bg-fg-brand" else ""),
         onMouseDown --> (ev => startDrag(ev))
       )

@@ -3,9 +3,12 @@ package com.togger.milestone
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
-import com.togger.common.{DbPageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.milestone.MilestoneSummaryError.{CannotDeleteLastVersion, CannotEditLatestVersion}
+import com.togger.milestone.MilestoneSummaryError.CannotDeleteLastVersion
+import com.togger.milestone.MilestoneSummaryError.CannotEditLatestVersion
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._

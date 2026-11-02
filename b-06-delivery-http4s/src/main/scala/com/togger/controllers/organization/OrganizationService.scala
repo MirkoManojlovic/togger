@@ -1,15 +1,22 @@
 package com.togger.controllers.organization
 
 import cats.effect.IO
-import cats.implicits.{catsSyntaxApplicativeId, toTraverseOps}
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.toTraverseOps
 import com.togger.account.Account
-import com.togger.common.{DbPageRequest, PaginatedResponse, TgClock}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
 import com.togger.logging.TgLogging
-import com.togger.organization.{Organization, OrganizationAccount, OrganizationAccountRepo, OrganizationRepo}
+import com.togger.organization.Organization
+import com.togger.organization.OrganizationAccount
+import com.togger.organization.OrganizationAccountRepo
+import com.togger.organization.OrganizationRepo
 import com.togger.project.ProjectRepo
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
 
@@ -107,15 +114,18 @@ class OrganizationService(
     * the organization; false when it is not.
     */
   def deleteWithAllData(organizationId: UUID, accountId: UUID): IO[Boolean] =
-    (organizationAccountRepo.isMember(organizationId, accountId).flatMap {
-      case false => false.pure[ConnectionIO]
-      case true =>
-        for {
-          _ <- projectRepo.deleteAllByOrganizationId(organizationId)
-          _ <- organizationAccountRepo.deleteAllByOrganizationId(organizationId)
-          _ <- organizationRepo.deleteById(organizationId)
-        } yield true
-    }).transact(transactor)
+    (organizationAccountRepo
+      .isMember(organizationId, accountId)
+      .flatMap {
+        case false => false.pure[ConnectionIO]
+        case true =>
+          for {
+            _ <- projectRepo.deleteAllByOrganizationId(organizationId)
+            _ <- organizationAccountRepo.deleteAllByOrganizationId(organizationId)
+            _ <- organizationRepo.deleteById(organizationId)
+          } yield true
+      })
+      .transact(transactor)
 
   /** Every organization of every tenant: only for admins. */
   def findPaginated(page: DbPageRequest): IO[PaginatedResponse[Organization]] =

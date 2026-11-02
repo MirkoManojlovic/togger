@@ -2,11 +2,16 @@ package com.togger.ui.organization
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.dto._
-import com.togger.dto.organization.{CreateOrganizationReq, FindOrganizationResp, UpdateOrganizationReq}
+import com.togger.dto.organization.CreateOrganizationReq
+import com.togger.dto.organization.FindOrganizationResp
+import com.togger.dto.organization.UpdateOrganizationReq
 import com.togger.ui.project.ProjectService
 
 import java.util.UUID

@@ -14,7 +14,7 @@ object ThemeMode {
   def fromStorage(value: Option[String]): ThemeMode = value match {
     case Some("light") => Light
     case Some("dark")  => Dark
-    case _              => System
+    case _             => System
   }
 
   def toStorage(mode: ThemeMode): String = mode match {
@@ -53,7 +53,9 @@ class ThemeStore(localStorage: LocalStorage) {
   }
 
   def applyToDocument(dark: Boolean): Unit =
-    dom.document.documentElement.classList.toggle("dark", dark)
+    locally {
+      val _ = dom.document.documentElement.classList.toggle("dark", dark)
+    }
 
   /** Keeps System mode live if the OS theme changes while the app is open. */
   def listenToSystemPreference(): Unit = {

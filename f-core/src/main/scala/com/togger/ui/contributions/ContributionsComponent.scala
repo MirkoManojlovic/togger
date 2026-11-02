@@ -4,15 +4,22 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{ContributionsDto, MemberContributionDto, MilestoneContributionsDto}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.MilestoneContributionsDto
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.ContributionsParams
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowContributionsPage
-import com.togger.routes.{ContributionsParams, FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{TableFilterComponent, TgTab, TgTabs}
+import com.togger.ui.components.TableFilterComponent
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.contributions.ContributionsComponent.GeneralTabId
-import com.togger.ui.milestone.{DateFilterComponent, DateFilterMode}
+import com.togger.ui.milestone.DateFilterComponent
+import com.togger.ui.milestone.DateFilterMode
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TgDateFormater

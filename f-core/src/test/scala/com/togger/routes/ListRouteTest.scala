@@ -1,16 +1,14 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{
-  ShowAllOrganizationsPage,
-  ShowAllProjectLabelCategoriesPage,
-  ShowAllProjectLabelsPage,
-  ShowAllTaskLabelsPage,
-  ShowAllTaskStatusesPage,
-  ShowAllTaskTemplatesPage,
-  ShowProjectsForOrganizationIdTable,
-  ShowTimeboxesPage
-}
+import com.togger.routes.Pages.ShowAllOrganizationsPage
+import com.togger.routes.Pages.ShowAllProjectLabelCategoriesPage
+import com.togger.routes.Pages.ShowAllProjectLabelsPage
+import com.togger.routes.Pages.ShowAllTaskLabelsPage
+import com.togger.routes.Pages.ShowAllTaskStatusesPage
+import com.togger.routes.Pages.ShowAllTaskTemplatesPage
+import com.togger.routes.Pages.ShowProjectsForOrganizationIdTable
+import com.togger.routes.Pages.ShowTimeboxesPage
 
 import java.util.UUID
 
@@ -18,7 +16,7 @@ class ListRouteTest extends AsyncJsWordSpec {
 
   private val id = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: FrontendPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

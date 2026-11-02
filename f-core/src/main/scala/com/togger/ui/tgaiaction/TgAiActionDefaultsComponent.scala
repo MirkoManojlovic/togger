@@ -3,10 +3,15 @@ package com.togger.ui.tgaiaction
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindTgAiActionResp, SetTgAiActionDefaultReq, TgAiEndpointDto}
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.SetTgAiActionDefaultReq
+import com.togger.dto.TgAiEndpointDto
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.{AccountService, TgCard, TgSelect}
-import com.togger.ui.organization.{OrganizationProjectsLoader, OrganizationWithProjects}
+import com.togger.ui.auth.AccountService
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgSelect
+import com.togger.ui.organization.OrganizationProjectsLoader
+import com.togger.ui.organization.OrganizationWithProjects
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 
@@ -59,7 +64,9 @@ class TgAiActionDefaultsComponent(
   private def changeDefault(projectId: String, endpointId: Int, actionId: String): Unit = {
     val call =
       if (actionId.isEmpty)
-        tgAiActionService.clearDefault(UUID.fromString(projectId), endpointId).toastMessageJustMessage("Default cleared")
+        tgAiActionService
+          .clearDefault(UUID.fromString(projectId), endpointId)
+          .toastMessageJustMessage("Default cleared")
       else
         tgAiActionService
           .setDefault(SetTgAiActionDefaultReq(UUID.fromString(projectId), endpointId, UUID.fromString(actionId)))
@@ -86,7 +93,8 @@ class TgAiActionDefaultsComponent(
       inputStateUpdater = Observer[String](actionId => changeDefault(projectId, endpoint.id, actionId)),
       labelValue = endpoint.name,
       emptyValue = Some("No default"),
-      valuesAndDisplays = ListMap(actions.filter(_.endpointIds.contains(endpoint.id)).map(a => a.id.toString -> a.name): _*)
+      valuesAndDisplays =
+        ListMap(actions.filter(_.endpointIds.contains(endpoint.id)).map(a => a.id.toString -> a.name): _*)
     ).htmlElement.amend(cls("mb-4"))
 
   val element = div(

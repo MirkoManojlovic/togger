@@ -1,10 +1,13 @@
 package com.togger.projectlabel
 
 import cats.implicits._
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class ProjectLabelCategoryRepoPaginationTest extends BusinessTgDbSpec with TimeHelpers {
 
@@ -13,7 +16,8 @@ class ProjectLabelCategoryRepoPaginationTest extends BusinessTgDbSpec with TimeH
   private def newCategory(name: String): ProjectLabelCategory =
     ProjectLabelCategory(java.util.UUID.randomUUID(), name, nowAsInstant, nowAsInstant)
 
-  /** Eleven categories "Category 00".."Category 10", inserted in reverse so the order is by name and not by insertion. */
+  /** Eleven categories "Category 00".."Category 10", inserted in reverse so the order is by name and not by insertion.
+    */
   private def seed(): ConnectionIO[Vector[ProjectLabelCategory]] =
     (0 to 10).toList.reverse
       .traverse(index => repo.insert(newCategory(f"Category $index%02d")).map(index -> _))

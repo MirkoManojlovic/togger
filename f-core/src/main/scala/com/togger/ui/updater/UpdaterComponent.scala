@@ -2,12 +2,12 @@ package com.togger.ui.updater
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.scalajs.js.Thenable.Implicits._
 
 class UpdaterComponent {
 
@@ -81,7 +81,12 @@ class UpdaterComponent {
       p(cls("mt-3 text-sm text-body"), role("status"), child.text <-- stateVar.signal.map(statusText)),
       child.maybe <-- stateVar.signal.map {
         case Available(_, notes) if notes.nonEmpty =>
-          Some(pre(cls("mt-3 p-2 rounded-base bg-neutral-secondary-medium text-sm text-heading whitespace-pre-wrap"), notes))
+          Some(
+            pre(
+              cls("mt-3 p-2 rounded-base bg-neutral-secondary-medium text-sm text-heading whitespace-pre-wrap"),
+              notes
+            )
+          )
         case _ => None
       }
     )

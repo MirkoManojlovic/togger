@@ -1,6 +1,7 @@
 package com.togger.controllers.projectlabel
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.projectlabel._
@@ -16,7 +17,7 @@ class ProjectLabelController(
   import projectLabelEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => projectLabelId =>
+    findByIdEndpoint.serverLogic { _ => projectLabelId =>
       projectLabelService
         .findById(projectLabelId)
         .map { projectLabel =>
@@ -32,7 +33,7 @@ class ProjectLabelController(
     }
 
   val findAll =
-    findAllEndpoint.serverLogic { auth => pageRequest =>
+    findAllEndpoint.serverLogic { _ => pageRequest =>
       PageRequestValidation.withPage(pageRequest) { page =>
         projectLabelService
           .findPaginated(page)
@@ -51,7 +52,7 @@ class ProjectLabelController(
       }
     }
 
-  val save = saveEndpoint.serverLogic { auth => dto =>
+  val save = saveEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabel = ProjectLabel(
@@ -74,7 +75,7 @@ class ProjectLabelController(
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val projectLabel = ProjectLabel(
@@ -98,7 +99,7 @@ class ProjectLabelController(
     }
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     projectLabelService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Project label deleted successfully"))

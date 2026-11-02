@@ -1,18 +1,19 @@
 package com.togger.controllers.milestone
 
 import cats.effect.IO
+import com.togger.common.DateRangeValidation
 import com.togger.common.TgError._
-import com.togger.common.{DateRangeValidation, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.milestone.MilestoneDateDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.{FindMilestoneDateResp, MilestoneDateVersionDto}
-import com.togger.milestone.{
-  MilestoneDate,
-  MilestoneDateEndpoints,
-  MilestoneDateService,
-  MilestoneDateVersion,
-  MilestoneService
-}
+import com.togger.controllers.milestone.MilestoneDateDtoMapper.toDto
+import com.togger.controllers.milestone.MilestoneDateDtoMapper.toVersionDto
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.MilestoneDateVersionDto
+import com.togger.milestone.MilestoneDate
+import com.togger.milestone.MilestoneDateEndpoints
+import com.togger.milestone.MilestoneDateService
+import com.togger.milestone.MilestoneDateVersion
+import com.togger.milestone.MilestoneService
 
 import java.time.ZoneOffset
 import java.util.UUID
@@ -24,7 +25,7 @@ class MilestoneDateController(
   dateRangeValidation: DateRangeValidation
 ) {
 
-  val save = milestoneDateEndpoints.saveEndpoint.serverLogic { auth => dto =>
+  val save = milestoneDateEndpoints.saveEndpoint.serverLogic { _ => dto =>
     milestoneService.getCurrent(dto.milestoneId).flatMap {
       case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
       case Right(milestone) =>
@@ -57,7 +58,7 @@ class MilestoneDateController(
     }
   }
 
-  val findById = milestoneDateEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = milestoneDateEndpoints.findByIdEndpoint.serverLogic { _ => id =>
     milestoneDateService
       .getCurrent(id)
       .map {
@@ -66,7 +67,7 @@ class MilestoneDateController(
       }
   }
 
-  val findByMilestoneId = milestoneDateEndpoints.findByMilestoneIdEndpoint.serverLogic { auth => request =>
+  val findByMilestoneId = milestoneDateEndpoints.findByMilestoneIdEndpoint.serverLogic { _ => request =>
     val (milestoneId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneDateService
@@ -75,7 +76,7 @@ class MilestoneDateController(
     }
   }
 
-  val findByProjectId = milestoneDateEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = milestoneDateEndpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneDateService
@@ -84,7 +85,7 @@ class MilestoneDateController(
     }
   }
 
-  val update = milestoneDateEndpoints.updateEndpoint.serverLogic { auth => dto =>
+  val update = milestoneDateEndpoints.updateEndpoint.serverLogic { _ => dto =>
     milestoneDateService.getCurrent(dto.id).flatMap {
       case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneDateResp])
       case Right(currentMilestoneDate) =>
@@ -119,13 +120,13 @@ class MilestoneDateController(
     }
   }
 
-  val delete = milestoneDateEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = milestoneDateEndpoints.deleteByIdEndpoint.serverLogic { _ => id =>
     milestoneDateService
       .deleteMilestoneDate(id)
       .map(_ => TgJsonSuccess.justMessageRight("Milestone date deleted successfully"))
   }
 
-  val listVersions = milestoneDateEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = milestoneDateEndpoints.listVersionsEndpoint.serverLogic { _ => request =>
     val (milestoneDateId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       milestoneDateService
@@ -134,7 +135,7 @@ class MilestoneDateController(
     }
   }
 
-  val updateVersion = milestoneDateEndpoints.updateVersionEndpoint.serverLogic { auth => dto =>
+  val updateVersion = milestoneDateEndpoints.updateVersionEndpoint.serverLogic { _ => dto =>
     milestoneDateService.getCurrent(dto.milestoneDateId).flatMap {
       case Left(error) => IO.pure(error.toBadRequestLeft[MilestoneDateVersionDto])
       case Right(currentMilestoneDate) =>
@@ -158,7 +159,7 @@ class MilestoneDateController(
     }
   }
 
-  val deleteVersion = milestoneDateEndpoints.deleteVersionEndpoint.serverLogic { auth => version =>
+  val deleteVersion = milestoneDateEndpoints.deleteVersionEndpoint.serverLogic { _ => version =>
     milestoneDateService
       .deleteVersion(version)
       .map {

@@ -18,13 +18,13 @@ class ApexChartComponent(chartOptions: Signal[ApexChartOptions], isDark: Signal[
       onMountBind { ctx =>
         chartOptions.combineWith(isDark) --> Observer[(ApexChartOptions, Boolean)] { case (options, dark) =>
           // wait a frame so the `.dark` class (applied from the same signal) is reflected in computed styles
-          dom.window.requestAnimationFrame { _ =>
+          val _ = dom.window.requestAnimationFrame { _ =>
             val all = ApexChartJs.toJs(options, ApexChartTheme(readPalette(), dark))
             chart match {
               case Some(existing) => existing.updateOptions(all)
               case None =>
                 val created = new ApexCharts(ctx.thisNode.ref, all)
-                created.render()
+                val _ = created.render()
                 chart = Some(created)
             }
           }

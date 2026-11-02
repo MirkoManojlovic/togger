@@ -43,7 +43,7 @@ class ModalFactory(val parentElementForModal: HtmlElement) {
 
   private def show(modal: TgModal): Unit = {
     currentModalVar.set(Some(modal.element))
-    modal.isClicked.changes.foreach {
+    val _ = modal.isClicked.changes.foreach {
       case Some(_) => currentModalVar.set(None)
       case None    => ()
     }(unsafeWindowOwner)

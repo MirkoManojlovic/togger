@@ -4,23 +4,30 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindTaskTemplateResp
-import com.togger.routes.Pages.{CreateTaskTemplatePage, EditTaskTemplatePage, ShowAllTaskTemplatesPage}
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
+import com.togger.routes.Pages.CreateTaskTemplatePage
+import com.togger.routes.Pages.EditTaskTemplatePage
+import com.togger.routes.Pages.ShowAllTaskTemplatesPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
+import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgPaginationComponent}
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{
-  headerIconButtonCls,
-  iconButton,
-  rowButtonMarginCls,
-  rowIconButtonCls,
-  rowIconButtonDangerCls
-}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
@@ -30,7 +37,6 @@ class ShowAllTaskTemplatesComponent(
   taskTemplateService: TaskTemplateFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   tgDateFormater: TgDateFormater,
   modalFactory: ModalFactory,
   projectId: UUID,

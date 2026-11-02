@@ -1,7 +1,8 @@
 package com.togger.ui.contributions
 
 import com.togger.routes.ContributionsParams
-import com.togger.ui.milestone.{ActiveDateFilter, MonthOption}
+import com.togger.ui.milestone.ActiveDateFilter
+import com.togger.ui.milestone.MonthOption
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -3,7 +3,8 @@ package com.togger.ui.synccheck
 import com.raquo.laminar.api.L._
 import com.togger.ui.localstorage.LocalStorage
 
-/** How often the frontend asks the backend whether there is something to import or export; kept in this browser only. */
+/** How often the frontend asks the backend whether there is something to import or export; kept in this browser only.
+  */
 class SyncCheckSettingsStore(localStorage: LocalStorage) {
 
   private val intervalVar: Var[Int] = Var(readIntervalSeconds)

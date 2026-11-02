@@ -2,28 +2,33 @@ package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.project.ProjectHomeStats
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskCard}
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkTaskCard
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.gantt.ReviewTaskBadges
-
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /** A task as the status of the projects shows it: its description on the left, its log entries in the middle, by the
   * day selected in the calendar or by a range of weeks, and the calendar of the log entries on the right.
   *
   * @param showName
-  *   the name of the task, linked to its page, with its labels beside it and the other badges of the task under it, over the description; left out
-  *   where the name is shown by the caller
+  *   the name of the task, linked to its page, with its labels beside it and the other badges of the task under it,
+  *   over the description; left out where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
   * @param summaryPeriod
@@ -104,8 +109,8 @@ class TaskPreviewComponent(
       .toSeq
       .collectFirst { case entry: dom.html.Element if entry.offsetParent != null => entry }
       .foreach { entry =>
-      pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
-    }
+        pane.scrollTop = entry.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
+      }
 
   /** The log entries in a pane that scrolls and the calendar beside it, outside of the pane, so the calendar stays
     * where it is; a click on a day of the calendar scrolls the pane to the entries of that day.
@@ -177,7 +182,11 @@ class TaskPreviewComponent(
                   div(
                     cls("flex items-center gap-2 mb-2"),
                     dateBadge(),
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    TgBadge(
+                      text = entry.status.toStringWithEmoji,
+                      color = entry.status.badgeColor,
+                      bordered = true
+                    ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)
@@ -208,8 +217,8 @@ class TaskPreviewComponent(
           div(
             logDateAttr := day.toString,
             cls("mb-2 p-2 border rounded-base"),
-            cls.toggle("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
-            cls.toggle("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
+            cls("border-brand") <-- selectedDayVar.signal.map(_.contains(day)),
+            cls("border-transparent") <-- selectedDayVar.signal.map(!_.contains(day)),
             dayEntries
               .sortBy(_.createdAt)
               .reverse
@@ -223,7 +232,11 @@ class TaskPreviewComponent(
                       bordered = true,
                       color = TgBadgeColor.Gray
                     ).element,
-                    TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+                    TgBadge(
+                      text = entry.status.toStringWithEmoji,
+                      color = entry.status.badgeColor,
+                      bordered = true
+                    ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
                   tgMarkdown.toLaminarDiv(entry.textExternal)

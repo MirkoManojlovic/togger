@@ -3,16 +3,18 @@ package com.togger.dump
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.util.SplunkMacro.sp
-import io.circe.generic.auto._
-import io.circe.parser.{decode, parse}
-import io.circe.syntax._
 import io.circe.Json
+import io.circe.generic.auto._
+import io.circe.parser.decode
+import io.circe.parser.parse
+import io.circe.syntax._
 
 import java.time.Instant
 import java.util.UUID
 import scala.util.Try
 
-/** One file of the export tree. The hash is taken from the canonical json, so it is the same wherever it is computed. */
+/** One file of the export tree. The hash is taken from the canonical json, so it is the same wherever it is computed.
+  */
 case class ExportEntity(entityType: DataExportEntityType, id: UUID, name: Option[String], json: Json) {
   lazy val hash: String = ExportHasher.hashJson(json)
   lazy val changedAt: Option[Instant] = ExportHasher.latestTimestamp(json)
@@ -97,7 +99,9 @@ class DataExportTreeStore(diskOps: DiskOps) extends TgLogging {
   ): Either[String, Json] =
     for {
       entry <- index.entriesOf(entityType).get(id).toRight(s"${entityType.folder}/$id is not in the index")
-      content <- Try(diskOps.readFileFromDisk(entityPath(diskOps.resolvePath(folderPath), entityType, id))).toEither.left
+      content <- Try(
+        diskOps.readFileFromDisk(entityPath(diskOps.resolvePath(folderPath), entityType, id))
+      ).toEither.left
         .map(_.getMessage)
       json <- parse(content).left.map(_.getMessage)
       _ <- Either.cond(ExportHasher.hashJson(json) == entry.hash, (), "file content does not match the index hash")
@@ -114,17 +118,20 @@ class DataExportTreeStore(diskOps: DiskOps) extends TgLogging {
 
   private def deleteStaleFiles(folder: os.Path, entities: List[ExportEntity]): Int = {
     val wantedByFolder = entities.groupBy(_.entityType.folder).view.mapValues(_.map(e => s"${e.id}.json").toSet)
-    DataExportEntityType.all.filterNot(_.singleton).map { entityType =>
-      val wanted = wantedByFolder.getOrElse(entityType.folder, Set.empty)
-      diskOps
-        .listFiles(folder / entityType.folder)
-        .filter(file => file.last.endsWith(".json") && !wanted.contains(file.last))
-        .map { stale =>
-          logger.info(s"Deleting ${sp(stale)} as its entity no longer exists")
-          diskOps.deleteFile(stale)
-        }
-        .size
-    }.sum
+    DataExportEntityType.all
+      .filterNot(_.singleton)
+      .map { entityType =>
+        val wanted = wantedByFolder.getOrElse(entityType.folder, Set.empty)
+        diskOps
+          .listFiles(folder / entityType.folder)
+          .filter(file => file.last.endsWith(".json") && !wanted.contains(file.last))
+          .map { stale =>
+            logger.info(s"Deleting ${sp(stale)} as its entity no longer exists")
+            diskOps.deleteFile(stale)
+          }
+          .size
+      }
+      .sum
   }
 
 }

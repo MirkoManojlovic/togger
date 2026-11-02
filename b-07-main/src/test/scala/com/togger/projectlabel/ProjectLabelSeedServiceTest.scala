@@ -4,7 +4,6 @@ import com.togger.ProjectLabelSeedService
 import com.togger.common.BusinessTgDbSpec
 import com.togger.db.TgPages
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
 
@@ -27,7 +26,7 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
           val categoryIdByName = allCategories.map(c => c.name -> c.id).toMap
           allProjectLabels.size shouldBe
             DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size +
-              DefaultInfrastructure.values.size + DefaultDomain.values.size
+            DefaultInfrastructure.values.size + DefaultDomain.values.size
           allProjectLabels.count(
             _.categoryId == categoryIdByName(DefaultProjectLabelCategory.ProgrammingLanguage.categoryName)
           ) shouldBe DefaultProgrammingLanguage.values.size
@@ -55,7 +54,7 @@ class ProjectLabelSeedServiceTest extends BusinessTgDbSpec {
         allCategories.size shouldBe DefaultProjectLabelCategory.values.size
         allProjectLabels.size shouldBe
           DefaultProgrammingLanguage.values.size + DefaultProgrammingFramework.values.size +
-            DefaultInfrastructure.values.size + DefaultDomain.values.size
+          DefaultInfrastructure.values.size + DefaultDomain.values.size
       }
     }
   }

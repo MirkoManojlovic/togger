@@ -2,11 +2,13 @@ package com.togger.account
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.togger.db.{PostgresConfig, TgTestTransactor}
+import com.togger.db.PostgresConfig
+import com.togger.db.TgTestTransactor
 import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 
-import java.sql.{DriverManager, SQLException}
+import java.sql.DriverManager
+import java.sql.SQLException
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.util.chaining.scalaUtilChainingOps
@@ -55,13 +57,15 @@ object TgTestDatabase extends TgTestTransactor {
     new TgTestDatabase(name, transactor, release)
   }
 
-  def dropDatabase(name: String): Unit = adminStatement(s"""DROP DATABASE IF EXISTS "$name" WITH (FORCE)""", retries = 0)
+  def dropDatabase(name: String): Unit =
+    adminStatement(s"""DROP DATABASE IF EXISTS "$name" WITH (FORCE)""", retries = 0)
 
   @tailrec
   private def adminStatement(sql: String, retries: Int): Unit = {
     val failure =
       try {
-        val connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "togger_account", "togger_password")
+        val connection =
+          DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "togger_account", "togger_password")
         try { connection.createStatement().execute(sql); () }
         finally connection.close()
         None

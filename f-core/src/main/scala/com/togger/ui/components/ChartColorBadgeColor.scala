@@ -1,6 +1,7 @@
 package com.togger.ui.components
 
-import com.togger.chart.{ChartColor, Chartable}
+import com.togger.chart.ChartColor
+import com.togger.chart.Chartable
 
 /** Maps a [[ChartColor]] onto the [[TgBadgeColor]] of the same hue, so a badge and a chart show the same thing in the
   * same color.

@@ -1,8 +1,13 @@
 package com.togger.account
 
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, TimeHelpers}
-import com.togger.organization.{TgOrganization, TgProject}
-import com.togger.project.{ProjectAccount, ProjectAccountRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.TimeHelpers
+import com.togger.organization.TgOrganization
+import com.togger.organization.TgProject
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectAccountRepoImpl
 import doobie.implicits._
 
 import java.util.UUID

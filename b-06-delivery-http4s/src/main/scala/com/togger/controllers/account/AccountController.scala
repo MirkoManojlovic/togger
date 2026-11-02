@@ -1,8 +1,10 @@
 package com.togger.controllers.account
 
 import com.togger.account._
+import com.togger.common.AccountSearchTerm
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgError._
-import com.togger.common.{AccountSearchTerm, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto.SearchAccountDto
 
@@ -33,7 +35,7 @@ class AccountController(accountEndpoints: AccountEndpoints, accountServiceCore: 
   //      )
   //    }
   //
-  val searchByFirstNameLastNameEmail = accountEndpoints.searchByFirstNameLastNameEmail.serverLogic { auth => request =>
+  val searchByFirstNameLastNameEmail = accountEndpoints.searchByFirstNameLastNameEmail.serverLogic { _ => request =>
     val (searchTerm, pageRequest) = request
     AccountSearchTerm.validate(searchTerm) match {
       case Left(error) => error.toBadRequestLeftIO[PaginatedResponse[SearchAccountDto]]

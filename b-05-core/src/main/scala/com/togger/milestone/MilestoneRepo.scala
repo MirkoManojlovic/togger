@@ -1,6 +1,7 @@
 package com.togger.milestone
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.dto.MilestoneFilter
 import doobie.ConnectionIO
 

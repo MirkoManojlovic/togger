@@ -2,7 +2,8 @@ package com.togger.task
 
 import com.togger.account.Account
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class Task(id: UUID, projectId: UUID, createdBy: UUID, createdAt: Instant, archived: Boolean = false)
@@ -118,4 +119,3 @@ case class TaskLabel(
 }
 
 case class TaskLabelAssignment(taskId: UUID, taskLabelId: UUID, createdAt: Instant)
-

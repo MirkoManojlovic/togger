@@ -1,16 +1,17 @@
 package com.togger.ui.milestone
 
 import cats.effect.IO
+import com.togger.common.DateRangeValidation
+import com.togger.common.Forbidden
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgError._
-import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{DateRangeValidation, Forbidden, PageRequest, PaginatedResponse}
-import com.togger.dto.{
-  CreateMilestoneSummaryReq,
-  FindMilestoneSummaryResp,
-  SummariseMilestoneWithAiReq,
-  UpdateMilestoneSummaryReq
-}
+import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.dto.CreateMilestoneSummaryReq
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.SummariseMilestoneWithAiReq
+import com.togger.dto.UpdateMilestoneSummaryReq
 import com.togger.preview._
 
 import java.time.LocalDate
@@ -84,7 +85,7 @@ class MilestoneSummaryFeServicePreview(
 
   override def deleteMilestoneSummary(id: UUID): TgRespIO[TgEmptyBody] =
     asProjectMember(projectIdOfSummary(id), SummaryNotFound) {
-      data.summaries.delete(id)
+      val _ = data.summaries.delete(id)
       PreviewResponses.okEmpty("Milestone summary deleted successfully")
     }
 
@@ -94,9 +95,9 @@ class MilestoneSummaryFeServicePreview(
   private def asProjectMember[A](projectId: => Option[UUID], notFound: String)(onMember: => TgRespIO[A]): TgRespIO[A] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(projectId match {
-        case None                                           => PreviewResponses.badRequest[A](notFound)
+        case None                                         => PreviewResponses.badRequest[A](notFound)
         case Some(id) if !projects.isMember(id, callerId) => IO.pure(Left(Forbidden))
-        case Some(_)                                        => onMember
+        case Some(_)                                      => onMember
       })
     )
 

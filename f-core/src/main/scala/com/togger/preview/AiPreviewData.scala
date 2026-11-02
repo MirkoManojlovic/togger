@@ -1,7 +1,9 @@
 package com.togger.preview
 
 import com.togger.ai.TgAiEndpoints
-import com.togger.dto.{TgAiEndpointDto, TgAiModelDto, TgPromptTemplateVersionDto}
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
+import com.togger.dto.TgPromptTemplateVersionDto
 import io.circe.generic.auto._
 
 import java.time.Instant
@@ -50,7 +52,9 @@ class AiPreviewData(db: PreviewDb, projects: ProjectsPreviewData) {
     promptVersions.filter(_.tgPromptTemplateId == promptId).lastOption
 
   def deletePromptTemplate(id: UUID): Boolean = {
-    actions.all.filter(_.tgPromptTemplateId.contains(id)).foreach(action => actions.upsert(action.copy(tgPromptTemplateId = None)))
+    actions.all
+      .filter(_.tgPromptTemplateId.contains(id))
+      .foreach(action => actions.upsert(action.copy(tgPromptTemplateId = None)))
     promptVersions.deleteWhere(_.tgPromptTemplateId == id)
     promptTemplates.delete(id)
   }

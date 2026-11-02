@@ -1,17 +1,21 @@
 package com.togger.ui.tgaiaction
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
+import com.togger.dto.FindTgPromptTemplateResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.dto.TgAiModelDto
+import com.togger.ui.auth.TgCheckbox
 import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.auth.TgSelect
 import com.togger.ui.auth.TgSelect.TgSelectSyntax
-import com.togger.ui.auth.{TgCheckbox, TgInputType, TgSelect}
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import scala.collection.immutable.ListMap
 
-/** The fields shared by the create and the edit form. The prompt templates, the models and the endpoints are read before
-  * the form is shown, because the selects and the checkboxes are built from them.
+/** The fields shared by the create and the edit form. The prompt templates, the models and the endpoints are read
+  * before the form is shown, because the selects and the checkboxes are built from them.
   */
 class TgAiActionFormFields(
   formState: Var[TgAiActionForm],

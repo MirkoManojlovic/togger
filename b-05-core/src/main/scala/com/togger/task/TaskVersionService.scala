@@ -2,9 +2,13 @@ package com.togger.task
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
-import com.togger.task.TaskError.{CannotDeleteLastVersion, CannotEditLatestVersion, TaskError, VersionNotFound}
+import com.togger.task.TaskError.CannotDeleteLastVersion
+import com.togger.task.TaskError.CannotEditLatestVersion
+import com.togger.task.TaskError.TaskError
+import com.togger.task.TaskError.VersionNotFound
 import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd

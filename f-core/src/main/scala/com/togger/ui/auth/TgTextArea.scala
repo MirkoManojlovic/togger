@@ -1,9 +1,10 @@
 package com.togger.ui.auth
 
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import com.togger.ui.auth.TgTextArea.{labelClass, tgTextAreaStyle}
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgTextArea.labelClass
+import com.togger.ui.auth.TgTextArea.tgTextAreaStyle
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import org.scalajs.dom.html
 import org.scalajs.dom.html.Paragraph

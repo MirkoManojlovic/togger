@@ -9,22 +9,26 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
-import com.togger.ui.organization.TgIcons
 import com.togger.ui.auth._
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
+import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
-import com.togger.ui.components._
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskFeService, TgDateFormater}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 import scala.util.Try
 
@@ -85,15 +89,14 @@ object ActivePopup {
 /** @param taskStartDate
   *   the earliest date selectable in the date picker — a log entry can't predate its task's start date.
   * @param taskEndDate
-  *   the latest date selectable in the date picker, if the task has one — a log entry can't come after its task's
-  *   end date.
-  * @param takenDates
-  *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's
-  *   own date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in
-  *   that status's badge color so it's visibly distinct from a plain disabled (non-work-day) day.
-  * @param workDays
-  *   the owning project's configured work days — non-work days are disabled in the date picker, same as a taken
+  *   the latest date selectable in the date picker, if the task has one — a log entry can't come after its task's end
   *   date.
+  * @param takenDates
+  *   the status of every other log entry the task already has, keyed by its date (the caller excludes this entry's own
+  *   date, if any) — each such date is disabled in the date picker, to keep one entry per day, and ringed in that
+  *   status's badge color so it's visibly distinct from a plain disabled (non-work-day) day.
+  * @param workDays
+  *   the owning project's configured work days — non-work days are disabled in the date picker, same as a taken date.
   */
 class LogEntryComponent(
   logEntryForm: LogEntryForm,

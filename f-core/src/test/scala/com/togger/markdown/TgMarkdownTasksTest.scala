@@ -54,8 +54,8 @@ class TgMarkdownTasksTest extends AsyncJsWordSpec {
         Some("  * [ ] starred\n1) [x] parens")
     }
 
-    /** `linesIterator` would drop this, and a rewrite that silently trims the document is a rewrite that shows up
-      * as a spurious diff on every toggle.
+    /** `linesIterator` would drop this, and a rewrite that silently trims the document is a rewrite that shows up as a
+      * spurious diff on every toggle.
       */
     "preserve a trailing newline" in { _ =>
       TgMarkdownTasks.setChecked("- [ ] one\n", 0, checked = true) shouldBe Some("- [x] one\n")
@@ -70,8 +70,8 @@ class TgMarkdownTasksTest extends AsyncJsWordSpec {
       TgMarkdownTasks.setChecked("- [ ] one", 4, checked = true) shouldBe None
     }
 
-    /** What an index the renderer and the scanner disagree about looks like from here: the click costs nothing
-      * rather than flipping some other line.
+    /** What an index the renderer and the scanner disagree about looks like from here: the click costs nothing rather
+      * than flipping some other line.
       */
     "decline a marker already in the requested state" in { _ =>
       TgMarkdownTasks.setChecked("- [x] one", 0, checked = true) shouldBe None

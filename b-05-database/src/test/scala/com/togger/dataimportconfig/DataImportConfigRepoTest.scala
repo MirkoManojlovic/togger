@@ -1,11 +1,15 @@
 package com.togger.dataimportconfig
 
 import cats.implicits._
-import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgIds, TimeHelpers}
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

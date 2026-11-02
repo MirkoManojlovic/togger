@@ -2,17 +2,17 @@ package com.togger.milestone
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
-import com.togger.milestone.MilestoneSummaryError.{
-  CannotDeleteLastVersion,
-  CannotEditLatestVersion,
-  MilestoneSummaryError,
-  MilestoneSummaryNotFound,
-  VersionNotFound
-}
+import com.togger.milestone.MilestoneSummaryError.CannotDeleteLastVersion
+import com.togger.milestone.MilestoneSummaryError.CannotEditLatestVersion
+import com.togger.milestone.MilestoneSummaryError.MilestoneSummaryError
+import com.togger.milestone.MilestoneSummaryError.MilestoneSummaryNotFound
+import com.togger.milestone.MilestoneSummaryError.VersionNotFound
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Transactor}
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 

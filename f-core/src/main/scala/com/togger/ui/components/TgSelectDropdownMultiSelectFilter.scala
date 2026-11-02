@@ -98,7 +98,11 @@ case class TgSelectDropdownMultiSelectFilter(
             if (filtered.isEmpty) Seq(li(cls("p-2 text-center text-body"), "No matching options"))
             else
               filtered.map(option =>
-                TgSelectDropdown.optionRow(option, inputSignal.map(_.contains(option.value)), () => toggle(option.value))
+                TgSelectDropdown.optionRow(
+                  option,
+                  inputSignal.map(_.contains(option.value)),
+                  () => toggle(option.value)
+                )
               )
           )
         }
@@ -113,7 +117,7 @@ case class TgSelectDropdownMultiSelectFilter(
       div(
         cls("relative"),
         // The panel is absolutely positioned, so reserve its height below the trigger to let the page scroll down.
-        cls.toggle("pb-96") <-- isOpenVar.signal,
+        cls("pb-96") <-- isOpenVar.signal,
         button(
           `type`("button"),
           cls(TgSelectDropdown.triggerButtonCls),

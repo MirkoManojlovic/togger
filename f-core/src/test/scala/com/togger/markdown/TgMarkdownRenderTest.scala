@@ -30,17 +30,17 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
     rendered
   }
 
-  /** The structure assertions predate the Flowbite classes and are about the element tree, so the classes are
-    * stripped back out rather than pasted into every expectation. Anything asserting on raw HTML in the source
-    * uses [[html]] instead — escaped markup contains a literal `class="…"` that this would eat.
+  /** The structure assertions predate the Flowbite classes and are about the element tree, so the classes are stripped
+    * back out rather than pasted into every expectation. Anything asserting on raw HTML in the source uses [[html]]
+    * instead — escaped markup contains a literal `class="…"` that this would eat.
     */
   private def structure(markdown: String, config: MarkdownConfig = MarkdownConfig.default): String =
     html(markdown, config).replaceAll(""" class="[^"]*"""", "")
 
   private def occurrences(haystack: String, needle: String): Int = haystack.split(needle, -1).length - 1
 
-  /** Task lists need `taskListItems` on, which `MarkdownConfig.default` does not have — `TgMarkdown.defaultConfig`
-    * is what the app renders with.
+  /** Task lists need `taskListItems` on, which `MarkdownConfig.default` does not have — `TgMarkdown.defaultConfig` is
+    * what the app renders with.
     */
   private def taskStructure(markdown: String): String = structure(markdown, TgMarkdown.defaultConfig)
 
@@ -157,8 +157,8 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       rendered should include(styles.codeBlockCode)
     }
 
-    /** Asserted on `ps-5` rather than the whole `nestedList` string: Laminar merges repeated `cls` modifiers and
-      * drops duplicate names, and `space-y-1` is in both list styles, so the value never appears verbatim.
+    /** Asserted on `ps-5` rather than the whole `nestedList` string: Laminar merges repeated `cls` modifiers and drops
+      * duplicate names, and `space-y-1` is in both list styles, so the value never appears verbatim.
       */
     "indent a nested list and only the nested one" in { _ =>
       val rendered = html("- one\n  - nested")
@@ -197,8 +197,8 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       taskStructure("- [X] upper") should include("checked=\"\"")
     }
 
-    /** The attribute, not the property: a property assignment leaves no trace in the markup, so the rendered
-      * document would not say which boxes are ticked.
+    /** The attribute, not the property: a property assignment leaves no trace in the markup, so the rendered document
+      * would not say which boxes are ticked.
       */
     "leave no checked attribute on an unchecked box" in { _ =>
       taskStructure("- [ ] open") should not include "checked="
@@ -249,8 +249,8 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       }
     }
 
-    /** Numbering is what `TgMarkdownTasks` looks an index up by, so the walk has to hand out indices in source
-      * order — a nested item after the parent that contains it.
+    /** Numbering is what `TgMarkdownTasks` looks an index up by, so the walk has to hand out indices in source order —
+      * a nested item after the parent that contains it.
       */
     "number a nested task item after its parent" in { _ =>
       withCheckboxes("- [ ] parent\n  - [ ] child\n- [ ] sibling") { (inputs, toggles) =>
@@ -261,8 +261,8 @@ class TgMarkdownRenderTest extends AsyncJsWordSpec {
       }
     }
 
-    /** The index counter lives on the render instance, so a second render through the same `TgMarkdown` has to
-      * start over — the split editor's preview re-renders on every keystroke.
+    /** The index counter lives on the render instance, so a second render through the same `TgMarkdown` has to start
+      * over — the split editor's preview re-renders on every keystroke.
       */
     "number from zero again on a second render" in { _ =>
       val toggles = mutable.Buffer.empty[TaskToggle]

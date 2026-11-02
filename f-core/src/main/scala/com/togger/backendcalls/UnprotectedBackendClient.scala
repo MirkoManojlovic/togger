@@ -1,7 +1,8 @@
 package com.togger.backendcalls
 
 import cats.effect.IO
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import scribe.Logging
 import sttp.capabilities
 import sttp.client3._

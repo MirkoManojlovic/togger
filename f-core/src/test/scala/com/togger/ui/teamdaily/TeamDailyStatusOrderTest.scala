@@ -26,7 +26,9 @@ class TeamDailyStatusOrderTest extends AsyncJsWordSpec {
     }
 
     "know that waiting and blocked tasks are on hold" in { _ =>
-      Seq(DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked).map(s => TeamDailyStatusOrder.isOnHold(s.statusName)) shouldBe
+      Seq(DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked).map(s =>
+        TeamDailyStatusOrder.isOnHold(s.statusName)
+      ) shouldBe
         Seq(true, true)
       TeamDailyStatusOrder.isOnHold(DefaultTaskStatus.InProgress.statusName) shouldBe false
     }

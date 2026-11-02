@@ -3,17 +3,18 @@ package com.togger.tgaiaction
 import cats.effect.IO
 import cats.implicits._
 import com.togger.ai.TgAiEndpoints
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.project.ProjectAccountRepo
 import com.togger.tgaiaction.TgAiActionError._
 import com.togger.tgprompttemplate.TgPromptTemplateRepo
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
-import java.time.Instant
 import java.util.UUID
 
 /** Every method that touches an existing action takes the id of the calling account and reports an action of another
@@ -32,15 +33,17 @@ class TgAiActionService(
 
   def create(action: TgAiAction, endpointIds: List[Int]): IO[Result[TgAiActionWithBindings]] = {
     logger.info(s"Creating ${sp(action)} bound to ${sp(endpointIds)}")
-    validate(action, endpointIds, exceptId = None).flatMap {
-      case Some(error) => error.asLeft[TgAiActionWithBindings].pure[ConnectionIO]
-      case None =>
-        for {
-          saved <- tgAiActionRepo.insert(action)
-          _ <- tgAiActionEndpointRepo.replaceBindings(saved.id, endpointIds.distinct)
-          full <- withBindings(saved)
-        } yield full.asRight[TgAiActionError]
-    }.transact(transactor)
+    validate(action, endpointIds, exceptId = None)
+      .flatMap {
+        case Some(error) => error.asLeft[TgAiActionWithBindings].pure[ConnectionIO]
+        case None =>
+          for {
+            saved <- tgAiActionRepo.insert(action)
+            _ <- tgAiActionEndpointRepo.replaceBindings(saved.id, endpointIds.distinct)
+            full <- withBindings(saved)
+          } yield full.asRight[TgAiActionError]
+      }
+      .transact(transactor)
   }
 
   def update(action: TgAiAction, endpointIds: List[Int]): IO[Result[TgAiActionWithBindings]] = {
@@ -100,7 +103,11 @@ class TgAiActionService(
       case false => (ActionNotBoundToEndpoint: TgAiActionError).asLeft[TgAiActionDefault].pure[ConnectionIO]
     }
 
-  private def validate(action: TgAiAction, endpointIds: List[Int], exceptId: Option[UUID]): ConnectionIO[Option[TgAiActionError]] =
+  private def validate(
+    action: TgAiAction,
+    endpointIds: List[Int],
+    exceptId: Option[UUID]
+  ): ConnectionIO[Option[TgAiActionError]] =
     if (endpointIds.exists(id => TgAiEndpoints.withValueOpt(id).isEmpty))
       Option[TgAiActionError](UnknownEndpoint).pure[ConnectionIO]
     else
@@ -128,7 +135,9 @@ class TgAiActionService(
       .findById(id)
       .map(action => Either.cond(action.createdBy == accountId, action, TgAiActionNotFound: TgAiActionError))
 
-  private def withOwnedAction[A](accountId: UUID, id: UUID)(action: TgAiAction => ConnectionIO[Result[A]]): IO[Result[A]] =
+  private def withOwnedAction[A](accountId: UUID, id: UUID)(
+    action: TgAiAction => ConnectionIO[Result[A]]
+  ): IO[Result[A]] =
     ownedAction(accountId, id)
       .flatMap(_.flatTraverse(action))
       .transact(transactor)

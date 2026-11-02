@@ -1,7 +1,9 @@
 package com.togger.controllers.logentry
 
-import com.togger.dto.{LogEntryDto, LogEntryVersionDto}
-import com.togger.logentry.{LogEntry, LogEntryVersion}
+import com.togger.dto.LogEntryDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryVersion
 
 import java.util.UUID
 

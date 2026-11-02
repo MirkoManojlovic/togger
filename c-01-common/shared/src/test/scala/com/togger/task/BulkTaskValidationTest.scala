@@ -1,13 +1,21 @@
 package com.togger.task
 
-import com.togger.common.{DateRangeValidation, NonEmptyChainHelpers, WorkDayCalendar}
-import com.togger.dto.{CreateTaskAndLinksReq, CreateTaskReq, CreateTasksBulkReq}
-import com.togger.task.BulkTaskValidation.{InvalidTask, NoTasks, TasksInDifferentProjects, TooManyTasks}
+import com.togger.common.DateRangeValidation
+import com.togger.common.NonEmptyChainHelpers
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.CreateTaskAndLinksReq
+import com.togger.dto.CreateTaskReq
+import com.togger.dto.CreateTasksBulkReq
+import com.togger.task.BulkTaskValidation.InvalidTask
+import com.togger.task.BulkTaskValidation.NoTasks
+import com.togger.task.BulkTaskValidation.TasksInDifferentProjects
+import com.togger.task.BulkTaskValidation.TooManyTasks
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class BulkTaskValidationTest extends AnyWordSpec with Matchers with EitherValues with NonEmptyChainHelpers {

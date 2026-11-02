@@ -2,7 +2,8 @@ package com.togger.ui.mcp
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
@@ -36,9 +37,9 @@ class McpSettingsComponent {
         aria.label(s"Copy the $what to the clipboard"),
         TgIcons.copyIcon("w-6 h-6"),
         onClick --> { _ =>
-          dom.window.navigator.clipboard.writeText(text)
+          val _ = dom.window.navigator.clipboard.writeText(text)
           copiedVar.set(true)
-          js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
+          val _ = js.timers.setTimeout(CopiedMessageMillis)(copiedVar.set(false))
         }
       ),
       child <-- copiedVar.signal.map { copied =>

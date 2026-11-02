@@ -1,7 +1,10 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{CreateTgAiActionPage, EditTgAiActionPage, ShowAllTgAiActionsPage, TgAiActionDefaultsPage}
+import com.togger.routes.Pages.CreateTgAiActionPage
+import com.togger.routes.Pages.EditTgAiActionPage
+import com.togger.routes.Pages.ShowAllTgAiActionsPage
+import com.togger.routes.Pages.TgAiActionDefaultsPage
 
 import java.util.UUID
 
@@ -9,7 +12,7 @@ class TgAiActionRouteTest extends AsyncJsWordSpec {
 
   private val actionId = UUID.randomUUID()
   private val origin = "http://localhost:5173"
-  private val routes = new TgRoutes().routes("")
+  private val routes = new TgRoutes().routes()
 
   private def urlOf(page: FrontendPage): String =
     routes.flatMap(_.relativeUrlForPage(page)).head

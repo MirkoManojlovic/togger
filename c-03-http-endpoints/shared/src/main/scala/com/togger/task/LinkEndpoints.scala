@@ -1,7 +1,8 @@
 package com.togger.task
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
 import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.dto.LinkVersionDto

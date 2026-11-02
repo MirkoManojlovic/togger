@@ -1,10 +1,18 @@
 package com.togger.ui.contributions
 
-import com.togger.chart.{ChartColor, TaskLabelChartable, TaskStatusChartable}
-import com.togger.dto.{MemberContributionDto, TaskAttributesDto}
-import com.togger.ui.apexchart.{ApexChartOptions, ApexChartType, ApexLegendPosition, ApexNamedSeries, ApexSeries}
-import com.togger.ui.timebox.{StagedCharts, StagedGrouping}
+import com.togger.chart.ChartColor
+import com.togger.chart.TaskLabelChartable
+import com.togger.chart.TaskStatusChartable
+import com.togger.dto.MemberContributionDto
+import com.togger.dto.TaskAttributesDto
+import com.togger.ui.apexchart.ApexChartOptions
+import com.togger.ui.apexchart.ApexChartType
+import com.togger.ui.apexchart.ApexLegendPosition
+import com.togger.ui.apexchart.ApexNamedSeries
+import com.togger.ui.apexchart.ApexSeries
+import com.togger.ui.timebox.StagedCharts
 import com.togger.ui.timebox.StagedCharts.Slice
+import com.togger.ui.timebox.StagedGrouping
 
 import java.time.LocalDate
 
@@ -78,8 +86,8 @@ object ContributionCharts {
     )
   }
 
-  /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without
-    * a status is a zero.
+  /** A column per day that anyone worked, stacked by the status of the log entries of all the members; a day without a
+    * status is a zero.
     */
   def dailyTrend(
     members: Seq[MemberContributionDto],

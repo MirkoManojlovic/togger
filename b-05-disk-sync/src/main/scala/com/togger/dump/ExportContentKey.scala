@@ -30,7 +30,9 @@ object ExportContentKey {
       name <- cursor.get[String]("name")
       description <- cursor.get[String]("description")
       emoji <- cursor.get[String]("emoji")
-    } yield List(name, description, emoji)).left.map(error => s"cannot read name, description and emoji: ${error.message}")
+    } yield List(name, description, emoji)).left.map(error =>
+      s"cannot read name, description and emoji: ${error.message}"
+    )
   }
 
   private def template(json: Json, labelKeys: Map[UUID, Key]): Either[String, Key] = {

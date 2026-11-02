@@ -3,12 +3,15 @@ package com.togger.ui.task.bulk
 import com.raquo.laminar.api.L._
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskStatusResp
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.components.CalendarPickerPopup
+import com.togger.ui.components.QuickOption
+import com.togger.ui.components.QuickOptionsPopup
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{CalendarPickerPopup, QuickOption, QuickOptionsPopup}
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 
@@ -225,7 +228,8 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
         )
     )
     QuickOptionsPopup(
-      options = projectLabels.map(l => QuickOption(l.id.toString, l.badgeText, "", isSelected = false, Some(l.badgeColor))),
+      options =
+        projectLabels.map(l => QuickOption(l.id.toString, l.badgeText, "", isSelected = false, Some(l.badgeColor))),
       onChoose = option => {
         val id = UUID.fromString(option.id)
         chosen.update(labels => if (labels.contains(id)) labels - id else labels + id)

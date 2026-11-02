@@ -3,11 +3,13 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
-/** Mini calendars of a date range, `Weeks` weeks each; the oldest on the left and the newest on the right, with only the
-  * work days of the project. The days of the range are filled, the others in the weeks shown are faded, and the first and the last day of the range are
-  * marked. Two clicks pick a new range, which is handed to `onRange`, see [[pick]].
+/** Mini calendars of a date range, `Weeks` weeks each; the oldest on the left and the newest on the right, with only
+  * the work days of the project. The days of the range are filled, the others in the weeks shown are faded, and the
+  * first and the last day of the range are marked. Two clicks pick a new range, which is handed to `onRange`, see
+  * [[pick]].
   */
 object MilestoneSummaryRangeCalendar {
 
@@ -15,8 +17,8 @@ object MilestoneSummaryRangeCalendar {
 
   private val DaysInWeek = 7
 
-  /** The first day of each calendar: the Monday of the week the range starts in, then every `Weeks` weeks until the
-    * end of the range is covered. Empty for a range that ends before it starts.
+  /** The first day of each calendar: the Monday of the week the range starts in, then every `Weeks` weeks until the end
+    * of the range is covered. Empty for a range that ends before it starts.
     */
   def calendarStarts(start: LocalDate, end: LocalDate): Seq[LocalDate] =
     if (end.isBefore(start)) Seq.empty
@@ -31,8 +33,9 @@ object MilestoneSummaryRangeCalendar {
     */
   def pick(pending: Option[LocalDate], clicked: LocalDate): ((LocalDate, LocalDate), Option[LocalDate]) =
     pending match {
-      case None        => ((clicked, clicked), Some(clicked))
-      case Some(first) => ((if (clicked.isBefore(first)) clicked else first, if (clicked.isBefore(first)) first else clicked), None)
+      case None => ((clicked, clicked), Some(clicked))
+      case Some(first) =>
+        ((if (clicked.isBefore(first)) clicked else first, if (clicked.isBefore(first)) first else clicked), None)
     }
 
   /** The work days to show, in the order of the week; every day while none is known. */

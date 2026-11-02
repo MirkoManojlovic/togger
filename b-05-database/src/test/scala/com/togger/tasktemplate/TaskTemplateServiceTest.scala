@@ -6,7 +6,8 @@ import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
-import com.togger.task.{TaskLabel, TaskLabelRepo}
+import com.togger.task.TaskLabel
+import com.togger.task.TaskLabelRepo
 import com.togger.tasktemplate.TaskTemplateError._
 import doobie.ConnectionIO
 import doobie.util.invariant.UnexpectedEnd

@@ -1,7 +1,9 @@
 package com.togger.preview
 
-import com.togger.demo.{DemoProjectLabel, DemoProjectLabelCategory}
-import com.togger.dto.{FindProjectLabelCategoryResp, FindProjectLabelResp}
+import com.togger.demo.DemoProjectLabel
+import com.togger.demo.DemoProjectLabelCategory
+import com.togger.dto.FindProjectLabelCategoryResp
+import com.togger.dto.FindProjectLabelResp
 
 /** Seeds the project label categories and labels; the labels of each project come with the seeded projects. */
 class ProjectLabelsPreviewSeed(

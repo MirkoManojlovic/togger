@@ -5,18 +5,24 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.UpdateOrganizationReq
-import com.togger.routes.Pages.{EditOrganizationPage, HomePage}
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.EditOrganizationPage
+import com.togger.routes.Pages.HomePage
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.navbar.SidebarRefresh
-import com.togger.ui.project.{FindAccountService, FindAccountsComponent}
+import com.togger.ui.project.FindAccountService
+import com.togger.ui.project.FindAccountsComponent
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro

@@ -2,10 +2,12 @@ package com.togger.timebox
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PaginationTestSupport, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginationTestSupport
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -39,19 +41,18 @@ class TimeboxVersionRepoPaginationTest
 
   testNameFromClassName should {
 
-    "split 11 versions over 3 pages of 5, newest version first, and give an empty page past the end" in {
-      transactor =>
-        (for {
-          orgAndProject <- createOrgAndProject
-          timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), orgAndProject._2.id, nowAsInstant))
-          otherTimebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), orgAndProject._2.id, nowAsInstant))
-          versions <- (0 to 10).toList.traverse(index => timeboxVersionRepo.insert(newVersion(timebox.id, index)))
-          _ <- timeboxVersionRepo.insert(newVersion(otherTimebox.id, 99))
-          result <- assertElevenRowsOverThreePages(
-            readPages(timebox.id),
-            versions.map(_.version).sortBy(_.toString).reverse
-          )(_.version)
-        } yield result).transact(transactor)
+    "split 11 versions over 3 pages of 5, newest version first, and give an empty page past the end" in { transactor =>
+      (for {
+        orgAndProject <- createOrgAndProject
+        timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), orgAndProject._2.id, nowAsInstant))
+        otherTimebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), orgAndProject._2.id, nowAsInstant))
+        versions <- (0 to 10).toList.traverse(index => timeboxVersionRepo.insert(newVersion(timebox.id, index)))
+        _ <- timeboxVersionRepo.insert(newVersion(otherTimebox.id, 99))
+        result <- assertElevenRowsOverThreePages(
+          readPages(timebox.id),
+          versions.map(_.version).sortBy(_.toString).reverse
+        )(_.version)
+      } yield result).transact(transactor)
     }
 
     "give no versions for an unknown timebox" in { transactor =>

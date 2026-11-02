@@ -6,7 +6,8 @@ import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
 import com.togger.suites.TestNameHelper
-import com.togger.task.LinkError.{CannotDeleteLastVersion, CannotEditLatestVersion}
+import com.togger.task.LinkError.CannotDeleteLastVersion
+import com.togger.task.LinkError.CannotEditLatestVersion
 import doobie.ConnectionIO
 import doobie.implicits._
 import org.scalamock.scalatest.AsyncMockFactory

@@ -3,37 +3,50 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
-import com.togger.components.button.TgHtmlButton
 import com.togger.ai.TgAiEndpoints
-import com.togger.dto.{
-  CreateMilestoneSummaryReq,
-  FindTgAiActionResp,
-  FindMilestoneResp,
-  FindTaskRespFull,
-  UpdateMilestoneSummaryReq
-}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
+import com.togger.components.button.TgHtmlButton
+import com.togger.dto.CreateMilestoneSummaryReq
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTgAiActionResp
+import com.togger.dto.UpdateMilestoneSummaryReq
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
+import com.togger.task.DefaultTaskStatus
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.project.{ProjectService, TaskListItem}
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.project.ProjectService
+import com.togger.ui.project.TaskListItem
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.tgaiaction.TgAiActionFeService
-import com.togger.ui.task.{TaskFeService, TaskPreviewComponent, TgDateFormater}
-import com.togger.task.DefaultTaskStatus
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskPreviewComponent
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
-import com.togger.ui.timebox.{StagedGrouping, StagedGroup}
+import com.togger.ui.tgaiaction.TgAiActionFeService
+import com.togger.ui.timebox.StagedGroup
+import com.togger.ui.timebox.StagedGrouping
 import com.togger.ui.toast.Toast
 
-import scala.collection.mutable
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
+import scala.collection.mutable
 
 /** The summaries of a milestone on the left, and a preview of each of its tasks on the right to write them from. */
 class MilestoneSummaryComponent(
@@ -133,7 +146,12 @@ class MilestoneSummaryComponent(
             component.aiSummaryState.set(AiSummaryState.Idle)
             toast.error(message)
         }
-        .guarantee(IO(if (component.aiSummaryState.now() == AiSummaryState.Streaming) component.aiSummaryState.set(AiSummaryState.Idle)))
+        .guarantee(
+          IO(
+            if (component.aiSummaryState.now() == AiSummaryState.Streaming)
+              component.aiSummaryState.set(AiSummaryState.Idle)
+          )
+        )
         .unsafeRunAndForget()
     }
   }
@@ -148,7 +166,9 @@ class MilestoneSummaryComponent(
         case Some(id) =>
           spinnerService
             .runWithSpinner(
-              milestoneSummaryService.updateMilestoneSummary(UpdateMilestoneSummaryReq(id, component.textToSave, startDate, endDate))
+              milestoneSummaryService.updateMilestoneSummary(
+                UpdateMilestoneSummaryReq(id, component.textToSave, startDate, endDate)
+              )
             )
             .toastMessageDto(_ => "Summary updated successfully")(_ => IO(component.editingVar.set(false)))
         case None =>
@@ -361,17 +381,17 @@ class MilestoneSummaryComponent(
   private val newSummaryStatusCounts: Signal[Seq[HtmlElement]] =
     tasksVar.signal.combineWithFn(newSummaryPeriod)((tasks, period) => (tasks, period._1, period._2)).map {
       case (tasks, startDate, endDate) =>
-      if (startDate.isEmpty || endDate.isEmpty) Seq.empty
-      else {
-        val inPeriod =
-          MilestoneSummaryComponent.withLogEntriesBetween(tasks, LocalDate.parse(startDate), LocalDate.parse(endDate))
-        if (inPeriod.isEmpty) Seq(TgBadge("No tasks", TgBadgeColor.Gray, bordered = true).element)
-        else
-          MilestoneSummaryComponent.byStatusOrder(StagedGrouping.ByStatus.group(inPeriod, Seq.empty)).map { group =>
-            val status = group.tasks.head.taskStatus
-            TgBadge(s"${status.badgeText} × ${group.tasks.size}", status.badgeColor, bordered = true).element
-          }
-      }
+        if (startDate.isEmpty || endDate.isEmpty) Seq.empty
+        else {
+          val inPeriod =
+            MilestoneSummaryComponent.withLogEntriesBetween(tasks, LocalDate.parse(startDate), LocalDate.parse(endDate))
+          if (inPeriod.isEmpty) Seq(TgBadge("No tasks", TgBadgeColor.Gray, bordered = true).element)
+          else
+            MilestoneSummaryComponent.byStatusOrder(StagedGrouping.ByStatus.group(inPeriod, Seq.empty)).map { group =>
+              val status = group.tasks.head.taskStatus
+              TgBadge(s"${status.badgeText} × ${group.tasks.size}", status.badgeColor, bordered = true).element
+            }
+        }
     }
 
   private lazy val newSummaryHeader: HtmlElement =
@@ -410,7 +430,11 @@ class MilestoneSummaryComponent(
 
   private val summaryPeriodOf: MilestoneSummaryFormComponent => Signal[Option[(LocalDate, LocalDate)]] =
     _.formState.signal
-      .map(form => Option.when(form.startDate.nonEmpty && form.endDate.nonEmpty)(LocalDate.parse(form.startDate) -> LocalDate.parse(form.endDate)))
+      .map(form =>
+        Option.when(form.startDate.nonEmpty && form.endDate.nonEmpty)(
+          LocalDate.parse(form.startDate) -> LocalDate.parse(form.endDate)
+        )
+      )
       .distinct
 
   // The tasks with log entries in the period of the summary; the one pressed is previewed under the list, with the
@@ -532,7 +556,11 @@ object MilestoneSummaryComponent {
     )
 
   /** The tasks with a log entry created from `startDate` to `endDate`, both included. */
-  def withLogEntriesBetween(tasks: Seq[FindTaskRespFull], startDate: LocalDate, endDate: LocalDate): Seq[FindTaskRespFull] =
+  def withLogEntriesBetween(
+    tasks: Seq[FindTaskRespFull],
+    startDate: LocalDate,
+    endDate: LocalDate
+  ): Seq[FindTaskRespFull] =
     tasks.filter(_.logEntries.exists { entry =>
       val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
       !day.isBefore(startDate) && !day.isAfter(endDate)

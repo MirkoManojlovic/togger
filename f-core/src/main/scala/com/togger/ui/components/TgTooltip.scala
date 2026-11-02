@@ -1,7 +1,8 @@
 package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.auth.TgHtmlTypes.{HtmlDiv, TgHtmlElement}
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
+import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
 
 case class TgTooltip(trigger: TgHtmlElement, text: String) {
   private val visibleVar = Var(false)

@@ -15,11 +15,16 @@ import sttp.client4.testing.StreamBackendStub
 import sttp.model.StatusCode
 import sttp.tapir.Schema
 
+object TgOpenAiClientTest {
+  final case class Greeting(text: String)
+}
+
 class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
+  import TgOpenAiClientTest.Greeting
+
   private val apiKey = TgAiApiKey("test-key")
   private val request = TgAiChatRequest(TgAiModel("gpt-4o-mini"), List(TgAiMessage.User("hello")))
 
-  final case class Greeting(text: String)
   private implicit val greetingCodec: Codec[Greeting] = deriveCodec
   private implicit val greetingSchema: Schema[Greeting] = Schema.derived
 
@@ -120,11 +125,15 @@ class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
       val stub: StreamBackend[IO, Fs2Streams[IO]] =
         StreamBackendStub[IO, Fs2Streams[IO]](new CatsMonadAsyncError[IO]).whenAnyRequest
           .thenRespondF { request =>
-            IO { requestedUri.set(request.uri.toString); sttp.client4.testing.ResponseStub.adjust(completionJson("hi")) }
+            IO {
+              requestedUri.set(request.uri.toString); sttp.client4.testing.ResponseStub.adjust(completionJson("hi"))
+            }
           }
       new TgOpenAiClient(stub, TgOllama.BaseUri)
         .chat(TgOllama.ApiKey, request)
-        .map(result => (result.isRight, requestedUri.get()) shouldBe (true, "http://localhost:11434/v1/chat/completions"))
+        .map(result =>
+          (result.isRight, requestedUri.get()) shouldBe (true, "http://localhost:11434/v1/chat/completions")
+        )
         .unsafeToFuture()
     }
   }
@@ -149,7 +158,8 @@ class TgOpenAiClientTest extends AsyncWordSpec with Matchers {
     "emit non-empty deltas and skip empty ones" in {
       def chunk(content: String) =
         s"""data: {"id":"c1","object":"chat.completion.chunk","created":1,"model":"gpt-4o-mini",
-           |"choices":[{"index":0,"delta":{"content":"$content"},"finish_reason":null}]}""".stripMargin.replace("\n", "") + "\n\n"
+           |"choices":[{"index":0,"delta":{"content":"$content"},"finish_reason":null}]}""".stripMargin
+          .replace("\n", "") + "\n\n"
       val sse = chunk("Hel") + chunk("") + chunk("lo") + "data: [DONE]\n\n"
       val stub: StreamBackend[IO, Fs2Streams[IO]] =
         StreamBackendStub[IO, Fs2Streams[IO]](new CatsMonadAsyncError[IO]).whenAnyRequest

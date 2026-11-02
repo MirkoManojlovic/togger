@@ -1,10 +1,16 @@
 package com.togger.dump
 
-import com.togger.project.{ProjectAccount, ProjectError}
-import com.togger.task.{Link, LinkVersion, TaskLabelAssignment}
-import com.togger.tasktemplate.{TaskTemplate, TaskTemplateVersion}
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateVersion}
-import com.togger.timebox.{Timebox, TimeboxVersion}
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectError
+import com.togger.task.Link
+import com.togger.task.LinkVersion
+import com.togger.task.TaskLabelAssignment
+import com.togger.tasktemplate.TaskTemplate
+import com.togger.tasktemplate.TaskTemplateVersion
+import com.togger.tgprompttemplate.TgPromptTemplate
+import com.togger.tgprompttemplate.TgPromptTemplateVersion
+import com.togger.timebox.Timebox
+import com.togger.timebox.TimeboxVersion
 import doobie.implicits._
 import io.circe.generic.auto._
 
@@ -106,7 +112,11 @@ class DataImportServiceTest extends ExportImportTestSupport {
         restoredPrompt <- tgPromptTemplateRepo.findFullById(fixture.promptId).transact(transactor)
         restoredPlanned <- taskVersionRepo
           .findLatestByTaskId(fixture.taskId)
-          .flatMap(v => timeboxVersionRepo.findLatestByTimeboxId(fixture.timeboxId).flatMap(tv => timeboxVersionRepo.findPlannedTasks(tv.version).map(_.map(_.version) -> v.version)))
+          .flatMap(v =>
+            timeboxVersionRepo
+              .findLatestByTimeboxId(fixture.timeboxId)
+              .flatMap(tv => timeboxVersionRepo.findPlannedTasks(tv.version).map(_.map(_.version) -> v.version))
+          )
           .transact(transactor)
       } yield {
         val cp = new Checkpoint
@@ -146,7 +156,9 @@ class DataImportServiceTest extends ExportImportTestSupport {
         other <- accountRepo
           .insert(createAccount(owner.accountTypeId).copy(email = "other@email.com"))
           .transact(transactor)
-        foreign <- tgPromptTemplateRepo.insert(TgPromptTemplate(UUID.randomUUID(), other.id, nowAsInstant)).transact(transactor)
+        foreign <- tgPromptTemplateRepo
+          .insert(TgPromptTemplate(UUID.randomUUID(), other.id, nowAsInstant))
+          .transact(transactor)
         _ <- tgPromptTemplateVersionRepo
           .insert(TgPromptTemplateVersion(UUID.randomUUID(), foreign.id, "Foreign", "Foreign text", nowAsInstant))
           .transact(transactor)
@@ -176,7 +188,13 @@ class DataImportServiceTest extends ExportImportTestSupport {
         root <- exportToFolder(transactor, project.id, account.id)
         task = handWrittenTask(taskId, project.id, account.id, status.id).copy(links = List(linkData))
         _ = putEntity(root, DataExportEntityType.Task, taskId, None, task)
-        _ = putEntity(root, DataExportEntityType.LogEntry, logEntryId, None, handWrittenLogEntry(logEntryId, taskId, account.id))
+        _ = putEntity(
+          root,
+          DataExportEntityType.LogEntry,
+          logEntryId,
+          None,
+          handWrittenLogEntry(logEntryId, taskId, account.id)
+        )
         importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
         persistedTask <- taskRepo.findById(taskId).transact(transactor)
         versions <- taskVersionRepo.findByTaskId(taskId).transact(transactor)
@@ -254,7 +272,11 @@ class DataImportServiceTest extends ExportImportTestSupport {
         root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
         _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
         source <- projectRepo.findById(fixture.projectId).transact(transactor)
-        imported <- newImportService(transactor).importNewProject(source.organizationId, fixture.accountId, root.toString)
+        imported <- newImportService(transactor).importNewProject(
+          source.organizationId,
+          fixture.accountId,
+          root.toString
+        )
         (newProjectId, result) = imported.toOption.get
         created <- projectRepo.findById(newProjectId).transact(transactor)
         isMember <- projectAccountRepo.isMember(newProjectId, fixture.accountId).transact(transactor)
@@ -265,7 +287,9 @@ class DataImportServiceTest extends ExportImportTestSupport {
         created.name shouldBe source.name
         isMember shouldBe true
         tasks.map(_.id) should contain(fixture.taskId)
-        result.results.filter(_.entityType == DataExportEntityType.Task).map(_.status) shouldBe List(DataImportStatus.Inserted)
+        result.results.filter(_.entityType == DataExportEntityType.Task).map(_.status) shouldBe List(
+          DataImportStatus.Inserted
+        )
       }
     }
 
@@ -314,7 +338,11 @@ class DataImportServiceTest extends ExportImportTestSupport {
         cp(templateResult.versionsAdded shouldBe 1)
         cp(merged.map(_.template.id) shouldBe Some(defaultTemplate.id))
         cp(versions.items.map(_.name).toSet shouldBe Set("Default", "Template"))
-        cp(resultOf(second.toOption.get, DataExportEntityType.TaskTemplate).map(_.status) shouldBe List(DataImportStatus.Unchanged))
+        cp(
+          resultOf(second.toOption.get, DataExportEntityType.TaskTemplate).map(_.status) shouldBe List(
+            DataImportStatus.Unchanged
+          )
+        )
         cp.reportAll()
       }
     }

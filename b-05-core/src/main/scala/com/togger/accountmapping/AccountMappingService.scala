@@ -1,7 +1,8 @@
 package com.togger.accountmapping
 
 import cats.effect.IO
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor

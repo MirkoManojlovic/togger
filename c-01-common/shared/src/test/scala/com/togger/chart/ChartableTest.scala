@@ -2,7 +2,9 @@ package com.togger.chart
 
 import com.togger.logentry.LogEntryStatus
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus, TaskPriority}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

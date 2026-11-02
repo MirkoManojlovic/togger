@@ -17,4 +17,10 @@ case class FindTgPromptTemplateResp(
   updatedAt: Instant
 )
 
-case class TgPromptTemplateVersionDto(version: UUID, tgPromptTemplateId: UUID, title: String, prompt: String, createdAt: Instant)
+case class TgPromptTemplateVersionDto(
+  version: UUID,
+  tgPromptTemplateId: UUID,
+  title: String,
+  prompt: String,
+  createdAt: Instant
+)

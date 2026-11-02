@@ -3,10 +3,14 @@ package com.togger.controllers.ai
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
-import com.togger.ai.TgAiError.{TgAiError, TgAiProviderUnavailable}
+import com.togger.ai.TgAiError.TgAiError
+import com.togger.ai.TgAiError.TgAiProviderUnavailable
 import com.togger.ai._
-import com.togger.auth.{AuthAccount, SecuredEndpoint, SecurityLogic}
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.SecurityLogic
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.dto.TgAiModelDto
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

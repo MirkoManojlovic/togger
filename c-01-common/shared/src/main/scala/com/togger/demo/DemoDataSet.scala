@@ -1,14 +1,19 @@
 package com.togger.demo
 
 import com.togger.ai.TgAiEndpoints
+import com.togger.dto.LinkVersionDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.dto.TaskVersionDto
+import com.togger.dto.TgPromptTemplateVersionDto
 import com.togger.dto.dataexportconfig.DataExportConfigResp
 import com.togger.dto.dataimportconfig.DataImportConfigResp
 import com.togger.dto.projectmapping.ProjectMappingResp
-import com.togger.dto.{LinkVersionDto, LogEntryVersionDto, TaskVersionDto, TgPromptTemplateVersionDto}
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.DefaultTaskStatus
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class DemoAccount(id: UUID, firstName: String, lastName: String, email: String, password: String, admin: Boolean)

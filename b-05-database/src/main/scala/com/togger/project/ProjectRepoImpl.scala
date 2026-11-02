@@ -1,17 +1,23 @@
 package com.togger.project
 import cats.data.NonEmptyList
-import cats.implicits.{toFoldableOps, toTraverseOps}
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import cats.implicits.toFoldableOps
+import cats.implicits.toTraverseOps
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.project.ProjectRepoImpl.PROJECT_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Fragments, Meta}
+import doobie.ConnectionIO
+import doobie.Fragments
+import doobie.Meta
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 
-import java.time.{DayOfWeek, Instant}
+import java.time.DayOfWeek
+import java.time.Instant
 import java.util.UUID
 
 class ProjectRepoImpl extends ProjectRepo {
@@ -168,8 +174,8 @@ object ProjectRepoImpl {
   val PROJECT_TABLE: String = "project"
   val PROJECT_TABLE_FRAG: Fragment = Fragment.const(PROJECT_TABLE)
 
-  /** (table, project id column) in the order that satisfies the foreign keys: the versions, links, log entries and label
-    * assignments of a task, timebox or milestone go with it by cascade, but task versions reference statuses and
+  /** (table, project id column) in the order that satisfies the foreign keys: the versions, links, log entries and
+    * label assignments of a task, timebox or milestone go with it by cascade, but task versions reference statuses and
     * milestones, so tasks go before those, and task templates before the labels they may point to.
     */
   val TABLES_DELETED_BEFORE_PROJECT: List[(String, String)] = List(

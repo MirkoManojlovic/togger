@@ -35,6 +35,8 @@ permissions:
 env:
   # see the comment at ThisBuild / version in build.sbt
   TOGGER_FIXED_VERSION: ci
+  # sbt-tpolecat CI mode: compiler warnings fail the build (local builds only warn, see build.sbt)
+  SBT_TPOLECAT_CI: "true"
 
 # a newer push to the pull request supersedes the running checks
 concurrency:
@@ -105,15 +107,19 @@ jobs:
             --password=togger_password \
             update
 
-      # one step and so one sbt server for both commands: the test run reuses what the compile built. The specs of a
-      # project work on their own cloned databases, so all projects are tested in one go; sbt runs every project even
-      # after a failure in another one
+      # one step and so one sbt server for all commands: the checks and the test run reuse what the compile built. The
+      # specs of a project work on their own cloned databases, so all projects are tested in one go; sbt runs every
+      # project even after a failure in another one. The formatting and scalafix checks (scalafix needs the compiled
+      # semanticdb) run before the tests and fail the step at the end, so a style problem does not hide a test failure
       - name: Compile and test
         run: |
           echo "::group::Test/compile"
           sbt --client Test/compile
           echo "::endgroup::"
           status=0
+          echo "::group::Formatting and scalafix"
+          sbt --client "scalafmtCheckAll; scalafix --check; Test/scalafix --check" || status=$?
+          echo "::endgroup::"
           sbt --client test || status=$?
           sbt --client shutdown || true
           exit $status

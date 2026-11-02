@@ -1,6 +1,7 @@
 package com.togger.controllers.task
 
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 import com.togger.task._
@@ -16,7 +17,7 @@ class TaskStatusController(
   import taskStatusEndpoints._
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => taskStatusId =>
+    findByIdEndpoint.serverLogic { _ => taskStatusId =>
       taskStatusService
         .findById(taskStatusId)
         .map { taskStatus =>
@@ -26,14 +27,14 @@ class TaskStatusController(
               projectId = taskStatus.projectId,
               name = taskStatus.name,
               description = taskStatus.description,
-          emoji = taskStatus.emoji
+              emoji = taskStatus.emoji
             )
           )
         }
     }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         taskStatusService
@@ -54,7 +55,7 @@ class TaskStatusController(
       }
     }
 
-  val save = saveEndpoint.serverLogic { auth => dto =>
+  val save = saveEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val task = TaskStatus(
@@ -79,7 +80,7 @@ class TaskStatusController(
     }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val now = tgClock.currentInstant
 
     val taskStatus = TaskStatus(
@@ -99,13 +100,13 @@ class TaskStatusController(
           projectId = taskStatus.projectId,
           name = taskStatus.name,
           description = taskStatus.description,
-              emoji = taskStatus.emoji
+          emoji = taskStatus.emoji
         )
       )
     }
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     taskStatusService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Task status deleted successfully"))

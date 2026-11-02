@@ -1,11 +1,14 @@
 package com.togger.task
 
-import cats.implicits.{catsSyntaxApplicativeError, toTraverseOps}
+import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits.toTraverseOps
 import com.togger.account._
-import com.togger.common.{BusinessTgDbSpec, TgIds, TimeHelpers}
-import com.togger.organization.{TgProject, TgTaskStatus}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -50,7 +53,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
     }
 
     "insert many links" in { transactor =>
-      def createLinks(taskId: UUID) = (0 to 10).map(index =>
+      def createLinks(taskId: UUID) = (0 to 10).map(_ =>
         Link(
           id = UUID.randomUUID(),
           taskId = taskId,
@@ -89,7 +92,7 @@ class LinkRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
       res.transact(transactor)
     }
 
-    def createLinks(taskId: UUID) = (0 to 10).map(index =>
+    def createLinks(taskId: UUID) = (0 to 10).map(_ =>
       Link(
         id = UUID.randomUUID(),
         taskId = taskId,

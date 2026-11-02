@@ -1,10 +1,11 @@
 package com.togger.desktop
 
-import cats.effect.{Deferred, IO}
+import cats.effect.Deferred
+import cats.effect.IO
 import com.togger.TgLogging
-import scribe.Logging
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 
 class CheckDesktopAppRunning(checkInterval: FiniteDuration = 30.seconds) extends TgLogging {
 
@@ -26,7 +27,7 @@ class CheckDesktopAppRunning(checkInterval: FiniteDuration = 30.seconds) extends
         } else {
           for {
             _ <- IO(logger.info("Desktop app is not running"))
-            _ <- stopSignal.complete()
+            _ <- stopSignal.complete(())
           } yield ()
         }
     } yield ()

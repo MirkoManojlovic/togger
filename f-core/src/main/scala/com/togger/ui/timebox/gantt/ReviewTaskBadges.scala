@@ -1,12 +1,15 @@
 package com.togger.ui.timebox.gantt
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.task.bulk.{BadgeSpec, BulkTaskBadges, BulkTaskCard}
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkTaskBadges
+import com.togger.ui.task.bulk.BulkTaskCard
 
 /** The badges of a task as the create timebox page shows them next to its Gantt bar, but not to click on. */
 object ReviewTaskBadges {

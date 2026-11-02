@@ -2,12 +2,14 @@ package com.togger.tasktemplate
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.task.TaskLabelRepo
 import com.togger.tasktemplate.TaskTemplateError._
 import com.togger.util.SplunkMacro.sp
-import doobie.{ConnectionIO, Transactor}
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 

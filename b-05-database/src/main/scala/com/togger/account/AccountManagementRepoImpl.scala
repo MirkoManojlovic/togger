@@ -5,9 +5,11 @@ import cats.implicits._
 import com.togger.account.AccountRepoImpl.ACCOUNT_TABLE_FRAG
 import com.togger.account.AccountSessionRepo.ACCOUNT_SESSION_TABLE_FRAG
 import com.togger.account.AccountTypeRepo.ACCOUNT_TYPE_TABLE_FRAG
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.organization.OrganizationAccountRepoImpl
 import com.togger.project.ProjectAccountRepoImpl
 import com.togger.util.SplunkMacro.sp
@@ -61,7 +63,9 @@ class AccountManagementRepoImpl extends AccountManagementRepo {
     logAroundInfoQuery(
       for {
         _ <- (deleteStatement(ACCOUNT_SESSION_TABLE_FRAG) ++ fr"where account_id = $id").update.run
-        _ <- (deleteStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++ fr"where account_id = $id").update.run
+        _ <- (deleteStatement(
+          ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG
+        ) ++ fr"where account_id = $id").update.run
         _ <- (deleteStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
           fr"where account_id = $id").update.run
         deleted <- (deleteStatement(ACCOUNT_TABLE_FRAG) ++ fr"where id = $id").update.run

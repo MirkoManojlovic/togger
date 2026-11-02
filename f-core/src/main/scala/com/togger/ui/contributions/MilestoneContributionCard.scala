@@ -4,15 +4,13 @@ import com.raquo.laminar.api.L._
 import com.togger.dto.MilestoneContributionsDto
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{
-  ChartColorBadgeColor,
-  TgBadge,
-  TgBadgeColor,
-  TgProgressColor,
-  TgProgressComponent,
-  TgProgressLabel,
-  TgProgressSize
-}
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressComponent
+import com.togger.ui.components.TgProgressLabel
+import com.togger.ui.components.TgProgressSize
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate

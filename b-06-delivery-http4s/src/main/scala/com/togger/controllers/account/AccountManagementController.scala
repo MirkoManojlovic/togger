@@ -2,10 +2,11 @@ package com.togger.controllers.account
 
 import cats.effect.IO
 import com.togger.account._
+import com.togger.common.Forbidden
 import com.togger.common.TgError._
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{Forbidden, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.dto._
 

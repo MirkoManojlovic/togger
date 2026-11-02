@@ -29,7 +29,7 @@ class TgAiService(client: TgAiClient, apiKeyProvider: TgAiApiKeyProvider) extend
     withValidRequest(accountId, request)(client.chatStream(_, request))
 
   private def withValidRequest[A](accountId: UUID, request: TgAiChatRequest)(
-      call: TgAiApiKey => IO[Result[A]]
+    call: TgAiApiKey => IO[Result[A]]
   ): IO[Result[A]] =
     validate(request) match {
       case Left(error) => IO.pure(error.asLeft)

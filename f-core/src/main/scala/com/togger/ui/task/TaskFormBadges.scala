@@ -1,20 +1,25 @@
 package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskStatusResp, SearchAccountDto}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.bulk._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The attributes of the task a form edits, as badges that open the same popups the task list uses; the form reads the
-  * edited task from [[taskVar]] when it is submitted. Choosing a closing status (Done or Won't do) is handed to [[onClosingChosen]]
-  * instead of being applied, as a closed task needs an end date.
+  * edited task from [[taskVar]] when it is submitted. Choosing a closing status (Done or Won't do) is handed to
+  * [[onClosingChosen]] instead of being applied, as a closed task needs an end date.
   */
 class TaskFormBadges(
   initial: BulkTask,

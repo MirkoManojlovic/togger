@@ -1,6 +1,7 @@
 package com.togger.chart
 
-/** Something that can be drawn in a chart. The same thing always gets the same label and color, wherever it is drawn. */
+/** Something that can be drawn in a chart. The same thing always gets the same label and color, wherever it is drawn.
+  */
 trait Chartable {
 
   /** Stable id to tell the series of a chart apart, e.g. `task-status.blocked`. */

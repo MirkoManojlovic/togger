@@ -1,16 +1,19 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.NotFound
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
+import com.togger.common.suites.AsyncJsWordSpec
+import com.togger.demo.DemoIdentity
 import com.togger.demo.DemoProjectLabelsData
 import com.togger.demo.DemoTaskConfigData
-
-import com.togger.demo.DemoIdentity
-
-import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, NotFound, PageRequest, Unauthenticated}
 import com.togger.dto._
 import com.togger.ui.project.ProjectServicePreview
-import com.togger.ui.projectlabel.{ProjectLabelCategoryFeServicePreview, ProjectLabelFeServicePreview}
-import com.togger.ui.task.{TaskLabelFeServicePreview, TaskStatusFeServicePreview}
+import com.togger.ui.projectlabel.ProjectLabelCategoryFeServicePreview
+import com.togger.ui.projectlabel.ProjectLabelFeServicePreview
+import com.togger.ui.task.TaskLabelFeServicePreview
+import com.togger.ui.task.TaskStatusFeServicePreview
 import com.togger.ui.tasktemplate.TaskTemplateFeServicePreview
 
 import java.util.UUID
@@ -26,7 +29,8 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     val templates = new TaskTemplateFeServicePreview(m.context, m.taskConfig)
     val projectLabels = new ProjectLabelFeServicePreview(m.context, m.projectLabels)
     val categories = new ProjectLabelCategoryFeServicePreview(m.context, m.projectLabels)
-    val projects = new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
+    val projects =
+      new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
     env.loginAsDemo()
   }
 
@@ -36,7 +40,12 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
 
     "answer unauthenticated without a session" in { _ =>
       val env = new PreviewTestEnv
-      val statuses = new TaskStatusFeServicePreview(env.module.context, env.module.projects, env.module.taskConfig, env.module.taskStats)
+      val statuses = new TaskStatusFeServicePreview(
+        env.module.context,
+        env.module.projects,
+        env.module.taskConfig,
+        env.module.taskStats
+      )
       env.run(statuses.findByProjectId(DemoIdentity.ProjectId, firstPage)).map(_ shouldBe Left(Unauthenticated))
     }
 
@@ -56,14 +65,20 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
     "create, update and delete a status but keep Done" in { _ =>
       val s = new Services
       for {
-        created <- s.env.run(s.statuses.createTaskStatus(CreateTaskStatusReq(DemoIdentity.ProjectId, "Review", "In review", "👀")))
+        created <- s.env.run(
+          s.statuses.createTaskStatus(CreateTaskStatusReq(DemoIdentity.ProjectId, "Review", "In review", "👀"))
+        )
         updated <- s.env.run(
-          s.statuses.updateTaskStatus(UpdateTaskStatusResp(created.toOption.get.id, DemoIdentity.ProjectId, "Code review", "In review", "👀"))
+          s.statuses.updateTaskStatus(
+            UpdateTaskStatusResp(created.toOption.get.id, DemoIdentity.ProjectId, "Code review", "In review", "👀")
+          )
         )
         found <- s.env.run(s.statuses.findTaskStatusById(created.toOption.get.id))
         deleted <- s.env.runEmpty(s.statuses.deleteTaskStatusById(created.toOption.get.id))
         gone <- s.env.run(s.statuses.findTaskStatusById(created.toOption.get.id))
-        done = s.env.module.taskConfig.statuses.all.find(st => st.projectId == DemoIdentity.ProjectId && st.name == "Done").get
+        done = s.env.module.taskConfig.statuses.all
+          .find(st => st.projectId == DemoIdentity.ProjectId && st.name == "Done")
+          .get
         doneDelete <- s.env.runEmpty(s.statuses.deleteTaskStatusById(done.id))
         unknownProject <- s.env.run(s.statuses.createTaskStatus(CreateTaskStatusReq(UUID.randomUUID(), "X", "", "")))
       } yield {
@@ -90,7 +105,9 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         project <- s.env.run(
-          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty))
+          s.projects.createProject(
+            CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty)
+          )
         )
         created = project.toOption.get
         statuses <- s.env.run(s.statuses.findAllByProjectId(created.id))
@@ -106,9 +123,13 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         seeded <- s.env.run(s.labels.findAllByProjectId(DemoIdentity.ProjectId))
-        created <- s.env.run(s.labels.createTaskLabel(CreateTaskLabelReq(DemoIdentity.ProjectId, "security", "Security work", "🔒")))
+        created <- s.env.run(
+          s.labels.createTaskLabel(CreateTaskLabelReq(DemoIdentity.ProjectId, "security", "Security work", "🔒"))
+        )
         updated <- s.env.run(
-          s.labels.updateTaskLabel(UpdateTaskLabelResp(created.toOption.get.id, DemoIdentity.ProjectId, "sec", "Security work", "🔒"))
+          s.labels.updateTaskLabel(
+            UpdateTaskLabelResp(created.toOption.get.id, DemoIdentity.ProjectId, "sec", "Security work", "🔒")
+          )
         )
         deleted <- s.env.runEmpty(s.labels.deleteTaskLabelById(created.toOption.get.id))
         missing <- s.env.runEmpty(s.labels.deleteTaskLabelById(created.toOption.get.id))
@@ -137,8 +158,12 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         category <- s.env.run(s.categories.createProjectLabelCategory(CreateProjectLabelCategoryReq("Domain")))
-        label <- s.env.run(s.projectLabels.createProjectLabel(CreateProjectLabelReq("Payments", "", category.toOption.get.id)))
-        noCategory <- s.env.run(s.projectLabels.createProjectLabel(CreateProjectLabelReq("Orphan", "", UUID.randomUUID())))
+        label <- s.env.run(
+          s.projectLabels.createProjectLabel(CreateProjectLabelReq("Payments", "", category.toOption.get.id))
+        )
+        noCategory <- s.env.run(
+          s.projectLabels.createProjectLabel(CreateProjectLabelReq("Orphan", "", UUID.randomUUID()))
+        )
         blocked <- s.env.runEmpty(s.categories.deleteProjectLabelCategoryById(category.toOption.get.id))
         _ <- s.env.runEmpty(s.projectLabels.deleteProjectLabelById(label.toOption.get.id))
         removed <- s.env.runEmpty(s.categories.deleteProjectLabelCategoryById(category.toOption.get.id))
@@ -157,11 +182,19 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
       val choreLabel = DemoTaskConfigData.labelId(0, 5)
       for {
         seeded <- s.env.run(s.templates.findAllByProjectId(DemoIdentity.ProjectId))
-        clash <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Another bug", "x", Some(bugLabel))))
-        foreign <- s.env.run(
-          s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Foreign", "x", Some(DemoTaskConfigData.labelId(1, 5))))
+        clash <- s.env.run(
+          s.templates.createTaskTemplate(
+            CreateTaskTemplateReq(DemoIdentity.ProjectId, "Another bug", "x", Some(bugLabel))
+          )
         )
-        created <- s.env.run(s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Chore", "v1", Some(choreLabel))))
+        foreign <- s.env.run(
+          s.templates.createTaskTemplate(
+            CreateTaskTemplateReq(DemoIdentity.ProjectId, "Foreign", "x", Some(DemoTaskConfigData.labelId(1, 5)))
+          )
+        )
+        created <- s.env.run(
+          s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Chore", "v1", Some(choreLabel)))
+        )
         id = created.toOption.get.id
         same <- s.env.run(s.templates.updateTaskTemplate(UpdateTaskTemplateReq(id, "Chore", "v1", Some(choreLabel))))
         changed <- s.env.run(s.templates.updateTaskTemplate(UpdateTaskTemplateReq(id, "Chore", "v2", None)))

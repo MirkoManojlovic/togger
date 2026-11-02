@@ -28,7 +28,11 @@ class DataExportStatusServiceTest extends ExportImportTestSupport {
       } yield {
         val statuses = result.toOption.get.pathStatuses.head.entityStatuses
         statuses.forall(_.status == DataExportSyncStatus.MissingFromExport) shouldBe true
-        statusOf(result, DataExportEntityType.TaskLabel, label.id).status shouldBe DataExportSyncStatus.MissingFromExport
+        statusOf(
+          result,
+          DataExportEntityType.TaskLabel,
+          label.id
+        ).status shouldBe DataExportSyncStatus.MissingFromExport
       }
     }
 
@@ -96,7 +100,11 @@ class DataExportStatusServiceTest extends ExportImportTestSupport {
         result <- service.checkStatus(savedProject.id, savedAccount.id)
       } yield {
         statusOf(result, DataExportEntityType.TaskLabel, removed.id).status shouldBe DataExportSyncStatus.MissingFromDb
-        statusOf(result, DataExportEntityType.TaskLabel, created.id).status shouldBe DataExportSyncStatus.MissingFromExport
+        statusOf(
+          result,
+          DataExportEntityType.TaskLabel,
+          created.id
+        ).status shouldBe DataExportSyncStatus.MissingFromExport
       }
     }
 

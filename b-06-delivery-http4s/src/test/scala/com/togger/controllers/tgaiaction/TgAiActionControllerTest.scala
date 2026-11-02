@@ -2,16 +2,18 @@ package com.togger.controllers.tgaiaction
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import cats.implicits._
 import com.togger.ai.TgAiEndpoints
-import com.togger.auth.{AuthAccount, SecuredEndpoint, SecurityLogic}
-import com.togger.common.{TgClockImpl, TgJsonFailure, TgJsonSuccess}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.SecurityLogic
+import com.togger.common.TgClockImpl
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.db.MockedTransactor
 import com.togger.dto.TgAiEndpointDto
 import com.togger.project.ProjectAccountRepo
 import com.togger.tgaiaction._
 import com.togger.tgprompttemplate.TgPromptTemplateRepo
-import doobie.ConnectionIO
 import doobie.util.invariant.UnexpectedEnd
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers

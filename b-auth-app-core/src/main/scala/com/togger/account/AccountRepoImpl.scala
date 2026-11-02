@@ -1,16 +1,20 @@
 package com.togger.account
 
-import com.togger.account.AccountRepoImpl.ACCOUNT_TABLE_FRAG
-import com.togger.common.{DbPageRequest, PaginatedResponse}
-import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
-import com.togger.logging.TgLogging
-import com.togger.util.SplunkMacro.sp
 import cats.data.NonEmptyList
 import cats.implicits._
+import com.togger.account.AccountRepoImpl.ACCOUNT_TABLE_FRAG
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
+import com.togger.db.Util._
+import com.togger.logging.TgLogging
+import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Fragments
+import doobie.Meta
 import doobie.implicits._
-import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Fragments, Meta}
 import doobie.postgres.implicits._
 
 import java.time.Instant

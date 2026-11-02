@@ -1,10 +1,12 @@
 package com.togger.ui.timebox
 
 import cats.effect.IO
+import com.togger.common.DateRangeValidation
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -33,7 +35,8 @@ class TimeboxFeServicePreview(
           resolveTaskVersions(dto.projectId, dto.taskIds).fold(
             PreviewResponses.badRequest[FindTimeboxResp](_),
             versionIds => {
-              val timebox = data.timeboxes.upsert(PreviewTimebox(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant))
+              val timebox =
+                data.timeboxes.upsert(PreviewTimebox(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant))
               val version = insertVersion(timebox.id, dto.startDate, dto.endDate, dto.description, "", versionIds)
               PreviewResponses.ok(toDto(timebox, version))
             }
@@ -45,7 +48,9 @@ class TimeboxFeServicePreview(
     secured {
       val rangeError = validateRange(dto.startDate, dto.endDate)
       val commentError =
-        Option.when(dto.changeComment.trim.isEmpty)(PreviewResponses.badRequest[FindTimeboxResp]("Change comment must not be empty"))
+        Option.when(dto.changeComment.trim.isEmpty)(
+          PreviewResponses.badRequest[FindTimeboxResp]("Change comment must not be empty")
+        )
       (rangeError.orElse(commentError), data.timeboxes.find(dto.timeboxId)) match {
         case (Some(error), _) => error
         case (None, None)     => PreviewResponses.badRequest[FindTimeboxResp](TimeboxNotFound)
@@ -56,7 +61,14 @@ class TimeboxFeServicePreview(
             PreviewResponses.badRequest[FindTimeboxResp](_),
             versionIds => {
               val version =
-                insertVersion(timebox.id, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, versionIds)
+                insertVersion(
+                  timebox.id,
+                  dto.startDate,
+                  dto.endDate,
+                  dto.description,
+                  dto.changeComment.trim,
+                  versionIds
+                )
               PreviewResponses.ok(toDto(timebox, version))
             }
           )
@@ -88,12 +100,17 @@ class TimeboxFeServicePreview(
 
   override def deleteTimebox(id: UUID): TgRespIO[TgEmptyBody] =
     secured {
-      data.deleteTimebox(id)
+      val _ = data.deleteTimebox(id)
       PreviewResponses.okEmpty("Timebox deleted successfully")
     }
 
   private def validateRange[A](start: LocalDate, end: LocalDate): Option[TgRespIO[A]] =
-    dateRangeValidation.validateOnOrAfterStart("End date", end, start).toEither.left.toOption.map(_.toBadRequestLeftIO[A])
+    dateRangeValidation
+      .validateOnOrAfterStart("End date", end, start)
+      .toEither
+      .left
+      .toOption
+      .map(_.toBadRequestLeftIO[A])
 
   private def overlaps(projectId: UUID, start: LocalDate, end: LocalDate, excluded: Option[UUID]): Boolean =
     data.timeboxes
@@ -105,8 +122,9 @@ class TimeboxFeServicePreview(
     taskIds.distinct.toList.foldLeft[Either[String, List[UUID]]](Right(List.empty)) { (acc, taskId) =>
       acc.flatMap { versions =>
         data.tasks.find(taskId) match {
-          case None                                       => Left(s"Task $taskId not found")
-          case Some(task) if task.projectId != projectId  => Left(s"Task $taskId does not belong to the project of the timebox")
+          case None => Left(s"Task $taskId not found")
+          case Some(task) if task.projectId != projectId =>
+            Left(s"Task $taskId does not belong to the project of the timebox")
           case Some(_) =>
             data.latestTaskVersion(taskId).map(v => versions :+ v.version).toRight(s"Task $taskId not found")
         }

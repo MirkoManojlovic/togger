@@ -2,14 +2,19 @@ package com.togger.task
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.dto.TaskFilter
-import com.togger.logentry.{LogEntryRepo, LogEntryVersionRepo, LogEntryWithVersions}
+import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.LogEntryVersionRepo
+import com.togger.logentry.LogEntryWithVersions
 import com.togger.logging.TgLogging
-import com.togger.task.TaskError.{TaskError, TaskNotFound}
+import com.togger.task.TaskError.TaskError
+import com.togger.task.TaskError.TaskNotFound
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
-import doobie.{ConnectionIO, Transactor}
 
 import java.util.UUID
 

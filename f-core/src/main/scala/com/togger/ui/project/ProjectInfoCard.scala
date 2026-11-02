@@ -3,12 +3,17 @@ package com.togger.ui.project
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindProjectResp
 import com.togger.markdown.TgMarkdown
-import com.togger.routes.Pages.{EditProjectPage, ProjectHomePage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.EditProjectPage
+import com.togger.routes.Pages.ProjectHomePage
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 
 sealed trait ProjectTitle
 

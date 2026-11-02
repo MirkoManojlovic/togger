@@ -2,13 +2,18 @@ package com.togger.controllers.contribution
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.togger.auth.{AuthAccount, SecuredEndpoint, SecurityLogic}
+import com.togger.account.Account
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.SecurityLogic
 import com.togger.common._
 import com.togger.contribution._
 import com.togger.db.MockedTransactor
 import com.togger.dto.ContributionsFilter
-import com.togger.account.Account
-import com.togger.project.{Project, ProjectAccount, ProjectAccountRepo, ProjectRepo}
+import com.togger.project.Project
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectAccountRepo
+import com.togger.project.ProjectRepo
 import doobie.ConnectionIO
 import doobie.free.connection.pure
 import org.scalatest.matchers.should.Matchers

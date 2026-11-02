@@ -1,10 +1,13 @@
 package com.togger.ui.dataexportconfig
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.dataexportconfig.{CreateDataExportConfigReq, DataExportConfigResp, UpdateDataExportConfigReq}
+import com.togger.dto.dataexportconfig.CreateDataExportConfigReq
+import com.togger.dto.dataexportconfig.DataExportConfigResp
+import com.togger.dto.dataexportconfig.UpdateDataExportConfigReq
 import com.togger.preview._
 import com.togger.ui.components.pagination.PaginatedLoader
 
@@ -17,26 +20,28 @@ class DataExportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
     PreviewResponses.authenticated(ctx.loginRepo)(accountId =>
       IO.defer(
         validated(dto.projectId, dto.name, dto.exportPath) {
-            val now = ctx.clock.currentInstant
-            PreviewResponses.ok(
-              data.exportConfigs.upsert(
-                DataExportConfigResp(
-                  UUID.randomUUID(),
-                  dto.projectId,
-                  accountId,
-                  dto.name.trim,
-                  dto.exportPath.trim,
-                  now,
-                  now
-                )
+          val now = ctx.clock.currentInstant
+          PreviewResponses.ok(
+            data.exportConfigs.upsert(
+              DataExportConfigResp(
+                UUID.randomUUID(),
+                dto.projectId,
+                accountId,
+                dto.name.trim,
+                dto.exportPath.trim,
+                now,
+                now
               )
             )
+          )
         }
       )
     )
 
   override def findById(id: UUID): TgRespIO[DataExportConfigResp] =
-    PreviewResponses.authenticated(ctx.loginRepo)(_ => IO.defer(PreviewResponses.fromOption(data.exportConfigs.find(id))))
+    PreviewResponses.authenticated(ctx.loginRepo)(_ =>
+      IO.defer(PreviewResponses.fromOption(data.exportConfigs.find(id)))
+    )
 
   override def update(dto: UpdateDataExportConfigReq): TgRespIO[DataExportConfigResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
@@ -44,16 +49,16 @@ class DataExportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
         if (data.exportConfigs.find(dto.id).isEmpty) PreviewResponses.notFound[DataExportConfigResp]
         else
           validated(dto.projectId, dto.name, dto.exportPath) {
-              PreviewResponses.fromOption(
-                data.exportConfigs.update(dto.id)(
-                  _.copy(
-                    projectId = dto.projectId,
-                    name = dto.name.trim,
-                    exportPath = dto.exportPath.trim,
-                    updatedAt = ctx.clock.currentInstant
-                  )
+            PreviewResponses.fromOption(
+              data.exportConfigs.update(dto.id)(
+                _.copy(
+                  projectId = dto.projectId,
+                  name = dto.name.trim,
+                  exportPath = dto.exportPath.trim,
+                  updatedAt = ctx.clock.currentInstant
                 )
               )
+            )
           }
       )
     )
@@ -85,7 +90,9 @@ class DataExportConfigFeServicePreview(ctx: PreviewContext, projects: ProjectsPr
   private def validated(projectId: UUID, name: String, exportPath: String)(
     onValid: => TgRespIO[DataExportConfigResp]
   ): TgRespIO[DataExportConfigResp] =
-    validate(projectId, name, exportPath).fold(onValid)(error => PreviewResponses.badRequest[DataExportConfigResp](error))
+    validate(projectId, name, exportPath).fold(onValid)(error =>
+      PreviewResponses.badRequest[DataExportConfigResp](error)
+    )
 
   private def validate(projectId: UUID, name: String, exportPath: String): Option[String] =
     if (projects.projects.find(projectId).isEmpty) Some("The project does not exist")

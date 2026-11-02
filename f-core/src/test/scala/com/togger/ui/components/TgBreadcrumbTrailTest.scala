@@ -30,7 +30,11 @@ class TgBreadcrumbTrailTest extends AsyncJsWordSpec {
     }
 
     "label the last crumb after the page" in { _ =>
-      TgBreadcrumbTrail.forPage(ShowAllTasksPage(projectId)).map(_.label) shouldBe Seq("Organizations", "Project", "Tasks")
+      TgBreadcrumbTrail.forPage(ShowAllTasksPage(projectId)).map(_.label) shouldBe Seq(
+        "Organizations",
+        "Project",
+        "Tasks"
+      )
     }
 
     "put the contributions under the project" in { _ =>

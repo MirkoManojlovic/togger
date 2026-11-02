@@ -6,7 +6,8 @@ import com.togger.common._
 import com.togger.logging.TgLogging
 import com.togger.ui.organization.TgIcons
 import com.togger.util.SplunkMacro.sp
-import org.scalajs.dom.{HTMLDivElement, html}
+import org.scalajs.dom.HTMLDivElement
+import org.scalajs.dom.html
 
 import java.util.UUID
 

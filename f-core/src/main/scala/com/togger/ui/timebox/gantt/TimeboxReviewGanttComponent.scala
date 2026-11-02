@@ -2,18 +2,24 @@ package com.togger.ui.timebox.gantt
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, LogEntryDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.task.TaskProgressComponent
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.LogEntryStatusSquare
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.logentry.LogEntryReadOnlyCard
-import com.togger.ui.components.{LogEntryStatusSquare, TgTab, TgTabs}
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task.TgDateFormater
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The tasks of a timebox as a read only Gantt chart. Under the bar of each task, the planned duration, there is a
@@ -51,7 +57,7 @@ class TimeboxReviewGanttComponent(
 
   private def toggle(key: (UUID, LocalDate)): Unit =
     selectedVar.update(current => if (current.contains(key)) None else Some(key))
-    tabVar.set("single-day")
+  tabVar.set("single-day")
 
   private def taskDetails(task: FindTaskRespFull, milestones: Seq[FindMilestoneResp]): HtmlElement =
     div(
@@ -128,9 +134,9 @@ class TimeboxReviewGanttComponent(
     div(
       cls("mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-body-subtle"),
       span(cls("font-medium"), "Log entry of the day:"),
-      statuses.sortBy(_.value).map(status =>
-        span(cls("flex items-center gap-1.5"), LogEntryStatusSquare(Some(status)), status.statusName)
-      ),
+      statuses
+        .sortBy(_.value)
+        .map(status => span(cls("flex items-center gap-1.5"), LogEntryStatusSquare(Some(status)), status.statusName)),
       span(cls("flex items-center gap-1.5"), LogEntryStatusSquare(None), "No log entry")
     )
 
@@ -147,7 +153,10 @@ class TimeboxReviewGanttComponent(
       val shown = all.flatMap(_.logEntries).map(_.status).distinct
       div(
         legend(shown),
-        layout.frame(axis, GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, milestoneList, entries)))
+        layout.frame(
+          axis,
+          GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, milestoneList, entries))
+        )
       )
     }
 
@@ -168,7 +177,10 @@ class TimeboxReviewGanttComponent(
       .element
       .amend(cls("w-full mb-4"))
 
-  private def entriesOf(all: Seq[FindTaskRespFull], inRange: LocalDate => Boolean): Seq[(FindTaskRespFull, LogEntryDto)] =
+  private def entriesOf(
+    all: Seq[FindTaskRespFull],
+    inRange: LocalDate => Boolean
+  ): Seq[(FindTaskRespFull, LogEntryDto)] =
     all
       .flatMap(task => task.logEntries.map(task -> _))
       .filter { case (_, entry) => inRange(GanttLogStatus.toLocalDate(entry.createdAt)) }
@@ -180,7 +192,13 @@ class TimeboxReviewGanttComponent(
       if (found.isEmpty) p(cls("text-body"), emptyText)
       else
         found.map { case (task, entry) =>
-          LogEntryReadOnlyCard(entry, GanttLogStatus.toLocalDate(entry.createdAt), task.name, tgDateFormater, tgMarkdown)
+          LogEntryReadOnlyCard(
+            entry,
+            GanttLogStatus.toLocalDate(entry.createdAt),
+            task.name,
+            tgDateFormater,
+            tgMarkdown
+          )
             .amend(cls("mb-2"))
         }
     )
@@ -191,8 +209,9 @@ class TimeboxReviewGanttComponent(
       label = label,
       content = div(
         child <-- selectedVar.signal.combineWith(tasks).map {
-          case (None, _)                  => p(cls("text-body"), PickTaskText)
-          case (Some((taskId, _)), all) => entryCards(entriesOf(all.filter(_.id == taskId), inRange), "No status update")
+          case (None, _) => p(cls("text-body"), PickTaskText)
+          case (Some((taskId, _)), all) =>
+            entryCards(entriesOf(all.filter(_.id == taskId), inRange), "No status update")
         }
       )
     )

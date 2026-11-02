@@ -1,6 +1,7 @@
 package com.togger.dto
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class CreateTimeboxReq(

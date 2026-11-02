@@ -2,9 +2,11 @@ package com.togger.ui.components
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.ui.auth.TgHtmlTypes.{HtmlSpan, TgHtmlElement}
+import com.togger.ui.auth.TgHtmlTypes.HtmlSpan
+import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
 import com.togger.ui.organization.TgIcons
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.Enum
+import enumeratum.EnumEntry
 import org.scalajs.dom.SVGSVGElement
 
 /** What an interactive badge does.
@@ -22,9 +24,9 @@ object TgBadgeAction {
 /** A badge color, as the five class fragments a badge needs.
   *
   * Two families live here. The **semantic six** (`Brand` .. `Warning`) use Flowbite's theme tokens, which swap
-  * themselves under `.dark`, so they carry no `dark:` class. The **palette colors** (`Blue` .. `Rose`) are raw
-  * Tailwind shades, which do not, so each spells out its own `dark:` pair. `style.css` points the `dark:` variant at
-  * the same `.dark` class the theme uses, so both families flip together.
+  * themselves under `.dark`, so they carry no `dark:` class. The **palette colors** (`Blue` .. `Rose`) are raw Tailwind
+  * shades, which do not, so each spells out its own `dark:` pair. `style.css` points the `dark:` variant at the same
+  * `.dark` class the theme uses, so both families flip together.
   *
   * Every class is a literal string on purpose: Tailwind scans source text for whole class names, so a fragment built
   * with interpolation (`s"bg-$hue-100"`) would generate no CSS at all.
@@ -301,7 +303,7 @@ case class TgBadge(
     case Some(TgBadgeAction.Dismiss(observer)) =>
       span(
         cls(containerCls),
-        cls.toggle(TgBadgeStyles.dismissedCls) <-- dismissedVar.signal,
+        cls(TgBadgeStyles.dismissedCls) <-- dismissedVar.signal,
         iconNode,
         span(text),
         dismissButton(observer)

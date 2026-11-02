@@ -1,8 +1,10 @@
 package com.togger.tgprompttemplate
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.tgprompttemplate.TgPromptTemplateRepoImpl.TG_PROMPT_TEMPLATE_TABLE_FRAG
 import com.togger.tgprompttemplate.TgPromptTemplateVersionRepoImpl.TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG

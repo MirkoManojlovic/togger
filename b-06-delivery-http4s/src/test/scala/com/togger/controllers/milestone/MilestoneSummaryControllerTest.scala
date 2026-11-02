@@ -3,20 +3,26 @@ package com.togger.controllers.milestone
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.togger.account.Account
-import com.togger.auth.{AuthAccount, SecuredEndpoint, SecurityLogic}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.SecurityLogic
 import com.togger.common._
-import com.togger.contribution.{ContributionRepo, ContributionService}
+import com.togger.contribution.ContributionRepo
+import com.togger.contribution.ContributionService
 import com.togger.db.MockedTransactor
 import com.togger.dto.CreateMilestoneSummaryReq
 import com.togger.milestone._
-import com.togger.project.{ProjectAccount, ProjectAccountRepo, ProjectRepo}
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectAccountRepo
+import com.togger.project.ProjectRepo
 import doobie.ConnectionIO
 import doobie.free.connection.pure
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import sttp.tapir.integ.cats.effect.CatsMonadError
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneSummaryControllerTest extends AnyWordSpec with Matchers {

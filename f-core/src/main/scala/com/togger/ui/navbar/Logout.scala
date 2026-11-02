@@ -1,11 +1,13 @@
 package com.togger.ui.navbar
 
-import com.togger.routes.Pages.LoginPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.auth.LoginRepo
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import org.scalajs.dom.{HTMLAnchorElement, HTMLLIElement, MouseEvent}
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.LoginPage
+import com.togger.routes.TgRouter
+import com.togger.ui.auth.LoginRepo
+import org.scalajs.dom.HTMLAnchorElement
+import org.scalajs.dom.MouseEvent
 import scalacss.StyleSheet
 
 case class Logout[PAGE](

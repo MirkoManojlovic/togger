@@ -3,10 +3,12 @@ package com.togger.ui.components
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import com.raquo.laminar.tags.HtmlTag
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
-import org.scalajs.dom.{HTMLElement, SVGSVGElement}
+import org.scalajs.dom.HTMLElement
+import org.scalajs.dom.SVGSVGElement
 
 import scala.scalajs.js
 
@@ -52,7 +54,8 @@ class TgBreadcrumbs(
   private val currentCls = "inline-flex items-center text-sm font-medium text-body-subtle"
   private val separatorCls = "w-3.5 h-3.5 rtl:rotate-180 text-body"
   private val iconCls = "w-4 h-4 me-1.5"
-  private val historyButtonCls = "inline-flex items-center text-body enabled:hover:text-fg-brand enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+  private val historyButtonCls =
+    "inline-flex items-center text-body enabled:hover:text-fg-brand enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 
   // The Navigation API is the only way to know if history has entries; where it is missing both buttons stay enabled.
   private val canGoBack = Var(true)
@@ -81,7 +84,7 @@ class TgBreadcrumbs(
   val element: HtmlElement =
     navTag(
       cls("flex"),
-      cls.toggle(solidCls) := variant == TgBreadcrumbVariant.Solid,
+      cls(solidCls) := variant == TgBreadcrumbVariant.Solid,
       aria.label("Breadcrumb"),
       onMountUnmountCallback(_ => listenToHistory(), _ => stopListeningToHistory()),
       div(
@@ -118,7 +121,7 @@ class TgBreadcrumbs(
     val crumbRole = TgBreadcrumbs.roleOf(index, items.size, item.page.isDefined)
     val body = crumbBody(item, crumbRole)
     li(
-      cls.toggle("inline-flex items-center") := index == 0,
+      cls("inline-flex items-center") := index == 0,
       Option.when(crumbRole == TgCrumbRole.Current)(aria.current("page")),
       if (index == 0) body else div(cls("flex items-center space-x-1.5"), separator, body)
     )

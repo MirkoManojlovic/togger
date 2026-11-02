@@ -1,9 +1,11 @@
 package com.togger.ui.contributions
 
 import com.togger.routes.ContributionsParams
-import com.togger.ui.milestone.{ActiveDateFilter, MonthOption}
+import com.togger.ui.milestone.ActiveDateFilter
+import com.togger.ui.milestone.MonthOption
 
-import java.time.{LocalDate, YearMonth}
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** How the date filter of the page becomes the range asked from the backend. */
 object ContributionsFilterMapping {
@@ -13,8 +15,8 @@ object ContributionsFilterMapping {
   /** The months a page opened without a range looks back, up to the day it is opened. */
   val DefaultMonths = 3
 
-  /** A URL without a range is the last [[DefaultMonths]] months. The range is then in the address bar, so a reload or
-    * a shared link shows the same days. Every day is still one pick away, by ticking no month.
+  /** A URL without a range is the last [[DefaultMonths]] months. The range is then in the address bar, so a reload or a
+    * shared link shows the same days. Every day is still one pick away, by ticking no month.
     */
   def withDefaultRange(params: ContributionsParams, today: LocalDate): ContributionsParams =
     if (params == ContributionsParams.default)

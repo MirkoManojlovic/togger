@@ -1,6 +1,7 @@
 package com.togger
 
-import enumeratum.{EnumEntry, _}
+import enumeratum.EnumEntry
+import enumeratum._
 
 sealed abstract class DbMode(val dbName: String) extends EnumEntry
 object DbMode extends Enum[DbMode] {

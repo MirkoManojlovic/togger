@@ -1,9 +1,10 @@
 package com.togger.ui.task
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -18,8 +19,12 @@ class TaskLabelFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewDa
         if (projects.projects.find(dto.projectId).isEmpty) PreviewResponses.notFound[CreateTaskLabelResp]
         else {
           val created =
-            data.labels.upsert(FindTaskLabelResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji))
-          PreviewResponses.ok(CreateTaskLabelResp(created.id, created.projectId, created.name, created.description, created.emoji))
+            data.labels.upsert(
+              FindTaskLabelResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji)
+            )
+          PreviewResponses.ok(
+            CreateTaskLabelResp(created.id, created.projectId, created.name, created.description, created.emoji)
+          )
         }
       }
     )
@@ -53,7 +58,7 @@ class TaskLabelFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewDa
       IO.defer {
         if (data.labels.find(id).isEmpty) PreviewResponses.notFound[TgEmptyBody]
         else {
-          data.deleteLabel(id)
+          val _ = data.deleteLabel(id)
           PreviewResponses.okEmpty("Task label deleted successfully")
         }
       }

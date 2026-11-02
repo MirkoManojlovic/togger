@@ -1,10 +1,15 @@
 package com.togger.ui.accountmanagement
 
 import cats.effect.IO
-import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.common.Forbidden
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{Forbidden, PageRequest, PaginatedResponse}
-import com.togger.dto.{AccountManagementDto, AccountProjectDto, AccountTypeDto, UpdateAccountReq}
+import com.togger.common.TgResponseTypes.TgRespIO
+import com.togger.dto.AccountManagementDto
+import com.togger.dto.AccountProjectDto
+import com.togger.dto.AccountTypeDto
+import com.togger.dto.UpdateAccountReq
 import com.togger.preview._
 
 import java.util.UUID
@@ -21,9 +26,11 @@ class AccountManagementFeServicePreview(
 
   override def findById(id: UUID): TgRespIO[AccountManagementDto] =
     adminOnly(_ =>
-      accounts.accounts.find(id).fold(PreviewResponses.badRequest[AccountManagementDto]("Account not found"))(a =>
-        PreviewResponses.ok(toDto(a))
-      )
+      accounts.accounts
+        .find(id)
+        .fold(PreviewResponses.badRequest[AccountManagementDto]("Account not found"))(a =>
+          PreviewResponses.ok(toDto(a))
+        )
     )
 
   override def findAccountTypes: TgRespIO[List[AccountTypeDto]] =
@@ -50,7 +57,7 @@ class AccountManagementFeServicePreview(
           email = email,
           accountTypeId = req.accountTypeId
         )
-        accounts.accounts.upsert(updated)
+        val _ = accounts.accounts.upsert(updated)
         PreviewResponses.ok(toDto(updated))
     }
   }

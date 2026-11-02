@@ -30,9 +30,9 @@ class TgAiActionEndpointRepoImpl extends TgAiActionEndpointRepo with TgLogging {
 
   // Deleting a binding also deletes the defaults that use it (cascade).
   private def removeUnlisted(actionId: UUID, endpointIds: List[Int]): ConnectionIO[Int] = {
-    val unlisted = NonEmptyList.fromList(endpointIds).fold(Fragment.empty)(ids =>
-      fr"and" ++ fragments.notIn(fr"ai_endpoint_id", ids)
-    )
+    val unlisted = NonEmptyList
+      .fromList(endpointIds)
+      .fold(Fragment.empty)(ids => fr"and" ++ fragments.notIn(fr"ai_endpoint_id", ids))
     (fr"delete from" ++ TG_AI_ACTION_ENDPOINT_TABLE_FRAG ++ fr"where tg_ai_action_id = $actionId" ++ unlisted).update.run
   }
 

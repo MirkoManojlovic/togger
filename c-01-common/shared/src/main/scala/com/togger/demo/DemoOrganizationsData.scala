@@ -3,6 +3,7 @@ package com.togger.demo
 import java.util.UUID
 
 object DemoOrganizationsData {
+
   /** The projects in the order the per project seed data (statuses, labels, tasks) indexes them. */
   val projectIds: List[UUID] = List(DemoIdentity.ProjectId, DemoIdentity.SecondProjectId, DemoIdentity.SideProjectId)
 

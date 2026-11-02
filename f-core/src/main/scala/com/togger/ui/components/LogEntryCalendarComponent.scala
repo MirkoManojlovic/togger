@@ -7,15 +7,21 @@ import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.task.TgDateFormater
 
-import java.time.{DayOfWeek, LocalDate, ZoneOffset}
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /** A grid of a task's log entries, one column per the project's configured work day, each showing that day's status
   * emoji(s). Clicking a cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail
   * view elsewhere.
   *
-  * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the month (with the month where one starts) in small
-  * cells, `TinyWeeks` weeks at a time, the latest first, with arrows to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a brand border and is always part of the grid, as are the `extraDays`. A status in `pendingStatuses` is shown faded on a dashed cell: it is not saved yet, and clicking a day without a saved entry that is an extra day or has a pending status calls `onMissingDayClick` instead of toggling it. The task's `startDate` and `dueDate` are marked
-  * on it when they fall in the days shown.
+  * `tinyElement` is the same grid in a mini shape for tight spots: one letter per column, the emoji and the day of the
+  * month (with the month where one starts) in small cells, `TinyWeeks` weeks at a time, the latest first, with arrows
+  * to step back and forward. Clicking a cell toggles it in `selectedDayVar`, as in the big one. The `markedDay` gets a
+  * brand border and is always part of the grid, as are the `extraDays`. A status in `pendingStatuses` is shown faded on
+  * a dashed cell: it is not saved yet, and clicking a day without a saved entry that is an extra day or has a pending
+  * status calls `onMissingDayClick` instead of toggling it. The task's `startDate` and `dueDate` are marked on it when
+  * they fall in the days shown.
   */
 class LogEntryCalendarComponent(
   logEntries: Seq[LogEntryDto],
@@ -82,7 +88,9 @@ class LogEntryCalendarComponent(
       def pageButton(label: String, icon: SvgElement, delta: Int) =
         button(
           `type`("button"),
-          cls("flex h-5 w-5 items-center justify-center rounded-sm text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"),
+          cls(
+            "flex h-5 w-5 items-center justify-center rounded-sm text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          ),
           aria.label(label),
           title(label),
           icon,
@@ -114,7 +122,9 @@ class LogEntryCalendarComponent(
             pageButton(s"Back $TinyWeeks weeks", TgIcons.chevronLeftIcon("w-3 h-3"), delta = 1),
             button(
               `type`("button"),
-              cls("rounded-sm px-1.5 text-[11px] font-medium leading-5 text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"),
+              cls(
+                "rounded-sm px-1.5 text-[11px] font-medium leading-5 text-body hover:bg-neutral-tertiary-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              ),
               title("Latest weeks"),
               "Today",
               disabled <-- page.signal.map(_ == 0),
@@ -144,7 +154,9 @@ class LogEntryCalendarComponent(
 
   private def tinyDayCell(day: LocalDate, entries: Seq[LogEntryDto], startsMonth: Boolean, marks: Seq[DateMark]) =
     div(
-      cls("relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"),
+      cls(
+        "relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-sm border border-default-medium text-sm leading-none"
+      ),
       cls(if (entries.isEmpty) "bg-neutral-primary" else "bg-neutral-secondary-medium"),
       cls <-- selectedDayVar.signal.map(selected => if (selected.contains(day)) "ring-2 ring-blue-400" else ""),
       cls(if (markedDay.contains(day)) "border-brand!" else ""),
@@ -156,7 +168,10 @@ class LogEntryCalendarComponent(
           case None           => selectedDayVar.update(current => if (current.contains(day)) None else Some(day))
         }
       },
-      span(cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"), if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString),
+      span(
+        cls("absolute start-1 top-1 text-[10px] leading-none text-body-subtle"),
+        if (startsMonth) s"${day.getDayOfMonth} ${monthAbbrev(day)}" else day.getDayOfMonth.toString
+      ),
       entries.lastOption.map(entry => span(cls("mt-2"), entry.status.emoji)),
       child.maybe <-- pendingStatuses.map(_.get(day).map { status =>
         // beside a saved entry it goes in the corner, so both can be told apart

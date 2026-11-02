@@ -1,14 +1,20 @@
 package com.togger.ui.project
 
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SearchAccountDto
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.bulk.BadgeSpec
-import com.togger.ui.teamdaily.{TeamDailyStatusOrder, TeamDailyTaskBadges}
+import com.togger.ui.teamdaily.TeamDailyStatusOrder
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.TimeboxReviewStats
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** What the project home picks out of the project, kept apart from the screen so it can be tested without a DOM. */
@@ -84,8 +90,7 @@ object ProjectHomeStats {
         TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
       )
 
-  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left
-    * out.
+  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left out.
     */
   def byColumn(tasks: Seq[FindTaskRespFull]): Seq[Seq[FindTaskRespFull]] = {
     val ranked = tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))

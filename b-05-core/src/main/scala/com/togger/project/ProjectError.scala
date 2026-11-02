@@ -10,7 +10,8 @@ object ProjectError {
   }
 
   case object NoExportPathConfigured extends ProjectError {
-    override def message: String = "No export path configured for this project. Configure at least one export data config path first."
+    override def message: String =
+      "No export path configured for this project. Configure at least one export data config path first."
   }
 
   case object DumpManifestMissing extends ProjectError {

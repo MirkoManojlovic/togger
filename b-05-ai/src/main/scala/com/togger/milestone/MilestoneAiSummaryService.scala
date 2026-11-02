@@ -5,7 +5,8 @@ import cats.effect.IO
 import cats.syntax.either._
 import com.togger.ai._
 import com.togger.common.TgError
-import com.togger.logentry.{LogEntryRepo, LogEntryWithOneVersion}
+import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.LogEntryWithOneVersion
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneAiSummaryError._
 import com.togger.tgprompttemplate.TgPromptTemplateService
@@ -15,7 +16,8 @@ import io.circe.Printer
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class MilestoneAiSummaryCommand(
@@ -50,16 +52,18 @@ class MilestoneAiSummaryService(
       .findLatestByMilestoneIdBetween(command.milestoneId, command.startDate, command.endDate, MAX_LOG_ENTRIES + 1)
       .transact(transactor)
       .map {
-        case Nil                                  => (NoLogEntriesInRange: TgError).asLeft
+        case Nil                                       => (NoLogEntriesInRange: TgError).asLeft
         case entries if entries.size > MAX_LOG_ENTRIES => (TooManyLogEntries(MAX_LOG_ENTRIES): TgError).asLeft
-        case entries                              => entries.map(toAiDto).asRight
+        case entries                                   => entries.map(toAiDto).asRight
       }
 
   private def findStoredPrompt(accountId: UUID, promptId: Option[UUID]): IO[Result[Option[String]]] =
     promptId match {
       case None => IO.pure(None.asRight)
       case Some(id) =>
-        tgPromptTemplateService.findById(accountId, id).map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
+        tgPromptTemplateService
+          .findById(accountId, id)
+          .map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
     }
 
   private def chatStream(

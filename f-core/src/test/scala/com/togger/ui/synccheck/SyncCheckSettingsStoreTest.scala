@@ -1,7 +1,6 @@
 package com.togger.ui.synccheck
 
 import com.raquo.airstream.ownership.OneTimeOwner
-import com.raquo.laminar.api.L._
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.ui.localstorage.LocalStorageTest
 

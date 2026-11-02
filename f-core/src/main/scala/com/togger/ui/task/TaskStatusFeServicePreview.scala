@@ -1,9 +1,10 @@
 package com.togger.ui.task
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 import com.togger.task.DefaultTaskStatus
@@ -25,7 +26,9 @@ class TaskStatusFeServicePreview(
           val created = data.statuses.upsert(
             FindTaskStatusResp(UUID.randomUUID(), dto.projectId, dto.name, dto.description, dto.emoji)
           )
-          PreviewResponses.ok(CreateTaskStatusResp(created.id, created.projectId, created.name, created.description, created.emoji))
+          PreviewResponses.ok(
+            CreateTaskStatusResp(created.id, created.projectId, created.name, created.description, created.emoji)
+          )
         }
       }
     )
@@ -63,7 +66,7 @@ class TaskStatusFeServicePreview(
         case Some(_) if stats.source.statusInUse(id) =>
           PreviewResponses.badRequest[TgEmptyBody]("Task status is used by tasks and cannot be deleted")
         case Some(_) =>
-          data.statuses.delete(id)
+          val _ = data.statuses.delete(id)
           PreviewResponses.okEmpty("Task status deleted successfully")
       })
     )

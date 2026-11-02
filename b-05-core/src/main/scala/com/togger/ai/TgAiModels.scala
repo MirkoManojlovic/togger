@@ -17,9 +17,9 @@ object TgAiMessage {
 }
 
 final case class TgAiChatRequest(
-    model: TgAiModel,
-    messages: List[TgAiMessage],
-    maxOutputTokens: Option[Int] = None
+  model: TgAiModel,
+  messages: List[TgAiMessage],
+  maxOutputTokens: Option[Int] = None
 )
 
 final case class TgAiUsage(promptTokens: Int, completionTokens: Int, totalTokens: Int)

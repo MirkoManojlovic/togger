@@ -3,7 +3,8 @@ package com.togger.contribution
 import com.togger.auth.SecuredEndpoint
 import com.togger.common.TgEndpoints.TgSecuredEndpoint
 import com.togger.common.TgJsonSuccess
-import com.togger.dto.{ContributionsDto, ContributionsFilter}
+import com.togger.dto.ContributionsDto
+import com.togger.dto.ContributionsFilter
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

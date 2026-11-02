@@ -4,16 +4,21 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindTgPromptTemplateResp, TgAiEndpointDto, TgAiModelDto}
+import com.togger.dto.FindTgPromptTemplateResp
+import com.togger.dto.TgAiEndpointDto
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowAllTgAiActionsPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.toast.Toast
 import com.togger.ui.tgprompttemplate.TgPromptTemplateFeService
+import com.togger.ui.toast.Toast
 
 import java.util.UUID
 
@@ -99,7 +104,9 @@ class EditTgAiActionComponent(
                     cls("flex justify-between"),
                     button(
                       `type` := "button",
-                      cls("text-white bg-danger box-border border border-transparent hover:bg-danger-strong font-medium rounded-base text-sm px-4 py-2.5"),
+                      cls(
+                        "text-white bg-danger box-border border border-transparent hover:bg-danger-strong font-medium rounded-base text-sm px-4 py-2.5"
+                      ),
                       "Delete",
                       onClick.mapToUnit --> (_ => deleteAction())
                     ),

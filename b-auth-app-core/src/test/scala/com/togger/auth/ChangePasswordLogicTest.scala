@@ -2,9 +2,14 @@ package com.togger.auth
 
 import cats.implicits._
 import com.togger.TgAsyncWordSpecMockJvm
-import com.togger.account.{Account, AccountRepoImpl, HashedPasswordImpl, TgAccount}
-import com.togger.auth.ChangePasswordError.{InvalidAccountId, PasswordsMustMatch}
-import com.togger.common.Password.{DoesNotContainDigit, DoesNotContainSpecialChar}
+import com.togger.account.Account
+import com.togger.account.AccountRepoImpl
+import com.togger.account.HashedPasswordImpl
+import com.togger.account.TgAccount
+import com.togger.auth.ChangePasswordError.InvalidAccountId
+import com.togger.auth.ChangePasswordError.PasswordsMustMatch
+import com.togger.common.Password.DoesNotContainDigit
+import com.togger.common.Password.DoesNotContainSpecialChar
 import com.togger.common._
 import com.togger.db.MockedTransactor
 import com.togger.dto.login.ChangePasswordDto
@@ -107,7 +112,7 @@ class ChangePasswordLogicTest
       (accountRepo.findById _).expects(accountId).returns(account.pure[ConnectionIO])
       val updatedCustomerAccount = account.copy(password = HashedPasswordImpl.fromPassword(anotherValidPassword))
       (passwordUpdate.run _).expects(account, anotherValidPassword).returns(updatedCustomerAccount)
-      (tgClock.currentInstant _).expects().returns(nowAsInstant).twice()
+      (() => tgClock.currentInstant).expects().returns(nowAsInstant).twice()
       (accountRepo.update _)
         .expects(updatedCustomerAccount, tgClock.currentInstant)
         .returns(updatedCustomerAccount.pure[ConnectionIO])

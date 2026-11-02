@@ -1,8 +1,8 @@
 package com.togger.ui.modal
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.components.button.TgHtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import org.scalajs.dom.MouseEvent
 

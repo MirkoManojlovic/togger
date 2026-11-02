@@ -1,7 +1,10 @@
 package com.togger.ui.task
 
-import com.togger.dto.{FindTaskRespFull, UpdateTaskReq, UpdateTaskReq1}
-import com.togger.ui.task.bulk.{BulkLookups, BulkTask}
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.UpdateTaskReq
+import com.togger.dto.UpdateTaskReq1
+import com.togger.ui.task.bulk.BulkLookups
+import com.togger.ui.task.bulk.BulkTask
 
 import java.time.Instant
 

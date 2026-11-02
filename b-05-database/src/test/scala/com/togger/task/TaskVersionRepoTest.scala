@@ -1,12 +1,15 @@
 package com.togger.task
 
 import cats.implicits.catsSyntaxApplicativeError
-import com.togger.account.{Account, AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TgIds, TimeHelpers}
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TgIds
+import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
-import com.togger.organization.{TgProject, TgTaskStatus}
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID

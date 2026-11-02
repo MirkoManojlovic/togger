@@ -1,6 +1,7 @@
 package com.togger.dump
 
-import com.togger.project.{ProjectAccount, ProjectError}
+import com.togger.project.ProjectAccount
+import com.togger.project.ProjectError
 import doobie.implicits._
 
 class DataExportServiceTest extends ExportImportTestSupport {

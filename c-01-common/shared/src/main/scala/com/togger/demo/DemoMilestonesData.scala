@@ -2,8 +2,11 @@ package com.togger.demo
 
 import com.togger.milestone.MilestoneStatus
 
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 /** Milestones around today with their dates and summaries; milestone dates are always work days of the project. */
@@ -97,7 +100,13 @@ object DemoMilestonesData {
         (-90, "Data model frozen", "Schema reviewed and migrations agreed."),
         (-45, "Foundations done", "Everything merged and deployed to staging.")
       ),
-      List((-100, -70, "## First half\n\n- Authentication and sessions shipped.\n- CI pipeline runs in under ten minutes.\n"))
+      List(
+        (
+          -100,
+          -70,
+          "## First half\n\n- Authentication and sessions shipped.\n- CI pipeline runs in under ten minutes.\n"
+        )
+      )
     ),
     MilestoneSpec(
       2,
@@ -115,7 +124,11 @@ object DemoMilestonesData {
       ),
       List(
         (-42, -29, "## Weeks 1-2\n\n- Task statuses and labels landed.\n- Milestone dates are editable.\n"),
-        (-28, -15, "## Weeks 3-4\n\n- Dashboards show contributions per week.\n- Two blocking bugs fixed in the export.\n")
+        (
+          -28,
+          -15,
+          "## Weeks 3-4\n\n- Dashboards show contributions per week.\n- Two blocking bugs fixed in the export.\n"
+        )
       )
     ),
     MilestoneSpec(
@@ -127,7 +140,10 @@ object DemoMilestonesData {
       13,
       75,
       None,
-      List((30, "Pricing decision", "Final pricing agreed with the business."), (70, "Launch day", "Public announcement.")),
+      List(
+        (30, "Pricing decision", "Final pricing agreed with the business."),
+        (70, "Launch day", "Public announcement.")
+      ),
       List.empty
     ),
     MilestoneSpec(
@@ -163,7 +179,10 @@ object DemoMilestonesData {
       -27,
       20,
       None,
-      List((-3, "TestFlight build", "Build 0.9 for the beta group."), (18, "Beta feedback closes", "Collected feedback is triaged.")),
+      List(
+        (-3, "TestFlight build", "Build 0.9 for the beta group."),
+        (18, "Beta feedback closes", "Collected feedback is triaged.")
+      ),
       List((-27, -10, "## Beta so far\n\n- Push notifications work on both platforms.\n- Widget design approved.\n"))
     ),
     MilestoneSpec(
@@ -175,7 +194,10 @@ object DemoMilestonesData {
       -21,
       9,
       None,
-      List((-7, "Style guide published", "Contributors follow the guide from now on."), (8, "Old site redirects", "Redirects from the old URLs go live.")),
+      List(
+        (-7, "Style guide published", "Contributors follow the guide from now on."),
+        (8, "Old site redirects", "Redirects from the old URLs go live.")
+      ),
       List((-21, -8, "## Revamp\n\n- Navigation restructured.\n- Search indexes the whole site.\n"))
     ),
     MilestoneSpec(

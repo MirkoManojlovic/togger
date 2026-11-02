@@ -12,8 +12,8 @@ import org.scalajs.dom.HTMLButtonElement
 case class MultiSelectItem(id: String, name: String, isSelected: Boolean)
 
 /** @param selectedIdsVar
-  *   defaults to a fresh, private `Var` (one filter, one selection). Callers that render several instances of the
-  *   same logical filter (e.g. one per table section) pass in a shared `Var` so all instances stay in sync.
+  *   defaults to a fresh, private `Var` (one filter, one selection). Callers that render several instances of the same
+  *   logical filter (e.g. one per table section) pass in a shared `Var` so all instances stay in sync.
   */
 class TableFilterComponent(
   itemsSignal: Signal[Seq[MultiSelectItem]],

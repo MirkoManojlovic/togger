@@ -3,7 +3,9 @@ package com.togger.controllers.organization
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.togger.account.AdminCheck
-import com.togger.auth.{AuthAccount, SecuredEndpoint, SecurityLogic}
+import com.togger.auth.AuthAccount
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.SecurityLogic
 import com.togger.common._
 import com.togger.db.MockedTransactor
 import com.togger.organization._

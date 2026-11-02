@@ -4,7 +4,9 @@ import com.raquo.laminar.api.L._
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgStatColumn}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgStatColumn
 
 /** The numbers under both panels. Rendering only: what is counted lives in [[BulkSummary]]. */
 object BulkSummaryBar {

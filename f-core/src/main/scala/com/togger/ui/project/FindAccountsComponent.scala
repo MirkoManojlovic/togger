@@ -1,24 +1,27 @@
 package com.togger.ui.project
 
 import cats.effect.unsafe.IORuntime
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.account.AccountEndpoints
-import com.togger.ui.account.HiddenAccounts
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.AccountSearchTerm
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{AccountSearchTerm, PageRequest, PaginatedResponse}
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.SearchAccountDto
 import com.togger.organization.OrganizationEndpoints
+import com.togger.ui.account.HiddenAccounts
+import com.togger.ui.auth.AccountService
 import com.togger.ui.auth.TgCheckbox.TgCheckboxSyntax
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgInputType}
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLDivElement
 

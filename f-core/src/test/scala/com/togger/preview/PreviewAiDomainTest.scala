@@ -1,10 +1,9 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.demo.DemoIdentity
 import com.togger.demo.DemoSeedIds
-
-import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.BadRequest
 import com.togger.dto._
 import com.togger.ui.tgaiaction.TgAiActionFeServicePreview
 import com.togger.ui.tgprompttemplate.TgPromptTemplateFeServicePreview
@@ -95,13 +94,17 @@ class PreviewAiDomainTest extends AsyncJsWordSpec {
         created <- s.env.run(create("Brand new", Some(promptId)))
         id = created.toOption.get.id
         updated <- s.env.run(s.actions.update(UpdateTgAiActionReq(id, "Brand newer", "p2", None, "gpt-4o", List(0))))
-        renameClash <- s.env.run(s.actions.update(UpdateTgAiActionReq(id, "Quick recap", "p2", None, "gpt-4o", List(0))))
+        renameClash <- s.env.run(
+          s.actions.update(UpdateTgAiActionReq(id, "Quick recap", "p2", None, "gpt-4o", List(0)))
+        )
         deleted <- s.env.runEmpty(s.actions.deleteById(id))
         gone <- s.env.run(s.actions.findById(id))
         _ = s.env.loginAs(DemoIdentity.SecondAccountId)
         foreign <- s.env.run(s.actions.findById(DemoSeedIds.id(DemoSeedIds.AiAction, 1)))
       } yield {
-        seeded.map(_.map(_.name)) shouldBe Right(List("Quick recap", "Risk review", "Executive brief", "Weekly summary"))
+        seeded.map(_.map(_.name)) shouldBe Right(
+          List("Quick recap", "Risk review", "Executive brief", "Weekly summary")
+        )
         isBadRequest(duplicate) shouldBe true
         isBadRequest(badEndpoint) shouldBe true
         isBadRequest(foreignPrompt) shouldBe true

@@ -1,14 +1,18 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp}
-import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
 import com.togger.markdown.TaskProgress
+import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TaskProgressComponent
-import com.togger.ui.timebox.{DaysProgress, TimeboxReviewStats}
+import com.togger.ui.timebox.DaysProgress
+import com.togger.ui.timebox.TimeboxReviewStats
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** The task counts of a milestone with their progress bars: a row for the total first, then one for each team member;
   * the counts are on the left of a row and the bars on the right.
@@ -49,7 +53,9 @@ object MilestoneTaskRows {
 
   private def column(title: String, content: HtmlElement): HtmlElement =
     div(
-      cls("flex flex-col items-center gap-2 text-center px-3 first:pl-0 min-w-0 border-r border-default last:border-r-0"),
+      cls(
+        "flex flex-col items-center gap-2 text-center px-3 first:pl-0 min-w-0 border-r border-default last:border-r-0"
+      ),
       span(cls("text-base font-semibold text-heading"), title),
       content
     )

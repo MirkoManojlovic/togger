@@ -1,10 +1,18 @@
 package com.togger.dep
 
 import cats.effect.IO
-import com.togger.account.{AccountRepoImpl, AccountService, AccountSessionRepo, AccountTypeAdminCheck, AccountTypeRepo}
-import com.togger.auth.{ChangePasswordLogic, PasswordUpdate, SecuredEndpoint, UpdateAccountInfoLogic}
+import com.togger.account.AccountRepoImpl
+import com.togger.account.AccountService
+import com.togger.account.AccountSessionRepo
+import com.togger.account.AccountTypeAdminCheck
+import com.togger.account.AccountTypeRepo
+import com.togger.auth.ChangePasswordLogic
+import com.togger.auth.PasswordUpdate
+import com.togger.auth.SecuredEndpoint
+import com.togger.auth.UpdateAccountInfoLogic
 import com.togger.common.TgClockImpl
-import com.togger.login.{LoginController, SessionTokenFactoryImpl}
+import com.togger.login.LoginController
+import com.togger.login.SessionTokenFactoryImpl
 import doobie.Transactor
 
 class AuthDependenciesModule(val transactor: Transactor[IO]) {

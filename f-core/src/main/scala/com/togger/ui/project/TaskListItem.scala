@@ -2,16 +2,19 @@ package com.togger.ui.project
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.dto.{FindMilestoneResp, FindTaskRespFull}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.ui.task.{TaskProgressComponent, TgDateFormater}
+import com.togger.routes.TgRouter
+import com.togger.ui.task.TaskProgressComponent
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkTaskCard
 
 import java.time.DayOfWeek
 
-/** A task as the active tasks of the project home list it: its name linked to its page with its labels and progress, and
-  * its badges under them. Clicking the task previews it.
+/** A task as the active tasks of the project home list it: its name linked to its page with its labels and progress,
+  * and its badges under them. Clicking the task previews it.
   *
   * @param milestones
   *   to name the milestone of the task in its badges; empty where the milestone is already known

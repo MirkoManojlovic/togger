@@ -2,12 +2,15 @@ package com.togger.milestone
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, PageRequest, PaginatedResponse, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TimeHelpers
 import com.togger.dto.MilestoneFilter
 import com.togger.organization.TgProject
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -21,9 +24,9 @@ class MilestoneRepoPaginationTest extends BusinessTgDbSpec with TgAccount with T
 
   /** Eleven milestones of the project, milestone i due i days after `firstDue`, inserted in reverse so the order is by
     * due date and not by insertion. Milestone 0 has an older version due later than any other, which no ordering may
-    * use. Milestone 1 and 2 are replaced by a newer version with the other's due date, swapping them. Milestones
-    * 0-3 are done, the others in progress; "Release" is in the name of 4 and in the description of 5. One more
-    * milestone belongs to another project.
+    * use. Milestone 1 and 2 are replaced by a newer version with the other's due date, swapping them. Milestones 0-3
+    * are done, the others in progress; "Release" is in the name of 4 and in the description of 5. One more milestone
+    * belongs to another project.
     */
   private case class Seeded(projectId: UUID, milestones: Vector[Milestone], otherProjectMilestone: Milestone) {
     def idsOf(indexes: Seq[Int]): List[UUID] = indexes.map(milestones(_).id).toList

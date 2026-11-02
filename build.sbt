@@ -1,6 +1,7 @@
 import Libraries.com.*
 import Libraries.io.*
 import Libraries.org.*
+import org.typelevel.sbt.tpolecat.DevMode
 import org.typelevel.scalacoptions.ScalacOptions
 import sbt.Keys.libraryDependencies
 
@@ -12,8 +13,14 @@ ThisBuild / organizationName := "Togger"
 // nothing is reused. The PR checks pin the version to keep their sbt cache useful.
 ThisBuild / version ~= (gitVersion => sys.env.getOrElse("TOGGER_FIXED_VERSION", gitVersion))
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
+// scalafix semantic rules (RemoveUnused, ...) read the semanticdb that scalac emits. Not enabled in the sbt import of
+// IntelliJ: its own compiler gets `-P:semanticdb:...` without the plugin jar and fails with "bad option"
+ThisBuild / semanticdbEnabled := !sys.props.contains("idea.managed")
 
-Global / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNumericWiden) ++ ScalacOptions.fatalWarningOptions
+// Local builds (and the IntelliJ import) only warn; the PR checks set SBT_TPOLECAT_CI=true, which adds fatal warnings.
+ThisBuild / tpolecatDefaultOptionsMode := DevMode
+Global / tpolecatExcludeOptions += ScalacOptions.warnNumericWiden
+// Test sources skip the checks for discarded values (ScalaTest assertions), see project/TestWarnings.scala
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 // parallel DB specs each clone a database and open a pool; keep it well below the postgres connection limit
@@ -486,8 +493,9 @@ lazy val backendMcp = (project in file("b-08-mcp"))
     // Chimp and its tapir/sttp dependencies are compiled with Scala 3.9, so this module needs a 3.9 compiler.
     scalaVersion := "3.9.0",
     Test / parallelExecution := false,
-    // scalatest assertions are values; several of them in one test body are normal
-    Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:s",
+    // the Scala 3 semanticdb cannot be written under sbt 2's sandboxed output, so scalafix skips this module
+    Compile / scalafix / unmanagedSources := Seq.empty,
+    Test / scalafix / unmanagedSources := Seq.empty,
     // Replaces (does not extend) the ThisBuild overrides, which pin the Scala 2.13 scala-library and scala3-library
     // 3.7.4 for the rest of the build and would break a 3.9 module.
     dependencyOverrides := Seq(`org.slf4j` % `slf4j-api` % `slf4-api-version`),

@@ -1,14 +1,15 @@
 package com.togger.preview
 
 import com.togger.demo.DemoMilestone
-import com.togger.dto.{FindMilestoneDateResp, FindMilestoneSummaryResp}
+import com.togger.dto.FindMilestoneDateResp
+import com.togger.dto.FindMilestoneSummaryResp
 
 /** Seeds milestones around today, with their dates and summaries. */
 class MilestonesPreviewSeed(data: MilestonesPreviewData, milestones: List[DemoMilestone]) extends PreviewSeeder {
 
   override def seed(): Unit =
     milestones.foreach { m =>
-      data.milestones.upsert(
+      val _ = data.milestones.upsert(
         PreviewMilestone(
           id = m.id,
           projectId = m.projectId,

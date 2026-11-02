@@ -157,7 +157,9 @@ class TgPromptTemplateServiceTest
     "report an unknown version" in {
       val unknown = UUID.randomUUID()
 
-      (versionRepo.findByVersion _).expects(unknown).returns(UnexpectedEnd.raiseError[ConnectionIO, TgPromptTemplateVersion])
+      (versionRepo.findByVersion _)
+        .expects(unknown)
+        .returns(UnexpectedEnd.raiseError[ConnectionIO, TgPromptTemplateVersion])
 
       service.deleteVersion(accountId, unknown).map(_ shouldBe Left(VersionNotFound)).unsafeToFuture()
     }

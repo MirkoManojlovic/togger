@@ -1,9 +1,10 @@
 package com.togger.ui.tgprompttemplate
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -21,7 +22,7 @@ class TgPromptTemplateFeServicePreview(ctx: PreviewContext, data: AiPreviewData)
         val template = data.promptTemplates.upsert(
           PreviewPromptTemplate(UUID.randomUUID(), callerId, ctx.clock.currentInstant)
         )
-        data.promptVersions.upsert(newVersion(template.id, dto.title, dto.prompt))
+        val _ = data.promptVersions.upsert(newVersion(template.id, dto.title, dto.prompt))
         PreviewResponses.ok(toDto(template))
       }
     )
@@ -29,7 +30,7 @@ class TgPromptTemplateFeServicePreview(ctx: PreviewContext, data: AiPreviewData)
   override def saveNewVersion(dto: NewTgPromptTemplateVersionReq): TgRespIO[FindTgPromptTemplateResp] =
     owned(dto.id) { (_, template) =>
       val unchanged = data.latestVersion(template.id).exists(v => v.title == dto.title && v.prompt == dto.prompt)
-      if (!unchanged) data.promptVersions.upsert(newVersion(template.id, dto.title, dto.prompt))
+      val _ = if (!unchanged) data.promptVersions.upsert(newVersion(template.id, dto.title, dto.prompt))
       PreviewResponses.ok(toDto(template))
     }
 
@@ -65,7 +66,7 @@ class TgPromptTemplateFeServicePreview(ctx: PreviewContext, data: AiPreviewData)
             case Some(_) if data.promptVersions.filter(_.tgPromptTemplateId == existing.tgPromptTemplateId).size <= 1 =>
               PreviewResponses.badRequest[TgEmptyBody](LastVersionMessage)
             case Some(_) =>
-              data.promptVersions.delete(version)
+              val _ = data.promptVersions.delete(version)
               PreviewResponses.okEmpty("Prompt version deleted successfully")
           }
       })
@@ -73,7 +74,7 @@ class TgPromptTemplateFeServicePreview(ctx: PreviewContext, data: AiPreviewData)
 
   override def deleteTgPromptTemplateById(id: UUID): TgRespIO[TgEmptyBody] =
     owned(id) { (_, template) =>
-      data.deletePromptTemplate(template.id)
+      val _ = data.deletePromptTemplate(template.id)
       PreviewResponses.okEmpty("Prompt deleted successfully")
     }
 

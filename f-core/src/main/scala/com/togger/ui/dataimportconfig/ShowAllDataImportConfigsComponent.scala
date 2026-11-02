@@ -2,21 +2,27 @@ package com.togger.ui.dataimportconfig
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.dto.dataimportconfig.DataImportConfigResp
-import com.togger.dto.{DataImportEntityResultResp, DataImportResp, DataImportStatusResp}
-import com.togger.routes.Pages.{CreateDataImportConfigPage, EditDataImportConfigPage}
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
+import com.togger.routes.Pages.CreateDataImportConfigPage
+import com.togger.routes.Pages.EditDataImportConfigPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskConfigTableSupport, DataExportFeService, TgDateFormater}
+import com.togger.ui.task.DataExportFeService
+import com.togger.ui.task.TaskConfigTableSupport
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 
 import java.util.UUID
@@ -61,9 +67,11 @@ class ShowAllDataImportConfigsComponent(
 
   reload()
 
-  private val importFlow = new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
+  private val importFlow =
+    new ImportFlow(dataExportService, dataImportConfigService, spinnerService, modalFactory, toast)
 
-  private def importFrom(importPath: String, name: String): Unit = importFlow.importFrom(projectId, importPath, Some(name))
+  private def importFrom(importPath: String, name: String): Unit =
+    importFlow.importFrom(projectId, importPath, Some(name))
 
   private def loadAll(): Unit = importFlow.importAll(projectId)
 

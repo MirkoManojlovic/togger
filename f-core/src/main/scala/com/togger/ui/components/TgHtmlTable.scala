@@ -62,9 +62,9 @@ object TgHtmlTable {
       )
     )
 
-  /** Header/rows overload for a table whose header (e.g. an embedded filter control, passed as one of `headers`)
-    * must stay mounted while the rows themselves change, rather than being torn down and rebuilt on every row-set
-    * update - so `rows` is reactive here while `headers` is built once.
+  /** Header/rows overload for a table whose header (e.g. an embedded filter control, passed as one of `headers`) must
+    * stay mounted while the rows themselves change, rather than being torn down and rebuilt on every row-set update -
+    * so `rows` is reactive here while `headers` is built once.
     */
   def tableElement(
     headers: Seq[Modifier[ReactiveHtmlElement[HTMLTableCellElement]]],

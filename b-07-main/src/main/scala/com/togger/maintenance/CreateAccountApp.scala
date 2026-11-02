@@ -1,20 +1,28 @@
 package com.togger.maintenance
 
-import com.togger.db.TgPages
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import cats.implicits._
 import com.togger.account._
 import com.togger.common.TgIds
-import com.togger.logentry.{LogEntry, LogEntryStatus, LogEntryVersion}
-import com.togger.milestone.{Milestone, MilestoneStatus, MilestoneVersion}
+import com.togger.db.TgPages
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryStatus
+import com.togger.logentry.LogEntryVersion
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneVersion
 import com.togger.organization.Organization
 import com.togger.project.Project
 import com.togger.task._
-import doobie.implicits._
 import doobie.ConnectionIO
+import doobie.implicits._
 
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.time.{Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 object CreateAccountApp extends IOApp with SeedAppModule {
@@ -67,7 +75,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       ownerId: UUID,
       taskName: String,
       taskIndex: Int,
-      taskLabelIds: Seq[UUID] = Seq.empty
+      taskLabelIds: Seq[UUID]
     ): IO[Unit] =
       for {
         taskResult <- taskService.createTask(
@@ -117,7 +125,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       taskStatusId: UUID,
       ownerId: UUID,
       taskIndexOffset: Int,
-      labelPool: Seq[UUID] = Seq.empty
+      labelPool: Seq[UUID]
     ): IO[Unit] =
       for {
         milestoneResult <- milestoneService.createMilestone(

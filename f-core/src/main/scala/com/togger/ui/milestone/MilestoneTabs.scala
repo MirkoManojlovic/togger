@@ -3,7 +3,10 @@ package com.togger.ui.milestone
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.markdown.TgMarkdown
-import com.togger.ui.components.{TgBadge, TgBadgeColor, TgTab, TgTabs}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
@@ -35,7 +38,8 @@ class MilestoneTabs(tgDateFormater: TgDateFormater, tgMarkdown: TgMarkdown) {
     )
 
   // One tab per summary, newest first; the selected tab survives the summaries being reloaded.
-  private def summaryTabs(summaries: Seq[FindMilestoneSummaryResp],
+  private def summaryTabs(
+    summaries: Seq[FindMilestoneSummaryResp],
     workDays: Signal[Set[DayOfWeek]],
     selectedVar: Var[String]
   ): HtmlElement =

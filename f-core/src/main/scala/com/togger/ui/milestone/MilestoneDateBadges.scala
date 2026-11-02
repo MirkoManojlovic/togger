@@ -1,13 +1,15 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 
@@ -72,16 +74,16 @@ class MilestoneDateBadges(
       cls("flex flex-wrap items-center gap-1.5"),
       children <-- dates.combineWith(endDate, daysLeftWorkDays.getOrElse(Val(Set.empty[DayOfWeek]))).map {
         case (start, due, end, workDays) =>
-        BulkTaskCard.row(
-          key,
-          Seq(
-            badge(parse(start), "Start", BulkEditKind.StartDate),
-            badge(parse(due), dueLabel, BulkEditKind.DueDate)
-          ) ++ parse(end).map(endBadge) ++ Option
-            .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
-            .flatten,
-          popups
-        )
+          BulkTaskCard.row(
+            key,
+            Seq(
+              badge(parse(start), "Start", BulkEditKind.StartDate),
+              badge(parse(due), dueLabel, BulkEditKind.DueDate)
+            ) ++ parse(end).map(endBadge) ++ Option
+              .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
+              .flatten,
+            popups
+          )
       }
     )
 }

@@ -3,13 +3,18 @@ package com.togger.ui.components.wysiwyg
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveSvgElement
-import com.togger.markdown.{TaskToggle, TgMarkdown, TgMarkdownStyles, TgMarkdownTasks}
-import com.togger.ui.auth.TgHtmlTypes.{HtmlButton, HtmlDiv}
+import com.togger.markdown.TaskToggle
+import com.togger.markdown.TgMarkdown
+import com.togger.markdown.TgMarkdownStyles
+import com.togger.markdown.TgMarkdownTasks
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
+import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
 import com.togger.ui.organization.TgIcons
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import io.github.edadma.markdown.MarkdownConfig
 import org.scalajs.dom
 import org.scalajs.dom.SVGSVGElement
+
 import scala.scalajs.js
 
 /** Which pane is on screen while the editor is too narrow to show both. */
@@ -21,8 +26,8 @@ object SplitPane {
 }
 
 /** A `trigger` char (e.g. `@`) typed at the start of a word, and the word's text after it. Modeled on
-  * [[com.togger.ui.task.quick.TaskQuickInputParser.QuickToken]], kept separate since this one lives inside a
-  * textarea rather than a single-line input and has no fixed set of trigger meanings.
+  * [[com.togger.ui.task.quick.TaskQuickInputParser.QuickToken]], kept separate since this one lives inside a textarea
+  * rather than a single-line input and has no fixed set of trigger meanings.
   */
 case class WYSIWYGTriggerToken(trigger: Char, query: String, start: Int, end: Int)
 
@@ -44,23 +49,23 @@ object WYSIWYGTriggerToken {
 }
 
 /** Reported to `onTriggerChange` while a trigger char is active (`None` once it no longer is). `consume` deletes the
-  * token text — the caller has already written its pick into its own form state — and refocuses the editor. The
-  * editor renders no popup of its own; the caller decides where and how to show one (e.g. anchored to a badge) and
-  * calls `consume` from its pick handler.
+  * token text — the caller has already written its pick into its own form state — and refocuses the editor. The editor
+  * renders no popup of its own; the caller decides where and how to show one (e.g. anchored to a badge) and calls
+  * `consume` from its pick handler.
   */
 case class WYSIWYGTriggerEvent(trigger: Char, query: String, consume: () => Unit)
 
 /** A two-pane markdown editor: the source on one side, a live preview on the other, the way GitHub does it.
   *
-  * Shaped like [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an `Observer[String]` out — so it drops
-  * into the same form wiring and can replace one in place.
+  * Shaped like [[com.togger.ui.auth.TgTextArea]] — a `Signal[String]` in, an `Observer[String]` out — so it drops into
+  * the same form wiring and can replace one in place.
   *
-  * The markdown string is the model, not the DOM. The source pane is a plain `<textarea>`, so the caret, undo and
-  * IME are the browser's, and the value reported back is exactly what the author typed — this editor never
-  * re-renders the source and so never rewrites it into a canonical form.
+  * The markdown string is the model, not the DOM. The source pane is a plain `<textarea>`, so the caret, undo and IME
+  * are the browser's, and the value reported back is exactly what the author typed — this editor never re-renders the
+  * source and so never rewrites it into a canonical form.
   *
-  * That is also why the preview can use an ordinary `children <--`. Nothing but Laminar touches those nodes, so
-  * there is no hand-mounting, no `replaceChildren` and no mount-callback caveat.
+  * That is also why the preview can use an ordinary `children <--`. Nothing but Laminar touches those nodes, so there
+  * is no hand-mounting, no `replaceChildren` and no mount-callback caveat.
   *
   * Raw HTML stays escaped: a task description is read by people other than its author.
   *
@@ -94,13 +99,14 @@ case class WYSIWYGTextEditorSplit(
   /** Laminar has no prop for a textarea's own selection event, which is the one that fires on every caret move. */
   private val onSelectionChange = eventProp[dom.Event]("select")
 
-  /** The preview's checkboxes are live: the source pane is right there to write the change back into. The live
-    * editor passes no observer, because a click inside its contenteditable places a caret rather than toggling.
+  /** The preview's checkboxes are live: the source pane is right there to write the change back into. The live editor
+    * passes no observer, because a click inside its contenteditable places a caret rather than toggling.
     */
   private val markdown =
     new TgMarkdown(config, allowRawHtml = false, styles, onTaskToggle = Some(Observer[TaskToggle](applyTaskToggle)))
 
   private val sourceVar = Var("")
+
   /** True once the editor is given less than `minWidthRem`; the panes then stack behind the tab bar. */
   private val stackedVar = Var(false)
   private val activePaneVar = Var[SplitPane](SplitPane.Source)
@@ -122,16 +128,16 @@ case class WYSIWYGTextEditorSplit(
       .activeAt(sourceVar.now(), caretVar.now(), triggerChars)
       .filterNot(token => dismissedTriggerStartVar.now().contains(token.start))
 
-  /** The last markdown the editor and its caller agree on. An incoming value equal to this is the echo of our own
-    * emit; acting on it would re-assign the textarea's value and drop the caret to the end of the text.
+  /** The last markdown the editor and its caller agree on. An incoming value equal to this is the echo of our own emit;
+    * acting on it would re-assign the textarea's value and drop the caret to the end of the text.
     */
   private var lastKnown: Option[String] = None
 
   private var sourceRef: Option[dom.html.TextArea] = None
 
   /** Pulls DOM focus back onto the textarea — the caller's job after something else (clicking a badge, say) opens a
-    * popup that should still read arrow keys from here, the way `CreateTaskQuick` refocuses `nameInput` after a
-    * badge click so the same keydown handler keeps driving the popup it just opened.
+    * popup that should still read arrow keys from here, the way `CreateTaskQuick` refocuses `nameInput` after a badge
+    * click so the same keydown handler keeps driving the popup it just opened.
     */
   def focus(): Unit = sourceRef.foreach(_.focus())
 
@@ -159,8 +165,8 @@ case class WYSIWYGTextEditorSplit(
       sourceVar.signal.changes.debounce(debounceTimeMillis) --> Observer[String](emit)
     )
 
-  /** Watches the editor's own box, which `widthReserve` keeps from being measured at a width the editor itself
-    * asked for. jsdom has no `ResizeObserver`, so there the editor just stays side by side.
+  /** Watches the editor's own box, which `widthReserve` keeps from being measured at a width the editor itself asked
+    * for. jsdom has no `ResizeObserver`, so there the editor just stays side by side.
     */
   private def observeWidth(element: dom.html.Div): Unit =
     if (js.typeOf(js.Dynamic.global.ResizeObserver) != "undefined") {
@@ -178,9 +184,9 @@ case class WYSIWYGTextEditorSplit(
       WYSIWYGTriggerEvent(activeToken.trigger, activeToken.query, () => consumeTriggerToken(activeToken))
     )
 
-  /** Deletes the token's text (the caller already wrote its pick into the form state) and puts the caret back where
-    * the token used to start, the same order `applyResult` uses for the same reason: assigning a textarea's value
-    * clears its selection.
+  /** Deletes the token's text (the caller already wrote its pick into the form state) and puts the caret back where the
+    * token used to start, the same order `applyResult` uses for the same reason: assigning a textarea's value clears
+    * its selection.
     */
   private def consumeTriggerToken(token: WYSIWYGTriggerToken): Unit = {
     val updated = sourceVar.now().patch(token.start, "", token.end - token.start)
@@ -286,8 +292,8 @@ case class WYSIWYGTextEditorSplit(
       toolbarButton("Task list", "task", TgIcons.taskListIcon, WYSIWYGMarkdownCommands.toggleTaskList)
     )
 
-  /** `onMouseDown.preventDefault` keeps the textarea focused: a button taking focus would collapse the selection
-    * the command is about to act on.
+  /** `onMouseDown.preventDefault` keeps the textarea focused: a button taking focus would collapse the selection the
+    * command is about to act on.
     */
   private def toolbarButton(
     title: String,
@@ -306,12 +312,12 @@ case class WYSIWYGTextEditorSplit(
       onClick.preventDefault.mapToUnit --> Observer[Unit](_ => runCommand(command))
     )
 
-  /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the
-    * browser's — the whole reason this editor is a textarea.
+  /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the browser's —
+    * the whole reason this editor is a textarea.
     *
     * `onEditorKeyDown` runs first and gets to claim the key (via `preventDefault`) before any of this editor's own
-    * handling — the caller's popup (e.g. a status dropdown open above this field) needs ArrowUp/ArrowDown/Enter
-    * before they'd otherwise move the caret or insert a newline.
+    * handling — the caller's popup (e.g. a status dropdown open above this field) needs ArrowUp/ArrowDown/Enter before
+    * they'd otherwise move the caret or insert a newline.
     */
   private def handleKeyDown(event: dom.KeyboardEvent): Unit = {
     onEditorKeyDown(event)
@@ -338,8 +344,8 @@ case class WYSIWYGTextEditorSplit(
     }
   }
 
-  /** Plain Enter is only intercepted when the caret sits in a list item — everywhere else it stays the browser's,
-    * so `preventDefault` waits until `continueList` has actually found something to do.
+  /** Plain Enter is only intercepted when the caret sits in a list item — everywhere else it stays the browser's, so
+    * `preventDefault` waits until `continueList` has actually found something to do.
     */
   private def handleEnter(event: dom.KeyboardEvent): Unit =
     sourceRef.foreach { element =>
@@ -362,9 +368,9 @@ case class WYSIWYGTextEditorSplit(
       applyResult(command(TextSelection(element.value, element.selectionStart, element.selectionEnd)), element)
     )
 
-  /** The `Var` is written before the DOM on purpose: the controlled binding assigns `value` synchronously while
-    * `set` runs, and assigning a textarea's value is what clears its selection. Restoring the selection afterwards
-    * is therefore the last step, not the first.
+  /** The `Var` is written before the DOM on purpose: the controlled binding assigns `value` synchronously while `set`
+    * runs, and assigning a textarea's value is what clears its selection. Restoring the selection afterwards is
+    * therefore the last step, not the first.
     */
   private def applyResult(result: TextSelection, element: dom.html.TextArea): Unit = {
     sourceVar.set(result.text)
@@ -382,8 +388,8 @@ case class WYSIWYGTextEditorSplit(
       )
     }
 
-  /** The click landed in the preview, so the author's place in the source pane is untouched by it and should
-    * survive the rewrite — the same reason `runCommand` restores the selection.
+  /** The click landed in the preview, so the author's place in the source pane is untouched by it and should survive
+    * the rewrite — the same reason `runCommand` restores the selection.
     *
     * A rewrite the source declines leaves everything alone; the checkbox undoes itself, being controlled.
     */
@@ -413,8 +419,8 @@ case class WYSIWYGTextEditorSplit(
 
 object WYSIWYGTextEditorSplit {
 
-  /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using
-    * it reads like the ones around it.
+  /** Builds an editor from a form `Var` the way `TgTextArea`, `TgInput` and `TgSelect` are built, so a field using it
+    * reads like the ones around it.
     */
   implicit class WYSIWYGTextEditorSplitSyntax[A](formState: Var[A]) {
 

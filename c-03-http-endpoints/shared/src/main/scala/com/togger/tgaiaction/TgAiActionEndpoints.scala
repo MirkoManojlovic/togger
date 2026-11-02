@@ -1,10 +1,12 @@
 package com.togger.tgaiaction
 
 import com.togger.auth.SecuredEndpoint
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
 import com.togger.common.TgEndpoints._
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 import com.togger.dto._
 import io.circe.generic.auto._
 import sttp.tapir._

@@ -3,16 +3,23 @@ package com.togger.ui.task
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.routes.Pages.{CreateTaskLabelPage, EditTaskLabelPage, ShowAllTaskLabelsPage}
-import com.togger.routes.{FrontendPage, ListParams, TgRouter}
-import com.togger.ui.auth.{AccountService, TgCard}
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
+import com.togger.routes.FrontendPage
+import com.togger.routes.ListParams
+import com.togger.routes.Pages.CreateTaskLabelPage
+import com.togger.routes.Pages.EditTaskLabelPage
+import com.togger.routes.Pages.ShowAllTaskLabelsPage
+import com.togger.routes.TgRouter
+import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
 import com.togger.ui.components.TgPaginationComponent
 import com.togger.ui.components.pagination.PaginationState
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.toast.Toast
-import com.togger.ui.task.TaskConfigTableSupport.{headerIconButtonCls, iconButton, rowButtonMarginCls, rowIconButtonCls}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 
 import java.util.UUID
 
@@ -28,10 +35,8 @@ class ShowAllTaskLabelsComponent(
   taskLabelService: TaskLabelFeService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
-  accountService: AccountService,
   projectId: UUID,
-  params: ListParams,
-  toast: Toast
+  params: ListParams
 )(implicit
   ioRuntime: IORuntime
 ) {
@@ -104,8 +109,7 @@ class ShowAllTaskLabelsComponent(
                       )
                     ),
                     tbody(
-                      dtos
-                        .zipWithIndex
+                      dtos.zipWithIndex
                         .map { case (dto, index) =>
                           val rowCls = if (index % 2 == 0) {
                             "odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"

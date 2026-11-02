@@ -16,12 +16,12 @@ case class TextSelection(text: String, start: Int, end: Int) {
 
 /** Toolbar operations for [[WYSIWYGTextEditorSplit]], as pure transforms of text plus selection.
   *
-  * The markdown string is the model there, so a command is string editing rather than surgery on a rendered
-  * document. Keeping the DOM out of the signatures is what lets the whole set be tested without a fixture.
+  * The markdown string is the model there, so a command is string editing rather than surgery on a rendered document.
+  * Keeping the DOM out of the signatures is what lets the whole set be tested without a fixture.
   *
-  * Two rules shape every command: the returned selection covers the same *text* it did before, never the markers
-  * around it, so clicking a button twice undoes it; and a line command works on whole lines, expanding the
-  * selection to line boundaries first.
+  * Two rules shape every command: the returned selection covers the same *text* it did before, never the markers around
+  * it, so clicking a button twice undoes it; and a line command works on whole lines, expanding the selection to line
+  * boundaries first.
   */
 object WYSIWYGMarkdownCommands {
 
@@ -35,9 +35,9 @@ object WYSIWYGMarkdownCommands {
 
   /** `**x**`, `*x*`, `` `x` ``, `~~x~~`.
     *
-    * The selection is unwrapped when it already carries the markers — whether they fall just inside it or just
-    * outside — and wrapped otherwise. A caret with nothing selected gets the pair inserted around it, so clicking
-    * the button and typing produces a marked-up word.
+    * The selection is unwrapped when it already carries the markers — whether they fall just inside it or just outside
+    * — and wrapped otherwise. A caret with nothing selected gets the pair inserted around it, so clicking the button
+    * and typing produces a marked-up word.
     */
   def toggleInline(selection: TextSelection, marker: String): TextSelection = {
     val current = normalised(selection)
@@ -60,8 +60,8 @@ object WYSIWYGMarkdownCommands {
 
   /** `## `, `> ` — set on every line the selection touches, removed when every one already carries exactly it.
     *
-    * The prefix replaces others of its own kind rather than stacking: `## ` on a line starting `### ` swaps the
-    * level instead of producing `## ### `.
+    * The prefix replaces others of its own kind rather than stacking: `## ` on a line starting `### ` swaps the level
+    * instead of producing `## ### `.
     */
   def togglePrefix(selection: TextSelection, prefix: String): TextSelection =
     rewriteLines(normalised(selection)) { lines =>
@@ -82,8 +82,8 @@ object WYSIWYGMarkdownCommands {
 
   /** `- [ ] ` per line — a bullet list whose items open with a checkbox.
     *
-    * A line already carrying a list marker of any kind is converted rather than nested, and a line already a task
-    * loses the whole marker, checkbox included, so a second click returns it to plain text.
+    * A line already carrying a list marker of any kind is converted rather than nested, and a line already a task loses
+    * the whole marker, checkbox included, so a second click returns it to plain text.
     */
   def toggleTaskList(selection: TextSelection): TextSelection =
     rewriteLines(normalised(selection)) { lines =>
@@ -92,12 +92,12 @@ object WYSIWYGMarkdownCommands {
       if (lines.forall(line => taskMarker.findFirstIn(line).isDefined)) stripped else stripped.map("- [ ] " + _)
     }
 
-  /** Enter's effect inside a list: a non-empty item continues the list with a new item of the same kind; an empty
-    * one breaks out, leaving a plain, unstyled line for the marker to have disappeared from. `None` outside a
-    * list, so the caller lets Enter do its ordinary job.
+  /** Enter's effect inside a list: a non-empty item continues the list with a new item of the same kind; an empty one
+    * breaks out, leaving a plain, unstyled line for the marker to have disappeared from. `None` outside a list, so the
+    * caller lets Enter do its ordinary job.
     *
-    * Only a caret is handled — a selection lands here collapsed already, its content simply gone, the way a
-    * textarea's own Enter would leave it, rather than being kept as a mark this command has an opinion about.
+    * Only a caret is handled — a selection lands here collapsed already, its content simply gone, the way a textarea's
+    * own Enter would leave it, rather than being kept as a mark this command has an opinion about.
     */
   def continueList(selection: TextSelection): Option[TextSelection] =
     if (!selection.collapsed) None
@@ -131,8 +131,8 @@ object WYSIWYGMarkdownCommands {
     TextSelection(newText, caret, caret)
   }
 
-  /** A task's next item opens unchecked; an ordered item's number moves on by one; a bullet repeats its own
-    * character, so a list typed with `*` keeps using `*`.
+  /** A task's next item opens unchecked; an ordered item's number moves on by one; a bullet repeats its own character,
+    * so a list typed with `*` keeps using `*`.
     */
   private def nextItemPrefix(matched: String): String =
     if (taskMarker.findFirstIn(matched).isDefined) "- [ ] "
@@ -157,8 +157,8 @@ object WYSIWYGMarkdownCommands {
 
   /** What the selection currently sits inside, keyed the way the toolbar's buttons are.
     *
-    * Headings report `h2` at every level, because the toolbar has one heading button. A task line reports `task`
-    * alone rather than also `ul`, so that the two list buttons never light together.
+    * Headings report `h2` at every level, because the toolbar has one heading button. A task line reports `task` alone
+    * rather than also `ul`, so that the two list buttons never light together.
     */
   def activeMarks(selection: TextSelection): Set[String] = {
     val current = normalised(selection)
@@ -185,8 +185,8 @@ object WYSIWYGMarkdownCommands {
     else if (prefix.startsWith(">")) quoteMarker
     else ("^" + Regex.quote(prefix)).r
 
-  /** A selection out of step with the text would throw in `substring`; a textarea never sends one, but a command
-    * is a pure function and should not depend on that.
+  /** A selection out of step with the text would throw in `substring`; a textarea never sends one, but a command is a
+    * pure function and should not depend on that.
     */
   private def normalised(selection: TextSelection): TextSelection = {
     val start = clamp(selection.start, 0, selection.text.length)
@@ -267,13 +267,13 @@ object WYSIWYGMarkdownCommands {
       selection.end + marker.length
     )
 
-  /** Runs a line rewrite over the block the selection touches and puts the selection back where it was, shifted by
-    * what the rewrite added or removed ahead of it — replacing it with the whole block would make a heading button
-    * swallow the caret every time it is pressed.
+  /** Runs a line rewrite over the block the selection touches and puts the selection back where it was, shifted by what
+    * the rewrite added or removed ahead of it — replacing it with the whole block would make a heading button swallow
+    * the caret every time it is pressed.
     *
-    * A caret moves past a marker the rewrite just added, so that clicking *Heading* on an empty line and typing
-    * puts the text in the heading. A selection that already started at the line does not, so that it keeps
-    * covering the lines it covered and a second click toggles them back.
+    * A caret moves past a marker the rewrite just added, so that clicking *Heading* on an empty line and typing puts
+    * the text in the heading. A selection that already started at the line does not, so that it keeps covering the
+    * lines it covered and a second click toggles them back.
     */
   private def rewriteLines(selection: TextSelection)(rewrite: Seq[String] => Seq[String]): TextSelection = {
     val from = lineStart(selection.text, selection.start)

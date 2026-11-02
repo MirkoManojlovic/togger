@@ -1,8 +1,8 @@
 package com.togger.components.button
 
-import com.togger.ui.auth.TgHtmlTypes.HtmlButton
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.auth.TgHtmlTypes.HtmlButton
 import org.scalajs.dom.HTMLButtonElement
 
 object TgHtmlButton {

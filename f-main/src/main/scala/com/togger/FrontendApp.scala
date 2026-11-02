@@ -2,7 +2,8 @@ package com.togger
 
 import com.raquo.laminar.api.L._
 import com.togger.preview.PreviewConfig
-import com.togger.routes.{TgRouterImpl, TgRoutes}
+import com.togger.routes.TgRouterImpl
+import com.togger.routes.TgRoutes
 import org.scalajs.dom
 
 import scala.concurrent.duration._
@@ -18,27 +19,26 @@ object FrontendApp extends App {
 
   if (appConfig.isDesktopMode.toBoolean) {
     require(!previewConfig.enabled, "Frontend preview mode is web only")
-    desktopFrontendApp.run
-  } else webFrontendApp.run
+    desktopFrontendApp.run()
+  } else webFrontendApp.run()
 }
 
 class WebFrontendApp(previewConfig: PreviewConfig) {
   private val app = dom.document.querySelector("#app")
   private val splashScreen = dom.document.querySelector("#splash-screen")
 
-  def run: Unit = {
+  def run(): Unit = {
     splashScreen.remove()
 
     // a deployed preview is served from its own origin; everything else runs on the vite dev server
     val origin = if (previewConfig.enabled) dom.window.location.origin else "http://localhost:5173"
-    val basePath = "/"
 
-    val routes = new TgRoutes().routes(basePath)
+    val routes = new TgRoutes().routes()
 
     val router = new TgRouterImpl(routes, origin, None)
     val splitRender = new TgSplitRender(router, previewConfig)
 
-    render(
+    val _ = render(
       app,
       div(
         child <-- splitRender.splitRender.signal
@@ -53,20 +53,19 @@ class DesktopFrontendApp {
   private val splashScreen = dom.document.querySelector("#splash-screen")
   private val sleepTime = 3.seconds
 
-  def run: Unit = {
+  def run(): Unit = {
     val origin = "tauri://localhost"
     val initialUrl = "tauri://localhost/"
-    val basePath = "/"
 
-    setTimeout(sleepTime) {
-      val routes = new TgRoutes().routes(basePath)
+    val _ = setTimeout(sleepTime) {
+      val routes = new TgRoutes().routes()
 
       val router = new TgRouterImpl(routes, origin, Some(initialUrl))
       val splitRender = new TgSplitRender(router)
 
       splashScreen.remove()
 
-      render(
+      val _ = render(
         app,
         div(
           child <-- splitRender.splitRender.signal

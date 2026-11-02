@@ -1,7 +1,8 @@
 package com.togger.ui.milestone
 
 import cats.effect.IO
-import com.togger.backendcalls.{SseEvent, SseParser}
+import com.togger.backendcalls.SseEvent
+import com.togger.backendcalls.SseParser
 import com.togger.dto.SummariseMilestoneWithAiReq
 import com.togger.logging.TgLogging
 import com.togger.milestone.MilestoneAiSummaryStreamContract._
@@ -10,7 +11,8 @@ import io.circe.generic.auto._
 import io.circe.parser.parse
 import io.circe.syntax._
 import org.scalajs.dom
-import org.scalajs.dom.{HttpMethod, RequestInit}
+import org.scalajs.dom.HttpMethod
+import org.scalajs.dom.RequestInit
 
 import scala.scalajs.js
 
@@ -42,9 +44,13 @@ class MilestoneAiSummaryStreamClientImpl(loginRepo: LoginRepo, baseUrl: String)
       case None => IO(onEvent(Failed("Please log in again")))
       case Some(account) =>
         IO.fromPromise(IO(dom.fetch(url, requestInit(dto, account.sessionId))))
-          .flatMap(response => if (response.ok) read(response, onEvent) else IO(onEvent(Failed(failureMessage(response.status)))))
+          .flatMap(response =>
+            if (response.ok) read(response, onEvent) else IO(onEvent(Failed(failureMessage(response.status))))
+          )
           .handleErrorWith { error =>
-            IO(logger.error(s"The AI summary request failed: $error")) *> IO(onEvent(Failed("Could not reach the server")))
+            IO(logger.error(s"The AI summary request failed: $error")) *> IO(
+              onEvent(Failed("Could not reach the server"))
+            )
           }
     }
 

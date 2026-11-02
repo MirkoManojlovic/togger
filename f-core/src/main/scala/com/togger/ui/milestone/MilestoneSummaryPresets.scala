@@ -1,6 +1,7 @@
 package com.togger.ui.milestone
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 sealed abstract class MilestoneSummaryPreset(val label: String)
 

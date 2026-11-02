@@ -1,8 +1,8 @@
 package com.togger.account
 
+import com.outr.scalapass.PBKDF2PasswordFactory
 import com.togger.TgWordSpecJvm
 import com.togger.common.Password
-import com.outr.scalapass.PBKDF2PasswordFactory
 import org.scalatest.EitherValues
 
 class HashedPasswordTest extends TgWordSpecJvm with EitherValues {

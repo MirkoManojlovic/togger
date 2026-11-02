@@ -1,8 +1,10 @@
 package com.togger.ui.components.pagination
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
 
 /** Reads every page of a list for the screens that need all of it (charts, progress, calendars) instead of one page.
   * Bounded: at most `MaxPages` pages of `PageRequest.MaxSize` items are read, so a huge list is cut off, not endless.

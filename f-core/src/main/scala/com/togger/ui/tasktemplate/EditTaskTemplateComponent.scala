@@ -3,17 +3,19 @@ package com.togger.ui.tasktemplate
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{AccountService, TgCard, TgInputType}
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskLabelFeService, TgDateFormater}
+import com.togger.ui.task.TaskLabelFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -25,8 +27,6 @@ class EditTaskTemplateComponent(
   spinnerService: SpinnerService,
   tgMarkdown: TgMarkdown,
   tgDateFormater: TgDateFormater,
-  tgClock: TgClock,
-  accountService: AccountService,
   projectId: UUID,
   taskTemplateId: UUID,
   val toast: Toast

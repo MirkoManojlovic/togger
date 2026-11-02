@@ -1,12 +1,16 @@
 package com.togger.ui.timebox
 
-import com.togger.dto.{FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
-import com.togger.task.{DefaultTaskStatus, TaskPriority}
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
 import com.togger.ui.localstorage.LocalStorageTest
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class TimeboxStagingStoreTest extends AnyWordSpec with Matchers {

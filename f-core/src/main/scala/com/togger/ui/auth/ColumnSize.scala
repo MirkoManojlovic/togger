@@ -1,6 +1,7 @@
 package com.togger.ui.auth
 
-import enumeratum.values.{IntEnum, IntEnumEntry}
+import enumeratum.values.IntEnum
+import enumeratum.values.IntEnumEntry
 
 sealed abstract class ColumnSize(val value: Int) extends IntEnumEntry {
   private def toColumnText = s"col-$value"

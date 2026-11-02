@@ -5,19 +5,25 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.dto.organization.FindOrganizationResp
-import com.togger.routes.Pages.{EditProjectPage, HomePage}
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.EditProjectPage
+import com.togger.routes.Pages.HomePage
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth._
+import com.togger.ui.components.DropdownMeta
 import com.togger.ui.components.TgSelectDropdownMultiSelect.TgSelectDropdownMultiSelectSyntax
 import com.togger.ui.components.TgSelectDropdownMultiSelectFilter.TgSelectDropdownMultiSelectFilterSyntax
+import com.togger.ui.components.TgSelectDropdownOption
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdownOption}
 import com.togger.ui.emoji.TgEmojiField.TgEmojiFieldSyntax
 import com.togger.ui.localstorage.LocalStorage
-import com.togger.ui.modal.{ModalFactory, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.navbar.SidebarRefresh
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.projectlabel.ProjectLabelFeService
@@ -27,7 +33,8 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
 import java.time.DayOfWeek
 import java.time.format.TextStyle
-import java.util.{Locale, UUID}
+import java.util.Locale
+import java.util.UUID
 
 case class EditProjectForm(
   projectId: UUID = UUID.randomUUID(),

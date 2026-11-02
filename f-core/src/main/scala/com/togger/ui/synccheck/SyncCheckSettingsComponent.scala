@@ -3,7 +3,8 @@ package com.togger.ui.synccheck
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.components.button.TgHtmlButton
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.tgInputStyle
 
@@ -57,10 +58,12 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
               intervalInput.amend(cls("mb-4")),
               div(
                 cls("flex justify-end"),
-                TgHtmlButton.extraSmall("Reset to default").amend(onClick.mapToUnit --> (_ => {
-                  inputError.set(None)
-                  settings.reset()
-                }))
+                TgHtmlButton
+                  .extraSmall("Reset to default")
+                  .amend(onClick.mapToUnit --> (_ => {
+                    inputError.set(None)
+                    settings.reset()
+                  }))
               )
             )
           )

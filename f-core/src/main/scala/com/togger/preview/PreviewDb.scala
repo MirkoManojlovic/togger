@@ -2,9 +2,10 @@ package com.togger.preview
 
 import com.togger.logging.TgLogging
 import com.togger.ui.localstorage.LocalStorage
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
 import scala.util.Try

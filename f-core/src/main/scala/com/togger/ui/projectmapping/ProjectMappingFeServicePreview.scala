@@ -1,10 +1,12 @@
 package com.togger.ui.projectmapping
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
-import com.togger.dto.projectmapping.{CreateProjectMappingReq, ProjectMappingResp}
+import com.togger.dto.projectmapping.CreateProjectMappingReq
+import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.preview._
 import com.togger.ui.components.pagination.PaginatedLoader
 
@@ -22,7 +24,7 @@ class ProjectMappingFeServicePreview(ctx: PreviewContext, projects: ProjectsPrev
         else {
           val now = ctx.clock.currentInstant
           val mapping = ProjectMappingResp(dto.projectIdDb, dto.projectIdDump, now, now)
-          data.mappings.upsert(PreviewProjectMapping(UUID.randomUUID(), mapping))
+          val _ = data.mappings.upsert(PreviewProjectMapping(UUID.randomUUID(), mapping))
           PreviewResponses.ok(mapping)
         }
       }
@@ -47,7 +49,7 @@ class ProjectMappingFeServicePreview(ctx: PreviewContext, projects: ProjectsPrev
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
         find(projectIdDb, projectIdDump).fold(PreviewResponses.notFound[TgEmptyBody]) { existing =>
-          data.mappings.delete(existing.id)
+          val _ = data.mappings.delete(existing.id)
           PreviewResponses.okEmpty("Project mapping deleted successfully")
         }
       )

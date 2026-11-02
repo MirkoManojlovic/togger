@@ -2,7 +2,8 @@ package com.togger.toast
 
 import cats.effect.IO
 import com.togger.common.TgJsonFailure
-import com.togger.common.TgResponseTypes.{TgResp, TgRespIO}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.ui.toast.Toast
 
 trait ToastMessagesTgResp {
@@ -109,7 +110,7 @@ trait ToastMessageTgRespIO {
       )
 
     def toastBackendMessage: IO[Unit] =
-      resp.toastBackendMessageCodeBlock(())
+      toastBackendMessageCodeBlock(())
 
     def toastHandleErrorUnit(e: PartialFunction[TgJsonFailure, Unit])(successFn: DTO => Unit): IO[Unit] =
       resp.flatMap(

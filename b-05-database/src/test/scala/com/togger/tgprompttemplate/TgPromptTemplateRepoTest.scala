@@ -1,17 +1,16 @@
 package com.togger.tgprompttemplate
 
 import cats.implicits._
-import com.togger.account.{AccountRepoImpl, TgAccount}
-import com.togger.common.{BusinessTgDbSpec, PaginationTestSupport, TimeHelpers}
+import com.togger.account.AccountRepoImpl
+import com.togger.account.TgAccount
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.PaginationTestSupport
+import com.togger.common.TimeHelpers
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TgPromptTemplateRepoTest extends BusinessTgDbSpec
-    with PaginationTestSupport
-    with TgAccount
-    with TimeHelpers {
+class TgPromptTemplateRepoTest extends BusinessTgDbSpec with PaginationTestSupport with TgAccount with TimeHelpers {
 
   private val promptRepo = new TgPromptTemplateRepoImpl
   private val versionRepo = new TgPromptTemplateVersionRepoImpl

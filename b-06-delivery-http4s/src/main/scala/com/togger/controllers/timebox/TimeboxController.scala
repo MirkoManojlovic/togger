@@ -1,15 +1,22 @@
 package com.togger.controllers.timebox
 
+import cats.data.NonEmptyChain
+import cats.data.ValidatedNec
 import cats.effect.IO
-import cats.data.{NonEmptyChain, ValidatedNec}
 import cats.implicits._
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
+import com.togger.common.TgError
 import com.togger.common.TgError._
-import com.togger.common.{DateRangeValidation, TgClock, TgError, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.timebox.TimeboxDtoMapper.{toDto, toVersionDto}
-import com.togger.dto.{FindTimeboxResp, SaveTimeboxVersionReq}
+import com.togger.controllers.timebox.TimeboxDtoMapper.toDto
+import com.togger.controllers.timebox.TimeboxDtoMapper.toVersionDto
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SaveTimeboxVersionReq
+import com.togger.timebox.TimeboxEndpoints
 import com.togger.timebox.TimeboxError.ChangeCommentEmpty
-import com.togger.timebox.{TimeboxEndpoints, TimeboxService}
+import com.togger.timebox.TimeboxService
 
 import java.time.LocalDate
 
@@ -33,12 +40,19 @@ class TimeboxController(
       .combine(validateChangeComment(dto.changeComment).toValidated)
       .toEither
 
-  val save = timeboxEndpoints.saveEndpoint.serverLogic { auth => dto =>
+  val save = timeboxEndpoints.saveEndpoint.serverLogic { _ => dto =>
     validateRange(dto.startDate, dto.endDate) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .createTimebox(dto.projectId, dto.startDate, dto.endDate, dto.description, dto.taskIds, tgClock.currentInstant)
+          .createTimebox(
+            dto.projectId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .map {
             case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
             case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
@@ -46,12 +60,20 @@ class TimeboxController(
     }
   }
 
-  val saveNewVersion = timeboxEndpoints.saveNewVersionEndpoint.serverLogic { auth => dto =>
+  val saveNewVersion = timeboxEndpoints.saveNewVersionEndpoint.serverLogic { _ => dto =>
     validateNewVersion(dto) match {
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, dto.taskIds, tgClock.currentInstant)
+          .saveNewVersion(
+            dto.timeboxId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.changeComment.trim,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .map {
             case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
             case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
@@ -59,14 +81,14 @@ class TimeboxController(
     }
   }
 
-  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { _ => id =>
     timeboxService.getCurrent(id).map {
       case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
       case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
     }
   }
 
-  val findByProjectId = timeboxEndpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = timeboxEndpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       timeboxService
@@ -75,7 +97,7 @@ class TimeboxController(
     }
   }
 
-  val listVersions = timeboxEndpoints.listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = timeboxEndpoints.listVersionsEndpoint.serverLogic { _ => request =>
     val (timeboxId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       timeboxService
@@ -84,7 +106,7 @@ class TimeboxController(
     }
   }
 
-  val delete = timeboxEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = timeboxEndpoints.deleteByIdEndpoint.serverLogic { _ => id =>
     timeboxService.deleteTimebox(id).map(_ => TgJsonSuccess.justMessageRight("Timebox deleted successfully"))
   }
 

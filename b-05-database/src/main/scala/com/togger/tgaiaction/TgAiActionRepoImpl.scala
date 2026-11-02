@@ -1,8 +1,10 @@
 package com.togger.tgaiaction
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.tgaiaction.TgAiActionRepoImpl.TG_AI_ACTION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp

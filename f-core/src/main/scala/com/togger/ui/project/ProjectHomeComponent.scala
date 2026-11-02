@@ -1,28 +1,47 @@
 package com.togger.ui.project
 
 import cats.effect.IO
-import cats.syntax.all._
 import cats.effect.unsafe.IORuntime
+import cats.syntax.all._
 import com.raquo.laminar.api.L._
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.dto.{SearchAccountDto, FindMilestoneResp, FindMilestoneSummaryResp, FindProjectResp, FindTaskRespFull, FindTaskStatusResp, FindTimeboxResp}
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneSummaryResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.MilestoneFilter
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.TaskFilter
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.components.pagination.PaginatedLoader
-import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.{TgTab, TgTabs, TgBadge, TgBadgeColor}
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryFeService, MilestoneTabs, MilestoneTaskRows}
+import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneSummaryFeService
+import com.togger.ui.milestone.MilestoneTabs
+import com.togger.ui.milestone.MilestoneTaskRows
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.{TaskStatusesState, TaskFeService, TaskPreviewComponent, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskPreviewComponent
+import com.togger.ui.task.TaskStatusFeService
+import com.togger.ui.task.TaskStatusesState
+import com.togger.ui.task.TgDateFormater
+import com.togger.ui.timebox.TimeboxFeService
+import com.togger.ui.timebox.TimeboxReviewStats
 import com.togger.ui.timebox.gantt.TimeboxReviewGanttComponent
-import com.togger.ui.timebox.{TimeboxFeService, TimeboxReviewStats}
-import com.togger.dto.{MilestoneFilter, TaskFilter}
 
 import java.time.DayOfWeek
 import java.util.UUID
@@ -60,14 +79,18 @@ class ProjectHomeComponent(
     }
 
   /** The tasks of each parent, loaded one parent after the other; a failure leaves the parent without tasks. */
-  private def withTasks[P](parents: Seq[P])(tasksOf: P => TgRespIO[Seq[FindTaskRespFull]]): IO[Seq[(P, Seq[FindTaskRespFull])]] =
+  private def withTasks[P](
+    parents: Seq[P]
+  )(tasksOf: P => TgRespIO[Seq[FindTaskRespFull]]): IO[Seq[(P, Seq[FindTaskRespFull])]] =
     parents.toList.traverse { parent =>
       tasksOf(parent).map(_.fold(_ => parent -> Seq.empty, success => parent -> success.body.getOrElse(Seq.empty)))
     }
 
   private def loadMilestones(): IO[Unit] =
     PaginatedLoader
-      .loadAll(milestoneService.findByProjectId(projectId, MilestoneFilter(statuses = List(MilestoneStatus.InProgress)), _))
+      .loadAll(
+        milestoneService.findByProjectId(projectId, MilestoneFilter(statuses = List(MilestoneStatus.InProgress)), _)
+      )
       .flatMap {
         case Left(failure) => IO.println(failure)
         case Right(success) =>
@@ -78,12 +101,17 @@ class ProjectHomeComponent(
 
   /** The summaries of each active milestone, newest period first; a failure leaves the milestone without summaries. */
   private def loadSummaries(): IO[Unit] =
-    milestonesVar.now().map(_._1).toList.traverse { milestone =>
-      milestoneSummaryService.findAllByMilestoneId(milestone.id).map { response =>
-        val summaries = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
-        milestone.id -> summaries.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
+    milestonesVar
+      .now()
+      .map(_._1)
+      .toList
+      .traverse { milestone =>
+        milestoneSummaryService.findAllByMilestoneId(milestone.id).map { response =>
+          val summaries = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
+          milestone.id -> summaries.sortBy(_.startDate.toEpochDay)(Ordering[Long].reverse)
+        }
       }
-    }.map(loaded => summariesVar.set(loaded.toMap))
+      .map(loaded => summariesVar.set(loaded.toMap))
 
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
   private def loadAllMilestones(): IO[Unit] =
@@ -96,8 +124,8 @@ class ProjectHomeComponent(
     PaginatedLoader.loadAll(timeboxService.findByProjectId(projectId, _)).flatMap {
       case Left(failure) => IO.println(failure)
       case Right(success) =>
-        withTasks(ProjectHomeStats.activeTimeboxes(success.body.getOrElse(Seq.empty), tgClock.currentDate()))(
-          timebox => taskService.findAllByTimebox(projectId, timebox.id)
+        withTasks(ProjectHomeStats.activeTimeboxes(success.body.getOrElse(Seq.empty), tgClock.currentDate()))(timebox =>
+          taskService.findAllByTimebox(projectId, timebox.id)
         ).map(timeboxesVar.set)
     }
 
@@ -150,7 +178,6 @@ class ProjectHomeComponent(
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
-
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
@@ -194,7 +221,9 @@ class ProjectHomeComponent(
           s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
-        version.description.filter(_.nonEmpty).map(description => tgMarkdown.toLaminarDiv(description).amend(cls("mt-1")))
+        version.description
+          .filter(_.nonEmpty)
+          .map(description => tgMarkdown.toLaminarDiv(description).amend(cls("mt-1")))
       ),
       gantt.element,
       gantt.detailElement
@@ -212,7 +241,16 @@ class ProjectHomeComponent(
 
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
-      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now()).element,
+      new TaskPreviewComponent(
+        task,
+        workDays,
+        router,
+        tgDateFormater,
+        tgMarkdown,
+        tgClock,
+        showName = true,
+        allMilestonesVar.now()
+      ).element,
       title = "Task preview",
       maxWidthCls = "max-w-[112rem]"
     )
@@ -222,7 +260,6 @@ class ProjectHomeComponent(
       router,
       tgDateFormater,
       tgClock,
-      projectId,
       allMilestonesVar.now(),
       workDays,
       tasks,

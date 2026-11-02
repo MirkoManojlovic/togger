@@ -5,7 +5,10 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common._
 import com.togger.db.MockedTransactor
-import com.togger.dto.login.{DeviceInfo, ExpireSessionResult, LoginDto, LoginResponseDto}
+import com.togger.dto.login.DeviceInfo
+import com.togger.dto.login.ExpireSessionResult
+import com.togger.dto.login.LoginDto
+import com.togger.dto.login.LoginResponseDto
 import com.togger.login.SessionTokenFactory
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -158,7 +161,7 @@ class AccountServiceTest
       val token = "some-token"
       (accountSessionRepo.findByTokenNotSoftDeleted _).expects(token).returns(accountSession.pure[ConnectionIO])
 
-      accountService.findByToken(token).map(session => session shouldBe accountSession).unsafeToFuture
+      accountService.findByToken(token).map(session => session shouldBe accountSession).unsafeToFuture()
     }
 
     "is session expired" should {
@@ -182,7 +185,7 @@ class AccountServiceTest
         (accountSessionRepo.findByTokenNotSoftDeleted _)
           .expects(sessionToken)
           .returns(expiredAccountSession.pure[ConnectionIO])
-        (tgClock.currentInstant _).expects().returns(nowAsInstant)
+        (() => tgClock.currentInstant).expects().returns(nowAsInstant)
         (accountSessionRepo.deleteSoftById _).expects(expiredAccountSession.id).returns(1.pure[ConnectionIO])
 
         accountService.isSessionExpired(sessionToken).map(result => result shouldBe None).unsafeToFuture()
@@ -194,7 +197,7 @@ class AccountServiceTest
         (accountSessionRepo.findByTokenNotSoftDeleted _)
           .expects(sessionToken)
           .returns(nonExpiredAccountSession.pure[ConnectionIO])
-        (tgClock.currentInstant _).expects().returns(nowAsInstant)
+        (() => tgClock.currentInstant).expects().returns(nowAsInstant)
 
         accountService
           .isSessionExpired(sessionToken)

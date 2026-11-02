@@ -5,8 +5,11 @@ import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
 import com.togger.common.TgJsonFailure
-import com.togger.dto.{DataExportPathStatusResp, DataExportSyncStatusResp, DataImportResp}
-import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.dto.DataExportPathStatusResp
+import com.togger.dto.DataExportSyncStatusResp
+import com.togger.dto.DataImportResp
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.dataexportconfig.ExportCheckComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.spinner.SpinnerService
@@ -30,7 +33,8 @@ class ImportFlow(
 
   /** Loads from every import config of the project, not only the ones on the page on screen. */
   def importAll(projectId: UUID): Unit =
-    check(projectId, 
+    check(
+      projectId,
       dataImportConfigService
         .findAllByProjectId(projectId)
         .map(_.map(_.body.get.toList.distinctBy(_.importPath).map(config => config.importPath -> Some(config.name))))
@@ -54,7 +58,10 @@ class ImportFlow(
       .map {
         case Left(failure) =>
           toast.error(failure)
-          modalFactory.previewModal(div(cls("p-4 text-body"), "Could not load the import paths of this project"), "Import check")
+          modalFactory.previewModal(
+            div(cls("p-4 text-body"), "Could not load the import paths of this project"),
+            "Import check"
+          )
         case Right(outcomes) =>
           outcomes.collect { case Left(failure) => failure }.foreach(toast.error)
           val statuses = outcomes.collect { case Right(status) => status }
@@ -94,10 +101,12 @@ class ImportFlow(
         failures.foreach(toast.error)
         onFinished()
         if (failures.isEmpty && successes.nonEmpty)
-          toast.success(s"Imported from ${successes.size} path(s), ${successes.map(_.results.size).sum} entity(ies) total")
+          toast.success(
+            s"Imported from ${successes.size} path(s), ${successes.map(_.results.size).sum} entity(ies) total"
+          )
         else if (failures.nonEmpty && successes.nonEmpty)
           toast.error(s"Imported from ${successes.size}/${importPaths.size} path(s); ${failures.size} failed")
-        modalFactory.previewModal(content(importPaths, outcomes), "Import results")
+        modalFactory.previewModal(content(outcomes), "Import results")
       }
       .unsafeRunAndForget()
   }
@@ -110,11 +119,11 @@ class ImportFlow(
         else new ImportResultsComponent(dto.results).element
     )
 
-  private def content(importPaths: List[String], outcomes: List[(String, Either[TgJsonFailure, DataImportResp])]) =
+  private def content(outcomes: List[(String, Either[TgJsonFailure, DataImportResp])]) =
     outcomes match {
-      case Nil                        => div(cls("p-4 text-body"), "No import paths configured for this project")
-      case ("", _) :: Nil             => div(cls("p-4 text-body"), "Could not load the import paths of this project")
-      case (_, outcome) :: Nil        => div(cls("p-4"), pathPanel(outcome))
+      case Nil                 => div(cls("p-4 text-body"), "No import paths configured for this project")
+      case ("", _) :: Nil      => div(cls("p-4 text-body"), "Could not load the import paths of this project")
+      case (_, outcome) :: Nil => div(cls("p-4"), pathPanel(outcome))
       case several =>
         val tabs = several.zipWithIndex.map { case ((path, outcome), index) =>
           TgTab(s"import-path-$index", path, pathPanel(outcome))

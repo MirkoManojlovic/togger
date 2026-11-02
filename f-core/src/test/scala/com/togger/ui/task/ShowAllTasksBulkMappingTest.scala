@@ -1,14 +1,23 @@
 package com.togger.ui.task
 
 import com.togger.common.WorkDayCalendar
-import com.togger.dto.{FindMilestoneResp, FindTaskLabelResp, FindTaskRespFull, FindTaskStatusResp, SearchAccountDto}
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindTaskLabelResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTaskStatusResp
+import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
-import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus, TaskPriority}
-import com.togger.ui.task.bulk.{BulkEdit, BulkLookups, BulkTaskEditor}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.DefaultTaskStatus
+import com.togger.task.TaskPriority
+import com.togger.ui.task.bulk.BulkEdit
+import com.togger.ui.task.bulk.BulkLookups
+import com.togger.ui.task.bulk.BulkTaskEditor
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
@@ -75,7 +84,7 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
     }
 
     "apply status, assignee, milestone, priority and label edits" in {
-      val edited = Seq(
+      val edited = Seq[Any](
         edit(bare, BulkEdit.SetStatus(done.id)).taskStatus,
         edit(bare, BulkEdit.SetAssignee(Some(member.id))).assignedTo,
         edit(bare, BulkEdit.SetMilestone(Some(milestone.id))).milestone,

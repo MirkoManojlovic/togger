@@ -3,10 +3,11 @@ package com.togger.ui.slacker
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.teamdaily.TeamDailyEntryDraft
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
 import scala.util.Try
@@ -23,7 +24,8 @@ case class SlackerDraft(
   def isEmpty: Boolean = entries.isEmpty
 }
 
-/** The draft in the browser's local storage, one per account and project, so an unfinished slacker survives a refresh. */
+/** The draft in the browser's local storage, one per account and project, so an unfinished slacker survives a refresh.
+  */
 class SlackerDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
 
   import SlackerDraftStore._

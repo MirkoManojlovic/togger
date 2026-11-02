@@ -1,7 +1,7 @@
 package com.togger.ui.task
 
-import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.common.TgIds
+import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.TaskFilter
 import com.togger.routes.TaskListParams
 import com.togger.task.TaskPriority
@@ -32,7 +32,9 @@ class TaskListFilterMappingTest extends AsyncJsWordSpec {
     }
 
     "not filter when everything is ticked" in { _ =>
-      filterOf(labels = selection(Set(idA.toString, idB.toString), Set(idA.toString, idB.toString))) shouldBe TaskFilter.empty
+      filterOf(labels =
+        selection(Set(idA.toString, idB.toString), Set(idA.toString, idB.toString))
+      ) shouldBe TaskFilter.empty
     }
 
     "filter by the ticked ids when some are unticked" in { _ =>
@@ -47,8 +49,10 @@ class TaskListFilterMappingTest extends AsyncJsWordSpec {
 
     "map the not assigned and no milestone options to the backend markers" in { _ =>
       val filter = filterOf(
-        assignees = selection(Set(TaskListFilterMapping.UnassignedId, idA.toString), Set(TaskListFilterMapping.UnassignedId)),
-        milestones = selection(Set(TaskListFilterMapping.NoMilestoneId, idB.toString), Set(TaskListFilterMapping.NoMilestoneId))
+        assignees =
+          selection(Set(TaskListFilterMapping.UnassignedId, idA.toString), Set(TaskListFilterMapping.UnassignedId)),
+        milestones =
+          selection(Set(TaskListFilterMapping.NoMilestoneId, idB.toString), Set(TaskListFilterMapping.NoMilestoneId))
       )
       filter.assigneeIds shouldBe List(TgIds.UNASSIGNED_UUID)
       filter.milestoneIds shouldBe List(TgIds.NO_MILESTONE_UUID)

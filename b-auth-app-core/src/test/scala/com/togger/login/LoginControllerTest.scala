@@ -8,14 +8,16 @@ import com.togger.dep.AuthDependenciesModule
 import com.togger.dto.login._
 import com.togger.http.HttpModule
 import doobie.implicits._
-import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
-import org.http4s.circe.{jsonEncoder, jsonOf}
+import org.http4s.EntityDecoder
+import org.http4s.Method
+import org.http4s.Request
+import org.http4s.circe.jsonEncoder
+import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.implicits.http4sLiteralsSyntax
-import org.http4s.{EntityDecoder, Method, Request}
 
 import java.time.ZoneOffset
 import java.util.UUID
@@ -112,7 +114,7 @@ class LoginControllerTest extends AccountTgDbSpec with TgAccount with TimeHelper
         res <- responseDtos
           .map(sessionToken => accountService.findByToken(sessionToken.sessionId))
           .sequence
-          .handleError(e => Seq.empty)
+          .handleError(_ => Seq.empty)
       } yield {
         logger.info(success.toString)
         logger.info(s"Result is $res")

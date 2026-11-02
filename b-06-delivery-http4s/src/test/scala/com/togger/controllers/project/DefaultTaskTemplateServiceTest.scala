@@ -1,7 +1,8 @@
 package com.togger.controllers.project
 
 import com.togger.common.TgClockImpl
-import com.togger.task.{DefaultTaskLabel, TaskLabel}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.TaskLabel
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

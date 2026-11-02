@@ -5,10 +5,16 @@ import com.togger.common._
 import com.togger.logging.TgLogging
 import io.circe.generic.auto._
 import sttp.model.StatusCode
+import sttp.tapir.Endpoint
+import sttp.tapir.auth
+import sttp.tapir.emptyOutputAs
+import sttp.tapir.endpoint
 import sttp.tapir.generic.auto.schemaForCaseClass
 import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.oneOf
+import sttp.tapir.oneOfVariant
 import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.{Endpoint, auth, emptyOutputAs, endpoint, oneOf, oneOfVariant, statusCode}
+import sttp.tapir.statusCode
 
 class SecuredEndpoint(securityLogic: SecurityLogic) extends TgLogging {
   import BaseEndpoint._

@@ -5,34 +5,46 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.common.{TgClock, WorkDayCalendar}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{CreateTimeboxReq, FindTaskRespFull, FindTimeboxResp, SaveTimeboxVersionReq}
+import com.togger.dto.CreateTimeboxReq
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.FindTimeboxResp
+import com.togger.dto.SaveTimeboxVersionReq
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
-import com.togger.routes.{FrontendPage, TaskListParams, TgRouter}
+import com.togger.routes.TaskListParams
+import com.togger.routes.TgRouter
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
-import com.togger.timebox.{TimeboxDefault, TimeboxDefaults}
+import com.togger.timebox.TimeboxDefault
+import com.togger.timebox.TimeboxDefaults
 import com.togger.toast.ToastMessages
-import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.auth.TgCard
+import com.togger.ui.components.CalendarPickerPopup
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{CalendarPickerPopup, TgBadge, TgBadgeColor, TgHtmlTable}
-import com.togger.ui.milestone.{MilestoneFeService, MilestoneSummaryRangeCalendar}
+import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk._
+import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task._
+import com.togger.ui.task.bulk._
 import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 
@@ -199,9 +211,7 @@ class TimeboxFormComponent(
         typ("button"),
         cls("rounded-base cursor-pointer hover:ring-2 hover:ring-blue-300"),
         child <-- formState.signal
-          .map(form =>
-            parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv)
-          )
+          .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
           .distinct
           .map(date =>
             TgBadge(text = s"$labelValue: $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
@@ -320,7 +330,10 @@ class TimeboxFormComponent(
 
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
-    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
+    else
+      dto.taskLabels
+        .sortBy(_.name)
+        .map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
   private def primaryRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
@@ -502,7 +515,6 @@ class TimeboxFormComponent(
     projectId,
     lookups.projectVar.signal.map(_.workDays.map(DayOfWeek.of)),
     formDatesSignal,
-    tgDateFormater,
     capacitySignal,
     lookups.milestonesVar.signal,
     isDark,
@@ -557,7 +569,12 @@ class TimeboxFormComponent(
               cls("mb-4 flex flex-col gap-4"),
               div(
                 cls("min-w-0"),
-                div(cls("mb-2 flex flex-wrap items-center gap-1.5"), startDateInput, endDateInput, child.maybe <-- daysLeftBadge),
+                div(
+                  cls("mb-2 flex flex-wrap items-center gap-1.5"),
+                  startDateInput,
+                  endDateInput,
+                  child.maybe <-- daysLeftBadge
+                ),
                 presetButtons,
                 child.maybe <-- endBeforeStartError.map(
                   _.map(message => p(cls("mt-4 text-xs text-fg-danger-strong"), message))

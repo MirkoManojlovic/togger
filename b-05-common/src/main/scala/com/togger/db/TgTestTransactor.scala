@@ -1,6 +1,5 @@
 package com.togger.db
 
-import doobie.postgres.implicits._
 import org.postgresql.ds.PGSimpleDataSource
 
 trait TgTestTransactor {

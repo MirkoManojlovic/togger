@@ -2,8 +2,8 @@ package com.togger.routes
 
 import com.togger.common.PageRequest
 
-/** What the task list shows, as carried by the URL. A filter of `None` is the screen's default selection, `Some(ids)` is
-  * what the user picked (possibly nothing, which the URL spells `_empty`).
+/** What the task list shows, as carried by the URL. A filter of `None` is the screen's default selection, `Some(ids)`
+  * is what the user picked (possibly nothing, which the URL spells `_empty`).
   */
 case class TaskListParams(
   page: Int = PageRequest.DefaultPage,
@@ -42,7 +42,8 @@ object TaskListParams {
   ): TaskListParams =
     TaskListParams(
       page = page.flatMap(_.trim.toIntOption).filter(_ >= 1).getOrElse(PageRequest.DefaultPage),
-      size = size.flatMap(_.trim.toIntOption).filter(PageRequest.SizeOptions.contains).getOrElse(PageRequest.DefaultSize),
+      size =
+        size.flatMap(_.trim.toIntOption).filter(PageRequest.SizeOptions.contains).getOrElse(PageRequest.DefaultSize),
       statuses = selectionFromQuery(statuses),
       priorities = selectionFromQuery(priorities),
       labels = selectionFromQuery(labels),
@@ -67,8 +68,8 @@ object TaskListParams {
 
   def selectionToQuery(selection: Option[Set[String]]): List[String] =
     selection match {
-      case None                       => List.empty
+      case None                     => List.empty
       case Some(ids) if ids.isEmpty => List(EmptySelectionMarker)
-      case Some(ids)                  => ids.toList.sorted
+      case Some(ids)                => ids.toList.sorted
     }
 }

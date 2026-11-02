@@ -1,10 +1,9 @@
 package com.togger.desktop
 
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
 import com.togger.TgLogging
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import scala.util.Try
 
 object CompactLogs1 extends App {
@@ -41,7 +40,7 @@ class LogArchive extends TgLogging {
 
         val zipLocation = logPath / s"$archiveName.zip"
         logger.info(s"Started zipping at location $zipLocation")
-        os.zip(
+        val _ = os.zip(
           dest = zipLocation,
           sources = Seq(archivePath)
         )

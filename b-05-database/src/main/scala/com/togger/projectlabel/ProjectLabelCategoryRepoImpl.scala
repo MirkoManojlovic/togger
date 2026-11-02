@@ -1,8 +1,10 @@
 package com.togger.projectlabel
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.projectlabel.ProjectLabelCategoryRepoImpl.PROJECT_LABEL_CATEGORY_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
@@ -42,7 +44,10 @@ class ProjectLabelCategoryRepoImpl extends ProjectLabelCategoryRepo with TgLoggi
       _ => s"ProjectLabelCategory with ${sp(id)} deleted"
     )
 
-  override def update(projectLabelCategory: ProjectLabelCategory, updatedAt: Instant): ConnectionIO[ProjectLabelCategory] =
+  override def update(
+    projectLabelCategory: ProjectLabelCategory,
+    updatedAt: Instant
+  ): ConnectionIO[ProjectLabelCategory] =
     logAroundInfoQuery(
       updateStatementUUID(PROJECT_LABEL_CATEGORY_TABLE_FRAG)(projectLabelCategory.id)(fr"""
            name = ${projectLabelCategory.name},

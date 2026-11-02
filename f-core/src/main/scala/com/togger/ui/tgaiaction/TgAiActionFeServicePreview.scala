@@ -2,9 +2,10 @@ package com.togger.ui.tgaiaction
 
 import cats.effect.IO
 import com.togger.ai.TgAiEndpoints
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -76,7 +77,7 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
 
   override def deleteById(id: UUID): TgRespIO[TgEmptyBody] =
     owned(id) { (_, action) =>
-      data.deleteAction(action.id)
+      val _ = data.deleteAction(action.id)
       PreviewResponses.okEmpty("AI action deleted successfully")
     }
 
@@ -102,7 +103,8 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
         val action = data.actions.find(dto.actionId).filter(_.createdBy == callerId)
-        if (!projects.isMember(dto.projectId, callerId)) PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotAMemberMessage)
+        if (!projects.isMember(dto.projectId, callerId))
+          PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotAMemberMessage)
         else if (action.isEmpty) PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotFoundMessage)
         else if (!action.exists(_.endpointIds.contains(dto.endpointId)))
           PreviewResponses.badRequest[FindTgAiActionDefaultResp](NotBoundMessage)
@@ -127,7 +129,9 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
   override def clearDefault(projectId: UUID, endpointId: Int): TgRespIO[TgEmptyBody] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer {
-        data.defaults.deleteWhere(d => d.accountId == callerId && d.projectId == projectId && d.endpointId == endpointId)
+        data.defaults.deleteWhere(d =>
+          d.accountId == callerId && d.projectId == projectId && d.endpointId == endpointId
+        )
         PreviewResponses.okEmpty("AI action default cleared successfully")
       }
     )
@@ -135,9 +139,12 @@ class TgAiActionFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
   private def owned[A](id: UUID)(f: (UUID, PreviewAiAction) => TgRespIO[A]): TgRespIO[A] =
     PreviewResponses.authenticated(ctx.loginRepo)(callerId =>
       IO.defer(
-        data.actions.find(id).filter(_.createdBy == callerId).fold(PreviewResponses.badRequest[A](NotFoundMessage))(
-          f(callerId, _)
-        )
+        data.actions
+          .find(id)
+          .filter(_.createdBy == callerId)
+          .fold(PreviewResponses.badRequest[A](NotFoundMessage))(
+            f(callerId, _)
+          )
       )
     )
 

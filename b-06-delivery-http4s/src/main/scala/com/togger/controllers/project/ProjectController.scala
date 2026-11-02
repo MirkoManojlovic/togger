@@ -2,11 +2,15 @@ package com.togger.controllers.project
 
 import cats.effect.IO
 import cats.syntax.apply._
-import com.togger.common.TgError._
-import com.togger.common.{Forbidden, TgClock, TgJsonSuccess}
-import com.togger.controllers.common.PageRequestValidation
 import com.togger.account.Account
-import com.togger.dto.{FindProjectResp, FindProjectLabelResp, SearchAccountDto}
+import com.togger.common.Forbidden
+import com.togger.common.TgClock
+import com.togger.common.TgError._
+import com.togger.common.TgJsonSuccess
+import com.togger.controllers.common.PageRequestValidation
+import com.togger.dto.FindProjectLabelResp
+import com.togger.dto.FindProjectResp
+import com.togger.dto.SearchAccountDto
 import com.togger.project._
 import com.togger.projectlabel.ProjectLabel
 
@@ -49,7 +53,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       projectLabels = projectLabels.map(toProjectLabelDto)
     )
 
-  val findByid = findByIdEndpoint.serverLogic { auth => id =>
+  val findByid = findByIdEndpoint.serverLogic { _ => id =>
     projectService
       .findById(id)
       .map { case (foundProject, members, projectLabels) =>
@@ -78,7 +82,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
       }
   }
 
-  val update = updateEndpoint.serverLogic { auth => dto =>
+  val update = updateEndpoint.serverLogic { _ => dto =>
     val workDays = dto.workDays.map(DayOfWeek.of)
 
     if (workDays.isEmpty) {
@@ -142,7 +146,7 @@ class ProjectController(projectEndpoints: ProjectEndpoints, projectService: Proj
     }
   }
 
-  val findAllMembers = findAllMembersEndpoint.serverLogic { auth => request =>
+  val findAllMembers = findAllMembersEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       projectService

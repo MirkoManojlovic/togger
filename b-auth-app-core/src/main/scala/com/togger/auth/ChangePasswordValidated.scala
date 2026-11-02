@@ -1,10 +1,13 @@
 package com.togger.auth
 
-import cats.data.{EitherNec, ValidatedNec}
+import cats.data.EitherNec
+import cats.data.ValidatedNec
 import cats.implicits._
-import com.togger.auth.ChangePasswordError.{ChangePasswordError, PasswordsMustMatch}
+import com.togger.auth.ChangePasswordError.ChangePasswordError
+import com.togger.auth.ChangePasswordError.PasswordsMustMatch
+import com.togger.common.Password
 import com.togger.common.Password.PasswordError
-import com.togger.common.{Password, TgError}
+import com.togger.common.TgError
 import com.togger.dto.login.ChangePasswordDto
 
 import java.util.UUID

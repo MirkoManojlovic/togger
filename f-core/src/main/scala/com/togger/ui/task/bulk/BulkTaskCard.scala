@@ -1,7 +1,8 @@
 package com.togger.ui.task.bulk
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.components.{TgBadge, TgBadgeColor}
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
 
 import java.util.UUID
 

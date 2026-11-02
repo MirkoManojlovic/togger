@@ -1,10 +1,15 @@
 package com.togger.controllers.dataexportconfig
 
-import com.togger.common.{TgClock, TgJsonError, TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgClock
+import com.togger.common.TgJsonError
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
+import com.togger.dataexportconfig.DataExportConfig
+import com.togger.dataexportconfig.DataExportConfigEndpoints
+import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.dto.dataexportconfig.DataExportConfigResp
 import com.togger.dump.DataImportConfigVerification
-import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigEndpoints, DataExportConfigService}
 
 import java.util.UUID
 
@@ -29,7 +34,7 @@ class DataExportConfigController(
     )
 
   val findById =
-    findByIdEndpoint.serverLogic { auth => id =>
+    findByIdEndpoint.serverLogic { _ => id =>
       dataExportConfigService
         .findById(id)
         .map(dataExportConfig => TgJsonSuccess.justBodyRight(toResp(dataExportConfig)))
@@ -87,14 +92,14 @@ class DataExportConfigController(
 
   }
 
-  val delete = deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = deleteByIdEndpoint.serverLogic { _ => id =>
     dataExportConfigService
       .deleteById(id)
       .map(_ => TgJsonSuccess.justMessageRight("Task dump config deleted successfully"))
   }
 
   val findByProjectId =
-    findByProjectIdEndpoint.serverLogic { auth => request =>
+    findByProjectIdEndpoint.serverLogic { _ => request =>
       val (projectId, pageRequest) = request
       PageRequestValidation.withPage(pageRequest) { page =>
         dataExportConfigService

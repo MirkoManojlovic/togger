@@ -2,10 +2,11 @@ package com.togger.ui.teamdaily
 
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.localstorage.LocalStorage
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder}
 
 import java.time.LocalDate
 import java.util.UUID
@@ -28,7 +29,9 @@ case class TeamDailyDraft(
   def isEmpty: Boolean = entries.isEmpty
 }
 
-/** The draft in the browser's local storage, one per account and project, so an unfinished team daily survives a refresh. */
+/** The draft in the browser's local storage, one per account and project, so an unfinished team daily survives a
+  * refresh.
+  */
 class TeamDailyDraftStore(localStorage: LocalStorage, accountId: UUID, projectId: UUID) {
 
   import TeamDailyDraftStore._

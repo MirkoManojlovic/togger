@@ -4,7 +4,8 @@ import cats.effect.IO
 import com.togger.common.Password
 import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
 import com.togger.dto.login.ChangePasswordDto
-import com.togger.preview.{AccountsPreviewData, PreviewResponses}
+import com.togger.preview.AccountsPreviewData
+import com.togger.preview.PreviewResponses
 
 class ChangePasswordServicePreview(accounts: AccountsPreviewData, loginRepo: LoginRepo) extends ChangePasswordService {
 
@@ -29,7 +30,7 @@ class ChangePasswordServicePreview(accounts: AccountsPreviewData, loginRepo: Log
       case Some(account) if account.password != dto.oldPassword =>
         PreviewResponses.badRequest("Old password is incorrect")
       case Some(account) =>
-        accounts.accounts.upsert(account.copy(password = dto.newPassword))
+        val _ = accounts.accounts.upsert(account.copy(password = dto.newPassword))
         PreviewResponses.okEmpty("Password successfully changed")
     }
 }

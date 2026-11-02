@@ -3,16 +3,25 @@ package com.togger.timebox
 import cats.data.EitherT
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
-import com.togger.task.{TaskRepo, TaskVersion, TaskVersionRepo}
-import com.togger.timebox.TimeboxError.{TaskNotFound, TaskNotInProject, TimeboxError, TimeboxNotFound, TimeboxOverlaps}
+import com.togger.task.TaskRepo
+import com.togger.task.TaskVersion
+import com.togger.task.TaskVersionRepo
+import com.togger.timebox.TimeboxError.TaskNotFound
+import com.togger.timebox.TimeboxError.TaskNotInProject
+import com.togger.timebox.TimeboxError.TimeboxError
+import com.togger.timebox.TimeboxError.TimeboxNotFound
+import com.togger.timebox.TimeboxError.TimeboxOverlaps
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class TimeboxService(

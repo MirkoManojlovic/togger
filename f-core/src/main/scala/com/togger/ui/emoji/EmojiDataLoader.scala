@@ -3,10 +3,13 @@ package com.togger.ui.emoji
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.Thenable.Implicits._
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 sealed trait EmojiDataState
 
@@ -18,12 +21,14 @@ object EmojiDataState {
 
 /** Raw shape of `public/emoji-data.json`, as produced by `tools/emoji/build-emoji-data.mjs`. */
 @js.native
+@nowarn("msg=dead code")
 private[emoji] trait RawEmojiCategory extends js.Object {
   val id: String = js.native
   val emojis: js.Array[String] = js.native
 }
 
 @js.native
+@nowarn("msg=dead code")
 private[emoji] trait RawEmoji extends js.Object {
   val name: String = js.native
   val keywords: js.Array[String] = js.native
@@ -31,6 +36,7 @@ private[emoji] trait RawEmoji extends js.Object {
 }
 
 @js.native
+@nowarn("msg=dead code")
 private[emoji] trait RawEmojiData extends js.Object {
   val categories: js.Array[RawEmojiCategory] = js.native
   val emojis: js.Dictionary[RawEmoji] = js.native

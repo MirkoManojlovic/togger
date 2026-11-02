@@ -1,6 +1,7 @@
 package com.togger.controllers.ai
 
-import com.togger.ai.{TgAiModelEndpoints, TgAiService}
+import com.togger.ai.TgAiModelEndpoints
+import com.togger.ai.TgAiService
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.dto.TgAiModelDto
