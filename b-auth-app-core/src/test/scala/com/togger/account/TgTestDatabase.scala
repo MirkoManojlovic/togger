@@ -55,13 +55,15 @@ object TgTestDatabase extends TgTestTransactor {
     new TgTestDatabase(name, transactor, release)
   }
 
-  def dropDatabase(name: String): Unit = adminStatement(s"""DROP DATABASE IF EXISTS "$name" WITH (FORCE)""", retries = 0)
+  def dropDatabase(name: String): Unit =
+    adminStatement(s"""DROP DATABASE IF EXISTS "$name" WITH (FORCE)""", retries = 0)
 
   @tailrec
   private def adminStatement(sql: String, retries: Int): Unit = {
     val failure =
       try {
-        val connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "togger_account", "togger_password")
+        val connection =
+          DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "togger_account", "togger_password")
         try { connection.createStatement().execute(sql); () }
         finally connection.close()
         None

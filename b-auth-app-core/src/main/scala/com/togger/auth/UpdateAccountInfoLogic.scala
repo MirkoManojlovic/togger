@@ -22,7 +22,8 @@ class UpdateAccountInfoLogic(
 
   def update(accountId: UUID, dto: AccountInfoDto): TgRespIO[AccountInfoDto] =
     AccountInfoValidation.validate(dto) match {
-      case Nil    => save(accountId, dto.copy(firstName = dto.firstName.trim, lastName = dto.lastName.trim, email = dto.email.trim))
+      case Nil =>
+        save(accountId, dto.copy(firstName = dto.firstName.trim, lastName = dto.lastName.trim, email = dto.email.trim))
       case errors => TgJsonFailure.badRequestLeftIO(errors.flatMap(TgJsonError.fromError).toSet)
     }
 

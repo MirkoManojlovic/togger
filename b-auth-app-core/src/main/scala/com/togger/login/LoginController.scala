@@ -5,7 +5,13 @@ import com.togger.account.AccountService
 import com.togger.auth.{BaseEndpoint, ChangePasswordLogic, SecuredEndpoint, UpdateAccountInfoLogic}
 import com.togger.common.TgResponseTypes.{TgAuth, TgRespEmptyBodyIO, TgRespIO}
 import com.togger.common.{TgClock, TgJsonFailure, TgJsonSuccess}
-import com.togger.dto.login.{AccountInfoDto, ChangePasswordDto, ExpireSessionResult, LoginResponseDto, LogoutEveryoneDto}
+import com.togger.dto.login.{
+  AccountInfoDto,
+  ChangePasswordDto,
+  ExpireSessionResult,
+  LoginResponseDto,
+  LogoutEveryoneDto
+}
 import com.togger.logging.TgLogging
 
 import java.time.temporal.ChronoUnit
