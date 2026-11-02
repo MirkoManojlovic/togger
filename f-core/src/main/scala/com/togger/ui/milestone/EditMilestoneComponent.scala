@@ -25,6 +25,7 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -228,7 +229,7 @@ class EditMilestoneComponent(
         cls("cursor-pointer"),
         cls("ring-2 ring-blue-500") <-- closePickerOpen.signal,
         aria.label("End date"),
-        value <-- closeEndDate.signal.map(tgDateFormater.asAmericanDate),
+        value <-- closeEndDate.signal.map(date => s"${DateEmoji.End} ${tgDateFormater.asAmericanDate(date)}"),
         // stopPropagation keeps this click from reaching the popup's own outside-click listener
         onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))
       ),

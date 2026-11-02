@@ -415,7 +415,9 @@ class EditTaskComponent(
         cls("ring-2 ring-blue-500") <-- closePickerOpen.signal,
         aria.label("End date"),
         value <-- closeEndDate.signal.map(raw =>
-          Try(LocalDate.parse(raw)).toOption.fold(raw)(tgDateFormater.asAmericanDate)
+          Try(LocalDate.parse(raw)).toOption.fold(raw)(date =>
+            s"${DateEmoji.End} ${tgDateFormater.asAmericanDate(date)}"
+          )
         ),
         // stopPropagation keeps this click from reaching the popup's own outside-click listener
         onClick.stopPropagation.mapToUnit --> (_ => closePickerOpen.update(!_))

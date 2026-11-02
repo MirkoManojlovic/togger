@@ -21,6 +21,7 @@ import com.togger.ui.components.TableSearchComponent
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgTooltip
 import com.togger.ui.project.ProjectService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
@@ -379,7 +380,7 @@ class SingleMilestoneHistoryComponent(
                                 rowEnd = rowEnd,
                                 colIndex = idx + 1,
                                 tooltipText =
-                                  s"$milestoneName — due date: ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
+                                  s"$milestoneName — ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(milestone.dueDate)}"
                               )
                             )
                         }

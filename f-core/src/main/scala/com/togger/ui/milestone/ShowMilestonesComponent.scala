@@ -5,6 +5,8 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindProjectResp
 import com.togger.markdown.TgMarkdown
@@ -32,8 +34,10 @@ import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.task.bulk.BulkTaskCard
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import org.scalajs.dom.HTMLTableCellElement
 
+import java.time.DayOfWeek
 import java.util.UUID
 
 class ShowMilestonesComponent(
@@ -42,6 +46,7 @@ class ShowMilestonesComponent(
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
   tgDateFormater: TgDateFormater,
+  tgClock: TgClock,
   tgMarkdown: TgMarkdown,
   projectId: UUID,
   params: MilestoneListParams
@@ -155,11 +160,17 @@ class ShowMilestonesComponent(
     case MilestoneStatus.Abandoned  => TgBadgeColor.Gray
   }
 
+  private def workDays: Set[DayOfWeek] =
+    Some(projectVar.now().workDays.map(DayOfWeek.of)).filter(_.nonEmpty).getOrElse(WorkDayCalendar.DefaultWorkDays)
+
   private def dateRow(dto: FindMilestoneResp): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray),
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray)
-    ) ++ dto.endDate.map(date => BadgeSpec(s"End: ${tgDateFormater.asAmericanDate(date)}", TgBadgeColor.Gray))
+      BadgeSpec(tgDateFormater.asStartDate(dto.startDate), TgBadgeColor.Gray),
+      BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray),
+      TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, workDays)
+    ) ++ dto.endDate.fold(Seq(TeamDailyTaskBadges.daysLeft(dto.dueDate, tgClock.currentDate(), workDays)))(date =>
+      Seq(BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
+    )
 
   /** One tall row spanning every column, so the table keeps its size when no milestone matches. */
   private def noMilestonesRow: Seq[ReactiveHtmlElement[HTMLTableCellElement]] =

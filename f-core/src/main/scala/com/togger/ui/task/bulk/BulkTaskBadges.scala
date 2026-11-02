@@ -1,6 +1,5 @@
 package com.togger.ui.task.bulk
 
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
@@ -10,8 +9,10 @@ import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
 import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** @param kind
   *   the attribute this badge shows, so clicking it can edit it; none for a badge that is only a label
@@ -57,26 +58,23 @@ object BulkTaskBadges {
 
   private val dateFormater = new TgDateFormater
 
-  def of(task: BulkTask, lookups: BulkLookups): BulkTaskBadgeRows =
+  def of(task: BulkTask, lookups: BulkLookups, today: LocalDate): BulkTaskBadgeRows =
     BulkTaskBadgeRows(
       labelRow = labels(task, lookups),
       primaryRow = Seq(milestone(task, lookups), priority(task), status(task, lookups), assignee(task, lookups)),
       dateRow = Seq(
         BadgeSpec(
-          dateFormater.asAmericanDateWithDayAbrv(task.startDate),
+          dateFormater.asStartDate(task.startDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.StartDate)
         ),
         BadgeSpec(
-          dateFormater.asAmericanDateWithDayAbrv(task.dueDate),
+          dateFormater.asDueDate(task.dueDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
         ),
-        BadgeSpec(
-          WorkDayCalendar.countWorkDays(task.startDate, task.dueDate, lookups.workDays).toString,
-          TgBadgeColor.Gray,
-          Some(BulkEditKind.WorkDays)
-        )
+        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays, Some(BulkEditKind.WorkDays)),
+        TeamDailyTaskBadges.daysLeft(task.dueDate, today, lookups.workDays)
       )
     )
 

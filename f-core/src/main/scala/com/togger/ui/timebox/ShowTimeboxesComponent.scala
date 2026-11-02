@@ -20,6 +20,7 @@ import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
@@ -126,8 +127,8 @@ class ShowTimeboxesComponent(
                 timeboxes.map { dto =>
                   val version = dto.latestVersion
                   Seq(
-                    createTd(tgDateFormater.asAmericanDate(version.startDate)),
-                    createTd(tgDateFormater.asAmericanDate(version.endDate)),
+                    createTd(s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)}"),
+                    createTd(s"${DateEmoji.End} ${tgDateFormater.asAmericanDate(version.endDate)}"),
                     createTd(version.tasks.size.toString),
                     createTd(
                       div(

@@ -921,6 +921,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   router,
                   spinnerService,
                   tgDateFormater,
+                  tgClock,
                   tgMarkdown,
                   projectId,
                   listParams

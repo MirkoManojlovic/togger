@@ -12,6 +12,7 @@ import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.task.DateEmoji
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom.HTMLFormElement
 
@@ -165,14 +166,14 @@ class MilestoneSummaryFormComponent(
 
   private val everyDay = DayOfWeek.values.toSet
 
-  // The dates are the start and "due" of the badges, which are labelled Start and End here.
+  // The dates are the start and "due" of the badges, which are the start and the end of the summary here.
   private val dateBadges = new MilestoneDateBadges(
     dates = formState.signal.map(form => form.startDate -> form.endDate),
     currentDates = () => formState.now().startDate -> formState.now().endDate,
     currentWorkDays = () => everyDay,
     onDates = (start, end) => formState.update(_.copy(startDate = start.toString, endDate = end.toString)),
     tgClock = tgClock,
-    dueLabel = "End"
+    dueLabel = DateEmoji.Due
   )
 
   private def presetBadge(preset: MilestoneSummaryPreset): HtmlElement = {

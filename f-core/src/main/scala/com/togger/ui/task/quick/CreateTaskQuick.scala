@@ -30,11 +30,13 @@ import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task._
 import com.togger.ui.task.quick.QuickDropdown._
 import com.togger.ui.tasktemplate.TaskTemplateFeService
 import com.togger.ui.tasktemplate.TaskTemplatePicker
 import com.togger.ui.tasktemplate.TaskTemplateSelection
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
@@ -568,25 +570,34 @@ class CreateTaskQuick(
       Seq(
         dateBadge(
           StartDateDropdown,
-          "Start",
+          DateEmoji.Start,
           current.effectiveStartDate,
           current.startDate.map(_ => () => state.update(_.copy(startDate = None))),
           current
         ),
         dateBadge(
           DueDateDropdown,
-          "Due",
+          DateEmoji.Due,
           current.effectiveDueDate,
           current.dueDate.map(_ => () => state.update(_.copy(dueDate = None))),
           current
         ),
-        TgBadge(
-          text = if (current.workDays == 1) "1 day left" else s"${current.workDays} days left",
-          color = TgBadgeColor.Gray,
-          bordered = true
-        ).element
+        durationBadge(current),
+        daysLeftBadge(current)
       )
     }
+
+  private def durationBadge(current: QuickState): HtmlElement = {
+    val spec =
+      TeamDailyTaskBadges.duration(current.effectiveStartDate, current.effectiveDueDate, current.effectiveWorkDays)
+    TgBadge(text = spec.text, color = spec.color, bordered = true).element
+  }
+
+  private def daysLeftBadge(current: QuickState): HtmlElement = {
+    val spec =
+      TeamDailyTaskBadges.daysLeft(current.effectiveDueDate, current.today, current.effectiveWorkDays)
+    TgBadge(text = spec.text, color = spec.color, bordered = true).element
+  }
 
   private def dateBadge(
     dropdown: QuickDropdown,

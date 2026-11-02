@@ -34,9 +34,11 @@ import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskProgressComponent
 import com.togger.ui.task._
 import com.togger.ui.task.bulk._
+import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -214,7 +216,7 @@ class TimeboxFormComponent(
           .map(form => parsedDate(selector(form)).fold("Select a date")(tgDateFormater.asAmericanDateWithDayAbrv))
           .distinct
           .map(date =>
-            TgBadge(text = s"$labelValue: $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
+            TgBadge(text = s"$labelValue $date", color = TgBadgeColor.Gray, extraCls = "dark:text-body").element
           ),
         // stopPropagation keeps this click from reaching the picker's own outside-click listener, which starts
         // listening synchronously within this same click when the picker opens
@@ -237,10 +239,11 @@ class TimeboxFormComponent(
     )
   }
 
-  private val startDateInput = dateField("Start date", _.startDate, (form, value) => form.copy(startDate = value), None)
+  private val startDateInput =
+    dateField(DateEmoji.Start, _.startDate, (form, value) => form.copy(startDate = value), None)
 
   private val endDateInput = dateField(
-    "End date",
+    DateEmoji.End,
     _.endDate,
     (form, value) => form.copy(endDate = value),
     parsedDate(formState.now().startDate)
@@ -254,7 +257,7 @@ class TimeboxFormComponent(
         if (end.isBefore(today)) ("Overdue", TgBadgeColor.Red)
         else {
           val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
-          (s"${WorkDayCalendar.countWorkDays(today, end, workDays)} days left", TgBadgeColor.Gray)
+          (TeamDailyTaskBadges.daysLeftText(WorkDayCalendar.countWorkDays(today, end, workDays)), TgBadgeColor.Gray)
         }
       TgBadge(text = text, color = color, extraCls = if (color == TgBadgeColor.Gray) "dark:text-body" else "").element
     }
@@ -322,12 +325,6 @@ class TimeboxFormComponent(
     }
   )
 
-  private def durationLabel(dto: FindTaskRespFull): String = {
-    val workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
-    val days = WorkDayCalendar.countWorkDays(dto.startDate, dto.dueDate, workDays)
-    if (days == 1) "1 day" else s"$days days"
-  }
-
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
     else
@@ -351,12 +348,17 @@ class TimeboxFormComponent(
   private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
       BadgeSpec(
-        tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+        tgDateFormater.asStartDate(dto.startDate),
         TgBadgeColor.Gray,
         Some(BulkEditKind.StartDate)
       ),
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
-      BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
+      BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
+      TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, lookups.projectVar.now().workDays.map(DayOfWeek.of)),
+      TeamDailyTaskBadges.daysLeft(
+        dto.dueDate,
+        tgClock.currentDate(),
+        lookups.projectVar.now().workDays.map(DayOfWeek.of)
+      )
     )
 
   private def badgeRow(taskId: UUID, specs: Seq[BadgeSpec], origin: String = "") =

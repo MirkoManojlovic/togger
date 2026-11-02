@@ -60,7 +60,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
 
   "BulkTaskBadges.of" should {
     "show the empty-state emoji for a milestone, labels and assignee that have no default" in {
-      val rows = BulkTaskBadges.of(task, lookups)
+      val rows = BulkTaskBadges.of(task, lookups, monday)
       (rows.primaryRow.head, rows.labelRow, rows.primaryRow(3)) shouldBe
         (
           BadgeSpec("🏁", TgBadgeColor.Gray, Some(BulkEditKind.Milestone)),
@@ -70,7 +70,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
     }
 
     "show priority as its short code and status as its emoji" in {
-      val rows = BulkTaskBadges.of(task, lookups)
+      val rows = BulkTaskBadges.of(task, lookups, monday)
       (rows.primaryRow(1).text, rows.primaryRow(2)) shouldBe ("p3", BadgeSpec(
         "📚",
         TgBadgeColor.Gray,
@@ -78,9 +78,10 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
       ))
     }
 
-    "show dates in full and the work days as a bare number" in {
-      val rows = BulkTaskBadges.of(task, lookups)
-      rows.dateRow.map(_.text) shouldBe Seq("2026-10-12 | Mon", "2026-10-16 | Fri", "5")
+    "show dates in full, the length in work days and the work days left" in {
+      val rows = BulkTaskBadges.of(task, lookups, monday)
+      rows.dateRow
+        .map(_.text) shouldBe Seq("🗓️ Oct 12, 2026 | Mon", "🎯 Oct 16, 2026 | Fri", "⏱️ 5 days", "⏳ 5 days left")
     }
 
     "show the milestone name, label emoji and assignee name when set" in {
@@ -89,20 +90,20 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
         labelIds = Set(bug.id, feature.id),
         assigneeId = Some(member.id)
       )
-      val rows = BulkTaskBadges.of(full, lookups)
+      val rows = BulkTaskBadges.of(full, lookups, monday)
       (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(3).text) shouldBe
         ("Release 1", Seq("🐞", "🆕"), "Ada Lovelace")
     }
 
     "put the assignee after the status in the first of two rows, and the labels apart from them" in {
-      val rows = BulkTaskBadges.of(task, lookups)
-      (rows.rows.map(_.size), rows.primaryRow.map(_.text)) shouldBe (Seq(4, 3), Seq("🏁", "p3", "📚", "👤"))
+      val rows = BulkTaskBadges.of(task, lookups, monday)
+      (rows.rows.map(_.size), rows.primaryRow.map(_.text)) shouldBe (Seq(4, 4), Seq("🏁", "p3", "📚", "👤"))
     }
   }
 
   "BulkTaskBadges kinds" should {
     "say which attribute each badge edits" in {
-      val rows = BulkTaskBadges.of(task, lookups)
+      val rows = BulkTaskBadges.of(task, lookups, monday)
       (rows.primaryRow.map(_.kind), rows.dateRow.map(_.kind), rows.labelRow.map(_.kind)) shouldBe
         (
           Seq(
@@ -111,14 +112,14 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
             Some(BulkEditKind.Status),
             Some(BulkEditKind.Assignee)
           ),
-          Seq(Some(BulkEditKind.StartDate), Some(BulkEditKind.DueDate), Some(BulkEditKind.WorkDays)),
+          Seq(Some(BulkEditKind.StartDate), Some(BulkEditKind.DueDate), Some(BulkEditKind.WorkDays), None),
           Seq(Some(BulkEditKind.Labels))
         )
     }
 
     "group the label badges of a task into one thing to click and leave other badges alone" in {
       val labelled = task.copy(labelIds = Set(bug.id, feature.id))
-      val rows = BulkTaskBadges.of(labelled, lookups)
+      val rows = BulkTaskBadges.of(labelled, lookups, monday)
       (BulkTaskBadges.grouped(rows.labelRow).map(_.size), BulkTaskBadges.grouped(rows.primaryRow).map(_.size)) shouldBe
         (Seq(2), Seq(1, 1, 1, 1))
     }

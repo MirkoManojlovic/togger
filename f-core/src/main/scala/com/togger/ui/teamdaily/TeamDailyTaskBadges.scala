@@ -5,7 +5,9 @@ import com.togger.dto.FindMilestoneResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkEditKind
 
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -24,7 +26,7 @@ object TeamDailyTaskBadges {
       .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
       .toSeq :+ BadgeSpec(task.priority.shortCode, task.priority.badgeColor)
 
-  /** The start and due date, and the work days left until the due date (or overdue). */
+  /** The start and due date, the length in work days, and the work days left until the due date (or overdue). */
   def dates(
     task: TeamDailyTaskPlan,
     today: LocalDate,
@@ -32,12 +34,31 @@ object TeamDailyTaskBadges {
     format: LocalDate => String
   ): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(format(task.startDate), TgBadgeColor.Gray),
-      BadgeSpec(format(task.dueDate), TgBadgeColor.Gray),
+      BadgeSpec(s"${DateEmoji.Start} ${format(task.startDate)}", TgBadgeColor.Gray),
+      BadgeSpec(s"${DateEmoji.Due} ${format(task.dueDate)}", TgBadgeColor.Gray),
+      duration(task.startDate, task.dueDate, workDays),
       daysLeft(task.dueDate, today, workDays)
     )
 
+  /** The length of a task in work days, from its start to its due date. */
+  def duration(
+    startDate: LocalDate,
+    dueDate: LocalDate,
+    workDays: Set[DayOfWeek],
+    kind: Option[BulkEditKind] = None
+  ): BadgeSpec = {
+    val days = WorkDayCalendar.countWorkDays(startDate, dueDate, workDays)
+    BadgeSpec(s"${DateEmoji.Duration} ${if (days == 1) "1 day" else s"$days days"}", TgBadgeColor.Gray, kind)
+  }
+
   def daysLeft(dueDate: LocalDate, today: LocalDate, workDays: Set[DayOfWeek]): BadgeSpec =
-    if (dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
-    else BadgeSpec(s"${WorkDayCalendar.countWorkDays(today, dueDate, workDays)} days left", TgBadgeColor.Gray)
+    if (dueDate.isBefore(today)) BadgeSpec(s"${DateEmoji.DaysLeft} Overdue", TgBadgeColor.Red)
+    else
+      BadgeSpec(
+        s"${DateEmoji.DaysLeft} ${daysLeftText(WorkDayCalendar.countWorkDays(today, dueDate, workDays))}",
+        TgBadgeColor.Gray
+      )
+
+  /** "1 day left", but "0 days left" and "5 days left". */
+  def daysLeftText(days: Int): String = if (days == 1) "1 day left" else s"$days days left"
 }

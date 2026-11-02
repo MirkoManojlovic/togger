@@ -137,7 +137,7 @@ case class CalendarPickerPopup(
       DatePickerInput.parse(raw, today) match {
         case Some(day) if !inRange(day) => Some("That date is outside the allowed range")
         case Some(_)                    => None
-        case None                       => Some("Enter a valid date (yyyy-mm-dd)")
+        case None                       => Some("Enter a valid date (e.g. Nov 2, 2026)")
       }
 
   private def suggestionsPopup: Signal[Option[HtmlElement]] =

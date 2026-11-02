@@ -34,6 +34,7 @@ import com.togger.ui.milestone.MilestoneTaskRows
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TaskPreviewComponent
 import com.togger.ui.task.TaskStatusFeService
@@ -187,7 +188,7 @@ class ProjectHomeComponent(
         cls("flex flex-wrap items-center gap-2 mb-3"),
         pageLink(milestone.name, MilestoneReviewPage(projectId, milestone.id)),
         TgBadge(
-          text = s"Due ${tgDateFormater.asAmericanDateWithDayAbrv(milestone.dueDate)}",
+          text = tgDateFormater.asDueDate(milestone.dueDate),
           color = TgBadgeColor.Gray,
           bordered = true
         ).element
@@ -218,7 +219,8 @@ class ProjectHomeComponent(
       div(
         cls("mb-3"),
         pageLink(
-          s"${tgDateFormater.asAmericanDate(version.startDate)} - ${tgDateFormater.asAmericanDate(version.endDate)}",
+          s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(version.startDate)} - ${DateEmoji.End} ${tgDateFormater
+              .asAmericanDate(version.endDate)}",
           TimeboxReviewPage(projectId, timebox.id)
         ),
         version.description

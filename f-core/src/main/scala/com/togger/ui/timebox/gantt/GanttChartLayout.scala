@@ -3,6 +3,7 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 
 import java.time.LocalDate
@@ -45,7 +46,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     )
 
   def barTitle(task: FindTaskRespFull, start: LocalDate, due: LocalDate): String =
-    s"${task.name}: ${tgDateFormater.asAmericanDate(start)} - ${tgDateFormater.asAmericanDate(due)}"
+    s"${task.name}: ${DateEmoji.Start} ${tgDateFormater.asAmericanDate(start)} - ${DateEmoji.Due} ${tgDateFormater.asAmericanDate(due)}"
 
   def barStyle(placed: GanttBar.Placed): String =
     s"grid-column: ${placed.startCol + 2} / span ${placed.width}; grid-row: 1"

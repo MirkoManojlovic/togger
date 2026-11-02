@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 
+import java.time.LocalDate
 import java.util.UUID
 
 object BulkTaskCard {
@@ -22,10 +23,11 @@ object BulkTaskCard {
     popups: BulkEditPopups,
     leading: HtmlElement,
     controls: HtmlElement,
+    today: () => LocalDate,
     rootModifiers: Modifier[HtmlElement]*
   ): HtmlElement = {
     val badges = task.combineWith(lookups).map { case (current, currentLookups) =>
-      BulkTaskBadges.of(current, currentLookups)
+      BulkTaskBadges.of(current, currentLookups, today())
     }
     div(
       cls("rounded-base border border-default-medium bg-neutral-primary p-2.5"),

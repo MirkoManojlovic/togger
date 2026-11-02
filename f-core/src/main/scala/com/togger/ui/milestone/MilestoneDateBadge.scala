@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.task.TaskPriority
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk._
 
@@ -57,7 +58,7 @@ class MilestoneDateBadge(
           key,
           Seq(
             BadgeSpec(
-              s"Date ${parse(text).map(tgDateFormater.asAmericanDateWithDayAbrv).getOrElse("-")}",
+              s"${DateEmoji.Due} ${parse(text).map(tgDateFormater.asAmericanDateWithDayAbrv).getOrElse("-")}",
               TgBadgeColor.Gray,
               Some(BulkEditKind.DueDate)
             )

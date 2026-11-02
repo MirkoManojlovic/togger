@@ -1,6 +1,6 @@
 package com.togger.ui.task
 
-import com.togger.ui.task.TgDateFormat.AmericanDashes
+import com.togger.ui.task.TgDateFormat.AmericanMonthName
 import com.togger.ui.task.TgDateFormat.DayOnlyFormat
 import com.togger.ui.task.TgDateFormat.LogEntryFormat
 import com.togger.ui.task.TgDateFormat.MonthNameFormat
@@ -15,13 +15,16 @@ import java.time.format.DateTimeFormatter
 
 class TgDateFormater {
   def asAmericanDate(date: LocalDate): String =
-    AmericanDashes.formater.format(date)
+    AmericanMonthName.formater.format(date)
 
-  def asAmericanDateWithDayAbrv(date: LocalDate): String = {
-    val day = dayOfWeekAbbrev(date)
-    val americanDate = AmericanDashes.formater.format(date)
-    s"$americanDate | $day"
-  }
+  def asAmericanDateWithDayAbrv(date: LocalDate): String =
+    s"${AmericanMonthName.formater.format(date)} | ${dayOfWeekAbbrev(date)}"
+
+  def asStartDate(date: LocalDate): String = s"${DateEmoji.Start} ${asAmericanDateWithDayAbrv(date)}"
+
+  def asDueDate(date: LocalDate): String = s"${DateEmoji.Due} ${asAmericanDateWithDayAbrv(date)}"
+
+  def asEndDate(date: LocalDate): String = s"${DateEmoji.End} ${asAmericanDateWithDayAbrv(date)}"
 
   def dayAndMonth(date: LocalDate): String =
     LogEntryFormat.formater.format(date)
@@ -41,18 +44,27 @@ class TgDateFormater {
     ) // When converting from instant an error is thrown
 }
 
+/** The emoji that marks a start, due and end date in the date badges. */
+object DateEmoji {
+  val Start = "🗓️"
+  val Due = "🎯"
+  val End = "✅"
+  val Duration = "⏱️"
+  val DaysLeft = "⏳"
+}
+
 sealed abstract class TgDateFormat(val formater: DateTimeFormatter) extends EnumEntry
 
 object TgDateFormat extends Enum[TgDateFormat] {
 
   override def values: IndexedSeq[TgDateFormat] = findValues
 
-  case object AmericanDashes extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
+  case object AmericanMonthName extends TgDateFormat(DateTimeFormatter.ofPattern("MMM d, yyyy"))
 
 //  case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd-MMM-Y"))
   case object LogEntryFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd MMM"))
 
-  case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss"))
+  case object YearMonthDayTimeFormat extends TgDateFormat(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
   case object DayOnlyFormat extends TgDateFormat(DateTimeFormatter.ofPattern("dd"))
 
