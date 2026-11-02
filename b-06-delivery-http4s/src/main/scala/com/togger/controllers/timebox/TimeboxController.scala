@@ -38,7 +38,14 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .createTimebox(dto.projectId, dto.startDate, dto.endDate, dto.description, dto.taskIds, tgClock.currentInstant)
+          .createTimebox(
+            dto.projectId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .map {
             case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
             case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]
@@ -51,7 +58,15 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, dto.taskIds, tgClock.currentInstant)
+          .saveNewVersion(
+            dto.timeboxId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.changeComment.trim,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .map {
             case Right(result) => TgJsonSuccess.justBodyRight(toDto(result))
             case Left(error)   => error.toBadRequestLeft[FindTimeboxResp]

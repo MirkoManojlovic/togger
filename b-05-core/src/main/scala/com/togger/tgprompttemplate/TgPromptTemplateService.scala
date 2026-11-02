@@ -92,7 +92,9 @@ class TgPromptTemplateService(
   private def ownedPrompt(accountId: UUID, id: UUID): ConnectionIO[Result[TgPromptTemplate]] =
     tgPromptTemplateRepo
       .findById(id)
-      .map(prompt => Either.cond(prompt.createdBy == accountId, prompt, TgPromptTemplateNotFound: TgPromptTemplateError))
+      .map(prompt =>
+        Either.cond(prompt.createdBy == accountId, prompt, TgPromptTemplateNotFound: TgPromptTemplateError)
+      )
 
   private def withOwnedPrompt[A](accountId: UUID, id: UUID)(action: => ConnectionIO[Result[A]]): IO[Result[A]] =
     ownedPrompt(accountId, id)

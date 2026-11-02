@@ -114,7 +114,9 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         (project, (task1, task1v1), (task2, _)) = fixtures
         created <- right(service.createTimebox(project.id, start, end, None, Seq(task1.id, task2.id), nowAsInstant))
         _ <- right(service.saveNewVersion(created.timebox.id, start, end, None, "drop 2", Seq(task1.id), nowAsInstant))
-        _ <- taskVersionRepo.insert(task1v1.copy(version = UUID.randomUUID(), name = "task 1 edited")).transact(transactor)
+        _ <- taskVersionRepo
+          .insert(task1v1.copy(version = UUID.randomUUID(), name = "task 1 edited"))
+          .transact(transactor)
         found <- taskVersionRepo
           .findPaginatedByProjectId(project.id, TaskFilter(timeboxId = Some(created.timebox.id)), DbPageRequest.default)
           .transact(transactor)
@@ -156,7 +158,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         found.items shouldBe empty
       }
     }
- 
+
     "reject timeboxes whose dates overlap another timebox of the project" in { transactor =>
       val service = serviceFor(transactor)
       for {
@@ -167,7 +169,9 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         first <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
         overlapping <- service.createTimebox(project.id, end, end.plusDays(5), None, Seq.empty, nowAsInstant)
         adjacent <- service.createTimebox(project.id, end.plusDays(1), end.plusDays(5), None, Seq.empty, nowAsInstant)
-        second <- right(service.createTimebox(project.id, end.plusDays(10), end.plusDays(12), None, Seq.empty, nowAsInstant))
+        second <- right(
+          service.createTimebox(project.id, end.plusDays(10), end.plusDays(12), None, Seq.empty, nowAsInstant)
+        )
         moved <- service.saveNewVersion(second.timebox.id, start, start, None, "move", Seq.empty, nowAsInstant)
         resaved <- service.saveNewVersion(first.timebox.id, start, end, None, "same", Seq.empty, nowAsInstant)
       } yield {
@@ -177,7 +181,7 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
         resaved.isRight shouldBe true
       }
     }
- 
+
     "allow the same dates in different projects" in { transactor =>
       val service = serviceFor(transactor)
       for {
@@ -201,7 +205,17 @@ class TimeboxServiceTest extends BusinessTgDbSpec with TgAccount with TgProject 
           orgAndProject <- createOrgAndProject
         } yield orgAndProject._2).transact(transactor)
         first <- right(service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant))
-        _ <- right(service.saveNewVersion(first.timebox.id, end.plusDays(10), end.plusDays(12), None, "move", Seq.empty, nowAsInstant))
+        _ <- right(
+          service.saveNewVersion(
+            first.timebox.id,
+            end.plusDays(10),
+            end.plusDays(12),
+            None,
+            "move",
+            Seq.empty,
+            nowAsInstant
+          )
+        )
         reuse <- service.createTimebox(project.id, start, end, None, Seq.empty, nowAsInstant)
       } yield reuse.isRight shouldBe true
     }

@@ -13,7 +13,12 @@ import doobie.postgres.implicits._
 import java.time.{Instant, LocalDate}
 import java.util.UUID
 
-class LogEntryRepoMilestoneTest extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+class LogEntryRepoMilestoneTest
+    extends BusinessTgDbSpec
+    with TgAccount
+    with TgProject
+    with TgTaskStatus
+    with TimeHelpers {
 
   private val logEntryRepo = new LogEntryRepoImpl
   private val logEntryVersionRepo = new LogEntryVersionRepoImpl

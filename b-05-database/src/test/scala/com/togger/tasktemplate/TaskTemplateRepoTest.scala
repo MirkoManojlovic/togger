@@ -11,7 +11,8 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TaskTemplateRepoTest extends BusinessTgDbSpec
+class TaskTemplateRepoTest
+    extends BusinessTgDbSpec
     with PaginationTestSupport
     with TgAccount
     with TgProject

@@ -32,15 +32,17 @@ class TgAiActionService(
 
   def create(action: TgAiAction, endpointIds: List[Int]): IO[Result[TgAiActionWithBindings]] = {
     logger.info(s"Creating ${sp(action)} bound to ${sp(endpointIds)}")
-    validate(action, endpointIds, exceptId = None).flatMap {
-      case Some(error) => error.asLeft[TgAiActionWithBindings].pure[ConnectionIO]
-      case None =>
-        for {
-          saved <- tgAiActionRepo.insert(action)
-          _ <- tgAiActionEndpointRepo.replaceBindings(saved.id, endpointIds.distinct)
-          full <- withBindings(saved)
-        } yield full.asRight[TgAiActionError]
-    }.transact(transactor)
+    validate(action, endpointIds, exceptId = None)
+      .flatMap {
+        case Some(error) => error.asLeft[TgAiActionWithBindings].pure[ConnectionIO]
+        case None =>
+          for {
+            saved <- tgAiActionRepo.insert(action)
+            _ <- tgAiActionEndpointRepo.replaceBindings(saved.id, endpointIds.distinct)
+            full <- withBindings(saved)
+          } yield full.asRight[TgAiActionError]
+      }
+      .transact(transactor)
   }
 
   def update(action: TgAiAction, endpointIds: List[Int]): IO[Result[TgAiActionWithBindings]] = {
@@ -100,7 +102,11 @@ class TgAiActionService(
       case false => (ActionNotBoundToEndpoint: TgAiActionError).asLeft[TgAiActionDefault].pure[ConnectionIO]
     }
 
-  private def validate(action: TgAiAction, endpointIds: List[Int], exceptId: Option[UUID]): ConnectionIO[Option[TgAiActionError]] =
+  private def validate(
+    action: TgAiAction,
+    endpointIds: List[Int],
+    exceptId: Option[UUID]
+  ): ConnectionIO[Option[TgAiActionError]] =
     if (endpointIds.exists(id => TgAiEndpoints.withValueOpt(id).isEmpty))
       Option[TgAiActionError](UnknownEndpoint).pure[ConnectionIO]
     else
@@ -128,7 +134,9 @@ class TgAiActionService(
       .findById(id)
       .map(action => Either.cond(action.createdBy == accountId, action, TgAiActionNotFound: TgAiActionError))
 
-  private def withOwnedAction[A](accountId: UUID, id: UUID)(action: TgAiAction => ConnectionIO[Result[A]]): IO[Result[A]] =
+  private def withOwnedAction[A](accountId: UUID, id: UUID)(
+    action: TgAiAction => ConnectionIO[Result[A]]
+  ): IO[Result[A]] =
     ownedAction(accountId, id)
       .flatMap(_.flatTraverse(action))
       .transact(transactor)

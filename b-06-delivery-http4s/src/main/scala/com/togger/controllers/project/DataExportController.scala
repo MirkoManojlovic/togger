@@ -55,7 +55,8 @@ class DataExportController(
       .map {
         case Right(result) =>
           val pathStatuses =
-            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name))
+            result.pathStatuses
+              .map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name))
           TgJsonSuccess.justBodyRight(DataExportStatusResp(projectId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
@@ -76,7 +77,8 @@ class DataExportController(
       .map {
         case Right(result) =>
           val pathStatuses =
-            result.pathStatuses.map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name))
+            result.pathStatuses
+              .map(p => DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name))
           TgJsonSuccess.justBodyRight(DataExportStatusResp(exportConfigId, pathStatuses))
         case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
       }
@@ -111,7 +113,10 @@ class DataExportController(
         .map {
           case Right(p) =>
             TgJsonSuccess.justBodyRight(
-              DataExportStatusResp(projectId, List(DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name)))
+              DataExportStatusResp(
+                projectId,
+                List(DataExportPathStatusResp(p.exportPath, p.entityStatuses.map(toResp), p.exportConfigId, p.name))
+              )
             )
           case Left(error) => error.toBadRequestLeft[DataExportStatusResp]
         }
@@ -153,17 +158,17 @@ class DataExportController(
     counts.map { case (entityType, count) => DataExportEntityCountResp(toResp(entityType), count) }
 
   private def toResp(t: DataExportEntityType): DataExportEntityTypeResp = t match {
-    case DataExportEntityType.Project      => DataExportEntityTypeResp.Project
-    case DataExportEntityType.Members      => DataExportEntityTypeResp.Members
-    case DataExportEntityType.TaskStatus   => DataExportEntityTypeResp.TaskStatus
-    case DataExportEntityType.TaskLabel    => DataExportEntityTypeResp.TaskLabel
-    case DataExportEntityType.ProjectLabel => DataExportEntityTypeResp.ProjectLabel
-    case DataExportEntityType.Milestone    => DataExportEntityTypeResp.Milestone
-    case DataExportEntityType.Task         => DataExportEntityTypeResp.Task
-    case DataExportEntityType.LogEntry     => DataExportEntityTypeResp.LogEntry
-    case DataExportEntityType.TaskTemplate => DataExportEntityTypeResp.TaskTemplate
-    case DataExportEntityType.Timebox      => DataExportEntityTypeResp.Timebox
-    case DataExportEntityType.TgPromptTemplate     => DataExportEntityTypeResp.TgPromptTemplate
+    case DataExportEntityType.Project          => DataExportEntityTypeResp.Project
+    case DataExportEntityType.Members          => DataExportEntityTypeResp.Members
+    case DataExportEntityType.TaskStatus       => DataExportEntityTypeResp.TaskStatus
+    case DataExportEntityType.TaskLabel        => DataExportEntityTypeResp.TaskLabel
+    case DataExportEntityType.ProjectLabel     => DataExportEntityTypeResp.ProjectLabel
+    case DataExportEntityType.Milestone        => DataExportEntityTypeResp.Milestone
+    case DataExportEntityType.Task             => DataExportEntityTypeResp.Task
+    case DataExportEntityType.LogEntry         => DataExportEntityTypeResp.LogEntry
+    case DataExportEntityType.TaskTemplate     => DataExportEntityTypeResp.TaskTemplate
+    case DataExportEntityType.Timebox          => DataExportEntityTypeResp.Timebox
+    case DataExportEntityType.TgPromptTemplate => DataExportEntityTypeResp.TgPromptTemplate
   }
 
   private def toResp(r: DataImportEntityResult): DataImportEntityResultResp =

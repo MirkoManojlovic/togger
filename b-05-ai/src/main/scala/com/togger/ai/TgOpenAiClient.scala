@@ -45,13 +45,17 @@ class TgOpenAiClient(
   }
 
   override def chatStream(
-      apiKey: TgAiApiKey,
-      request: TgAiChatRequest
+    apiKey: TgAiApiKey,
+    request: TgAiChatRequest
   ): IO[Either[TgAiError, fs2.Stream[IO, TgAiChunk]]] =
     openAI(apiKey)
       .createStreamedChatCompletion[IO](toChatBody(request))
       .send(backend)
-      .map(_.body.leftMap(toTgAiError).map(_.map(_.choices.flatMap(_.delta.content).mkString).filter(_.nonEmpty).map(TgAiChunk)))
+      .map(
+        _.body
+          .leftMap(toTgAiError)
+          .map(_.map(_.choices.flatMap(_.delta.content).mkString).filter(_.nonEmpty).map(TgAiChunk))
+      )
       .handleError(unavailable)
       .flatTap(logOutcome("chatStream"))
 

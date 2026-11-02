@@ -8,10 +8,7 @@ import doobie.postgres.implicits._
 
 import java.util.UUID
 
-class TgPromptTemplateRepoTest extends BusinessTgDbSpec
-    with PaginationTestSupport
-    with TgAccount
-    with TimeHelpers {
+class TgPromptTemplateRepoTest extends BusinessTgDbSpec with PaginationTestSupport with TgAccount with TimeHelpers {
 
   private val promptRepo = new TgPromptTemplateRepoImpl
   private val versionRepo = new TgPromptTemplateVersionRepoImpl

@@ -5,7 +5,12 @@ import com.togger.common.{PaginatedResponse, TgClock, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.tgprompttemplate.TgPromptTemplateDtoMapper.{toDto, toVersionDto}
 import com.togger.dto.{FindTgPromptTemplateResp, TgPromptTemplateVersionDto}
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateEndpoints, TgPromptTemplateService, TgPromptTemplateVersion}
+import com.togger.tgprompttemplate.{
+  TgPromptTemplate,
+  TgPromptTemplateEndpoints,
+  TgPromptTemplateService,
+  TgPromptTemplateVersion
+}
 
 import java.util.UUID
 
@@ -28,10 +33,12 @@ class TgPromptTemplateController(
   }
 
   val newVersion = newVersionEndpoint.serverLogic { auth => dto =>
-    tgPromptTemplateService.saveNewVersion(auth.body.get.id, dto.id, dto.title, dto.prompt, tgClock.currentInstant).map {
-      case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
-      case Left(error) => error.toBadRequestLeft[FindTgPromptTemplateResp]
-    }
+    tgPromptTemplateService
+      .saveNewVersion(auth.body.get.id, dto.id, dto.title, dto.prompt, tgClock.currentInstant)
+      .map {
+        case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
+        case Left(error) => error.toBadRequestLeft[FindTgPromptTemplateResp]
+      }
   }
 
   val findAll = findAllEndpoint.serverLogic { auth => pageRequest =>

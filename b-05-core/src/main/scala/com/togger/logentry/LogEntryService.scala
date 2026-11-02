@@ -4,7 +4,14 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.{DbPageRequest, PaginatedResponse}
 import com.togger.dto.LogEntryFilter
-import com.togger.logentry.LogEntryError.{LogEntryAlreadyExistsForDay, CannotDeleteLastVersion, CannotEditLatestVersion, LogEntryError, LogEntryNotFound, VersionNotFound}
+import com.togger.logentry.LogEntryError.{
+  LogEntryAlreadyExistsForDay,
+  CannotDeleteLastVersion,
+  CannotEditLatestVersion,
+  LogEntryError,
+  LogEntryNotFound,
+  VersionNotFound
+}
 import com.togger.logging.TgLogging
 import com.togger.util.SplunkMacro.sp
 import doobie.Transactor

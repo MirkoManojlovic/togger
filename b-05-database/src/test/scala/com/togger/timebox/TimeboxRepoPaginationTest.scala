@@ -20,8 +20,8 @@ class TimeboxRepoPaginationTest extends BusinessTgDbSpec with TgAccount with TgP
 
   /** Eleven timeboxes of the project, timebox i starting i weeks after `firstStart`, inserted in reverse so the order
     * is by start date and not by insertion. Timebox 0 has an older version starting later than any other, which no
-    * ordering may use. Timebox 1 and 2 are replaced by a newer version with the other's start date, swapping them.
-    * One more timebox belongs to another project.
+    * ordering may use. Timebox 1 and 2 are replaced by a newer version with the other's start date, swapping them. One
+    * more timebox belongs to another project.
     */
   private case class Seeded(projectId: UUID, timeboxes: Vector[Timebox], otherProjectTimebox: Timebox) {
     def idsOf(indexes: Seq[Int]): List[UUID] = indexes.map(timeboxes(_).id).toList

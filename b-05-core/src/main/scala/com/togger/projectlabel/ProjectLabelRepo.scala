@@ -11,6 +11,7 @@ trait ProjectLabelRepo {
   def insert(projectLabel: ProjectLabel): ConnectionIO[ProjectLabel]
   def deleteById(id: UUID): ConnectionIO[Int]
   def update(projectLabel: ProjectLabel, updatedAt: Instant): ConnectionIO[ProjectLabel]
+
   /** One page of all labels, by name. */
   def findPaginated(page: DbPageRequest): ConnectionIO[PaginatedResponse[ProjectLabel]]
 }

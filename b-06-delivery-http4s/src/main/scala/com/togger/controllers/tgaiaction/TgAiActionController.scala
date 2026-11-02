@@ -20,7 +20,8 @@ class TgAiActionController(
 
   val save = saveEndpoint.serverLogic { auth => dto =>
     val now = tgClock.currentInstant
-    val action = TgAiAction(UUID.randomUUID(), auth.body.get.id, dto.name, dto.prompt, dto.tgPromptTemplateId, dto.model, now, now)
+    val action =
+      TgAiAction(UUID.randomUUID(), auth.body.get.id, dto.name, dto.prompt, dto.tgPromptTemplateId, dto.model, now, now)
     tgAiActionService.create(action, dto.endpointIds).map {
       case Right(saved) => TgJsonSuccess.justBodyRight(toDto(saved))
       case Left(error)  => error.toBadRequestLeft[FindTgAiActionResp]

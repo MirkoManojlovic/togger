@@ -44,7 +44,8 @@ class AccountManagementService(
         types <- accountManagementRepo.findAccountTypes
         account <- accountRepo.findById(id)
         result <-
-          if (!types.exists(_.id == accountTypeId)) (UnknownAccountType: AccountManagementError).asLeft[Unit].pure[ConnectionIO]
+          if (!types.exists(_.id == accountTypeId))
+            (UnknownAccountType: AccountManagementError).asLeft[Unit].pure[ConnectionIO]
           else
             accountRepo
               .update(
@@ -57,8 +58,9 @@ class AccountManagementService(
     update
       .transact(transactor)
       .recover {
-        case UnexpectedEnd                                       => (AccountNotFound: AccountManagementError).asLeft[Unit]
-        case e: SQLException if e.getSQLState == UniqueViolation => (EmailAlreadyInUse: AccountManagementError).asLeft[Unit]
+        case UnexpectedEnd => (AccountNotFound: AccountManagementError).asLeft[Unit]
+        case e: SQLException if e.getSQLState == UniqueViolation =>
+          (EmailAlreadyInUse: AccountManagementError).asLeft[Unit]
       }
       .flatMap {
         case Left(error) => error.asLeft[AccountWithProjects].pure[IO]
@@ -75,7 +77,8 @@ class AccountManagementService(
         .transact(transactor)
         .map(deleted => if (deleted > 0) ().asRight[AccountManagementError] else AccountNotFound.asLeft[Unit])
         .recover {
-          case e: SQLException if e.getSQLState == ForeignKeyViolation => (AccountInUse: AccountManagementError).asLeft[Unit]
+          case e: SQLException if e.getSQLState == ForeignKeyViolation =>
+            (AccountInUse: AccountManagementError).asLeft[Unit]
         }
   }
 

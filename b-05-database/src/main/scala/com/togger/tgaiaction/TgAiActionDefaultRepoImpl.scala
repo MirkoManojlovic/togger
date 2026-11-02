@@ -20,7 +20,8 @@ class TgAiActionDefaultRepoImpl extends TgAiActionDefaultRepo with TgLogging {
         (account_id, project_id, ai_endpoint_id, tg_ai_action_id)
         values ($accountId, $projectId, $aiEndpointId, $tgAiActionId)
         on conflict (account_id, project_id, ai_endpoint_id) do update set tg_ai_action_id = excluded.tg_ai_action_id
-      """).update.withUniqueGeneratedKeys[TgAiActionDefault]("account_id", "project_id", "ai_endpoint_id", "tg_ai_action_id")
+      """).update
+        .withUniqueGeneratedKeys[TgAiActionDefault]("account_id", "project_id", "ai_endpoint_id", "tg_ai_action_id")
     )(s"Upserting ${sp(default)}", saved => s"AI action default saved ${sp(saved)}")
   }
 

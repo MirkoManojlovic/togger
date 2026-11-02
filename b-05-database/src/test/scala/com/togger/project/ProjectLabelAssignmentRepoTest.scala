@@ -31,7 +31,12 @@ class ProjectLabelAssignmentRepoTest extends BusinessTgDbSpec with TgAccount wit
         orgAndProject <- createOrgAndProject
         savedProject = orgAndProject._2
         category <- projectLabelCategoryRepo.insert(
-          ProjectLabelCategory(id = UUID.randomUUID(), name = "Language", createdAt = nowAsInstant, updatedAt = nowAsInstant)
+          ProjectLabelCategory(
+            id = UUID.randomUUID(),
+            name = "Language",
+            createdAt = nowAsInstant,
+            updatedAt = nowAsInstant
+          )
         )
         projectLabel1 <- projectLabelRepo.insert(projectLabel("Scala", category.id))
         projectLabel2 <- projectLabelRepo.insert(projectLabel("Kotlin", category.id))

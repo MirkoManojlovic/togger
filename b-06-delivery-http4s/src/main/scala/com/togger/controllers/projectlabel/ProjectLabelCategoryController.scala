@@ -52,7 +52,9 @@ class ProjectLabelCategoryController(
     )
 
     projectLabelCategoryService.createProjectLabelCategory(projectLabelCategory).map { projectLabelCategory =>
-      TgJsonSuccess.justBodyRight(CreateProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name))
+      TgJsonSuccess.justBodyRight(
+        CreateProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name)
+      )
     }
   }
 
@@ -67,7 +69,9 @@ class ProjectLabelCategoryController(
     )
 
     projectLabelCategoryService.updateProjectLabelCategory(projectLabelCategory).map { projectLabelCategory =>
-      TgJsonSuccess.justBodyRight(FindProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name))
+      TgJsonSuccess.justBodyRight(
+        FindProjectLabelCategoryResp(id = projectLabelCategory.id, name = projectLabelCategory.name)
+      )
     }
   }
 

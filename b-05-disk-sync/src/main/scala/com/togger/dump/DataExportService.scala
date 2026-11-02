@@ -7,7 +7,13 @@ import com.togger.dataexportconfig.{DataExportConfig, DataExportConfigService}
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
 import com.togger.project.Project
-import com.togger.project.ProjectError.{DumpManifestMissing, ImportFolderReadTimeout, NoExportPathConfigured, NotAssignedToProject, ProjectError}
+import com.togger.project.ProjectError.{
+  DumpManifestMissing,
+  ImportFolderReadTimeout,
+  NoExportPathConfigured,
+  NotAssignedToProject,
+  ProjectError
+}
 import com.togger.util.SplunkMacro.sp
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
@@ -122,9 +128,9 @@ class DataExportService(
       }
   }
 
-  /** Compares the tree at an import path with the database: what is on disk but not in the database, or differs and
-    * is newer on disk, is what an import would bring in. An entity that differs but is newer in the database is
-    * reported as in sync, as there is nothing to import.
+  /** Compares the tree at an import path with the database: what is on disk but not in the database, or differs and is
+    * newer on disk, is what an import would bring in. An entity that differs but is newer in the database is reported
+    * as in sync, as there is nothing to import.
     */
   def checkImportStatus(
     projectId: UUID,
@@ -138,7 +144,9 @@ class DataExportService(
         logger.info(s"Loaded database entities for import check [entities.size=${data.entities.size}]")
         readImportFolder(data, importPath).timeoutTo(
           importFolderReadTimeout,
-          IO(logger.error(s"Reading import folder timed out after [timeout=$importFolderReadTimeout] ${sp(importPath)}"))
+          IO(
+            logger.error(s"Reading import folder timed out after [timeout=$importFolderReadTimeout] ${sp(importPath)}")
+          )
             .as(Left(ImportFolderReadTimeout))
         )
     }
@@ -170,11 +178,14 @@ class DataExportService(
       result
     }
 
-  /** A differing entity is only importable when the disk holds the newer change; without timestamps to compare, it is. */
+  /** A differing entity is only importable when the disk holds the newer change; without timestamps to compare, it is.
+    */
   private def withoutOlderDisk(data: ExportData, indexResult: Either[String, Option[ExportIndex]])(
     entityStatus: DataExportEntityStatus
   ): DataExportEntityStatus = {
-    val dbChangedAt = data.entities.find(e => e.entityType == entityStatus.entityType && e.id == entityStatus.entityId).flatMap(_.changedAt)
+    val dbChangedAt = data.entities
+      .find(e => e.entityType == entityStatus.entityType && e.id == entityStatus.entityId)
+      .flatMap(_.changedAt)
     val diskChangedAt = indexResult.toOption.flatten
       .flatMap(_.entriesOf(entityStatus.entityType).get(entityStatus.entityId))
       .flatMap(_.changedAt)
@@ -235,21 +246,28 @@ class DataExportService(
           else if (matchByContent && entityType == DataExportEntityType.Project && db.size == 1 && indexed.size == 1)
             importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
           else {
-          val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
-            val entity = db(id)
-            if (indexed(id).hash != entity.hash)
-              outOfSyncStatus(folderPath, index, entity, if (matchByContent) importIgnoredFields else Set.empty, entity.id, accountKeys)
-            else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
-              status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
-            else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
-          }
-          val missingFromExport = db.keySet.diff(indexed.keySet).toList.map { id =>
-            status(entityType, id, db(id).name, DataExportSyncStatus.MissingFromExport)
-          }
-          val missingFromDb = indexed.keySet.diff(db.keySet).toList.map { id =>
-            status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
-          }
-          common ++ missingFromExport ++ missingFromDb
+            val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
+              val entity = db(id)
+              if (indexed(id).hash != entity.hash)
+                outOfSyncStatus(
+                  folderPath,
+                  index,
+                  entity,
+                  if (matchByContent) importIgnoredFields else Set.empty,
+                  entity.id,
+                  accountKeys
+                )
+              else if (!dataExportTreeStore.entityExists(folderPath, entityType, id))
+                status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
+              else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
+            }
+            val missingFromExport = db.keySet.diff(indexed.keySet).toList.map { id =>
+              status(entityType, id, db(id).name, DataExportSyncStatus.MissingFromExport)
+            }
+            val missingFromDb = indexed.keySet.diff(db.keySet).toList.map { id =>
+              status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
+            }
+            common ++ missingFromExport ++ missingFromDb
           }
         }
     }
@@ -281,7 +299,9 @@ class DataExportService(
   ): List[DataExportEntityStatus] = {
     val (dbLabelKeys, diskLabelKeys) = labelKeys
     val dbByKey =
-      dbEntities.flatMap(e => ExportContentKey.of(entityType, e.json, dbLabelKeys).toOption.map(_ -> e)).groupMap(_._1)(_._2)
+      dbEntities
+        .flatMap(e => ExportContentKey.of(entityType, e.json, dbLabelKeys).toOption.map(_ -> e))
+        .groupMap(_._1)(_._2)
     val diskKeys = indexed.keys.toList.sorted.map { id =>
       id -> dataExportTreeStore
         .readEntityJson(folderPath, index, entityType, id)
@@ -291,11 +311,19 @@ class DataExportService(
     val (unmatchedDiskIds, results, remaining) =
       diskKeys.foldLeft((List.empty[UUID], List.empty[DataExportEntityStatus], dbByKey)) {
         case ((missing, matched, available), (id, Left(error))) =>
-          (missing, status(entityType, id, indexed(id).name, DataExportSyncStatus.Malformed, List(error)) :: matched, available)
+          (
+            missing,
+            status(entityType, id, indexed(id).name, DataExportSyncStatus.Malformed, List(error)) :: matched,
+            available
+          )
         case ((missing, matched, available), (id, Right(key))) =>
           available.getOrElse(key, Nil) match {
             case dbEntity :: rest =>
-              (missing, status(entityType, dbEntity.id, dbEntity.name, DataExportSyncStatus.InSync) :: matched, available.updated(key, rest))
+              (
+                missing,
+                status(entityType, dbEntity.id, dbEntity.name, DataExportSyncStatus.InSync) :: matched,
+                available.updated(key, rest)
+              )
             case Nil =>
               (id :: missing, matched, available)
           }
@@ -318,7 +346,9 @@ class DataExportService(
   /** The import check does not report a project that was renamed, nor the id it had when exported. */
   private val importIgnoredFields = Set("project.name", "project.id")
 
-  /** The project of an import folder is the database project whatever its id, as an import into a new project gives it a new one. */
+  /** The project of an import folder is the database project whatever its id, as an import into a new project gives it
+    * a new one.
+    */
   private def importedProjectStatus(
     folderPath: String,
     index: ExportIndex,
@@ -336,7 +366,9 @@ class DataExportService(
     for {
       index <- indexResult.toOption.flatten
       diskProjectId <- index.entriesOf(DataExportEntityType.Project).keys.headOption
-      diskJson <- dataExportTreeStore.readEntityJson(folderPath, index, DataExportEntityType.Project, diskProjectId).toOption
+      diskJson <- dataExportTreeStore
+        .readEntityJson(folderPath, index, DataExportEntityType.Project, diskProjectId)
+        .toOption
       dbProject <- data.entities.find(_.entityType == DataExportEntityType.Project)
     } yield (ExportAccountKeys.ofProject(diskJson), ExportAccountKeys.ofProject(dbProject.json))
 
@@ -356,7 +388,8 @@ class DataExportService(
         val (diskCompared, databaseCompared) = accountKeys.fold((diskJson, entity.json)) { case (disk, database) =>
           (disk.replaceIds(diskJson), database.replaceIds(entity.json))
         }
-        val fieldDiffs = ExportJsonDiff.diff(diskCompared, databaseCompared).filterNot(d => ignoredFields.contains(d.field))
+        val fieldDiffs =
+          ExportJsonDiff.diff(diskCompared, databaseCompared).filterNot(d => ignoredFields.contains(d.field))
         if (fieldDiffs.isEmpty && (ignoredFields.nonEmpty || accountKeys.isDefined))
           status(entity.entityType, entity.id, entity.name, DataExportSyncStatus.InSync)
         else

@@ -70,7 +70,9 @@ class TgPromptTemplateVersionRepoImpl extends TgPromptTemplateVersionRepo with T
     logAroundInfoQuery(
       TgFindPaginatedQuery[TgPromptTemplateVersion](
         pageQuery = request =>
-          (selectAllStatement(TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG) ++ fr"where tg_prompt_template_id = $tgPromptTemplateId" ++
+          (selectAllStatement(
+            TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG
+          ) ++ fr"where tg_prompt_template_id = $tgPromptTemplateId" ++
             PaginationSql.orderBy(fr"version desc") ++
             PaginationSql.limitOffset(request)).query[TgPromptTemplateVersion].to[List],
         countQuery = (countStatement(TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG) ++
@@ -83,7 +85,9 @@ class TgPromptTemplateVersionRepoImpl extends TgPromptTemplateVersionRepo with T
 
   override def countByTgPromptTemplateId(tgPromptTemplateId: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
-      (countStatement(TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG) ++ fr"where tg_prompt_template_id = $tgPromptTemplateId").query[Int].unique
+      (countStatement(TG_PROMPT_TEMPLATE_VERSION_TABLE_FRAG) ++ fr"where tg_prompt_template_id = $tgPromptTemplateId")
+        .query[Int]
+        .unique
     )(
       s"Counting prompt versions for ${sp(tgPromptTemplateId)}",
       count => s"Prompt version count ${sp(count)} for ${sp(tgPromptTemplateId)}"

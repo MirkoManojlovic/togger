@@ -143,8 +143,20 @@ class DataImportMappingTest extends ExportImportTestSupport {
         setupResult <- setup.transact(transactor)
         (account, dumpProject, targetProject, doneOnDumpSide, blockedOnDumpSide, doneOnTargetSide) = setupResult
         root <- exportToFolder(transactor, dumpProject.id, account.id)
-        _ = putEntity(root, DataExportEntityType.Task, doneTaskId, None, handWrittenTask(doneTaskId, dumpProject.id, account.id, doneOnDumpSide.id))
-        _ = putEntity(root, DataExportEntityType.Task, blockedTaskId, None, handWrittenTask(blockedTaskId, dumpProject.id, account.id, blockedOnDumpSide.id))
+        _ = putEntity(
+          root,
+          DataExportEntityType.Task,
+          doneTaskId,
+          None,
+          handWrittenTask(doneTaskId, dumpProject.id, account.id, doneOnDumpSide.id)
+        )
+        _ = putEntity(
+          root,
+          DataExportEntityType.Task,
+          blockedTaskId,
+          None,
+          handWrittenTask(blockedTaskId, dumpProject.id, account.id, blockedOnDumpSide.id)
+        )
         importResult <- newImportService(transactor).importProject(targetProject.id, account.id, root.toString)
         doneTask <- taskRepo.findById(doneTaskId).transact(transactor)
         blockedTask <- taskRepo.findById(blockedTaskId).transact(transactor)
@@ -225,8 +237,27 @@ class DataImportMappingTest extends ExportImportTestSupport {
               List(AccountDumpData(exportSideAccountId, account.firstName, account.lastName, account.email))
             )
           )
-          _ = putEntity(root, DataExportEntityType.Task, taskId, None, handWrittenTask(taskId, project.id, exportSideAccountId, status.id, Some(exportSideAccountId), Some(exportSideAccountId)))
-          _ = putEntity(root, DataExportEntityType.LogEntry, logEntryId, None, handWrittenLogEntry(logEntryId, taskId, exportSideAccountId))
+          _ = putEntity(
+            root,
+            DataExportEntityType.Task,
+            taskId,
+            None,
+            handWrittenTask(
+              taskId,
+              project.id,
+              exportSideAccountId,
+              status.id,
+              Some(exportSideAccountId),
+              Some(exportSideAccountId)
+            )
+          )
+          _ = putEntity(
+            root,
+            DataExportEntityType.LogEntry,
+            logEntryId,
+            None,
+            handWrittenLogEntry(logEntryId, taskId, exportSideAccountId)
+          )
           importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
           task <- taskRepo.findById(taskId).transact(transactor)
           version <- taskVersionRepo.findByTaskId(taskId).transact(transactor).map(_.head)
@@ -285,7 +316,9 @@ class DataImportMappingTest extends ExportImportTestSupport {
         setupResult <- setup.transact(transactor)
         (account, project) = setupResult
         root <- exportToFolder(transactor, project.id, account.id)
-        _ = editIndex(root)(_.copy(exportedBy = AccountDumpData(UUID.randomUUID(), "Missing", "Person", uniqueEmail("missing"))))
+        _ = editIndex(root)(
+          _.copy(exportedBy = AccountDumpData(UUID.randomUUID(), "Missing", "Person", uniqueEmail("missing")))
+        )
         importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
       } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)
     }
@@ -315,8 +348,27 @@ class DataImportMappingTest extends ExportImportTestSupport {
             AccountDumpData(exportId, a.firstName, a.lastName, a.email)
           })
         )
-        _ = putEntity(root, DataExportEntityType.Task, taskId, None, handWrittenTask(taskId, project.id, exportIds(creator), status.id, Some(exportIds(assignee)), Some(exportIds(closer))))
-        _ = putEntity(root, DataExportEntityType.LogEntry, logEntryId, None, handWrittenLogEntry(logEntryId, taskId, exportIds(logAuthor)))
+        _ = putEntity(
+          root,
+          DataExportEntityType.Task,
+          taskId,
+          None,
+          handWrittenTask(
+            taskId,
+            project.id,
+            exportIds(creator),
+            status.id,
+            Some(exportIds(assignee)),
+            Some(exportIds(closer))
+          )
+        )
+        _ = putEntity(
+          root,
+          DataExportEntityType.LogEntry,
+          logEntryId,
+          None,
+          handWrittenLogEntry(logEntryId, taskId, exportIds(logAuthor))
+        )
         importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
         task <- taskRepo.findById(taskId).transact(transactor)
         version <- taskVersionRepo.findByTaskId(taskId).transact(transactor).map(_.head)
@@ -356,7 +408,9 @@ class DataImportMappingTest extends ExportImportTestSupport {
           root <- exportToFolder(transactor, project.id, account.id)
           // the exporting account resolves by email, the referenced one can neither be found nor created
           _ = editProjectDump(root)(
-            _.copy(referencedAccounts = List(AccountDumpData(UUID.randomUUID(), "Missing", "Person", uniqueEmail("missing"))))
+            _.copy(referencedAccounts =
+              List(AccountDumpData(UUID.randomUUID(), "Missing", "Person", uniqueEmail("missing")))
+            )
           )
           importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
         } yield importResult shouldBe Left(ProjectError.AccountTypeMissing)

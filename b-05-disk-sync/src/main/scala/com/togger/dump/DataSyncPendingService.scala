@@ -33,7 +33,10 @@ class DataSyncPendingService(
   def importPending(projectId: UUID, accountId: UUID): IO[Either[ProjectError, Boolean]] =
     for {
       configs <- TgPages.readAll[IO, DataImportConfig](dataImportConfigService.findPaginatedByProjectId(projectId, _))
-      results <- configs.map(_.importPath).distinct.traverse(dataExportService.checkImportStatus(projectId, accountId, _))
+      results <- configs
+        .map(_.importPath)
+        .distinct
+        .traverse(dataExportService.checkImportStatus(projectId, accountId, _))
     } yield results
       .collectFirst { case Left(NotAssignedToProject) => NotAssignedToProject }
       .toLeft(results.exists {

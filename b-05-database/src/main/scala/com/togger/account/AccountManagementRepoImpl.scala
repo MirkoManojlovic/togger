@@ -61,7 +61,9 @@ class AccountManagementRepoImpl extends AccountManagementRepo {
     logAroundInfoQuery(
       for {
         _ <- (deleteStatement(ACCOUNT_SESSION_TABLE_FRAG) ++ fr"where account_id = $id").update.run
-        _ <- (deleteStatement(ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG) ++ fr"where account_id = $id").update.run
+        _ <- (deleteStatement(
+          ProjectAccountRepoImpl.PROJECT_ACCOUNT_TABLE_FRAG
+        ) ++ fr"where account_id = $id").update.run
         _ <- (deleteStatement(OrganizationAccountRepoImpl.ORGANIZATION_ACCOUNT_TABLE_FRAG) ++
           fr"where account_id = $id").update.run
         deleted <- (deleteStatement(ACCOUNT_TABLE_FRAG) ++ fr"where id = $id").update.run

@@ -24,7 +24,7 @@ class AiEndpointSeedService(transactor: Transactor[IO]) extends TgLogging {
   private def warnOnMismatches(existingById: Map[Int, AiEndpointRow]): IO[Unit] =
     existingById.values.toList.traverse_ { row =>
       TgAiEndpoints.withValueOpt(row.id) match {
-        case None                                        => IO(logger.warn(s"AI endpoint $row is not in TgAiEndpoints"))
+        case None => IO(logger.warn(s"AI endpoint $row is not in TgAiEndpoints"))
         case Some(endpoint) if endpoint.endpointName != row.name =>
           IO(logger.warn(s"AI endpoint $row differs from the enum name ${endpoint.endpointName}"))
         case _ => IO.unit

@@ -7,7 +7,12 @@ import com.togger.ai._
 import com.togger.common.TgError
 import com.togger.logentry._
 import com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateNotFound
-import com.togger.tgprompttemplate.{TgPromptTemplate, TgPromptTemplateFull, TgPromptTemplateService, TgPromptTemplateVersion}
+import com.togger.tgprompttemplate.{
+  TgPromptTemplate,
+  TgPromptTemplateFull,
+  TgPromptTemplateService,
+  TgPromptTemplateVersion
+}
 import doobie.util.transactor.Strategy
 import doobie.{ConnectionIO, Transactor}
 import org.scalamock.scalatest.AsyncMockFactory
@@ -45,8 +50,7 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
     s"""[{"logEntryId":"$logEntryId","taskId":"$taskId","status":"Completed","textInternal":"internal",""" +
       s""""textExternal":"external","createdAt":"$at","updatedAt":"$at"}]"""
 
-  private class CapturingAiService(reply: Either[TgAiError.TgAiError, List[String]])
-      extends TgAiService(null, null) {
+  private class CapturingAiService(reply: Either[TgAiError.TgAiError, List[String]]) extends TgAiService(null, null) {
     val request = new AtomicReference[TgAiChatRequest]()
     override def chatStream(accountId: UUID, request: TgAiChatRequest): IO[Result[fs2.Stream[IO, TgAiChunk]]] =
       IO { this.request.set(request); reply.map(pieces => fs2.Stream.emits(pieces.map(TgAiChunk(_))).covary[IO]) }
@@ -58,7 +62,9 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
       case Left(error)   => IO.pure(error.asLeft[String])
     }
 
-  private def promptService(reply: Either[com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateError, TgPromptTemplateFull]) =
+  private def promptService(
+    reply: Either[com.togger.tgprompttemplate.TgPromptTemplateError.TgPromptTemplateError, TgPromptTemplateFull]
+  ) =
     new TgPromptTemplateService(null, null, transactor) {
       override def findById(accountId: UUID, id: UUID): IO[Result[TgPromptTemplateFull]] = IO.pure(reply)
     }
@@ -77,15 +83,17 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
     "send summarize prompt followed by the entries as compact json, and stream the summary" in {
       val ai = new CapturingAiService(List("the ", "summary").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
-      summarise(service, command).map { result =>
-        (result, ai.request.get()) shouldBe (
-          "the summary".asRight,
-          TgAiChatRequest(
-            TgAiModel("gpt-4o-mini"),
-            List(TgAiMessage.User(s"Summarise the work.\n\n$expectedEntryJson"))
+      summarise(service, command)
+        .map { result =>
+          (result, ai.request.get()) shouldBe (
+            "the summary".asRight,
+            TgAiChatRequest(
+              TgAiModel("gpt-4o-mini"),
+              List(TgAiMessage.User(s"Summarise the work.\n\n$expectedEntryJson"))
+            )
           )
-        )
-      }.unsafeToFuture()
+        }
+        .unsafeToFuture()
     }
 
     "prepend the stored prompt to the summarize prompt" in {
@@ -95,36 +103,47 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
         TgPromptTemplateVersion(UUID.randomUUID(), promptId, "title", "You are a PM.", at)
       )
       val ai = new CapturingAiService(List("ok").asRight)
-      val service = new MilestoneAiSummaryService(repoReturning(List(entry)), promptService(full.asRight), ai, transactor)
-      summarise(service, command.copy(promptId = Some(promptId))).map { _ =>
-        ai.request.get().messages shouldBe
-          List(TgAiMessage.User(s"You are a PM.\n\nSummarise the work.\n\n$expectedEntryJson"))
-      }.unsafeToFuture()
+      val service =
+        new MilestoneAiSummaryService(repoReturning(List(entry)), promptService(full.asRight), ai, transactor)
+      summarise(service, command.copy(promptId = Some(promptId)))
+        .map { _ =>
+          ai.request.get().messages shouldBe
+            List(TgAiMessage.User(s"You are a PM.\n\nSummarise the work.\n\n$expectedEntryJson"))
+        }
+        .unsafeToFuture()
     }
 
     "fail when the stored prompt is not found, without calling the ai" in {
       val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(List(entry)), unusedPromptService, ai, transactor)
-      summarise(service, command.copy(promptId = Some(UUID.randomUUID()))).map { result =>
-        (result, Option(ai.request.get())) shouldBe (TgPromptTemplateNotFound.asLeft, None)
-      }.unsafeToFuture()
+      summarise(service, command.copy(promptId = Some(UUID.randomUUID())))
+        .map { result =>
+          (result, Option(ai.request.get())) shouldBe (TgPromptTemplateNotFound.asLeft, None)
+        }
+        .unsafeToFuture()
     }
 
     "fail without calling the ai when there are no log entries" in {
       val ai = new CapturingAiService(List("ok").asRight)
       val service = new MilestoneAiSummaryService(repoReturning(Nil), unusedPromptService, ai, transactor)
-      summarise(service, command).map { result =>
-        (result, Option(ai.request.get())) shouldBe (NoLogEntriesInRange.asLeft, None)
-      }.unsafeToFuture()
+      summarise(service, command)
+        .map { result =>
+          (result, Option(ai.request.get())) shouldBe (NoLogEntriesInRange.asLeft, None)
+        }
+        .unsafeToFuture()
     }
 
     "fail when there are more log entries than the limit" in {
       val ai = new CapturingAiService(List("ok").asRight)
       val tooMany = List.fill(MilestoneAiSummaryService.MAX_LOG_ENTRIES + 1)(entry)
       val service = new MilestoneAiSummaryService(repoReturning(tooMany), unusedPromptService, ai, transactor)
-      summarise(service, command).map { result =>
-        (result, Option(ai.request.get())) shouldBe (TooManyLogEntries(MilestoneAiSummaryService.MAX_LOG_ENTRIES).asLeft, None)
-      }.unsafeToFuture()
+      summarise(service, command)
+        .map { result =>
+          (result, Option(ai.request.get())) shouldBe (TooManyLogEntries(
+            MilestoneAiSummaryService.MAX_LOG_ENTRIES
+          ).asLeft, None)
+        }
+        .unsafeToFuture()
     }
 
     "pass through ai errors" in {

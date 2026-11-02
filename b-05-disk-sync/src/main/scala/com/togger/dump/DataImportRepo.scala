@@ -103,7 +103,9 @@ class DataImportRepo(
           resolveAccountMapping(accountDumpData).map(_.map(dbId => map + (accountDumpData.id -> dbId)))
       }
 
-  private def resolveOrCreateAccountByEmail(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
+  private def resolveOrCreateAccountByEmail(
+    accountDumpData: AccountDumpData
+  ): ConnectionIO[Either[ProjectError, UUID]] =
     accountRepo.findByEmail(accountDumpData.email).attempt.flatMap {
       case Right(account) => account.id.asRight[ProjectError].pure[ConnectionIO]
       case Left(_) =>
@@ -215,19 +217,20 @@ class DataImportRepo(
     for {
       dbLabels <- TgPages.readAll(taskLabelRepo.findPaginatedByProjectId(projectIdDb, _))
       now = tgClock.currentInstant
-      folded <- diskLabels.foldLeftM((dbLabels.map(l => l.name -> l.id).toMap, Map.empty[UUID, UUID], List.empty[DataImportEntityResult])) {
-        case ((byName, idMap, results), diskLabel) =>
-          byName.get(diskLabel.name) match {
-            case Some(dbId) =>
-              val result = reconciledResult(DataExportEntityType.TaskLabel, diskLabel.id, diskLabel.name, false)
-              (byName, idMap + (diskLabel.id -> dbId), result :: results).pure[ConnectionIO]
-            case None =>
-              taskLabelRepo.insert(diskLabel.copy(projectId = projectIdDb, createdAt = now, updatedAt = now)).map {
-                created =>
-                  val result = reconciledResult(DataExportEntityType.TaskLabel, diskLabel.id, diskLabel.name, true)
-                  (byName + (diskLabel.name -> created.id), idMap + (diskLabel.id -> created.id), result :: results)
-              }
-          }
+      folded <- diskLabels.foldLeftM(
+        (dbLabels.map(l => l.name -> l.id).toMap, Map.empty[UUID, UUID], List.empty[DataImportEntityResult])
+      ) { case ((byName, idMap, results), diskLabel) =>
+        byName.get(diskLabel.name) match {
+          case Some(dbId) =>
+            val result = reconciledResult(DataExportEntityType.TaskLabel, diskLabel.id, diskLabel.name, false)
+            (byName, idMap + (diskLabel.id -> dbId), result :: results).pure[ConnectionIO]
+          case None =>
+            taskLabelRepo.insert(diskLabel.copy(projectId = projectIdDb, createdAt = now, updatedAt = now)).map {
+              created =>
+                val result = reconciledResult(DataExportEntityType.TaskLabel, diskLabel.id, diskLabel.name, true)
+                (byName + (diskLabel.name -> created.id), idMap + (diskLabel.id -> created.id), result :: results)
+            }
+        }
       }
     } yield (folded._2, folded._3.reverse)
 
@@ -277,7 +280,12 @@ class DataImportRepo(
           newLabels,
           assignedIds + labelId,
           idMap + (disk.label.id -> labelId),
-          reconciledResult(DataExportEntityType.ProjectLabel, disk.label.id, disk.label.name, labelInserted || assignmentAdded) :: results
+          reconciledResult(
+            DataExportEntityType.ProjectLabel,
+            disk.label.id,
+            disk.label.name,
+            labelInserted || assignmentAdded
+          ) :: results
         )
       }
     } yield (folded._4, folded._5.reverse)
@@ -321,7 +329,9 @@ class DataImportRepo(
     isKnown: V => ConnectionIO[Boolean],
     insert: V => ConnectionIO[_]
   ): ConnectionIO[Int] =
-    versions.traverse(v => isKnown(v).flatMap(known => if (known) false.pure[ConnectionIO] else insert(v).as(true))).map(_.count(identity))
+    versions
+      .traverse(v => isKnown(v).flatMap(known => if (known) false.pure[ConnectionIO] else insert(v).as(true)))
+      .map(_.count(identity))
 
   /** Inserts the versions that are not known yet and returns how many were added. */
   private def insertUnknown[V](versions: List[V])(
@@ -455,7 +465,9 @@ class DataImportRepo(
         if (templateExists) Option.empty[TaskTemplate].pure[ConnectionIO]
         else templateDump.template.taskLabelId.flatTraverse(taskTemplateRepo.findByLabelId)
       target = labelTemplate.getOrElse(templateDump.template)
-      _ <- if (templateExists || labelTemplate.isDefined) ().pure[ConnectionIO] else taskTemplateRepo.insertWithId(target).void
+      _ <-
+        if (templateExists || labelTemplate.isDefined) ().pure[ConnectionIO]
+        else taskTemplateRepo.insertWithId(target).void
       versions <- labelTemplate.fold(templateDump.versions.pure[ConnectionIO])(existing =>
         withoutRepeatedContent(existing, templateDump.versions.map(_.copy(taskTemplateId = existing.id)))
       )
@@ -472,8 +484,7 @@ class DataImportRepo(
       childrenAdded = 0
     )
 
-  /** The versions that differ from the latest one of the template, so merging identical default templates adds
-    * nothing.
+  /** The versions that differ from the latest one of the template, so merging identical default templates adds nothing.
     */
   private def withoutRepeatedContent(
     template: TaskTemplate,
@@ -506,7 +517,9 @@ class DataImportRepo(
   def mergeTgPromptTemplate(promptDump: TgPromptTemplateDumpData): ConnectionIO[DataImportEntityResult] =
     exists(tgPromptTemplateRepo.findById(promptDump.tgPromptTemplate.id)).flatMap { promptExists =>
       for {
-        _ <- if (promptExists) ().pure[ConnectionIO] else tgPromptTemplateRepo.insertWithId(promptDump.tgPromptTemplate).void
+        _ <-
+          if (promptExists) ().pure[ConnectionIO]
+          else tgPromptTemplateRepo.insertWithId(promptDump.tgPromptTemplate).void
         added <- insertMissing(promptDump.versions)(
           v => exists(tgPromptTemplateVersionRepo.findByVersion(v.version)),
           tgPromptTemplateVersionRepo.insertWithId

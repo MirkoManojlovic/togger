@@ -22,6 +22,7 @@ object AccountManagementError {
   }
 
   case object AccountInUse extends AccountManagementError {
-    override def message: String = "The account cannot be deleted because it still owns tasks, log entries or other data"
+    override def message: String =
+      "The account cannot be deleted because it still owns tasks, log entries or other data"
   }
 }

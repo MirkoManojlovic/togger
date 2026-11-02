@@ -202,7 +202,12 @@ class TaskController(
               val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
                 val (task, firstVersion) =
                   newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
-                NewTask(task, firstVersion, newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now), taskAndLinks.task.taskLabelIds)
+                NewTask(
+                  task,
+                  firstVersion,
+                  newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now),
+                  taskAndLinks.task.taskLabelIds
+                )
               }
 
               taskService.createTasks(newTasks).map { saved =>
@@ -325,35 +330,35 @@ class TaskController(
     taskService.findProjectIdByVersion(dto.version).flatMap { projectId =>
       (projectService.findById(projectId), taskStatusService.findById(dto.taskStatusId)).flatMapN {
         case ((project, _, _), status) =>
-        val validation = for {
-          _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
-          _ <- dateRangeValidation.validateEndDateWhenDone(
-            DefaultTaskStatus.isTerminalName(status.name),
-            dto.endDate
-          )
-        } yield ()
-        validation match {
-          case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
-          case Right(_) =>
-            taskVersionService
-              .updateVersionContent(
-                dto.version,
-                dto.name,
-                dto.description,
-                dto.assignedTo,
-                dto.closedBy,
-                dto.taskStatusId,
-                dto.priority,
-                dto.milestone,
-                dto.startDate,
-                dto.dueDate,
-                dto.endDate
-              )
-              .map {
-                case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
-                case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
-              }
-        }
+          val validation = for {
+            _ <- dateRangeValidation.validate(Some(dto.startDate), Some(dto.dueDate), dto.endDate, project.workDays)
+            _ <- dateRangeValidation.validateEndDateWhenDone(
+              DefaultTaskStatus.isTerminalName(status.name),
+              dto.endDate
+            )
+          } yield ()
+          validation match {
+            case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
+            case Right(_) =>
+              taskVersionService
+                .updateVersionContent(
+                  dto.version,
+                  dto.name,
+                  dto.description,
+                  dto.assignedTo,
+                  dto.closedBy,
+                  dto.taskStatusId,
+                  dto.priority,
+                  dto.milestone,
+                  dto.startDate,
+                  dto.dueDate,
+                  dto.endDate
+                )
+                .map {
+                  case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
+                  case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
+                }
+          }
       }
     }
   }

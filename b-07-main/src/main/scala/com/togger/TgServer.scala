@@ -1,17 +1,36 @@
 package com.togger
 import cats.effect.{IO, Resource}
 import com.togger.ai.{TgAiClient, TgAiModelEndpoints, TgAiService, TgOllama, TgOpenAiClient, TgStaticApiKeyProvider}
-import com.togger.account.{AccountEndpoints, AccountManagementRepoImpl, AccountManagementService, AccountNameLookup, AccountServiceCore, AccountTypeRepo}
+import com.togger.account.{
+  AccountEndpoints,
+  AccountManagementRepoImpl,
+  AccountManagementService,
+  AccountNameLookup,
+  AccountServiceCore,
+  AccountTypeRepo
+}
 import com.togger.auth.{BaseEndpoint, SecuredEndpoint}
 import com.togger.controllers.account.{AccountController, AccountManagementController}
 import com.togger.contribution.{ContributionEndpoints, ContributionRepoImpl, ContributionService}
 import com.togger.controllers.contribution.ContributionController
 import com.togger.controllers.logentry.LogEntryController
-import com.togger.controllers.milestone.{MilestoneAiSummaryController, MilestoneAiSummaryStreamEndpoints, MilestoneController, MilestoneDateController, MilestoneSummaryController}
+import com.togger.controllers.milestone.{
+  MilestoneAiSummaryController,
+  MilestoneAiSummaryStreamEndpoints,
+  MilestoneController,
+  MilestoneDateController,
+  MilestoneSummaryController
+}
 import com.togger.controllers.ai.TgAiModelController
 import com.togger.controllers.tgaiaction.TgAiActionController
 import com.togger.controllers.tgprompttemplate.TgPromptTemplateController
-import com.togger.tgaiaction.{TgAiActionDefaultRepoImpl, TgAiActionEndpointRepoImpl, TgAiActionEndpoints, TgAiActionRepoImpl, TgAiActionService}
+import com.togger.tgaiaction.{
+  TgAiActionDefaultRepoImpl,
+  TgAiActionEndpointRepoImpl,
+  TgAiActionEndpoints,
+  TgAiActionRepoImpl,
+  TgAiActionService
+}
 import com.togger.controllers.timebox.TimeboxController
 import com.togger.controllers.organization.{OrganizationController, OrganizationService}
 import com.togger.controllers.project.{
@@ -48,7 +67,12 @@ import com.togger.projectmapping.{ProjectMappingEndpoints, ProjectMappingRepoImp
 import com.togger.task._
 import com.togger.taskStatus.TaskStatusRepoImpl
 import com.togger.tasktemplate.{TaskTemplateRepoImpl, TaskTemplateService, TaskTemplateVersionRepoImpl}
-import com.togger.tgprompttemplate.{TgPromptTemplateEndpoints, TgPromptTemplateRepoImpl, TgPromptTemplateService, TgPromptTemplateVersionRepoImpl}
+import com.togger.tgprompttemplate.{
+  TgPromptTemplateEndpoints,
+  TgPromptTemplateRepoImpl,
+  TgPromptTemplateService,
+  TgPromptTemplateVersionRepoImpl
+}
 import com.togger.dataexportconfig.{DataExportConfigEndpoints, DataExportConfigRepoImpl, DataExportConfigService}
 import com.togger.dataimportconfig.{DataImportConfigEndpoints, DataImportConfigRepoImpl, DataImportConfigService}
 import com.togger.projectlabel.{
@@ -415,9 +439,11 @@ class DependenciesModule(
 
   lazy val tgPromptTemplateRepo = new TgPromptTemplateRepoImpl
   lazy val tgPromptTemplateVersionRepo = new TgPromptTemplateVersionRepoImpl
-  lazy val tgPromptTemplateService = new TgPromptTemplateService(tgPromptTemplateRepo, tgPromptTemplateVersionRepo, transactor)
+  lazy val tgPromptTemplateService =
+    new TgPromptTemplateService(tgPromptTemplateRepo, tgPromptTemplateVersionRepo, transactor)
   lazy val tgPromptTemplateEndpoints = new TgPromptTemplateEndpoints(securedEndpoint)
-  lazy val tgPromptTemplateController = new TgPromptTemplateController(tgPromptTemplateService, tgPromptTemplateEndpoints, tgClock)
+  lazy val tgPromptTemplateController =
+    new TgPromptTemplateController(tgPromptTemplateService, tgPromptTemplateEndpoints, tgClock)
   lazy val tgAiActionRepo = new TgAiActionRepoImpl
   lazy val tgAiActionEndpointRepo = new TgAiActionEndpointRepoImpl
   lazy val tgAiActionDefaultRepo = new TgAiActionDefaultRepoImpl
@@ -557,10 +583,10 @@ class DependenciesModule(
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)
   lazy val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
   lazy val dataExportController = new DataExportController(
-      dataExportEndpoints,
-      dataExportService,
-      dataImportService,
-      dataSyncPendingService
-    )
+    dataExportEndpoints,
+    dataExportService,
+    dataImportService,
+    dataSyncPendingService
+  )
 
 }

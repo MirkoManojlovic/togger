@@ -22,7 +22,8 @@ trait TimeboxVersionRepo {
 
   def findLatestByTimeboxId(timeboxId: UUID): ConnectionIO[TimeboxVersion]
 
-  /** Whether another timebox of the project has a latest version whose inclusive date range intersects the given one. */
+  /** Whether another timebox of the project has a latest version whose inclusive date range intersects the given one.
+    */
   def existsOverlappingLatest(
     projectId: UUID,
     startDate: LocalDate,

@@ -94,7 +94,9 @@ class ContributionRepoImpl extends ContributionRepo {
   ): ConnectionIO[List[TaskPriorityCountRow]] =
     logAroundInfoQuery(
       (fr"select tv.milestone_id, tv.assigned_to, tv.priority, count(*) from" ++ TASK_TABLE_FRAG ++ latestVersionLateral ++
-        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, tv.priority").query[TaskPriorityCountRow].to[List]
+        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, tv.priority")
+        .query[TaskPriorityCountRow]
+        .to[List]
     )(
       s"Counting tasks by priority of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Tasks by priority counted in ${sp(rows.size)} rows for ${sp(projectId)}"
@@ -106,7 +108,9 @@ class ContributionRepoImpl extends ContributionRepo {
         latestVersionLateral ++
         leftJoin(TASK_LABEL_ASSIGNMENT_TABLE_FRAG)(fr"task_label_assignment.task_id = task.id") ++
         leftJoin(TASK_LABEL_TABLE_FRAG)(fr"task_label.id = task_label_assignment.task_label_id") ++
-        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, task_label.name").query[TaskLabelCountRow].to[List]
+        startedIn(projectId, filter) ++ fr"group by tv.milestone_id, tv.assigned_to, task_label.name")
+        .query[TaskLabelCountRow]
+        .to[List]
     )(
       s"Counting tasks by label of ${sp(projectId)} with ${sp(filter)}",
       rows => s"Tasks by label counted in ${sp(rows.size)} rows for ${sp(projectId)}"

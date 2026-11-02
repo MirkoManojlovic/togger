@@ -17,7 +17,8 @@ import java.util.UUID
 
 class TimeboxVersionRepoImpl extends TimeboxVersionRepo {
 
-  private lazy val returnFields = List("version", "timebox_id", "start_date", "end_date", "description", "created_at", "change_comment")
+  private lazy val returnFields =
+    List("version", "timebox_id", "start_date", "end_date", "description", "created_at", "change_comment")
 
   override def insert(timeboxVersion: TimeboxVersion): ConnectionIO[TimeboxVersion] = {
     import timeboxVersion._

@@ -26,7 +26,7 @@ class TaskStatusController(
               projectId = taskStatus.projectId,
               name = taskStatus.name,
               description = taskStatus.description,
-          emoji = taskStatus.emoji
+              emoji = taskStatus.emoji
             )
           )
         }
@@ -99,7 +99,7 @@ class TaskStatusController(
           projectId = taskStatus.projectId,
           name = taskStatus.name,
           description = taskStatus.description,
-              emoji = taskStatus.emoji
+          emoji = taskStatus.emoji
         )
       )
     }

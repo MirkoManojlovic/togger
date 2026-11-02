@@ -29,7 +29,12 @@ import io.circe.Encoder
 import java.time.LocalDate
 import java.util.UUID
 
-trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgProject with TgTaskStatus with TimeHelpers {
+trait ExportImportTestSupport
+    extends BusinessTgDbSpec
+    with TgAccount
+    with TgProject
+    with TgTaskStatus
+    with TimeHelpers {
 
   val projectAccountRepo = new ProjectAccountRepoImpl
   val accountRepo = new AccountRepoImpl
@@ -311,7 +316,13 @@ trait ExportImportTestSupport extends BusinessTgDbSpec with TgAccount with TgPro
   }
 
   /** Writes an entity file by hand and records its hash in the index, as an export would have. */
-  def putEntity[A: Encoder](root: os.Path, entityType: DataExportEntityType, id: UUID, name: Option[String], data: A): Unit = {
+  def putEntity[A: Encoder](
+    root: os.Path,
+    entityType: DataExportEntityType,
+    id: UUID,
+    name: Option[String],
+    data: A
+  ): Unit = {
     val json = data.asJson
     val path = if (entityType.singleton) root / s"${entityType.folder}.json" else root / entityType.folder / s"$id.json"
     os.write.over(path, json.spaces2, createFolders = true)

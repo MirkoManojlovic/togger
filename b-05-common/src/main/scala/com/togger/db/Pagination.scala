@@ -44,8 +44,8 @@ object PaginationSql {
 
 object TgPages {
 
-  /** Reads page after page until the last one. Only for maintenance jobs and internal runs that must see every row;
-    * an endpoint never does this.
+  /** Reads page after page until the last one. Only for maintenance jobs and internal runs that must see every row; an
+    * endpoint never does this.
     */
   def readAll[F[_]: MonadThrow, A](read: DbPageRequest => F[PaginatedResponse[A]]): F[List[A]] = {
     def loop(page: Int, collected: Vector[A]): F[List[A]] =

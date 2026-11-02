@@ -168,8 +168,8 @@ object ProjectRepoImpl {
   val PROJECT_TABLE: String = "project"
   val PROJECT_TABLE_FRAG: Fragment = Fragment.const(PROJECT_TABLE)
 
-  /** (table, project id column) in the order that satisfies the foreign keys: the versions, links, log entries and label
-    * assignments of a task, timebox or milestone go with it by cascade, but task versions reference statuses and
+  /** (table, project id column) in the order that satisfies the foreign keys: the versions, links, log entries and
+    * label assignments of a task, timebox or milestone go with it by cascade, but task versions reference statuses and
     * milestones, so tasks go before those, and task templates before the labels they may point to.
     */
   val TABLES_DELETED_BEFORE_PROJECT: List[(String, String)] = List(

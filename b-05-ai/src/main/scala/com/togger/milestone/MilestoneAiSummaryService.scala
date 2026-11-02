@@ -50,16 +50,18 @@ class MilestoneAiSummaryService(
       .findLatestByMilestoneIdBetween(command.milestoneId, command.startDate, command.endDate, MAX_LOG_ENTRIES + 1)
       .transact(transactor)
       .map {
-        case Nil                                  => (NoLogEntriesInRange: TgError).asLeft
+        case Nil                                       => (NoLogEntriesInRange: TgError).asLeft
         case entries if entries.size > MAX_LOG_ENTRIES => (TooManyLogEntries(MAX_LOG_ENTRIES): TgError).asLeft
-        case entries                              => entries.map(toAiDto).asRight
+        case entries                                   => entries.map(toAiDto).asRight
       }
 
   private def findStoredPrompt(accountId: UUID, promptId: Option[UUID]): IO[Result[Option[String]]] =
     promptId match {
       case None => IO.pure(None.asRight)
       case Some(id) =>
-        tgPromptTemplateService.findById(accountId, id).map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
+        tgPromptTemplateService
+          .findById(accountId, id)
+          .map(_.map(full => Option(full.latestVersion.prompt)).leftMap(e => e: TgError))
     }
 
   private def chatStream(

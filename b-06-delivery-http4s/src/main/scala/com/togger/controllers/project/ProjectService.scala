@@ -146,10 +146,13 @@ class ProjectService(
 
   /** Deletes the project and all of its data, if the account is a member of it; false when it is not. */
   def deleteWithAllData(projectId: UUID, accountId: UUID): IO[Boolean] =
-    (projectAccountRepo.isMember(projectId, accountId).flatMap {
-      case false => false.pure[ConnectionIO]
-      case true  => projectRepo.deleteWithAllData(projectId).as(true)
-    }).transact(transactor)
+    (projectAccountRepo
+      .isMember(projectId, accountId)
+      .flatMap {
+        case false => false.pure[ConnectionIO]
+        case true  => projectRepo.deleteWithAllData(projectId).as(true)
+      })
+      .transact(transactor)
 
   def findPaginatedByOrganizationIdAndAccountId(
     organizationId: UUID,

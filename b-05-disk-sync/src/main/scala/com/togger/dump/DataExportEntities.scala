@@ -28,9 +28,7 @@ object DataExportEntities {
       snapshot.milestones.map(m =>
         entity(DataExportEntityType.Milestone, m.milestone.id, m.versions.lastOption.map(_.name), m)
       ) ++
-      snapshot.tasks.map(t =>
-        entity(DataExportEntityType.Task, t.task.id, t.taskVersions.lastOption.map(_.name), t)
-      ) ++
+      snapshot.tasks.map(t => entity(DataExportEntityType.Task, t.task.id, t.taskVersions.lastOption.map(_.name), t)) ++
       snapshot.logEntries.map(le => entity(DataExportEntityType.LogEntry, le.logEntry.id, None, le)) ++
       snapshot.taskTemplates.map(t =>
         entity(DataExportEntityType.TaskTemplate, t.template.id, t.versions.lastOption.map(_.name), t)

@@ -20,8 +20,8 @@ class ProjectRepoPaginationTest extends BusinessTgDbSpec with TgAccount with TgP
 
   /** Eleven projects "Project 00".."Project 10" of the account in `organization`, inserted in reverse so the order is
     * by name and not by insertion. Labelled with both labels for 0-5, with `scala` only for 6-8, unlabelled for 9-10.
-    * Besides: one more project of the account in another organization, and one project of the organization the
-    * account is not a member of.
+    * Besides: one more project of the account in another organization, and one project of the organization the account
+    * is not a member of.
     */
   private case class Seeded(
     accountId: UUID,

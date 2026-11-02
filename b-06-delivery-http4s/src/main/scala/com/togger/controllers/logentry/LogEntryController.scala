@@ -55,7 +55,8 @@ class LogEntryController(
           accountNameLookup
             .namesByIds(entriesPage.items.map(_.logEntry.createdBy).toSet)
             .map(names =>
-              TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.versions.head, names)))
+              TgJsonSuccess
+                .justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.versions.head, names)))
             )
         )
     }
@@ -70,7 +71,8 @@ class LogEntryController(
           accountNameLookup
             .namesByIds(entriesPage.items.map(_.logEntry.createdBy).toSet)
             .map(names =>
-              TgJsonSuccess.justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.latestVersion, names)))
+              TgJsonSuccess
+                .justBodyRight(entriesPage.mapItem(entry => toDto(entry.logEntry, entry.latestVersion, names)))
             )
         )
     }

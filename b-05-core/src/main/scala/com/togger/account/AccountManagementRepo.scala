@@ -26,8 +26,8 @@ trait AccountManagementRepo {
 
   def findAccountTypes: ConnectionIO[List[AccountTypeRef]]
 
-  /** Deletes the account together with its sessions and its organization and project memberships. Fails with a
-    * foreign key violation when other data (tasks, log entries, ...) still references the account.
+  /** Deletes the account together with its sessions and its organization and project memberships. Fails with a foreign
+    * key violation when other data (tasks, log entries, ...) still references the account.
     */
   def deleteWithMemberships(id: UUID): ConnectionIO[Int]
 }

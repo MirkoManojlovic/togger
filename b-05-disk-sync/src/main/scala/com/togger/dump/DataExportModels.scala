@@ -117,7 +117,19 @@ object DataExportEntityType {
 
   /** Dependency order: an entity only refers to entities listed before it. */
   lazy val all: List[DataExportEntityType] =
-    List(Project, Members, TaskStatus, TaskLabel, ProjectLabel, Milestone, Task, LogEntry, TaskTemplate, Timebox, TgPromptTemplate)
+    List(
+      Project,
+      Members,
+      TaskStatus,
+      TaskLabel,
+      ProjectLabel,
+      Milestone,
+      Task,
+      LogEntry,
+      TaskTemplate,
+      Timebox,
+      TgPromptTemplate
+    )
 
   def fromFolder(folder: String): Option[DataExportEntityType] = all.find(_.folder == folder)
 }

@@ -45,10 +45,10 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
   // the repos give every inserted version a new time ordered id, so versions inserted later are the newer ones
   private def versionId(number: Long): UUID = new UUID(number, 0L)
 
-  /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without
-    * a milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to
-    * `first`, still open. t2 is "Done" and critical, the others are in the first status and medium. t1 is labelled
-    * "bug", t2 "bug" and "feature", t3 has no label.
+  /** Tasks: t1 in the milestone, assigned to and closed by `first`, older version assigned to `second` without a
+    * milestone; t2 in the milestone, assigned to and closed by `second`; t3 without a milestone, assigned to `first`,
+    * still open. t2 is "Done" and critical, the others are in the first status and medium. t1 is labelled "bug", t2
+    * "bug" and "feature", t3 has no label.
     *
     * Log entries: e1 of t1 by `first` on the 13th, completed by its latest version (an older one was in progress); e2
     * of t1 by `first` on the 13th, in progress; e3 of t2 by `second` on the 14th at 23:30 UTC, completed; e4 of t3 by

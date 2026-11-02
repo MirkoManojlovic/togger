@@ -42,7 +42,10 @@ class ProjectLabelCategoryRepoImpl extends ProjectLabelCategoryRepo with TgLoggi
       _ => s"ProjectLabelCategory with ${sp(id)} deleted"
     )
 
-  override def update(projectLabelCategory: ProjectLabelCategory, updatedAt: Instant): ConnectionIO[ProjectLabelCategory] =
+  override def update(
+    projectLabelCategory: ProjectLabelCategory,
+    updatedAt: Instant
+  ): ConnectionIO[ProjectLabelCategory] =
     logAroundInfoQuery(
       updateStatementUUID(PROJECT_LABEL_CATEGORY_TABLE_FRAG)(projectLabelCategory.id)(fr"""
            name = ${projectLabelCategory.name},

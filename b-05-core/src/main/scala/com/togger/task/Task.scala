@@ -118,4 +118,3 @@ case class TaskLabel(
 }
 
 case class TaskLabelAssignment(taskId: UUID, taskLabelId: UUID, createdAt: Instant)
-

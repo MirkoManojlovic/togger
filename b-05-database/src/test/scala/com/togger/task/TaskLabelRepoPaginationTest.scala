@@ -14,8 +14,8 @@ class TaskLabelRepoPaginationTest extends BusinessTgDbSpec with TgAccount with T
 
   private val repo = new TaskLabelRepoImpl
 
-  /** Eleven task labels "Label 00".."Label 10" of the project, inserted in reverse so the order is by name and not
-    * by insertion. One more belongs to another project.
+  /** Eleven task labels "Label 00".."Label 10" of the project, inserted in reverse so the order is by name and not by
+    * insertion. One more belongs to another project.
     */
   private case class Seeded(projectId: UUID, items: Vector[TaskLabel], otherProjectItem: TaskLabel)
 

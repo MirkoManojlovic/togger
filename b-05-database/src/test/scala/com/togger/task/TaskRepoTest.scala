@@ -44,7 +44,6 @@ class TaskRepoTest extends BusinessTgDbSpec with TgAccount with TgProject with T
       res.transact(transactor)
     }
 
-
     "delete links and log entries of the task when the task is deleted" in { transactor =>
       val res = for {
         savedAccount <- createAccount
