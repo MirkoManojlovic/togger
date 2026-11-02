@@ -1,12 +1,15 @@
 package com.togger.common
 
-import com.togger.common.DateRangeValidation.{DateBeforeStartDate, EndDateRequiredWhenDone, WeekendDateNotAllowed}
+import com.togger.common.DateRangeValidation.DateBeforeStartDate
+import com.togger.common.DateRangeValidation.EndDateRequiredWhenDone
+import com.togger.common.DateRangeValidation.WeekendDateNotAllowed
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class DateRangeValidationTest
     extends AnyWordSpec

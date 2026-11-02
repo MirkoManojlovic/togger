@@ -1,11 +1,16 @@
 package com.togger.demo
 
-import com.togger.dto.{LinkVersionDto, LogEntryVersionDto, TaskVersionDto}
+import com.togger.dto.LinkVersionDto
+import com.togger.dto.LogEntryVersionDto
+import com.togger.dto.TaskVersionDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 import scala.collection.mutable
 

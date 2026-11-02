@@ -1,9 +1,12 @@
 package com.togger.common
 
-import cats.data.{EitherNec, NonEmptyChain, ValidatedNec}
+import cats.data.EitherNec
+import cats.data.NonEmptyChain
+import cats.data.ValidatedNec
 import cats.implicits._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class DateRangeValidation {
 

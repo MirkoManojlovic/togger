@@ -1,7 +1,9 @@
 package com.togger.common
 
 import java.time._
-import java.time.temporal.{ChronoUnit, TemporalAdjuster, TemporalAdjusters}
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjuster
+import java.time.temporal.TemporalAdjusters
 import scala.util.Try
 
 object TgJavaTimeSyntax {

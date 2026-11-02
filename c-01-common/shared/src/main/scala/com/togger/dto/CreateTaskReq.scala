@@ -3,7 +3,8 @@ package com.togger.dto
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class CreateTaskReq(

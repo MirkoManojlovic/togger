@@ -3,7 +3,8 @@ package com.togger.task
 import cats.data.EitherNec
 import cats.implicits._
 import com.togger.common.TgError
-import com.togger.dto.{CreateLinkReq, UpdateLinkReq}
+import com.togger.dto.CreateLinkReq
+import com.togger.dto.UpdateLinkReq
 
 object LinkValidation {
 

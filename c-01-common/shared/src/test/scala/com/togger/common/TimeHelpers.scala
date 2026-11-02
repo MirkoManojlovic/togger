@@ -1,6 +1,9 @@
 package com.togger.common
 
-import java.time.{Duration, Instant, LocalTime, ZoneOffset}
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneOffset
 
 trait TimeHelpers {
 

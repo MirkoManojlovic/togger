@@ -4,7 +4,8 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.togger.logging.TestLoggingShared
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.{AnyWordSpec, AsyncWordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
 class TgAsyncWordSpecShared
     extends AsyncWordSpec

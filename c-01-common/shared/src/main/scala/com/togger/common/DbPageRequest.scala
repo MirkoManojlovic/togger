@@ -1,6 +1,7 @@
 package com.togger.common
 
-import cats.data.{EitherNec, ValidatedNec}
+import cats.data.EitherNec
+import cats.data.ValidatedNec
 import cats.implicits._
 
 abstract sealed case class DbPage private (pageValue: Int)

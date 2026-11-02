@@ -1,15 +1,21 @@
 package com.togger.account
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
-import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
 import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
-import com.togger.dto.{AccountManagementDto, AccountTypeDto, SearchAccountDto, UpdateAccountReq}
+import com.togger.common.TgJsonSuccess
+import com.togger.common.TgJsonSuccess.TgEmptyBody
+import com.togger.dto.AccountManagementDto
+import com.togger.dto.AccountTypeDto
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.UpdateAccountReq
 import io.circe.generic.auto._
+import sttp.tapir.EndpointInput
 import sttp.tapir.generic.auto.schemaForCaseClass
 import sttp.tapir.json.circe.jsonBody
-import sttp.tapir.{EndpointInput, path}
+import sttp.tapir.path
 
 import java.util.UUID
 

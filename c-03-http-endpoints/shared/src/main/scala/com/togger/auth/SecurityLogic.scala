@@ -1,7 +1,8 @@
 package com.togger.auth
 
 import cats.effect.IO
-import com.togger.common.{TgJsonFailure, TgJsonSuccess}
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 
 trait SecurityLogic {
   def securityLogic(token: String): IO[Either[TgJsonFailure, TgJsonSuccess[AuthAccount]]]

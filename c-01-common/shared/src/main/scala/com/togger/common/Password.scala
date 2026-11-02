@@ -1,6 +1,7 @@
 package com.togger.common
 
-import cats.data.{EitherNec, ValidatedNec}
+import cats.data.EitherNec
+import cats.data.ValidatedNec
 import cats.implicits._
 
 sealed abstract case class Password private (value: String)
@@ -98,7 +99,7 @@ object Password {
   sealed trait PasswordError extends TgError
 
   case class InvalidLength(rawPassword: String) extends PasswordError {
-    override val message: String = s"Password must be at least 16 characters long"
+    override val message: String = "Password must be at least 16 characters long"
   }
 
   case class DoesNotContainLowercase(rawPassword: String) extends PasswordError {

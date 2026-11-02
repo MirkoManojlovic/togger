@@ -2,13 +2,19 @@ package com.togger
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
+import com.togger.common.NonEmptyChainHelpers
+import com.togger.common.TgJsonFailure
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{NonEmptyChainHelpers, TgJsonFailure, TgJsonSuccess}
 import com.togger.suites.TestNameHelper
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
+import org.scalamock.scalatest.AsyncMockFactory
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.Assertion
+import org.scalatest.EitherValues
+import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.{AnyWordSpec, AsyncWordSpec}
-import org.scalatest.{Assertion, EitherValues, Suite}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
 class TgAsyncWordSpecJvm extends AsyncWordSpec with AsyncIOSpec with Matchers with TestLoggingJvm with TestNameHelper
 

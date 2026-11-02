@@ -1,7 +1,9 @@
 package com.togger.auth
 
-import com.togger.auth.TgPermission.{DeveloperUserPermission, ManagerUserPermission}
-import enumeratum.{Enum, EnumEntry}
+import com.togger.auth.TgPermission.DeveloperUserPermission
+import com.togger.auth.TgPermission.ManagerUserPermission
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
 sealed trait UserRole extends EnumEntry {
   val permissions: Set[TgPermission]

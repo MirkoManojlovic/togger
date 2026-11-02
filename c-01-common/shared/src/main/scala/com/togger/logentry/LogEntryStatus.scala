@@ -1,7 +1,9 @@
 package com.togger.logentry
 
-import com.togger.chart.{ChartColor, Chartable}
-import enumeratum.values.{IntEnum, IntEnumEntry}
+import com.togger.chart.ChartColor
+import com.togger.chart.Chartable
+import enumeratum.values.IntEnum
+import enumeratum.values.IntEnumEntry
 
 sealed abstract class LogEntryStatus(
   val value: Int,

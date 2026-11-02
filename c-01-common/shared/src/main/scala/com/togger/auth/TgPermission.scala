@@ -1,6 +1,7 @@
 package com.togger.auth
 
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.Enum
+import enumeratum.EnumEntry
 
 sealed trait TgPermission extends EnumEntry
 

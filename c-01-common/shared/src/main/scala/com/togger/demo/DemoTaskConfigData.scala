@@ -1,6 +1,7 @@
 package com.togger.demo
 
-import com.togger.task.{DefaultTaskLabel, DefaultTaskStatus}
+import com.togger.task.DefaultTaskLabel
+import com.togger.task.DefaultTaskStatus
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit

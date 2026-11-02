@@ -2,7 +2,8 @@ package com.togger.dto
 
 import com.togger.milestone.MilestoneStatus
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class CreateMilestoneReq(

@@ -4,9 +4,10 @@ import cats.effect.IO
 import com.togger.auth.AuthAccount
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgAuth
+import sttp.tapir.Endpoint
+import sttp.tapir.PublicEndpoint
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
-import sttp.tapir.{Endpoint, PublicEndpoint}
 
 object TgEndpoints {
 

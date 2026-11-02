@@ -2,9 +2,11 @@ package com.togger
 
 import com.togger.TestLoggingJvm.separatorLength
 import com.togger.logging.TgLoggingExtra
+import scribe.Level
+import scribe.Logger
+import scribe.Logging
 import scribe.format.Formatter
 import scribe.writer.ConsoleWriter
-import scribe.{Level, Logger, Logging}
 
 trait TestLoggingJvm extends Logging with TgLoggingExtra {
   import TestLoggingJvm.testLogger

@@ -2,7 +2,10 @@ package com.togger.common
 
 import cats.data.NonEmptyChain
 import cats.effect.IO
-import com.togger.common.TgResponseTypes.{TgResp, TgRespEmptyBody, TgRespEmptyBodyIO, TgRespIO}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.common.TgResponseTypes.TgRespEmptyBody
+import com.togger.common.TgResponseTypes.TgRespEmptyBodyIO
+import com.togger.common.TgResponseTypes.TgRespIO
 
 case class TgJsonSuccess[+A](message: Option[String] = None, body: Option[A] = None)
 case class TgJsonError(message: String, `type`: String)

@@ -1,6 +1,7 @@
 package com.togger.common
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 object WorkDayCalendar {
 

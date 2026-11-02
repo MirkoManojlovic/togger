@@ -1,11 +1,18 @@
 package com.togger.project
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
-import com.togger.dto.{CreateProjectReq, FindProjectResp, SearchAccountDto, SearchProjectsByLabelsReq, UpdateProjectReq}
+import com.togger.dto.CreateProjectReq
+import com.togger.dto.FindProjectResp
+import com.togger.dto.SearchAccountDto
+import com.togger.dto.SearchProjectsByLabelsReq
+import com.togger.dto.UpdateProjectReq
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

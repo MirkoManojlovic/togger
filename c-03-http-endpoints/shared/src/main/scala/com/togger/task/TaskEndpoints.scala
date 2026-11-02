@@ -1,19 +1,19 @@
 package com.togger.task
 
 import com.togger.auth.SecuredEndpoint
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
 import com.togger.common.TgEndpoints._
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.{
-  CreateTaskAndLinksReq,
-  CreateTasksBulkReq,
-  FindTaskResp,
-  FindTaskRespFull,
-  TaskFilter,
-  TaskVersionDto,
-  UpdateTaskReq
-}
+import com.togger.dto.CreateTaskAndLinksReq
+import com.togger.dto.CreateTasksBulkReq
+import com.togger.dto.FindTaskResp
+import com.togger.dto.FindTaskRespFull
+import com.togger.dto.TaskFilter
+import com.togger.dto.TaskVersionDto
+import com.togger.dto.UpdateTaskReq
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

@@ -1,11 +1,14 @@
 package com.togger.accountmapping
 
 import com.togger.auth.SecuredEndpoint
-import com.togger.common.TgEndpoints._
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
+import com.togger.common.TgEndpoints._
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.dto.accountmapping.{AccountMappingResp, CreateAccountMappingReq}
+import com.togger.dto.accountmapping.AccountMappingResp
+import com.togger.dto.accountmapping.CreateAccountMappingReq
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._

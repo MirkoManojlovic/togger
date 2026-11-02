@@ -2,8 +2,11 @@ package com.togger.demo
 
 import com.togger.milestone.MilestoneStatus
 
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 
 /** Milestones around today with their dates and summaries; milestone dates are always work days of the project. */

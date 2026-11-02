@@ -1,7 +1,8 @@
 package com.togger.common
 
 import cats.data.NonEmptyChain
-import com.togger.common.TgResponseTypes.{TgResp, TgRespIO}
+import com.togger.common.TgResponseTypes.TgResp
+import com.togger.common.TgResponseTypes.TgRespIO
 
 trait TgError extends TgErrorType {
   def message: String
