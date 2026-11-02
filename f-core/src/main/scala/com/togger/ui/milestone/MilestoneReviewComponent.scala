@@ -6,7 +6,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.dto.FindTaskRespFull
@@ -34,6 +33,7 @@ import com.togger.ui.task.TaskListLookups
 import com.togger.ui.task.TaskListTable
 import com.togger.ui.task.TaskStatusFeService
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.timebox.TimeboxReviewStats
 import com.togger.ui.toast.Toast
 
@@ -120,13 +120,14 @@ class MilestoneReviewComponent(
     TgBadge(text = s"$label ${tgDateFormater.asAmericanDateWithDayAbrv(date)}", color = color, bordered = true).element
 
   /** The work days left until the due date, or "Overdue" once it has passed. */
-  private def daysLeftBadge(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement = {
-    val today = tgClock.currentDate()
-    val (text, color) =
-      if (milestone.dueDate.isBefore(today)) ("Overdue", TgBadgeColor.Red)
-      else (TeamDailyTaskBadges.daysLeftText(WorkDayCalendar.countWorkDays(today, milestone.dueDate, workDays)), TgBadgeColor.Gray)
-    TgBadge(text = text, color = color, bordered = true).element
-  }
+  private def daysLeftBadge(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement =
+    specBadge(TeamDailyTaskBadges.daysLeft(milestone.dueDate, tgClock.currentDate(), workDays))
+
+  private def durationBadge(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement =
+    specBadge(TeamDailyTaskBadges.duration(milestone.startDate, milestone.dueDate, workDays))
+
+  private def specBadge(spec: BadgeSpec): HtmlElement =
+    TgBadge(text = spec.text, color = spec.color, bordered = true).element
 
   private def summary(milestone: FindMilestoneResp, workDays: Set[DayOfWeek]): HtmlElement =
     div(
@@ -139,6 +140,7 @@ class MilestoneReviewComponent(
         ).element,
         dateBadge(DateEmoji.Start, milestone.startDate),
         dateBadge(DateEmoji.Due, milestone.dueDate),
+        durationBadge(milestone, workDays),
         milestone.endDate.fold(daysLeftBadge(milestone, workDays))(dateBadge(DateEmoji.End, _, TgBadgeColor.Success))
       ),
       Option.when(milestone.description.nonEmpty)(tgMarkdown.toLaminarDiv(milestone.description))

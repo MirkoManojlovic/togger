@@ -2,7 +2,6 @@ package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.common.WorkDayCalendar
 import com.togger.task.TaskPriority
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.components.TgBadgeColor
@@ -63,12 +62,14 @@ class MilestoneDateBadges(
   private def endBadge(date: LocalDate): BadgeSpec =
     BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Success)
 
+  private def duration(start: Option[LocalDate], due: Option[LocalDate], workDays: Set[DayOfWeek]): Option[BadgeSpec] =
+    for {
+      startDate <- start
+      dueDate <- due
+    } yield TeamDailyTaskBadges.duration(startDate, dueDate, workDays)
+
   private def daysLeft(due: Option[LocalDate], workDays: Set[DayOfWeek]): Option[BadgeSpec] =
-    due.map { dueDate =>
-      val today = tgClock.currentDate()
-      if (dueDate.isBefore(today)) BadgeSpec("Overdue", TgBadgeColor.Red)
-      else BadgeSpec(TeamDailyTaskBadges.daysLeftText(WorkDayCalendar.countWorkDays(today, dueDate, workDays)), TgBadgeColor.Gray)
-    }
+    due.map(TeamDailyTaskBadges.daysLeft(_, tgClock.currentDate(), workDays))
 
   val element: HtmlElement =
     div(
@@ -80,9 +81,10 @@ class MilestoneDateBadges(
             Seq(
               badge(parse(start), DateEmoji.Start, BulkEditKind.StartDate),
               badge(parse(due), dueLabel, BulkEditKind.DueDate)
-            ) ++ parse(end).map(endBadge) ++ Option
-              .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
-              .flatten,
+            ) ++ Option.when(daysLeftWorkDays.isDefined)(duration(parse(start), parse(due), workDays)).flatten ++
+              parse(end).map(endBadge) ++ Option
+                .when(daysLeftWorkDays.isDefined && parse(end).isEmpty)(daysLeft(parse(due), workDays))
+                .flatten,
             popups
           )
       }
