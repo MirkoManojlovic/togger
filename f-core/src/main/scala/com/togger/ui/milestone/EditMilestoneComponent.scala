@@ -10,7 +10,6 @@ import com.togger.dto.CreateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.MilestoneStatus
-import com.togger.routes.Pages.ShowMilestoneStepsPage
 import com.togger.routes.{FrontendPage, TgRouter}
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
@@ -283,16 +282,6 @@ class EditMilestoneComponent(
       )
     )
 
-  private val stepsButton =
-    button(
-      typ("button"),
-      cls(TgHtmlButton.tailwindExtraSmallButton),
-      child.text <-- stepCountsVar.signal.map { case (total, closed) =>
-        s"Steps (${MilestoneStepProgress.label(total, closed)})"
-      },
-      onClick.mapToUnit --> (_ => router.route(ShowMilestoneStepsPage(projectId, milestoneId)))
-    )
-
   private val closeButton =
     button(
       typ("button"),
@@ -397,7 +386,7 @@ class EditMilestoneComponent(
                 ),
                 addNewMilestoneDate
               ),
-              div(cls("flex justify-end gap-2"), stepsButton, closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
+              div(cls("flex justify-end gap-2"), closeButton, TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
         )

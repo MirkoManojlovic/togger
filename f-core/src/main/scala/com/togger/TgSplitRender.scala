@@ -984,16 +984,37 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   toast
                 ).element
               case EditMilestonePage(projectId, id: UUID) =>
-                new EditMilestoneComponent(
-                  milestoneService,
-                  milestoneDateService,
-                  spinnerService,
-                  tgClock,
-                  projectService,
-                  router,
-                  projectId,
-                  id,
-                  toast
+                new EditMilestoneTabsComponent(
+                  new EditMilestoneComponent(
+                    milestoneService,
+                    milestoneDateService,
+                    spinnerService,
+                    dateRangeValidation,
+                    tgClock,
+                    projectService,
+                    router,
+                    projectId,
+                    id,
+                    toast
+                  ).element,
+                  new ShowMilestoneStepsComponent(
+                    milestoneStepService,
+                    milestoneService,
+                    router,
+                    spinnerService,
+                    tgDateFormater,
+                    tgClock,
+                    projectService,
+                    modalFactory,
+                    taskService,
+                    taskStatusService,
+                    taskLabelService,
+                    timeboxStagingStore,
+                    themeStore.isDark,
+                    projectId,
+                    id,
+                    toast
+                  ).element
                 ).element
               case ShowMilestoneStepsPage(projectId: UUID, milestoneId: UUID) =>
                 new ShowMilestoneStepsComponent(
