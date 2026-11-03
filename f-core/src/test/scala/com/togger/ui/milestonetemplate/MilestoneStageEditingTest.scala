@@ -71,6 +71,30 @@ class MilestoneStageEditingTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "MilestoneStageEditing.joinStage" should {
+    "run the step in parallel with the target stage and drop the stage it left empty" in {
+      joinStage(List(List("a"), List("b"), List("c")), "c", 0) shouldBe List(List("a", "c"), List("b"))
+    }
+
+    "change nothing for a step already in the target stage" in {
+      val stages = List(List("a", "b"), List("c"))
+      joinStage(stages, "a", 0) shouldBe stages
+    }
+  }
+
+  "MilestoneStageEditing.moveToNewStage" should {
+    "put the step in a stage of its own in the gap" in {
+      moveToNewStage(List(List("a", "b"), List("c")), "b", 2) shouldBe List(List("a"), List("c"), List("b"))
+      moveToNewStage(List(List("a", "b"), List("c")), "c", 0) shouldBe List(List("c"), List("a", "b"))
+    }
+
+    "change nothing when the step stays where it is" in {
+      val stages = List(List("a"), List("b"), List("c"))
+      moveToNewStage(stages, "b", 1) shouldBe stages
+      moveToNewStage(stages, "b", 2) shouldBe stages
+    }
+  }
+
   "MilestoneStageEditing.rows" should {
     "label a step alone in its stage with the stage number and the steps of a parallel stage with letters" in {
       rows(List(List("a"), List("b", "c"), List("d"))).map(row => row.step -> row.label) shouldBe

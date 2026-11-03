@@ -54,6 +54,24 @@ object MilestoneStageEditing {
       )
     }
 
+  /** The step leaves its stage and runs in parallel with the steps of the stage `targetStage`. */
+  def joinStage[A](stages: Stages[A], step: A, targetStage: Int): Stages[A] =
+    if (!stages.indices.contains(targetStage) || stages(targetStage).contains(step)) stages
+    else
+      withoutEmpty(stages.zipWithIndex.map { case (inStage, stage) =>
+        if (stage == targetStage) inStage :+ step else inStage.filterNot(_ == step)
+      })
+
+  /** The step leaves its stage for a stage of its own placed in the gap `insertion` of the stages as they are now: 0 is
+    * before the first stage and the number of stages is after the last.
+    */
+  def moveToNewStage[A](stages: Stages[A], step: A, insertion: Int): Stages[A] =
+    if (!stages.flatten.contains(step) || insertion < 0 || insertion > stages.size) stages
+    else {
+      val (before, after) = stages.splitAt(insertion)
+      withoutEmpty(before.map(_.filterNot(_ == step)) ++ List(List(step)) ++ after.map(_.filterNot(_ == step)))
+    }
+
   /** A step of a parallel stage leaves it for a stage of its own just after it; a step alone in its stage stays. */
   def splitFromStage[A](stages: Stages[A], stage: Int, index: Int): Stages[A] =
     if (!exists(stages, stage, index) || stages(stage).size == 1) stages
