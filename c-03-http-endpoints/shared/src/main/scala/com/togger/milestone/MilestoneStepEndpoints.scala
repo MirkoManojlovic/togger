@@ -42,7 +42,8 @@ class MilestoneStepEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[UpdateMilestoneStepReq])
       .out(jsonBody[TgJsonSuccess[FindMilestoneStepResp]])
 
-  /** All steps of the milestone ordered by position; a milestone has a short list of them, so it is not paged. */
+  /** All steps of the milestone ordered by position (stage); a milestone has a short list of them, so it is not paged.
+    */
   val findByMilestoneIdEndpoint: TgSecuredEndpoint[UUID, List[FindMilestoneStepResp]] =
     securedEndpoint.endpoint.get
       .in(basePath / "milestone" / path[UUID]("id"))
