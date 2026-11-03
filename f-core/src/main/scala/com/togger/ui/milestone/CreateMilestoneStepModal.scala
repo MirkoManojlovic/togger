@@ -68,18 +68,19 @@ class CreateMilestoneStepModal(
       ModalStyles.closeOnBackdropOrEscape(Observer(_ => onClose())),
       div(
         cls(ModalStyles.contentBoxCls),
-        cls("w-full max-w-2xl max-h-[90vh] overflow-y-auto"),
+        cls("flex w-full max-w-5xl min-h-[60vh] max-h-[90vh] flex-col overflow-y-auto"),
         h3(
           cls(ModalStyles.titleCls),
           cls("mb-4"),
           if (parallel) "Add a step in parallel with the last stage" else "Add a step after the last stage"
         ),
         form(
+          cls("flex flex-1 flex-col"),
           onSubmit.preventDefault.mapTo(step.formState.now()) --> submitter,
           step.htmlElement.amend(cls("mb-4")),
           div(
             cls(ModalStyles.footerCls),
-            cls("justify-end"),
+            cls("mt-auto justify-end"),
             button(
               typ("button"),
               cls(ModalStyles.secondaryButtonCls),
