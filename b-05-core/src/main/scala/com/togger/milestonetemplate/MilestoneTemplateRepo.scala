@@ -34,8 +34,10 @@ trait MilestoneTemplateVersionRepo {
   def insert(version: MilestoneTemplateVersion): ConnectionIO[MilestoneTemplateVersion]
   def insertWithId(version: MilestoneTemplateVersion): ConnectionIO[MilestoneTemplateVersion]
 
-  /** Stores the ordered steps of a version; the position is the index in the list. */
-  def insertSteps(version: UUID, stepTemplateIds: List[UUID]): ConnectionIO[Int]
+  /** Stores the steps of a version; the position is the index of the stage, and the step templates of a stage run in
+    * parallel. Empty stages are skipped and a step template is stored once per stage.
+    */
+  def insertSteps(version: UUID, stages: List[List[UUID]]): ConnectionIO[Int]
 
   def findByVersion(version: UUID): ConnectionIO[MilestoneTemplateVersion]
 
@@ -47,7 +49,7 @@ trait MilestoneTemplateVersionRepo {
     page: DbPageRequest
   ): ConnectionIO[PaginatedResponse[MilestoneTemplateVersion]]
 
-  /** The ordered steps of each of the versions; a version without steps is absent from the result. */
+  /** The steps of each of the versions, ordered by stage; a version without steps is absent from the result. */
   def findStepsByVersions(versions: List[UUID]): ConnectionIO[Map[UUID, List[MilestoneTemplateStep]]]
 
 }

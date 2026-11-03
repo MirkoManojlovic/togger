@@ -50,16 +50,16 @@ class MilestoneTemplateVersionRepoImpl extends MilestoneTemplateVersionRepo with
     )
   }
 
-  override def insertSteps(version: UUID, stepTemplateIds: List[UUID]): ConnectionIO[Int] =
+  override def insertSteps(version: UUID, stages: List[List[UUID]]): ConnectionIO[Int] =
     logAroundInfoQuery(
       Update[(UUID, Int, UUID)](
         (fr"insert into" ++ MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG ++
           fr"(milestone_template_version, position, milestone_step_template_id) values (?, ?, ?)").update.sql
-      ).updateMany(stepTemplateIds.zipWithIndex.map { case (stepTemplateId, position) =>
-        (version, position, stepTemplateId)
+      ).updateMany(stages.map(_.distinct).filter(_.nonEmpty).zipWithIndex.flatMap { case (stage, position) =>
+        stage.map(stepTemplateId => (version, position, stepTemplateId))
       })
     )(
-      s"Inserting steps ${sp(stepTemplateIds)} of milestone template version ${sp(version)}",
+      s"Inserting steps ${sp(stages)} of milestone template version ${sp(version)}",
       count => s"Milestone template version steps inserted ${sp(count)}"
     )
 
@@ -105,17 +105,17 @@ class MilestoneTemplateVersionRepoImpl extends MilestoneTemplateVersionRepo with
   override def findStepsByVersions(versions: List[UUID]): ConnectionIO[Map[UUID, List[MilestoneTemplateStep]]] =
     NonEmptyList.fromList(versions).fold(Map.empty[UUID, List[MilestoneTemplateStep]].pure[ConnectionIO]) { ids =>
       logAroundInfoQuery(
-        (fr"select s.milestone_template_version, s.milestone_step_template_id, stv.name, stv.description from" ++
+        (fr"select s.milestone_template_version, s.milestone_step_template_id, stv.name, stv.description, s.position from" ++
           MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG ++ fr"s join lateral (select * from" ++
           MILESTONE_STEP_TEMPLATE_VERSION_TABLE_FRAG ++
           fr"where milestone_step_template_id = s.milestone_step_template_id order by version desc limit 1) stv on true" ++
           fr"where" ++ Fragments.in(fr"s.milestone_template_version", ids) ++
-          fr"order by s.milestone_template_version, s.position")
-          .query[(UUID, UUID, String, String)]
+          fr"order by s.milestone_template_version, s.position, stv.name, s.milestone_step_template_id")
+          .query[(UUID, UUID, String, String, Int)]
           .to[List]
           .map(
-            _.groupMap { case (version, _, _, _) => version } { case (_, stepTemplateId, name, description) =>
-              MilestoneTemplateStep(stepTemplateId, name, description)
+            _.groupMap { case (version, _, _, _, _) => version } { case (_, stepTemplateId, name, description, stage) =>
+              MilestoneTemplateStep(stepTemplateId, name, description, stage)
             }
           )
       )(

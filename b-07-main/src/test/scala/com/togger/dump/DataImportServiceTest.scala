@@ -57,7 +57,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         account.id,
         "New feature",
         "Feature description",
-        List(stepTemplateId, stepTemplateId)
+        List(List(stepTemplateId), List(stepTemplateId))
       )
       timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), savedProject.id, nowAsInstant))
       timeboxVersion <- timeboxVersionRepo.insert(
@@ -420,7 +420,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
               accountId,
               "New feature",
               "The default",
-              List(design)
+              List(List(design))
             )
           } yield (targetProject, design, featureId)
 

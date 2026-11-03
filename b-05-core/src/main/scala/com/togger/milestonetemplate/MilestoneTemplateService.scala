@@ -28,40 +28,42 @@ class MilestoneTemplateService(
   def create(
     template: MilestoneTemplate,
     firstVersion: MilestoneTemplateVersion,
-    stepTemplateIds: List[UUID]
+    stages: List[List[UUID]]
   ): IO[Result[MilestoneTemplateFull]] = {
-    logger.info(s"Creating ${sp(template)} with ${sp(firstVersion)} and ${sp(stepTemplateIds)}")
+    logger.info(s"Creating ${sp(template)} with ${sp(firstVersion)} and ${sp(stages)}")
     (for {
-      stepsCheck <- validateStepTemplates(template.projectId, stepTemplateIds)
+      stepsCheck <- validateStepTemplates(template.projectId, stages.flatten)
       created <- stepsCheck.traverse { _ =>
         for {
           savedTemplate <- templateRepo.insert(template)
           savedVersion <- templateVersionRepo.insert(firstVersion.copy(milestoneTemplateId = savedTemplate.id))
-          _ <- templateVersionRepo.insertSteps(savedVersion.version, stepTemplateIds)
+          _ <- templateVersionRepo.insertSteps(savedVersion.version, stages)
           full <- templateRepo.findFullById(savedTemplate.id)
         } yield full
       }
     } yield created).transact(transactor)
   }
 
-  /** Saves a new version only when the name, the description or the steps changed. */
+  /** Saves a new version only when the name, the description or the stages changed. `stages` is the sequence of stages;
+    * the step templates of a stage run in parallel.
+    */
   def update(
     id: UUID,
     name: String,
     description: String,
-    stepTemplateIds: List[UUID],
+    stages: List[List[UUID]],
     now: Instant
   ): IO[Result[MilestoneTemplateFull]] = {
     logger.info(s"Updating milestone template ${sp(id)}")
     (for {
       template <- templateRepo.findById(id)
-      stepsCheck <- validateStepTemplates(template.projectId, stepTemplateIds)
+      stepsCheck <- validateStepTemplates(template.projectId, stages.flatten)
       updated <- stepsCheck.traverse { _ =>
         for {
           current <- templateRepo.findFullById(id)
           _ <-
-            if (current.latest.hasSameContentAs(name, description, stepTemplateIds)) ().pure[ConnectionIO]
-            else saveVersion(MilestoneTemplateVersion(UUID.randomUUID(), id, name, description, now), stepTemplateIds)
+            if (current.latest.hasSameContentAs(name, description, stages)) ().pure[ConnectionIO]
+            else saveVersion(MilestoneTemplateVersion(UUID.randomUUID(), id, name, description, now), stages)
           full <- templateRepo.findFullById(id)
         } yield full
       }
@@ -94,10 +96,10 @@ class MilestoneTemplateService(
     ))
       .transact(transactor)
 
-  private def saveVersion(version: MilestoneTemplateVersion, stepTemplateIds: List[UUID]): ConnectionIO[Unit] =
+  private def saveVersion(version: MilestoneTemplateVersion, stages: List[List[UUID]]): ConnectionIO[Unit] =
     templateVersionRepo
       .insert(version)
-      .flatMap(saved => templateVersionRepo.insertSteps(saved.version, stepTemplateIds))
+      .flatMap(saved => templateVersionRepo.insertSteps(saved.version, stages))
       .void
 
   /** Every step template has to exist and belong to the project of the template. */

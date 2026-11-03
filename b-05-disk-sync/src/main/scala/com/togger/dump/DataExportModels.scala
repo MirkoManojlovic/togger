@@ -109,8 +109,26 @@ case class TaskTemplateDumpData(template: TaskTemplate, versions: List[TaskTempl
 /** `milestonesteptemplates/<id>.json` */
 case class MilestoneStepTemplateDumpData(template: MilestoneStepTemplate, versions: List[MilestoneStepTemplateVersion])
 
-/** A version of a milestone template with the ordered ids of its step templates. */
-case class MilestoneTemplateVersionDumpData(version: MilestoneTemplateVersion, stepTemplateIds: List[UUID])
+/** A version of a milestone template with the ids of its step templates by stage; the ones of a stage run in parallel.
+  */
+case class MilestoneTemplateVersionDumpData(version: MilestoneTemplateVersion, stages: List[List[UUID]])
+
+object MilestoneTemplateVersionDumpData {
+  import io.circe.generic.auto._
+
+  // Dumps written before the steps could run in parallel list the step templates in `stepTemplateIds`, one per stage.
+  implicit val milestoneTemplateVersionDumpDataDecoder: Decoder[MilestoneTemplateVersionDumpData] =
+    Decoder.instance { cursor =>
+      for {
+        version <- cursor.get[MilestoneTemplateVersion]("version")
+        stages <- cursor
+          .get[List[List[UUID]]]("stages")
+          .orElse(
+            cursor.get[List[UUID]]("stepTemplateIds").map(_.map(List(_)))
+          )
+      } yield MilestoneTemplateVersionDumpData(version, stages)
+    }
+}
 
 /** `milestonetemplates/<id>.json` */
 case class MilestoneTemplateDumpData(template: MilestoneTemplate, versions: List[MilestoneTemplateVersionDumpData])

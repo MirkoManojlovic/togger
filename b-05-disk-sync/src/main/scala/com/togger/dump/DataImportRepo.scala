@@ -567,13 +567,13 @@ class DataImportRepo(
       versions = sameName.fold(templateDump.versions)(existing =>
         templateDump.versions
           .map(v => v.copy(version = v.version.copy(milestoneTemplateId = existing.template.id)))
-          .filterNot(v => existing.latest.hasSameContentAs(v.version.name, v.version.description, v.stepTemplateIds))
+          .filterNot(v => existing.latest.hasSameContentAs(v.version.name, v.version.description, v.stages))
       )
       added <- insertMissing(versions)(
         v => exists(milestoneTemplateVersionRepo.findByVersion(v.version.version)),
         v =>
           milestoneTemplateVersionRepo
-            .insertWithId(v.version) *> milestoneTemplateVersionRepo.insertSteps(v.version.version, v.stepTemplateIds)
+            .insertWithId(v.version) *> milestoneTemplateVersionRepo.insertSteps(v.version.version, v.stages)
       )
     } yield DataImportEntityResult.merged(
       DataExportEntityType.MilestoneTemplate,

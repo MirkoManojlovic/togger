@@ -372,20 +372,20 @@ trait ExportImportTestSupport
       )
     } yield template.id
 
-  /** A milestone template with its first version and the ordered steps of it. */
+  /** A milestone template with its first version and the stages of its steps; the steps of a stage run in parallel. */
   def createMilestoneTemplate(
     projectId: UUID,
     createdBy: UUID,
     name: String,
     description: String,
-    stepTemplateIds: List[UUID]
+    stages: List[List[UUID]]
   ): ConnectionIO[UUID] =
     for {
       template <- milestoneTemplateRepo.insert(MilestoneTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant))
       version <- milestoneTemplateVersionRepo.insert(
         MilestoneTemplateVersion(UUID.randomUUID(), template.id, name, description, nowAsInstant)
       )
-      _ <- milestoneTemplateVersionRepo.insertSteps(version.version, stepTemplateIds)
+      _ <- milestoneTemplateVersionRepo.insertSteps(version.version, stages)
     } yield template.id
 
   /** Removes everything an import restores, keeping accounts, the project and its memberships. */

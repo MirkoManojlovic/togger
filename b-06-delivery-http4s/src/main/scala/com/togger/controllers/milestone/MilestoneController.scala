@@ -98,7 +98,7 @@ class MilestoneController(
       createdAt = now,
       updatedAt = now
     )
-    val steps = dto.steps.map { step =>
+    val steps = dto.steps.zipWithIndex.map { case (step, index) =>
       val stepEntity = MilestoneStep(UUID.randomUUID(), milestone.id, now)
       stepEntity -> MilestoneStepVersion(
         version = UUID.randomUUID(),
@@ -106,7 +106,7 @@ class MilestoneController(
         name = step.name,
         description = step.description,
         status = MilestoneStepStatus.Planned,
-        position = 0,
+        position = step.stage.getOrElse(index), // the stage as requested; the service numbers the stages
         startDate = step.startDate,
         dueDate = step.dueDate,
         endDate = None,

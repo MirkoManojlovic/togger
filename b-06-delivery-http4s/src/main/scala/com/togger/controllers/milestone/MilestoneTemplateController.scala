@@ -25,7 +25,7 @@ class MilestoneTemplateController(
     val templateId = UUID.randomUUID()
     val template = MilestoneTemplate(templateId, dto.projectId, auth.body.get.id, now)
     val firstVersion = MilestoneTemplateVersion(UUID.randomUUID(), templateId, dto.name, dto.description, now)
-    templateService.create(template, firstVersion, dto.stepTemplateIds).map {
+    templateService.create(template, firstVersion, dto.stages).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindMilestoneTemplateResp]
     }
@@ -39,7 +39,7 @@ class MilestoneTemplateController(
   }
 
   val update = endpoints.updateEndpoint.serverLogic { _ => dto =>
-    templateService.update(dto.id, dto.name, dto.description, dto.stepTemplateIds, tgClock.currentInstant).map {
+    templateService.update(dto.id, dto.name, dto.description, dto.stages, tgClock.currentInstant).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindMilestoneTemplateResp]
     }

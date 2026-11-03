@@ -41,7 +41,8 @@ class MilestoneTemplateServiceTest
   private def stepTemplate(id: UUID, inProject: UUID) =
     MilestoneStepTemplate(id, inProject, UUID.randomUUID(), nowAsInstant)
 
-  private def step(id: UUID, name: String) = MilestoneTemplateStep(id, name, s"$name description")
+  private def step(id: UUID, name: String, stage: Int = 0) =
+    MilestoneTemplateStep(id, name, s"$name description", stage)
 
   private def full(version: MilestoneTemplateVersion, steps: List[MilestoneTemplateStep]) =
     MilestoneTemplateFull(template, MilestoneTemplateVersionWithSteps(version, steps))
@@ -55,12 +56,16 @@ class MilestoneTemplateServiceTest
       stepTemplatesExist(development, design)
       (templateRepo.insert _).expects(template).returns(template.pure[ConnectionIO])
       (versionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
-      (versionRepo.insertSteps _).expects(firstVersion.version, List(development, design)).returns(2.pure[ConnectionIO])
+      (versionRepo.insertSteps _)
+        .expects(firstVersion.version, List(List(development), List(design)))
+        .returns(2.pure[ConnectionIO])
       (templateRepo.findFullById _)
         .expects(template.id)
-        .returns(full(firstVersion, List(step(development, "Development"), step(design, "Design"))).pure[ConnectionIO])
+        .returns(
+          full(firstVersion, List(step(development, "Development", 0), step(design, "Design", 1))).pure[ConnectionIO]
+        )
 
-      service.create(template, firstVersion, List(development, design)).unsafeToFuture().map { result =>
+      service.create(template, firstVersion, List(List(development), List(design))).unsafeToFuture().map { result =>
         result.map(_.latest.steps.map(_.name)) shouldBe Right(List("Development", "Design"))
       }
     }
@@ -71,7 +76,7 @@ class MilestoneTemplateServiceTest
         .expects(foreign)
         .returns(stepTemplate(foreign, UUID.randomUUID()).pure[ConnectionIO])
 
-      service.create(template, firstVersion, List(foreign)).unsafeToFuture().map { result =>
+      service.create(template, firstVersion, List(List(foreign))).unsafeToFuture().map { result =>
         result shouldBe Left(StepTemplateNotInProject(foreign))
       }
     }
@@ -82,35 +87,37 @@ class MilestoneTemplateServiceTest
         .expects(missing)
         .returns(doobie.free.connection.raiseError[MilestoneStepTemplate](UnexpectedEnd))
 
-      service.create(template, firstVersion, List(missing)).unsafeToFuture().map { result =>
+      service.create(template, firstVersion, List(List(missing))).unsafeToFuture().map { result =>
         result shouldBe Left(StepTemplateNotInProject(missing))
       }
     }
 
     "not save a new version when nothing changed" in {
-      val current = full(firstVersion, List(step(design, "Design"), step(development, "Development")))
+      val current = full(firstVersion, List(step(design, "Design", 0), step(development, "Development", 1)))
       (templateRepo.findById _).expects(template.id).returns(template.pure[ConnectionIO])
       stepTemplatesExist(design, development)
       (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO]).twice()
 
       service
-        .update(template.id, "New feature", "d", List(design, development), nowAsInstant)
+        .update(template.id, "New feature", "d", List(List(design), List(development)), nowAsInstant)
         .unsafeToFuture()
         .map(_ shouldBe Right(current))
     }
 
     "save a new version when only the order of the steps changed" in {
-      val current = full(firstVersion, List(step(design, "Design"), step(development, "Development")))
+      val current = full(firstVersion, List(step(design, "Design", 0), step(development, "Development", 1)))
       val newVersion = firstVersion.copy(version = UUID.randomUUID())
       (templateRepo.findById _).expects(template.id).returns(template.pure[ConnectionIO])
       stepTemplatesExist(development, design)
       (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO])
       (versionRepo.insert _).expects(*).returns(newVersion.pure[ConnectionIO])
-      (versionRepo.insertSteps _).expects(newVersion.version, List(development, design)).returns(2.pure[ConnectionIO])
+      (versionRepo.insertSteps _)
+        .expects(newVersion.version, List(List(development), List(design)))
+        .returns(2.pure[ConnectionIO])
       (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO])
 
       service
-        .update(template.id, "New feature", "d", List(development, design), nowAsInstant)
+        .update(template.id, "New feature", "d", List(List(development), List(design)), nowAsInstant)
         .unsafeToFuture()
         .map(_.isRight shouldBe true)
     }

@@ -12,6 +12,7 @@ import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
 import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
 import com.togger.milestonetemplate.MilestoneTemplateRepo
 import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionWithSteps
 import com.togger.project.Project
 import com.togger.project.ProjectAccountRepo
 import com.togger.project.ProjectLabelAssignmentRepo
@@ -232,7 +233,10 @@ class DataExportRepo(
         } yield MilestoneTemplateDumpData(
           full.template,
           sortedVersions.map(version =>
-            MilestoneTemplateVersionDumpData(version, steps.getOrElse(version.version, Nil).map(_.stepTemplateId))
+            MilestoneTemplateVersionDumpData(
+              version,
+              MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil)).stages
+            )
           )
         )
       }

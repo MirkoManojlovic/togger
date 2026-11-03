@@ -2278,3 +2278,18 @@ databaseChangeLog:
             columns:
               - column:
                   name: milestone_step_id
+  - changeSet:
+      id: 21
+      author: mirko
+      labels: milestone-step-parallel
+      comment: >
+        The position of a step of a milestone template version is its stage: steps with the same position run in
+        parallel. The primary key therefore includes the step template, so a stage can hold several steps.
+      changes:
+        - dropPrimaryKey:
+            tableName: milestone_template_version_step
+            constraintName: pk_milestone_template_version_step
+        - addPrimaryKey:
+            tableName: milestone_template_version_step
+            columnNames: milestone_template_version, position, milestone_step_template_id
+            constraintName: pk_milestone_template_version_step

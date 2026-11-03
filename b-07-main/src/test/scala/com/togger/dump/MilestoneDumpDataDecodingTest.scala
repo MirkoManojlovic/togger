@@ -2,6 +2,7 @@ package com.togger.dump
 
 import com.togger.milestone.Milestone
 import com.togger.milestone.MilestoneStep
+import com.togger.milestonetemplate.MilestoneTemplateVersion
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax._
@@ -49,4 +50,32 @@ class MilestoneDumpDataDecodingTest extends AnyWordSpec with Matchers {
       decode[MilestoneDumpData](withStep.asJson.noSpaces) shouldBe Right(withStep)
     }
   }
+
+  "MilestoneTemplateVersionDumpData" should {
+
+    val version = MilestoneTemplateVersion(
+      UUID.randomUUID(),
+      UUID.randomUUID(),
+      "Feature",
+      "d",
+      Instant.parse("2026-10-12T10:00:00Z")
+    )
+    val design = UUID.randomUUID()
+    val backend = UUID.randomUUID()
+    val frontend = UUID.randomUUID()
+
+    "decode the stages it encodes" in {
+      val data = MilestoneTemplateVersionDumpData(version, List(List(design), List(backend, frontend)))
+      decode[MilestoneTemplateVersionDumpData](data.asJson.noSpaces) shouldBe Right(data)
+    }
+
+    "decode a dump written before steps could run in parallel, as one stage per step" in {
+      val old = data(version).mapObject(_.add("stepTemplateIds", List(design, backend).asJson)).noSpaces
+      decode[MilestoneTemplateVersionDumpData](old) shouldBe
+        Right(MilestoneTemplateVersionDumpData(version, List(List(design), List(backend))))
+    }
+  }
+
+  private def data(version: MilestoneTemplateVersion) =
+    MilestoneTemplateVersionDumpData(version, Nil).asJson.mapObject(_.remove("stages"))
 }

@@ -304,9 +304,8 @@ class DataImportService(
     ): MilestoneTemplateDumpData =
       data.copy(
         template = data.template.copy(projectId = projectIdDb, createdBy = account(data.template.createdBy)),
-        versions = data.versions.map(v =>
-          v.copy(stepTemplateIds = v.stepTemplateIds.map(id => stepTemplateTargets.getOrElse(id, id)))
-        )
+        versions =
+          data.versions.map(v => v.copy(stages = v.stages.map(_.map(id => stepTemplateTargets.getOrElse(id, id)))))
       )
 
     def milestone(data: MilestoneDumpData): MilestoneDumpData =

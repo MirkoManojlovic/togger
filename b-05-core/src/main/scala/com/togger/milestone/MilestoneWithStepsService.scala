@@ -18,8 +18,10 @@ class MilestoneWithStepsService(
   transactor: Transactor[IO]
 ) extends TgLogging {
 
-  /** The steps are stored in the given order; their ids and positions are set here. Without steps the milestone gets
-    * the [[DefaultMilestoneStep]] (Shelf), which is always the first step.
+  /** The ids of the steps are set here. The `position` of each given step is the stage it asked for: steps with the
+    * same stage run in parallel and the stages are numbered, in the order of the requested ones, after the stage of the
+    * [[DefaultMilestoneStep]] (Shelf), which is always alone in the first one. Without steps the milestone only gets
+    * the Shelf step.
     */
   def create(
     milestone: Milestone,
@@ -30,7 +32,7 @@ class MilestoneWithStepsService(
     (for {
       savedMilestone <- milestoneRepo.insert(milestone)
       savedVersion <- milestoneVersionRepo.insert(firstVersion.copy(milestoneId = savedMilestone.id))
-      savedSteps <- (shelfStep(milestone, firstVersion) +: steps).zipWithIndex.traverse {
+      savedSteps <- (shelfStep(milestone, firstVersion) +: steps).zip(0 +: stagePositions(steps)).traverse {
         case ((step, stepVersion), position) =>
           for {
             savedStep <- milestoneStepRepo.insert(step.copy(milestoneId = savedMilestone.id))
@@ -40,6 +42,12 @@ class MilestoneWithStepsService(
           } yield MilestoneStepWithOneVersion(savedStep, savedStepVersion)
       }
     } yield MilestoneWithOneVersion(savedMilestone, savedVersion) -> savedSteps).transact(transactor)
+  }
+
+  /** The positions after the Shelf step: the requested stages numbered one after the other, from 1. */
+  private def stagePositions(steps: List[(MilestoneStep, MilestoneStepVersion)]): List[Int] = {
+    val stageNumbers = steps.map { case (_, version) => version.position }.distinct.sorted.zipWithIndex.toMap
+    steps.map { case (_, version) => stageNumbers(version.position) + 1 }
   }
 
   private def shelfStep(milestone: Milestone, firstVersion: MilestoneVersion): (MilestoneStep, MilestoneStepVersion) = {

@@ -83,8 +83,16 @@ object ExportContentKey {
       latest <- latestVersion(json)(_.hcursor.downField("version").get[Instant]("createdAt").getOrElse(Instant.MIN))
       name <- latest.hcursor.downField("version").get[String]("name").left.map(_.message)
       description <- latest.hcursor.downField("version").get[String]("description").left.map(_.message)
-      stepIds <- latest.hcursor.get[List[UUID]]("stepTemplateIds").left.map(_.message)
-      steps <- stepIds.traverse(id => stepTemplateKeys.get(id).toRight(s"milestone step template $id is unknown"))
-    } yield List(name, description) ++ steps.flatMap("step" :: _)
+      stages <- latest.hcursor
+        .get[List[List[UUID]]]("stages")
+        .orElse(latest.hcursor.get[List[UUID]]("stepTemplateIds").map(_.map(List(_))))
+        .left
+        .map(_.message)
+      keyed <- stages.traverse(
+        _.traverse(id => stepTemplateKeys.get(id).toRight(s"milestone step template $id is unknown"))
+      )
+      // the steps of a stage run in parallel, so their order does not matter
+    } yield List(name, description) ++
+      keyed.flatMap(stage => "stage" :: stage.sortBy(_.mkString("\u0000")).flatMap("step" :: _))
 
 }

@@ -101,7 +101,7 @@ class ProjectService(
           for {
             saved <- milestoneTemplateRepo.insert(template)
             savedVersion <- milestoneTemplateVersionRepo.insert(version.copy(milestoneTemplateId = saved.id))
-            _ <- milestoneTemplateVersionRepo.insertSteps(savedVersion.version, stepTemplateIds)
+            _ <- milestoneTemplateVersionRepo.insertSteps(savedVersion.version, stepTemplateIds.map(List(_)))
           } yield ()
         }
         .toList

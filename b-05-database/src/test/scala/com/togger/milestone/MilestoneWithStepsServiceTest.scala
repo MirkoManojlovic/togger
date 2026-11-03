@@ -32,7 +32,8 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
     milestone -> version
   }
 
-  private def stepOf(milestoneId: UUID, name: String) = {
+  /** `stage` is the stage the step asks for; the service numbers the stages. */
+  private def stepOf(milestoneId: UUID, name: String, stage: Int = 99) = {
     val step = MilestoneStep(UUID.randomUUID(), milestoneId, nowAsInstant)
     step -> MilestoneStepVersion(
       version = UUID.randomUUID(),
@@ -40,7 +41,7 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
       name = name,
       description = s"$name description",
       status = MilestoneStepStatus.Planned,
-      position = 99,
+      position = stage,
       startDate = LocalDate.of(2026, 1, 5),
       dueDate = LocalDate.of(2026, 1, 9),
       endDate = None,
@@ -65,7 +66,9 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
         orgAndProject <- createOrgAndProject.transact(transactor)
         pair = milestoneOf(orgAndProject._2.id)
         (milestone, version) = pair
-        steps = List("Design", "Development", "Production").map(stepOf(milestone.id, _))
+        steps = List("Design", "Development", "Production").zipWithIndex.map { case (name, stage) =>
+          stepOf(milestone.id, name, stage)
+        }
         created <- service.create(milestone, version, steps)
         stored <- stepVersionRepo.findLatestByMilestoneId(created._1.milestone.id).transact(transactor)
       } yield {
@@ -77,6 +80,26 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
           .sortBy(_.position)
           .map(_.name) shouldBe List(DefaultMilestoneStep.Shelf.stepName, "Design", "Development", "Production")
       })
+    }
+
+    "put the steps that ask for the same stage in one position, after the Shelf step" in { transactor =>
+      val service = new MilestoneWithStepsService(
+        milestoneRepo,
+        milestoneVersionRepo,
+        stepRepo,
+        stepVersionRepo,
+        transactor
+      )
+
+      (for {
+        orgAndProject <- createOrgAndProject.transact(transactor)
+        (milestone, version) = milestoneOf(orgAndProject._2.id)
+        steps = List(("Design", 5), ("Backend", 10), ("Frontend", 10), ("Release", 20)).map { case (name, stage) =>
+          stepOf(milestone.id, name, stage)
+        }
+        created <- service.create(milestone, version, steps)
+      } yield created._2.map(step => step.version.name -> step.version.position) shouldBe
+        List(DefaultMilestoneStep.Shelf.stepName -> 0, "Design" -> 1, "Backend" -> 2, "Frontend" -> 2, "Release" -> 3))
     }
 
     "give a milestone without steps only the Shelf step with the dates of the milestone" in { transactor =>

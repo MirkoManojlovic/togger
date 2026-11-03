@@ -34,7 +34,7 @@ class MilestoneTemplateRepoTest extends BusinessTgDbSpec with TgAccount with TgP
     for {
       saved <- templateRepo.insert(MilestoneTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant))
       version <- versionRepo.insert(MilestoneTemplateVersion(UUID.randomUUID(), saved.id, name, "d", nowAsInstant))
-      _ <- versionRepo.insertSteps(version.version, steps)
+      _ <- versionRepo.insertSteps(version.version, steps.map(List(_)))
     } yield saved -> version
 
   testNameFromClassName should {
@@ -55,6 +55,24 @@ class MilestoneTemplateRepoTest extends BusinessTgDbSpec with TgAccount with TgP
       }).transact(transactor)
     }
 
+    "store the steps of a stage with the same position and read them back by stage" in { transactor =>
+      (for {
+        account <- createAccount
+        projectId <- createOrgAndProject.map(_._2.id)
+        design <- newStepTemplate(projectId, account.id, "Design")
+        backend <- newStepTemplate(projectId, account.id, "Backend")
+        frontend <- newStepTemplate(projectId, account.id, "Frontend")
+        saved <- templateRepo.insert(MilestoneTemplate(UUID.randomUUID(), projectId, account.id, nowAsInstant))
+        version <- versionRepo.insert(MilestoneTemplateVersion(UUID.randomUUID(), saved.id, "T", "d", nowAsInstant))
+        _ <- versionRepo.insertSteps(version.version, List(List(design), List(frontend, backend, backend), Nil))
+        full <- templateRepo.findFullById(saved.id)
+      } yield {
+        full.latest.steps.map(step => step.name -> step.stage) shouldBe
+          List("Design" -> 0, "Backend" -> 1, "Frontend" -> 1)
+        full.latest.stages shouldBe List(List(design), List(backend, frontend))
+      }).transact(transactor)
+    }
+
     "give the template without steps an empty list" in { transactor =>
       (for {
         account <- createAccount
@@ -72,7 +90,7 @@ class MilestoneTemplateRepoTest extends BusinessTgDbSpec with TgAccount with TgP
         staging <- newStepTemplate(projectId, account.id, "Staging")
         saved <- newTemplate(projectId, account.id, "T", List(design))
         v2 <- versionRepo.insert(MilestoneTemplateVersion(UUID.randomUUID(), saved._1.id, "T2", "d", nowAsInstant))
-        _ <- versionRepo.insertSteps(v2.version, List(staging, design))
+        _ <- versionRepo.insertSteps(v2.version, List(staging, design).map(List(_)))
         history <- versionRepo.findPaginatedByTemplateId(saved._1.id, DbPageRequest.default)
         steps <- versionRepo.findStepsByVersions(history.items.map(_.version))
         full <- templateRepo.findFullById(saved._1.id)
@@ -117,7 +135,7 @@ class MilestoneTemplateRepoTest extends BusinessTgDbSpec with TgAccount with TgP
         v2 <- versionRepo.insert(
           MilestoneTemplateVersion(UUID.randomUUID(), droppedDesign._1.id, "Dropped design", "d", nowAsInstant)
         )
-        _ <- versionRepo.insertSteps(v2.version, List(staging))
+        _ <- versionRepo.insertSteps(v2.version, List(List(staging)))
         usingDesign <- templateRepo.findNamesUsingStepTemplate(design)
         usingStaging <- templateRepo.findNamesUsingStepTemplate(staging)
       } yield {

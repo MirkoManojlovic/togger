@@ -31,5 +31,5 @@ object MilestoneTemplateDtoMapper {
     )
 
   private def toStepDto(step: MilestoneTemplateStep): MilestoneTemplateStepDto =
-    MilestoneTemplateStepDto(step.stepTemplateId, step.name, step.description)
+    MilestoneTemplateStepDto(step.stepTemplateId, step.name, step.description, step.stage)
 }

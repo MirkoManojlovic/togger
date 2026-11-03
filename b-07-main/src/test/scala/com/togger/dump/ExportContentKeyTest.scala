@@ -28,7 +28,7 @@ class ExportContentKeyTest extends AnyWordSpec with Matchers {
       }
     ).asJson
 
-  private def milestoneTemplateJson(id: UUID, versions: (String, String, Instant, List[UUID])*): Json =
+  private def milestoneTemplateJson(id: UUID, versions: (String, String, Instant, List[List[UUID]])*): Json =
     MilestoneTemplateDumpData(
       MilestoneTemplate(id, projectId, accountId, earlier),
       versions.toList.map { case (name, description, at, steps) =>
@@ -71,9 +71,9 @@ class ExportContentKeyTest extends AnyWordSpec with Matchers {
       val here = milestoneTemplateJson(
         UUID.randomUUID(),
         ("Feature", "x", earlier, Nil),
-        ("Feature", "y", later, List(designHere))
+        ("Feature", "y", later, List(List(designHere)))
       )
-      val there = milestoneTemplateJson(UUID.randomUUID(), ("Feature", "y", later, List(designThere)))
+      val there = milestoneTemplateJson(UUID.randomUUID(), ("Feature", "y", later, List(List(designThere))))
 
       val keyHere = ExportContentKey.of(DataExportEntityType.MilestoneTemplate, here, stepKeysHere)
       keyHere.isRight shouldBe true
@@ -89,22 +89,25 @@ class ExportContentKeyTest extends AnyWordSpec with Matchers {
           staging -> stepTemplateJson(staging, ("Staging", "s", later))
         )
       )
-      def keyOf(steps: List[UUID]) =
+      def keyOf(steps: List[List[UUID]]) =
         ExportContentKey.of(
           DataExportEntityType.MilestoneTemplate,
           milestoneTemplateJson(UUID.randomUUID(), ("T", "d", later, steps)),
           keys
         )
 
-      keyOf(List(design, staging)) should not be keyOf(List(staging, design))
-      keyOf(List(design)) should not be keyOf(List(design, staging))
+      keyOf(List(List(design), List(staging))) should not be keyOf(List(List(staging), List(design)))
+      keyOf(List(List(design))) should not be keyOf(List(List(design), List(staging)))
+      // steps that run in parallel are not steps in sequence, and their order inside a stage does not matter
+      keyOf(List(List(design, staging))) should not be keyOf(List(List(design), List(staging)))
+      keyOf(List(List(design, staging))) shouldBe keyOf(List(List(staging, design)))
     }
 
     "report a step template the milestone template names but the tree does not hold" in {
       val unknown = UUID.randomUUID()
       val result = ExportContentKey.of(
         DataExportEntityType.MilestoneTemplate,
-        milestoneTemplateJson(UUID.randomUUID(), ("T", "d", later, List(unknown))),
+        milestoneTemplateJson(UUID.randomUUID(), ("T", "d", later, List(List(unknown)))),
         Map.empty
       )
 
