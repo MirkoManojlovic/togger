@@ -17,7 +17,9 @@ import com.togger.ui.timebox.gantt.GanttColors
 import java.time.DayOfWeek
 import java.time.LocalDate
 
-/** A step as the Gantt chart draws it. */
+/** A step as the Gantt chart draws it. The steps of a `stage` run in parallel and share a colour; without a stage the
+  * colour follows the row.
+  */
 case class MilestoneGanttStep(
   key: String,
   name: String,
@@ -25,7 +27,8 @@ case class MilestoneGanttStep(
   dueDate: LocalDate,
   status: MilestoneStepStatus = MilestoneStepStatus.Planned,
   tasksTotal: Int = 0,
-  tasksDone: Int = 0
+  tasksDone: Int = 0,
+  stage: Option[Int] = None
 )
 
 /** The steps of a milestone as a Gantt chart that looks like the one of a timebox: one column per work day of the
@@ -72,7 +75,7 @@ class MilestoneStepsGanttComponent(
           val bar = colors.bar(
             layout,
             layout.barTitle(step.name, step.startDate, step.dueDate),
-            index,
+            step.stage.getOrElse(index),
             GanttBarProgress(step.tasksTotal, step.tasksDone),
             placed
           )

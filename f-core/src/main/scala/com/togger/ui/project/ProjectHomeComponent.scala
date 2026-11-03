@@ -124,12 +124,15 @@ class ProjectHomeComponent(
       }
       .map(loaded => summariesVar.set(loaded.toMap))
 
-  /** The steps of the milestones of the project by milestone, in order; a failure leaves the milestones without bars.
+  /** The steps of the milestones of the project by milestone, by stage and then by start date; a failure leaves the
+    * milestones without bars.
     */
   private def loadSteps(): IO[Unit] =
     milestoneStepService.findByProjectId(projectId).map { response =>
       val steps = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
-      stepsVar.set(steps.groupBy(_.milestoneId).view.mapValues(_.sortBy(_.position)).toMap)
+      stepsVar.set(
+        steps.groupBy(_.milestoneId).view.mapValues(_.sortBy(step => (step.position, step.startDate.toEpochDay))).toMap
+      )
     }
 
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */

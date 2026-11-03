@@ -422,7 +422,16 @@ class ShowMilestoneStepsComponent(
         .filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
         .map { step =>
           val (start, due) = staged.getOrElse(step.id, (step.startDate, step.dueDate))
-          MilestoneGanttStep(step.id.toString, step.name, start, due, step.status, step.tasksTotal, step.tasksDone)
+          MilestoneGanttStep(
+            step.id.toString,
+            step.name,
+            start,
+            due,
+            step.status,
+            step.tasksTotal,
+            step.tasksDone,
+            Some(step.position)
+          )
         }
     }
 
