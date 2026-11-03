@@ -94,11 +94,26 @@ class MilestoneStepsGanttComponent(
       )
     )
 
+  /** The rows of the steps, those of a stage with several steps (they run in parallel) together in one bordered box. */
+  private def parallelBorders(rows: Seq[MilestoneGanttStep], axis: GanttAxis): Seq[HtmlElement] = {
+    val indexed = rows.zipWithIndex
+    val groups = indexed.foldLeft(List.empty[List[(MilestoneGanttStep, Int)]]) {
+      case (previous :: earlier, row @ (step, _)) if step.stage.isDefined && previous.head._1.stage == step.stage =>
+        (previous :+ row) :: earlier
+      case (groups, row) => List(row) :: groups
+    }
+    groups.reverse.map { group =>
+      val stepRows = group.map { case (step, index) => stepRow(step, index, axis) }
+      if (group.size > 1) div(cls("my-1 rounded-base border-2 border-blue-500"), title := "Steps in parallel", stepRows)
+      else stepRows.head
+    }
+  }
+
   private def chart(axis: GanttAxis, rows: Seq[MilestoneGanttStep]): HtmlElement =
     if (axis.isEmpty)
       layout.emptyMessage("Pick a valid start and due date with at least one work day to see the Gantt chart.")
     else if (rows.isEmpty) layout.emptyMessage("The milestone has no steps to show on the Gantt chart.")
-    else layout.frame(axis, rows.zipWithIndex.map { case (step, index) => stepRow(step, index, axis) }, "Steps")
+    else layout.frame(axis, parallelBorders(rows, axis), "Steps")
 
   val element: HtmlElement =
     TgCard
