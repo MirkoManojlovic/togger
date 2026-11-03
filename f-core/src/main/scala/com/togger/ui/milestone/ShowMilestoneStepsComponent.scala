@@ -12,6 +12,7 @@ import com.togger.milestone.DefaultMilestoneStep
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.CreateMilestoneStepPage
+import com.togger.routes.Pages.CreateParallelMilestoneStepPage
 import com.togger.routes.Pages.EditMilestonePage
 import com.togger.routes.Pages.EditMilestoneStepPage
 import com.togger.routes.TgRouter
@@ -445,6 +446,21 @@ class ShowMilestoneStepsComponent(
     colors = Percentages
   )
 
+  /** Dragging a step in the graph asks for the change comment of the new layout; adding opens the add step page. */
+  private val stepsGraph = new MilestoneStepsGraphComponent(
+    stepsVar.signal.map(_.filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))),
+    Some(
+      MilestoneStepsGraphEditing(
+        onLayoutChange = stages => requestLayout(_ => stages),
+        onAdd = parallel =>
+          router.route(
+            if (parallel) CreateParallelMilestoneStepPage(projectId, milestoneId)
+            else CreateMilestoneStepPage(projectId, milestoneId)
+          )
+      )
+    )
+  )
+
   private val stepTasks = new MilestoneStepTasksComponent(
     taskService,
     taskStatusFeService,
@@ -469,6 +485,13 @@ class ShowMilestoneStepsComponent(
       child.maybe <-- pendingMove.signal.map(_.map(_ => moveDialog)),
       child.maybe <-- savingDates.signal.map(Option.when(_)(saveDatesDialog)),
       child.maybe <-- stagedDatesBanner,
+      TgCard
+        .headerNoFooter(
+          header = TgCard.CardHeader.plainText("Steps graph", TgCard.CardHeaderSize.H5),
+          body = TgCard.HtmlCardContent(stepsGraph.element)
+        )
+        .element
+        .amend(cls("w-full mb-4")),
       stepsGantt.element,
       TgCard
         .headerNoFooter(

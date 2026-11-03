@@ -25,8 +25,6 @@ import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.components.TgProgressColor
-import com.togger.ui.components.TgProgressStyles
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.components.pagination.PaginatedLoader
@@ -35,7 +33,7 @@ import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.milestone.MilestoneSummaryFeService
 import com.togger.ui.milestone.MilestoneTabs
 import com.togger.ui.milestone.MilestoneTaskRows
-import com.togger.ui.milestone.StepBar
+import com.togger.ui.milestone.MilestoneStepsGraphComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -201,55 +199,6 @@ class ProjectHomeComponent(
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
 
-  /** Written out in full so Tailwind finds the classes. */
-  private def stepFillCls(color: TgProgressColor): String = color match {
-    case TgProgressColor.Success => "bg-success-soft"
-    case TgProgressColor.Dark    => "bg-dark-soft"
-    case _                       => "bg-brand-soft"
-  }
-
-  /** One bar per step, its name above it: the tasks of the step and those done with the share done in the middle, over
-    * a fill of that share. The fill is blue, and green once the step is done with all its tasks done.
-    */
-  private def stepBar(step: FindMilestoneStepResp): HtmlElement = {
-    val bar = StepBar.of(step)
-    val percent = TgProgressStyles.percent(bar.value, bar.max)
-    div(
-      cls("min-w-0"),
-      title := bar.title,
-      div(cls("mb-1 truncate text-center text-sm font-medium text-heading"), s"${step.status.emoji} ${step.name}"),
-      div(
-        cls("relative h-8 overflow-hidden rounded-base border border-default-medium bg-neutral-primary-soft"),
-        div(cls(s"absolute inset-y-0 left-0 ${stepFillCls(bar.color)}"), width(s"$percent%")),
-        div(
-          cls("relative flex h-full items-center justify-center text-sm text-heading"),
-          s"${step.tasksTotal}/${step.tasksDone} ($percent%)"
-        )
-      )
-    )
-  }
-
-  /** The stages run side by side in sequence; the steps of a stage run in parallel, so they are stacked in one column
-    * (a stage with several steps gets a tinted background to make that obvious).
-    */
-  private def stepBars(steps: Seq[FindMilestoneStepResp]): HtmlElement = {
-    val stages = steps.groupBy(_.position).toSeq.sortBy(_._1).map(_._2)
-    div(
-      cls("flex flex-col gap-4 mb-4 sm:flex-row"),
-      stages.map { stage =>
-        val parallel = stage.size > 1
-        div(
-          cls(
-            if (parallel)
-              "flex min-w-0 flex-1 flex-col gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-2"
-            else "flex min-w-0 flex-1 flex-col gap-3 p-2 border border-transparent"
-          ),
-          stage.map(stepBar)
-        )
-      }
-    )
-  }
-
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
@@ -264,7 +213,7 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
-      child <-- stepsVar.signal.map(steps => stepBars(steps.getOrElse(milestone.id, Seq.empty))),
+      new MilestoneStepsGraphComponent(stepsVar.signal.map(_.getOrElse(milestone.id, Seq.empty))).element,
       milestoneTabs(
         MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays),
         summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty)),
