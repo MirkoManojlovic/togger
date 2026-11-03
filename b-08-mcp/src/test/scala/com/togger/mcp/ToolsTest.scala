@@ -47,6 +47,13 @@ class ToolsTest extends AnyWordSpec with Matchers:
       all.size shouldBe 19
       all.foreach(_.annotations.flatMap(_.readOnlyHint) shouldBe Some(true))
     }
+
+    "tell that steps with the same position run in parallel" in {
+      val (_, client) = withBackend()
+      val description = named(MilestoneStepTools(client).all, "list_milestone_steps").description.getOrElse("")
+
+      description should include("same position run in parallel")
+    }
   }
 
   "list_tasks" should {
