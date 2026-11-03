@@ -113,7 +113,8 @@ class ShowMilestoneStepsComponent(
       pendingMove.set(None)
       spinnerService
         .runWithSpinner(
-          milestoneStepService.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, order, moveComment.now()))
+          milestoneStepService
+            .reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, order.map(List(_)), moveComment.now()))
         )
         .toastJustErrorsUnit(steps => stepsVar.set(steps))
         .unsafeRunAndForget()

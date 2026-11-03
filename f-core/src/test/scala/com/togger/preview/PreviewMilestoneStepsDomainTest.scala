@@ -171,13 +171,19 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         (milestoneId, ids) <- s.milestoneWithSteps()
-        noComment <- s.env.run(s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids, " ")))
+        noComment <- s.env.run(
+          s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids.map(List(_)), " "))
+        )
         reordered <- s.env.run(
-          s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, List(ids(0), ids(2), ids(1)), "Swap"))
+          s.steps.reorderMilestoneSteps(
+            ReorderMilestoneStepsReq(milestoneId, List(ids(0), ids(2), ids(1)).map(List(_)), "Swap")
+          )
         )
         untouched <- s.env.run(s.steps.listAllVersions(ids(0)))
         moved <- s.env.run(s.steps.listAllVersions(ids(1)))
-        mismatch <- s.env.run(s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids.take(2), "x")))
+        mismatch <- s.env.run(
+          s.steps.reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, ids.take(2).map(List(_)), "x"))
+        )
       } yield {
         isBadRequest(noComment) shouldBe true
         reordered.map(_.map(_.name)) shouldBe Right(List("Shelf", "A", "C", "B"))

@@ -104,7 +104,7 @@ class MilestoneStepFeServicePreview(
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer {
         val (defaults, movable) = data.latestVersionsOf(dto.milestoneId).partition(isDefault)
-        val requested = dto.stepIds.filterNot(defaults.map(_.milestoneStepId).contains)
+        val requested = dto.stages.flatten.filterNot(defaults.map(_.milestoneStepId).contains)
         if (dto.changeComment.trim.isEmpty) PreviewResponses.badRequest[List[FindMilestoneStepResp]](ChangeCommentEmpty)
         else if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
           PreviewResponses.badRequest[List[FindMilestoneStepResp]](StepsDoNotMatchMilestone)
