@@ -20,7 +20,8 @@ ThisBuild / semanticdbEnabled := !sys.props.contains("idea.managed")
 // Local builds (and the IntelliJ import) only warn; the PR checks set SBT_TPOLECAT_CI=true, which adds fatal warnings.
 ThisBuild / tpolecatDefaultOptionsMode := DevMode
 Global / tpolecatExcludeOptions += ScalacOptions.warnNumericWiden
-// Test sources skip the checks for discarded values (ScalaTest assertions), see project/TestWarnings.scala
+// Test sources skip the checks for discarded values (ScalaTest assertions)
+Test / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNonUnitStatement, ScalacOptions.warnValueDiscard)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 // parallel DB specs each clone a database and open a pool; keep it well below the postgres connection limit
