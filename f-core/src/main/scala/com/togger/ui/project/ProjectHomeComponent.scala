@@ -211,27 +211,44 @@ class ProjectHomeComponent(
   /** One bar per step, its name above it: the tasks of the step and those done with the share done in the middle, over
     * a fill of that share. The fill is blue, and green once the step is done with all its tasks done.
     */
-  private def stepBars(steps: Seq[FindMilestoneStepResp]): HtmlElement =
+  private def stepBar(step: FindMilestoneStepResp): HtmlElement = {
+    val bar = StepBar.of(step)
+    val percent = TgProgressStyles.percent(bar.value, bar.max)
     div(
-      cls("grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2 lg:grid-cols-4"),
-      steps.map { step =>
-        val bar = StepBar.of(step)
-        val percent = TgProgressStyles.percent(bar.value, bar.max)
+      cls("min-w-0"),
+      title := bar.title,
+      div(cls("mb-1 truncate text-center text-sm font-medium text-heading"), s"${step.status.emoji} ${step.name}"),
+      div(
+        cls("relative h-8 overflow-hidden rounded-base border border-default-medium bg-neutral-primary-soft"),
+        div(cls(s"absolute inset-y-0 left-0 ${stepFillCls(bar.color)}"), width(s"$percent%")),
         div(
-          cls("min-w-0"),
-          title := bar.title,
-          div(cls("mb-1 truncate text-center text-sm font-medium text-heading"), s"${step.status.emoji} ${step.name}"),
-          div(
-            cls("relative h-8 overflow-hidden rounded-base border border-default-medium bg-neutral-primary-soft"),
-            div(cls(s"absolute inset-y-0 left-0 ${stepFillCls(bar.color)}"), width(s"$percent%")),
-            div(
-              cls("relative flex h-full items-center justify-center text-sm text-heading"),
-              s"${step.tasksTotal}/${step.tasksDone} ($percent%)"
-            )
-          )
+          cls("relative flex h-full items-center justify-center text-sm text-heading"),
+          s"${step.tasksTotal}/${step.tasksDone} ($percent%)"
+        )
+      )
+    )
+  }
+
+  /** The stages run side by side in sequence; the steps of a stage run in parallel, so they are stacked in one column
+    * (a stage with several steps gets a tinted background to make that obvious).
+    */
+  private def stepBars(steps: Seq[FindMilestoneStepResp]): HtmlElement = {
+    val stages = steps.groupBy(_.position).toSeq.sortBy(_._1).map(_._2)
+    div(
+      cls("flex flex-col gap-4 mb-4 sm:flex-row"),
+      stages.map { stage =>
+        val parallel = stage.size > 1
+        div(
+          cls(
+            if (parallel)
+              "flex min-w-0 flex-1 flex-col gap-3 rounded-base border border-default-medium bg-neutral-secondary-soft p-2"
+            else "flex min-w-0 flex-1 flex-col gap-3 p-2 border border-transparent"
+          ),
+          stage.map(stepBar)
         )
       }
     )
+  }
 
   private def milestoneRow(milestone: FindMilestoneResp, tasks: Seq[FindTaskRespFull]): HtmlElement = {
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
