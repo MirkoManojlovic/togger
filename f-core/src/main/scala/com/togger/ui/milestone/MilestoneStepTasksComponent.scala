@@ -82,7 +82,14 @@ class MilestoneStepTasksComponent(
   private val planStepsVar = Var(Seq.empty[PlanStep])
 
   private val lookups =
-    new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
+    new TaskListLookups(
+      projectId,
+      projectService,
+      taskStatusFeService,
+      taskLabelFeService,
+      milestoneService,
+      Some(milestoneStepService)
+    )
 
   // The list starts with the tasks of this milestone; the milestone filter can be widened to the other tasks.
   private val paramsVar = Var(TaskListParams.default.copy(milestones = Some(Set(milestoneId.toString))))
