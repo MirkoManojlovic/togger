@@ -20,18 +20,42 @@ object MilestoneStepsDraft {
 
   def parseDate(text: String): Option[LocalDate] = Try(LocalDate.parse(text)).toOption
 
-  /** One draft per step of the template, with the milestone range spread evenly over them. */
+  /** One draft per step of the template, with the milestone range spread evenly over its stages: the steps of a stage
+    * run in parallel, so they get the same dates.
+    */
   def fromTemplate(
     steps: Seq[MilestoneTemplateStepDto],
     milestoneStart: String,
     milestoneDue: String,
     workDays: Set[DayOfWeek]
   ): List[MilestoneStepDraft] =
-    steps.toList.zip(spread(steps.size, milestoneStart, milestoneDue, workDays)).map { case (step, (start, due)) =>
-      MilestoneStepDraft(step.name, step.description, start, due)
+    steps.toList.zip(spreadStages(steps.map(_.stage), milestoneStart, milestoneDue, workDays)).map {
+      case (step, (start, due)) =>
+        MilestoneStepDraft(step.name, step.description, start, due)
     }
 
-  /** The start and due date of each of `count` steps; empty dates when the milestone range is not a valid one yet. */
+  /** The start and due date of each step, one range per distinct stage in the order of the stages; `stages` is the
+    * stage of each step. Empty dates when the milestone range is not a valid one yet.
+    */
+  def spreadStages(
+    stages: Seq[Int],
+    milestoneStart: String,
+    milestoneDue: String,
+    workDays: Set[DayOfWeek]
+  ): List[(String, String)] = {
+    val stageNumbers = stages.distinct.sorted
+    val rangeOfStage = for {
+      start <- parseDate(milestoneStart)
+      due <- parseDate(milestoneDue)
+      ranges = WorkDayCalendar.splitEvenly(start, due, stageNumbers.size, workDays)
+      if ranges.size == stageNumbers.size
+    } yield stageNumbers.zip(ranges.map { case (from, to) => from.toString -> to.toString }).toMap
+    stages.toList.map(stage => rangeOfStage.flatMap(_.get(stage)).getOrElse("" -> ""))
+  }
+
+  /** The start and due date of each of `count` steps, one after the other; empty dates when the milestone range is not
+    * a valid one yet.
+    */
   def spread(
     count: Int,
     milestoneStart: String,

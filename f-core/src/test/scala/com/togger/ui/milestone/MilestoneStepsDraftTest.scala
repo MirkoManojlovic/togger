@@ -16,16 +16,28 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
   private val start = "2026-10-05"
   private val due = "2026-10-16"
 
-  private def templateStep(name: String) = MilestoneTemplateStepDto(UUID.randomUUID(), name, s"$name description", 0)
+  private def templateStep(name: String, stage: Int = 0) =
+    MilestoneTemplateStepDto(UUID.randomUUID(), name, s"$name description", stage)
 
   "MilestoneStepsDraft.fromTemplate" should {
     "make one draft per step with the milestone range spread over them in order" in {
       val drafts =
-        MilestoneStepsDraft.fromTemplate(List(templateStep("Design"), templateStep("Build")), start, due, monFri)
+        MilestoneStepsDraft.fromTemplate(List(templateStep("Design", 0), templateStep("Build", 1)), start, due, monFri)
 
       drafts shouldBe List(
         MilestoneStepDraft("Design", "Design description", "2026-10-05", "2026-10-09"),
         MilestoneStepDraft("Build", "Build description", "2026-10-12", "2026-10-16")
+      )
+    }
+
+    "give the steps of a stage the same dates and spread the range over the stages" in {
+      val steps = List(templateStep("Design", 0), templateStep("Backend", 1), templateStep("Frontend", 1))
+      val drafts = MilestoneStepsDraft.fromTemplate(steps, start, due, monFri)
+
+      drafts.map(d => d.name -> (d.startDate -> d.dueDate)) shouldBe List(
+        "Design" -> ("2026-10-05" -> "2026-10-09"),
+        "Backend" -> ("2026-10-12" -> "2026-10-16"),
+        "Frontend" -> ("2026-10-12" -> "2026-10-16")
       )
     }
 
