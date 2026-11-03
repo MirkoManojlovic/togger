@@ -37,6 +37,7 @@ class MilestoneTemplateServiceTest
   private val firstVersion = MilestoneTemplateVersion(UUID.randomUUID(), template.id, "New feature", "d", nowAsInstant)
   private val design = UUID.randomUUID()
   private val development = UUID.randomUUID()
+  private val staging = UUID.randomUUID()
 
   private def stepTemplate(id: UUID, inProject: UUID) =
     MilestoneStepTemplate(id, inProject, UUID.randomUUID(), nowAsInstant)
@@ -118,6 +119,42 @@ class MilestoneTemplateServiceTest
 
       service
         .update(template.id, "New feature", "d", List(List(development), List(design)), nowAsInstant)
+        .unsafeToFuture()
+        .map(_.isRight shouldBe true)
+    }
+
+    "not save a new version when only the order inside a parallel stage changed" in {
+      val current = full(
+        firstVersion,
+        List(step(design, "Design", 0), step(development, "Development", 1), step(staging, "Staging", 1))
+      )
+      (templateRepo.findById _).expects(template.id).returns(template.pure[ConnectionIO])
+      stepTemplatesExist(design, staging, development)
+      (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO]).twice()
+
+      service
+        .update(template.id, "New feature", "d", List(List(design), List(staging, development)), nowAsInstant)
+        .unsafeToFuture()
+        .map(_ shouldBe Right(current))
+    }
+
+    "save a new version when steps that ran in parallel run in sequence" in {
+      val current = full(
+        firstVersion,
+        List(step(design, "Design", 0), step(development, "Development", 0))
+      )
+      val newVersion = firstVersion.copy(version = UUID.randomUUID())
+      (templateRepo.findById _).expects(template.id).returns(template.pure[ConnectionIO])
+      stepTemplatesExist(design, development)
+      (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO])
+      (versionRepo.insert _).expects(*).returns(newVersion.pure[ConnectionIO])
+      (versionRepo.insertSteps _)
+        .expects(newVersion.version, List(List(design), List(development)))
+        .returns(2.pure[ConnectionIO])
+      (templateRepo.findFullById _).expects(template.id).returns(current.pure[ConnectionIO])
+
+      service
+        .update(template.id, "New feature", "d", List(List(design), List(development)), nowAsInstant)
         .unsafeToFuture()
         .map(_.isRight shouldBe true)
     }
