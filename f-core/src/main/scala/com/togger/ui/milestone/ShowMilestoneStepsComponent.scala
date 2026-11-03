@@ -22,7 +22,7 @@ import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.TgHtmlTable.createTh
-import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
+import com.togger.ui.milestonetemplate.MilestoneStageEditing
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.modal.PlainModalVariant
@@ -74,8 +74,9 @@ class ShowMilestoneStepsComponent(
   val stepsVar = Var(List.empty[FindMilestoneStepResp])
   private val workDaysVar = Var(Set.empty[DayOfWeek])
 
-  /** The move waiting for its change comment: the index of the step and how far it goes. */
-  private val pendingMove = Var(Option.empty[(Int, Int)])
+  /** The new layout of the steps waiting for its change comment: the stages of step ids, steps of a stage in parallel.
+    */
+  private val pendingMove = Var(Option.empty[MilestoneStageEditing.Stages[UUID]])
   private val moveComment = Var("")
 
   /** The dates dragged on the Gantt chart and not saved yet, by step. */
@@ -96,25 +97,32 @@ class ShowMilestoneStepsComponent(
 
   spinnerService.runWithSpinner(load()).unsafeRunAndForget()
 
-  private def requestMove(index: Int, delta: Int): Unit = {
-    val target = index + delta
-    // the default steps stay at the top: they do not move and nothing moves above them
-    val steps = stepsVar.now()
-    def movable(i: Int) = steps.lift(i).exists(step => !DefaultMilestoneStep.isDefaultName(step.name))
-    if (movable(index) && movable(target)) {
+  /** The steps but the default ones (they stay at the top, alone) by stage: the steps of a stage run in parallel. */
+  private def currentStages(steps: List[FindMilestoneStepResp]): MilestoneStageEditing.Stages[UUID] =
+    steps
+      .filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))
+      .groupBy(_.position)
+      .toList
+      .sortBy { case (position, _) => position }
+      .map { case (_, inStage) => inStage.map(_.id) }
+
+  /** Asks for the change comment of a new layout of the steps; nothing happens when the layout does not change. */
+  private def requestLayout(edit: MilestoneStageEditing.Stages[UUID] => MilestoneStageEditing.Stages[UUID]): Unit = {
+    val current = currentStages(stepsVar.now())
+    val edited = edit(current)
+    if (edited != current) {
       moveComment.set("")
-      pendingMove.set(Some(index -> delta))
+      pendingMove.set(Some(edited))
     }
   }
 
   private def confirmMove(): Unit =
-    pendingMove.now().foreach { case (index, delta) =>
-      val order = MilestoneTemplateStepsEditing.move(stepsVar.now().map(_.id), index, delta)
+    pendingMove.now().foreach { stages =>
       pendingMove.set(None)
       spinnerService
         .runWithSpinner(
           milestoneStepService
-            .reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, order.map(List(_)), moveComment.now()))
+            .reorderMilestoneSteps(ReorderMilestoneStepsReq(milestoneId, stages, moveComment.now()))
         )
         .toastJustErrorsUnit(steps => stepsVar.set(steps))
         .unsafeRunAndForget()
@@ -236,8 +244,8 @@ class ShowMilestoneStepsComponent(
 
   private val moveDialog: HtmlElement =
     commentDialog(
-      "Reorder steps",
-      "Why are the steps reordered?",
+      "Change the order of the steps",
+      "Why is the order of the steps changed?",
       "Reorder",
       moveComment,
       () => pendingMove.set(None),
@@ -325,10 +333,15 @@ class ShowMilestoneStepsComponent(
       )
     }
 
-  private def row(step: FindMilestoneStepResp, index: Int): HtmlElement =
+  /** `address` is the stage of the step and its place in it; a default step has none. */
+  private def row(
+    step: FindMilestoneStepResp,
+    address: Option[MilestoneStageEditing.Row[UUID]],
+    stageSize: Int
+  ): HtmlElement =
     tr(
       cls("odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default"),
-      createTd((index + 1).toString),
+      createTd(address.fold("-")(_.label)),
       createTd(step.name),
       createTd(statusBadge(step)),
       createTd(s"${step.tasksDone}/${step.tasksTotal}"),
@@ -336,23 +349,44 @@ class ShowMilestoneStepsComponent(
       createTd(tgDateFormater.asAmericanDate(step.dueDate)),
       createTd(step.endDate.map(end => span(tgDateFormater.asAmericanDate(end)))),
       createTd(
-        if (DefaultMilestoneStep.isDefaultName(step.name)) emptyNode
-        else
+        address.fold[Node](emptyNode) { at =>
           div(
             iconButton(
               "Move up",
               span("↑"),
               rowIconButtonCls,
               rowButtonMarginCls,
-              onClick.mapToUnit --> (_ => requestMove(index, -1))
+              onClick.mapToUnit --> (_ => requestLayout(MilestoneStageEditing.move(_, at.stage, at.indexInStage, -1)))
             ),
             iconButton(
               "Move down",
               span("↓"),
               rowIconButtonCls,
               rowButtonMarginCls,
-              onClick.mapToUnit --> (_ => requestMove(index, 1))
+              onClick.mapToUnit --> (_ => requestLayout(MilestoneStageEditing.move(_, at.stage, at.indexInStage, 1)))
             ),
+            if (at.stage > 0)
+              iconButton(
+                "Run in parallel with the previous stage",
+                span("∥"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ =>
+                  requestLayout(MilestoneStageEditing.joinPreviousStage(_, at.stage, at.indexInStage))
+                )
+              )
+            else emptyNode,
+            if (stageSize > 1)
+              iconButton(
+                "Run after the others of its stage",
+                span("→"),
+                rowIconButtonCls,
+                rowButtonMarginCls,
+                onClick.mapToUnit --> (_ =>
+                  requestLayout(MilestoneStageEditing.splitFromStage(_, at.stage, at.indexInStage))
+                )
+              )
+            else emptyNode,
             iconButton(
               "Edit",
               TgIcons.editIcon(className = "w-4 h-4"),
@@ -368,8 +402,18 @@ class ShowMilestoneStepsComponent(
               onClick.mapToUnit --> (_ => deleteStep(step))
             )
           )
+        }
       )
     )
+
+  /** The default steps first, alone, then the others by stage with the label of their stage. */
+  private def stepRows(steps: List[FindMilestoneStepResp]): List[HtmlElement] = {
+    val byId = steps.map(step => step.id -> step).toMap
+    val stages = currentStages(steps)
+    val stageSizes = stages.map(_.size)
+    val defaults = steps.filter(step => DefaultMilestoneStep.isDefaultName(step.name)).map(row(_, None, 1))
+    defaults ++ MilestoneStageEditing.rows(stages).map(at => row(byId(at.step), Some(at), stageSizes(at.stage)))
+  }
 
   /** The steps as the chart draws them: the saved ones with the dates dragged so far, and never a default step. */
   private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
@@ -465,7 +509,7 @@ class ShowMilestoneStepsComponent(
                           createTh("Action")
                         )
                       ),
-                      tbody(steps.zipWithIndex.map { case (step, index) => row(step, index) })
+                      tbody(stepRows(steps))
                     )
                   )
               }

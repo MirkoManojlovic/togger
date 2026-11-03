@@ -102,6 +102,12 @@ object MilestoneStepsDraft {
     List(workDayErrors, milestoneRangeErrors).flatMap(_.left.toOption.toList.flatMap(_.toChain.toList.map(_.message)))
   }
 
+  /** The drafts of each stage as the request wants them, with the index of the stage; the drafts of a stage run in
+    * parallel. A draft with a date that cannot be read is left out.
+    */
+  def toStagedRequests(stages: List[List[MilestoneStepDraft]]): List[NewMilestoneStepReq] =
+    stages.zipWithIndex.flatMap { case (drafts, stage) => toRequests(drafts).map(_.copy(stage = Some(stage))) }
+
   /** The drafts as the request wants them; a draft with a date that cannot be read is left out. */
   def toRequests(drafts: Seq[MilestoneStepDraft]): List[NewMilestoneStepReq] =
     drafts.toList.flatMap { draft =>

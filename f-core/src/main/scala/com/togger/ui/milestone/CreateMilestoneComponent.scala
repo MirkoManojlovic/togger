@@ -25,7 +25,7 @@ import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
 import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
-import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
+import com.togger.ui.milestonetemplate.MilestoneStageEditing
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
@@ -91,7 +91,8 @@ class CreateMilestoneComponent(
   private val milestoneRange: Signal[(String, String)] =
     formState.signal.map(form => form.startDate -> form.dueDate).distinct
 
-  val milestoneStepsVar = Var(List.empty[CreateMilestoneStepComponent])
+  /** The steps being created by stage: the steps of a stage run in parallel. */
+  val milestoneStepsVar = Var(List.empty[List[CreateMilestoneStepComponent]])
 
   private def newStepComponent(draft: MilestoneStepDraft) =
     new CreateMilestoneStepComponent(draft, milestoneRange, workDaysVar.signal)
@@ -103,33 +104,42 @@ class CreateMilestoneComponent(
     val drafts = template.fold(List.empty[MilestoneStepDraft])(chosen =>
       MilestoneStepsDraft.fromTemplate(chosen.steps, form.startDate, form.dueDate, workDaysVar.now())
     )
-    milestoneStepsVar.set(drafts.map(newStepComponent))
+    val stages = template.fold(List.empty[Int])(_.steps.map(_.stage).toList)
+    milestoneStepsVar.set(MilestoneStageEditing.groupByStage(stages.zip(drafts.map(newStepComponent))))
   }
 
   private def addStep(): Unit = {
     val form = formState.now()
     milestoneStepsVar.update(
-      _ :+ newStepComponent(MilestoneStepDraft(startDate = form.startDate, dueDate = form.dueDate))
+      MilestoneStageEditing.add(
+        _,
+        newStepComponent(MilestoneStepDraft(startDate = form.startDate, dueDate = form.dueDate))
+      )
     )
   }
 
-  /** Spreads the milestone range over all steps again, whatever was typed. */
+  /** Spreads the milestone range over the stages again, whatever was typed; parallel steps get the same dates. */
   private def spreadStepDates(): Unit = {
-    val steps = milestoneStepsVar.now()
+    val stages = milestoneStepsVar.now()
     val form = formState.now()
-    steps.zip(MilestoneStepsDraft.spread(steps.size, form.startDate, form.dueDate, workDaysVar.now())).foreach {
-      case (step, (start, due)) => step.setAutomaticDates(start, due)
-    }
+    val ranges = MilestoneStepsDraft.spreadStages(
+      MilestoneStageEditing.stageIndexes(stages),
+      form.startDate,
+      form.dueDate,
+      workDaysVar.now()
+    )
+    stages.flatten.zip(ranges).foreach { case (step, (start, due)) => step.setAutomaticDates(start, due) }
   }
 
   /** While no step has its own dates, the steps follow the milestone range when that changes. */
   private val followMilestoneRange: Observer[Unit] = Observer[Unit] { _ =>
-    if (milestoneStepsVar.now().nonEmpty && !milestoneStepsVar.now().exists(_.datesEdited)) spreadStepDates()
+    val steps = milestoneStepsVar.now().flatten
+    if (steps.nonEmpty && !steps.exists(_.datesEdited)) spreadStepDates()
   }
 
   private val stepsHaveErrors: Signal[Boolean] =
     milestoneStepsVar.signal
-      .flatMapSwitch(steps => Signal.combineSeq(steps.map(_.errors)))
+      .flatMapSwitch(stages => Signal.combineSeq(stages.flatten.map(_.errors)))
       .map(_.exists(_.nonEmpty))
 
   /** A new milestone starts on the next work day after next Monday and lasts the default number of work days. */
@@ -201,23 +211,24 @@ class CreateMilestoneComponent(
       router.route(ShowMilestoneStepsPage(projectId, milestone.id))
     }
 
-  lazy val submitter = Observer[(CreateMilestoneForm, Seq[CreateMilestoneDateComponent], Seq[MilestoneStepDraft])] {
-    case (form, dateComponents, stepDrafts) =>
-      val dto = CreateMilestoneReq(
-        projectId = form.projectId,
-        name = form.name,
-        description = form.description,
-        startDate = LocalDate.parse(form.startDate),
-        dueDate = LocalDate.parse(form.dueDate),
-        steps = MilestoneStepsDraft.toRequests(stepDrafts)
-      )
-      spinnerService
-        .runWithSpinner(milestoneService.createMilestone(dto))
-        .toastMessageDto(_ => "Milestone created successfully")(milestone =>
-          createMilestoneDates(milestone, dateComponents) >> IO(offerToPlanTasks(milestone))
+  lazy val submitter =
+    Observer[(CreateMilestoneForm, Seq[CreateMilestoneDateComponent], List[List[MilestoneStepDraft]])] {
+      case (form, dateComponents, stepDrafts) =>
+        val dto = CreateMilestoneReq(
+          projectId = form.projectId,
+          name = form.name,
+          description = form.description,
+          startDate = LocalDate.parse(form.startDate),
+          dueDate = LocalDate.parse(form.dueDate),
+          steps = MilestoneStepsDraft.toStagedRequests(stepDrafts)
         )
-        .unsafeRunAndForget()
-  }
+        spinnerService
+          .runWithSpinner(milestoneService.createMilestone(dto))
+          .toastMessageDto(_ => "Milestone created successfully")(milestone =>
+            createMilestoneDates(milestone, dateComponents) >> IO(offerToPlanTasks(milestone))
+          )
+          .unsafeRunAndForget()
+    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -229,7 +240,7 @@ class CreateMilestoneComponent(
   /** The steps as the chart draws them: the steps being created whose dates can be read, never the Shelf step. */
   private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
     milestoneStepsVar.signal
-      .flatMapSwitch(steps => Signal.combineSeq(steps.map(_.formState.signal)))
+      .flatMapSwitch(stages => Signal.combineSeq(stages.flatten.map(_.formState.signal)))
       .map(_.zipWithIndex.flatMap { case (draft, index) =>
         for {
           start <- MilestoneStepsDraft.parseDate(draft.startDate)
@@ -253,6 +264,7 @@ class CreateMilestoneComponent(
     onDatesChange = Some((step, start, due) =>
       milestoneStepsVar
         .now()
+        .flatten
         .lift(step.key.toInt)
         .foreach(_.formState.update(_.copy(startDate = start.toString, dueDate = due.toString)))
     )
@@ -264,38 +276,63 @@ class CreateMilestoneComponent(
     placeholderValue = "Describe the milestone"
   )
 
-  private def stepCard(step: CreateMilestoneStepComponent, index: Int): HtmlElement =
+  /** `at` is the stage of the step and its place in it; steps of a parallel stage are labelled 2a, 2b, ... */
+  private def stepCard(at: MilestoneStageEditing.Row[CreateMilestoneStepComponent], stageSize: Int): HtmlElement = {
+    def edit(
+      change: MilestoneStageEditing.Stages[CreateMilestoneStepComponent] => MilestoneStageEditing.Stages[
+        CreateMilestoneStepComponent
+      ]
+    ) = milestoneStepsVar.update(change)
     div(
       cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
       div(
         cls("mb-3 flex items-center justify-between"),
-        span(cls("text-sm font-medium text-heading"), s"Step ${index + 1}"),
+        span(cls("text-sm font-medium text-heading"), s"Step ${at.label}"),
         div(
           iconButton(
             "Move up",
             span("↑"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => milestoneStepsVar.update(MilestoneTemplateStepsEditing.move(_, index, -1)))
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.move(_, at.stage, at.indexInStage, -1)))
           ),
           iconButton(
             "Move down",
             span("↓"),
             rowIconButtonCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => milestoneStepsVar.update(MilestoneTemplateStepsEditing.move(_, index, 1)))
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.move(_, at.stage, at.indexInStage, 1)))
           ),
+          if (at.stage > 0)
+            iconButton(
+              "Run in parallel with the previous stage",
+              span("∥"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.joinPreviousStage(_, at.stage, at.indexInStage)))
+            )
+          else emptyNode,
+          if (stageSize > 1)
+            iconButton(
+              "Run after the others of its stage",
+              span("→"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.splitFromStage(_, at.stage, at.indexInStage)))
+            )
+          else emptyNode,
           iconButton(
             "Remove step",
             TgIcons.trashIcon(className = "w-4 h-4"),
             rowIconButtonDangerCls,
             rowButtonMarginCls,
-            onClick.mapToUnit --> (_ => milestoneStepsVar.update(MilestoneTemplateStepsEditing.remove(_, index)))
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.remove(_, at.stage, at.indexInStage)))
           )
         )
       ),
-      step.htmlElement
+      at.step.htmlElement
     )
+  }
 
   private val addStepBadge: HtmlElement =
     TgBadge(text = "+ Add step", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
@@ -341,9 +378,11 @@ class CreateMilestoneComponent(
           )
         )
       ),
-      children <-- milestoneStepsVar.signal.map(_.zipWithIndex.map { case (step, index) => stepCard(step, index) }),
+      children <-- milestoneStepsVar.signal.map(stages =>
+        MilestoneStageEditing.rows(stages).map(at => stepCard(at, stages(at.stage).size))
+      ),
       addStepBadge,
-      child <-- milestoneStepsVar.signal.map(steps => if (steps.size > 1) spreadDatesBadge else emptyNode)
+      child <-- milestoneStepsVar.signal.map(stages => if (stages.flatten.size > 1) spreadDatesBadge else emptyNode)
     )
 
   private val selectedTabVar = Var(EditMilestoneTabsComponent.BasicInformationTabId)
@@ -393,7 +432,7 @@ class CreateMilestoneComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(
-                (formState.now(), milestoneDatesVar.now(), milestoneStepsVar.now().map(_.formState.now()))
+                (formState.now(), milestoneDatesVar.now(), milestoneStepsVar.now().map(_.map(_.formState.now())))
               ) --> submitter,
               tabs.element,
               div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(stepsHaveErrors.changes))

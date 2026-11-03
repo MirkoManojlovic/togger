@@ -125,4 +125,28 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
       MilestoneStepsDraft.toRequests(List(MilestoneStepDraft("A", "", "", ""))) shouldBe Nil
     }
   }
+
+  "MilestoneStepsDraft.toStagedRequests" should {
+    "ask for the index of the stage of each draft" in {
+      val requests = MilestoneStepsDraft.toStagedRequests(
+        List(
+          List(MilestoneStepDraft("Design", "", "2026-10-05", "2026-10-09")),
+          List(
+            MilestoneStepDraft("Backend", "", "2026-10-12", "2026-10-16"),
+            MilestoneStepDraft("Frontend", "", "2026-10-12", "2026-10-16")
+          )
+        )
+      )
+
+      requests.map(r => (r.name, r.stage)) shouldBe
+        List(("Design", Some(0)), ("Backend", Some(1)), ("Frontend", Some(1)))
+    }
+  }
+
+  "MilestoneStepsDraft.spreadStages" should {
+    "spread the range over the distinct stages, the steps of a stage sharing the dates" in {
+      MilestoneStepsDraft.spreadStages(List(0, 1, 1), start, due, monFri) shouldBe
+        List("2026-10-05" -> "2026-10-09", "2026-10-12" -> "2026-10-16", "2026-10-12" -> "2026-10-16")
+    }
+  }
 }

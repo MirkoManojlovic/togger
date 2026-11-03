@@ -12,6 +12,7 @@ import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgCheckbox
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.toast.Toast
@@ -19,7 +20,9 @@ import com.togger.ui.toast.Toast
 import java.time.DayOfWeek
 import java.util.UUID
 
-/** Adds a step at the end of a milestone; its dates start out as the dates of the milestone. */
+/** Adds a step at the end of a milestone, after the last stage or in parallel with it; its dates start out as the dates
+  * of the milestone.
+  */
 class CreateMilestoneStepPageComponent(
   milestoneStepService: MilestoneStepFeService,
   milestoneService: MilestoneFeService,
@@ -38,6 +41,7 @@ class CreateMilestoneStepPageComponent(
   val step = new CreateMilestoneStepComponent(MilestoneStepDraft(), milestoneRangeVar.signal, workDaysVar.signal)
 
   private val milestoneNameVar = Var("")
+  private val parallelVar = Var(false)
 
   private def load(): IO[Unit] =
     for {
@@ -65,7 +69,8 @@ class CreateMilestoneStepPageComponent(
         name = request.name,
         description = request.description,
         startDate = request.startDate,
-        dueDate = request.dueDate
+        dueDate = request.dueDate,
+        parallel = parallelVar.now()
       )
       spinnerService
         .runWithSpinner(milestoneStepService.createMilestoneStep(dto))
@@ -94,6 +99,14 @@ class CreateMilestoneStepPageComponent(
             form(
               onSubmit.preventDefault.mapTo(step.formState.now()) --> submitter,
               step.htmlElement.amend(cls("mb-4")),
+              TgCheckbox
+                .checkBox(
+                  parallelVar.signal,
+                  parallelVar.writer,
+                  "Run in parallel with the last stage of the milestone"
+                )
+                .htmlElement
+                .amend(cls("mb-4")),
               div(
                 cls("flex justify-end"),
                 TgHtmlButton.createSmall(step.errors.map(_.nonEmpty).changes)
