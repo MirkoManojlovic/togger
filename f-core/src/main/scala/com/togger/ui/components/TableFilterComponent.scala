@@ -9,7 +9,10 @@ import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
 
-case class MultiSelectItem(id: String, name: String, isSelected: Boolean)
+/** @param group
+  *   a heading the item is listed under; consecutive items with the same group share one heading.
+  */
+case class MultiSelectItem(id: String, name: String, isSelected: Boolean, group: Option[String] = None)
 
 /** @param selectedIdsVar
   *   defaults to a fresh, private `Var` (one filter, one selection). Callers that render several instances of the same
@@ -62,6 +65,36 @@ class TableFilterComponent(
         )
         .htmlElement
     )
+
+  private def groupLinkButton(linkLabel: String, onClickMod: Modifier[ReactiveHtmlElement[HTMLButtonElement]]) =
+    button(
+      `type`("button"),
+      cls("normal-case font-medium text-heading hover:underline cursor-pointer"),
+      onClickMod,
+      linkLabel
+    )
+
+  /** The heading of a group, with links that tick or untick every item of the group. */
+  private def groupRow(group: String, groupIds: Set[String]) =
+    li(
+      cls("flex items-center justify-between px-1 pt-2 pb-1 text-xs font-semibold uppercase text-body"),
+      span(cls("truncate"), group),
+      span(
+        cls("flex shrink-0 gap-2 ps-2"),
+        groupLinkButton("All", onClick.mapToUnit --> (_ => selectedIdsVar.update(_ ++ groupIds))),
+        groupLinkButton("None", onClick.mapToUnit --> (_ => selectedIdsVar.update(_ -- groupIds)))
+      )
+    )
+
+  /** The options, each run of items of one group below that group's heading. */
+  private def optionRows(items: Seq[MultiSelectItem]): Seq[HtmlElement] =
+    items.zipWithIndex.flatMap { case (item, index) =>
+      val startsGroup = item.group.exists(group => index == 0 || !items(index - 1).group.contains(group))
+      val heading = item.group.filter(_ => startsGroup).map { group =>
+        groupRow(group, items.filter(_.group.contains(group)).map(_.id).toSet)
+      }
+      heading.toSeq :+ optionRow(item)
+    }
 
   private val panelWidthPx = 224.0
   private val panelMaxHeightPx = 480.0
@@ -123,7 +156,7 @@ class TableFilterComponent(
         ),
         actionRow("Deselect all", onClick.mapToUnit --> (_ => selectedIdsVar.set(Set.empty))),
         li(cls("border-t border-default my-1")),
-        children <-- itemsSignal.map(_.map(optionRow))
+        children <-- itemsSignal.map(optionRows)
       )
     )
   }
