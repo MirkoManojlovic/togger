@@ -165,6 +165,12 @@ object TgBreadcrumbTrail {
         link("Milestone steps", ShowMilestoneStepsPage(projectId, milestoneId)),
         current("Add step")
       )
+    case CreateParallelMilestoneStepPage(projectId, milestoneId) =>
+      underProject(
+        projectId,
+        link("Milestone steps", ShowMilestoneStepsPage(projectId, milestoneId)),
+        current("Add parallel step")
+      )
     case EditMilestoneStepPage(projectId, _) => underMilestones(projectId, "Edit step")
     case MilestoneSummaryPage(projectId, _)  => underMilestones(projectId, "Milestone summaries")
   }
