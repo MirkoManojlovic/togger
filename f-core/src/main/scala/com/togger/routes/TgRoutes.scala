@@ -457,14 +457,6 @@ class TgRoutes {
           endOfSegments
       ),
       Route(
-        encode = (page: CreateParallelMilestoneStepPage) => page.projectId.toString -> page.milestoneId.toString,
-        decode = { (ids: (String, String)) =>
-          CreateParallelMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2))
-        },
-        pattern = root / "create-parallel-milestone-step" / "project-id" / segment[String] / "milestone-id" /
-          segment[String] / endOfSegments
-      ),
-      Route(
         encode = (page: EditMilestoneStepPage) => page.projectId.toString -> page.milestoneStepId.toString,
         decode = { (ids: (String, String)) => EditMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
         pattern =

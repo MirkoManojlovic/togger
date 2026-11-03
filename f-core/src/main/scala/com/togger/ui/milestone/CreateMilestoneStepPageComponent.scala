@@ -31,8 +31,7 @@ class CreateMilestoneStepPageComponent(
   spinnerService: SpinnerService,
   projectId: UUID,
   milestoneId: UUID,
-  val toast: Toast,
-  parallel: Boolean = false
+  val toast: Toast
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -42,7 +41,7 @@ class CreateMilestoneStepPageComponent(
   val step = new CreateMilestoneStepComponent(MilestoneStepDraft(), milestoneRangeVar.signal, workDaysVar.signal)
 
   private val milestoneNameVar = Var("")
-  private val parallelVar = Var(parallel)
+  private val parallelVar = Var(false)
 
   private def load(): IO[Unit] =
     for {

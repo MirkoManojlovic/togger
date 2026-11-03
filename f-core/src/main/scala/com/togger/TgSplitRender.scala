@@ -1014,18 +1014,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   milestoneId,
                   toast
                 ).element
-              case CreateParallelMilestoneStepPage(projectId: UUID, milestoneId: UUID) =>
-                new CreateMilestoneStepPageComponent(
-                  milestoneStepService,
-                  milestoneService,
-                  projectService,
-                  router,
-                  spinnerService,
-                  projectId,
-                  milestoneId,
-                  toast,
-                  parallel = true
-                ).element
               case EditMilestoneStepPage(projectId: UUID, milestoneStepId: UUID) =>
                 new EditMilestoneStepComponent(
                   milestoneStepService,
