@@ -42,6 +42,7 @@ import com.togger.ui.task.TaskStatusesState
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.timebox.TimeboxFeService
 import com.togger.ui.timebox.TimeboxReviewStats
+import com.togger.ui.timebox.TimeboxUi
 import com.togger.ui.timebox.gantt.TimeboxReviewGanttComponent
 
 import java.time.DayOfWeek
@@ -155,7 +156,7 @@ class ProjectHomeComponent(
         _ <- loadAllMilestones()
         _ <- loadMilestones()
         _ <- loadSummaries()
-        _ <- loadTimeboxes()
+        _ <- if (TimeboxUi.visible) loadTimeboxes() else IO.unit
         _ <- loadInFlightTasks()
       } yield ()
     )
@@ -299,7 +300,9 @@ class ProjectHomeComponent(
           ActiveTasksConfig("No tasks in progress, testing, waiting or blocked.")
         )
       ),
-      generalSection("Active timeboxes", timeboxes, "No active timeboxes.", bordered = true)((timeboxRow _).tupled),
+      if (TimeboxUi.visible)
+        generalSection("Active timeboxes", timeboxes, "No active timeboxes.", bordered = true)((timeboxRow _).tupled)
+      else emptyNode,
       generalSection("Active Milestones", milestones, "No current work.")((milestoneRow _).tupled)
     )
 

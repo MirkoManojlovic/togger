@@ -21,6 +21,7 @@ import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.synccheck.SyncPendingDot
 import com.togger.ui.synccheck.SyncPendingStore
 import com.togger.ui.task.DataExportFeService
+import com.togger.ui.timebox.TimeboxUi
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
@@ -339,7 +340,8 @@ class Sidebar(
                               collapsed = collapsed,
                               onTasksClick = Some(() => router.route(ShowAllTasksPage(project.id))),
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
-                              onTimeboxesClick = Some(() => router.route(ShowTimeboxesPage(project.id))),
+                              onTimeboxesClick =
+                                Option.when(TimeboxUi.visible)(() => router.route(ShowTimeboxesPage(project.id))),
                               exportPending = syncPendingStore.exportPending(project.id),
                               importPending = syncPendingStore.importPending(project.id),
                               onExportClick = Some(() => exportProject(project.id)),
