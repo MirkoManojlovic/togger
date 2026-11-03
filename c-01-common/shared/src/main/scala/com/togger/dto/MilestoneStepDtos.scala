@@ -6,8 +6,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-/** A step created together with its milestone; the milestone id and the position come from the request context. */
-case class NewMilestoneStepReq(name: String, description: String, startDate: LocalDate, dueDate: LocalDate)
+/** A step created together with its milestone; the milestone id comes from the request context. Steps with the same
+  * `stage` run in parallel and the stages run in the order of their numbers; absent, the stage is the index of the step
+  * in the list, so the steps run one after the other.
+  */
+case class NewMilestoneStepReq(
+  name: String,
+  description: String,
+  startDate: LocalDate,
+  dueDate: LocalDate,
+  stage: Option[Int] = None
+)
 
 /** `position` is the stage of the step: steps with the same position run in parallel, stages run in sequence. Absent
   * appends a new last stage, present inserts a new stage there and moves the later stages down. With `parallel` the
