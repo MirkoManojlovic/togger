@@ -9,6 +9,7 @@ import com.togger.ui.organization.OrganizationWithProjects
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.synccheck.SyncPendingDot
 import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.timebox.TimeboxUi
 import org.scalajs.dom
 
 import java.util.UUID
@@ -167,7 +168,8 @@ object ProjectNavMenu {
         "Create milestone" -> CreateMilestonePage(projectId),
         "Milestone history" -> ShowMilestoneHistoryPage(projectId)
       )
-    ),
+    )
+  ) ++ Option.when(TimeboxUi.visible)(
     ProjectNavGroup(
       "Timeboxes",
       Seq("Timeboxes" -> ShowTimeboxesPage(projectId), "Create timebox" -> CreateTimeboxPage(projectId))
