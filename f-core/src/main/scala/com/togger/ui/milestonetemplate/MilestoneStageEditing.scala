@@ -1,22 +1,5 @@
 package com.togger.ui.milestonetemplate
 
-/** The edits of an ordered list of steps; an index out of range changes nothing. */
-object MilestoneTemplateStepsEditing {
-
-  def add[A](steps: List[A], step: A): List[A] =
-    steps :+ step
-
-  def remove[A](steps: List[A], index: Int): List[A] =
-    if (steps.indices.contains(index)) steps.patch(index, Nil, 1) else steps
-
-  /** Moves the step `delta` places down (positive) or up (negative); it stops at the ends of the list. */
-  def move[A](steps: List[A], index: Int, delta: Int): List[A] = {
-    val target = index + delta
-    if (!steps.indices.contains(index) || !steps.indices.contains(target)) steps
-    else steps.updated(index, steps(target)).updated(target, steps(index))
-  }
-}
-
 /** The edits of steps grouped in stages: the outer list is the sequence of stages, the steps of an inner list run in
   * parallel. A step is addressed by its stage and its index inside the stage; an address out of range changes nothing,
   * and a stage left empty is dropped.
@@ -30,6 +13,16 @@ object MilestoneStageEditing {
 
   /** Stages of single steps: the way steps ran before they could run in parallel. */
   def sequential[A](steps: List[A]): Stages[A] = steps.map(List(_))
+
+  /** The items grouped by their stage number, in the order of the numbers and of the items inside a stage. */
+  def groupByStage[A](items: List[(Int, A)]): Stages[A] =
+    items.groupBy { case (stage, _) => stage }.toList.sortBy { case (stage, _) => stage }.map { case (_, inStage) =>
+      inStage.map { case (_, item) => item }
+    }
+
+  /** The stage index of each step, for the steps listed stage by stage. */
+  def stageIndexes[A](stages: Stages[A]): List[Int] =
+    stages.zipWithIndex.flatMap { case (inStage, stage) => inStage.map(_ => stage) }
 
   /** The step in a stage of its own after the last stage. */
   def add[A](stages: Stages[A], step: A): Stages[A] =

@@ -82,4 +82,13 @@ class MilestoneStageEditingTest extends AnyWordSpec with Matchers {
         List((0, 0), (1, 0), (1, 1))
     }
   }
+
+  "MilestoneStageEditing.groupByStage and stageIndexes" should {
+    "group the items by stage number in order and give the stage index of each" in {
+      val stages = groupByStage(List(5 -> "b", 1 -> "a", 5 -> "c"))
+
+      stages shouldBe List(List("a"), List("b", "c"))
+      stageIndexes(stages) shouldBe List(0, 1, 1)
+    }
+  }
 }

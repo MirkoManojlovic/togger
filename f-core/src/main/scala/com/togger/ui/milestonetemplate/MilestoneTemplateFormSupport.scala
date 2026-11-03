@@ -19,7 +19,7 @@ case class MilestoneTemplateForm(
   id: UUID = UUID.randomUUID(),
   name: String = "",
   description: String = "",
-  stepTemplateIds: List[UUID] = Nil
+  stages: List[List[UUID]] = Nil
 )
 
 object MilestoneTemplateFormSupport {
@@ -30,13 +30,16 @@ object MilestoneTemplateFormSupport {
 
   private val DeletedStepName = "(deleted step template)"
 
-  /** The step templates of the form in order, each with its name; one that no longer exists keeps its place. */
-  def stepNames(stepTemplateIds: List[UUID], available: Seq[FindMilestoneStepTemplateResp]): List[String] = {
+  /** The step templates of the form stage by stage, each with its name; one that no longer exists keeps its place. */
+  def stepNames(stages: List[List[UUID]], available: Seq[FindMilestoneStepTemplateResp]): List[List[String]] = {
     val namesById = available.map(template => template.id -> template.name).toMap
-    stepTemplateIds.map(namesById.getOrElse(_, DeletedStepName))
+    stages.map(_.map(namesById.getOrElse(_, DeletedStepName)))
   }
 
-  /** The ordered steps with buttons to move and remove them, and a dropdown to add a step template at the end. */
+  /** The steps by stage, numbered 1, 2a, 2b, ... (the steps of a stage run in parallel), with buttons to move them, to
+    * run them in parallel with the previous stage or after the others of their stage, and to remove them; and a
+    * dropdown to add a step template in a stage of its own at the end.
+    */
   def stepsEditor(
     form: Var[MilestoneTemplateForm],
     available: Signal[Seq[FindMilestoneStepTemplateResp]]
@@ -44,41 +47,65 @@ object MilestoneTemplateFormSupport {
     div(
       label(cls("block mb-2.5 text-sm font-medium text-heading"), "Steps"),
       child <-- form.signal
-        .map(_.stepTemplateIds)
+        .map(_.stages)
         .combineWith(available)
-        .map { case (ids, templates) =>
-          if (ids.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
+        .map { case (stages, templates) =>
+          if (stages.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
           else
             div(
               cls("mb-3"),
-              stepNames(ids, templates).zipWithIndex.map { case (name, index) =>
+              MilestoneStageEditing.rows(stepNames(stages, templates)).map { at =>
                 div(
                   cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
-                  span(cls("text-sm text-heading"), s"${index + 1}. $name"),
+                  span(cls("text-sm text-heading"), s"${at.label}. ${at.step}"),
                   div(
                     iconButton(
                       "Move up",
                       span("↑"),
                       rowIconButtonCls,
                       rowButtonMarginCls,
-                      onClick.mapToUnit --> (_ => moveStep(form, index, -1))
+                      onClick.mapToUnit --> (_ =>
+                        edit(form, MilestoneStageEditing.move(_, at.stage, at.indexInStage, -1))
+                      )
                     ),
                     iconButton(
                       "Move down",
                       span("↓"),
                       rowIconButtonCls,
                       rowButtonMarginCls,
-                      onClick.mapToUnit --> (_ => moveStep(form, index, 1))
+                      onClick.mapToUnit --> (_ =>
+                        edit(form, MilestoneStageEditing.move(_, at.stage, at.indexInStage, 1))
+                      )
                     ),
+                    if (at.stage > 0)
+                      iconButton(
+                        "Run in parallel with the previous stage",
+                        span("∥"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ =>
+                          edit(form, MilestoneStageEditing.joinPreviousStage(_, at.stage, at.indexInStage))
+                        )
+                      )
+                    else emptyNode,
+                    if (stages(at.stage).size > 1)
+                      iconButton(
+                        "Run after the others of its stage",
+                        span("→"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ =>
+                          edit(form, MilestoneStageEditing.splitFromStage(_, at.stage, at.indexInStage))
+                        )
+                      )
+                    else emptyNode,
                     iconButton(
                       "Remove",
                       TgIcons.trashIcon(className = "w-4 h-4"),
                       rowIconButtonDangerCls,
                       rowButtonMarginCls,
                       onClick.mapToUnit --> (_ =>
-                        form.update(f =>
-                          f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.remove(f.stepTemplateIds, index))
-                        )
+                        edit(form, MilestoneStageEditing.remove(_, at.stage, at.indexInStage))
                       )
                     )
                   )
@@ -89,17 +116,18 @@ object MilestoneTemplateFormSupport {
       child <-- available.map(templates => addStepDropdown(form, templates))
     )
 
-  private def moveStep(form: Var[MilestoneTemplateForm], index: Int, delta: Int): Unit =
-    form.update(f => f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.move(f.stepTemplateIds, index, delta)))
+  private def edit(
+    form: Var[MilestoneTemplateForm],
+    change: MilestoneStageEditing.Stages[UUID] => MilestoneStageEditing.Stages[UUID]
+  ): Unit =
+    form.update(f => f.copy(stages = change(f.stages)))
 
   private def addStepDropdown(form: Var[MilestoneTemplateForm], templates: Seq[FindMilestoneStepTemplateResp]) =
     TgSelectDropdown(
       inputSignal = Val(NoStepValue),
       inputStateUpdater = Observer[String] { value =>
         if (value != NoStepValue)
-          form.update(f =>
-            f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.add(f.stepTemplateIds, UUID.fromString(value)))
-          )
+          edit(form, MilestoneStageEditing.add(_, UUID.fromString(value)))
       },
       labelValue = "Add a step",
       options = templates.sortBy(_.name).map { template =>

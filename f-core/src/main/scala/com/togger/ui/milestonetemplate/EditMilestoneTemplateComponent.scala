@@ -62,7 +62,7 @@ class EditMilestoneTemplateComponent(
             id = dto.id,
             name = dto.name,
             description = dto.description,
-            stepTemplateIds = dto.steps.map(_.stepTemplateId).toList
+            stages = MilestoneStageEditing.groupByStage(dto.steps.map(step => step.stage -> step.stepTemplateId).toList)
           )
         )
     }
@@ -76,7 +76,7 @@ class EditMilestoneTemplateComponent(
       id = form.id,
       name = form.name,
       description = form.description,
-      stages = form.stepTemplateIds.map(List(_))
+      stages = form.stages
     )
     spinnerService
       .runWithSpinner(milestoneTemplateService.updateMilestoneTemplate(dto).flatTap {
