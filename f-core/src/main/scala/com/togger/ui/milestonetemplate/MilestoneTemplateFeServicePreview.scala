@@ -28,7 +28,7 @@ class MilestoneTemplateFeServicePreview(
           val template = data.templates.upsert(
             PreviewMilestoneTemplate(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant)
           )
-          data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
+          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
           PreviewResponses.ok(toDto(template))
         }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
       )
@@ -45,8 +45,10 @@ class MilestoneTemplateFeServicePreview(
               .exists(v =>
                 v.name == dto.name && v.description == dto.description && v.stepTemplateIds == dto.stepTemplateIds
               )
-            if (!unchanged)
-              data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
+            if (!unchanged) {
+              val _ =
+                data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
+            }
             PreviewResponses.ok(toDto(template))
           }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
       })
@@ -91,7 +93,7 @@ class MilestoneTemplateFeServicePreview(
       IO.defer {
         if (data.templates.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](NotFoundMessage)
         else {
-          data.deleteTemplate(id)
+          val _ = data.deleteTemplate(id)
           PreviewResponses.okEmpty("Milestone template deleted successfully")
         }
       }

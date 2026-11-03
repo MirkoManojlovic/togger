@@ -31,21 +31,21 @@ class MilestoneTemplateController(
     }
   }
 
-  val findById = endpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = endpoints.findByIdEndpoint.serverLogic { _ => id =>
     templateService.findById(id).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindMilestoneTemplateResp]
     }
   }
 
-  val update = endpoints.updateEndpoint.serverLogic { auth => dto =>
+  val update = endpoints.updateEndpoint.serverLogic { _ => dto =>
     templateService.update(dto.id, dto.name, dto.description, dto.stepTemplateIds, tgClock.currentInstant).map {
       case Right(full) => TgJsonSuccess.justBodyRight(toDto(full))
       case Left(error) => error.toBadRequestLeft[FindMilestoneTemplateResp]
     }
   }
 
-  val findByProjectId = endpoints.findByProjectIdEndpoint.serverLogic { auth => request =>
+  val findByProjectId = endpoints.findByProjectIdEndpoint.serverLogic { _ => request =>
     val (projectId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       templateService
@@ -54,7 +54,7 @@ class MilestoneTemplateController(
     }
   }
 
-  val listVersions = endpoints.listVersionsEndpoint.serverLogic { auth => request =>
+  val listVersions = endpoints.listVersionsEndpoint.serverLogic { _ => request =>
     val (templateId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
       templateService
@@ -63,7 +63,7 @@ class MilestoneTemplateController(
     }
   }
 
-  val delete = endpoints.deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = endpoints.deleteByIdEndpoint.serverLogic { _ => id =>
     templateService.delete(id).map {
       case Right(_)    => TgJsonSuccess.justMessageRight("Milestone template deleted successfully")
       case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]

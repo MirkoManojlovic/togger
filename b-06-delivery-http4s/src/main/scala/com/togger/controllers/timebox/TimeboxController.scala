@@ -94,7 +94,7 @@ class TimeboxController(
     }
   }
 
-  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = timeboxEndpoints.findByIdEndpoint.serverLogic { _ => id =>
     timeboxService.getCurrent(id).flatMap(respond)
   }
 

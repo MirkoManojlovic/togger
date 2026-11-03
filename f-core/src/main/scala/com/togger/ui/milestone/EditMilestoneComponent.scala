@@ -10,8 +10,6 @@ import com.togger.dto.CreateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.MilestoneStatus
-import com.togger.routes.FrontendPage
-import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
@@ -54,8 +52,6 @@ class EditMilestoneComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   projectService: ProjectService,
-  router: TgRouter[FrontendPage],
-  projectId: UUID,
   milestoneId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)

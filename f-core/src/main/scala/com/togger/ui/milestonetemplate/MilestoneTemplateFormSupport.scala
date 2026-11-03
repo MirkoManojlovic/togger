@@ -46,46 +46,45 @@ object MilestoneTemplateFormSupport {
       child <-- form.signal
         .map(_.stepTemplateIds)
         .combineWith(available)
-        .map {
-          case (ids, templates) =>
-            if (ids.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
-            else
-              div(
-                cls("mb-3"),
-                stepNames(ids, templates).zipWithIndex.map { case (name, index) =>
+        .map { case (ids, templates) =>
+          if (ids.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
+          else
+            div(
+              cls("mb-3"),
+              stepNames(ids, templates).zipWithIndex.map { case (name, index) =>
+                div(
+                  cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
+                  span(cls("text-sm text-heading"), s"${index + 1}. $name"),
                   div(
-                    cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
-                    span(cls("text-sm text-heading"), s"${index + 1}. $name"),
-                    div(
-                      iconButton(
-                        "Move up",
-                        span("↑"),
-                        rowIconButtonCls,
-                        rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ => moveStep(form, index, -1))
-                      ),
-                      iconButton(
-                        "Move down",
-                        span("↓"),
-                        rowIconButtonCls,
-                        rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ => moveStep(form, index, 1))
-                      ),
-                      iconButton(
-                        "Remove",
-                        TgIcons.trashIcon(className = "w-4 h-4"),
-                        rowIconButtonDangerCls,
-                        rowButtonMarginCls,
-                        onClick.mapToUnit --> (_ =>
-                          form.update(f =>
-                            f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.remove(f.stepTemplateIds, index))
-                          )
+                    iconButton(
+                      "Move up",
+                      span("↑"),
+                      rowIconButtonCls,
+                      rowButtonMarginCls,
+                      onClick.mapToUnit --> (_ => moveStep(form, index, -1))
+                    ),
+                    iconButton(
+                      "Move down",
+                      span("↓"),
+                      rowIconButtonCls,
+                      rowButtonMarginCls,
+                      onClick.mapToUnit --> (_ => moveStep(form, index, 1))
+                    ),
+                    iconButton(
+                      "Remove",
+                      TgIcons.trashIcon(className = "w-4 h-4"),
+                      rowIconButtonDangerCls,
+                      rowButtonMarginCls,
+                      onClick.mapToUnit --> (_ =>
+                        form.update(f =>
+                          f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.remove(f.stepTemplateIds, index))
                         )
                       )
                     )
                   )
-                }
-              )
+                )
+              }
+            )
         },
       child <-- available.map(templates => addStepDropdown(form, templates))
     )

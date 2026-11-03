@@ -161,7 +161,7 @@ class MilestoneStepFeServicePreview(
           PreviewResponses.badRequest[TgEmptyBody](stepHasTasks(data.taskCounts(id)._1))
         else {
           data.stepVersions.deleteWhere(_.milestoneStepId == id)
-          data.steps.delete(id)
+          val _ = data.steps.delete(id)
           PreviewResponses.okEmpty("Milestone step deleted successfully")
         }
       }

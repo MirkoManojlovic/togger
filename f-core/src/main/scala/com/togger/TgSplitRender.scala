@@ -962,8 +962,6 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                     spinnerService,
                     tgClock,
                     projectService,
-                    router,
-                    projectId,
                     id,
                     toast
                   ).element,

@@ -125,7 +125,7 @@ class MilestoneController(
       }
   }
 
-  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { auth => id =>
+  val findById = milestoneEndpoints.findByIdEndpoint.serverLogic { _ => id =>
     milestoneService
       .getCurrent(id)
       .flatMap {
@@ -215,7 +215,7 @@ class MilestoneController(
   private def stepCounts(milestoneIds: List[UUID]): IO[Map[UUID, MilestoneStepCounts]] =
     milestoneStepService.countsByMilestoneIds(milestoneIds)
 
-  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { auth => id =>
+  val delete = milestoneEndpoints.deleteByIdEndpoint.serverLogic { _ => id =>
     milestoneStepService.countTasksOfMilestone(id).flatMap {
       case tasks if tasks > 0 => IO.pure(MilestoneHasTasks(tasks).toBadRequestLeft[TgJsonSuccess.TgEmptyBody])
       case _ =>

@@ -263,8 +263,8 @@ class EditTaskComponent(
 
           (statusesAndTaskCall, membersCall, labelsCall, milestonesCall, stepsCall).parMapN {
             (_, membersEither, labelsEither, milestonesEither, stepsEither) =>
-              membersEither.map(success => badges.setMembers(success.body.get))
-              labelsEither.map(success => badges.setLabels(success.body.get))
+              val _ = membersEither.map(success => badges.setMembers(success.body.get))
+              val _ = labelsEither.map(success => badges.setLabels(success.body.get))
               milestonesEither.map { success =>
                 badges.setMilestones(success.body.get)
                 stepsEither.map(steps => badges.setSteps(MilestoneStepLabels.ordered(steps.body.get, success.body.get)))

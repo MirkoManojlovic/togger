@@ -23,7 +23,7 @@ class MilestoneStepTemplateFeServicePreview(ctx: PreviewContext, data: Milestone
         val template = data.templates.upsert(
           PreviewMilestoneStepTemplate(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant)
         )
-        data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description))
+        val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description))
         PreviewResponses.ok(toDto(template))
       }
     )
@@ -37,7 +37,9 @@ class MilestoneStepTemplateFeServicePreview(ctx: PreviewContext, data: Milestone
         case Some(template) =>
           val unchanged =
             data.latestVersion(template.id).exists(v => v.name == dto.name && v.description == dto.description)
-          if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description))
+          if (!unchanged) {
+            val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description))
+          }
           PreviewResponses.ok(toDto(template))
       })
     )
@@ -84,7 +86,7 @@ class MilestoneStepTemplateFeServicePreview(ctx: PreviewContext, data: Milestone
           )
         else if (data.templates.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody](NotFoundMessage)
         else {
-          data.deleteTemplate(id)
+          val _ = data.deleteTemplate(id)
           PreviewResponses.okEmpty("Milestone step template deleted successfully")
         }
       }
