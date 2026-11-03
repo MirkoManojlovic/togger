@@ -10,13 +10,15 @@ import java.util.UUID
 
 case class PreviewMilestoneTemplate(id: UUID, projectId: UUID, createdAt: Instant)
 
-/** A version keeps the ids of its step templates in order; names and descriptions are read from the step templates. */
+/** A version keeps the ids of its step templates by stage, the ones of a stage run in parallel; names and descriptions
+  * are read from the step templates.
+  */
 case class PreviewMilestoneTemplateVersion(
   version: UUID,
   milestoneTemplateId: UUID,
   name: String,
   description: String,
-  stepTemplateIds: List[UUID],
+  stages: List[List[UUID]],
   createdAt: Instant
 )
 
@@ -75,7 +77,7 @@ class MilestoneTemplatesPreviewData(
           template.id,
           default.name,
           default.description,
-          default.stepNames.flatMap(stepTemplateIdsByName.get),
+          default.stepNames.flatMap(stepTemplateIdsByName.get).map(List(_)),
           now
         )
       )
@@ -84,15 +86,17 @@ class MilestoneTemplatesPreviewData(
 
   private def namesUsingStepTemplate(stepTemplateId: UUID): List[String] =
     templates.all.flatMap(template =>
-      latestVersion(template.id).filter(_.stepTemplateIds.contains(stepTemplateId)).map(_.name)
+      latestVersion(template.id).filter(_.stages.flatten.contains(stepTemplateId)).map(_.name)
     )
 
   /** Like the backend: older versions lose the deleted step template from their steps. */
   private def dropStepTemplate(stepTemplateId: UUID): Unit =
     templateVersions.all
-      .filter(_.stepTemplateIds.contains(stepTemplateId))
+      .filter(_.stages.flatten.contains(stepTemplateId))
       .foreach(version =>
-        templateVersions.upsert(version.copy(stepTemplateIds = version.stepTemplateIds.filterNot(_ == stepTemplateId)))
+        templateVersions.upsert(
+          version.copy(stages = version.stages.map(_.filterNot(_ == stepTemplateId)).filter(_.nonEmpty))
+        )
       )
 
   private def deleteProjectData(projectId: UUID): Unit =

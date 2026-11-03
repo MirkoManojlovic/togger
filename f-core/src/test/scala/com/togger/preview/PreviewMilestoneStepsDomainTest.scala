@@ -100,6 +100,48 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
       }
     }
 
+    "let a new step join the last stage, or the stage at a position, without moving anything" in { _ =>
+      val s = new Services
+      for {
+        (milestoneId, ids) <- s.milestoneWithSteps()
+        inLast <- s.env.run(
+          s.steps.createMilestoneStep(CreateMilestoneStepReq(milestoneId, "P", "", monday, friday, parallel = true))
+        )
+        inFirst <- s.env.run(
+          s.steps.createMilestoneStep(
+            CreateMilestoneStepReq(milestoneId, "Q", "", monday, friday, Some(0), parallel = true)
+          )
+        )
+        listed <- s.env.run(s.steps.findByMilestoneId(milestoneId))
+        untouched <- s.env.run(s.steps.listAllVersions(ids(0)))
+      } yield {
+        inLast.map(_.position) shouldBe Right(3)
+        inFirst.map(_.position) shouldBe Right(1) // never the stage of Shelf
+        listed.map(_.map(step => step.name -> step.position).toSet) shouldBe
+          Right(Set("Shelf" -> 0, "A" -> 1, "Q" -> 1, "B" -> 2, "C" -> 3, "P" -> 3))
+        untouched.map(_.size) shouldBe Right(1)
+      }
+    }
+
+    "reorder into stages, versioning only the steps whose stage changes" in { _ =>
+      val s = new Services
+      for {
+        (milestoneId, ids) <- s.milestoneWithSteps()
+        reordered <- s.env.run(
+          s.steps.reorderMilestoneSteps(
+            ReorderMilestoneStepsReq(milestoneId, List(List(ids(0)), List(ids(1), ids(2))), "Build in parallel")
+          )
+        )
+        untouched <- s.env.run(s.steps.listAllVersions(ids(0)))
+        moved <- s.env.run(s.steps.listAllVersions(ids(2)))
+      } yield {
+        reordered.map(_.map(step => step.name -> step.position)) shouldBe
+          Right(List("Shelf" -> 0, "A" -> 1, "B" -> 2, "C" -> 2))
+        untouched.map(_.size) shouldBe Right(1)
+        moved.map(_.map(v => (v.position, v.changeComment))) shouldBe Right(List((2, "Build in parallel"), (3, "")))
+      }
+    }
+
     "reject dates outside the milestone or on a day off, and an unknown milestone" in { _ =>
       val s = new Services
       for {

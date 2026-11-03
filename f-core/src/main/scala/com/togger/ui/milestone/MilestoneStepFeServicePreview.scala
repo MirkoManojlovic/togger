@@ -11,6 +11,7 @@ import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto._
 import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.MilestoneStepStages
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.preview._
 
@@ -104,13 +105,16 @@ class MilestoneStepFeServicePreview(
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer {
         val (defaults, movable) = data.latestVersionsOf(dto.milestoneId).partition(isDefault)
-        val requested = dto.stages.flatten.filterNot(defaults.map(_.milestoneStepId).contains)
+        val defaultIds = defaults.map(_.milestoneStepId).toSet
+        val requestedStages = dto.stages.map(_.filterNot(defaultIds.contains)).filter(_.nonEmpty)
+        val requested = requestedStages.flatten
         if (dto.changeComment.trim.isEmpty) PreviewResponses.badRequest[List[FindMilestoneStepResp]](ChangeCommentEmpty)
         else if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
           PreviewResponses.badRequest[List[FindMilestoneStepResp]](StepsDoNotMatchMilestone)
         else {
-          val byStepId = movable.map(version => version.milestoneStepId -> version).toMap
-          renumber(defaults ++ requested.map(byStepId), 0, dto.changeComment.trim)
+          val current = defaults ++ movable
+          val positions = MilestoneStepStages.reorderedPositions(current.map(asStaged), requestedStages)
+          moveTo(current.map(version => version -> positions(version.milestoneStepId)), dto.changeComment.trim)
           PreviewResponses.ok(stepsOf(dto.milestoneId))
         }
       }
@@ -167,11 +171,14 @@ class MilestoneStepFeServicePreview(
       }
     )
 
-  /** Appends the step, or inserts it at the position and moves the later steps down by one. */
+  /** Appends the step as a new last stage, or inserts it as a new stage at the position and moves the later stages down
+    * by one; when `parallel` it joins the last stage (or the stage at the position) instead. Like the backend.
+    */
   private def create(milestone: PreviewMilestone, dto: CreateMilestoneStepReq): FindMilestoneStepResp = {
     val now = ctx.clock.currentInstant
     val current = data.latestVersionsOf(milestone.id)
-    val insertAt = dto.position.map(_.max(current.takeWhile(isDefault).size)).filter(_ < current.size)
+    val staged = current.map(asStaged)
+    val placement = MilestoneStepStages.placementOf(staged, dto.position, dto.parallel)
     val step = data.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), milestone.id, now))
     val first = data.stepVersions.upsert(
       PreviewMilestoneStepVersion(
@@ -180,7 +187,7 @@ class MilestoneStepFeServicePreview(
         name = dto.name,
         description = dto.description,
         statusValue = MilestoneStepStatus.Planned.value,
-        position = insertAt.getOrElse(current.lastOption.map(_.position + 1).getOrElse(0)),
+        position = MilestoneStepStages.positionOf(placement),
         startDate = dto.startDate,
         dueDate = dto.dueDate,
         endDate = None,
@@ -189,21 +196,21 @@ class MilestoneStepFeServicePreview(
         changeComment = ""
       )
     )
-    insertAt.foreach { index =>
-      renumber(current.take(index), 0, MoveForNewStepComment)
-      renumber(current.drop(index), index + 1, MoveForNewStepComment)
-    }
+    val moves = MilestoneStepStages.movesFor(staged, placement).toMap
+    moveTo(current.flatMap(version => moves.get(version.milestoneStepId).map(version -> _)), MoveForNewStepComment)
     toDto(step, first)
   }
 
-  /** Gives `ordered` the positions `firstPosition`, `firstPosition + 1`, ... and versions only the ones that move. */
+  private def asStaged(version: PreviewMilestoneStepVersion): MilestoneStepStages.Staged =
+    MilestoneStepStages.Staged(version.milestoneStepId, version.position, isDefault(version))
+
   private def isDefault(version: PreviewMilestoneStepVersion): Boolean =
     DefaultMilestoneStep.isDefaultName(version.name)
 
-  private def renumber(ordered: List[PreviewMilestoneStepVersion], firstPosition: Int, comment: String): Unit = {
+  /** Gives every step its target position and versions only the ones that move. */
+  private def moveTo(targets: List[(PreviewMilestoneStepVersion, Int)], comment: String): Unit = {
     val now = ctx.clock.currentInstant
-    ordered.zipWithIndex.foreach { case (version, index) =>
-      val position = firstPosition + index
+    targets.foreach { case (version, position) =>
       if (version.position != position)
         data.stepVersions.upsert(
           version.copy(

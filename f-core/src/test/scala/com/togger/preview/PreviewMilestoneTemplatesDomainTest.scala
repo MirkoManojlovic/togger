@@ -54,6 +54,50 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
       }
     }
 
+    "keep the steps of a stage together and ignore their order inside the stage" in { _ =>
+      val s = new Services
+      for {
+        ids <- s.stepTemplateIds()
+        created <- s.env.run(
+          s.templates.createMilestoneTemplate(
+            CreateMilestoneTemplateReq(
+              DemoIdentity.ProjectId,
+              "Parallel",
+              "d",
+              List(List(ids("Design")), List(ids("Staging"), ids("Prototype")))
+            )
+          )
+        )
+        id = created.toOption.get.id
+        sameStage <- s.env.run(
+          s.templates.updateMilestoneTemplate(
+            UpdateMilestoneTemplateReq(
+              id,
+              "Parallel",
+              "d",
+              List(List(ids("Design")), List(ids("Prototype"), ids("Staging")))
+            )
+          )
+        )
+        sequential <- s.env.run(
+          s.templates.updateMilestoneTemplate(
+            UpdateMilestoneTemplateReq(
+              id,
+              "Parallel",
+              "d",
+              List(List(ids("Design")), List(ids("Prototype")), List(ids("Staging")))
+            )
+          )
+        )
+      } yield {
+        created.map(_.steps.map(step => step.name -> step.stage)) shouldBe
+          Right(List("Design" -> 0, "Prototype" -> 1, "Staging" -> 1))
+        sameStage.map(_.latestVersion) shouldBe created.map(_.latestVersion)
+        sequential.map(_.steps.map(step => step.name -> step.stage)) shouldBe
+          Right(List("Design" -> 0, "Prototype" -> 1, "Staging" -> 2))
+      }
+    }
+
     "create a template with its steps and save a new version only when something changed" in { _ =>
       val s = new Services
       for {

@@ -54,6 +54,25 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
       }
     }
 
+    "put the steps that ask for the same stage in one position, after the Shelf step" in { _ =>
+      val s = new Services
+      for {
+        created <- s.env.run(
+          s.milestones.createMilestone(
+            create(
+              List(
+                NewMilestoneStepReq("Design", "", monday, friday, Some(5)),
+                NewMilestoneStepReq("Backend", "", nextMonday, nextFriday, Some(10)),
+                NewMilestoneStepReq("Frontend", "", nextMonday, nextFriday, Some(10))
+              )
+            )
+          )
+        )
+        id = created.toOption.get.id
+      } yield s.steps.latestVersionsOf(id).map(v => (v.name, v.position)).toSet shouldBe
+        Set(("Shelf", 0), ("Design", 1), ("Backend", 2), ("Frontend", 2))
+    }
+
     "give a milestone without steps only the Shelf step with the dates of the milestone" in { _ =>
       val s = new Services
       for {

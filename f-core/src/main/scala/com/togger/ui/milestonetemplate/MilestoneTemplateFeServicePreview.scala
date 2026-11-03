@@ -28,7 +28,7 @@ class MilestoneTemplateFeServicePreview(
           val template = data.templates.upsert(
             PreviewMilestoneTemplate(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant)
           )
-          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages.flatten))
+          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages))
           PreviewResponses.ok(toDto(template))
         }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
       )
@@ -42,12 +42,10 @@ class MilestoneTemplateFeServicePreview(
           stepTemplateError(template.projectId, dto.stages.flatten).fold {
             val unchanged = data
               .latestVersion(template.id)
-              .exists(v =>
-                v.name == dto.name && v.description == dto.description && v.stepTemplateIds == dto.stages.flatten
-              )
+              .exists(v => v.name == dto.name && v.description == dto.description && sameStages(v.stages, dto.stages))
             if (!unchanged) {
               val _ =
-                data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages.flatten))
+                data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages))
             }
             PreviewResponses.ok(toDto(template))
           }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
@@ -105,26 +103,31 @@ class MilestoneTemplateFeServicePreview(
       .find(id => !stepTemplates.templates.find(id).exists(_.projectId == projectId))
       .map(notInProject)
 
+  /** The same step templates in the same sequence of stages; the order inside a stage does not matter. */
+  private def sameStages(left: List[List[UUID]], right: List[List[UUID]]): Boolean =
+    left.map(_.toSet).filter(_.nonEmpty) == right.map(_.toSet).filter(_.nonEmpty)
+
   private def newVersion(
     templateId: UUID,
     name: String,
     description: String,
-    stepTemplateIds: List[UUID]
+    stages: List[List[UUID]]
   ): PreviewMilestoneTemplateVersion =
     PreviewMilestoneTemplateVersion(
       UUID.randomUUID(),
       templateId,
       name,
       description,
-      stepTemplateIds,
+      stages.map(_.distinct).filter(_.nonEmpty),
       ctx.clock.currentInstant
     )
 
-  private def stepsOf(stepTemplateIds: List[UUID]): List[MilestoneTemplateStepDto] =
-    stepTemplateIds.zipWithIndex.flatMap { case (id, stage) =>
-      stepTemplates
-        .latestVersion(id)
-        .map(version => MilestoneTemplateStepDto(id, version.name, version.description, stage))
+  private def stepsOf(stages: List[List[UUID]]): List[MilestoneTemplateStepDto] =
+    stages.zipWithIndex.flatMap { case (ids, stage) =>
+      ids
+        .flatMap(id => stepTemplates.latestVersion(id).map(id -> _))
+        .sortBy { case (id, version) => (version.name, id.toString) }
+        .map { case (id, version) => MilestoneTemplateStepDto(id, version.name, version.description, stage) }
     }
 
   private def toVersionDto(version: PreviewMilestoneTemplateVersion): MilestoneTemplateVersionDto =
@@ -133,7 +136,7 @@ class MilestoneTemplateFeServicePreview(
       version.milestoneTemplateId,
       version.name,
       version.description,
-      stepsOf(version.stepTemplateIds),
+      stepsOf(version.stages),
       version.createdAt
     )
 
@@ -144,7 +147,7 @@ class MilestoneTemplateFeServicePreview(
         projectId = template.projectId,
         name = version.name,
         description = version.description,
-        steps = stepsOf(version.stepTemplateIds),
+        steps = stepsOf(version.stages),
         latestVersion = version.version,
         updatedAt = version.createdAt
       )

@@ -15,6 +15,7 @@ import com.togger.dto.NewMilestoneStepReq
 import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.DefaultMilestoneStep
 import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStages
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.preview._
 
@@ -87,7 +88,14 @@ class MilestoneFeServicePreview(
       dto.startDate,
       dto.dueDate
     )
-    (shelf +: dto.steps).zipWithIndex.foreach { case (step, position) =>
+    // steps that ask for the same stage run in parallel; the stages are numbered after the Shelf step
+    val positions = 0 +: MilestoneStepStages.numberedStages(
+      dto.steps.zipWithIndex.map { case (step, index) =>
+        step.stage.getOrElse(index)
+      },
+      1
+    )
+    (shelf +: dto.steps).zip(positions).foreach { case (step, position) =>
       val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now))
       steps.stepVersions.upsert(
         PreviewMilestoneStepVersion(
