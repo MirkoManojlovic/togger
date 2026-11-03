@@ -45,10 +45,8 @@ class MilestoneWithStepsService(
   }
 
   /** The positions after the Shelf step: the requested stages numbered one after the other, from 1. */
-  private def stagePositions(steps: List[(MilestoneStep, MilestoneStepVersion)]): List[Int] = {
-    val stageNumbers = steps.map { case (_, version) => version.position }.distinct.sorted.zipWithIndex.toMap
-    steps.map { case (_, version) => stageNumbers(version.position) + 1 }
-  }
+  private def stagePositions(steps: List[(MilestoneStep, MilestoneStepVersion)]): List[Int] =
+    MilestoneStepStages.numberedStages(steps.map { case (_, version) => version.position }, 1)
 
   private def shelfStep(milestone: Milestone, firstVersion: MilestoneVersion): (MilestoneStep, MilestoneStepVersion) = {
     val step = MilestoneStep(UUID.randomUUID(), milestone.id, milestone.createdAt)

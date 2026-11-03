@@ -45,20 +45,19 @@ class MilestoneStepService(
     logger.info(s"Creating a ${sp(milestoneStep)}, with ${sp(firstVersion)} at ${sp(position)}, parallel $parallel")
     (for {
       current <- orderedLatestVersions(milestoneStep.milestoneId)
-      placement = MilestoneStepStages.placementOf(current, position, parallel)
-      stage = placement match {
-        case MilestoneStepStages.JoinStage(at) => at
-        case MilestoneStepStages.NewStage(at)  => at
-      }
+      staged = current.map(asStaged)
+      placement = MilestoneStepStages.placementOf(staged, position, parallel)
+      stage = MilestoneStepStages.positionOf(placement)
       savedStep <- milestoneStepRepo.insert(milestoneStep)
       savedVersion <- milestoneStepVersionRepo.insert(
         firstVersion.copy(milestoneStepId = savedStep.id, position = stage)
       )
-      _ <- placement match {
-        case MilestoneStepStages.JoinStage(_) => ().pure[ConnectionIO]
-        case MilestoneStepStages.NewStage(at) =>
-          moveTo(current.filter(_.position >= at).map(step => step -> (step.position + 1)), MoveForNewStepComment, now)
-      }
+      moves = MilestoneStepStages.movesFor(staged, placement).toMap
+      _ <- moveTo(
+        current.flatMap(step => moves.get(step.milestoneStepId).map(step -> _)),
+        MoveForNewStepComment,
+        now
+      )
     } yield {
       logger.info(s"Milestone step created successfully ${sp(savedStep)} with ${sp(savedVersion)}")
       MilestoneStepWithOneVersion(savedStep, savedVersion)
@@ -119,7 +118,7 @@ class MilestoneStepService(
     if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
       (StepsDoNotMatchMilestone: MilestoneStepError).asLeft[List[MilestoneStepWithOneVersion]].pure[ConnectionIO]
     else {
-      val positions = MilestoneStepStages.reorderedPositions(current, requestedStages)
+      val positions = MilestoneStepStages.reorderedPositions(current.map(asStaged), requestedStages)
       moveTo(current.map(step => step -> positions(step.milestoneStepId)), changeComment, now) *>
         findAllWithLatest(milestoneId).map(_.asRight[MilestoneStepError])
     }
@@ -211,6 +210,9 @@ class MilestoneStepService(
   /** The tasks in any step of the milestone. */
   def countTasksOfMilestone(milestoneId: UUID): IO[Int] =
     milestoneStepRepo.countTasksOfMilestone(milestoneId).transact(transactor)
+
+  private def asStaged(version: MilestoneStepVersion): MilestoneStepStages.Staged =
+    MilestoneStepStages.Staged(version.milestoneStepId, version.position, isDefault(version))
 
   private def isDefault(version: MilestoneStepVersion): Boolean = DefaultMilestoneStep.isDefaultName(version.name)
 
