@@ -2,12 +2,13 @@ package com.togger.demo
 
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
+import com.togger.task.DefaultTaskTemplates
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
-/** The default statuses and labels of every demo project, and a few task templates. */
+/** The default statuses and labels of every demo project, and their default task templates. */
 object DemoTaskConfigData {
   private val projectIds = DemoOrganizationsData.projectIds
 
@@ -29,40 +30,28 @@ object DemoTaskConfigData {
       (label, i) <- DefaultTaskLabel.values.toList.zipWithIndex
     } yield DemoTaskLabel(labelId(index, i), projectId, label)
 
+  /** Every project has the default template of each default label, like a project created in the backend. */
   def templates(now: Instant): List[DemoTaskTemplate] =
-    templateSpecs.map { case (number, projectIndex, labelOpt, versions) =>
+    for {
+      (projectId, projectIndex) <- projectIds.zipWithIndex
+      label <- DefaultTaskLabel.values.toList
+      (name, body) <- DefaultTaskTemplates.contentOf(label.labelName).toList
+    } yield {
+      val number = projectIndex * 20 + label.i
       DemoTaskTemplate(
-        templateId(number),
-        projectIds(projectIndex),
-        labelOpt.map(label => labelId(projectIndex, label.i)),
+        DemoSeedIds.id(DemoSeedIds.TaskTemplate, number),
+        projectId,
+        Some(labelId(projectIndex, label.i)),
         DemoIdentity.AccountId,
-        now.minus(versions.size * 10L, ChronoUnit.DAYS),
-        versions.zipWithIndex.map { case ((name, body), i) =>
+        now.minus(10L, ChronoUnit.DAYS),
+        List(
           DemoTaskTemplateVersion(
-            DemoSeedIds.id(DemoSeedIds.TaskTemplate, number * 10 + i + 100),
+            DemoSeedIds.id(DemoSeedIds.TaskTemplate, number + 1000),
             name,
             body,
-            now.minus((versions.size - i) * 10L, ChronoUnit.DAYS)
+            now.minus(10L, ChronoUnit.DAYS)
           )
-        }
+        )
       )
     }
-
-  private def templateId(n: Int): UUID = DemoSeedIds.id(DemoSeedIds.TaskTemplate, n)
-
-  private val bugBody =
-    "## What happened\n\n\n## Steps to reproduce\n\n1. \n2. \n\n## Expected behaviour\n\n\n## Environment\n\n- Version:\n- Browser:\n"
-  private val bugBodyV1 = "## What happened\n\n\n## Steps to reproduce\n\n1. \n\n## Expected behaviour\n"
-  private val featureBody =
-    "## Goal\n\n\n## Why now\n\n\n## Acceptance criteria\n\n- [ ] \n- [ ] \n\n## Out of scope\n"
-  private val doneBody =
-    "## Definition of done\n\n- [ ] Code reviewed\n- [ ] Tests added or updated\n- [ ] Documentation updated\n- [ ] Deployed to staging\n"
-
-  private val templateSpecs: List[(Int, Int, Option[DefaultTaskLabel], List[(String, String)])] = List(
-    (1, 0, Some(DefaultTaskLabel.Bug), List("Bug report" -> bugBodyV1, "Bug report" -> bugBody)),
-    (2, 0, Some(DefaultTaskLabel.Feature), List("Feature request" -> featureBody)),
-    (3, 0, None, List("Definition of done" -> doneBody)),
-    (4, 1, Some(DefaultTaskLabel.Bug), List("Mobile bug report" -> bugBody.replace("Browser", "Device"))),
-    (5, 2, Some(DefaultTaskLabel.Docs), List("Documentation page" -> "## Audience\n\n\n## Outline\n\n\n## Examples\n"))
-  )
 }
