@@ -108,7 +108,7 @@ class MilestoneStepController(
       changeComment = ""
     )
     milestoneStepService
-      .createMilestoneStep(step, firstVersion, dto.position, now)
+      .createMilestoneStep(step, firstVersion, dto.position, dto.parallel, now)
       .map(result => TgJsonSuccess.justBodyRight(toDto(result)))
   }
 
@@ -182,7 +182,7 @@ class MilestoneStepController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[List[FindMilestoneStepResp]])
       case Right(_) =>
         milestoneStepService
-          .reorder(dto.milestoneId, dto.stepIds, dto.changeComment.trim, tgClock.currentInstant)
+          .reorder(dto.milestoneId, dto.stages, dto.changeComment.trim, tgClock.currentInstant)
           .flatMap {
             case Right(steps) => withTaskCounts(steps).map(found => TgJsonSuccess.justBodyRight(found))
             case Left(error)  => IO.pure(error.toBadRequestLeft[List[FindMilestoneStepResp]])

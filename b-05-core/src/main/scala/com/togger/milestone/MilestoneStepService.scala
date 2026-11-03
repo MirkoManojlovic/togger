@@ -31,28 +31,33 @@ class MilestoneStepService(
 
   private val MoveForNewStepComment = "Moved to make room for a new step"
 
-  /** Appends the step, or inserts it at `position` and moves the later steps down by one. */
+  /** Appends the step as a new last stage, or inserts it as a new stage at `position` and moves the stages from there
+    * down by one. When `parallel`, the step joins the last stage (or the stage at `position`) instead, and nothing
+    * moves. A step never joins the stage of a default step.
+    */
   def createMilestoneStep(
     milestoneStep: MilestoneStep,
     firstVersion: MilestoneStepVersion,
     position: Option[Int],
+    parallel: Boolean,
     now: Instant
   ): IO[MilestoneStepWithOneVersion] = {
-    logger.info(s"Creating a ${sp(milestoneStep)}, with ${sp(firstVersion)} at ${sp(position)}")
+    logger.info(s"Creating a ${sp(milestoneStep)}, with ${sp(firstVersion)} at ${sp(position)}, parallel $parallel")
     (for {
       current <- orderedLatestVersions(milestoneStep.milestoneId)
-      // the default steps stay at the top, so a new step goes below them
-      insertAt = position.map(_.max(current.takeWhile(isDefault).size)).filter(_ < current.size)
+      placement = MilestoneStepStages.placementOf(current, position, parallel)
+      stage = placement match {
+        case MilestoneStepStages.JoinStage(at) => at
+        case MilestoneStepStages.NewStage(at)  => at
+      }
       savedStep <- milestoneStepRepo.insert(milestoneStep)
       savedVersion <- milestoneStepVersionRepo.insert(
-        firstVersion.copy(
-          milestoneStepId = savedStep.id,
-          position = insertAt.getOrElse(nextPosition(current))
-        )
+        firstVersion.copy(milestoneStepId = savedStep.id, position = stage)
       )
-      _ <- insertAt.traverse_ { index =>
-        renumber(current.take(index), 0, MoveForNewStepComment, now) *>
-          renumber(current.drop(index), index + 1, MoveForNewStepComment, now)
+      _ <- placement match {
+        case MilestoneStepStages.JoinStage(_) => ().pure[ConnectionIO]
+        case MilestoneStepStages.NewStage(at) =>
+          moveTo(current.filter(_.position >= at).map(step => step -> (step.position + 1)), MoveForNewStepComment, now)
       }
     } yield {
       logger.info(s"Milestone step created successfully ${sp(savedStep)} with ${sp(savedVersion)}")
@@ -85,33 +90,37 @@ class MilestoneStepService(
       .transact(transactor)
       .recoverWith { case UnexpectedEnd => IO.pure(Left(MilestoneStepNotFound)) }
 
-  /** One new version for every step whose position changes, all with the same change comment. */
+  /** `stages` is the complete new order: the outer list is the sequence of stages, the steps of an inner list run in
+    * parallel. One new version for every step whose position changes, all with the same change comment.
+    */
   def reorder(
     milestoneId: UUID,
-    orderedStepIds: List[UUID],
+    stages: List[List[UUID]],
     changeComment: String,
     now: Instant
   ): IO[Either[MilestoneStepError, List[MilestoneStepWithOneVersion]]] =
     (for {
       current <- orderedLatestVersions(milestoneId)
-      result <- reorderMatching(milestoneId, current, orderedStepIds, changeComment, now)
+      result <- reorderMatching(milestoneId, current, stages, changeComment, now)
     } yield result).transact(transactor)
 
   private def reorderMatching(
     milestoneId: UUID,
     current: List[MilestoneStepVersion],
-    orderedStepIds: List[UUID],
+    stages: List[List[UUID]],
     changeComment: String,
     now: Instant
   ): ConnectionIO[Either[MilestoneStepError, List[MilestoneStepWithOneVersion]]] = {
     val (defaults, movable) = current.partition(isDefault)
-    // the default steps are not ordered: they stay at the top whatever the request says
-    val requested = orderedStepIds.filterNot(defaults.map(_.milestoneStepId).contains)
+    // the default steps are not ordered: they stay at the top, alone, whatever the request says
+    val defaultIds = defaults.map(_.milestoneStepId).toSet
+    val requestedStages = stages.map(_.filterNot(defaultIds.contains)).filter(_.nonEmpty)
+    val requested = requestedStages.flatten
     if (movable.map(_.milestoneStepId).toSet != requested.toSet || requested.distinct.size != movable.size)
       (StepsDoNotMatchMilestone: MilestoneStepError).asLeft[List[MilestoneStepWithOneVersion]].pure[ConnectionIO]
     else {
-      val byStepId = movable.map(version => version.milestoneStepId -> version).toMap
-      renumber(defaults ++ requested.map(byStepId), 0, changeComment, now) *>
+      val positions = MilestoneStepStages.reorderedPositions(current, requestedStages)
+      moveTo(current.map(step => step -> positions(step.milestoneStepId)), changeComment, now) *>
         findAllWithLatest(milestoneId).map(_.asRight[MilestoneStepError])
     }
   }
@@ -205,9 +214,6 @@ class MilestoneStepService(
 
   private def isDefault(version: MilestoneStepVersion): Boolean = DefaultMilestoneStep.isDefaultName(version.name)
 
-  private def nextPosition(ordered: List[MilestoneStepVersion]): Int =
-    ordered.lastOption.map(_.position + 1).getOrElse(0)
-
   private def orderedLatestVersions(milestoneId: UUID): ConnectionIO[List[MilestoneStepVersion]] =
     milestoneStepVersionRepo.findLatestByMilestoneId(milestoneId).map(_.sortBy(_.position))
 
@@ -220,15 +226,9 @@ class MilestoneStepService(
       stepsById.get(version.milestoneStepId).map(MilestoneStepWithOneVersion(_, version))
     )
 
-  /** Gives `ordered` the positions `firstPosition`, `firstPosition + 1`, ... and versions only the ones that move. */
-  private def renumber(
-    ordered: List[MilestoneStepVersion],
-    firstPosition: Int,
-    comment: String,
-    now: Instant
-  ): ConnectionIO[Unit] =
-    ordered.zipWithIndex
-      .map { case (version, index) => version -> (firstPosition + index) }
+  /** Gives every step its target position and versions only the ones that move. */
+  private def moveTo(targets: List[(MilestoneStepVersion, Int)], comment: String, now: Instant): ConnectionIO[Unit] =
+    targets
       .filter { case (version, position) => version.position != position }
       .traverse_ { case (version, position) =>
         milestoneStepVersionRepo.insert(version.movedTo(position, comment, now))

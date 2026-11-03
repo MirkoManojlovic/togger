@@ -78,7 +78,7 @@ class MilestoneStepServiceTest
       (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
       val inserted = recordInserts()
 
-      service.createMilestoneStep(step, first, None, nowAsInstant).unsafeToFuture().map { result =>
+      service.createMilestoneStep(step, first, None, false, nowAsInstant).unsafeToFuture().map { result =>
         result.version.position shouldBe 1
         inserted.map(_.name) shouldBe List("Prototype")
       }
@@ -96,11 +96,63 @@ class MilestoneStepServiceTest
       (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
       val inserted = recordInserts()
 
-      service.createMilestoneStep(step, first, Some(1), nowAsInstant).unsafeToFuture().map { result =>
+      service.createMilestoneStep(step, first, Some(1), false, nowAsInstant).unsafeToFuture().map { result =>
         result.version.position shouldBe 1
         val moved = inserted.filterNot(_.milestoneStepId == step.id).map(v => v.name -> v.position).toList
         moved shouldBe List("Development" -> 2, "Production" -> 3)
         inserted.filterNot(_.milestoneStepId == step.id).map(_.changeComment).distinct should have size 1
+      }
+    }
+
+    "join the last stage without moving anything when the new step runs in parallel" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val development = newVersion(UUID.randomUUID(), "Development", 1)
+      val step = newStep()
+      val first = newVersion(step.id, "Docs", 99)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returns(List(design, development).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, None, true, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        inserted.map(_.name) shouldBe List("Docs")
+      }
+    }
+
+    "join the stage at the position when parallel, and never the stage of a default step" in {
+      val shelf = newVersion(UUID.randomUUID(), "Shelf", 0)
+      val design = newVersion(UUID.randomUUID(), "Design", 1)
+      val development = newVersion(UUID.randomUUID(), "Development", 2)
+      val step = newStep()
+      val first = newVersion(step.id, "Docs", 99)
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(shelf, design, development).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, Some(0), true, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1 // clamped below Shelf, joins the first stage after it
+        inserted.map(_.name) shouldBe List("Docs")
+      }
+    }
+
+    "move every step of the later stages down when a new stage is inserted" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val backend = newVersion(UUID.randomUUID(), "Backend", 1)
+      val frontend = newVersion(UUID.randomUUID(), "Frontend", 1)
+      val step = newStep()
+      val first = newVersion(step.id, "Spike", 99)
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(design, backend, frontend).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, Some(1), false, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        inserted.filterNot(_.milestoneStepId == step.id).map(v => v.name -> v.position).toSet shouldBe
+          Set("Backend" -> 2, "Frontend" -> 2)
       }
     }
 
@@ -235,12 +287,31 @@ class MilestoneStepServiceTest
         .twice()
       (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(steps.pure[ConnectionIO])
       val inserted = recordInserts()
-      val order = List(design, production, development).map(_.milestoneStepId)
+      val order = List(design, production, development).map(step => List(step.milestoneStepId))
 
       service.reorder(milestoneId, order, "Swap the last two", nowAsInstant).unsafeToFuture().map { result =>
         result.isRight shouldBe true
-        inserted.map(v => v.name -> v.position).toList shouldBe List("Production" -> 1, "Development" -> 2)
+        inserted.map(v => v.name -> v.position).toSet shouldBe Set("Production" -> 1, "Development" -> 2)
         inserted.map(_.changeComment).distinct.toList shouldBe List("Swap the last two")
+      }
+    }
+
+    "put the steps of an inner list in one stage when reordering, with Shelf alone at the top" in {
+      val shelf = newVersion(UUID.randomUUID(), "Shelf", 0)
+      val design = newVersion(UUID.randomUUID(), "Design", 1)
+      val backend = newVersion(UUID.randomUUID(), "Backend", 2)
+      val frontend = newVersion(UUID.randomUUID(), "Frontend", 3)
+      val all = List(shelf, design, backend, frontend)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returning(all.pure[ConnectionIO]).twice()
+      (stepRepo.findAllByMilestoneId _)
+        .expects(milestoneId)
+        .returns(all.map(v => MilestoneStep(v.milestoneStepId, milestoneId, nowAsInstant)).pure[ConnectionIO])
+      val inserted = recordInserts()
+      val stages = List(List(design.milestoneStepId), List(backend.milestoneStepId, frontend.milestoneStepId))
+
+      service.reorder(milestoneId, stages, "Build in parallel", nowAsInstant).unsafeToFuture().map { result =>
+        result.isRight shouldBe true
+        inserted.map(v => v.name -> v.position).toList shouldBe List("Frontend" -> 2)
       }
     }
 
@@ -288,7 +359,7 @@ class MilestoneStepServiceTest
       (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returns(List(design).pure[ConnectionIO])
 
       service
-        .reorder(milestoneId, List(design.milestoneStepId, UUID.randomUUID()), "comment", nowAsInstant)
+        .reorder(milestoneId, List(List(design.milestoneStepId), List(UUID.randomUUID())), "comment", nowAsInstant)
         .unsafeToFuture()
         .map(_ shouldBe Left(StepsDoNotMatchMilestone))
     }
