@@ -16,7 +16,7 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
   private val start = "2026-10-05"
   private val due = "2026-10-16"
 
-  private def templateStep(name: String) = MilestoneTemplateStepDto(UUID.randomUUID(), name, s"$name description")
+  private def templateStep(name: String) = MilestoneTemplateStepDto(UUID.randomUUID(), name, s"$name description", 0)
 
   "MilestoneStepsDraft.fromTemplate" should {
     "make one draft per step with the milestone range spread over them in order" in {

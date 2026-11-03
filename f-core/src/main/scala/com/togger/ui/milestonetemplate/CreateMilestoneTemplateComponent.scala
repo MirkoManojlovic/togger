@@ -41,7 +41,7 @@ class CreateMilestoneTemplateComponent(
       projectId = form.projectId,
       name = form.name,
       description = form.description,
-      stepTemplateIds = form.stepTemplateIds
+      stages = form.stepTemplateIds.map(List(_))
     )
     spinnerService
       .runWithSpinner(milestoneTemplateService.createMilestoneTemplate(dto))

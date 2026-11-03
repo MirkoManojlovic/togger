@@ -60,18 +60,23 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         ids <- s.stepTemplateIds()
         created <- s.env.run(
           s.templates.createMilestoneTemplate(
-            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "QA", "d", List(ids("Staging"), ids("Design")))
+            CreateMilestoneTemplateReq(
+              DemoIdentity.ProjectId,
+              "QA",
+              "d",
+              List(ids("Staging"), ids("Design")).map(List(_))
+            )
           )
         )
         id = created.toOption.get.id
         same <- s.env.run(
           s.templates.updateMilestoneTemplate(
-            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Staging"), ids("Design")))
+            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Staging"), ids("Design")).map(List(_)))
           )
         )
         reordered <- s.env.run(
           s.templates.updateMilestoneTemplate(
-            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Design"), ids("Staging")))
+            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Design"), ids("Staging")).map(List(_)))
           )
         )
         versions <- s.env.run(s.templates.listAllVersions(id))
@@ -92,12 +97,12 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         foreignIds <- s.stepTemplateIds(DemoIdentity.SecondProjectId)
         foreign <- s.env.run(
           s.templates.createMilestoneTemplate(
-            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "X", "d", List(foreignIds("Design")))
+            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "X", "d", List(List(foreignIds("Design"))))
           )
         )
         missing <- s.env.run(
           s.templates.createMilestoneTemplate(
-            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "X", "d", List(UUID.randomUUID()))
+            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "X", "d", List(List(UUID.randomUUID())))
           )
         )
         templates <- s.env.run(s.templates.findAllByProjectId(DemoIdentity.ProjectId))
@@ -115,7 +120,7 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         ids <- s.stepTemplateIds()
         created <- s.env.run(
           s.templates.createMilestoneTemplate(
-            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "Only prototype", "d", List(ids("Prototype")))
+            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "Only prototype", "d", List(List(ids("Prototype"))))
           )
         )
         blocked <- s.env.runEmpty(s.stepTemplates.deleteMilestoneStepTemplateById(ids("Prototype")))
@@ -139,12 +144,17 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         ids <- s.stepTemplateIds()
         created <- s.env.run(
           s.templates.createMilestoneTemplate(
-            CreateMilestoneTemplateReq(DemoIdentity.ProjectId, "Old", "d", List(ids("Staging"), ids("Design")))
+            CreateMilestoneTemplateReq(
+              DemoIdentity.ProjectId,
+              "Old",
+              "d",
+              List(ids("Staging"), ids("Design")).map(List(_))
+            )
           )
         )
         id = created.toOption.get.id
         _ <- s.env.run(
-          s.templates.updateMilestoneTemplate(UpdateMilestoneTemplateReq(id, "Old", "d", List(ids("Design"))))
+          s.templates.updateMilestoneTemplate(UpdateMilestoneTemplateReq(id, "Old", "d", List(List(ids("Design")))))
         )
         // Staging is only in the older version of this template, but still used by the default templates.
         all <- s.env.run(s.templates.findAllByProjectId(DemoIdentity.ProjectId))

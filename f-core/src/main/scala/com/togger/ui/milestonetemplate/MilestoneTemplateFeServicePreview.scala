@@ -24,11 +24,11 @@ class MilestoneTemplateFeServicePreview(
   override def createMilestoneTemplate(dto: CreateMilestoneTemplateReq): TgRespIO[FindMilestoneTemplateResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        stepTemplateError(dto.projectId, dto.stepTemplateIds).fold {
+        stepTemplateError(dto.projectId, dto.stages.flatten).fold {
           val template = data.templates.upsert(
             PreviewMilestoneTemplate(UUID.randomUUID(), dto.projectId, ctx.clock.currentInstant)
           )
-          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
+          val _ = data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages.flatten))
           PreviewResponses.ok(toDto(template))
         }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
       )
@@ -39,15 +39,15 @@ class MilestoneTemplateFeServicePreview(
       IO.defer(data.templates.find(dto.id) match {
         case None => PreviewResponses.badRequest[FindMilestoneTemplateResp](NotFoundMessage)
         case Some(template) =>
-          stepTemplateError(template.projectId, dto.stepTemplateIds).fold {
+          stepTemplateError(template.projectId, dto.stages.flatten).fold {
             val unchanged = data
               .latestVersion(template.id)
               .exists(v =>
-                v.name == dto.name && v.description == dto.description && v.stepTemplateIds == dto.stepTemplateIds
+                v.name == dto.name && v.description == dto.description && v.stepTemplateIds == dto.stages.flatten
               )
             if (!unchanged) {
               val _ =
-                data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stepTemplateIds))
+                data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description, dto.stages.flatten))
             }
             PreviewResponses.ok(toDto(template))
           }(PreviewResponses.badRequest[FindMilestoneTemplateResp](_))
@@ -121,9 +121,11 @@ class MilestoneTemplateFeServicePreview(
     )
 
   private def stepsOf(stepTemplateIds: List[UUID]): List[MilestoneTemplateStepDto] =
-    stepTemplateIds.flatMap(id =>
-      stepTemplates.latestVersion(id).map(version => MilestoneTemplateStepDto(id, version.name, version.description))
-    )
+    stepTemplateIds.zipWithIndex.flatMap { case (id, stage) =>
+      stepTemplates
+        .latestVersion(id)
+        .map(version => MilestoneTemplateStepDto(id, version.name, version.description, stage))
+    }
 
   private def toVersionDto(version: PreviewMilestoneTemplateVersion): MilestoneTemplateVersionDto =
     MilestoneTemplateVersionDto(
