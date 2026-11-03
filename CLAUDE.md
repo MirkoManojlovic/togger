@@ -176,17 +176,23 @@ the arg it runs until stopped. Register
 with `claude mcp add --transport http togger http://localhost:8090/mcp`. Run with `sbt --client "backendMcp/run"` (this
 blocks the shared sbt server; alternatively run `com.togger.mcp.McpApp` from the exported classpath).
 
-**Milestone steps and templates:** a milestone has an ordered list of `MilestoneStep`s (`milestone_step` +
-append-only `milestone_step_version`, package `com.togger.milestone`). The position is part of the version, so a reorder
-writes a new version only for the steps that move, all with the one change comment it requires; every update needs a
-change comment (like Timebox). `MilestoneStepStatus` is Planned, InProgress, Done, Paused, Abandoned; Done and Abandoned
+**Milestone steps and templates:** a milestone has a sequence of stages of `MilestoneStep`s (`milestone_step` +
+append-only `milestone_step_version`, package `com.togger.milestone`). The `position` of a step is its **stage**: steps
+with the same position run in parallel, stages run in sequence, gaps are allowed, and Shelf is alone in the first one.
+The placement rules live in `MilestoneStepStages` (`c-01-common`, shared by the backend services and the frontend
+preview): `CreateMilestoneStepReq` inserts a new stage at `position` (later stages move down) or, with `parallel`, joins
+the last stage / the stage at `position`; `ReorderMilestoneStepsReq.stages` is `List[List[UUID]]` (outer = sequence, inner
+= parallel); `NewMilestoneStepReq.stage` (default: its index) groups the steps of a new milestone. The position is part of
+the version, so a reorder writes a new version only for the steps whose stage changes, all with the one change comment it
+requires; every update needs a change comment (like Timebox). `MilestoneStepStatus` is Planned, InProgress, Done, Paused, Abandoned; Done and Abandoned
 are the closing ones and need an end date. A step must lie inside the milestone range (`DateRangeValidation.validateWithinRange`),
 and moving the milestone dates so that a step falls outside is rejected. A milestone can be Done with open steps (the UI
 shows that as closed with unfinished steps); `FindMilestoneResp` carries `stepsTotal`/`stepsClosed`. `CreateMilestoneReq.steps`
-creates the milestone with its steps in one transaction (`MilestoneWithStepsService`); `WorkDayCalendar.splitEvenly`
-spreads the milestone dates over them. Project-scoped templates work like task templates (versioned, `*Full` read models):
-`MilestoneStepTemplate` (name + description) and `MilestoneTemplate` (name + description + the ordered step templates of
-each version in `milestone_template_version_step`). Every new project gets the defaults, created in
+creates the milestone with its steps in one transaction (`MilestoneWithStepsService`); `WorkDayCalendar.splitStages`
+(on `splitEvenly`) spreads the milestone dates over the stages, the steps of a stage sharing the dates. Project-scoped templates work like task templates (versioned, `*Full` read models):
+`MilestoneStepTemplate` (name + description) and `MilestoneTemplate` (name + description + the step templates of
+each version by stage in `milestone_template_version_step`, whose `position` is the stage; the API takes `stages: List[List[UUID]]`
+and answers a `stage` per step). Every new project gets the defaults, created in
 `ProjectService.saveProject`; their text lives in `c-01-common` (`DefaultMilestoneStepTemplates`,
 `DefaultMilestoneTemplates`) because the preview uses it too. A step template used by the latest version of a milestone
 template cannot be deleted; deleting one drops it from older versions. Export/import: steps are part of
