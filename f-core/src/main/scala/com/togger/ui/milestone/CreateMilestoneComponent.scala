@@ -23,9 +23,9 @@ import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.milestonetemplate.MilestoneStageEditing
 import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
 import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
-import com.togger.ui.milestonetemplate.MilestoneStageEditing
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
