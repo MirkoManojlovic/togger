@@ -1010,6 +1010,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectService,
                   router,
                   spinnerService,
+                  tgClock,
                   projectId,
                   milestoneId,
                   toast

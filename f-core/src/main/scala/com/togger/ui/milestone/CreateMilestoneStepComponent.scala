@@ -1,6 +1,7 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
+import com.togger.common.TgClock
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
@@ -15,7 +16,8 @@ import java.time.DayOfWeek
 class CreateMilestoneStepComponent(
   initial: MilestoneStepDraft,
   milestoneRange: Signal[(String, String)],
-  workDays: Signal[Set[DayOfWeek]]
+  workDays: Signal[Set[DayOfWeek]],
+  tgClock: TgClock
 ) {
 
   val formState = Var(initial)
@@ -43,24 +45,20 @@ class CreateMilestoneStepComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val startDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.startDate),
-    errors = EventStream.empty,
-    labelValue = "Step start date",
-    tgInputType = TgInputType.Date
-  )
+  private val workDaysNow = Var(Set.empty[DayOfWeek])
 
-  private val dueDateInput = formState.tgInputManualErrorLPSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.dueDate),
-    errors = EventStream.empty,
-    labelValue = "Step due date",
-    tgInputType = TgInputType.Date
+  private val dateBadges = new MilestoneDateBadges(
+    dates = formState.signal.map(draft => draft.startDate -> draft.dueDate),
+    currentDates = () => formState.now().startDate -> formState.now().dueDate,
+    currentWorkDays = () => workDaysNow.now(),
+    onDates = (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString)),
+    tgClock = tgClock
   )
 
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Step description",
-    minHeightRem = 8,
+    minHeightRem = 26,
     minWidthRem = 0
   )
 
@@ -68,9 +66,13 @@ class CreateMilestoneStepComponent(
     div(
       nameInput.htmlElement.amend(cls("mb-3 max-w-[60ch]")),
       div(
-        cls("mb-3 flex flex-wrap gap-4"),
-        startDateInput.htmlElement,
-        dueDateInput.htmlElement
+        cls("mb-3 flex flex-col gap-3"),
+        dateBadges.element.amend(workDays --> workDaysNow),
+        MilestoneSummaryRangeCalendar.element(
+          formState.signal.map(draft => draft.startDate -> draft.dueDate).distinct,
+          workDays,
+          (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+        )
       ),
       descriptionEditor.htmlElement,
       children <-- errors.map(_.map(message => p(cls("mt-2 text-sm text-red-600 dark:text-red-500"), message)))

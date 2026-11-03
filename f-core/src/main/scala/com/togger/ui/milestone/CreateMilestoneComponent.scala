@@ -95,7 +95,7 @@ class CreateMilestoneComponent(
   val milestoneStepsVar = Var(List.empty[List[CreateMilestoneStepComponent]])
 
   private def newStepComponent(draft: MilestoneStepDraft) =
-    new CreateMilestoneStepComponent(draft, milestoneRange, workDaysVar.signal)
+    new CreateMilestoneStepComponent(draft, milestoneRange, workDaysVar.signal, tgClock)
 
   /** The template's steps replace the current ones, with the milestone range spread evenly over them. */
   private def applyTemplate(template: Option[FindMilestoneTemplateResp]): Unit = {

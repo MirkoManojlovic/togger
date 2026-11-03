@@ -458,6 +458,7 @@ class ShowMilestoneStepsComponent(
             milestone.startDate,
             milestone.dueDate,
             workDaysVar.now(),
+            tgClock,
             parallel,
             () => createStepModal.set(None),
             () => spinnerService.runWithSpinner(load()).unsafeRunAndForget(),

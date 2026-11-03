@@ -2,6 +2,7 @@ package com.togger.ui.milestone
 
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneStepReq
 import com.togger.toast.ToastMessages
@@ -24,6 +25,7 @@ class CreateMilestoneStepModal(
   milestoneStart: LocalDate,
   milestoneDue: LocalDate,
   workDays: Set[DayOfWeek],
+  tgClock: TgClock,
   parallel: Boolean,
   onClose: () => Unit,
   onCreated: () => Unit,
@@ -34,7 +36,8 @@ class CreateMilestoneStepModal(
   private val step = new CreateMilestoneStepComponent(
     MilestoneStepDraft(),
     Val(milestoneStart.toString -> milestoneDue.toString),
-    Val(workDays)
+    Val(workDays),
+    tgClock
   )
   step.setAutomaticDates(milestoneStart.toString, milestoneDue.toString)
 

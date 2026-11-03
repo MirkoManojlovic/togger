@@ -3,6 +3,7 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
+import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneStepReq
 import com.togger.routes.FrontendPage
@@ -29,6 +30,7 @@ class CreateMilestoneStepPageComponent(
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
+  tgClock: TgClock,
   projectId: UUID,
   milestoneId: UUID,
   val toast: Toast
@@ -38,7 +40,8 @@ class CreateMilestoneStepPageComponent(
   private val milestoneRangeVar = Var("" -> "")
   private val workDaysVar = Var(Set.empty[DayOfWeek])
 
-  val step = new CreateMilestoneStepComponent(MilestoneStepDraft(), milestoneRangeVar.signal, workDaysVar.signal)
+  val step =
+    new CreateMilestoneStepComponent(MilestoneStepDraft(), milestoneRangeVar.signal, workDaysVar.signal, tgClock)
 
   private val milestoneNameVar = Var("")
   private val parallelVar = Var(false)
