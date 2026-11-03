@@ -27,7 +27,7 @@ class TableFilterComponent(
   private val filterButtonCls =
     "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-2 py-1 focus:outline-none"
 
-  private val isOpenVar = Var(false)
+  private val isOpenVar = Var(TableFilterComponent.takeReopen(label))
   private val seededIdsVar = Var(Set.empty[String])
 
   val selectedIds: Signal[Set[String]] = selectedIdsVar.signal
@@ -105,6 +105,9 @@ class TableFilterComponent(
       `type`("button"),
       cls(filterButtonCls),
       onClick.mapToUnit --> (_ => isOpenVar.update(isOpened => !isOpened)),
+      // A choice is what rebuilds the page: the rebuilt filter opens again.
+      selectedIdsVar.signal.changes --> Observer[Set[String]](_ => TableFilterComponent.reopenAfterReload(label)),
+      onClick.mapToUnit --> (_ => TableFilterComponent.forgetReopen()),
       span(label),
       child.text <-- selectedIdsVar.signal.map(ids => if (ids.isEmpty) "" else s" (${ids.size})"),
       TgIcons.chevronDownIcon(className = "w-4 h-4 ms-1.5 inline")
@@ -139,6 +142,7 @@ class TableFilterComponent(
       bottom <-- positionVar.signal.map(_.anchor.fold(_ => "auto", px => s"${px}px")),
       onMountUnmountCallback(
         _ => {
+          positionVar.set(measurePosition())
           dom.window.addEventListener("scroll", reposition, true)
           dom.window.addEventListener("resize", reposition)
         },
@@ -169,4 +173,24 @@ class TableFilterComponent(
       child <-- isOpenVar.signal.map(if (_) panel else emptyNode)
     )
 
+}
+
+/** Choosing an option navigates, which rebuilds the page and with it every filter. The filter that was open is
+  * remembered, and the rebuilt one takes the memory and opens again. The memory is also dropped when the reload ends
+  * (the spinner stops), so a filter that was not rebuilt does not leave it behind for a later page.
+  */
+object TableFilterComponent {
+
+  private var reopenLabel: Option[String] = None
+
+  private def reopenAfterReload(label: String): Unit = reopenLabel = Some(label)
+
+  private def takeReopen(label: String): Boolean = {
+    val reopen = reopenLabel.contains(label)
+    if (reopen) reopenLabel = None
+    reopen
+  }
+
+  /** Called when a reload has ended, or the user closed or opened a filter by hand. */
+  def forgetReopen(): Unit = reopenLabel = None
 }
