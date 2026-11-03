@@ -75,7 +75,8 @@ class PreviewModule(storage: LocalStorage, loginRepo: LoginRepo, clock: TgClock)
   )
 
   /** Holders register project creation/deletion hooks in their constructors, so none may be created lazily later. */
-  private val hookRegistrations: List[AnyRef] = List(taskConfig, milestones, milestoneSteps, milestoneStepTemplates, milestoneTemplates, ai, tasks, dataSync)
+  private val hookRegistrations: List[AnyRef] =
+    List(taskConfig, milestones, milestoneSteps, milestoneStepTemplates, milestoneTemplates, ai, tasks, dataSync)
 
   /** Creating every holder registers every collection name in the db, which the reset needs. */
   private lazy val allHolders: List[AnyRef] =

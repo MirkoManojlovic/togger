@@ -36,16 +36,16 @@ object BulkTaskEditor {
 
   private def applyTo(task: BulkTask, edit: BulkEdit, workDays: Set[DayOfWeek]): BulkTask =
     edit match {
-      case BulkEdit.SetPriority(priority)   => task.copy(priority = priority)
-      case BulkEdit.SetStatus(statusId)     => task.copy(statusId = Some(statusId))
+      case BulkEdit.SetPriority(priority)  => task.copy(priority = priority)
+      case BulkEdit.SetStatus(statusId)    => task.copy(statusId = Some(statusId))
       case BulkEdit.SetMilestoneStep(step) => task.copy(milestoneStepId = step)
-      case BulkEdit.SetAssignee(assignee)   => task.copy(assigneeId = assignee)
-      case BulkEdit.AddLabels(labelIds)     => task.copy(labelIds = task.labelIds ++ labelIds)
-      case BulkEdit.RemoveLabels(labelIds)  => task.copy(labelIds = task.labelIds -- labelIds)
-      case BulkEdit.SetLabels(labelIds)     => task.copy(labelIds = labelIds)
-      case BulkEdit.SetStartDate(date)      => withStartDate(task, date, workDays)
-      case BulkEdit.SetDueDate(date)        => withDueDate(task, date, workDays)
-      case BulkEdit.SetWorkDays(count)      => withWorkDays(task, count, workDays)
+      case BulkEdit.SetAssignee(assignee)  => task.copy(assigneeId = assignee)
+      case BulkEdit.AddLabels(labelIds)    => task.copy(labelIds = task.labelIds ++ labelIds)
+      case BulkEdit.RemoveLabels(labelIds) => task.copy(labelIds = task.labelIds -- labelIds)
+      case BulkEdit.SetLabels(labelIds)    => task.copy(labelIds = labelIds)
+      case BulkEdit.SetStartDate(date)     => withStartDate(task, date, workDays)
+      case BulkEdit.SetDueDate(date)       => withDueDate(task, date, workDays)
+      case BulkEdit.SetWorkDays(count)     => withWorkDays(task, count, workDays)
     }
 
   /** The due date follows the start date, keeping the task's length in work days, unless it was picked by hand and is

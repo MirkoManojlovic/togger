@@ -30,13 +30,14 @@ class MilestoneWithStepsService(
     (for {
       savedMilestone <- milestoneRepo.insert(milestone)
       savedVersion <- milestoneVersionRepo.insert(firstVersion.copy(milestoneId = savedMilestone.id))
-      savedSteps <- (shelfStep(milestone, firstVersion) +: steps).zipWithIndex.traverse { case ((step, stepVersion), position) =>
-        for {
-          savedStep <- milestoneStepRepo.insert(step.copy(milestoneId = savedMilestone.id))
-          savedStepVersion <- milestoneStepVersionRepo.insert(
-            stepVersion.copy(milestoneStepId = savedStep.id, position = position)
-          )
-        } yield MilestoneStepWithOneVersion(savedStep, savedStepVersion)
+      savedSteps <- (shelfStep(milestone, firstVersion) +: steps).zipWithIndex.traverse {
+        case ((step, stepVersion), position) =>
+          for {
+            savedStep <- milestoneStepRepo.insert(step.copy(milestoneId = savedMilestone.id))
+            savedStepVersion <- milestoneStepVersionRepo.insert(
+              stepVersion.copy(milestoneStepId = savedStep.id, position = position)
+            )
+          } yield MilestoneStepWithOneVersion(savedStep, savedStepVersion)
       }
     } yield MilestoneWithOneVersion(savedMilestone, savedVersion) -> savedSteps).transact(transactor)
   }

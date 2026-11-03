@@ -1,7 +1,8 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest}
 import com.togger.demo.DemoIdentity
 import com.togger.dto._
 import com.togger.ui.milestone.MilestoneFeServicePreview
@@ -78,10 +79,15 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
         id = created.toOption.get.id
         first = s.steps.latestVersionsOf(id).head
         _ = s.steps.stepVersions.upsert(
-          first.copy(version = java.util.UUID.randomUUID(), statusValue = com.togger.milestone.MilestoneStepStatus.Done.value)
+          first.copy(
+            version = java.util.UUID.randomUUID(),
+            statusValue = com.togger.milestone.MilestoneStepStatus.Done.value
+          )
         )
         found <- s.env.run(s.milestones.findMilestoneById(id))
-        listed <- s.env.run(s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter.empty, PageRequest(1, 50)))
+        listed <- s.env.run(
+          s.milestones.findByProjectId(DemoIdentity.ProjectId, MilestoneFilter.empty, PageRequest(1, 50))
+        )
       } yield {
         found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((3, 1))
         listed.map(_.items.find(_.id == id).map(r => (r.stepsTotal, r.stepsClosed))) shouldBe Right(Some((3, 1)))
@@ -94,7 +100,9 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
       val stepsBefore = s.steps.steps.all.size
       for {
         outside <- s.env.run(
-          s.milestones.createMilestone(create(List(NewMilestoneStepReq("Late", "", nextMonday, nextFriday.plusDays(7)))))
+          s.milestones.createMilestone(
+            create(List(NewMilestoneStepReq("Late", "", nextMonday, nextFriday.plusDays(7))))
+          )
         )
       } yield {
         isBadRequest(outside) shouldBe true
@@ -126,7 +134,9 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
           s.milestones.createMilestone(create(List(NewMilestoneStepReq("Build", "", nextMonday, nextFriday))))
         )
         id = created.toOption.get.id
-        shrink <- s.env.run(s.milestones.updateMilestone(UpdateMilestoneReq(id, "With steps", "d", dueDate = Some(friday))))
+        shrink <- s.env.run(
+          s.milestones.updateMilestone(UpdateMilestoneReq(id, "With steps", "d", dueDate = Some(friday)))
+        )
         rename <- s.env.run(s.milestones.updateMilestone(UpdateMilestoneReq(id, "Renamed", "d")))
         extend <- s.env.run(
           s.milestones.updateMilestone(UpdateMilestoneReq(id, "Renamed", "d", dueDate = Some(nextFriday.plusDays(7))))
@@ -146,8 +156,13 @@ class PreviewMilestoneCreateWithStepsTest extends AsyncJsWordSpec {
       milestones.foreach { milestone =>
         val steps = s.steps.latestVersionsOf(milestone.id)
         steps.map(_.position) shouldBe List(0, 1, 2)
-        steps.forall(step => !step.startDate.isBefore(milestone.startDate) && !step.dueDate.isAfter(milestone.dueDate)) shouldBe true
-        steps.sliding(2).forall { case List(a, b) => !b.startDate.isBefore(a.dueDate) case _ => true } shouldBe true
+        steps.forall(step =>
+          !step.startDate.isBefore(milestone.startDate) && !step.dueDate.isAfter(milestone.dueDate)
+        ) shouldBe true
+        steps.sliding(2).forall {
+          case List(a, b) => !b.startDate.isBefore(a.dueDate)
+          case _          => true
+        } shouldBe true
         steps.forall(step => step.status.isClosing == step.endDate.isDefined) shouldBe true
       }
       s.steps.counts(com.togger.demo.DemoMilestonesData.FoundationsId) shouldBe (3 -> 2)

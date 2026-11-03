@@ -53,16 +53,22 @@ class DateRangeValidation {
     rangeEnd: LocalDate
   ): EitherNec[TgError, Unit] =
     (
-      Either.cond(
-        !startDate.isBefore(rangeStart) && !startDate.isAfter(rangeEnd),
-        (),
-        NonEmptyChain.one[TgError](DateRangeValidation.DateOutsideRange("Start date", startDate, rangeStart, rangeEnd))
-      ).toValidated,
-      Either.cond(
-        !dueDate.isBefore(rangeStart) && !dueDate.isAfter(rangeEnd),
-        (),
-        NonEmptyChain.one[TgError](DateRangeValidation.DateOutsideRange("Due date", dueDate, rangeStart, rangeEnd))
-      ).toValidated
+      Either
+        .cond(
+          !startDate.isBefore(rangeStart) && !startDate.isAfter(rangeEnd),
+          (),
+          NonEmptyChain.one[TgError](
+            DateRangeValidation.DateOutsideRange("Start date", startDate, rangeStart, rangeEnd)
+          )
+        )
+        .toValidated,
+      Either
+        .cond(
+          !dueDate.isBefore(rangeStart) && !dueDate.isAfter(rangeEnd),
+          (),
+          NonEmptyChain.one[TgError](DateRangeValidation.DateOutsideRange("Due date", dueDate, rangeStart, rangeEnd))
+        )
+        .toValidated
     ).mapN((_, _) => ()).toEither
 
   def validate(

@@ -1,11 +1,15 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, Unauthenticated}
-import com.togger.demo.{DemoIdentity, DemoMilestonesData}
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoMilestonesData
 import com.togger.dto._
 import com.togger.milestone.MilestoneStepStatus
-import com.togger.ui.milestone.{MilestoneFeServicePreview, MilestoneStepFeServicePreview}
+import com.togger.ui.milestone.MilestoneFeServicePreview
+import com.togger.ui.milestone.MilestoneStepFeServicePreview
 
 import java.time.LocalDate
 import java.util.UUID
@@ -156,7 +160,9 @@ class PreviewMilestoneStepsDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         (milestoneId, ids) <- s.milestoneWithSteps()
-        _ <- s.env.run(s.steps.updateMilestoneStep(update(ids(0), status = MilestoneStepStatus.Done, end = Some(friday))))
+        _ <- s.env.run(
+          s.steps.updateMilestoneStep(update(ids(0), status = MilestoneStepStatus.Done, end = Some(friday)))
+        )
         found <- s.env.run(s.milestones.findMilestoneById(milestoneId))
       } yield found.map(r => (r.stepsTotal, r.stepsClosed)) shouldBe Right((4, 1))
     }

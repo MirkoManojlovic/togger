@@ -10,10 +10,10 @@ import com.togger.milestone.MilestoneStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
 import com.togger.task.TaskPriority
+import com.togger.ui.milestone.StepTestData
 import com.togger.ui.task.bulk.BulkEdit
 import com.togger.ui.task.bulk.BulkLookups
 import com.togger.ui.task.bulk.BulkTaskEditor
-import com.togger.ui.milestone.StepTestData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -76,7 +76,12 @@ class ShowAllTasksBulkMappingTest extends AnyWordSpec with Matchers {
 
   "ShowAllTasksBulkMapping" should {
     "give back the same task when nothing is edited" in {
-      val full = bare.copy(assignedTo = Some(member), milestone = Some(milestone.id), milestoneStepId = Some(step.id), taskLabels = Seq(bug))
+      val full = bare.copy(
+        assignedTo = Some(member),
+        milestone = Some(milestone.id),
+        milestoneStepId = Some(step.id),
+        taskLabels = Seq(bug)
+      )
       ShowAllTasksBulkMapping.applyTo(full, ShowAllTasksBulkMapping.toBulkTask(full), lookups) shouldBe full
     }
 

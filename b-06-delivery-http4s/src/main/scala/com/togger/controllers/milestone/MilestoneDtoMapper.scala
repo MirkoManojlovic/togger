@@ -3,8 +3,8 @@ package com.togger.controllers.milestone
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.MilestoneVersionDto
 import com.togger.milestone.Milestone
-import com.togger.milestone.MilestoneVersion
 import com.togger.milestone.MilestoneStepCounts
+import com.togger.milestone.MilestoneVersion
 
 object MilestoneDtoMapper {
 

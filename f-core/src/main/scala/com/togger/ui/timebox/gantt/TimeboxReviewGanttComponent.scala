@@ -3,9 +3,9 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.LogEntryDto
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.FrontendPage
@@ -161,7 +161,12 @@ class TimeboxReviewGanttComponent(
       val shown = all.flatMap(_.logEntries).map(_.status).distinct
       div(
         legend(shown),
-        layout.frame(axis, GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, milestoneList, stepList, entries)))
+        layout.frame(
+          axis,
+          GanttRowOrder
+            .ordered(all, Seq.empty, members)
+            .map(taskRow(_, axis, members, milestoneList, stepList, entries))
+        )
       )
     }
 

@@ -6,10 +6,12 @@ import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
+import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
-import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestonesteptemplate.MilestoneStepTemplateFeService
 import com.togger.ui.spinner.SpinnerService
@@ -65,7 +67,9 @@ class EditMilestoneTemplateComponent(
         )
     }
 
-  spinnerService.runWithSpinner(loadStepTemplates().flatMap(_ => loadForm()).flatMap(_ => loadVersions())).unsafeRunAndForget()
+  spinnerService
+    .runWithSpinner(loadStepTemplates().flatMap(_ => loadForm()).flatMap(_ => loadVersions()))
+    .unsafeRunAndForget()
 
   lazy val submitter = Observer[MilestoneTemplateForm] { form =>
     val dto = UpdateMilestoneTemplateReq(

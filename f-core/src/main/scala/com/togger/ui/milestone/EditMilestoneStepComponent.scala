@@ -5,16 +5,24 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.components.button.TgHtmlButton
-import com.togger.dto.{FindMilestoneStepResp, MilestoneStepVersionDto, UpdateMilestoneStepReq}
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.MilestoneStepVersionDto
+import com.togger.dto.UpdateMilestoneStepReq
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStepStatus
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowMilestoneStepsPage
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
-import com.togger.ui.auth.TgInput.{TgInputSyntax, tgInputStyle}
-import com.togger.ui.auth.{TgCard, TgInputType}
+import com.togger.ui.auth.TgCard
+import com.togger.ui.auth.TgInput.TgInputSyntax
+import com.togger.ui.auth.TgInput.tgInputStyle
+import com.togger.ui.auth.TgInputType
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.QuickOption
+import com.togger.ui.components.QuickOptionsPopup
+import com.togger.ui.components.TgBadge
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.components.{ChartColorBadgeColor, QuickOption, QuickOptionsPopup, TgBadge}
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -23,7 +31,8 @@ import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 case class EditMilestoneStepForm(
@@ -93,7 +102,8 @@ class EditMilestoneStepComponent(
           projectResult <- projectService.findById(projectId)
           _ <- loadVersions()
         } yield {
-          milestoneResult.foreach(m => milestoneRangeVar.set(m.body.get.startDate.toString -> m.body.get.dueDate.toString))
+          milestoneResult
+            .foreach(m => milestoneRangeVar.set(m.body.get.startDate.toString -> m.body.get.dueDate.toString))
           projectResult.foreach(p => workDaysVar.set(p.body.get.workDays.map(DayOfWeek.of)))
         }
     }
@@ -219,7 +229,9 @@ class EditMilestoneStepComponent(
         ),
         label(cls("block mt-4 mb-2.5 text-sm font-medium text-heading"), "Change comment"),
         textArea(
-          cls("w-full p-2.5 text-sm text-heading bg-neutral-secondary-medium border border-default-medium rounded-base"),
+          cls(
+            "w-full p-2.5 text-sm text-heading bg-neutral-secondary-medium border border-default-medium rounded-base"
+          ),
           rows(3),
           placeholder("Why is the step closed?"),
           controlled(value <-- closeComment.signal, onInput.mapToValue --> closeComment)
@@ -374,7 +386,12 @@ class EditMilestoneStepComponent(
                 onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
                 nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
                 div(cls("mb-4 flex flex-wrap items-center gap-4"), statusBadge),
-                div(cls("mb-4 flex flex-wrap gap-4"), startDateInput.htmlElement, dueDateInput.htmlElement, endDateInput.htmlElement),
+                div(
+                  cls("mb-4 flex flex-wrap gap-4"),
+                  startDateInput.htmlElement,
+                  dueDateInput.htmlElement,
+                  endDateInput.htmlElement
+                ),
                 descriptionEditor.htmlElement.amend(cls("mb-4")),
                 changeCommentEditor.htmlElement.amend(cls("mb-4")),
                 children <-- errors.map(_.map(error => p(cls("mb-2 text-sm text-red-600 dark:text-red-500"), error))),

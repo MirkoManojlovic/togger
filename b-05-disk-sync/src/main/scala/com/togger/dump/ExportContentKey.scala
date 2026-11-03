@@ -19,8 +19,8 @@ object ExportContentKey {
       entityType == DataExportEntityType.TaskTemplate || entityType == DataExportEntityType.MilestoneStepTemplate ||
       entityType == DataExportEntityType.MilestoneTemplate
 
-  /** The keys of the milestone step templates by id (their latest name and description), for the milestone templates
-    * to resolve their steps through.
+  /** The keys of the milestone step templates by id (their latest name and description), for the milestone templates to
+    * resolve their steps through.
     */
   def stepTemplateKeys(stepTemplates: Map[UUID, Json]): Map[UUID, Key] =
     stepTemplates.flatMap { case (id, json) => stepTemplate(json).toOption.map(id -> _) }

@@ -4,7 +4,8 @@ import com.togger.milestone.MilestoneStepStatus
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class MilestoneStepCloseTest extends AnyWordSpec with Matchers {
 
@@ -38,7 +39,8 @@ class MilestoneStepCloseTest extends AnyWordSpec with Matchers {
 
   "MilestoneStepClose.openSteps" should {
     "keep the steps that are not closed in order" in {
-      val statuses = List("a" -> MilestoneStepStatus.Done, "b" -> MilestoneStepStatus.Paused, "c" -> MilestoneStepStatus.Planned)
+      val statuses =
+        List("a" -> MilestoneStepStatus.Done, "b" -> MilestoneStepStatus.Paused, "c" -> MilestoneStepStatus.Planned)
 
       MilestoneStepClose.openSteps(statuses, (_: (String, MilestoneStepStatus))._2).map(_._1) shouldBe List("b", "c")
     }

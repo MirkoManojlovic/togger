@@ -1,9 +1,12 @@
 package com.togger.ui.milestone
 
-import com.togger.common.{DateRangeValidation, WorkDayCalendar}
-import com.togger.dto.{MilestoneTemplateStepDto, NewMilestoneStepReq}
+import com.togger.common.DateRangeValidation
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.MilestoneTemplateStepDto
+import com.togger.dto.NewMilestoneStepReq
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import scala.util.Try
 
 /** A step of a milestone that is being created; the dates are the text of the date inputs. */
@@ -38,7 +41,9 @@ object MilestoneStepsDraft {
     val ranges = for {
       start <- parseDate(milestoneStart)
       due <- parseDate(milestoneDue)
-    } yield WorkDayCalendar.splitEvenly(start, due, count, workDays).map { case (from, to) => from.toString -> to.toString }
+    } yield WorkDayCalendar.splitEvenly(start, due, count, workDays).map { case (from, to) =>
+      from.toString -> to.toString
+    }
     ranges.filter(_.size == count).getOrElse(List.fill(count)("" -> ""))
   }
 

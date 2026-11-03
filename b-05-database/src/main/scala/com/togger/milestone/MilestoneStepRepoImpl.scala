@@ -4,13 +4,15 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.togger.db.Util._
 import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
+import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
-import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.{ConnectionIO, Fragment, Fragments}
 
 import java.util.UUID
 

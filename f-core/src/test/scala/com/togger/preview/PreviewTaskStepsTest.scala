@@ -1,14 +1,19 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest}
-import com.togger.demo.{DemoIdentity, DemoMilestonesData, DemoTaskConfigData}
+import com.togger.demo.DemoIdentity
+import com.togger.demo.DemoMilestonesData
+import com.togger.demo.DemoTaskConfigData
 import com.togger.dto._
 import com.togger.task.TaskPriority
-import com.togger.ui.milestone.{MilestoneFeServicePreview, MilestoneStepFeServicePreview}
+import com.togger.ui.milestone.MilestoneFeServicePreview
+import com.togger.ui.milestone.MilestoneStepFeServicePreview
 import com.togger.ui.task.TaskFeServicePreview
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** A task is in a step and the milestone of the task is the milestone of its step. */
@@ -63,8 +68,12 @@ class PreviewTaskStepsTest extends AsyncJsWordSpec {
         created <- s.env.run(s.tasks.createTask(s.newTask(Some(step.id))))
         found <- s.env.run(s.tasks.findTaskById(created.toOption.get.task.id))
       } yield {
-        created.map(r => (r.task.milestoneStepId, r.task.milestone)) shouldBe Right((Some(step.id), Some(DemoMilestonesData.BetaId)))
-        found.map(r => (r.task.milestoneStepId, r.task.milestone)) shouldBe Right((Some(step.id), Some(DemoMilestonesData.BetaId)))
+        created.map(r => (r.task.milestoneStepId, r.task.milestone)) shouldBe Right(
+          (Some(step.id), Some(DemoMilestonesData.BetaId))
+        )
+        found.map(r => (r.task.milestoneStepId, r.task.milestone)) shouldBe Right(
+          (Some(step.id), Some(DemoMilestonesData.BetaId))
+        )
       }
     }
 
@@ -132,11 +141,26 @@ class PreviewTaskStepsTest extends AsyncJsWordSpec {
           s.tasks.updateTask(
             UpdateTaskReq(
               UpdateTaskReq1(
-                task.id, task.projectId, task.name, task.description, task.assignedTo, task.createdBy,
-                task.taskStatusId, task.createdAt, task.updatedAt, task.priority, Some(stepList.last.id),
-                Some(task.startDate), Some(task.dueDate), task.endDate, task.taskLabelIds, task.archived
+                task.id,
+                task.projectId,
+                task.name,
+                task.description,
+                task.assignedTo,
+                task.createdBy,
+                task.taskStatusId,
+                task.createdAt,
+                task.updatedAt,
+                task.priority,
+                Some(stepList.last.id),
+                Some(task.startDate),
+                Some(task.dueDate),
+                task.endDate,
+                task.taskLabelIds,
+                task.archived
               ),
-              Seq.empty, Seq.empty, Seq.empty
+              Seq.empty,
+              Seq.empty,
+              Seq.empty
             )
           )
         )
@@ -199,7 +223,9 @@ class PreviewTaskStepsTest extends AsyncJsWordSpec {
         version.milestoneStepId.foreach { stepId =>
           val step = m.milestoneSteps.steps.find(stepId)
           step.map(_.milestoneId) shouldBe version.milestone
-          step.flatMap(found => m.milestones.milestones.find(found.milestoneId)).map(_.projectId) shouldBe Some(task.projectId)
+          step.flatMap(found => m.milestones.milestones.find(found.milestoneId)).map(_.projectId) shouldBe Some(
+            task.projectId
+          )
         }
         version.milestone.isDefined shouldBe version.milestoneStepId.isDefined
       }

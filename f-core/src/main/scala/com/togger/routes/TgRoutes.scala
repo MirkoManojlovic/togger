@@ -202,8 +202,8 @@ class TgRoutes {
         pattern = root / "create-milestone-step-template" / segment[String] / endOfSegments
       ),
       Route(
-        encode = (page: EditMilestoneStepTemplatePage) =>
-          page.projectId.toString -> page.milestoneStepTemplateId.toString,
+        encode =
+          (page: EditMilestoneStepTemplatePage) => page.projectId.toString -> page.milestoneStepTemplateId.toString,
         decode = { (projectIdAndTemplateId: (String, String)) =>
           EditMilestoneStepTemplatePage(
             UUID.fromString(projectIdAndTemplateId._1),
@@ -442,21 +442,26 @@ class TgRoutes {
       ),
       Route(
         encode = (page: ShowMilestoneStepsPage) => page.projectId.toString -> page.milestoneId.toString,
-        decode = { (ids: (String, String)) => ShowMilestoneStepsPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        decode = { (ids: (String, String)) =>
+          ShowMilestoneStepsPage(UUID.fromString(ids._1), UUID.fromString(ids._2))
+        },
         pattern =
           root / "milestone-steps" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
       ),
       Route(
         encode = (page: CreateMilestoneStepPage) => page.projectId.toString -> page.milestoneId.toString,
-        decode = { (ids: (String, String)) => CreateMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        decode = { (ids: (String, String)) =>
+          CreateMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2))
+        },
         pattern = root / "create-milestone-step" / "project-id" / segment[String] / "milestone-id" / segment[String] /
           endOfSegments
       ),
       Route(
         encode = (page: EditMilestoneStepPage) => page.projectId.toString -> page.milestoneStepId.toString,
         decode = { (ids: (String, String)) => EditMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
-        pattern = root / "edit-milestone-step" / "project-id" / segment[String] / "milestone-step-id" / segment[String] /
-          endOfSegments
+        pattern =
+          root / "edit-milestone-step" / "project-id" / segment[String] / "milestone-step-id" / segment[String] /
+            endOfSegments
       ),
       Route(
         encode = (page: MilestoneSummaryPage) => page.projectId.toString -> page.milestoneId.toString,

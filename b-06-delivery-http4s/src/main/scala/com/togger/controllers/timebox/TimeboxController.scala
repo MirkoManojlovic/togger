@@ -14,11 +14,11 @@ import com.togger.controllers.timebox.TimeboxDtoMapper.toDto
 import com.togger.controllers.timebox.TimeboxDtoMapper.toVersionDto
 import com.togger.dto.FindTimeboxResp
 import com.togger.dto.SaveTimeboxVersionReq
+import com.togger.milestone.MilestoneStepService
 import com.togger.timebox.TimeboxEndpoints
 import com.togger.timebox.TimeboxError.ChangeCommentEmpty
-import com.togger.timebox.TimeboxService
-import com.togger.milestone.MilestoneStepService
 import com.togger.timebox.TimeboxError.TimeboxError
+import com.togger.timebox.TimeboxService
 import com.togger.timebox.TimeboxVersionWithTasks
 import com.togger.timebox.TimeboxWithOneVersion
 
@@ -64,7 +64,14 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .createTimebox(dto.projectId, dto.startDate, dto.endDate, dto.description, dto.taskIds, tgClock.currentInstant)
+          .createTimebox(
+            dto.projectId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .flatMap(respond)
     }
   }
@@ -74,7 +81,15 @@ class TimeboxController(
       case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTimeboxResp])
       case Right(_) =>
         timeboxService
-          .saveNewVersion(dto.timeboxId, dto.startDate, dto.endDate, dto.description, dto.changeComment.trim, dto.taskIds, tgClock.currentInstant)
+          .saveNewVersion(
+            dto.timeboxId,
+            dto.startDate,
+            dto.endDate,
+            dto.description,
+            dto.changeComment.trim,
+            dto.taskIds,
+            tgClock.currentInstant
+          )
           .flatMap(respond)
     }
   }

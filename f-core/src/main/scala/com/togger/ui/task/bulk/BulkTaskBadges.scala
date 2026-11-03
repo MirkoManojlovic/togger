@@ -1,16 +1,15 @@
 package com.togger.ui.task.bulk
 
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
-import com.togger.common.WorkDayCalendar
-import com.togger.ui.milestone.MilestoneStepLabels
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
@@ -66,7 +65,13 @@ object BulkTaskBadges {
   def of(task: BulkTask, lookups: BulkLookups, today: LocalDate): BulkTaskBadgeRows =
     BulkTaskBadgeRows(
       labelRow = labels(task, lookups),
-      primaryRow = Seq(milestone(task, lookups), milestoneStep(task, lookups), priority(task), status(task, lookups), assignee(task, lookups)),
+      primaryRow = Seq(
+        milestone(task, lookups),
+        milestoneStep(task, lookups),
+        priority(task),
+        status(task, lookups),
+        assignee(task, lookups)
+      ),
       dateRow = Seq(
         BadgeSpec(
           dateFormater.asStartDate(task.startDate),

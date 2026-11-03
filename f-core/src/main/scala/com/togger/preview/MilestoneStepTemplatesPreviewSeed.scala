@@ -6,5 +6,7 @@ import com.togger.demo.DemoProject
 class MilestoneStepTemplatesPreviewSeed(data: MilestoneStepTemplatesPreviewData, demoProjects: List[DemoProject])
     extends PreviewSeeder {
 
-  override def seed(): Unit = demoProjects.zipWithIndex.foreach { case (project, index) => data.seedDefaultTemplates(project.id, index) }
+  override def seed(): Unit = demoProjects.zipWithIndex.foreach { case (project, index) =>
+    data.seedDefaultTemplates(project.id, index)
+  }
 }

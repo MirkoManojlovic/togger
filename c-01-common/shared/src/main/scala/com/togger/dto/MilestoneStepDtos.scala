@@ -2,7 +2,8 @@ package com.togger.dto
 
 import com.togger.milestone.MilestoneStepStatus
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** A step created together with its milestone; the milestone id and the position come from the request context. */

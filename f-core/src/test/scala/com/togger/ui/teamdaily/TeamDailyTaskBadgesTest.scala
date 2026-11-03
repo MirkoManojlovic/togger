@@ -3,10 +3,11 @@ package com.togger.ui.teamdaily
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.FindMilestoneResp
-import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.FindTaskLabelResp
 import com.togger.logentry.LogEntryStatus
-import com.togger.milestone.{MilestoneStatus, MilestoneStepStatus}
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.task.TaskPriority
 
 import java.time.Instant
@@ -57,7 +58,9 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
     }
 
     "show the milestone before the priority" in { _ =>
-      TeamDailyTaskBadges.milestoneAndPriority(task(Some(milestone.id), Seq.empty), Seq(milestone), Seq.empty).map(_.text) shouldBe
+      TeamDailyTaskBadges
+        .milestoneAndPriority(task(Some(milestone.id), Seq.empty), Seq(milestone), Seq.empty)
+        .map(_.text) shouldBe
         Seq("Release 1", TaskPriority.Medium.shortCode)
     }
 
@@ -84,7 +87,9 @@ class TeamDailyTaskBadgesTest extends AsyncJsWordSpec {
 
     "leave out a milestone that is not there or not known" in { _ =>
       val onlyPriority = Seq(TaskPriority.Medium.shortCode)
-      TeamDailyTaskBadges.milestoneAndPriority(task(None, Seq.empty), Seq(milestone), Seq.empty).map(_.text) shouldBe onlyPriority
+      TeamDailyTaskBadges
+        .milestoneAndPriority(task(None, Seq.empty), Seq(milestone), Seq.empty)
+        .map(_.text) shouldBe onlyPriority
       TeamDailyTaskBadges
         .milestoneAndPriority(task(Some(UUID.randomUUID()), Seq.empty), Seq(milestone), Seq.empty)
         .map(_.text) shouldBe onlyPriority

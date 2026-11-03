@@ -1,8 +1,10 @@
 package com.togger.milestonesteptemplate
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl.MILESTONE_STEP_TEMPLATE_TABLE_FRAG
 import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl.MILESTONE_STEP_TEMPLATE_VERSION_TABLE_FRAG
@@ -44,7 +46,9 @@ class MilestoneStepTemplateRepoImpl extends MilestoneStepTemplateRepo with TgLog
   }
 
   override def findById(id: UUID): ConnectionIO[MilestoneStepTemplate] =
-    logAroundInfoQuery(findByIdStatementUUID(MILESTONE_STEP_TEMPLATE_TABLE_FRAG)(id).query[MilestoneStepTemplate].unique)(
+    logAroundInfoQuery(
+      findByIdStatementUUID(MILESTONE_STEP_TEMPLATE_TABLE_FRAG)(id).query[MilestoneStepTemplate].unique
+    )(
       s"Finding milestone step template with ${sp(id)}",
       found => s"Milestone step template found ${sp(found)}"
     )
@@ -57,7 +61,10 @@ class MilestoneStepTemplateRepoImpl extends MilestoneStepTemplateRepo with TgLog
 
   override def findFullById(id: UUID): ConnectionIO[MilestoneStepTemplateFull] =
     logAroundInfoQuery(
-      (fullSelect ++ fr"where t.id = $id").query[(MilestoneStepTemplate, MilestoneStepTemplateVersion)].unique.map(toFull)
+      (fullSelect ++ fr"where t.id = $id")
+        .query[(MilestoneStepTemplate, MilestoneStepTemplateVersion)]
+        .unique
+        .map(toFull)
     )(
       s"Finding full milestone step template with ${sp(id)}",
       found => s"Full milestone step template found ${sp(found)}"

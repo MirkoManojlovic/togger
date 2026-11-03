@@ -1,48 +1,43 @@
 package com.togger.controllers.milestone
 
-import cats.data.{EitherNec, NonEmptyChain}
+import cats.data.EitherNec
+import cats.data.NonEmptyChain
 import cats.effect.IO
+import cats.implicits._
 import com.togger.common.DateRangeValidation
+import com.togger.common.TgError
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
-import cats.implicits._
-import com.togger.common.TgError
+import com.togger.common.TgResponseTypes.TgResp
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.milestone.MilestoneDtoMapper.toDto
 import com.togger.controllers.milestone.MilestoneDtoMapper.toVersionDto
 import com.togger.controllers.project.ProjectService
+import com.togger.dto.CreateMilestoneReq
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.MilestoneVersionDto
-import com.togger.milestone.Milestone
-import com.togger.milestone.MilestoneEndpoints
-import com.togger.milestone.MilestoneService
-import com.togger.milestone.MilestoneStatus
-import com.togger.milestone.MilestoneVersion
-import com.togger.common.TgResponseTypes.TgResp
-import com.togger.dto.CreateMilestoneReq
 import com.togger.dto.NewMilestoneStepReq
 import com.togger.dto.UpdateMilestoneReq
+import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneEndpoints
 import com.togger.milestone.MilestoneError.InvalidStep
+import com.togger.milestone.MilestoneError.MilestoneHasTasks
 import com.togger.milestone.MilestoneError.StepsOutsideNewRange
+import com.togger.milestone.MilestoneService
+import com.togger.milestone.MilestoneStatus
 import com.togger.milestone.MilestoneStep
 import com.togger.milestone.MilestoneStepCounts
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
 import com.togger.milestone.MilestoneStepService
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.milestone.MilestoneStepVersion
-import com.togger.milestone.MilestoneWithStepsService
-import com.togger.milestone.MilestoneWithOneVersion
-import com.togger.dto.FindMilestoneResp
-import com.togger.dto.MilestoneVersionDto
-import com.togger.milestone.MilestoneError.MilestoneHasTasks
-import com.togger.milestone.Milestone
-import com.togger.milestone.MilestoneEndpoints
-import com.togger.milestone.MilestoneService
-import com.togger.milestone.MilestoneStatus
 import com.togger.milestone.MilestoneVersion
-import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
-import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.MilestoneWithOneVersion
+import com.togger.milestone.MilestoneWithStepsService
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneController(
@@ -135,7 +130,8 @@ class MilestoneController(
       .getCurrent(id)
       .flatMap {
         case Right(result) =>
-          stepCounts(List(id)).map(counts => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(id))))
+          stepCounts(List(id))
+            .map(counts => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(id))))
         case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
       }
   }
@@ -192,29 +188,28 @@ class MilestoneController(
     effectiveDueDate: LocalDate,
     effectiveEndDate: Option[LocalDate]
   ): IO[TgResp[FindMilestoneResp]] = {
-              val now = java.time.Instant.now()
-              val newVersion = MilestoneVersion(
-                version = UUID.randomUUID(),
-                milestoneId = dto.id,
-                name = dto.name,
-                description = dto.description,
-                status = dto.status.getOrElse(current.version.status),
-                startDate = effectiveStartDate,
-                dueDate = effectiveDueDate,
-                endDate = effectiveEndDate,
-                createdAt = now,
-                updatedAt = now
-              )
+    val now = java.time.Instant.now()
+    val newVersion = MilestoneVersion(
+      version = UUID.randomUUID(),
+      milestoneId = dto.id,
+      name = dto.name,
+      description = dto.description,
+      status = dto.status.getOrElse(current.version.status),
+      startDate = effectiveStartDate,
+      dueDate = effectiveDueDate,
+      endDate = effectiveEndDate,
+      createdAt = now,
+      updatedAt = now
+    )
 
-              milestoneService
-                .saveNewVersion(dto.id, newVersion)
-                .flatMap {
-                  case Right(result) =>
-                    stepCounts(List(dto.id)).map(counts =>
-                      TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(dto.id)))
-                    )
-                  case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
-                }
+    milestoneService
+      .saveNewVersion(dto.id, newVersion)
+      .flatMap {
+        case Right(result) =>
+          stepCounts(List(dto.id))
+            .map(counts => TgJsonSuccess.justBodyRight(toDto(result.milestone, result.version, counts(dto.id))))
+        case Left(error) => IO.pure(error.toBadRequestLeft[FindMilestoneResp])
+      }
   }
 
   private def stepCounts(milestoneIds: List[UUID]): IO[Map[UUID, MilestoneStepCounts]] =

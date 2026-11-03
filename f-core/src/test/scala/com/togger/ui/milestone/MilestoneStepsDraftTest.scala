@@ -20,7 +20,8 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
 
   "MilestoneStepsDraft.fromTemplate" should {
     "make one draft per step with the milestone range spread over them in order" in {
-      val drafts = MilestoneStepsDraft.fromTemplate(List(templateStep("Design"), templateStep("Build")), start, due, monFri)
+      val drafts =
+        MilestoneStepsDraft.fromTemplate(List(templateStep("Design"), templateStep("Build")), start, due, monFri)
 
       drafts shouldBe List(
         MilestoneStepDraft("Design", "Design description", "2026-10-05", "2026-10-09"),
@@ -41,7 +42,12 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
 
   "MilestoneStepsDraft.errors" should {
     "find nothing wrong with a step inside the milestone on work days" in {
-      MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"), start, due, monFri) shouldBe Nil
+      MilestoneStepsDraft.errors(
+        MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"),
+        start,
+        due,
+        monFri
+      ) shouldBe Nil
     }
 
     "ask for a name and for the dates" in {
@@ -50,30 +56,43 @@ class MilestoneStepsDraftTest extends AnyWordSpec with Matchers {
     }
 
     "report a date outside the milestone" in {
-      val errors = MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-02", "2026-10-08"), start, due, monFri)
+      val errors =
+        MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-02", "2026-10-08"), start, due, monFri)
 
       errors should have size 1
       errors.head should include("Start date must be inside the range")
     }
 
     "report a start on a day that is not a work day" in {
-      val errors = MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-10", "2026-10-12"), start, due, monFri)
+      val errors =
+        MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-10", "2026-10-12"), start, due, monFri)
 
       errors.exists(_.contains("work days")) shouldBe true
     }
 
     "report a due date before the start date" in {
-      val errors = MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-08", "2026-10-06"), start, due, monFri)
+      val errors =
+        MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-08", "2026-10-06"), start, due, monFri)
 
       errors.exists(_.contains("on or after the start date")) shouldBe true
     }
 
     "not flag every day while the work days are not loaded yet" in {
-      MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"), start, due, Set.empty) shouldBe Nil
+      MilestoneStepsDraft.errors(
+        MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"),
+        start,
+        due,
+        Set.empty
+      ) shouldBe Nil
     }
 
     "skip the milestone range check while that range cannot be read" in {
-      MilestoneStepsDraft.errors(MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"), "", "", monFri) shouldBe Nil
+      MilestoneStepsDraft.errors(
+        MilestoneStepDraft("Design", "", "2026-10-06", "2026-10-08"),
+        "",
+        "",
+        monFri
+      ) shouldBe Nil
     }
   }
 

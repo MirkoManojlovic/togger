@@ -1,7 +1,8 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.ui.components.{TgTab, TgTabs}
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 
 /** The edit page of a milestone: its basic information in one tab, its steps in the other. */
 class EditMilestoneTabsComponent(basicInformation: HtmlElement, steps: HtmlElement) {

@@ -1,7 +1,9 @@
 package com.togger.dump
 
-import com.togger.milestonesteptemplate.{MilestoneStepTemplate, MilestoneStepTemplateVersion}
-import com.togger.milestonetemplate.{MilestoneTemplate, MilestoneTemplateVersion}
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateVersion
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -62,9 +64,15 @@ class ExportContentKeyTest extends AnyWordSpec with Matchers {
     "identify a milestone template by its latest version and the content of its steps, whatever their ids" in {
       val designHere = UUID.randomUUID()
       val designThere = UUID.randomUUID()
-      val stepKeysHere = ExportContentKey.stepTemplateKeys(Map(designHere -> stepTemplateJson(designHere, ("Design", "d", later))))
-      val stepKeysThere = ExportContentKey.stepTemplateKeys(Map(designThere -> stepTemplateJson(designThere, ("Design", "d", later))))
-      val here = milestoneTemplateJson(UUID.randomUUID(), ("Feature", "x", earlier, Nil), ("Feature", "y", later, List(designHere)))
+      val stepKeysHere =
+        ExportContentKey.stepTemplateKeys(Map(designHere -> stepTemplateJson(designHere, ("Design", "d", later))))
+      val stepKeysThere =
+        ExportContentKey.stepTemplateKeys(Map(designThere -> stepTemplateJson(designThere, ("Design", "d", later))))
+      val here = milestoneTemplateJson(
+        UUID.randomUUID(),
+        ("Feature", "x", earlier, Nil),
+        ("Feature", "y", later, List(designHere))
+      )
       val there = milestoneTemplateJson(UUID.randomUUID(), ("Feature", "y", later, List(designThere)))
 
       val keyHere = ExportContentKey.of(DataExportEntityType.MilestoneTemplate, here, stepKeysHere)

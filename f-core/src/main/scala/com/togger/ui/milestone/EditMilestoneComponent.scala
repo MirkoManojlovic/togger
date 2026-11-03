@@ -10,7 +10,8 @@ import com.togger.dto.CreateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneDateReq
 import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.MilestoneStatus
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.FrontendPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax

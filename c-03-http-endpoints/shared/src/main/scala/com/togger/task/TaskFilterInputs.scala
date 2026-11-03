@@ -6,8 +6,7 @@ import sttp.tapir._
 import java.util.UUID
 
 /** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId`,
-  * `milestoneStepId`, a single `search`, a single `timeboxId` and
-  * the `includeArchived` flag.
+  * `milestoneStepId`, a single `search`, a single `timeboxId` and the `includeArchived` flag.
   */
 object TaskFilterInputs {
 
@@ -27,7 +26,8 @@ object TaskFilterInputs {
       .mapDecode(toFilter)(toParams)
 
   private def toFilter(params: FilterParams): DecodeResult[TaskFilter] = {
-    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId, includeArchived, stepIds) = params
+    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId, includeArchived, stepIds) =
+      params
     val priorities = priorityValues.map(TaskPriority.withValueOpt)
     if (priorities.exists(_.isEmpty))
       DecodeResult.Error(priorityValues.mkString(","), new IllegalArgumentException("Unknown task priority"))

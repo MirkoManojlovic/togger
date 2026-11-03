@@ -1,16 +1,14 @@
 package com.togger.milestonetemplate
 
-import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
-import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl.MILESTONE_STEP_TEMPLATE_TABLE_FRAG
 import com.togger.milestonetemplate.MilestoneTemplateRepoImpl.MILESTONE_TEMPLATE_TABLE_FRAG
-import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.{
-  MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG,
-  MILESTONE_TEMPLATE_VERSION_TABLE_FRAG
-}
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -19,7 +17,9 @@ import doobie.util.fragment.Fragment
 
 import java.util.UUID
 
-class MilestoneTemplateRepoImpl(versionRepo: MilestoneTemplateVersionRepo) extends MilestoneTemplateRepo with TgLogging {
+class MilestoneTemplateRepoImpl(versionRepo: MilestoneTemplateVersionRepo)
+    extends MilestoneTemplateRepo
+    with TgLogging {
 
   private lazy val returnFields = List("id", "project_id", "created_by", "created_at")
 
@@ -105,10 +105,15 @@ class MilestoneTemplateRepoImpl(versionRepo: MilestoneTemplateVersionRepo) exten
       found => s"Milestone templates using step template ${sp(stepTemplateId)} found ${sp(found)}"
     )
 
-  private def withSteps(rows: List[(MilestoneTemplate, MilestoneTemplateVersion)]): ConnectionIO[List[MilestoneTemplateFull]] =
+  private def withSteps(
+    rows: List[(MilestoneTemplate, MilestoneTemplateVersion)]
+  ): ConnectionIO[List[MilestoneTemplateFull]] =
     versionRepo.findStepsByVersions(rows.map(_._2.version)).map { steps =>
       rows.map { case (template, version) =>
-        MilestoneTemplateFull(template, MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil)))
+        MilestoneTemplateFull(
+          template,
+          MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil))
+        )
       }
     }
 

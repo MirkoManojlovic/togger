@@ -53,7 +53,9 @@ object TgPaginationComponent {
       rangeText(state),
       Option.when(state.totalPages > 1)(pageNav(state, onChange)).getOrElse(emptyNode),
       Option
-        .when(alwaysShowSize || state.totalItems > PageRequest.SizeOptions.min)(sizeDropdown(state.size, newSize => onChange(1, newSize)))
+        .when(alwaysShowSize || state.totalItems > PageRequest.SizeOptions.min)(
+          sizeDropdown(state.size, newSize => onChange(1, newSize))
+        )
         .getOrElse(emptyNode)
     )
 

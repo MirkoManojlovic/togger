@@ -39,7 +39,10 @@ class TaskFeServicePreview(
   /** The steps have to exist and belong to the project of the task, like in the backend. */
   private def stepError(projectId: UUID, stepIds: Iterable[Option[UUID]]): Option[String] =
     stepIds.flatten.toList.distinct.collectFirst {
-      case id if !milestoneOfStep(Some(id)).flatMap(milestoneId => data.milestoneProject(milestoneId)).contains(projectId) =>
+      case id
+          if !milestoneOfStep(Some(id))
+            .flatMap(milestoneId => data.milestoneProject(milestoneId))
+            .contains(projectId) =>
         s"Milestone step $id does not belong to the project of the task"
     }
 
@@ -58,10 +61,13 @@ class TaskFeServicePreview(
             case Left(errors) => errors.toBadRequestLeftIO[FindTaskResp]
             case Right(_) =>
               stepError(task.projectId, List(task.milestoneStepId)).fold(
-                checkStatus(task.projectId, task.taskStatusId).fold(PreviewResponses.badRequest[FindTaskResp](_), _ => {
-                  val (created, links) = insertTask(accountId, dto, task.createdAt, ctx.clock.currentInstant)
-                  PreviewResponses.ok(savedDto(created, links))
-                })
+                checkStatus(task.projectId, task.taskStatusId).fold(
+                  PreviewResponses.badRequest[FindTaskResp](_),
+                  _ => {
+                    val (created, links) = insertTask(accountId, dto, task.createdAt, ctx.clock.currentInstant)
+                    PreviewResponses.ok(savedDto(created, links))
+                  }
+                )
               )(PreviewResponses.badRequest[FindTaskResp](_))
           }
       }
@@ -118,37 +124,37 @@ class TaskFeServicePreview(
             case Left(errors) => errors.toBadRequestLeftIO[FindTaskResp]
             case Right(_) =>
               stepError(task.projectId, List(update.milestoneStepId)).fold(
-              checkStatus(task.projectId, update.taskStatusId).fold(
-                PreviewResponses.badRequest[FindTaskResp](_),
-                _ => {
-                  val now = ctx.clock.currentInstant
-                  val candidate = current.copy(
-                    version = UUID.randomUUID(),
-                    name = update.name,
-                    description = update.description,
-                    assignedTo = update.assignedTo,
-                    closedBy = closedByFor(update.taskStatusId, current.closedBy, accountId),
-                    taskStatusId = update.taskStatusId,
-                    priority = update.priority,
-                    milestone = milestoneOfStep(update.milestoneStepId),
-                    milestoneStepId = update.milestoneStepId,
-                    startDate = startDate,
-                    dueDate = dueDate,
-                    endDate = endDate,
-                    createdAt = now,
-                    updatedAt = now
-                  )
-                  val saved = if (sameContent(current, candidate)) current else data.taskVersions.upsert(candidate)
-                  val labelIds = existingLabelIds(task.projectId, update.taskLabelIds)
-                  val storedTask = data.tasks.upsert(task.copy(archived = update.archived, labelIds = labelIds))
-                  val updatedLinks = dto.linksForUpdate.flatMap(updateLink(task.id, _, now))
-                  val createdLinks = linksToCreate.map(createLink(task.id, _, now))
-                  deleteOwnLinks(task.id, dto.linksToDelete)
-                  PreviewResponses.ok(
-                    FindTaskResp(toDto(storedTask, saved), (updatedLinks ++ createdLinks).map(toLinkDto), Seq.empty)
-                  )
-                }
-              )
+                checkStatus(task.projectId, update.taskStatusId).fold(
+                  PreviewResponses.badRequest[FindTaskResp](_),
+                  _ => {
+                    val now = ctx.clock.currentInstant
+                    val candidate = current.copy(
+                      version = UUID.randomUUID(),
+                      name = update.name,
+                      description = update.description,
+                      assignedTo = update.assignedTo,
+                      closedBy = closedByFor(update.taskStatusId, current.closedBy, accountId),
+                      taskStatusId = update.taskStatusId,
+                      priority = update.priority,
+                      milestone = milestoneOfStep(update.milestoneStepId),
+                      milestoneStepId = update.milestoneStepId,
+                      startDate = startDate,
+                      dueDate = dueDate,
+                      endDate = endDate,
+                      createdAt = now,
+                      updatedAt = now
+                    )
+                    val saved = if (sameContent(current, candidate)) current else data.taskVersions.upsert(candidate)
+                    val labelIds = existingLabelIds(task.projectId, update.taskLabelIds)
+                    val storedTask = data.tasks.upsert(task.copy(archived = update.archived, labelIds = labelIds))
+                    val updatedLinks = dto.linksForUpdate.flatMap(updateLink(task.id, _, now))
+                    val createdLinks = linksToCreate.map(createLink(task.id, _, now))
+                    deleteOwnLinks(task.id, dto.linksToDelete)
+                    PreviewResponses.ok(
+                      FindTaskResp(toDto(storedTask, saved), (updatedLinks ++ createdLinks).map(toLinkDto), Seq.empty)
+                    )
+                  }
+                )
               )(PreviewResponses.badRequest[FindTaskResp](_))
           }
       }

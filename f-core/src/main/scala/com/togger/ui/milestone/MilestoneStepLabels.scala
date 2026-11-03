@@ -1,7 +1,7 @@
 package com.togger.ui.milestone
 
-import com.togger.dto.{FindMilestoneResp, FindMilestoneStepResp}
-
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.milestone.DefaultMilestoneStep
 
 import java.util.UUID
@@ -40,7 +40,10 @@ object MilestoneStepLabels {
     * is not among the given ones are left out.
     */
   def ordered(steps: Seq[FindMilestoneStepResp], milestones: Seq[FindMilestoneResp]): Seq[FindMilestoneStepResp] = {
-    val milestoneOrder = milestones.sortBy(milestone => (milestone.dueDate.toEpochDay, milestone.name)).map(_.id).zipWithIndex.toMap
-    steps.filter(step => milestoneOrder.contains(step.milestoneId)).sortBy(step => (milestoneOrder(step.milestoneId), step.position))
+    val milestoneOrder =
+      milestones.sortBy(milestone => (milestone.dueDate.toEpochDay, milestone.name)).map(_.id).zipWithIndex.toMap
+    steps
+      .filter(step => milestoneOrder.contains(step.milestoneId))
+      .sortBy(step => (milestoneOrder(step.milestoneId), step.position))
   }
 }

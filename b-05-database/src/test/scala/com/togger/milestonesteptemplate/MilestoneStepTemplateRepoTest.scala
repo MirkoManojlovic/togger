@@ -2,10 +2,11 @@ package com.togger.milestonesteptemplate
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 

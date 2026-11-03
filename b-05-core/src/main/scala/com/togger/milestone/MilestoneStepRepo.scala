@@ -36,4 +36,9 @@ trait MilestoneStepRepo {
 
 }
 
-case class MilestoneWithoutShelf(milestoneId: UUID, startDate: java.time.LocalDate, dueDate: java.time.LocalDate, stepCount: Int)
+case class MilestoneWithoutShelf(
+  milestoneId: UUID,
+  startDate: java.time.LocalDate,
+  dueDate: java.time.LocalDate,
+  stepCount: Int
+)

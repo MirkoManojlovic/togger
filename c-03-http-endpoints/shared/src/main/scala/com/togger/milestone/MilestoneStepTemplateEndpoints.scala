@@ -1,16 +1,17 @@
 package com.togger.milestone
 
 import com.togger.auth.SecuredEndpoint
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.PaginationInputs.pageQuery
-import com.togger.common.TgEndpoints.{TgSecuredEndpoint, TgSecuredEndpointEmptyBody}
+import com.togger.common.TgEndpoints.TgSecuredEndpoint
+import com.togger.common.TgEndpoints.TgSecuredEndpointEmptyBody
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgJsonSuccess.TgEmptyBody
-import com.togger.common.{PageRequest, PaginatedResponse, TgJsonSuccess}
-import com.togger.dto.{
-  CreateMilestoneStepTemplateReq,
-  FindMilestoneStepTemplateResp,
-  MilestoneStepTemplateVersionDto,
-  UpdateMilestoneStepTemplateReq
-}
+import com.togger.dto.CreateMilestoneStepTemplateReq
+import com.togger.dto.FindMilestoneStepTemplateResp
+import com.togger.dto.MilestoneStepTemplateVersionDto
+import com.togger.dto.UpdateMilestoneStepTemplateReq
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -46,8 +47,7 @@ class MilestoneStepTemplateEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(pageQuery)
       .out(jsonBody[TgJsonSuccess[PaginatedResponse[FindMilestoneStepTemplateResp]]])
 
-  val listVersionsEndpoint
-    : TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[MilestoneStepTemplateVersionDto]] =
+  val listVersionsEndpoint: TgSecuredEndpoint[(UUID, PageRequest), PaginatedResponse[MilestoneStepTemplateVersionDto]] =
     securedEndpoint.endpoint.get
       .in(basePath / path[UUID]("id") / "version")
       .in(pageQuery)

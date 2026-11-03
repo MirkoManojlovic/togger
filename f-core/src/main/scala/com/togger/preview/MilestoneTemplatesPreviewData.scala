@@ -91,7 +91,9 @@ class MilestoneTemplatesPreviewData(
   private def dropStepTemplate(stepTemplateId: UUID): Unit =
     templateVersions.all
       .filter(_.stepTemplateIds.contains(stepTemplateId))
-      .foreach(version => templateVersions.upsert(version.copy(stepTemplateIds = version.stepTemplateIds.filterNot(_ == stepTemplateId))))
+      .foreach(version =>
+        templateVersions.upsert(version.copy(stepTemplateIds = version.stepTemplateIds.filterNot(_ == stepTemplateId)))
+      )
 
   private def deleteProjectData(projectId: UUID): Unit =
     templates.filter(_.projectId == projectId).foreach(template => deleteTemplate(template.id))

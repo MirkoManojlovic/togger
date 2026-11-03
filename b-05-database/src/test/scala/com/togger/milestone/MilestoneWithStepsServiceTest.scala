@@ -2,10 +2,10 @@ package com.togger.milestone
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -73,7 +73,9 @@ class MilestoneWithStepsServiceTest extends BusinessTgDbSpec with TgAccount with
           List(DefaultMilestoneStep.Shelf.stepName -> 0, "Design" -> 1, "Development" -> 2, "Production" -> 3)
         created._2.map(_.milestoneStep.milestoneId).distinct shouldBe List(created._1.milestone.id)
         stored.map(_.status).distinct shouldBe List(MilestoneStepStatus.Planned)
-        stored.sortBy(_.position).map(_.name) shouldBe List(DefaultMilestoneStep.Shelf.stepName, "Design", "Development", "Production")
+        stored
+          .sortBy(_.position)
+          .map(_.name) shouldBe List(DefaultMilestoneStep.Shelf.stepName, "Design", "Development", "Production")
       })
     }
 

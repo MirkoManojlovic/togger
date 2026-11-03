@@ -1,9 +1,10 @@
 package com.togger.ui.milestonesteptemplate
 
 import cats.effect.IO
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.preview._
 
@@ -34,7 +35,8 @@ class MilestoneStepTemplateFeServicePreview(ctx: PreviewContext, data: Milestone
       IO.defer(data.templates.find(dto.id) match {
         case None => PreviewResponses.badRequest[FindMilestoneStepTemplateResp](NotFoundMessage)
         case Some(template) =>
-          val unchanged = data.latestVersion(template.id).exists(v => v.name == dto.name && v.description == dto.description)
+          val unchanged =
+            data.latestVersion(template.id).exists(v => v.name == dto.name && v.description == dto.description)
           if (!unchanged) data.templateVersions.upsert(newVersion(template.id, dto.name, dto.description))
           PreviewResponses.ok(toDto(template))
       })

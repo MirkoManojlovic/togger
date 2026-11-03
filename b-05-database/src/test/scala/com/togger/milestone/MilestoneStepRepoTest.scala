@@ -2,12 +2,16 @@ package com.togger.milestone
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, TimeHelpers}
-import com.togger.organization.{TgProject, TgTaskStatus}
-import com.togger.task.{Task, TaskRepoImpl, TaskVersion, TaskVersionRepoImpl}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.TimeHelpers
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
+import com.togger.task.Task
+import com.togger.task.TaskRepoImpl
+import com.togger.task.TaskVersion
+import com.togger.task.TaskVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -84,8 +88,18 @@ class MilestoneStepRepoTest extends BusinessTgDbSpec with TgAccount with TgProje
         // a newer version of A: only that one is the latest
         aLatest <- versionRepo.insert(
           MilestoneStepVersion(
-            UUID.randomUUID(), a.id, "A2", "", MilestoneStepStatus.Done, 0, LocalDate.of(2026, 10, 1),
-            LocalDate.of(2026, 10, 5), Some(LocalDate.of(2026, 10, 4)), nowAsInstant, nowAsInstant, "done"
+            UUID.randomUUID(),
+            a.id,
+            "A2",
+            "",
+            MilestoneStepStatus.Done,
+            0,
+            LocalDate.of(2026, 10, 1),
+            LocalDate.of(2026, 10, 5),
+            Some(LocalDate.of(2026, 10, 4)),
+            nowAsInstant,
+            nowAsInstant,
+            "done"
           )
         )
         otherProject <- projectRepo.insert(

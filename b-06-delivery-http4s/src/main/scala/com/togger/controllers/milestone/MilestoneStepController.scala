@@ -1,19 +1,29 @@
 package com.togger.controllers.milestone
 
-import cats.data.{EitherNec, NonEmptyChain}
+import cats.data.EitherNec
+import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.DateRangeValidation
+import com.togger.common.TgClock
+import com.togger.common.TgError
 import com.togger.common.TgError._
+import com.togger.common.TgJsonSuccess
 import com.togger.common.TgResponseTypes.TgResp
-import com.togger.common.{DateRangeValidation, TgClock, TgError, TgJsonSuccess}
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.milestone.MilestoneStepDtoMapper.{toDto, toVersionDto}
+import com.togger.controllers.milestone.MilestoneStepDtoMapper.toDto
+import com.togger.controllers.milestone.MilestoneStepDtoMapper.toVersionDto
 import com.togger.controllers.project.ProjectService
-import com.togger.dto.{CreateMilestoneStepReq, FindMilestoneStepResp, UpdateMilestoneStepReq}
-import com.togger.milestone.MilestoneStepError.{ChangeCommentEmpty, DefaultStepNameReserved, EndDateRequiredWhenClosed}
+import com.togger.dto.CreateMilestoneStepReq
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.UpdateMilestoneStepReq
+import com.togger.milestone.MilestoneStepError.ChangeCommentEmpty
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
+import com.togger.milestone.MilestoneStepError.EndDateRequiredWhenClosed
 import com.togger.milestone._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneStepController(
@@ -40,7 +50,10 @@ class MilestoneStepController(
   private def validateComment(comment: String): EitherNec[TgError, Unit] =
     Either.cond(comment.trim.nonEmpty, (), NonEmptyChain.one[TgError](ChangeCommentEmpty))
 
-  private def validateClosedHasEndDate(status: MilestoneStepStatus, endDate: Option[LocalDate]): EitherNec[TgError, Unit] =
+  private def validateClosedHasEndDate(
+    status: MilestoneStepStatus,
+    endDate: Option[LocalDate]
+  ): EitherNec[TgError, Unit] =
     Either.cond(!status.isClosing || endDate.isDefined, (), NonEmptyChain.one[TgError](EndDateRequiredWhenClosed))
 
   private def validateDates(
@@ -103,7 +116,9 @@ class MilestoneStepController(
   private def withTaskCounts(steps: List[MilestoneStepWithOneVersion]): IO[List[FindMilestoneStepResp]] =
     milestoneStepService
       .taskCountsByStepIds(steps.map(_.milestoneStep.id))
-      .map(counts => steps.map(step => toDto(step, counts.getOrElse(step.milestoneStep.id, MilestoneStepTaskCounts.empty))))
+      .map(counts =>
+        steps.map(step => toDto(step, counts.getOrElse(step.milestoneStep.id, MilestoneStepTaskCounts.empty)))
+      )
 
   val findById = milestoneStepEndpoints.findByIdEndpoint.serverLogic { auth => id =>
     milestoneStepService.getCurrent(id).flatMap {
@@ -139,7 +154,10 @@ class MilestoneStepController(
     }
   }
 
-  private def saveNewVersion(dto: UpdateMilestoneStepReq, current: MilestoneStepVersion): IO[TgResp[FindMilestoneStepResp]] = {
+  private def saveNewVersion(
+    dto: UpdateMilestoneStepReq,
+    current: MilestoneStepVersion
+  ): IO[TgResp[FindMilestoneStepResp]] = {
     val now = tgClock.currentInstant
     val newVersion = current.copy(
       version = UUID.randomUUID(),

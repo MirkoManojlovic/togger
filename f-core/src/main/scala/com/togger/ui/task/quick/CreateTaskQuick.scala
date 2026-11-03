@@ -23,16 +23,13 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.OrganizationServiceFe
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.milestone.MilestoneStepFeService
-import com.togger.ui.milestone.MilestoneStepLabels
-import com.togger.routes.Pages.EditTaskPage
-import com.togger.routes.FrontendPage
-import com.togger.routes.TgRouter
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DateEmoji
@@ -564,7 +561,9 @@ class CreateTaskQuick(
         Some(
           badge(
             MilestoneDropdown,
-            current.milestones.find(milestone => current.milestoneId.contains(milestone.id)).fold("No milestone")(_.name),
+            current.milestones
+              .find(milestone => current.milestoneId.contains(milestone.id))
+              .fold("No milestone")(_.name),
             current.milestoneStepId.map(_ => () => state.update(_.copy(milestoneStepId = None)))
           )
         ),
@@ -799,7 +798,14 @@ class CreateTaskQuick(
           badgeRow(labelRowBadges, Set(LabelsDropdown)),
           badgeRow(
             primaryBadges,
-            Set(ProjectDropdown, MilestoneDropdown, MilestoneStepDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
+            Set(
+              ProjectDropdown,
+              MilestoneDropdown,
+              MilestoneStepDropdown,
+              PriorityDropdown,
+              TaskStatusDropdown,
+              AssignedToDropdown
+            )
           ),
           badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false))
         ),

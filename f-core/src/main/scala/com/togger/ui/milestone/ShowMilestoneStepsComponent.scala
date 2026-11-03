@@ -3,33 +3,48 @@ package com.togger.ui.milestone
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.dto.{FindMilestoneResp, FindMilestoneStepResp, ReorderMilestoneStepsReq, UpdateMilestoneStepReq}
-import com.togger.milestone.{DefaultMilestoneStep, MilestoneStatus}
-import com.togger.routes.Pages.{CreateMilestoneStepPage, EditMilestonePage, EditMilestoneStepPage}
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.common.TgClock
+import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.ReorderMilestoneStepsReq
+import com.togger.dto.UpdateMilestoneStepReq
+import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.MilestoneStatus
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.CreateMilestoneStepPage
+import com.togger.routes.Pages.EditMilestonePage
+import com.togger.routes.Pages.EditMilestoneStepPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.TgHtmlTable.{createTd, createTh}
-import com.togger.ui.components.{ChartColorBadgeColor, TgBadge, TgBadgeColor}
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.TgBadge
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable.createTd
+import com.togger.ui.components.TgHtmlTable.createTh
 import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
-import com.togger.ui.modal.{ModalFactory, ModalStyles, PlainModalVariant, PlainTextModalMessage}
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.ModalStyles
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
-import com.togger.common.TgClock
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.TaskConfigTableSupport.{
-  headerIconButtonCls,
-  iconButton,
-  rowButtonMarginCls,
-  rowIconButtonCls,
-  rowIconButtonDangerCls
-}
-import com.togger.ui.task.{TaskFeService, TaskLabelFeService, TaskStatusFeService, TgDateFormater}
+import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
+import com.togger.ui.task.TaskFeService
+import com.togger.ui.task.TaskLabelFeService
+import com.togger.ui.task.TaskStatusFeService
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.timebox.TimeboxStagingStore
 import com.togger.ui.timebox.gantt.Percentages
 import com.togger.ui.toast.Toast
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** The steps of one milestone in order: their state, reordering with a change comment, and the way to close the
@@ -80,8 +95,6 @@ class ShowMilestoneStepsComponent(
     }
 
   spinnerService.runWithSpinner(load()).unsafeRunAndForget()
-
-  private def openStepCount: Int = MilestoneStepClose.openSteps(stepsVar.now(), (_: FindMilestoneStepResp).status).size
 
   private def requestMove(index: Int, delta: Int): Unit = {
     val target = index + delta
@@ -140,7 +153,9 @@ class ShowMilestoneStepsComponent(
         .filter(_ => MilestoneStepClose.allClosed(steps.map(_.status)))
         .map(_ =>
           div(
-            cls("flex items-center justify-between p-4 mb-4 text-sm rounded-base bg-success-soft text-fg-success border border-success-subtle"),
+            cls(
+              "flex items-center justify-between p-4 mb-4 text-sm rounded-base bg-success-soft text-fg-success border border-success-subtle"
+            ),
             span("All steps are completed. Close the milestone?"),
             button(
               typ("button"),
@@ -185,15 +200,18 @@ class ShowMilestoneStepsComponent(
         h3(cls(ModalStyles.titleCls), cls("mb-4"), dialogTitle),
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "Change comment"),
         textArea(
-          cls("w-full p-2.5 text-sm text-heading bg-neutral-secondary-medium border border-default-medium rounded-base"),
+          cls(
+            "w-full p-2.5 text-sm text-heading bg-neutral-secondary-medium border border-default-medium rounded-base"
+          ),
           rows(3),
           placeholder(hint),
           controlled(value <-- comment.signal, onInput.mapToValue --> comment)
         ),
         child <-- comment.signal.map(text =>
-          MilestoneStepClose.commentErrors(text).headOption.fold[Node](emptyNode)(error =>
-            p(cls("mt-2 text-sm text-red-600 dark:text-red-500"), error)
-          )
+          MilestoneStepClose
+            .commentErrors(text)
+            .headOption
+            .fold[Node](emptyNode)(error => p(cls("mt-2 text-sm text-red-600 dark:text-red-500"), error))
         ),
         div(
           cls(ModalStyles.footerCls),
@@ -268,7 +286,10 @@ class ShowMilestoneStepsComponent(
     val saveAll = requests.foldLeft(IO.pure(true)) { (previous, request) =>
       previous.flatMap { saved =>
         if (!saved) IO.pure(false)
-        else milestoneStepService.updateMilestoneStep(request).map(_.fold(failure => { toast.error(failure); false }, _ => true))
+        else
+          milestoneStepService
+            .updateMilestoneStep(request)
+            .map(_.fold(failure => { toast.error(failure); false }, _ => true))
       }
     }
     spinnerService
@@ -280,7 +301,9 @@ class ShowMilestoneStepsComponent(
     stagedDates.signal.map { staged =>
       Option.when(staged.nonEmpty)(
         div(
-          cls("flex items-center justify-between p-4 mb-4 text-sm rounded-base bg-warning-soft text-fg-warning border border-warning-subtle"),
+          cls(
+            "flex items-center justify-between p-4 mb-4 text-sm rounded-base bg-warning-soft text-fg-warning border border-warning-subtle"
+          ),
           span(s"${staged.size} ${if (staged.size == 1) "step has" else "steps have"} unsaved date changes."),
           div(
             cls("flex gap-2"),
@@ -290,7 +313,12 @@ class ShowMilestoneStepsComponent(
               "Discard",
               onClick.mapToUnit --> (_ => stagedDates.set(Map.empty))
             ),
-            button(typ("button"), cls(ModalStyles.primaryButtonCls), "Save", onClick.mapToUnit --> (_ => requestSaveDates()))
+            button(
+              typ("button"),
+              cls(ModalStyles.primaryButtonCls),
+              "Save",
+              onClick.mapToUnit --> (_ => requestSaveDates())
+            )
           )
         )
       )
@@ -395,7 +423,9 @@ class ShowMilestoneStepsComponent(
               cls("flex justify-between"),
               div(
                 cls("flex items-center gap-2"),
-                child <-- milestoneVar.signal.map(m => span(m.fold("Milestone steps")(milestone => s"Steps of ${milestone.name}"))),
+                child <-- milestoneVar.signal.map(m =>
+                  span(m.fold("Milestone steps")(milestone => s"Steps of ${milestone.name}"))
+                ),
                 child <-- progressBadge
               ),
               iconButton(
@@ -416,7 +446,9 @@ class ShowMilestoneStepsComponent(
                 if (steps.isEmpty) div(cls("text-sm text-body"), "This milestone has no steps yet.")
                 else
                   div(
-                    cls("relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"),
+                    cls(
+                      "relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default"
+                    ),
                     table(
                       cls("w-full text-sm text-left rtl:text-right text-body"),
                       thead(

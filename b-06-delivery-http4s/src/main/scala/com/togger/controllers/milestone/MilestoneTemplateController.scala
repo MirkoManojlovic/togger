@@ -1,12 +1,16 @@
 package com.togger.controllers.milestone
 
+import com.togger.common.TgClock
 import com.togger.common.TgError._
-import com.togger.common.{TgClock, TgJsonSuccess}
+import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
-import com.togger.controllers.milestone.MilestoneTemplateDtoMapper.{toDto, toVersionDto}
+import com.togger.controllers.milestone.MilestoneTemplateDtoMapper.toDto
+import com.togger.controllers.milestone.MilestoneTemplateDtoMapper.toVersionDto
 import com.togger.dto.FindMilestoneTemplateResp
 import com.togger.milestone.MilestoneTemplateEndpoints
-import com.togger.milestonetemplate.{MilestoneTemplate, MilestoneTemplateService, MilestoneTemplateVersion}
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateService
+import com.togger.milestonetemplate.MilestoneTemplateVersion
 
 import java.util.UUID
 

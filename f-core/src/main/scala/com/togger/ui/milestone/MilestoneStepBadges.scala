@@ -2,7 +2,8 @@ package com.togger.ui.milestone
 
 import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.task.bulk.{BadgeSpec, BulkEditKind}
+import com.togger.ui.task.bulk.BadgeSpec
+import com.togger.ui.task.bulk.BulkEditKind
 
 import java.util.UUID
 

@@ -2,14 +2,16 @@ package com.togger.milestonetemplate
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
 import com.togger.milestonetemplate.MilestoneTemplateError._
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
 import java.time.Instant
 import java.util.UUID
@@ -87,11 +89,16 @@ class MilestoneTemplateService(
     (for {
       versionsPage <- templateVersionRepo.findPaginatedByTemplateId(templateId, page)
       steps <- templateVersionRepo.findStepsByVersions(versionsPage.items.map(_.version))
-    } yield versionsPage.mapItem(version => MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil))))
+    } yield versionsPage.mapItem(version =>
+      MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil))
+    ))
       .transact(transactor)
 
   private def saveVersion(version: MilestoneTemplateVersion, stepTemplateIds: List[UUID]): ConnectionIO[Unit] =
-    templateVersionRepo.insert(version).flatMap(saved => templateVersionRepo.insertSteps(saved.version, stepTemplateIds)).void
+    templateVersionRepo
+      .insert(version)
+      .flatMap(saved => templateVersionRepo.insertSteps(saved.version, stepTemplateIds))
+      .void
 
   /** Every step template has to exist and belong to the project of the template. */
   private def validateStepTemplates(projectId: UUID, stepTemplateIds: List[UUID]): ConnectionIO[Result[Unit]] =
@@ -99,7 +106,9 @@ class MilestoneTemplateService(
       .traverse { stepTemplateId =>
         stepTemplateRepo
           .findById(stepTemplateId)
-          .map(stepTemplate => Either.cond(stepTemplate.projectId == projectId, (), StepTemplateNotInProject(stepTemplateId)))
+          .map(stepTemplate =>
+            Either.cond(stepTemplate.projectId == projectId, (), StepTemplateNotInProject(stepTemplateId))
+          )
           .recover { case UnexpectedEnd => StepTemplateNotInProject(stepTemplateId).asLeft[Unit] }
       }
       .map(_.sequence_.leftWiden[MilestoneTemplateError])

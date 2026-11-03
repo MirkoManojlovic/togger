@@ -2,20 +2,22 @@ package com.togger.milestonetemplate
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
 import com.togger.logging.TgLogging
 import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl.MILESTONE_STEP_TEMPLATE_VERSION_TABLE_FRAG
-import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.{
-  MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG,
-  MILESTONE_TEMPLATE_VERSION_TABLE_FRAG
-}
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_STEP_TABLE_FRAG
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_TABLE_FRAG
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragments
+import doobie.Update
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
-import doobie.{ConnectionIO, Fragments, Update}
 
 import java.util.UUID
 

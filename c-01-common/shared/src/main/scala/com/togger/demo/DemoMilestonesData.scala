@@ -1,7 +1,9 @@
 package com.togger.demo
 
 import com.togger.common.WorkDayCalendar
-import com.togger.milestone.{DefaultMilestoneStepTemplates, MilestoneStatus, MilestoneStepStatus}
+import com.togger.milestone.DefaultMilestoneStepTemplates
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 
 import java.time.DayOfWeek
 import java.time.Instant
@@ -60,7 +62,11 @@ object DemoMilestonesData {
     }
 
   private val stepNames =
-    List(DefaultMilestoneStepTemplates.Design, DefaultMilestoneStepTemplates.Development, DefaultMilestoneStepTemplates.Production)
+    List(
+      DefaultMilestoneStepTemplates.Design,
+      DefaultMilestoneStepTemplates.Development,
+      DefaultMilestoneStepTemplates.Production
+    )
 
   /** Three steps spread over the dates of the milestone.
     *
@@ -86,7 +92,8 @@ object DemoMilestonesData {
           createdAt = at.minus(3, ChronoUnit.DAYS),
           version = DemoSeedIds.id(DemoSeedIds.MilestoneStepVersion, number),
           name = name,
-          description = DefaultMilestoneStepTemplates.defaults.collectFirst { case (`name`, text) => text }.getOrElse(""),
+          description =
+            DefaultMilestoneStepTemplates.defaults.collectFirst { case (`name`, text) => text }.getOrElse(""),
           status = status,
           position = position,
           startDate = stepStart,
@@ -107,7 +114,8 @@ object DemoMilestonesData {
     else if (milestoneStatus == MilestoneStatus.Done || due.isBefore(today)) MilestoneStepStatus.Done -> Some(due)
     else if (milestoneStatus == MilestoneStatus.Abandoned) MilestoneStepStatus.Abandoned -> Some(start)
     else if (!start.isAfter(today))
-      (if (milestoneStatus == MilestoneStatus.Paused) MilestoneStepStatus.Paused else MilestoneStepStatus.InProgress) -> None
+      (if (milestoneStatus == MilestoneStatus.Paused) MilestoneStepStatus.Paused
+       else MilestoneStepStatus.InProgress) -> None
     else MilestoneStepStatus.Planned -> None
 
   /** Offsets are in days from today; the dates are moved back to the previous work day of the project. */

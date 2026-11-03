@@ -23,9 +23,9 @@ import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.milestone.MilestoneStepLabels
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.bulk.BulkTask

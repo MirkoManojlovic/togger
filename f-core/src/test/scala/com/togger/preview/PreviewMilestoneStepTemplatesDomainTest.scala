@@ -1,7 +1,9 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, Unauthenticated}
 import com.togger.demo.DemoIdentity
 import com.togger.dto._
 import com.togger.ui.milestonesteptemplate.MilestoneStepTemplateFeServicePreview
@@ -16,7 +18,8 @@ class PreviewMilestoneStepTemplatesDomainTest extends AsyncJsWordSpec {
   private class Services(val env: PreviewTestEnv = new PreviewTestEnv) {
     private val m = env.module
     val templates = new MilestoneStepTemplateFeServicePreview(m.context, m.milestoneStepTemplates)
-    val projects = new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
+    val projects =
+      new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
     env.loginAsDemo()
   }
 
@@ -27,7 +30,9 @@ class PreviewMilestoneStepTemplatesDomainTest extends AsyncJsWordSpec {
     "answer unauthenticated without a session" in { _ =>
       val env = new PreviewTestEnv
       val templates = new MilestoneStepTemplateFeServicePreview(env.module.context, env.module.milestoneStepTemplates)
-      env.run(templates.findByProjectId(DemoIdentity.ProjectId, PageRequest(1, 50))).map(_ shouldBe Left(Unauthenticated))
+      env
+        .run(templates.findByProjectId(DemoIdentity.ProjectId, PageRequest(1, 50)))
+        .map(_ shouldBe Left(Unauthenticated))
     }
 
     "seed the five default templates of the demo project, sorted by name" in { _ =>
@@ -92,7 +97,9 @@ class PreviewMilestoneStepTemplatesDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         project <- s.env.run(
-          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty))
+          s.projects.createProject(
+            CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty)
+          )
         )
         created = project.toOption.get
         templates <- s.env.run(s.templates.findAllByProjectId(created.id))

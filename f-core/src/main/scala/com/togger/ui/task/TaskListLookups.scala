@@ -3,9 +3,9 @@ package com.togger.ui.task
 import cats.effect.IO
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindProjectResp
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.project.ProjectService
 

@@ -6,11 +6,11 @@ import com.togger.logentry.LogEntryVersion
 import com.togger.milestone.Milestone
 import com.togger.milestone.MilestoneDate
 import com.togger.milestone.MilestoneDateVersion
+import com.togger.milestone.MilestoneStep
+import com.togger.milestone.MilestoneStepVersion
 import com.togger.milestone.MilestoneSummary
 import com.togger.milestone.MilestoneSummaryVersion
 import com.togger.milestone.MilestoneVersion
-import com.togger.milestone.MilestoneStep
-import com.togger.milestone.MilestoneStepVersion
 import com.togger.milestonesteptemplate.MilestoneStepTemplate
 import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
 import com.togger.milestonetemplate.MilestoneTemplate
@@ -142,7 +142,21 @@ object DataExportEntityType {
 
   /** Dependency order: an entity only refers to entities listed before it. */
   lazy val all: List[DataExportEntityType] =
-    List(Project, Members, TaskStatus, TaskLabel, ProjectLabel, Milestone, Task, LogEntry, TaskTemplate, MilestoneStepTemplate, MilestoneTemplate, Timebox, TgPromptTemplate)
+    List(
+      Project,
+      Members,
+      TaskStatus,
+      TaskLabel,
+      ProjectLabel,
+      Milestone,
+      Task,
+      LogEntry,
+      TaskTemplate,
+      MilestoneStepTemplate,
+      MilestoneTemplate,
+      Timebox,
+      TgPromptTemplate
+    )
 
   def fromFolder(folder: String): Option[DataExportEntityType] = all.find(_.folder == folder)
 }

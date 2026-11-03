@@ -7,13 +7,10 @@ import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
-import com.togger.dto.FindTaskRespFull
-import com.togger.dto.LogEntryDto
-import com.togger.dto.organization.OrganizationProjectResp
-import com.togger.dto.FindMilestoneResp
 import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.LogEntryDto
+import com.togger.dto.organization.OrganizationProjectResp
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService

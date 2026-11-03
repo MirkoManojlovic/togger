@@ -2,15 +2,20 @@ package com.togger.ui.milestone
 
 import cats.effect.IO
 import cats.implicits._
+import com.togger.common.DateRangeValidation
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.common.TgError
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{DateRangeValidation, PageRequest, PaginatedResponse, TgError}
 import com.togger.dto._
-import com.togger.milestone.{DefaultMilestoneStep, MilestoneStepStatus}
+import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.preview._
 
-import java.time.{DayOfWeek, Instant, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 /** Mirrors the backend rules: dates inside the milestone and on work days, a comment on every change, a closed step has
@@ -192,7 +197,8 @@ class MilestoneStepFeServicePreview(
   }
 
   /** Gives `ordered` the positions `firstPosition`, `firstPosition + 1`, ... and versions only the ones that move. */
-  private def isDefault(version: PreviewMilestoneStepVersion): Boolean = DefaultMilestoneStep.isDefaultName(version.name)
+  private def isDefault(version: PreviewMilestoneStepVersion): Boolean =
+    DefaultMilestoneStep.isDefaultName(version.name)
 
   private def renumber(ordered: List[PreviewMilestoneStepVersion], firstPosition: Int, comment: String): Unit = {
     val now = ctx.clock.currentInstant
@@ -230,7 +236,9 @@ class MilestoneStepFeServicePreview(
 
   private case class Message(message: String) extends TgError
 
-  private def stepWithMilestone(id: UUID): Option[(PreviewMilestoneStep, PreviewMilestoneStepVersion, PreviewMilestone)] =
+  private def stepWithMilestone(
+    id: UUID
+  ): Option[(PreviewMilestoneStep, PreviewMilestoneStepVersion, PreviewMilestone)] =
     for {
       step <- data.steps.find(id)
       version <- data.latestVersion(id)
@@ -238,7 +246,9 @@ class MilestoneStepFeServicePreview(
     } yield (step, version, milestone)
 
   private def stepsOf(milestoneId: UUID): List[FindMilestoneStepResp] =
-    data.latestVersionsOf(milestoneId).flatMap(version => data.steps.find(version.milestoneStepId).map(toDto(_, version)))
+    data
+      .latestVersionsOf(milestoneId)
+      .flatMap(version => data.steps.find(version.milestoneStepId).map(toDto(_, version)))
 
   private def toDto(step: PreviewMilestoneStep, version: PreviewMilestoneStepVersion): FindMilestoneStepResp =
     FindMilestoneStepResp(

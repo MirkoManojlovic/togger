@@ -1,7 +1,11 @@
 package com.togger.controllers.milestone
 
-import com.togger.dto.{FindMilestoneTemplateResp, MilestoneTemplateStepDto, MilestoneTemplateVersionDto}
-import com.togger.milestonetemplate.{MilestoneTemplateFull, MilestoneTemplateStep, MilestoneTemplateVersionWithSteps}
+import com.togger.dto.FindMilestoneTemplateResp
+import com.togger.dto.MilestoneTemplateStepDto
+import com.togger.dto.MilestoneTemplateVersionDto
+import com.togger.milestonetemplate.MilestoneTemplateFull
+import com.togger.milestonetemplate.MilestoneTemplateStep
+import com.togger.milestonetemplate.MilestoneTemplateVersionWithSteps
 
 object MilestoneTemplateDtoMapper {
 

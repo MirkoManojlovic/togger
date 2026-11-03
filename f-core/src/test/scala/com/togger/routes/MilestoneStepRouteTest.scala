@@ -1,7 +1,9 @@
 package com.togger.routes
 
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.routes.Pages.{CreateMilestoneStepPage, EditMilestoneStepPage, ShowMilestoneStepsPage}
+import com.togger.routes.Pages.CreateMilestoneStepPage
+import com.togger.routes.Pages.EditMilestoneStepPage
+import com.togger.routes.Pages.ShowMilestoneStepsPage
 
 import java.util.UUID
 

@@ -2,12 +2,14 @@ package com.togger.milestonesteptemplate
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
 import com.togger.milestonesteptemplate.MilestoneStepTemplateError._
-import com.togger.util.SplunkMacro.sp
 import com.togger.milestonetemplate.MilestoneTemplateRepo
-import doobie.{ConnectionIO, Transactor}
+import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
@@ -42,7 +44,9 @@ class MilestoneStepTemplateService(
       _ <- templateRepo.findById(id)
       currentVersion <- templateVersionRepo.findLatestByTemplateId(id)
       newVersion = MilestoneStepTemplateVersion(UUID.randomUUID(), id, name, description, now)
-      _ <- if (currentVersion.hasSameContentAs(newVersion)) ().pure[doobie.ConnectionIO] else templateVersionRepo.insert(newVersion).void
+      _ <-
+        if (currentVersion.hasSameContentAs(newVersion)) ().pure[doobie.ConnectionIO]
+        else templateVersionRepo.insert(newVersion).void
       full <- templateRepo.findFullById(id)
     } yield full).transact(transactor).map(_.asRight[MilestoneStepTemplateError]).recover(notFound)
   }
@@ -56,7 +60,9 @@ class MilestoneStepTemplateService(
         else
           templateRepo
             .deleteById(id)
-            .map(deleted => Either.cond(deleted > 0, deleted, MilestoneStepTemplateNotFound: MilestoneStepTemplateError))
+            .map(deleted =>
+              Either.cond(deleted > 0, deleted, MilestoneStepTemplateNotFound: MilestoneStepTemplateError)
+            )
     } yield result).transact(transactor)
   }
 

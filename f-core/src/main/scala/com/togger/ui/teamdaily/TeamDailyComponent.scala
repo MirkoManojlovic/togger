@@ -8,10 +8,10 @@ import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgResp
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.LogEntryDto
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.OrganizationProjectResp
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.logentry.LogEntryStatus
 import com.togger.markdown.TgMarkdown
 import com.togger.ui.auth.AccountService
@@ -28,10 +28,9 @@ import com.togger.ui.components.TgStepperBreadcrumb
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TaskProgressComponent

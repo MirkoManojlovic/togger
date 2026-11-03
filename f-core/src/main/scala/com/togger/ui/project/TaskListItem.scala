@@ -3,9 +3,9 @@ package com.togger.ui.project
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.FrontendPage
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.routes.Pages.EditTaskPage
 import com.togger.routes.TgRouter
 import com.togger.ui.task.TaskProgressComponent

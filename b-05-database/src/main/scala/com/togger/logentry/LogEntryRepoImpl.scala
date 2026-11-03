@@ -11,7 +11,8 @@ import com.togger.logentry.LogEntryVersionRepoImpl.LOG_ENTRY_VERSION_TABLE_FRAG
 import com.togger.logentry.LogEntryVersionRepoImpl.logEntryStatusCodec
 import com.togger.task.Task
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
-import com.togger.task.TaskVersionRepoImpl.{latestVersionLateral, milestoneStepJoin}
+import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
+import com.togger.task.TaskVersionRepoImpl.milestoneStepJoin
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.Fragment

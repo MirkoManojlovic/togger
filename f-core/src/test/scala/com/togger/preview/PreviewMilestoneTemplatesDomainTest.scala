@@ -1,7 +1,9 @@
 package com.togger.preview
 
+import com.togger.common.BadRequest
+import com.togger.common.PageRequest
+import com.togger.common.Unauthenticated
 import com.togger.common.suites.AsyncJsWordSpec
-import com.togger.common.{BadRequest, PageRequest, Unauthenticated}
 import com.togger.demo.DemoIdentity
 import com.togger.dto._
 import com.togger.ui.milestonesteptemplate.MilestoneStepTemplateFeServicePreview
@@ -19,7 +21,8 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
     private val m = env.module
     val templates = new MilestoneTemplateFeServicePreview(m.context, m.milestoneTemplates, m.milestoneStepTemplates)
     val stepTemplates = new MilestoneStepTemplateFeServicePreview(m.context, m.milestoneStepTemplates)
-    val projects = new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
+    val projects =
+      new ProjectServicePreview(m.context, m.accounts, m.organizations, m.projects, m.projectLabels.labelsOf)
     env.loginAsDemo()
 
     def stepTemplateIds(project: UUID = DemoIdentity.ProjectId): Future[Map[String, UUID]] =
@@ -34,7 +37,9 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
       val env = new PreviewTestEnv
       val m = env.module
       val templates = new MilestoneTemplateFeServicePreview(m.context, m.milestoneTemplates, m.milestoneStepTemplates)
-      env.run(templates.findByProjectId(DemoIdentity.ProjectId, PageRequest(1, 50))).map(_ shouldBe Left(Unauthenticated))
+      env
+        .run(templates.findByProjectId(DemoIdentity.ProjectId, PageRequest(1, 50)))
+        .map(_ shouldBe Left(Unauthenticated))
     }
 
     "seed the six default templates with their steps in order" in { _ =>
@@ -60,17 +65,23 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         )
         id = created.toOption.get.id
         same <- s.env.run(
-          s.templates.updateMilestoneTemplate(UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Staging"), ids("Design"))))
+          s.templates.updateMilestoneTemplate(
+            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Staging"), ids("Design")))
+          )
         )
         reordered <- s.env.run(
-          s.templates.updateMilestoneTemplate(UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Design"), ids("Staging"))))
+          s.templates.updateMilestoneTemplate(
+            UpdateMilestoneTemplateReq(id, "QA", "d", List(ids("Design"), ids("Staging")))
+          )
         )
         versions <- s.env.run(s.templates.listAllVersions(id))
       } yield {
         created.map(_.steps.map(_.name)) shouldBe Right(List("Staging", "Design"))
         same.map(_.latestVersion) shouldBe created.map(_.latestVersion)
         reordered.map(_.steps.map(_.name)) shouldBe Right(List("Design", "Staging"))
-        versions.map(_.map(_.steps.map(_.name))) shouldBe Right(List(List("Design", "Staging"), List("Staging", "Design")))
+        versions.map(_.map(_.steps.map(_.name))) shouldBe Right(
+          List(List("Design", "Staging"), List("Staging", "Design"))
+        )
       }
     }
 
@@ -167,7 +178,9 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
       val s = new Services
       for {
         project <- s.env.run(
-          s.projects.createProject(CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty))
+          s.projects.createProject(
+            CreateProjectReq(DemoIdentity.OrganizationId, "Fresh", "", "🆕", Seq.empty, Seq.empty)
+          )
         )
         created = project.toOption.get
         templates <- s.env.run(s.templates.findAllByProjectId(created.id))
@@ -175,7 +188,9 @@ class PreviewMilestoneTemplatesDomainTest extends AsyncJsWordSpec {
         after <- s.env.run(s.templates.findAllByProjectId(created.id))
       } yield {
         templates.map(_.map(_.name)) shouldBe Right(defaultNames)
-        templates.map(_.find(_.name == "Release").map(_.steps.map(_.name))) shouldBe Right(Some(List("Staging", "Production")))
+        templates.map(_.find(_.name == "Release").map(_.steps.map(_.name))) shouldBe Right(
+          Some(List("Staging", "Production"))
+        )
         after.map(_.size) shouldBe Right(0)
       }
     }

@@ -139,11 +139,11 @@ object TgBreadcrumbTrail {
     case CreateMilestoneStepTemplatePage(projectId)  => underMilestoneStepTemplates(projectId, "Create step template")
     case EditMilestoneStepTemplatePage(projectId, _) => underMilestoneStepTemplates(projectId, "Edit step template")
 
-    case SyncConfigPage(projectId, _) => underProject(projectId, current("Sync config"))
-    case DataExportStatusPage(projectId)       => underProject(projectId, current("Export data status"))
-    case CreateDataExportConfigPage(projectId) => underConfigs(projectId, "Create export data config")
-    case CreateDataImportConfigPage(projectId) => underConfigs(projectId, "Create import data config")
-    case CreateProjectMappingPage(projectId) => underConfigs(projectId, "Create project mapping")
+    case SyncConfigPage(projectId, _)           => underProject(projectId, current("Sync config"))
+    case DataExportStatusPage(projectId)        => underProject(projectId, current("Export data status"))
+    case CreateDataExportConfigPage(projectId)  => underConfigs(projectId, "Create export data config")
+    case CreateDataImportConfigPage(projectId)  => underConfigs(projectId, "Create import data config")
+    case CreateProjectMappingPage(projectId)    => underConfigs(projectId, "Create project mapping")
     case EditDataExportConfigPage(projectId, _) => underConfigs(projectId, "Edit export data config")
     case EditDataImportConfigPage(projectId, _) => underConfigs(projectId, "Edit import data config")
 
@@ -155,10 +155,10 @@ object TgBreadcrumbTrail {
     case ShowContributionsPage(projectId, _)    => underProject(projectId, current("Contributions"))
     case ShowMilestonesPage(projectId, _)       => underProject(projectId, current("Milestones"))
     case ShowMilestoneHistoryPage(projectId, _) => underMilestones(projectId, "Milestone history")
-    case CreateMilestonePage(projectId)      => underMilestones(projectId, "Create milestone")
-    case EditMilestonePage(projectId, _)     => underMilestones(projectId, "Edit milestone")
-    case MilestoneReviewPage(projectId, _)   => underMilestones(projectId, "Milestone review")
-    case ShowMilestoneStepsPage(projectId, _) => underMilestones(projectId, "Milestone steps")
+    case CreateMilestonePage(projectId)         => underMilestones(projectId, "Create milestone")
+    case EditMilestonePage(projectId, _)        => underMilestones(projectId, "Edit milestone")
+    case MilestoneReviewPage(projectId, _)      => underMilestones(projectId, "Milestone review")
+    case ShowMilestoneStepsPage(projectId, _)   => underMilestones(projectId, "Milestone steps")
     case CreateMilestoneStepPage(projectId, milestoneId) =>
       underProject(
         projectId,

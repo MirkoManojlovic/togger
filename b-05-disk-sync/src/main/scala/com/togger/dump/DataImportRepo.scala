@@ -14,6 +14,12 @@ import com.togger.db.TgPages
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersionRepo
 import com.togger.milestone._
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateFull
+import com.togger.milestonetemplate.MilestoneTemplateRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
 import com.togger.project.Project
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectAccountRepo
@@ -26,12 +32,6 @@ import com.togger.projectlabel.ProjectLabelCategoryRepo
 import com.togger.projectlabel.ProjectLabelRepo
 import com.togger.projectmapping.ProjectMapping
 import com.togger.projectmapping.ProjectMappingRepo
-import com.togger.milestonetemplate.MilestoneTemplateFull
-import com.togger.milestonesteptemplate.MilestoneStepTemplate
-import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
-import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
-import com.togger.milestonetemplate.MilestoneTemplateRepo
-import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
 import com.togger.task._
 import com.togger.tasktemplate.TaskTemplate
 import com.togger.tasktemplate.TaskTemplateRepo
@@ -547,8 +547,8 @@ class DataImportRepo(
     )
 
   /** A template whose name the project already has under another id (e.g. a default one) is merged into that one: the
-    * versions that differ from its latest are added to it instead of inserting a second template. The step templates
-    * of the dump have to be mapped to those of the project already.
+    * versions that differ from its latest are added to it instead of inserting a second template. The step templates of
+    * the dump have to be mapped to those of the project already.
     */
   def mergeMilestoneTemplate(templateDump: MilestoneTemplateDumpData): ConnectionIO[DataImportEntityResult] =
     for {
@@ -571,7 +571,9 @@ class DataImportRepo(
       )
       added <- insertMissing(versions)(
         v => exists(milestoneTemplateVersionRepo.findByVersion(v.version.version)),
-        v => milestoneTemplateVersionRepo.insertWithId(v.version) *> milestoneTemplateVersionRepo.insertSteps(v.version.version, v.stepTemplateIds)
+        v =>
+          milestoneTemplateVersionRepo
+            .insertWithId(v.version) *> milestoneTemplateVersionRepo.insertSteps(v.version.version, v.stepTemplateIds)
       )
     } yield DataImportEntityResult.merged(
       DataExportEntityType.MilestoneTemplate,

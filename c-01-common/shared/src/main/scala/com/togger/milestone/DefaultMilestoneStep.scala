@@ -1,6 +1,7 @@
 package com.togger.milestone
 
-import enumeratum.values.{IntEnum, IntEnumEntry}
+import enumeratum.values.IntEnum
+import enumeratum.values.IntEnumEntry
 
 /** The steps every milestone gets when it is created, recognised by their name. They are read-only: they cannot be
   * edited or deleted, and no other step can take their name. Tasks go into the Shelf step when only the milestone is

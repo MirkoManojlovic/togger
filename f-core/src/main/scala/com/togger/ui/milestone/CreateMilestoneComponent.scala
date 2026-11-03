@@ -9,53 +9,34 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneDateReq
 import com.togger.dto.CreateMilestoneReq
 import com.togger.dto.FindMilestoneResp
-import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.dto.FindMilestoneTemplateResp
-import com.togger.dto.MilestoneFilter
-import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.DefaultMilestoneStep
-import com.togger.milestone.MilestoneEndpoints
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowMilestoneStepsPage
-import com.togger.routes.{FrontendPage, TgRouter}
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
-import com.togger.ui.modal.ModalFactory
-import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
-import com.togger.ui.auth.TgCard
-import com.togger.ui.auth.TgInputType
-import com.togger.ui.components.pagination.PaginatedLoader
-import com.togger.ui.components.TgBadge
-import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
+import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
 import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
 import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
-import com.togger.ui.auth.TgCard
-import com.togger.ui.auth.TgInputType
-import com.togger.ui.components.pagination.PaginatedLoader
-import com.togger.ui.components.TgBadge
-import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
-import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
-import com.togger.ui.milestonetemplate.MilestoneTemplateStepsEditing
-import com.togger.ui.organization.TgIcons
+import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
-import com.togger.ui.task.bulk.BulkTaskDefaults
-import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 
@@ -107,7 +88,8 @@ class CreateMilestoneComponent(
     .map(_.foreach(success => templatesVar.set(success.body.getOrElse(Seq.empty))))
     .unsafeRunAndForget()
 
-  private val milestoneRange: Signal[(String, String)] = formState.signal.map(form => form.startDate -> form.dueDate).distinct
+  private val milestoneRange: Signal[(String, String)] =
+    formState.signal.map(form => form.startDate -> form.dueDate).distinct
 
   val milestoneStepsVar = Var(List.empty[CreateMilestoneStepComponent])
 
@@ -126,7 +108,9 @@ class CreateMilestoneComponent(
 
   private def addStep(): Unit = {
     val form = formState.now()
-    milestoneStepsVar.update(_ :+ newStepComponent(MilestoneStepDraft(startDate = form.startDate, dueDate = form.dueDate)))
+    milestoneStepsVar.update(
+      _ :+ newStepComponent(MilestoneStepDraft(startDate = form.startDate, dueDate = form.dueDate))
+    )
   }
 
   /** Spreads the milestone range over all steps again, whatever was typed. */
@@ -250,7 +234,12 @@ class CreateMilestoneComponent(
         for {
           start <- MilestoneStepsDraft.parseDate(draft.startDate)
           due <- MilestoneStepsDraft.parseDate(draft.dueDate)
-        } yield MilestoneGanttStep(index.toString, Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"), start, due)
+        } yield MilestoneGanttStep(
+          index.toString,
+          Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${index + 1}"),
+          start,
+          due
+        )
       })
 
   private val stepsGantt = new MilestoneStepsGanttComponent(
@@ -262,7 +251,10 @@ class CreateMilestoneComponent(
     tgDateFormater,
     tgClock,
     onDatesChange = Some((step, start, due) =>
-      milestoneStepsVar.now().lift(step.key.toInt).foreach(_.formState.update(_.copy(startDate = start.toString, dueDate = due.toString)))
+      milestoneStepsVar
+        .now()
+        .lift(step.key.toInt)
+        .foreach(_.formState.update(_.copy(startDate = start.toString, dueDate = due.toString)))
     )
   )
 
@@ -315,7 +307,12 @@ class CreateMilestoneComponent(
       )
 
   private val spreadDatesBadge: HtmlElement =
-    TgBadge(text = "Spread dates evenly", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer ml-2").element
+    TgBadge(
+      text = "Spread dates evenly",
+      color = TgBadgeColor.Alternative,
+      bordered = true,
+      extraCls = "cursor-pointer ml-2"
+    ).element
       .amend(
         role("button"),
         tabIndex(0),
@@ -353,27 +350,27 @@ class CreateMilestoneComponent(
 
   private val basicInformation: HtmlElement =
     div(
-        nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-        div(
-          cls("mb-4 flex flex-col gap-4"),
-          dateBadges.element,
-          MilestoneSummaryRangeCalendar.element(
-            formState.signal.map(form => form.startDate -> form.dueDate).distinct,
-            workDaysVar.signal,
-            (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+      nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
+      div(
+        cls("mb-4 flex flex-col gap-4"),
+        dateBadges.element,
+        MilestoneSummaryRangeCalendar.element(
+          formState.signal.map(form => form.startDate -> form.dueDate).distinct,
+          workDaysVar.signal,
+          (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+        )
+      ),
+      descriptionEditor.htmlElement.amend(cls("mb-4")),
+      div(
+        cls("mb-4"),
+        h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
+        children <-- milestoneDatesVar.signal.map(dateComponents =>
+          dateComponents.map(
+            _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
           )
         ),
-        descriptionEditor.htmlElement.amend(cls("mb-4")),
-        div(
-          cls("mb-4"),
-          h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
-          children <-- milestoneDatesVar.signal.map(dateComponents =>
-            dateComponents.map(
-              _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
-            )
-          ),
-          addNewMilestoneDate
-        ),
+        addNewMilestoneDate
+      )
     )
 
   private val tabs = new TgTabs(

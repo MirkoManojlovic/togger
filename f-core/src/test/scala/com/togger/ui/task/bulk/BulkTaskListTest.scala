@@ -6,8 +6,8 @@ import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
-import com.togger.ui.milestone.StepTestData
 import com.togger.task.TaskPriority
+import com.togger.ui.milestone.StepTestData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

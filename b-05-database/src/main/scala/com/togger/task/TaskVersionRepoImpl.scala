@@ -10,8 +10,8 @@ import com.togger.db.PaginationSql
 import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
 import com.togger.dto.TaskFilter
-import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.logging.TgLogging
+import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
@@ -270,7 +270,9 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         NonEmptyList.fromList(filter.labelIds).map(hasAnyLabel),
         NonEmptyList.fromList(filter.assigneeIds).map(inOrNull(fr"tv.assigned_to", _, TgIds.UNASSIGNED_UUID)),
         NonEmptyList.fromList(filter.milestoneIds).map(inMilestones),
-        NonEmptyList.fromList(filter.milestoneStepIds).map(inOrNull(fr"tv.milestone_step_id", _, TgIds.NO_MILESTONE_UUID)),
+        NonEmptyList
+          .fromList(filter.milestoneStepIds)
+          .map(inOrNull(fr"tv.milestone_step_id", _, TgIds.NO_MILESTONE_UUID)),
         filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText),
         filter.timeboxId.map(inLatestTimeboxVersion),
         Option.unless(filter.includeArchived)(fr"not task.archived")

@@ -5,15 +5,13 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.milestone.MilestoneStepError.{
-  LastStepOfMilestone,
-  DefaultStepCannotBeDeleted,
-  DefaultStepCannotBeEdited,
-  DefaultStepNameReserved,
-  MilestoneStepNotFound,
-  StepHasTasks,
-  StepsDoNotMatchMilestone
-}
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeDeleted
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeEdited
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
+import com.togger.milestone.MilestoneStepError.LastStepOfMilestone
+import com.togger.milestone.MilestoneStepError.MilestoneStepNotFound
+import com.togger.milestone.MilestoneStepError.StepHasTasks
+import com.togger.milestone.MilestoneStepError.StepsDoNotMatchMilestone
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.util.invariant.UnexpectedEnd
@@ -60,10 +58,13 @@ class MilestoneStepServiceTest
   /** Records every inserted version and answers it unchanged. */
   private def recordInserts(): ListBuffer[MilestoneStepVersion] = {
     val inserted = ListBuffer.empty[MilestoneStepVersion]
-    (versionRepo.insert _).expects(*).onCall { (version: MilestoneStepVersion) =>
-      inserted += version
-      version.pure[ConnectionIO]
-    }.anyNumberOfTimes()
+    (versionRepo.insert _)
+      .expects(*)
+      .onCall { (version: MilestoneStepVersion) =>
+        inserted += version
+        version.pure[ConnectionIO]
+      }
+      .anyNumberOfTimes()
     inserted
   }
 
@@ -119,7 +120,9 @@ class MilestoneStepServiceTest
 
     "answer not found when the step to version does not exist" in {
       val id = UUID.randomUUID()
-      (stepRepo.findById _).expects(id).returns(doobie.free.connection.raiseError[com.togger.milestone.MilestoneStep](UnexpectedEnd))
+      (stepRepo.findById _)
+        .expects(id)
+        .returns(doobie.free.connection.raiseError[com.togger.milestone.MilestoneStep](UnexpectedEnd))
 
       service.saveNewVersion(id, newVersion(id, "x", 0)).unsafeToFuture().map(_ shouldBe Left(MilestoneStepNotFound))
     }
@@ -127,9 +130,13 @@ class MilestoneStepServiceTest
     "delete a step of a milestone that has other steps and no tasks" in {
       val step = newStep()
       (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(step.id).returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
       (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
-      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
       (stepRepo.deleteById _).expects(step.id).returns(1.pure[ConnectionIO])
 
       service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Right(1))
@@ -138,9 +145,13 @@ class MilestoneStepServiceTest
     "refuse to delete the Shelf step" in {
       val step = newStep()
       (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(step.id).returns(newVersion(step.id, "Shelf", 3).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Shelf", 3).pure[ConnectionIO])
       (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
-      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
 
       service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(DefaultStepCannotBeDeleted("Shelf")))
     }
@@ -149,9 +160,13 @@ class MilestoneStepServiceTest
       val shelf = newStep()
       val other = newStep()
       (stepRepo.findById _).expects(shelf.id).returns(shelf.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(shelf.id).returns(newVersion(shelf.id, "Shelf", 3).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(shelf.id)
+        .returns(newVersion(shelf.id, "Shelf", 3).pure[ConnectionIO])
       (stepRepo.findById _).expects(other.id).returns(other.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(other.id).returns(newVersion(other.id, "Design", 0).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(other.id)
+        .returns(newVersion(other.id, "Design", 0).pure[ConnectionIO])
       for {
         edited <- service.saveNewVersion(shelf.id, newVersion(shelf.id, "Other", 3)).unsafeToFuture()
         renamed <- service.saveNewVersion(other.id, newVersion(other.id, " shelf ", 0)).unsafeToFuture()
@@ -164,9 +179,13 @@ class MilestoneStepServiceTest
     "refuse to delete the last step of a milestone" in {
       val step = newStep()
       (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(step.id).returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
       (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step).pure[ConnectionIO])
-      (stepRepo.countTasksByStepIds _).expects(List(step.id)).returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
 
       service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(LastStepOfMilestone))
     }
@@ -174,7 +193,9 @@ class MilestoneStepServiceTest
     "refuse to delete a step that tasks are in" in {
       val step = newStep()
       (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
-      (versionRepo.findLatestByMilestoneStepId _).expects(step.id).returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
       (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
       (stepRepo.countTasksByStepIds _)
         .expects(List(step.id))
@@ -206,7 +227,8 @@ class MilestoneStepServiceTest
       val design = newVersion(UUID.randomUUID(), "Design", 0)
       val development = newVersion(UUID.randomUUID(), "Development", 1)
       val production = newVersion(UUID.randomUUID(), "Production", 2)
-      val steps = List(design, development, production).map(v => MilestoneStep(v.milestoneStepId, milestoneId, nowAsInstant))
+      val steps =
+        List(design, development, production).map(v => MilestoneStep(v.milestoneStepId, milestoneId, nowAsInstant))
       (versionRepo.findLatestByMilestoneId _)
         .expects(milestoneId)
         .returning(List(design, development, production).pure[ConnectionIO])

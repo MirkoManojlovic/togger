@@ -5,8 +5,10 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import com.togger.common.{TgClock, WorkDayCalendar}
-import com.togger.dto.{FindMilestoneStepResp, FindTaskRespFull}
+import com.togger.common.TgClock
+import com.togger.common.WorkDayCalendar
+import com.togger.dto.FindMilestoneStepResp
+import com.togger.dto.FindTaskRespFull
 import com.togger.milestone.DefaultMilestoneStep
 import com.togger.routes.TaskListParams
 import com.togger.toast.ToastMessages
@@ -14,27 +16,31 @@ import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
-import com.togger.ui.components.{TgBadgeColor, TgHtmlTable, TgTab, TgTabs}
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task._
 import com.togger.ui.task.bulk._
-import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.timebox._
+import com.togger.ui.timebox.gantt.TimeboxGanttComponent
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
 import org.scalajs.dom.HTMLTableCellElement
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.Try
 
 /** Plans the tasks of a milestone into its steps, the way a timebox is planned: the tasks of the project to pick from,
-  * the tasks staged in each step with the capacity of the step, and a Gantt chart per step to position them. Nothing
-  * is saved until Save: a staged task is then put in its step (with the dates it has on the chart) and a task taken out
-  * of every step falls back to the Shelf step of the milestone. The Shelf step itself is not planned.
+  * the tasks staged in each step with the capacity of the step, and a Gantt chart per step to position them. Nothing is
+  * saved until Save: a staged task is then put in its step (with the dates it has on the chart) and a task taken out of
+  * every step falls back to the Shelf step of the milestone. The Shelf step itself is not planned.
   *
   * The staged tasks of a step are kept in the staging store under the id of the step.
   */
@@ -75,7 +81,8 @@ class MilestoneStepTasksComponent(
 
   private val planStepsVar = Var(Seq.empty[PlanStep])
 
-  private val lookups = new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
+  private val lookups =
+    new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService)
 
   // The list starts with the tasks of this milestone; the milestone filter can be widened to the other tasks.
   private val paramsVar = Var(TaskListParams.default.copy(milestones = Some(Set(milestoneId.toString))))
@@ -90,8 +97,8 @@ class MilestoneStepTasksComponent(
   /** The tasks of the project as the backend has them: where each is and its dates when last saved. */
   private val projectTasksVar = Var(Seq.empty[FindTaskRespFull])
 
-  /** The project tasks as last loaded from the backend; staging starts again from them, which an edit of one task
-    * must not do, as it would drop the unsaved plan.
+  /** The project tasks as last loaded from the backend; staging starts again from them, which an edit of one task must
+    * not do, as it would drop the unsaved plan.
     */
   private val loadedTasksVar = Var(Seq.empty[FindTaskRespFull])
 
@@ -147,7 +154,10 @@ class MilestoneStepTasksComponent(
 
   private def labelRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     if (dto.taskLabels.isEmpty) Seq(BadgeSpec(BulkTaskBadges.EmptyLabels, TgBadgeColor.Gray, Some(BulkEditKind.Labels)))
-    else dto.taskLabels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
+    else
+      dto.taskLabels
+        .sortBy(_.name)
+        .map(label => BadgeSpec(label.badgeText, label.badgeColor, Some(BulkEditKind.Labels)))
 
   /** The milestone of the step the task is saved in; the milestone of the task itself when its step is not known. */
   private def milestoneBadge(dto: FindTaskRespFull): BadgeSpec =
@@ -175,7 +185,11 @@ class MilestoneStepTasksComponent(
 
   private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(
-      BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate), TgBadgeColor.Gray, Some(BulkEditKind.StartDate)),
+      BadgeSpec(
+        tgDateFormater.asAmericanDateWithDayAbrv(dto.startDate),
+        TgBadgeColor.Gray,
+        Some(BulkEditKind.StartDate)
+      ),
       BadgeSpec(tgDateFormater.asAmericanDateWithDayAbrv(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
       BadgeSpec(durationLabel(dto), TgBadgeColor.Gray)
     )
@@ -205,7 +219,12 @@ class MilestoneStepTasksComponent(
 
   private val lookupsSignal: Signal[BulkLookups] =
     lookups.statusesVar.signal
-      .combineWith(lookups.taskLabelsVar.signal, lookups.projectVar.signal, lookups.milestonesVar.signal, allStepsVar.signal)
+      .combineWith(
+        lookups.taskLabelsVar.signal,
+        lookups.projectVar.signal,
+        lookups.milestonesVar.signal,
+        allStepsVar.signal
+      )
       .map { case (statuses, labels, project, milestones, steps) =>
         BulkLookups(
           statuses = statuses.taskStatuses,
@@ -219,14 +238,19 @@ class MilestoneStepTasksComponent(
 
   private val popups: BulkEditPopups = new BulkEditPopups(
     context = scope =>
-      BulkEditContext(lookupsNow(), editableTasks(scope).map(ShowAllTasksBulkMapping.toBulkTask), tgClock.currentDate()),
+      BulkEditContext(
+        lookupsNow(),
+        editableTasks(scope).map(ShowAllTasksBulkMapping.toBulkTask),
+        tgClock.currentDate()
+      ),
     onEdit = saveEdit
   )
 
   private def stagedTasksNow(): Seq[FindTaskRespFull] =
     planStepsVar.now().flatMap(step => stagingStore.stagedWithDatesNow(step.id))
 
-  /** The task a badge edits: as it is staged, with the dates it has on the Gantt chart, or else as the page shows it. */
+  /** The task a badge edits: as it is staged, with the dates it has on the Gantt chart, or else as the page shows it.
+    */
   private def editableTasks(scope: Option[UUID]): Seq[FindTaskRespFull] =
     scope.toSeq.flatMap { id =>
       stagedTasksNow().find(_.id == id).orElse(browser.rowsVar.now().find(_.id == id))
@@ -256,8 +280,8 @@ class MilestoneStepTasksComponent(
     }
   }
 
-  /** Swaps the staged tasks for their saved state, and, when the edit moved the edited task to another step, puts it
-    * in the step it is now saved in: in none when it left the milestone. The saved state the changes are counted from
+  /** Swaps the staged tasks for their saved state, and, when the edit moved the edited task to another step, puts it in
+    * the step it is now saved in: in none when it left the milestone. The saved state the changes are counted from
     * follows, without the unsaved plan being dropped.
     */
   private def refreshStaged(editedId: UUID): IO[Unit] =
@@ -396,7 +420,9 @@ class MilestoneStepTasksComponent(
     val placed = steps.flatMap { step =>
       stagingStore.stagedWithDatesNow(step.id).flatMap { task =>
         val before = saved.find(_.id == task.id)
-        val unchanged = before.exists(b => b.milestoneStepId.contains(step.id) && b.startDate == task.startDate && b.dueDate == task.dueDate)
+        val unchanged = before.exists(b =>
+          b.milestoneStepId.contains(step.id) && b.startDate == task.startDate && b.dueDate == task.dueDate
+        )
         Option.when(!unchanged)(task.copy(milestoneStepId = Some(step.id), milestone = Some(milestoneId)))
       }
     }
@@ -430,7 +456,10 @@ class MilestoneStepTasksComponent(
     }
     spinnerService
       .runWithSpinner(
-        saveAll.flatMap(saved => IO(if (saved) toast.success("Tasks saved in the steps")) >> loadProjectTasks() >> browser.loadPage() >> onSaved)
+        saveAll.flatMap(saved =>
+          IO(if (saved) toast.success("Tasks saved in the steps")) >> loadProjectTasks() >> browser
+            .loadPage() >> onSaved
+        )
       )
       .unsafeRunAndForget()
   }
@@ -439,7 +468,12 @@ class MilestoneStepTasksComponent(
     div(
       cls("flex items-center justify-end gap-3"),
       child.maybe <-- overCapacity.map(
-        Option.when(_)(span(cls("text-sm font-medium text-fg-danger-strong"), "A step is over capacity: unstage tasks to be able to save."))
+        Option.when(_)(
+          span(
+            cls("text-sm font-medium text-fg-danger-strong"),
+            "A step is over capacity: unstage tasks to be able to save."
+          )
+        )
       ),
       button(
         typ("button"),
@@ -456,7 +490,12 @@ class MilestoneStepTasksComponent(
       else
         new TgTabs(
           steps.map(step =>
-            TgTab(step.id.toString, step.name, ganttOf(step).element, badge = Some(stagingStore.staged(step.id).map(_.size)))
+            TgTab(
+              step.id.toString,
+              step.name,
+              ganttOf(step).element,
+              badge = Some(stagingStore.staged(step.id).map(_.size))
+            )
           ),
           selectedStepVar
         ).element
@@ -480,7 +519,8 @@ class MilestoneStepTasksComponent(
                 TgCard
                   .headerNoFooter(
                     header = TgCard.CardHeader.plainText("Planned tasks", TgCard.CardHeaderSize.H5),
-                    body = TgCard.HtmlCardContent(div(browser.searchBar, taskTable, browser.pagination(alwaysShowSize = true)))
+                    body = TgCard
+                      .HtmlCardContent(div(browser.searchBar, taskTable, browser.pagination(alwaysShowSize = true)))
                   )
                   .element,
                 div(children <-- planSteps.map(_.map(stagedTasksOf)))

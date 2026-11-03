@@ -3,9 +3,14 @@ package com.togger.ui.milestonetemplate
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneStepTemplateResp
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
+import com.togger.ui.components.DropdownMeta
+import com.togger.ui.components.TgSelectDropdown
+import com.togger.ui.components.TgSelectDropdownOption
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.task.TaskConfigTableSupport.{iconButton, rowButtonMarginCls, rowIconButtonCls, rowIconButtonDangerCls}
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
 
 import java.util.UUID
 
@@ -38,42 +43,50 @@ object MilestoneTemplateFormSupport {
   ): HtmlDiv =
     div(
       label(cls("block mb-2.5 text-sm font-medium text-heading"), "Steps"),
-      child <-- form.signal.map(_.stepTemplateIds).combineWith(available).map { case (ids, templates) =>
-        if (ids.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
-        else
-          div(
-            cls("mb-3"),
-            stepNames(ids, templates).zipWithIndex.map { case (name, index) =>
+      child <-- form.signal
+        .map(_.stepTemplateIds)
+        .combineWith(available)
+        .map {
+          case (ids, templates) =>
+            if (ids.isEmpty) p(cls("mb-3 text-sm text-body-subtle"), "No steps yet")
+            else
               div(
-                cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
-                span(cls("text-sm text-heading"), s"${index + 1}. $name"),
-                div(
-                  iconButton(
-                    "Move up",
-                    span("↑"),
-                    rowIconButtonCls,
-                    rowButtonMarginCls,
-                    onClick.mapToUnit --> (_ => moveStep(form, index, -1))
-                  ),
-                  iconButton(
-                    "Move down",
-                    span("↓"),
-                    rowIconButtonCls,
-                    rowButtonMarginCls,
-                    onClick.mapToUnit --> (_ => moveStep(form, index, 1))
-                  ),
-                  iconButton(
-                    "Remove",
-                    TgIcons.trashIcon(className = "w-4 h-4"),
-                    rowIconButtonDangerCls,
-                    rowButtonMarginCls,
-                    onClick.mapToUnit --> (_ => form.update(f => f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.remove(f.stepTemplateIds, index))))
+                cls("mb-3"),
+                stepNames(ids, templates).zipWithIndex.map { case (name, index) =>
+                  div(
+                    cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
+                    span(cls("text-sm text-heading"), s"${index + 1}. $name"),
+                    div(
+                      iconButton(
+                        "Move up",
+                        span("↑"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ => moveStep(form, index, -1))
+                      ),
+                      iconButton(
+                        "Move down",
+                        span("↓"),
+                        rowIconButtonCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ => moveStep(form, index, 1))
+                      ),
+                      iconButton(
+                        "Remove",
+                        TgIcons.trashIcon(className = "w-4 h-4"),
+                        rowIconButtonDangerCls,
+                        rowButtonMarginCls,
+                        onClick.mapToUnit --> (_ =>
+                          form.update(f =>
+                            f.copy(stepTemplateIds = MilestoneTemplateStepsEditing.remove(f.stepTemplateIds, index))
+                          )
+                        )
+                      )
+                    )
                   )
-                )
+                }
               )
-            }
-          )
-      },
+        },
       child <-- available.map(templates => addStepDropdown(form, templates))
     )
 

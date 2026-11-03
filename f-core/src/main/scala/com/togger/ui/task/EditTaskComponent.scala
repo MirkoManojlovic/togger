@@ -24,13 +24,13 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.logentry.LogEntryComponent
 import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.modal.PlainTextModalMessage
-import com.togger.ui.milestone.MilestoneStepFeService
-import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.project.ProjectService
 import com.togger.ui.slacker.SlackerMissingDays
 import com.togger.ui.slacker.SlackerScope

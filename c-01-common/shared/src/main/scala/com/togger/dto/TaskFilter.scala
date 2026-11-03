@@ -8,8 +8,9 @@ import java.util.UUID
   * with AND, values within one dimension with OR. `labelIds` matches tasks having at least one of the labels.
   * `assigneeIds` may hold `TgIds.UNASSIGNED_UUID` for tasks without assignee and `milestoneIds` may hold
   * `TgIds.NO_MILESTONE_UUID` for tasks without milestone; a task is in the milestone of its step. `milestoneStepIds`
-  * keeps the tasks of those steps and may hold `TgIds.NO_MILESTONE_UUID` for tasks without step. `search` is a case-insensitive substring of name or
-  * description. `timeboxId` keeps only the tasks planned in the latest version of that timebox, in their current state. Archived tasks are left out unless `includeArchived`.
+  * keeps the tasks of those steps and may hold `TgIds.NO_MILESTONE_UUID` for tasks without step. `search` is a
+  * case-insensitive substring of name or description. `timeboxId` keeps only the tasks planned in the latest version of
+  * that timebox, in their current state. Archived tasks are left out unless `includeArchived`.
   */
 case class TaskFilter(
   statusIds: List[UUID] = List.empty,

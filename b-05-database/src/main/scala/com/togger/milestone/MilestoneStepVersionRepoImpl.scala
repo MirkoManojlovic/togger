@@ -1,17 +1,23 @@
 package com.togger.milestone
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
-import com.togger.db.Util._
-import com.togger.db.{PaginationSql, TgFindPaginatedQuery}
-import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
-import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
-import com.togger.milestone.MilestoneStepVersionRepoImpl.{MILESTONE_STEP_VERSION_TABLE_FRAG, milestoneStepStatusCodec}
-import com.togger.util.SplunkMacro.sp
-import doobie.implicits._
-import doobie.postgres.implicits._
 import cats.data.NonEmptyList
 import cats.implicits._
-import doobie.{ConnectionIO, Fragment, Fragments, Meta}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
+import com.togger.db.PaginationSql
+import com.togger.db.TgFindPaginatedQuery
+import com.togger.db.Util._
+import com.togger.milestone.MilestoneRepoImpl.MILESTONE_TABLE_FRAG
+import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
+import com.togger.milestone.MilestoneStepVersionRepoImpl.MILESTONE_STEP_VERSION_TABLE_FRAG
+import com.togger.milestone.MilestoneStepVersionRepoImpl.milestoneStepStatusCodec
+import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Fragment
+import doobie.Fragments
+import doobie.Meta
+import doobie.implicits._
+import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -140,8 +146,7 @@ class MilestoneStepVersionRepoImpl extends MilestoneStepVersionRepo {
           .query[(UUID, MilestoneStepStatus)]
           .to[List]
           .map(
-            _.groupMap { case (milestoneId, _) => milestoneId } { case (_, status) => status }
-              .view
+            _.groupMap { case (milestoneId, _) => milestoneId } { case (_, status) => status }.view
               .mapValues(MilestoneStepCounts.fromStatuses)
               .toMap
           )

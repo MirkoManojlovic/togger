@@ -5,7 +5,8 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.milestonesteptemplate.MilestoneStepTemplateError.{MilestoneStepTemplateNotFound, StepTemplateInUse}
+import com.togger.milestonesteptemplate.MilestoneStepTemplateError.MilestoneStepTemplateNotFound
+import com.togger.milestonesteptemplate.MilestoneStepTemplateError.StepTemplateInUse
 import com.togger.milestonetemplate.MilestoneTemplateRepo
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
@@ -28,7 +29,8 @@ class MilestoneStepTemplateServiceTest
   private val templateRepo: MilestoneStepTemplateRepo = mock[MilestoneStepTemplateRepo]
   private val versionRepo: MilestoneStepTemplateVersionRepo = mock[MilestoneStepTemplateVersionRepo]
   private val milestoneTemplateRepo: MilestoneTemplateRepo = mock[MilestoneTemplateRepo]
-  private val service = new MilestoneStepTemplateService(templateRepo, versionRepo, milestoneTemplateRepo, transactorMock)
+  private val service =
+    new MilestoneStepTemplateService(templateRepo, versionRepo, milestoneTemplateRepo, transactorMock)
 
   private val template = MilestoneStepTemplate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), nowAsInstant)
   private val current = MilestoneStepTemplateVersion(UUID.randomUUID(), template.id, "Design", "Plan it", nowAsInstant)
@@ -81,7 +83,9 @@ class MilestoneStepTemplateServiceTest
     }
 
     "answer not found when deleting a template that does not exist" in {
-      (milestoneTemplateRepo.findNamesUsingStepTemplate _).expects(template.id).returns(List.empty[String].pure[ConnectionIO])
+      (milestoneTemplateRepo.findNamesUsingStepTemplate _)
+        .expects(template.id)
+        .returns(List.empty[String].pure[ConnectionIO])
       (templateRepo.deleteById _).expects(template.id).returns(0.pure[ConnectionIO])
 
       service.delete(template.id).unsafeToFuture().map(_ shouldBe Left(MilestoneStepTemplateNotFound))

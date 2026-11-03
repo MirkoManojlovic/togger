@@ -1,8 +1,10 @@
 package com.togger.controllers.project
 
 import com.togger.common.TgClock
-import com.togger.milestone.{DefaultMilestoneTemplate, DefaultMilestoneTemplates}
-import com.togger.milestonetemplate.{MilestoneTemplate, MilestoneTemplateVersion}
+import com.togger.milestone.DefaultMilestoneTemplate
+import com.togger.milestone.DefaultMilestoneTemplates
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateVersion
 
 import java.util.UUID
 

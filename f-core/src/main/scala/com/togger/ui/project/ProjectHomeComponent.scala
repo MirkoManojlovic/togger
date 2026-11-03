@@ -8,6 +8,7 @@ import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.dto.FindProjectResp
 import com.togger.dto.FindTaskRespFull
@@ -16,7 +17,6 @@ import com.togger.dto.FindTimeboxResp
 import com.togger.dto.MilestoneFilter
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.TaskFilter
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.markdown.TgMarkdown
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.FrontendPage
@@ -25,29 +25,17 @@ import com.togger.routes.TgRouter
 import com.togger.ui.auth.TgCard
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressStyles
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.milestone.MilestoneSummaryFeService
-import com.togger.ui.milestone.MilestoneTabs
-import com.togger.ui.milestone.MilestoneTaskRows
-import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
-import com.togger.ui.components.TgBadge
-import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.components.TgProgressComponent
-import com.togger.ui.components.TgProgressLabel
-import com.togger.ui.components.TgProgressSize
-import com.togger.ui.components.TgTab
-import com.togger.ui.components.TgTabs
 import com.togger.ui.milestone.MilestoneStepFeService
-import com.togger.ui.milestone.StepBar
-import com.togger.ui.components.TgProgressColor
-import com.togger.ui.components.TgProgressStyles
-import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneSummaryFeService
 import com.togger.ui.milestone.MilestoneTabs
 import com.togger.ui.milestone.MilestoneTaskRows
+import com.togger.ui.milestone.StepBar
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -136,7 +124,8 @@ class ProjectHomeComponent(
       }
       .map(loaded => summariesVar.set(loaded.toMap))
 
-  /** The steps of the milestones of the project by milestone, in order; a failure leaves the milestones without bars. */
+  /** The steps of the milestones of the project by milestone, in order; a failure leaves the milestones without bars.
+    */
   private def loadSteps(): IO[Unit] =
     milestoneStepService.findByProjectId(projectId).map { response =>
       val steps = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
@@ -208,7 +197,6 @@ class ProjectHomeComponent(
     a(cls("text-fg-brand hover:underline cursor-pointer"), text, router.navigateTo(page))
 
   private def emptyNote(text: String): HtmlElement = div(cls("text-body"), text)
-
 
   /** Written out in full so Tailwind finds the classes. */
   private def stepFillCls(color: TgProgressColor): String = color match {
@@ -308,7 +296,17 @@ class ProjectHomeComponent(
 
   private def previewTask(task: FindTaskRespFull): Unit =
     modalFactory.previewModal(
-      new TaskPreviewComponent(task, workDays, router, tgDateFormater, tgMarkdown, tgClock, showName = true, allMilestonesVar.now(), allStepsNow()).element,
+      new TaskPreviewComponent(
+        task,
+        workDays,
+        router,
+        tgDateFormater,
+        tgMarkdown,
+        tgClock,
+        showName = true,
+        allMilestonesVar.now(),
+        allStepsNow()
+      ).element,
       title = "Task preview",
       maxWidthCls = "max-w-[112rem]"
     )

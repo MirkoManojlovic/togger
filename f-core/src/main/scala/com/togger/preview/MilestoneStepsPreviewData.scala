@@ -3,7 +3,8 @@ package com.togger.preview
 import com.togger.milestone.MilestoneStepStatus
 import io.circe.generic.auto._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 case class PreviewMilestoneStep(id: UUID, milestoneId: UUID, createdAt: Instant)

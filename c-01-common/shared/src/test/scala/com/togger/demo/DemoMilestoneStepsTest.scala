@@ -4,7 +4,8 @@ import com.togger.milestone.MilestoneStepStatus
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 
 class DemoMilestoneStepsTest extends AnyWordSpec with Matchers {
 
@@ -21,7 +22,10 @@ class DemoMilestoneStepsTest extends AnyWordSpec with Matchers {
         milestone.steps.forall(step => !step.startDate.isBefore(milestone.startDate)) shouldBe true
         milestone.steps.forall(step => !step.dueDate.isAfter(milestone.dueDate)) shouldBe true
         milestone.steps.forall(step => !step.dueDate.isBefore(step.startDate)) shouldBe true
-        milestone.steps.sliding(2).forall { case List(a, b) => !b.startDate.isBefore(a.dueDate) case _ => true } shouldBe true
+        milestone.steps.sliding(2).forall {
+          case List(a, b) => !b.startDate.isBefore(a.dueDate)
+          case _          => true
+        } shouldBe true
       }
     }
 
@@ -61,7 +65,9 @@ class DemoMilestoneStepsTest extends AnyWordSpec with Matchers {
     }
 
     "give every task that names a milestone a step, and no step to the others" in {
-      demo.tasks.flatMap(_.versions).foreach(version => version.milestone.isDefined shouldBe version.milestoneStepId.isDefined)
+      demo.tasks
+        .flatMap(_.versions)
+        .foreach(version => version.milestone.isDefined shouldBe version.milestoneStepId.isDefined)
     }
 
     "put some tasks of a milestone in each of several of its steps" in {

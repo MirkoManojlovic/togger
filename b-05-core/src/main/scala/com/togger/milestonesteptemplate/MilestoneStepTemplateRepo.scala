@@ -1,6 +1,7 @@
 package com.togger.milestonesteptemplate
 
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import doobie.ConnectionIO
 
 import java.util.UUID

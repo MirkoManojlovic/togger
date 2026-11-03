@@ -1,9 +1,9 @@
 package com.togger.milestone
 
 import doobie.ConnectionIO
-import doobie.implicits._
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** A step of a milestone for the tests of tasks, which are in a step. */

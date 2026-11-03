@@ -1,7 +1,9 @@
 package com.togger.milestone
 
-import com.togger.chart.{ChartColor, Chartable}
-import enumeratum.values.{IntEnum, IntEnumEntry}
+import com.togger.chart.ChartColor
+import com.togger.chart.Chartable
+import enumeratum.values.IntEnum
+import enumeratum.values.IntEnumEntry
 
 sealed abstract class MilestoneStepStatus(
   val value: Int,
@@ -28,7 +30,8 @@ object MilestoneStepStatus extends IntEnum[MilestoneStepStatus] {
   case object InProgress extends MilestoneStepStatus(1, "In Progress", "Things are moving", "▶️", ChartColor.Blue)
   case object Done extends MilestoneStepStatus(2, "Done", "This has been completed", "✅", ChartColor.Green)
   case object Paused extends MilestoneStepStatus(3, "Paused", "This is on hold for now", "⏸️", ChartColor.Yellow)
-  case object Abandoned extends MilestoneStepStatus(4, "Abandoned", "This will not be continued", "🗑️", ChartColor.Dark)
+  case object Abandoned
+      extends MilestoneStepStatus(4, "Abandoned", "This will not be continued", "🗑️", ChartColor.Dark)
 
   override def values: IndexedSeq[MilestoneStepStatus] = findValues
 

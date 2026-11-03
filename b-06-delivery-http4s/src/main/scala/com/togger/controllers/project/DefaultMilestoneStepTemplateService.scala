@@ -2,13 +2,16 @@ package com.togger.controllers.project
 
 import com.togger.common.TgClock
 import com.togger.milestone.DefaultMilestoneStepTemplates
-import com.togger.milestonesteptemplate.{MilestoneStepTemplate, MilestoneStepTemplateVersion}
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
 
 import java.util.UUID
 
 class DefaultMilestoneStepTemplateService(tgClock: TgClock) {
 
-  /** The default step templates with their first version, in the order of [[DefaultMilestoneStepTemplateService.defaults]]. */
+  /** The default step templates with their first version, in the order of
+    * [[DefaultMilestoneStepTemplateService.defaults]].
+    */
   def createDefaultMilestoneStepTemplates(
     projectId: UUID,
     createdBy: UUID

@@ -2,9 +2,10 @@ package com.togger.ui.milestonesteptemplate
 
 import com.togger.auth.SecuredEndpoint
 import com.togger.backendcalls.ProtectedBackendClient
+import com.togger.common.PageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.common.TgJsonSuccess.TgEmptyBody
 import com.togger.common.TgResponseTypes.TgRespIO
-import com.togger.common.{PageRequest, PaginatedResponse}
 import com.togger.dto._
 import com.togger.milestone.MilestoneStepTemplateEndpoints
 import com.togger.ui.components.pagination.PaginatedLoader
@@ -36,14 +37,20 @@ trait MilestoneStepTemplateFeService {
   def deleteMilestoneStepTemplateById(id: UUID): TgRespIO[TgEmptyBody]
 }
 
-class MilestoneStepTemplateFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
-    extends MilestoneStepTemplateFeService {
+class MilestoneStepTemplateFeServiceImpl(
+  securedEndpoint: SecuredEndpoint,
+  protectedBackendClient: ProtectedBackendClient
+) extends MilestoneStepTemplateFeService {
   private val endpoints = new MilestoneStepTemplateEndpoints(securedEndpoint)
 
-  override def createMilestoneStepTemplate(dto: CreateMilestoneStepTemplateReq): TgRespIO[FindMilestoneStepTemplateResp] =
+  override def createMilestoneStepTemplate(
+    dto: CreateMilestoneStepTemplateReq
+  ): TgRespIO[FindMilestoneStepTemplateResp] =
     protectedBackendClient.protectedHttpCall(endpoints.saveEndpoint)(dto)
 
-  override def updateMilestoneStepTemplate(dto: UpdateMilestoneStepTemplateReq): TgRespIO[FindMilestoneStepTemplateResp] =
+  override def updateMilestoneStepTemplate(
+    dto: UpdateMilestoneStepTemplateReq
+  ): TgRespIO[FindMilestoneStepTemplateResp] =
     protectedBackendClient.protectedHttpCall(endpoints.updateEndpoint)(dto)
 
   override def findByProjectId(

@@ -13,10 +13,10 @@ import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
 import com.togger.milestone.Milestone
 import com.togger.milestone.MilestoneRepoImpl
-import com.togger.organization.TgProject
-import com.togger.organization.TgTaskStatus
 import com.togger.milestone.MilestoneStep
 import com.togger.milestone.MilestoneStepFixtures
+import com.togger.organization.TgProject
+import com.togger.organization.TgTaskStatus
 import doobie.ConnectionIO
 import doobie.implicits._
 

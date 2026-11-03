@@ -3,7 +3,8 @@ package com.togger.preview
 import com.togger.demo.DemoMilestone
 
 /** Gives every demo milestone the steps of the demo data; needs the milestones to be seeded first. */
-class MilestoneStepsPreviewSeed(data: MilestoneStepsPreviewData, milestones: List[DemoMilestone]) extends PreviewSeeder {
+class MilestoneStepsPreviewSeed(data: MilestoneStepsPreviewData, milestones: List[DemoMilestone])
+    extends PreviewSeeder {
 
   override def seed(): Unit =
     milestones.foreach { milestone =>

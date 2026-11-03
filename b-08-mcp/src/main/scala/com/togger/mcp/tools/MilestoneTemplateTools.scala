@@ -18,9 +18,8 @@ class MilestoneTemplateTools(client: TgBackendClient):
   ).input[ListTemplatesInput]
     .handle(input =>
       respond(
-        uuid("projectId", input.projectId).flatMap(id =>
-          client.get(List("milestone-template", "project", id), paging(input.page, input.size))
-        )
+        uuid("projectId", input.projectId)
+          .flatMap(id => client.get(List("milestone-template", "project", id), paging(input.page, input.size)))
       )
     )
 
@@ -32,9 +31,8 @@ class MilestoneTemplateTools(client: TgBackendClient):
   ).input[ListTemplatesInput]
     .handle(input =>
       respond(
-        uuid("projectId", input.projectId).flatMap(id =>
-          client.get(List("milestone-step-template", "project", id), paging(input.page, input.size))
-        )
+        uuid("projectId", input.projectId)
+          .flatMap(id => client.get(List("milestone-step-template", "project", id), paging(input.page, input.size)))
       )
     )
 

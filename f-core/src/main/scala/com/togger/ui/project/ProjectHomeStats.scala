@@ -1,15 +1,15 @@
 package com.togger.ui.project
 
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.FindTimeboxResp
 import com.togger.dto.SearchAccountDto
-import com.togger.ui.milestone.MilestoneStepBadges
-import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.MilestoneStepBadges
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.teamdaily.TeamDailyStatusOrder

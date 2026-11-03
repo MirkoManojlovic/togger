@@ -1,7 +1,8 @@
 package com.togger.ui.milestone
 
 import com.togger.milestone.MilestoneStepStatus
-import com.togger.ui.components.{TgProgressColor, TgProgressStyles}
+import com.togger.ui.components.TgProgressColor
+import com.togger.ui.components.TgProgressStyles
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

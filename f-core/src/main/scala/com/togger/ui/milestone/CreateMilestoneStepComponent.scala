@@ -10,7 +10,8 @@ import org.scalajs.dom.HTMLDivElement
 
 import java.time.DayOfWeek
 
-/** The form of one step of the milestone that is being created. The dates follow the milestone until they are edited. */
+/** The form of one step of the milestone that is being created. The dates follow the milestone until they are edited.
+  */
 class CreateMilestoneStepComponent(
   initial: MilestoneStepDraft,
   milestoneRange: Signal[(String, String)],

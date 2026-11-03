@@ -3,7 +3,9 @@ package com.togger.ui.milestonetemplate
 import com.raquo.laminar.api.L._
 import com.togger.dto.FindMilestoneTemplateResp
 import com.togger.ui.auth.TgHtmlTypes.HtmlDiv
-import com.togger.ui.components.{DropdownMeta, TgSelectDropdown, TgSelectDropdownOption}
+import com.togger.ui.components.DropdownMeta
+import com.togger.ui.components.TgSelectDropdown
+import com.togger.ui.components.TgSelectDropdownOption
 
 import java.util.UUID
 

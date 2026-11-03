@@ -2,17 +2,16 @@ package com.togger.milestonetemplate
 
 import cats.implicits._
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
-import com.togger.milestonesteptemplate.{
-  MilestoneStepTemplate,
-  MilestoneStepTemplateRepoImpl,
-  MilestoneStepTemplateVersion,
-  MilestoneStepTemplateVersionRepoImpl
-}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
 import com.togger.organization.TgProject
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.util.UUID
 
@@ -115,7 +114,9 @@ class MilestoneTemplateRepoTest extends BusinessTgDbSpec with TgAccount with TgP
         usesDesign <- newTemplate(projectId, account.id, "Uses design", List(design))
         // Used design once, then dropped it in a newer version.
         droppedDesign <- newTemplate(projectId, account.id, "Dropped design", List(design))
-        v2 <- versionRepo.insert(MilestoneTemplateVersion(UUID.randomUUID(), droppedDesign._1.id, "Dropped design", "d", nowAsInstant))
+        v2 <- versionRepo.insert(
+          MilestoneTemplateVersion(UUID.randomUUID(), droppedDesign._1.id, "Dropped design", "d", nowAsInstant)
+        )
         _ <- versionRepo.insertSteps(v2.version, List(staging))
         usingDesign <- templateRepo.findNamesUsingStepTemplate(design)
         usingStaging <- templateRepo.findNamesUsingStepTemplate(staging)

@@ -5,10 +5,10 @@ import com.togger.common.TgClock
 import com.togger.dto.FindTaskRespFull
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.TgDateFormater
-
 import org.scalajs.dom
 
-import java.time.{LocalDate, YearMonth}
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** What the Gantt charts have in common: the grid, the header, the day columns, the bar and the labels. */
 class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
@@ -85,7 +85,9 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
         cls("pointer-events-none absolute inset-y-0 left-0 flex items-center justify-end"),
         styleAttr := s"width: var($NameColumnVar)",
         div(
-          cls("pointer-events-auto h-20 w-2 cursor-col-resize rounded-full bg-neutral-quaternary-medium hover:bg-fg-brand"),
+          cls(
+            "pointer-events-auto h-20 w-2 cursor-col-resize rounded-full bg-neutral-quaternary-medium hover:bg-fg-brand"
+          ),
           cls("bg-fg-brand") <-- nameColumnDragVar.signal.map(_.isDefined),
           onMouseDown --> (event => startNameColumnDrag(event))
         )
@@ -103,7 +105,6 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
     val today = if (isToday(axis.days(index))) " bg-brand-soft" else ""
     s"border-default-medium$gap$today"
   }
-
 
   /** Consecutive columns of the same month, as (first day, first column index, number of columns). */
   private def monthSpans(axis: GanttAxis): Seq[(LocalDate, Int, Int)] =
@@ -174,7 +175,9 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def barElement(tooltip: String, color: String, placed: GanttBar.Placed): HtmlElement = {
     val rounding = barRounding(placed)
     div(
-      cls(s"relative z-10 mx-1 my-1 flex h-7 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"),
+      cls(
+        s"relative z-10 mx-1 my-1 flex h-7 items-center justify-between overflow-hidden $color px-1 text-xs text-white $rounding"
+      ),
       title := tooltip,
       span(if (placed.clippedLeft) "◂" else ""),
       span(if (placed.clippedRight) "▸" else "")
@@ -225,7 +228,9 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   def frame(axis: GanttAxis, rows: Seq[HtmlElement], nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
       cls("overflow-x-auto rounded-base border border-default-medium"),
-      styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(_.fold("max-content")(width => s"${width}px")),
+      styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(
+        _.fold("max-content")(width => s"${width}px")
+      ),
       onMountUnmountCallbackWithState[HtmlElement, dom.ResizeObserver](
         mount = context => {
           fitNameColumn(context.thisNode.ref)

@@ -5,8 +5,10 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
-import com.togger.milestonesteptemplate.{MilestoneStepTemplate, MilestoneStepTemplateRepo}
-import com.togger.milestonetemplate.MilestoneTemplateError.{MilestoneTemplateNotFound, StepTemplateNotInProject}
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
+import com.togger.milestonetemplate.MilestoneTemplateError.MilestoneTemplateNotFound
+import com.togger.milestonetemplate.MilestoneTemplateError.StepTemplateNotInProject
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.util.invariant.UnexpectedEnd
@@ -36,7 +38,8 @@ class MilestoneTemplateServiceTest
   private val design = UUID.randomUUID()
   private val development = UUID.randomUUID()
 
-  private def stepTemplate(id: UUID, inProject: UUID) = MilestoneStepTemplate(id, inProject, UUID.randomUUID(), nowAsInstant)
+  private def stepTemplate(id: UUID, inProject: UUID) =
+    MilestoneStepTemplate(id, inProject, UUID.randomUUID(), nowAsInstant)
 
   private def step(id: UUID, name: String) = MilestoneTemplateStep(id, name, s"$name description")
 
@@ -64,7 +67,9 @@ class MilestoneTemplateServiceTest
 
     "reject a step template of another project" in {
       val foreign = UUID.randomUUID()
-      (stepTemplateRepo.findById _).expects(foreign).returns(stepTemplate(foreign, UUID.randomUUID()).pure[ConnectionIO])
+      (stepTemplateRepo.findById _)
+        .expects(foreign)
+        .returns(stepTemplate(foreign, UUID.randomUUID()).pure[ConnectionIO])
 
       service.create(template, firstVersion, List(foreign)).unsafeToFuture().map { result =>
         result shouldBe Left(StepTemplateNotInProject(foreign))

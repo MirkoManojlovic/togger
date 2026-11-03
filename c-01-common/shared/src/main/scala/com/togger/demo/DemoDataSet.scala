@@ -9,13 +9,9 @@ import com.togger.dto.dataexportconfig.DataExportConfigResp
 import com.togger.dto.dataimportconfig.DataImportConfigResp
 import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
-import com.togger.dto.LinkVersionDto
-import com.togger.dto.LogEntryVersionDto
-import com.togger.dto.TaskVersionDto
-import com.togger.dto.TgPromptTemplateVersionDto
-import com.togger.milestone.MilestoneStepStatus
 
 import java.time.Instant
 import java.time.LocalDate

@@ -1,6 +1,7 @@
 package com.togger.dump
 
-import com.togger.milestone.{Milestone, MilestoneStep}
+import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneStep
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax._

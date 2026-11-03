@@ -1,6 +1,5 @@
 package com.togger.ui.task.bulk
 
-import com.togger.ui.milestone.MilestoneStepLabels
 import com.raquo.laminar.api.L._
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindTaskStatusResp
@@ -13,6 +12,7 @@ import com.togger.ui.components.QuickOptionsPopup
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 
@@ -112,15 +112,15 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
       close()
     }
     target.kind match {
-      case BulkEditKind.Priority  => priorityPopup(current, choose)
-      case BulkEditKind.Status    => statusPopup(current, choose)
-      case BulkEditKind.Milestone => milestonePopup(current, choose)
+      case BulkEditKind.Priority      => priorityPopup(current, choose)
+      case BulkEditKind.Status        => statusPopup(current, choose)
+      case BulkEditKind.Milestone     => milestonePopup(current, choose)
       case BulkEditKind.MilestoneStep => milestoneStepPopup(current, choose)
-      case BulkEditKind.Assignee  => assigneePopup(current, choose)
-      case BulkEditKind.Labels    => labelsPopup(current, target.scope.isDefined, choose)
-      case BulkEditKind.StartDate => datePopup(current, isStart = true, choose)
-      case BulkEditKind.DueDate   => datePopup(current, isStart = false, choose)
-      case BulkEditKind.WorkDays  => workDaysPopup(current, choose)
+      case BulkEditKind.Assignee      => assigneePopup(current, choose)
+      case BulkEditKind.Labels        => labelsPopup(current, target.scope.isDefined, choose)
+      case BulkEditKind.StartDate     => datePopup(current, isStart = true, choose)
+      case BulkEditKind.DueDate       => datePopup(current, isStart = false, choose)
+      case BulkEditKind.WorkDays      => workDaysPopup(current, choose)
     }
   }
 

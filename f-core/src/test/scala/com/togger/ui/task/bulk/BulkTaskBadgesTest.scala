@@ -8,8 +8,8 @@ import com.togger.dto.SearchAccountDto
 import com.togger.milestone.MilestoneStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
-import com.togger.ui.milestone.StepTestData
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.StepTestData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -56,7 +56,14 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
   private val step = StepTestData.step(milestone.id, "Build")
 
   private val lookups =
-    BulkLookups(Seq(backlog), Seq(bug, feature), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays, Seq(step))
+    BulkLookups(
+      Seq(backlog),
+      Seq(bug, feature),
+      Seq(member),
+      Seq(milestone),
+      WorkDayCalendar.DefaultWorkDays,
+      Seq(step)
+    )
 
   private val defaults = BulkTaskDefaults.of(monday.minusDays(3), lookups.workDays, lookups.statuses)
   private val task = BulkTask.withDefaults(UUID.randomUUID(), "A", defaults)

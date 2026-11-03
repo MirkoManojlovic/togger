@@ -2,7 +2,8 @@ package com.togger.ui.milestone
 
 import com.togger.milestone.MilestoneStepStatus
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** The pure rules of closing a step: which statuses close it and what its end date has to be. */
 object MilestoneStepClose {

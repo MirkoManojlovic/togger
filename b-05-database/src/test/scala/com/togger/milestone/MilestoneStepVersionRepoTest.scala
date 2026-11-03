@@ -1,10 +1,11 @@
 package com.togger.milestone
 
 import com.togger.account.TgAccount
-import com.togger.common.{BusinessTgDbSpec, DbPageRequest, TimeHelpers}
+import com.togger.common.BusinessTgDbSpec
+import com.togger.common.DbPageRequest
+import com.togger.common.TimeHelpers
 import com.togger.organization.TgProject
 import doobie.implicits._
-import doobie.postgres.implicits._
 
 import java.time.LocalDate
 import java.util.UUID
@@ -15,7 +16,12 @@ class MilestoneStepVersionRepoTest extends BusinessTgDbSpec with TgAccount with 
   val stepRepo = new MilestoneStepRepoImpl
   val versionRepo = new MilestoneStepVersionRepoImpl
 
-  def stepVersion(stepId: UUID, name: String, position: Int, status: MilestoneStepStatus = MilestoneStepStatus.Planned) =
+  def stepVersion(
+    stepId: UUID,
+    name: String,
+    position: Int,
+    status: MilestoneStepStatus = MilestoneStepStatus.Planned
+  ) =
     MilestoneStepVersion(
       version = UUID.randomUUID(),
       milestoneStepId = stepId,

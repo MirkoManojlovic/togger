@@ -14,6 +14,14 @@ import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.dump.DayOfWeekCodec._
 import com.togger.logentry._
 import com.togger.milestone._
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateVersion
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
 import com.togger.organization.TgProject
 import com.togger.organization.TgTaskStatus
 import com.togger.project.Project
@@ -33,17 +41,6 @@ import com.togger.timebox.TimeboxRepoImpl
 import com.togger.timebox.TimeboxVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.Transactor
-import com.togger.milestonetemplate.MilestoneTemplate
-import com.togger.milestonetemplate.MilestoneTemplateVersion
-import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
-import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
-import com.togger.milestonesteptemplate.MilestoneStepTemplate
-import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
-import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
-import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
-import cats.effect.IO
-import com.togger.dump.DayOfWeekCodec._
-import com.togger.project.Project
 import doobie.implicits._
 import io.circe.Encoder
 import io.circe.generic.auto._
@@ -345,7 +342,9 @@ trait ExportImportTestSupport
     description: String
   ): ConnectionIO[UUID] =
     for {
-      template <- milestoneStepTemplateRepo.insert(MilestoneStepTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant))
+      template <- milestoneStepTemplateRepo.insert(
+        MilestoneStepTemplate(UUID.randomUUID(), projectId, createdBy, nowAsInstant)
+      )
       _ <- milestoneStepTemplateVersionRepo.insert(
         MilestoneStepTemplateVersion(UUID.randomUUID(), template.id, name, description, nowAsInstant)
       )

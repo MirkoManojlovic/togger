@@ -31,13 +31,9 @@ import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
-import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
-import com.togger.ui.components.CalendarPickerPopup
-import com.togger.ui.components.TgBadge
-import com.togger.ui.components.TgBadgeColor
-import com.togger.ui.components.TgHtmlTable
-import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.milestone.MilestoneStepBadges
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DateEmoji
@@ -397,7 +393,12 @@ class TimeboxFormComponent(
 
   private val lookupsSignal: Signal[BulkLookups] =
     lookups.statusesVar.signal
-      .combineWith(lookups.taskLabelsVar.signal, lookups.projectVar.signal, lookups.milestonesVar.signal, lookups.stepsVar.signal)
+      .combineWith(
+        lookups.taskLabelsVar.signal,
+        lookups.projectVar.signal,
+        lookups.milestonesVar.signal,
+        lookups.stepsVar.signal
+      )
       .map { case (statuses, labels, project, milestones, steps) =>
         BulkLookups(
           statuses = statuses.taskStatuses,

@@ -4,11 +4,18 @@ import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.ui.auth.TgCard
-import com.togger.ui.components.{ChartColorBadgeColor, TgBadge}
+import com.togger.ui.components.ChartColorBadgeColor
+import com.togger.ui.components.TgBadge
 import com.togger.ui.task.TgDateFormater
-import com.togger.ui.timebox.gantt.{DiffColors, GanttAxis, GanttBarDrag, GanttBarProgress, GanttChartLayout, GanttColors}
+import com.togger.ui.timebox.gantt.DiffColors
+import com.togger.ui.timebox.gantt.GanttAxis
+import com.togger.ui.timebox.gantt.GanttBarDrag
+import com.togger.ui.timebox.gantt.GanttBarProgress
+import com.togger.ui.timebox.gantt.GanttChartLayout
+import com.togger.ui.timebox.gantt.GanttColors
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /** A step as the Gantt chart draws it. */
 case class MilestoneGanttStep(
@@ -85,7 +92,8 @@ class MilestoneStepsGanttComponent(
     )
 
   private def chart(axis: GanttAxis, rows: Seq[MilestoneGanttStep]): HtmlElement =
-    if (axis.isEmpty) layout.emptyMessage("Pick a valid start and due date with at least one work day to see the Gantt chart.")
+    if (axis.isEmpty)
+      layout.emptyMessage("Pick a valid start and due date with at least one work day to see the Gantt chart.")
     else if (rows.isEmpty) layout.emptyMessage("The milestone has no steps to show on the Gantt chart.")
     else layout.frame(axis, rows.zipWithIndex.map { case (step, index) => stepRow(step, index, axis) }, "Steps")
 

@@ -3,7 +3,8 @@ package com.togger.ui.milestone
 import com.togger.dto.FindMilestoneStepResp
 import com.togger.milestone.MilestoneStepStatus
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 object StepTestData {

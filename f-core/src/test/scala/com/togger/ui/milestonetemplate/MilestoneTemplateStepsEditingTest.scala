@@ -53,7 +53,10 @@ class MilestoneTemplateStepsEditingTest extends AnyWordSpec with Matchers {
       def stepTemplate(id: UUID, name: String) =
         FindMilestoneStepTemplateResp(id, UUID.randomUUID(), name, "", UUID.randomUUID(), Instant.EPOCH)
 
-      MilestoneTemplateFormSupport.stepNames(List(s2, s1, s3, s2), Seq(stepTemplate(s1, "Design"), stepTemplate(s2, "Staging"))) shouldBe
+      MilestoneTemplateFormSupport.stepNames(
+        List(s2, s1, s3, s2),
+        Seq(stepTemplate(s1, "Design"), stepTemplate(s2, "Staging"))
+      ) shouldBe
         List("Staging", "Design", "(deleted step template)", "Staging")
     }
   }

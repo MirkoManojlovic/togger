@@ -5,9 +5,11 @@ import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneStepReq
+import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.ShowMilestoneStepsPage
-import com.togger.routes.{FrontendPage, TgRouter}
-import com.togger.style.TgCommonStyleJs.{heightAndWidthFitContent, justifyCenterFlex}
+import com.togger.routes.TgRouter
+import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
+import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.project.ProjectService
@@ -80,7 +82,11 @@ class CreateMilestoneStepPageComponent(
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.html(
-          div(child <-- milestoneNameVar.signal.map(name => span(if (name.isEmpty) "Add a step" else s"Add a step to $name"))),
+          div(
+            child <-- milestoneNameVar.signal.map(name =>
+              span(if (name.isEmpty) "Add a step" else s"Add a step to $name")
+            )
+          ),
           TgCard.CardHeaderSize.H3
         ),
         body = TgCard.HtmlCardContent(

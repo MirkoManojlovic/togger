@@ -2,24 +2,25 @@ package com.togger.milestone
 
 import cats.effect.IO
 import cats.implicits._
-import com.togger.common.{DbPageRequest, PaginatedResponse}
+import com.togger.common.DbPageRequest
+import com.togger.common.PaginatedResponse
 import com.togger.logging.TgLogging
-import com.togger.milestone.MilestoneStepError.{
-  LastStepOfMilestone,
-  MilestoneStepError,
-  MilestoneStepNotFound,
-  DefaultStepCannotBeDeleted,
-  DefaultStepCannotBeEdited,
-  DefaultStepNameReserved,
-  StepHasTasks,
-  StepsDoNotMatchMilestone
-}
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeDeleted
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeEdited
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
+import com.togger.milestone.MilestoneStepError.LastStepOfMilestone
+import com.togger.milestone.MilestoneStepError.MilestoneStepError
+import com.togger.milestone.MilestoneStepError.MilestoneStepNotFound
+import com.togger.milestone.MilestoneStepError.StepHasTasks
+import com.togger.milestone.MilestoneStepError.StepsDoNotMatchMilestone
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
+import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
-import doobie.{ConnectionIO, Transactor}
 
-import java.time.{Instant, LocalDate}
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneStepService(
@@ -163,7 +164,9 @@ class MilestoneStepService(
   def listVersions(milestoneStepId: UUID, page: DbPageRequest): IO[PaginatedResponse[MilestoneStepVersion]] =
     milestoneStepVersionRepo.findPaginatedByMilestoneStepId(milestoneStepId, page).transact(transactor)
 
-  /** Refuses to delete a default step (Shelf), the last step of a milestone and a step that tasks are in (by their latest version). */
+  /** Refuses to delete a default step (Shelf), the last step of a milestone and a step that tasks are in (by their
+    * latest version).
+    */
   def deleteMilestoneStep(id: UUID): IO[Either[MilestoneStepError, Int]] =
     (for {
       step <- milestoneStepRepo.findById(id)
@@ -213,7 +216,9 @@ class MilestoneStepService(
       steps <- milestoneStepRepo.findAllByMilestoneId(milestoneId)
       latest <- orderedLatestVersions(milestoneId)
       stepsById = steps.map(step => step.id -> step).toMap
-    } yield latest.flatMap(version => stepsById.get(version.milestoneStepId).map(MilestoneStepWithOneVersion(_, version)))
+    } yield latest.flatMap(version =>
+      stepsById.get(version.milestoneStepId).map(MilestoneStepWithOneVersion(_, version))
+    )
 
   /** Gives `ordered` the positions `firstPosition`, `firstPosition + 1`, ... and versions only the ones that move. */
   private def renumber(
@@ -225,6 +230,8 @@ class MilestoneStepService(
     ordered.zipWithIndex
       .map { case (version, index) => version -> (firstPosition + index) }
       .filter { case (version, position) => version.position != position }
-      .traverse_ { case (version, position) => milestoneStepVersionRepo.insert(version.movedTo(position, comment, now)) }
+      .traverse_ { case (version, position) =>
+        milestoneStepVersionRepo.insert(version.movedTo(position, comment, now))
+      }
 
 }

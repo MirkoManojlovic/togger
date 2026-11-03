@@ -90,7 +90,14 @@ class MilestoneReviewComponent(
       .map(_.fold(error => println(error), success => tasksVar.set(success.body.get)))
 
   private val lookups =
-    new TaskListLookups(projectId, projectService, taskStatusFeService, taskLabelFeService, milestoneService, Some(milestoneStepService))
+    new TaskListLookups(
+      projectId,
+      projectService,
+      taskStatusFeService,
+      taskLabelFeService,
+      milestoneService,
+      Some(milestoneStepService)
+    )
 
   // The table is paged, searched and filtered here, so its params are kept in a Var rather than in the URL.
   private val paramsVar = Var(TaskListParams.default)

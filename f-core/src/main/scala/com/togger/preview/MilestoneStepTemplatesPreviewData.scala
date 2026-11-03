@@ -32,7 +32,8 @@ class MilestoneStepTemplatesPreviewData(db: PreviewDb, projects: ProjectsPreview
   def seedDefaultTemplates(projectId: UUID, projectIndex: Int): Unit =
     createDefaultTemplates(
       projectId,
-      (group, position) => DemoSeedIds.id(group, projectIndex * MilestoneStepTemplatesPreviewData.IdsPerProject + position)
+      (group, position) =>
+        DemoSeedIds.id(group, projectIndex * MilestoneStepTemplatesPreviewData.IdsPerProject + position)
     )
 
   private def createDefaultTemplates(projectId: UUID, idOf: (Int, Int) => UUID): Unit = {

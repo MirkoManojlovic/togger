@@ -17,7 +17,12 @@ import scala.collection.mutable
 /** Tasks with several versions, links, log entries over the last two months, and a few timeboxes. */
 object DemoTasksData {
 
-  def tasks(today: LocalDate, now: Instant, projects: List[DemoProject], milestones: List[DemoMilestone]): List[DemoTask] =
+  def tasks(
+    today: LocalDate,
+    now: Instant,
+    projects: List[DemoProject],
+    milestones: List[DemoMilestone]
+  ): List[DemoTask] =
     new TaskBuilder(today, now, projects, milestones).build()
 
   /** The timeboxes plan the current version of some tasks, identified by the spec numbers of [[taskSpecs]]. */

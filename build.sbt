@@ -318,7 +318,8 @@ lazy val backendDeliveryHttp4s = (project in file("b-06-delivery-http4s"))
 
 //  .dependsOn(backendCommon % Cctt)
 
-lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform).in(file("c-03-http-endpoints")))
+lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-03-http-endpoints")))
   .settings(
     name := "http-endpoints",
     libraryDependencies ++= Seq(
@@ -352,7 +353,8 @@ lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform).in(file("c-03-ht
   )
   .dependsOn(tgCommon % Cctt)
 
-lazy val tgCommon = (crossProject(JSPlatform, JVMPlatform).in(file("c-01-common")))
+lazy val tgCommon = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-01-common")))
   .settings(
     name := "tg-common",
     libraryDependencies ++= Seq(
@@ -469,7 +471,8 @@ lazy val backendCommon = (project in file("b-05-common"))
   .dependsOn(tgCommon.jvm % Cctt)
   .dependsOn(httpEndpoints.jvm % Cctt)
 
-lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform).in(file("c-00-tg-macros")))
+lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-00-tg-macros")))
   .settings(
     name := "tg-macros",
     libraryDependencies ++= Seq(

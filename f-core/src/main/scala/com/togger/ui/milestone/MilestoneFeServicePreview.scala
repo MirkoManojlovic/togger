@@ -1,26 +1,25 @@
 package com.togger.ui.milestone
 
 import cats.effect.IO
+import cats.implicits._
 import com.togger.common.DateRangeValidation
 import com.togger.common.PageRequest
 import com.togger.common.PaginatedResponse
+import com.togger.common.TgError
 import com.togger.common.TgError._
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.CreateMilestoneReq
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.MilestoneFilter
-import com.togger.dto.UpdateMilestoneReq
-import com.togger.milestone.MilestoneStatus
-import com.togger.common.PageRequest
-import com.togger.common.PaginatedResponse
-import cats.implicits._
-import com.togger.common.TgError
-import com.togger.milestone.MilestoneStepStatus
 import com.togger.dto.NewMilestoneStepReq
+import com.togger.dto.UpdateMilestoneReq
 import com.togger.milestone.DefaultMilestoneStep
+import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.preview._
 
-import java.time.{DayOfWeek, LocalDate}
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.UUID
 
 class MilestoneFeServicePreview(
@@ -82,7 +81,12 @@ class MilestoneFeServicePreview(
       )
     )
     // like the backend: the Shelf step is always the first step
-    val shelf = NewMilestoneStepReq(DefaultMilestoneStep.Shelf.stepName, DefaultMilestoneStep.Shelf.description, dto.startDate, dto.dueDate)
+    val shelf = NewMilestoneStepReq(
+      DefaultMilestoneStep.Shelf.stepName,
+      DefaultMilestoneStep.Shelf.description,
+      dto.startDate,
+      dto.dueDate
+    )
     (shelf +: dto.steps).zipWithIndex.foreach { case (step, position) =>
       val stored = steps.steps.upsert(PreviewMilestoneStep(UUID.randomUUID(), created.id, now))
       steps.stepVersions.upsert(
@@ -113,9 +117,11 @@ class MilestoneFeServicePreview(
   override def findMilestoneById(id: UUID): TgRespIO[FindMilestoneResp] =
     PreviewResponses.authenticated(ctx.loginRepo)(_ =>
       IO.defer(
-        data.milestones.find(id).fold(PreviewResponses.badRequest[FindMilestoneResp](NotFoundMessage))(m =>
-          PreviewResponses.ok(withCounts(m))
-        )
+        data.milestones
+          .find(id)
+          .fold(PreviewResponses.badRequest[FindMilestoneResp](NotFoundMessage))(m =>
+            PreviewResponses.ok(withCounts(m))
+          )
       )
     )
 

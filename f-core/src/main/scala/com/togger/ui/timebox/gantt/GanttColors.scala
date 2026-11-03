@@ -61,7 +61,9 @@ object Percentages extends GanttColors {
     val color = GanttAssigneeColors.Palette(index % GanttAssigneeColors.Palette.size)
     val percent = math.round(progress.fraction * 100)
     div(
-      cls(s"relative z-10 mx-1 my-1 flex h-7 items-center justify-center overflow-hidden text-xs ${layout.barRounding(placed)}"),
+      cls(
+        s"relative z-10 mx-1 my-1 flex h-7 items-center justify-center overflow-hidden text-xs ${layout.barRounding(placed)}"
+      ),
       title := s"$tooltip (${progress.done} of ${progress.total} tasks done)",
       div(cls(s"absolute inset-0 opacity-30 $color")),
       div(cls(s"absolute inset-y-0 left-0 $color"), styleAttr := s"width: $percent%"),
