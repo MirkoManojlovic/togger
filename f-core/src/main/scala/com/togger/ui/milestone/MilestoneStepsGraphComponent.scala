@@ -128,17 +128,24 @@ class MilestoneStepsGraphComponent(
       inStage.map(stepBar)
     )
 
-  /** The drop zone between two stages; a step dropped here gets a stage of its own. */
-  private def gap(insertion: Int, stages: Stages[FindMilestoneStepResp]): HtmlElement =
+  /** The drop zone between two stages; a step dropped here, from a parallel stage or another one, gets a stage of its
+    * own and so runs in sequence. It keeps its size while dragging so that the stages don't move under the pointer.
+    */
+  private def gap(insertion: Int, stages: Stages[FindMilestoneStepResp]): HtmlElement = {
+    val dragging = dragged.signal.map(_.isDefined)
     div(
-      cls("h-3 w-full shrink-0 rounded-base sm:h-auto sm:w-3"),
+      cls(
+        "flex h-6 w-full shrink-0 items-center justify-center rounded-base border border-transparent sm:h-auto sm:w-8"
+      ),
+      title := "Drop here to run the step in sequence",
       onDragOver.preventDefault --> (_ => if (dragged.now().isDefined) dropTarget.set(Some(IntoGap(insertion)))),
       onDrop.preventDefault --> (_ => drop(stages)),
-      cls("bg-blue-500") <-- hovering(IntoGap(insertion)),
-      cls("bg-neutral-secondary-medium") <-- dragged.signal.combineWith(hovering(IntoGap(insertion))).map {
-        case (drag, over) => drag.isDefined && !over
-      }
+      cls("border-dashed border-blue-500 text-blue-500") <-- dragging,
+      cls("bg-blue-500 text-white") <-- hovering(IntoGap(insertion)),
+      child.text <-- dragging.map(if (_) "↓" else ""),
+      cls("sm:-rotate-90") <-- dragging
     )
+  }
 
   private def graph(stages: Stages[FindMilestoneStepResp]): HtmlElement = {
     val columns = stages.zipWithIndex.map { case (inStage, stage) => stageColumn(stage, inStage, stages) }
