@@ -334,6 +334,28 @@ trait ExportImportTestSupport
       )
     } yield milestone.id
 
+  /** A step of the milestone at the given position (stage); steps at the same position run in parallel. */
+  def createMilestoneStepAt(milestoneId: UUID, name: String, position: Int): ConnectionIO[UUID] =
+    for {
+      step <- milestoneStepRepo.insert(MilestoneStep(UUID.randomUUID(), milestoneId, nowAsInstant))
+      _ <- milestoneStepVersionRepo.insert(
+        MilestoneStepVersion(
+          version = UUID.randomUUID(),
+          milestoneStepId = step.id,
+          name = name,
+          description = "",
+          status = MilestoneStepStatus.Planned,
+          position = position,
+          startDate = LocalDate.now(),
+          dueDate = LocalDate.now().plusDays(10),
+          endDate = None,
+          createdAt = nowAsInstant,
+          updatedAt = nowAsInstant,
+          changeComment = ""
+        )
+      )
+    } yield step.id
+
   /** A step template with its first version. */
   def createMilestoneStepTemplate(
     projectId: UUID,

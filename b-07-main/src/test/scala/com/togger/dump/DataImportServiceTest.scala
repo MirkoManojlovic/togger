@@ -387,6 +387,26 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "restore the steps that run in parallel with the same position" in { transactor =>
+      val exportPath = newExportPath()
+      for {
+        fixture <- createFullProject(exportPath).transact(transactor)
+        _ <- (for {
+          _ <- createMilestoneStepAt(fixture.milestoneId, "Backend", 1)
+          _ <- createMilestoneStepAt(fixture.milestoneId, "Frontend", 1)
+        } yield ()).transact(transactor)
+        exported <- newExportService(transactor).exportProject(fixture.projectId, fixture.accountId)
+        root = exported.toOption.get.pathResults.head.exportPath
+        _ <- deleteProjectContent.transact(transactor)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root)
+        restoredSteps <- milestoneStepVersionRepo.findLatestByMilestoneId(fixture.milestoneId).transact(transactor)
+      } yield {
+        imported.toOption.get.results.filter(_.error.isDefined) shouldBe empty
+        restoredSteps.map(s => s.name -> s.position).toSet shouldBe
+          Set("Milestone step" -> 0, "Backend" -> 1, "Frontend" -> 1)
+      }
+    }
+
     "merge step templates and milestone templates into the ones of the same name the target project has" in {
       transactor =>
         val setupTarget = (sourceProjectId: UUID, accountId: UUID) =>
