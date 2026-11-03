@@ -134,7 +134,14 @@ class TableFilterComponent(
     */
   private def panel: HtmlElement = {
     val positionVar = Var(measurePosition())
-    val reposition: dom.Event => Unit = _ => positionVar.set(measurePosition())
+    var watching = false
+    // The button moves without any scroll or resize event while the page loads and the table is laid out, so the
+    // position is checked on every frame while the panel is open.
+    def watch(): Unit = {
+      val next = measurePosition()
+      if (next != positionVar.now()) positionVar.set(next)
+      if (watching) dom.window.requestAnimationFrame(_ => watch()): Unit
+    }
     div(
       cls("fixed z-20 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-56"),
       left <-- positionVar.signal.map(position => s"${position.leftPx}px"),
@@ -142,14 +149,10 @@ class TableFilterComponent(
       bottom <-- positionVar.signal.map(_.anchor.fold(_ => "auto", px => s"${px}px")),
       onMountUnmountCallback(
         _ => {
-          positionVar.set(measurePosition())
-          dom.window.addEventListener("scroll", reposition, true)
-          dom.window.addEventListener("resize", reposition)
+          watching = true
+          watch()
         },
-        _ => {
-          dom.window.removeEventListener("scroll", reposition, true)
-          dom.window.removeEventListener("resize", reposition)
-        }
+        _ => watching = false
       ),
       ul(
         cls("p-2 text-sm font-medium overflow-y-auto"),
