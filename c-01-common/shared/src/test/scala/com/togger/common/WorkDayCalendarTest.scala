@@ -125,4 +125,27 @@ class WorkDayCalendarTest extends AnyWordSpec with Matchers {
       WorkDayCalendar.splitEvenly(monday, monday.minusDays(1), 2, monFri) shouldBe Nil
     }
   }
+
+  "WorkDayCalendar.splitStages" should {
+    val twoWeeksEnd = monday.plusDays(11)
+
+    "give every step of a stage the range of the stage" in {
+      WorkDayCalendar.splitStages(monday, twoWeeksEnd, List(1, 2), monFri) shouldBe
+        List(
+          monday -> monday.plusDays(4),
+          monday.plusDays(7) -> twoWeeksEnd,
+          monday.plusDays(7) -> twoWeeksEnd
+        )
+    }
+
+    "split like splitEvenly when every stage holds one step" in {
+      WorkDayCalendar.splitStages(monday, twoWeeksEnd, List(1, 1), monFri) shouldBe
+        WorkDayCalendar.splitEvenly(monday, twoWeeksEnd, 2, monFri)
+    }
+
+    "be empty without stages or when the period is reversed" in {
+      WorkDayCalendar.splitStages(monday, twoWeeksEnd, Nil, monFri) shouldBe Nil
+      WorkDayCalendar.splitStages(monday, monday.minusDays(1), List(2), monFri) shouldBe Nil
+    }
+  }
 }

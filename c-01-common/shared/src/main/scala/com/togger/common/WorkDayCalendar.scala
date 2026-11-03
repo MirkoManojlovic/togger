@@ -54,6 +54,21 @@ object WorkDayCalendar {
     }
   }
 
+  /** Divides `start` to `end` into one consecutive date range per stage (see [[splitEvenly]]) and gives it to every
+    * step of the stage, as the steps of a stage run in parallel. `stageSizes` holds the number of steps of each stage
+    * in order; the result has one range per step, stage by stage. Empty when there is no stage or the period is
+    * reversed.
+    */
+  def splitStages(
+    start: LocalDate,
+    end: LocalDate,
+    stageSizes: List[Int],
+    workDays: Set[DayOfWeek]
+  ): List[(LocalDate, LocalDate)] =
+    splitEvenly(start, end, stageSizes.size, workDays).zip(stageSizes).flatMap { case (range, size) =>
+      List.fill(size)(range)
+    }
+
   /** Work days from `start` to `end`, counting both ends. */
   def countWorkDays(start: LocalDate, end: LocalDate, workDays: Set[DayOfWeek]): Int =
     Iterator
