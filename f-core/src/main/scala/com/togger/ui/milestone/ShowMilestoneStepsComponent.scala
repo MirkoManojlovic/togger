@@ -11,8 +11,6 @@ import com.togger.dto.UpdateMilestoneStepReq
 import com.togger.milestone.DefaultMilestoneStep
 import com.togger.milestone.MilestoneStatus
 import com.togger.routes.FrontendPage
-import com.togger.routes.Pages.CreateMilestoneStepPage
-import com.togger.routes.Pages.CreateParallelMilestoneStepPage
 import com.togger.routes.Pages.EditMilestonePage
 import com.togger.routes.Pages.EditMilestoneStepPage
 import com.togger.routes.TgRouter
@@ -446,17 +444,36 @@ class ShowMilestoneStepsComponent(
     colors = Percentages
   )
 
+  /** The add step modal while it is open, as `parallel` or after the last stage. */
+  private val createStepModal = Var(Option.empty[HtmlElement])
+
+  private def openCreateStep(parallel: Boolean): Unit =
+    milestoneVar.now().foreach { milestone =>
+      createStepModal.set(
+        Some(
+          new CreateMilestoneStepModal(
+            milestoneStepService,
+            spinnerService,
+            milestoneId,
+            milestone.startDate,
+            milestone.dueDate,
+            workDaysVar.now(),
+            parallel,
+            () => createStepModal.set(None),
+            () => spinnerService.runWithSpinner(load()).unsafeRunAndForget(),
+            toast
+          ).element
+        )
+      )
+    }
+
   /** Dragging a step in the graph asks for the change comment of the new layout; adding opens the add step page. */
   private val stepsGraph = new MilestoneStepsGraphComponent(
     stepsVar.signal.map(_.filterNot(step => DefaultMilestoneStep.isDefaultName(step.name))),
     Some(
       MilestoneStepsGraphEditing(
         onLayoutChange = stages => requestLayout(_ => stages),
-        onAdd = parallel =>
-          router.route(
-            if (parallel) CreateParallelMilestoneStepPage(projectId, milestoneId)
-            else CreateMilestoneStepPage(projectId, milestoneId)
-          )
+        onAdd = openCreateStep
       )
     )
   )
@@ -483,6 +500,7 @@ class ShowMilestoneStepsComponent(
   val element: HtmlElement =
     div(
       child.maybe <-- pendingMove.signal.map(_.map(_ => moveDialog)),
+      child.maybe <-- createStepModal.signal,
       child.maybe <-- savingDates.signal.map(Option.when(_)(saveDatesDialog)),
       child.maybe <-- stagedDatesBanner,
       TgCard
@@ -510,7 +528,7 @@ class ShowMilestoneStepsComponent(
                 TgIcons.plusIcon(className = "w-4 h-4"),
                 headerIconButtonCls,
                 "mr-2",
-                router.navigateTo(CreateMilestoneStepPage(projectId, milestoneId))
+                onClick.mapToUnit --> (_ => openCreateStep(false))
               )
             ),
             TgCard.CardHeaderSize.H3
