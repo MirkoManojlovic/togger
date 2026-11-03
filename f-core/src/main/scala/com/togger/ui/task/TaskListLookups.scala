@@ -18,7 +18,7 @@ class TaskListLookups(
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
   milestoneService: MilestoneFeService,
-  milestoneStepService: Option[MilestoneStepFeService] = None
+  val milestoneStepService: Option[MilestoneStepFeService] = None
 ) {
 
   val statusesVar = Var(TaskStatusesState())

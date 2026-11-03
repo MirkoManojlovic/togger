@@ -6,6 +6,7 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindProjectResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.SearchAccountDto
@@ -48,7 +49,7 @@ class TaskListBrowser(
   lockedMilestoneId: Option[UUID] = None
 )(implicit ioRuntime: IORuntime) {
 
-  import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
+  import lookups.{milestonesVar, projectVar, statusesVar, stepsVar, taskLabelsVar}
 
   val rowsVar = Var(Seq.empty[FindTaskRespFull])
 
@@ -76,7 +77,8 @@ class TaskListBrowser(
     optionsOf: S => Options,
     defaultSelectedOf: Options => Set[String],
     chosenIn: TaskListParams => Option[Set[String]],
-    withChosen: (TaskListParams, Option[Set[String]]) => TaskListParams
+    withChosen: (TaskListParams, Option[Set[String]]) => TaskListParams,
+    groupOf: S => Map[String, String] = (_: S) => Map.empty[String, String]
   ) {
     val selectedIdsVar: Var[Set[String]] = Var(Set.empty)
 
@@ -87,7 +89,10 @@ class TaskListBrowser(
       source.signal.combineWith(paramsVar.signal).map { case (state, current) =>
         val offered = optionsOf(state)
         val ticked = TaskListFilterMapping.selectedFromParams(chosenIn(current), defaultSelectedOf(offered))
-        offered.map { case (id, name) => MultiSelectItem(id = id, name = name, isSelected = ticked.contains(id)) }
+        val groups = groupOf(state)
+        offered.map { case (id, name) =>
+          MultiSelectItem(id = id, name = name, isSelected = ticked.contains(id), group = groups.get(id))
+        }
       }
 
     def selection: FilterSelection =
@@ -153,6 +158,24 @@ class TaskListBrowser(
     withChosen = (listParams, chosen) => listParams.copy(milestones = chosen)
   )
 
+  private def milestoneNameOf(milestoneId: UUID): String =
+    milestonesVar.now().find(_.id == milestoneId).fold("")(_.name)
+
+  /** The steps of every milestone, listed under the milestone's name, in the order of their stages. */
+  private def stepsByMilestone(steps: Seq[FindMilestoneStepResp]): Seq[FindMilestoneStepResp] =
+    steps.sortBy(step => (milestoneNameOf(step.milestoneId).toLowerCase, step.milestoneId, step.position, step.name))
+
+  private val stepFilter = new FilterSpec[Seq[FindMilestoneStepResp]](
+    source = stepsVar,
+    optionsOf = steps =>
+      stepsByMilestone(steps).map(step => step.id.toString -> step.name) :+
+        (TaskListFilterMapping.NoStepId -> "No step"),
+    defaultSelectedOf = allOptions,
+    chosenIn = _.steps,
+    withChosen = (listParams, chosen) => listParams.copy(steps = chosen),
+    groupOf = steps => steps.map(step => step.id.toString -> milestoneNameOf(step.milestoneId)).toMap
+  )
+
   private val searchBox = TableServerSearchComponent(
     initialTerm = params.search,
     placeholderValue = searchPlaceholder,
@@ -185,6 +208,7 @@ class TaskListBrowser(
       labels = labelFilter.selection,
       assignees = assigneeFilter.selection,
       milestones = milestoneFilter.selection,
+      steps = stepFilter.selection,
       search = params.search,
       includeArchived = showArchivedVar.now()
     )
@@ -231,6 +255,11 @@ class TaskListBrowser(
           ).element
         )
         .toSeq,
+      Option
+        .when(lockedMilestoneId.isEmpty && lookups.milestoneStepService.isDefined)(
+          new TableFilterComponent(stepFilter.itemsSignal, label = "Steps", stepFilter.selectedIdsVar).element
+        )
+        .toSeq,
       TgCheckbox
         .checkBox(showArchivedVar.signal, showArchivedVar.writer, "Show archived")
         .htmlElement
@@ -244,6 +273,7 @@ class TaskListBrowser(
     labelFilter.navigateOnChange,
     assigneeFilter.navigateOnChange,
     milestoneFilter.navigateOnChange,
+    stepFilter.navigateOnChange,
     showArchivedVar.signal.changes --> Observer[Boolean](_ => loadPage().unsafeRunAndForget())
   )
 

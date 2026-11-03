@@ -13,6 +13,7 @@ case class TaskListParams(
   labels: Option[Set[String]] = None,
   assignees: Option[Set[String]] = None,
   milestones: Option[Set[String]] = None,
+  steps: Option[Set[String]] = None,
   search: String = ""
 ) {
   def pageRequest: PageRequest = PageRequest(page, size)
@@ -38,6 +39,7 @@ object TaskListParams {
     labels: List[String],
     assignees: List[String],
     milestones: List[String],
+    steps: List[String],
     search: Option[String]
   ): TaskListParams =
     TaskListParams(
@@ -49,6 +51,7 @@ object TaskListParams {
       labels = selectionFromQuery(labels),
       assignees = selectionFromQuery(assignees),
       milestones = selectionFromQuery(milestones),
+      steps = selectionFromQuery(steps),
       search = search.map(_.trim).getOrElse("")
     )
 

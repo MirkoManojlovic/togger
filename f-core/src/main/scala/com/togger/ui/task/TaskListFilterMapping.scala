@@ -24,6 +24,9 @@ object TaskListFilterMapping {
   /** Id of the "No milestone" option of the milestone widget. */
   val NoMilestoneId: String = "none"
 
+  /** Id of the "No step" option of the step widget (the same id as [[NoMilestoneId]]). */
+  val NoStepId: String = NoMilestoneId
+
   /** Id of the "Not assigned" option of the assignee widget. */
   val UnassignedId: String = TgIds.UNASSIGNED_UUID.toString
 
@@ -33,6 +36,7 @@ object TaskListFilterMapping {
     labels: FilterSelection,
     assignees: FilterSelection,
     milestones: FilterSelection,
+    steps: FilterSelection,
     search: String,
     includeArchived: Boolean = false
   ): TaskFilter =
@@ -42,6 +46,7 @@ object TaskListFilterMapping {
       labelIds = uuids(labels.idsToFilterBy),
       assigneeIds = uuids(assignees.idsToFilterBy),
       milestoneIds = uuids(milestones.idsToFilterBy.map(noMilestoneAsUuid)),
+      milestoneStepIds = uuids(steps.idsToFilterBy.map(noMilestoneAsUuid)),
       search = Option(search.trim).filter(_.nonEmpty),
       includeArchived = includeArchived
     )
