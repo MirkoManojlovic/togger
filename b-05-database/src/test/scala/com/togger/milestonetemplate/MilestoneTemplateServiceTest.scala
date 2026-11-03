@@ -42,7 +42,7 @@ class MilestoneTemplateServiceTest
   private def stepTemplate(id: UUID, inProject: UUID) =
     MilestoneStepTemplate(id, inProject, UUID.randomUUID(), nowAsInstant)
 
-  private def step(id: UUID, name: String, stage: Int = 0) =
+  private def step(id: UUID, name: String, stage: Int) =
     MilestoneTemplateStep(id, name, s"$name description", stage)
 
   private def full(version: MilestoneTemplateVersion, steps: List[MilestoneTemplateStep]) =
