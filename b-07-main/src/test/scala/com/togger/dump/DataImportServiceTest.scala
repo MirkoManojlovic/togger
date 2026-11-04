@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import cats.effect.IO
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
@@ -331,6 +332,81 @@ class DataImportServiceTest extends ExportImportTestSupport {
           DataImportStatus.Inserted
         )
       }
+    }
+
+    "apply the project fields of a newer tree to the project, and leave a newer project alone" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        exported <- projectRepo.findById(fixture.projectId).transact(transactor)
+        older = exported.copy(icon = "old-icon", description = "old description")
+        _ <- projectRepo.update(older, exported.updatedAt.minusSeconds(60)).transact(transactor)
+        first <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        restored <- projectRepo.findById(fixture.projectId).transact(transactor)
+        newer = restored.copy(icon = "newer-icon")
+        _ <- projectRepo.update(newer, exported.updatedAt.plusSeconds(60)).transact(transactor)
+        second <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        kept <- projectRepo.findById(fixture.projectId).transact(transactor)
+      } yield {
+        restored.icon shouldBe exported.icon
+        restored.description shouldBe exported.description
+        restored.updatedAt shouldBe exported.updatedAt
+        first.toOption.get.results.filter(_.entityType == DataExportEntityType.Project).map(_.status) shouldBe List(
+          DataImportStatus.Merged
+        )
+        kept.icon shouldBe "newer-icon"
+        second.toOption.get.results.filter(_.entityType == DataExportEntityType.Project).map(_.status) shouldBe List(
+          DataImportStatus.Unchanged
+        )
+      }
+    }
+
+    "report a member the database lacks as importable, and a member only the database has as in sync" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        owner <- accountRepo.findById(fixture.accountId).transact(transactor)
+        other <- accountRepo
+          .insert(createAccount(owner.accountTypeId).copy(email = "member@email.com"))
+          .transact(transactor)
+        service = newExportService(transactor)
+        check = (root: os.Path) =>
+          service
+            .checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
+            .map(_.toOption.get.entityStatuses.filter(_.entityType == DataExportEntityType.Members).map(_.status))
+        _ <- projectAccountRepo
+          .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
+          .transact(transactor)
+        withMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- projectAccountRepo.deleteById(fixture.projectId, other.id).transact(transactor)
+        lacking <- check(withMember)
+        _ <- projectAccountRepo
+          .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
+          .transact(transactor)
+        withoutMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- IO(editMembers(withoutMember, _ => List(fixture.accountId)))
+        databaseOnly <- check(withoutMember)
+      } yield {
+        lacking shouldBe List(DataExportSyncStatus.OutOfSync)
+        databaseOnly shouldBe List(DataExportSyncStatus.InSync)
+      }
+    }
+
+    "compare the members of a tree with the ones of the project it was imported into" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
+        source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        imported <- newImportService(transactor).importNewProject(
+          source.organizationId,
+          fixture.accountId,
+          root.toString
+        )
+        (newProjectId, _) = imported.toOption.get
+        status <- newExportService(transactor).checkImportStatus(newProjectId, fixture.accountId, root.toString)
+      } yield status.toOption.get.entityStatuses
+        .filter(_.entityType == DataExportEntityType.Members)
+        .map(_.status) shouldBe List(DataExportSyncStatus.InSync)
     }
 
     "reject a new project import from a folder without an index" in { transactor =>

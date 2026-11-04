@@ -456,6 +456,12 @@ trait ExportImportTestSupport
     }
   }
 
+  def editMembers(root: os.Path, change: List[UUID] => List[UUID]): Unit = {
+    val current = decode[MembersDumpData](os.read(root / "members.json")).toOption.get
+    val id = readIndex(root).entriesOf(DataExportEntityType.Members).keys.head
+    putEntity(root, DataExportEntityType.Members, id, None, MembersDumpData(change(current.accountIds)))
+  }
+
   def editProjectDump(root: os.Path)(change: ProjectDumpData => ProjectDumpData): Unit = {
     val current = decode[ProjectDumpData](os.read(root / "project.json")).toOption.get
     putEntity(root, DataExportEntityType.Project, current.project.id, Some(current.project.name), change(current))

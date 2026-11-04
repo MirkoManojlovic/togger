@@ -39,6 +39,10 @@ object DataImportEntityResult {
     DataImportEntityResult(entityType, entityId, entityName, status, versionsAdded, childrenAdded, None)
   }
 
+  /** An existing entity whose own fields were updated in place, without a new version. */
+  def updated(entityType: DataExportEntityType, entityId: UUID, entityName: Option[String]): DataImportEntityResult =
+    DataImportEntityResult(entityType, entityId, entityName, DataImportStatus.Merged, 0, 0, None)
+
   def failed(
     entityType: DataExportEntityType,
     entityId: UUID,

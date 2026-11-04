@@ -17,6 +17,7 @@ import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.Transactor
 import doobie.implicits._
+import io.circe.Json
 
 import java.util.UUID
 import scala.concurrent.duration._
@@ -247,6 +248,8 @@ class DataExportService(
             contentStatuses(entityType, folderPath, index, db.values.toList.sortBy(_.id), indexed, labelKeys)
           else if (matchByContent && entityType == DataExportEntityType.Project && db.size == 1 && indexed.size == 1)
             importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
+          else if (matchByContent && entityType == DataExportEntityType.Members && db.size == 1 && indexed.size == 1)
+            importedMembersStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
           else {
             val common = db.keySet.intersect(indexed.keySet).toList.map { id =>
               val entity = db(id)
@@ -374,6 +377,45 @@ class DataExportService(
     diskId: UUID,
     accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)]
   ) = outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId, accountKeys)
+
+  /** The members file of an import folder is the one of the database project whatever its id, as an import into another
+    * project gives it a new one. An import only adds members, so members that the database has and the disk lacks are
+    * not reported: the entity is out of sync only when the disk lists an account that is not a member yet. Accounts are
+    * compared by their content, as the import maps them by email.
+    */
+  private def importedMembersStatus(
+    folderPath: String,
+    index: ExportIndex,
+    entity: ExportEntity,
+    diskId: UUID,
+    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)]
+  ): DataExportEntityStatus =
+    dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, diskId) match {
+      case Right(diskJson) =>
+        val (diskCompared, databaseCompared) = accountKeys.fold((diskJson, entity.json)) { case (disk, database) =>
+          (disk.replaceIds(diskJson), database.replaceIds(entity.json))
+        }
+        def accounts(json: Json): Set[String] = json.hcursor.get[Set[String]]("accountIds").getOrElse(Set.empty)
+        if (accounts(diskCompared).subsetOf(accounts(databaseCompared)))
+          status(entity.entityType, entity.id, entity.name, DataExportSyncStatus.InSync)
+        else
+          status(
+            entity.entityType,
+            entity.id,
+            entity.name,
+            DataExportSyncStatus.OutOfSync,
+            List("content differs"),
+            ExportJsonDiff.diff(diskCompared, databaseCompared)
+          )
+      case Left(error) =>
+        status(
+          entity.entityType,
+          entity.id,
+          entity.name,
+          DataExportSyncStatus.OutOfSync,
+          List("content differs", s"cannot compare: $error")
+        )
+    }
 
   /** The accounts of the disk and of the database by their content, from the project file of each side. */
   private def importAccountKeys(
