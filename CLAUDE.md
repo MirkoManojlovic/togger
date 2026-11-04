@@ -125,6 +125,11 @@ all tests) against the running sbt server; it needs Postgres and a `togger-test`
   `sbt --client "<command>"`. To only check that frontend changes compile, you can instead tail the watcher's output.
 - Never kill sbt processes (no `pkill -f sbt`): that would also kill the user's watcher. The client needs no cleanup.
 
+## Git worktrees
+
+Always create new git worktrees in `togger.worktrees`, the sibling directory of the main checkout (`../togger.worktrees`
+from the repo root; one subdirectory per worktree), not in `.claude/worktrees/` inside the repo.
+
 ## Architecture
 
 **Module layering by prefix:**
