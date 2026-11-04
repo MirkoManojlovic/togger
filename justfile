@@ -111,7 +111,19 @@ stop-backend:
     [ -z "$pids" ] || kill $pids
     echo "backend stopped"
 
-stop-all: stop-frontend stop-backend
+# Starts the read-only MCP server on http://127.0.0.1:8090/mcp; it needs the backend running (it logs in as the mcp account)
+mcp-start:
+    sbt --client "backendMcp/runMain com.togger.mcp.McpApp"
+
+# Stops the MCP server (the forked JVM listening on port 8090), not the sbt server that started it.
+mcp-stop:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    pids=$(lsof -nP -tiTCP:8090 -sTCP:LISTEN || true)
+    [ -z "$pids" ] || kill $pids
+    echo "mcp stopped"
+
+stop-all: stop-frontend stop-backend mcp-stop
 
 # Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock, commits and tags v<version>.
 # The sbt version follows the tag (sbt-dynver). Push with `git push origin develop v<version>` to start the release.
