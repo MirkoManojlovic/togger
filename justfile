@@ -94,6 +94,25 @@ web-demo: npm-install
     trap 'kill "$frontend_pid" 2>/dev/null || true' EXIT
     just backend-web
 
+# Stops the vite dev server (port 5173) and `tauri dev`. Never touches sbt.
+stop-frontend:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    pids=$(lsof -nP -tiTCP:5173 -sTCP:LISTEN || true)
+    [ -z "$pids" ] || kill $pids
+    pkill -f "tauri dev" || true
+    echo "frontend stopped"
+
+# Stops the backend (the forked JVM listening on port 8081), not the sbt server that started it.
+stop-backend:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    pids=$(lsof -nP -tiTCP:8081 -sTCP:LISTEN || true)
+    [ -z "$pids" ] || kill $pids
+    echo "backend stopped"
+
+stop-all: stop-frontend stop-backend
+
 # Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock, commits and tags v<version>.
 # The sbt version follows the tag (sbt-dynver). Push with `git push origin develop v<version>` to start the release.
 release version:
