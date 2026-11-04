@@ -40,11 +40,19 @@ class ToolsTest extends AnyWordSpec with Matchers:
     "have a unique name and be marked read-only" in {
       val (_, client) = withBackend()
       val all = OrganizationTools(client).all ++ ProjectTools(client).all ++ TaskTools(client).all ++
-        MilestoneTools(client).all ++ AccountTools(client).all
+        MilestoneTools(client).all ++ MilestoneStepTools(client).all ++ MilestoneTemplateTools(client).all ++
+        AccountTools(client).all
 
       all.map(_.name).distinct should have size all.size
-      all.size shouldBe 16
+      all.size shouldBe 19
       all.foreach(_.annotations.flatMap(_.readOnlyHint) shouldBe Some(true))
+    }
+
+    "tell that steps with the same position run in parallel" in {
+      val (_, client) = withBackend()
+      val description = named(MilestoneStepTools(client).all, "list_milestone_steps").description.getOrElse("")
+
+      description should include("same position run in parallel")
     }
   }
 
@@ -54,7 +62,7 @@ class ToolsTest extends AnyWordSpec with Matchers:
       val result = call(
         named(TaskTools(client).all, "list_tasks"),
         s"""{"projectId":"$projectId","statusIds":["$otherId"],"priorities":[1,2],"labelIds":["$otherId"],
-           |"assigneeIds":["$otherId"],"milestoneIds":["$otherId"],"search":" bug ","timeboxId":"$otherId",
+           |"assigneeIds":["$otherId"],"milestoneIds":["$otherId"],"milestoneStepIds":["$otherId"],"search":" bug ","timeboxId":"$otherId",
            |"includeArchived":true,"page":2,"size":50}""".stripMargin
       )
 
@@ -68,6 +76,7 @@ class ToolsTest extends AnyWordSpec with Matchers:
       uri should include(s"labelId=$otherId")
       uri should include(s"assigneeId=$otherId")
       uri should include(s"milestoneId=$otherId")
+      uri should include(s"milestoneStepId=$otherId")
       uri should include("search=bug")
       uri should include(s"timeboxId=$otherId")
       uri should include("includeArchived=true")
@@ -134,6 +143,15 @@ class ToolsTest extends AnyWordSpec with Matchers:
         s"""{"projectId":"$projectId","statuses":[0,2],"search":"q1"}"""
       )
       val _ = call(named(MilestoneTools(client).all, "get_milestone"), s"""{"milestoneId":"$otherId"}""")
+      val _ = call(named(MilestoneStepTools(client).all, "list_milestone_steps"), s"""{"milestoneId":"$otherId"}""")
+      val _ = call(
+        named(MilestoneTemplateTools(client).all, "list_milestone_templates"),
+        s"""{"projectId":"$projectId","page":2,"size":5}"""
+      )
+      val _ = call(
+        named(MilestoneTemplateTools(client).all, "list_milestone_step_templates"),
+        s"""{"projectId":"$projectId"}"""
+      )
       val _ = call(named(AccountTools(client).all, "search_accounts"), """{"term":"ann"}""")
 
       stub.seen.map(_.uri) shouldBe List(
@@ -146,6 +164,9 @@ class ToolsTest extends AnyWordSpec with Matchers:
         s"http://backend:8081/task/$otherId",
         s"http://backend:8081/milestone/project/$projectId?status=0&status=2&search=q1",
         s"http://backend:8081/milestone/$otherId",
+        s"http://backend:8081/milestone-step/milestone/$otherId",
+        s"http://backend:8081/milestone-template/project/$projectId?page=2&size=5",
+        s"http://backend:8081/milestone-step-template/project/$projectId",
         "http://backend:8081/account/term/ann"
       )
     }

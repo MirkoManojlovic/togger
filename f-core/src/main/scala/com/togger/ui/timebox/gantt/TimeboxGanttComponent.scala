@@ -172,7 +172,7 @@ class TimeboxGanttComponent(
   private def taskDetails(task: FindTaskRespFull): HtmlElement = {
     val badges = taskBadges(task)
     div(
-      cls("flex min-w-0 flex-col gap-1 py-1"),
+      cls("flex min-w-0 flex-col gap-0.5 py-0.5"),
       div(
         cls("flex items-center gap-1.5"),
         span(cls("min-w-0 truncate text-sm text-heading"), title := task.name, task.name),
@@ -200,7 +200,10 @@ class TimeboxGanttComponent(
       onDragEnd --> (event => setDraggable(event.currentTarget, draggable = false)),
       onMouseUp --> (event => setDraggable(event.currentTarget, draggable = false)),
       div(
-        cls("flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-1"),
+        cls(
+          s"flex cursor-pointer items-center gap-1 self-stretch overflow-hidden px-1 py-0.5 ${layout.nameCellClasses}"
+        ),
+        styleAttr := layout.nameCellStyle(),
         onPointerDown --> (event =>
           setDraggable(event.currentTarget.asInstanceOf[dom.html.Element].parentElement, draggable = true)
         ),

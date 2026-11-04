@@ -1,13 +1,16 @@
 package com.togger.controllers.task
 
+import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.implicits._
 import com.togger.account.Account
 import com.togger.account.AccountNameLookup
 import com.togger.common.DateRangeValidation
 import com.togger.common.TgClock
+import com.togger.common.TgError
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
+import com.togger.common.TgResponseTypes.TgResp
 import com.togger.controllers.common.PageRequestValidation
 import com.togger.controllers.logentry.LogEntryDtoMapper.toDto
 import com.togger.controllers.project.ProjectService
@@ -16,6 +19,8 @@ import com.togger.controllers.task.TaskDtoMapper.toVersionDto
 import com.togger.controllers.task.TaskDtoMapper.{toDto => toTaskDto}
 import com.togger.dto._
 import com.togger.logentry.LogEntryWithVersions
+import com.togger.milestone.MilestoneStepError.StepNotInProject
+import com.togger.milestone.MilestoneStepService
 import com.togger.task._
 
 import java.time.Instant
@@ -29,25 +34,46 @@ class TaskController(
   dateRangeValidation: DateRangeValidation,
   projectService: ProjectService,
   taskStatusService: TaskStatusService,
-  accountNameLookup: AccountNameLookup
+  accountNameLookup: AccountNameLookup,
+  milestoneStepService: MilestoneStepService
 ) {
 
   import taskEndpoints._
+
+  /** The milestone of a step, for the tasks that are in one. */
+  private def milestonesOf(stepIds: Iterable[Option[UUID]]): IO[UUID => Option[UUID]] =
+    milestoneStepService.findMilestoneIdsByStepIds(stepIds.flatten).map(milestones => (id: UUID) => milestones.get(id))
+
+  /** Runs `ok` when every step belongs to the project, else answers which steps do not. */
+  private def withStepsOfProject[A](projectId: UUID, stepIds: Iterable[Option[UUID]])(
+    ok: => IO[TgResp[A]]
+  ): IO[TgResp[A]] = {
+    val ids = stepIds.flatten.toList.distinct
+    milestoneStepService.findProjectIdsByStepIds(ids).flatMap { projects =>
+      NonEmptyChain
+        .fromSeq(ids.filterNot(id => projects.get(id).contains(projectId)).map(StepNotInProject(_): TgError)) match {
+        case Some(errors) => IO.pure(errors.toBadRequestLeft[A])
+        case None         => ok
+      }
+    }
+  }
 
   val findById =
     findByIdEndpoint.serverLogic { _ => taskId =>
       taskService
         .findById(taskId)
         .flatMap { case (taskWithVersions, links, logEntries, taskLabels) =>
-          namesOf(logEntries).map(names =>
-            TgJsonSuccess.justBodyRight(
-              FindTaskResp(
-                task = toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion, taskLabels.map(_.id)),
-                links = links.map(link => toLinkDto(link.link, link.latestVersion)),
-                logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion, names))
+          (namesOf(logEntries), milestonesOf(List(taskWithVersions.latestVersion.milestoneStepId))).mapN {
+            (names, milestoneOf) =>
+              TgJsonSuccess.justBodyRight(
+                FindTaskResp(
+                  task =
+                    toTaskDto(taskWithVersions.task, taskWithVersions.latestVersion, taskLabels.map(_.id), milestoneOf),
+                  links = links.map(link => toLinkDto(link.link, link.latestVersion)),
+                  logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.latestVersion, names))
+                )
               )
-            )
-          )
+          }
         }
     }
 
@@ -58,8 +84,11 @@ class TaskController(
         taskService
           .findPaginatedByProjectId(projectId, filter, page)
           .flatMap(tasksPage =>
-            namesOf(tasksPage.items.flatMap(_._3)).map(names =>
-              TgJsonSuccess.justBodyRight(tasksPage.mapItem(toFullDto(_, names)))
+            (
+              namesOf(tasksPage.items.flatMap(_._3)),
+              milestonesOf(tasksPage.items.map(_._1.milestoneStepId))
+            ).mapN((names, milestoneOf) =>
+              TgJsonSuccess.justBodyRight(tasksPage.mapItem(toFullDto(_, names, milestoneOf)))
             )
           )
       }
@@ -70,7 +99,8 @@ class TaskController(
 
   private def toFullDto(
     item: (TaskFull, List[LinkWithVersions], List[LogEntryWithVersions]),
-    names: Map[UUID, String]
+    names: Map[UUID, String],
+    milestoneOf: UUID => Option[UUID]
   ): FindTaskRespFull = {
     val (taskFull, links, logEntries) = item
     FindTaskRespFull(
@@ -94,7 +124,8 @@ class TaskController(
       latestVersion = taskFull.latestVersion,
       logEntries = logEntries.map(entry => toDto(entry.logEntry, entry.versions.head, names)),
       links = links.map(link => toLinkDto(link.link, link.latestVersion)),
-      milestone = taskFull.milestone,
+      milestone = taskFull.milestoneStepId.flatMap(milestoneOf),
+      milestoneStepId = taskFull.milestoneStepId,
       startDate = taskFull.startDate,
       dueDate = taskFull.dueDate,
       endDate = taskFull.endDate,
@@ -131,7 +162,7 @@ class TaskController(
       closedBy = None,
       taskStatusId = taskDto.taskStatusId,
       priority = taskDto.priority,
-      milestone = taskDto.milestone,
+      milestoneStepId = taskDto.milestoneStepId,
       startDate = taskDto.startDate,
       dueDate = taskDto.dueDate,
       endDate = None,
@@ -159,11 +190,12 @@ class TaskController(
 
   private def savedDtoOf(
     saved: (TaskWithOneVersion, List[LinkWithOneVersion]),
-    labelIds: Seq[UUID]
+    labelIds: Seq[UUID],
+    milestoneOf: UUID => Option[UUID]
   ): FindTaskResp = {
     val (savedTask, savedLinks) = saved
     FindTaskResp(
-      task = toTaskDto(savedTask.task, savedTask.version, labelIds),
+      task = toTaskDto(savedTask.task, savedTask.version, labelIds, milestoneOf),
       links = savedLinks.map(link => toLinkDto(link.link, link.version)),
       logEntries = Seq.empty
     )
@@ -179,12 +211,15 @@ class TaskController(
       validation match {
         case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
         case Right(_) =>
-          val (task, firstVersion) = newTaskOf(taskDto, auth.body.get.id, taskDto.createdAt)
-          val newLinks = newLinksOf(LinkValidation.withoutBlankLinks(dto.links), tgClock.currentInstant)
+          withStepsOfProject[FindTaskResp](taskDto.projectId, List(taskDto.milestoneStepId)) {
+            val (task, firstVersion) = newTaskOf(taskDto, auth.body.get.id, taskDto.createdAt)
+            val newLinks = newLinksOf(LinkValidation.withoutBlankLinks(dto.links), tgClock.currentInstant)
 
-          taskService
-            .createTask(task, firstVersion, newLinks, taskDto.taskLabelIds)
-            .map(saved => TgJsonSuccess.justBodyRight(savedDtoOf(saved, taskDto.taskLabelIds)))
+            for {
+              saved <- taskService.createTask(task, firstVersion, newLinks, taskDto.taskLabelIds)
+              milestoneOf <- milestonesOf(List(taskDto.milestoneStepId))
+            } yield TgJsonSuccess.justBodyRight(savedDtoOf(saved, taskDto.taskLabelIds, milestoneOf))
+          }
       }
     }
   }
@@ -202,21 +237,27 @@ class TaskController(
             .flatMap(_ => BulkTaskValidation.validateLinks(dto)) match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[Seq[FindTaskResp]])
             case Right(_) =>
-              val now = tgClock.currentInstant
-              val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
-                val (task, firstVersion) =
-                  newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
-                NewTask(
-                  task,
-                  firstVersion,
-                  newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now),
-                  taskAndLinks.task.taskLabelIds
-                )
-              }
+              withStepsOfProject[Seq[FindTaskResp]](
+                dto.tasks.head.task.projectId,
+                dto.tasks.map(_.task.milestoneStepId)
+              ) {
+                val now = tgClock.currentInstant
+                val newTasks = dto.tasks.zipWithIndex.map { case (taskAndLinks, index) =>
+                  val (task, firstVersion) =
+                    newTaskOf(taskAndLinks.task, auth.body.get.id, now.plusMillis(index.toLong))
+                  NewTask(
+                    task,
+                    firstVersion,
+                    newLinksOf(LinkValidation.withoutBlankLinks(taskAndLinks.links), now),
+                    taskAndLinks.task.taskLabelIds
+                  )
+                }
 
-              taskService.createTasks(newTasks).map { saved =>
-                TgJsonSuccess.justBodyRight(saved.zip(dto.tasks).map { case (savedTask, taskAndLinks) =>
-                  savedDtoOf(savedTask, taskAndLinks.task.taskLabelIds)
+                for {
+                  saved <- taskService.createTasks(newTasks)
+                  milestoneOf <- milestonesOf(dto.tasks.map(_.task.milestoneStepId))
+                } yield TgJsonSuccess.justBodyRight(saved.zip(dto.tasks).map { case (savedTask, taskAndLinks) =>
+                  savedDtoOf(savedTask, taskAndLinks.task.taskLabelIds, milestoneOf)
                 })
               }
           }
@@ -241,71 +282,75 @@ class TaskController(
             .flatMap(_ => LinkValidation.validateAll(linksToCreate, linksForUpdate)) match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[FindTaskResp])
             case Right(_) =>
-              val newUpdatedAt = tgClock.currentInstant
+              withStepsOfProject[FindTaskResp](projectId, List(taskDto.milestoneStepId)) {
+                val newUpdatedAt = tgClock.currentInstant
 
-              val newVersionContent = TaskVersion(
-                version = UUID.randomUUID(),
-                taskId = taskDto.id,
-                name = taskDto.name,
-                description = taskDto.description,
-                assignedTo = taskDto.assignedTo,
-                closedBy = None,
-                taskStatusId = taskDto.taskStatusId,
-                priority = taskDto.priority,
-                milestone = taskDto.milestone,
-                startDate = effectiveStartDate,
-                dueDate = effectiveDueDate,
-                endDate = effectiveEndDate,
-                createdAt = newUpdatedAt,
-                updatedAt = newUpdatedAt
-              )
-
-              val linkVersionUpdates =
-                linksForUpdate.map(dto =>
-                  LinkVersion(
-                    version = UUID.randomUUID(),
-                    linkId = dto.id,
-                    name = dto.name,
-                    url = dto.url,
-                    createdAt = newUpdatedAt,
-                    updatedAt = newUpdatedAt
-                  )
+                val newVersionContent = TaskVersion(
+                  version = UUID.randomUUID(),
+                  taskId = taskDto.id,
+                  name = taskDto.name,
+                  description = taskDto.description,
+                  assignedTo = taskDto.assignedTo,
+                  closedBy = None,
+                  taskStatusId = taskDto.taskStatusId,
+                  priority = taskDto.priority,
+                  milestoneStepId = taskDto.milestoneStepId,
+                  startDate = effectiveStartDate,
+                  dueDate = effectiveDueDate,
+                  endDate = effectiveEndDate,
+                  createdAt = newUpdatedAt,
+                  updatedAt = newUpdatedAt
                 )
 
-              val newLinks =
-                linksToCreate.map { linkDto =>
-                  val linkId = UUID.randomUUID()
-                  LinkWithOneVersion(
-                    link = Link(id = linkId, taskId = taskDto.id, createdAt = newUpdatedAt),
-                    version = LinkVersion(
+                val linkVersionUpdates =
+                  linksForUpdate.map(dto =>
+                    LinkVersion(
                       version = UUID.randomUUID(),
-                      linkId = linkId,
-                      name = linkDto.name,
-                      url = linkDto.url,
+                      linkId = dto.id,
+                      name = dto.name,
+                      url = dto.url,
                       createdAt = newUpdatedAt,
                       updatedAt = newUpdatedAt
                     )
                   )
-                }
 
-              taskService
-                .updateTask(
-                  taskDto.id,
-                  newVersionContent,
-                  linkVersionUpdates,
-                  newLinks,
-                  taskDto.taskLabelIds,
-                  taskDto.archived,
-                  dto.linksToDelete
-                )
-                .map { case (savedTask, updatedLinks, savedLinks) =>
-                  val savedDto = FindTaskResp(
-                    task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds),
-                    links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
-                    logEntries = Seq.empty
+                val newLinks =
+                  linksToCreate.map { linkDto =>
+                    val linkId = UUID.randomUUID()
+                    LinkWithOneVersion(
+                      link = Link(id = linkId, taskId = taskDto.id, createdAt = newUpdatedAt),
+                      version = LinkVersion(
+                        version = UUID.randomUUID(),
+                        linkId = linkId,
+                        name = linkDto.name,
+                        url = linkDto.url,
+                        createdAt = newUpdatedAt,
+                        updatedAt = newUpdatedAt
+                      )
+                    )
+                  }
+
+                taskService
+                  .updateTask(
+                    taskDto.id,
+                    newVersionContent,
+                    linkVersionUpdates,
+                    newLinks,
+                    taskDto.taskLabelIds,
+                    taskDto.archived,
+                    dto.linksToDelete
                   )
-                  TgJsonSuccess.justBodyRight(savedDto)
-                }
+                  .flatMap { case (savedTask, updatedLinks, savedLinks) =>
+                    milestonesOf(List(taskDto.milestoneStepId)).map { milestoneOf =>
+                      val savedDto = FindTaskResp(
+                        task = toTaskDto(savedTask.task, savedTask.version, taskDto.taskLabelIds, milestoneOf),
+                        links = (updatedLinks ++ savedLinks).map(link => toLinkDto(link.link, link.version)),
+                        logEntries = Seq.empty
+                      )
+                      TgJsonSuccess.justBodyRight(savedDto)
+                    }
+                  }
+              }
           }
         }
       }
@@ -324,9 +369,10 @@ class TaskController(
   val listVersions = listVersionsEndpoint.serverLogic { _ => request =>
     val (taskId, pageRequest) = request
     PageRequestValidation.withPage(pageRequest) { page =>
-      taskVersionService
-        .listVersions(taskId, page)
-        .map(versionsPage => TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto)))
+      for {
+        versionsPage <- taskVersionService.listVersions(taskId, page)
+        milestoneOf <- milestonesOf(versionsPage.items.map(_.milestoneStepId))
+      } yield TgJsonSuccess.justBodyRight(versionsPage.mapItem(toVersionDto(_, milestoneOf)))
     }
   }
 
@@ -344,24 +390,28 @@ class TaskController(
           validation match {
             case Left(errors) => IO.pure(errors.toBadRequestLeft[TaskVersionDto])
             case Right(_) =>
-              taskVersionService
-                .updateVersionContent(
-                  dto.version,
-                  dto.name,
-                  dto.description,
-                  dto.assignedTo,
-                  dto.closedBy,
-                  dto.taskStatusId,
-                  dto.priority,
-                  dto.milestone,
-                  dto.startDate,
-                  dto.dueDate,
-                  dto.endDate
-                )
-                .map {
-                  case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
-                  case Left(error)    => error.toBadRequestLeft[TaskVersionDto]
-                }
+              withStepsOfProject[TaskVersionDto](projectId, List(dto.milestoneStepId)) {
+                taskVersionService
+                  .updateVersionContent(
+                    dto.version,
+                    dto.name,
+                    dto.description,
+                    dto.assignedTo,
+                    dto.closedBy,
+                    dto.taskStatusId,
+                    dto.priority,
+                    dto.milestoneStepId,
+                    dto.startDate,
+                    dto.dueDate,
+                    dto.endDate
+                  )
+                  .flatMap {
+                    case Right(version) =>
+                      milestonesOf(List(version.milestoneStepId))
+                        .map(milestoneOf => TgJsonSuccess.justBodyRight(toVersionDto(version, milestoneOf)))
+                    case Left(error) => IO.pure(error.toBadRequestLeft[TaskVersionDto])
+                  }
+              }
           }
       }
     }

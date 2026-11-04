@@ -32,7 +32,14 @@ case class BulkState(
   def defaults: BulkTaskDefaults = BulkTaskDefaults.of(today, workDays, projectData.statuses)
 
   def lookups: BulkLookups =
-    BulkLookups(projectData.statuses, projectData.labels, projectData.members, projectData.milestones, workDays)
+    BulkLookups(
+      projectData.statuses,
+      projectData.labels,
+      projectData.members,
+      projectData.milestones,
+      workDays,
+      projectData.steps
+    )
 
   def draft: BulkDraft = BulkDraft(projectId, rawInput, tasks)
 

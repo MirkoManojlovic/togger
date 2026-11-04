@@ -14,6 +14,7 @@ import com.togger.task.DefaultTaskStatus.WontDo
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectInfoCard
@@ -30,6 +31,7 @@ class ShowAllTasksComponent(
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   projectService: ProjectService,
   router: TgRouter[FrontendPage],
   spinnerService: SpinnerService,
@@ -49,7 +51,8 @@ class ShowAllTasksComponent(
     projectService,
     taskStatusFeService,
     taskLabelFeService,
-    milestoneService
+    milestoneService,
+    Some(milestoneStepService)
   )
   import lookups.projectVar
 

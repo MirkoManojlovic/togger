@@ -1,48 +1,32 @@
 package com.togger.mcp
 
+import cats.effect.{Deferred, IO}
+
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.io.Source
-import scala.util.Using
 
-/** Same check as the backend's CheckDesktopAppRunning: polls whether the Togger desktop app is still running and calls
-  * `onStopped` once when it is not.
-  */
-class CheckDesktopAppRunning(
-  isRunning: () => Boolean = CheckDesktopAppRunning.desktopAppProcessExists,
-  checkInterval: FiniteDuration = 30.seconds,
-  onStopped: () => Unit
-):
+class CheckDesktopAppRunning(checkInterval: FiniteDuration = 30.seconds) extends TgLogging {
 
-  def start(): Thread =
-    val watcher = Thread(() => loop(), "check-desktop-app-running")
-    watcher.setDaemon(true)
-    watcher.start()
-    watcher
+  def run(fn: () => Boolean, stopSignal: Deferred[IO, Unit]): IO[Unit] =
+    loop(fn, stopSignal)
 
-  private def loop(): Unit =
-    Thread.sleep(checkInterval.toMillis)
-    scribe.info("Checking if app is running")
-    if isRunning() then
-      scribe.info("Desktop app is running")
-      loop()
-    else
-      scribe.info("Desktop app is not running")
-      onStopped()
+  private def loop(fn: () => Boolean, stopSignal: Deferred[IO, Unit]): IO[Unit] =
+    for {
+      _ <- IO.sleep(checkInterval)
+      _ <- IO(logger.info("Checking if app is running"))
+      isRunning = fn()
+      _ <-
+        if (isRunning) {
+          for {
+            _ <- IO(logger.info("Desktop app is running"))
+            _ <- loop(fn, stopSignal)
+          } yield ()
 
-object CheckDesktopAppRunning:
-  private val MacOsProcess = "Togger.app/Contents/MacOS/app"
+        } else {
+          for {
+            _ <- IO(logger.info("Desktop app is not running"))
+            _ <- stopSignal.complete(())
+          } yield ()
+        }
+    } yield ()
 
-  def containsDesktopApp(psOutput: String): Boolean =
-    psOutput.contains(MacOsProcess)
-
-  /** A failing `ps` counts as running, so a hiccup never takes the server down. */
-  def desktopAppProcessExists(): Boolean =
-    try
-      val process = ProcessBuilder("ps", "aux").redirectErrorStream(true).start()
-      val output = Using.resource(Source.fromInputStream(process.getInputStream))(_.mkString)
-      process.waitFor()
-      containsDesktopApp(output)
-    catch
-      case e: Exception =>
-        scribe.warn(s"Cannot check if the desktop app is running: ${e.getMessage}")
-        true
+}

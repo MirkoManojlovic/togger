@@ -9,7 +9,10 @@ import com.togger.ui.organization.TgIcons
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
 
-case class MultiSelectItem(id: String, name: String, isSelected: Boolean)
+/** @param group
+  *   a heading the item is listed under; consecutive items with the same group share one heading.
+  */
+case class MultiSelectItem(id: String, name: String, isSelected: Boolean, group: Option[String] = None)
 
 /** @param selectedIdsVar
   *   defaults to a fresh, private `Var` (one filter, one selection). Callers that render several instances of the same
@@ -24,7 +27,7 @@ class TableFilterComponent(
   private val filterButtonCls =
     "shrink-0 inline-flex items-center justify-center text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-2 py-1 focus:outline-none"
 
-  private val isOpenVar = Var(false)
+  private val isOpenVar = Var(TableFilterComponent.takeReopen(label))
   private val seededIdsVar = Var(Set.empty[String])
 
   val selectedIds: Signal[Set[String]] = selectedIdsVar.signal
@@ -63,6 +66,36 @@ class TableFilterComponent(
         .htmlElement
     )
 
+  private def groupLinkButton(linkLabel: String, onClickMod: Modifier[ReactiveHtmlElement[HTMLButtonElement]]) =
+    button(
+      `type`("button"),
+      cls("normal-case font-medium text-heading hover:underline cursor-pointer"),
+      onClickMod,
+      linkLabel
+    )
+
+  /** The heading of a group, with links that tick or untick every item of the group. */
+  private def groupRow(group: String, groupIds: Set[String]) =
+    li(
+      cls("flex items-center justify-between px-1 pt-2 pb-1 text-xs font-semibold uppercase text-body"),
+      span(cls("truncate"), group),
+      span(
+        cls("flex shrink-0 gap-2 ps-2"),
+        groupLinkButton("All", onClick.mapToUnit --> (_ => selectedIdsVar.update(_ ++ groupIds))),
+        groupLinkButton("None", onClick.mapToUnit --> (_ => selectedIdsVar.update(_ -- groupIds)))
+      )
+    )
+
+  /** The options, each run of items of one group below that group's heading. */
+  private def optionRows(items: Seq[MultiSelectItem]): Seq[HtmlElement] =
+    items.zipWithIndex.flatMap { case (item, index) =>
+      val startsGroup = item.group.exists(group => index == 0 || !items(index - 1).group.contains(group))
+      val heading = item.group.filter(_ => startsGroup).map { group =>
+        groupRow(group, items.filter(_.group.contains(group)).map(_.id).toSet)
+      }
+      heading.toSeq :+ optionRow(item)
+    }
+
   private val panelWidthPx = 224.0
   private val panelMaxHeightPx = 480.0
   private val viewportMarginPx = 8.0
@@ -72,6 +105,9 @@ class TableFilterComponent(
       `type`("button"),
       cls(filterButtonCls),
       onClick.mapToUnit --> (_ => isOpenVar.update(isOpened => !isOpened)),
+      // A choice is what rebuilds the page: the rebuilt filter opens again.
+      selectedIdsVar.signal.changes --> Observer[Set[String]](_ => TableFilterComponent.reopenAfterReload(label)),
+      onClick.mapToUnit --> (_ => TableFilterComponent.forgetReopen()),
       span(label),
       child.text <-- selectedIdsVar.signal.map(ids => if (ids.isEmpty) "" else s" (${ids.size})"),
       TgIcons.chevronDownIcon(className = "w-4 h-4 ms-1.5 inline")
@@ -98,7 +134,14 @@ class TableFilterComponent(
     */
   private def panel: HtmlElement = {
     val positionVar = Var(measurePosition())
-    val reposition: dom.Event => Unit = _ => positionVar.set(measurePosition())
+    var watching = false
+    // The button moves without any scroll or resize event while the page loads and the table is laid out, so the
+    // position is checked on every frame while the panel is open.
+    def watch(): Unit = {
+      val next = measurePosition()
+      if (next != positionVar.now()) positionVar.set(next)
+      if (watching) dom.window.requestAnimationFrame(_ => watch()): Unit
+    }
     div(
       cls("fixed z-20 bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-56"),
       left <-- positionVar.signal.map(position => s"${position.leftPx}px"),
@@ -106,13 +149,10 @@ class TableFilterComponent(
       bottom <-- positionVar.signal.map(_.anchor.fold(_ => "auto", px => s"${px}px")),
       onMountUnmountCallback(
         _ => {
-          dom.window.addEventListener("scroll", reposition, true)
-          dom.window.addEventListener("resize", reposition)
+          watching = true
+          watch()
         },
-        _ => {
-          dom.window.removeEventListener("scroll", reposition, true)
-          dom.window.removeEventListener("resize", reposition)
-        }
+        _ => watching = false
       ),
       ul(
         cls("p-2 text-sm font-medium overflow-y-auto"),
@@ -123,7 +163,7 @@ class TableFilterComponent(
         ),
         actionRow("Deselect all", onClick.mapToUnit --> (_ => selectedIdsVar.set(Set.empty))),
         li(cls("border-t border-default my-1")),
-        children <-- itemsSignal.map(_.map(optionRow))
+        children <-- itemsSignal.map(optionRows)
       )
     )
   }
@@ -136,4 +176,24 @@ class TableFilterComponent(
       child <-- isOpenVar.signal.map(if (_) panel else emptyNode)
     )
 
+}
+
+/** Choosing an option navigates, which rebuilds the page and with it every filter. The filter that was open is
+  * remembered, and the rebuilt one takes the memory and opens again. The memory is also dropped when the reload ends
+  * (the spinner stops), so a filter that was not rebuilt does not leave it behind for a later page.
+  */
+object TableFilterComponent {
+
+  private var reopenLabel: Option[String] = None
+
+  private def reopenAfterReload(label: String): Unit = reopenLabel = Some(label)
+
+  private def takeReopen(label: String): Boolean = {
+    val reopen = reopenLabel.contains(label)
+    if (reopen) reopenLabel = None
+    reopen
+  }
+
+  /** Called when a reload has ended, or the user closed or opened a filter by hand. */
+  def forgetReopen(): Unit = reopenLabel = None
 }

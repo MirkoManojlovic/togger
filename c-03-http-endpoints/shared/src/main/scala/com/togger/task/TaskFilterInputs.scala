@@ -5,13 +5,13 @@ import sttp.tapir._
 
 import java.util.UUID
 
-/** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId` a
-  * single `search`, a single `timeboxId` and the `includeArchived` flag.
+/** The task list filters as repeatable query params: `statusId`, `priority`, `labelId`, `assigneeId`, `milestoneId`,
+  * `milestoneStepId`, a single `search`, a single `timeboxId` and the `includeArchived` flag.
   */
 object TaskFilterInputs {
 
   private type FilterParams =
-    (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID], Boolean)
+    (List[UUID], List[Int], List[UUID], List[UUID], List[UUID], Option[String], Option[UUID], Boolean, List[UUID])
 
   val taskFilterQuery: EndpointInput[TaskFilter] =
     query[List[UUID]]("statusId")
@@ -22,10 +22,12 @@ object TaskFilterInputs {
       .and(query[Option[String]]("search"))
       .and(query[Option[UUID]]("timeboxId"))
       .and(query[Boolean]("includeArchived").default(false))
+      .and(query[List[UUID]]("milestoneStepId"))
       .mapDecode(toFilter)(toParams)
 
   private def toFilter(params: FilterParams): DecodeResult[TaskFilter] = {
-    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId, includeArchived) = params
+    val (statusIds, priorityValues, labelIds, assigneeIds, milestoneIds, search, timeboxId, includeArchived, stepIds) =
+      params
     val priorities = priorityValues.map(TaskPriority.withValueOpt)
     if (priorities.exists(_.isEmpty))
       DecodeResult.Error(priorityValues.mkString(","), new IllegalArgumentException("Unknown task priority"))
@@ -39,7 +41,8 @@ object TaskFilterInputs {
           milestoneIds,
           search.filter(_.trim.nonEmpty),
           timeboxId,
-          includeArchived
+          includeArchived,
+          stepIds
         )
       )
   }
@@ -53,6 +56,7 @@ object TaskFilterInputs {
       filter.milestoneIds,
       filter.search,
       filter.timeboxId,
-      filter.includeArchived
+      filter.includeArchived,
+      filter.milestoneStepIds
     )
 }

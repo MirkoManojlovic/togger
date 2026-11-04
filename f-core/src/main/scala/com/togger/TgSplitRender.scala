@@ -41,6 +41,8 @@ import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.localstorage.LocalStorageBrowser
 import com.togger.ui.mcp.McpSettingsComponent
 import com.togger.ui.milestone._
+import com.togger.ui.milestonesteptemplate._
+import com.togger.ui.milestonetemplate._
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.modal.PlainTextModalMessage
@@ -102,6 +104,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
         taskTemplateService,
         projectService,
         milestoneService,
+        milestoneStepService,
         organizationService,
         spinnerService,
         tgClock,
@@ -119,6 +122,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
     taskLabelService,
     projectService,
     milestoneService,
+    milestoneStepService,
     organizationService,
     accountService
   )
@@ -145,6 +149,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
         taskService,
         taskProjectDataLoader,
         milestoneService,
+        milestoneStepService,
         spinnerService,
         accountService,
         tgClock,
@@ -164,6 +169,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
         taskService,
         taskProjectDataLoader,
         milestoneService,
+        milestoneStepService,
         spinnerService,
         accountService,
         tgClock,
@@ -292,6 +298,30 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
     if (previewConfig.enabled)
       new TaskLabelFeServicePreview(previewModule.context, previewModule.projects, previewModule.taskConfig)
     else new TaskLabelFeServiceImpl(securedEndpoint, protectedBackendClient)
+  lazy val milestoneStepService: MilestoneStepFeService =
+    if (previewConfig.enabled)
+      new MilestoneStepFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.milestoneSteps
+      )
+    else new MilestoneStepFeServiceImpl(securedEndpoint, protectedBackendClient)
+
+  lazy val milestoneTemplateService: MilestoneTemplateFeService =
+    if (previewConfig.enabled)
+      new MilestoneTemplateFeServicePreview(
+        previewModule.context,
+        previewModule.milestoneTemplates,
+        previewModule.milestoneStepTemplates
+      )
+    else new MilestoneTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+
+  lazy val milestoneStepTemplateService: MilestoneStepTemplateFeService =
+    if (previewConfig.enabled)
+      new MilestoneStepTemplateFeServicePreview(previewModule.context, previewModule.milestoneStepTemplates)
+    else new MilestoneStepTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
+
   lazy val taskTemplateService: TaskTemplateFeService =
     if (previewConfig.enabled) new TaskTemplateFeServicePreview(previewModule.context, previewModule.taskConfig)
     else new TaskTemplateFeServiceImpl(securedEndpoint, protectedBackendClient)
@@ -301,7 +331,12 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
     else new DataExportFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val milestoneService: MilestoneFeService =
     if (previewConfig.enabled)
-      new MilestoneFeServicePreview(previewModule.context, previewModule.projects, previewModule.milestones)
+      new MilestoneFeServicePreview(
+        previewModule.context,
+        previewModule.projects,
+        previewModule.milestones,
+        previewModule.milestoneSteps
+      )
     else new MilestoneFeServiceImpl(securedEndpoint, protectedBackendClient)
   lazy val timeboxService: TimeboxFeService =
     if (previewConfig.enabled) new TimeboxFeServicePreview(previewModule.context, previewModule.tasks)
@@ -465,6 +500,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskLabelService,
                   taskTemplateService,
                   milestoneService,
+                  milestoneStepService,
                   spinnerService,
                   tgClock,
                   accountService,
@@ -555,6 +591,64 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskTemplateId,
                   toast
                 ).element
+              case CreateMilestoneTemplatePage(projectId: UUID) =>
+                new CreateMilestoneTemplateComponent(
+                  milestoneTemplateService,
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllMilestoneTemplatesPage(projectId, listParams) =>
+                new ShowAllMilestoneTemplatesComponent(
+                  milestoneTemplateService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  listParams,
+                  toast
+                ).element
+              case EditMilestoneTemplatePage(projectId: UUID, milestoneTemplateId: UUID) =>
+                new EditMilestoneTemplateComponent(
+                  milestoneTemplateService,
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  projectId,
+                  milestoneTemplateId,
+                  toast
+                ).element
+              case CreateMilestoneStepTemplatePage(projectId: UUID) =>
+                new CreateMilestoneStepTemplateComponent(
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  projectId,
+                  toast
+                ).element
+              case ShowAllMilestoneStepTemplatesPage(projectId, listParams) =>
+                new ShowAllMilestoneStepTemplatesComponent(
+                  milestoneStepTemplateService,
+                  router,
+                  spinnerService,
+                  tgDateFormater,
+                  modalFactory,
+                  projectId,
+                  listParams,
+                  toast
+                ).element
+              case EditMilestoneStepTemplatePage(projectId: UUID, milestoneStepTemplateId: UUID) =>
+                new EditMilestoneStepTemplateComponent(
+                  milestoneStepTemplateService,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  projectId,
+                  milestoneStepTemplateId,
+                  toast
+                ).element
               case SyncConfigPage(projectId: UUID, listParams) =>
                 new SyncConfigComponent(
                   dataExportConfigService,
@@ -613,6 +707,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   taskLabelService,
                   milestoneService,
+                  milestoneStepService,
                   projectService,
                   router,
                   spinnerService,
@@ -632,6 +727,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   taskLabelService,
                   milestoneService,
+                  milestoneStepService,
                   spinnerService,
                   tgClock,
                   accountService,
@@ -644,6 +740,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                       taskService,
                       taskProjectDataLoader,
                       milestoneService,
+                      milestoneStepService,
                       spinnerService,
                       accountService,
                       tgClock,
@@ -847,20 +944,89 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 new CreateMilestoneComponent(
                   milestoneService,
                   milestoneDateService,
+                  milestoneTemplateService,
                   spinnerService,
                   tgClock,
+                  tgDateFormater,
                   projectService,
+                  router,
+                  modalFactory,
                   projectId,
                   toast
                 ).element
-              case EditMilestonePage(_, id: UUID) =>
-                new EditMilestoneComponent(
+              case EditMilestonePage(projectId, id: UUID) =>
+                new EditMilestoneTabsComponent(
+                  new EditMilestoneComponent(
+                    milestoneService,
+                    milestoneDateService,
+                    spinnerService,
+                    tgClock,
+                    projectService,
+                    id,
+                    toast
+                  ).element,
+                  new ShowMilestoneStepsComponent(
+                    milestoneStepService,
+                    milestoneService,
+                    router,
+                    spinnerService,
+                    tgDateFormater,
+                    tgClock,
+                    projectService,
+                    modalFactory,
+                    taskService,
+                    taskStatusService,
+                    taskLabelService,
+                    timeboxStagingStore,
+                    themeStore.isDark,
+                    projectId,
+                    id,
+                    toast
+                  ).element
+                ).element
+              case ShowMilestoneStepsPage(projectId: UUID, milestoneId: UUID) =>
+                new ShowMilestoneStepsComponent(
+                  milestoneStepService,
                   milestoneService,
-                  milestoneDateService,
+                  router,
                   spinnerService,
+                  tgDateFormater,
                   tgClock,
                   projectService,
-                  id,
+                  modalFactory,
+                  taskService,
+                  taskStatusService,
+                  taskLabelService,
+                  timeboxStagingStore,
+                  themeStore.isDark,
+                  projectId,
+                  milestoneId,
+                  toast
+                ).element
+              case CreateMilestoneStepPage(projectId: UUID, milestoneId: UUID) =>
+                new CreateMilestoneStepPageComponent(
+                  milestoneStepService,
+                  milestoneService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  tgClock,
+                  projectId,
+                  milestoneId,
+                  toast
+                ).element
+              case EditMilestoneStepPage(projectId: UUID, milestoneStepId: UUID) =>
+                new EditMilestoneStepComponent(
+                  milestoneStepService,
+                  milestoneService,
+                  projectService,
+                  router,
+                  spinnerService,
+                  tgMarkdown,
+                  tgDateFormater,
+                  tgClock,
+                  projectId,
+                  milestoneStepId,
                   toast
                 ).element
               case MilestoneSummaryPage(_, id: UUID) =>
@@ -868,6 +1034,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   milestoneSummaryService,
                   tgAiActionService,
                   milestoneService,
+                  milestoneStepService,
                   taskService,
                   projectService,
                   router,
@@ -882,6 +1049,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
               case MilestoneReviewPage(projectId: UUID, milestoneId: UUID) =>
                 new MilestoneReviewComponent(
                   milestoneService,
+                  milestoneStepService,
                   milestoneDateService,
                   milestoneSummaryService,
                   taskService,
@@ -903,6 +1071,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectService,
                   milestoneService,
                   milestoneSummaryService,
+                  milestoneStepService,
                   timeboxService,
                   taskService,
                   taskStatusService,
@@ -960,6 +1129,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   taskLabelService,
                   milestoneService,
+                  milestoneStepService,
                   projectService,
                   tgDateFormater,
                   timeboxStagingStore,
@@ -978,6 +1148,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   taskStatusService,
                   taskLabelService,
                   milestoneService,
+                  milestoneStepService,
                   projectService,
                   tgDateFormater,
                   timeboxStagingStore,
@@ -1002,6 +1173,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   timeboxService,
                   taskService,
                   milestoneService,
+                  milestoneStepService,
                   projectService,
                   tgDateFormater,
                   tgMarkdown,

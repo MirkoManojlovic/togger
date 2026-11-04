@@ -17,7 +17,7 @@ case class TaskVersion(
   closedBy: Option[UUID] = None,
   taskStatusId: UUID,
   priority: TaskPriority = TaskPriority.Medium,
-  milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
@@ -32,7 +32,7 @@ case class TaskVersion(
     closedBy: Option[UUID],
     taskStatusId: UUID,
     priority: TaskPriority,
-    milestone: Option[UUID] = None,
+    milestoneStepId: Option[UUID] = None,
     startDate: LocalDate,
     dueDate: LocalDate,
     endDate: Option[LocalDate] = None
@@ -44,7 +44,7 @@ case class TaskVersion(
       closedBy = closedBy,
       taskStatusId = taskStatusId,
       priority = priority,
-      milestone = milestone,
+      milestoneStepId = milestoneStepId,
       startDate = startDate,
       dueDate = dueDate,
       endDate = endDate
@@ -57,7 +57,7 @@ case class TaskVersion(
       closedBy == other.closedBy &&
       taskStatusId == other.taskStatusId &&
       priority == other.priority &&
-      milestone == other.milestone &&
+      milestoneStepId == other.milestoneStepId &&
       startDate == other.startDate &&
       dueDate == other.dueDate &&
       endDate == other.endDate
@@ -80,7 +80,7 @@ case class TaskFull(
   taskStatus: TaskStatus,
   priority: TaskPriority,
   taskLabels: Seq[TaskLabel] = Seq.empty,
-  milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,

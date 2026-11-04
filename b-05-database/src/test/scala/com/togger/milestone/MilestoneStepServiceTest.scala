@@ -1,0 +1,367 @@
+package com.togger.milestone
+
+import cats.effect.unsafe.implicits.global
+import cats.implicits._
+import com.togger.TestLoggingJvm
+import com.togger.common.TimeHelpers
+import com.togger.db.MockedTransactor
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeDeleted
+import com.togger.milestone.MilestoneStepError.DefaultStepCannotBeEdited
+import com.togger.milestone.MilestoneStepError.DefaultStepNameReserved
+import com.togger.milestone.MilestoneStepError.LastStepOfMilestone
+import com.togger.milestone.MilestoneStepError.MilestoneStepNotFound
+import com.togger.milestone.MilestoneStepError.StepHasTasks
+import com.togger.milestone.MilestoneStepError.StepsDoNotMatchMilestone
+import com.togger.suites.TestNameHelper
+import doobie.ConnectionIO
+import doobie.util.invariant.UnexpectedEnd
+import org.scalamock.scalatest.AsyncMockFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
+
+import java.time.LocalDate
+import java.util.UUID
+import scala.collection.mutable.ListBuffer
+
+class MilestoneStepServiceTest
+    extends AsyncWordSpec
+    with AsyncMockFactory
+    with Matchers
+    with TestNameHelper
+    with MockedTransactor
+    with TimeHelpers
+    with TestLoggingJvm {
+
+  private val stepRepo: MilestoneStepRepo = mock[MilestoneStepRepo]
+  private val versionRepo: MilestoneStepVersionRepo = mock[MilestoneStepVersionRepo]
+  private val service = new MilestoneStepService(stepRepo, versionRepo, transactorMock)
+
+  private val milestoneId = UUID.randomUUID()
+
+  private def newStep() = MilestoneStep(UUID.randomUUID(), milestoneId, nowAsInstant)
+
+  private def newVersion(stepId: UUID, name: String, position: Int) = MilestoneStepVersion(
+    version = UUID.randomUUID(),
+    milestoneStepId = stepId,
+    name = name,
+    description = s"Description $name",
+    status = MilestoneStepStatus.Planned,
+    position = position,
+    startDate = LocalDate.of(2024, 1, 1),
+    dueDate = LocalDate.of(2024, 1, 31),
+    endDate = None,
+    createdAt = nowAsInstant,
+    updatedAt = nowAsInstant,
+    changeComment = ""
+  )
+
+  /** Records every inserted version and answers it unchanged. */
+  private def recordInserts(): ListBuffer[MilestoneStepVersion] = {
+    val inserted = ListBuffer.empty[MilestoneStepVersion]
+    (versionRepo.insert _)
+      .expects(*)
+      .onCall { (version: MilestoneStepVersion) =>
+        inserted += version
+        version.pure[ConnectionIO]
+      }
+      .anyNumberOfTimes()
+    inserted
+  }
+
+  testNameFromClassName should {
+
+    "append a new step after the last position" in {
+      val existing = newVersion(UUID.randomUUID(), "Design", 0)
+      val step = newStep()
+      val first = newVersion(step.id, "Prototype", 99)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returns(List(existing).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, None, false, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        inserted.map(_.name) shouldBe List("Prototype")
+      }
+    }
+
+    "insert a step in the middle and move the later steps down with a new version" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val development = newVersion(UUID.randomUUID(), "Development", 1)
+      val production = newVersion(UUID.randomUUID(), "Production", 2)
+      val step = newStep()
+      val first = newVersion(step.id, "Prototype", 99)
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(production, design, development).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, Some(1), false, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        val moved = inserted.filterNot(_.milestoneStepId == step.id).map(v => v.name -> v.position).toList
+        moved shouldBe List("Development" -> 2, "Production" -> 3)
+        inserted.filterNot(_.milestoneStepId == step.id).map(_.changeComment).distinct should have size 1
+      }
+    }
+
+    "join the last stage without moving anything when the new step runs in parallel" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val development = newVersion(UUID.randomUUID(), "Development", 1)
+      val step = newStep()
+      val first = newVersion(step.id, "Docs", 99)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returns(List(design, development).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, None, true, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        inserted.map(_.name) shouldBe List("Docs")
+      }
+    }
+
+    "join the stage at the position when parallel, and never the stage of a default step" in {
+      val shelf = newVersion(UUID.randomUUID(), "Shelf", 0)
+      val design = newVersion(UUID.randomUUID(), "Design", 1)
+      val development = newVersion(UUID.randomUUID(), "Development", 2)
+      val step = newStep()
+      val first = newVersion(step.id, "Docs", 99)
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(shelf, design, development).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, Some(0), true, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1 // clamped below Shelf, joins the first stage after it
+        inserted.map(_.name) shouldBe List("Docs")
+      }
+    }
+
+    "move every step of the later stages down when a new stage is inserted" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val backend = newVersion(UUID.randomUUID(), "Backend", 1)
+      val frontend = newVersion(UUID.randomUUID(), "Frontend", 1)
+      val step = newStep()
+      val first = newVersion(step.id, "Spike", 99)
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(design, backend, frontend).pure[ConnectionIO])
+      (stepRepo.insert _).expects(step).returns(step.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.createMilestoneStep(step, first, Some(1), false, nowAsInstant).unsafeToFuture().map { result =>
+        result.version.position shouldBe 1
+        inserted.filterNot(_.milestoneStepId == step.id).map(v => v.name -> v.position).toSet shouldBe
+          Set("Backend" -> 2, "Frontend" -> 2)
+      }
+    }
+
+    "keep the position when saving a new version of a step" in {
+      val step = newStep()
+      val current = newVersion(step.id, "Design", 3)
+      val update = newVersion(step.id, "Design 2", 0).copy(changeComment = "Renamed")
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _).expects(step.id).returns(current.pure[ConnectionIO])
+      val inserted = recordInserts()
+
+      service.saveNewVersion(step.id, update).unsafeToFuture().map { result =>
+        result.map(_.version.position) shouldBe Right(3)
+        inserted.map(_.changeComment).toList shouldBe List("Renamed")
+      }
+    }
+
+    "answer not found when the step to version does not exist" in {
+      val id = UUID.randomUUID()
+      (stepRepo.findById _)
+        .expects(id)
+        .returns(doobie.free.connection.raiseError[com.togger.milestone.MilestoneStep](UnexpectedEnd))
+
+      service.saveNewVersion(id, newVersion(id, "x", 0)).unsafeToFuture().map(_ shouldBe Left(MilestoneStepNotFound))
+    }
+
+    "delete a step of a milestone that has other steps and no tasks" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+      (stepRepo.deleteById _).expects(step.id).returns(1.pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Right(1))
+    }
+
+    "refuse to delete the Shelf step" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Shelf", 3).pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(DefaultStepCannotBeDeleted("Shelf")))
+    }
+
+    "refuse to edit the Shelf step or to rename a step to Shelf" in {
+      val shelf = newStep()
+      val other = newStep()
+      (stepRepo.findById _).expects(shelf.id).returns(shelf.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(shelf.id)
+        .returns(newVersion(shelf.id, "Shelf", 3).pure[ConnectionIO])
+      (stepRepo.findById _).expects(other.id).returns(other.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(other.id)
+        .returns(newVersion(other.id, "Design", 0).pure[ConnectionIO])
+      for {
+        edited <- service.saveNewVersion(shelf.id, newVersion(shelf.id, "Other", 3)).unsafeToFuture()
+        renamed <- service.saveNewVersion(other.id, newVersion(other.id, " shelf ", 0)).unsafeToFuture()
+      } yield {
+        edited shouldBe Left(DefaultStepCannotBeEdited("Shelf"))
+        renamed shouldBe Left(DefaultStepNameReserved("shelf"))
+      }
+    }
+
+    "refuse to delete the last step of a milestone" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map.empty[UUID, MilestoneStepTaskCounts].pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(LastStepOfMilestone))
+    }
+
+    "refuse to delete a step that tasks are in" in {
+      val step = newStep()
+      (stepRepo.findById _).expects(step.id).returns(step.pure[ConnectionIO])
+      (versionRepo.findLatestByMilestoneStepId _)
+        .expects(step.id)
+        .returns(newVersion(step.id, "Design", 0).pure[ConnectionIO])
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(List(step, newStep()).pure[ConnectionIO])
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(step.id))
+        .returns(Map(step.id -> MilestoneStepTaskCounts(3, 1)).pure[ConnectionIO])
+
+      service.deleteMilestoneStep(step.id).unsafeToFuture().map(_ shouldBe Left(StepHasTasks(3)))
+    }
+
+    "answer not found when deleting a step that does not exist" in {
+      val id = UUID.randomUUID()
+      (stepRepo.findById _).expects(id).returns(doobie.free.connection.raiseError[MilestoneStep](UnexpectedEnd))
+
+      service.deleteMilestoneStep(id).unsafeToFuture().map(_ shouldBe Left(MilestoneStepNotFound))
+    }
+
+    "fill the task counts of the steps, with zero for a step without tasks" in {
+      val withTasks = UUID.randomUUID()
+      val without = UUID.randomUUID()
+      (stepRepo.countTasksByStepIds _)
+        .expects(List(withTasks, without))
+        .returns(Map(withTasks -> MilestoneStepTaskCounts(4, 2)).pure[ConnectionIO])
+
+      service.taskCountsByStepIds(List(withTasks, without)).unsafeToFuture().map { counts =>
+        counts shouldBe Map(withTasks -> MilestoneStepTaskCounts(4, 2), without -> MilestoneStepTaskCounts.empty)
+      }
+    }
+
+    "version only the steps that move when reordering, with the shared comment" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      val development = newVersion(UUID.randomUUID(), "Development", 1)
+      val production = newVersion(UUID.randomUUID(), "Production", 2)
+      val steps =
+        List(design, development, production).map(v => MilestoneStep(v.milestoneStepId, milestoneId, nowAsInstant))
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returning(List(design, development, production).pure[ConnectionIO])
+        .twice()
+      (stepRepo.findAllByMilestoneId _).expects(milestoneId).returns(steps.pure[ConnectionIO])
+      val inserted = recordInserts()
+      val order = List(design, production, development).map(step => List(step.milestoneStepId))
+
+      service.reorder(milestoneId, order, "Swap the last two", nowAsInstant).unsafeToFuture().map { result =>
+        result.isRight shouldBe true
+        inserted.map(v => v.name -> v.position).toSet shouldBe Set("Production" -> 1, "Development" -> 2)
+        inserted.map(_.changeComment).distinct.toList shouldBe List("Swap the last two")
+      }
+    }
+
+    "put the steps of an inner list in one stage when reordering, with Shelf alone at the top" in {
+      val shelf = newVersion(UUID.randomUUID(), "Shelf", 0)
+      val design = newVersion(UUID.randomUUID(), "Design", 1)
+      val backend = newVersion(UUID.randomUUID(), "Backend", 2)
+      val frontend = newVersion(UUID.randomUUID(), "Frontend", 3)
+      val all = List(shelf, design, backend, frontend)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returning(all.pure[ConnectionIO]).twice()
+      (stepRepo.findAllByMilestoneId _)
+        .expects(milestoneId)
+        .returns(all.map(v => MilestoneStep(v.milestoneStepId, milestoneId, nowAsInstant)).pure[ConnectionIO])
+      val inserted = recordInserts()
+      val stages = List(List(design.milestoneStepId), List(backend.milestoneStepId, frontend.milestoneStepId))
+
+      service.reorder(milestoneId, stages, "Build in parallel", nowAsInstant).unsafeToFuture().map { result =>
+        result.isRight shouldBe true
+        inserted.map(v => v.name -> v.position).toList shouldBe List("Frontend" -> 2)
+      }
+    }
+
+    "count the closed steps per milestone and default to zero for milestones without steps" in {
+      val withSteps = UUID.randomUUID()
+      val without = UUID.randomUUID()
+      (versionRepo.countByMilestoneIds _)
+        .expects(List(withSteps, without))
+        .returns(Map(withSteps -> MilestoneStepCounts(3, 2)).pure[ConnectionIO])
+
+      service.countsByMilestoneIds(List(withSteps, without)).unsafeToFuture().map { counts =>
+        counts shouldBe Map(withSteps -> MilestoneStepCounts(3, 2), without -> MilestoneStepCounts.empty)
+      }
+    }
+
+    "not query the counts when there are no milestones" in {
+      service.countsByMilestoneIds(Nil).unsafeToFuture().map(_ shouldBe Map.empty)
+    }
+
+    "find the steps outside a new milestone range" in {
+      val inside = newVersion(UUID.randomUUID(), "Inside", 0).copy(
+        startDate = LocalDate.of(2024, 1, 10),
+        dueDate = LocalDate.of(2024, 1, 20)
+      )
+      val startsEarly = newVersion(UUID.randomUUID(), "Starts early", 1).copy(
+        startDate = LocalDate.of(2024, 1, 2),
+        dueDate = LocalDate.of(2024, 1, 20)
+      )
+      val endsLate = newVersion(UUID.randomUUID(), "Ends late", 2).copy(
+        startDate = LocalDate.of(2024, 1, 10),
+        dueDate = LocalDate.of(2024, 2, 20)
+      )
+      (versionRepo.findLatestByMilestoneId _)
+        .expects(milestoneId)
+        .returns(List(endsLate, inside, startsEarly).pure[ConnectionIO])
+
+      service
+        .findStepsOutsideRange(milestoneId, LocalDate.of(2024, 1, 5), LocalDate.of(2024, 1, 31))
+        .unsafeToFuture()
+        .map(_.map(_.name) shouldBe List("Starts early", "Ends late"))
+    }
+
+    "reject a reorder that does not list exactly the steps of the milestone" in {
+      val design = newVersion(UUID.randomUUID(), "Design", 0)
+      (versionRepo.findLatestByMilestoneId _).expects(milestoneId).returns(List(design).pure[ConnectionIO])
+
+      service
+        .reorder(milestoneId, List(List(design.milestoneStepId), List(UUID.randomUUID())), "comment", nowAsInstant)
+        .unsafeToFuture()
+        .map(_ shouldBe Left(StepsDoNotMatchMilestone))
+    }
+  }
+}

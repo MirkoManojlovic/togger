@@ -11,7 +11,8 @@ case class CreateMilestoneReq(
   name: String,
   description: String,
   startDate: LocalDate,
-  dueDate: LocalDate
+  dueDate: LocalDate,
+  steps: List[NewMilestoneStepReq] = Nil
 )
 
 case class UpdateMilestoneReq(
@@ -35,7 +36,9 @@ case class FindMilestoneResp(
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate],
-  updatedAt: Instant
+  updatedAt: Instant,
+  stepsTotal: Int = 0,
+  stepsClosed: Int = 0
 )
 
 case class MilestoneVersionDto(

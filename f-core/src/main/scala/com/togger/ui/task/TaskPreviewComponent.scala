@@ -3,6 +3,7 @@ package com.togger.ui.task
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.LogEntryDto
 import com.togger.markdown.TgMarkdown
@@ -31,6 +32,8 @@ import java.time.ZoneOffset
   *   over the description; left out where the name is shown by the caller
   * @param milestones
   *   to name the milestone of the task in its badges
+  * @param steps
+  *   to name the step of the task in its badges
   * @param summaryPeriod
   *   the dates of a summary, which get a first tab with their log entries
   */
@@ -43,6 +46,7 @@ class TaskPreviewComponent(
   tgClock: TgClock,
   showName: Boolean = false,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
   summaryPeriod: Option[(LocalDate, LocalDate)] = None
 ) {
 
@@ -79,7 +83,7 @@ class TaskPreviewComponent(
   private def badges: HtmlElement =
     div(
       cls("flex flex-col gap-1.5"),
-      ReviewTaskBadges.primary(task, milestones),
+      ReviewTaskBadges.primary(task, milestones, steps),
       BulkTaskCard.readOnlyRow(
         Seq(
           BadgeSpec(s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(task.startDate)}", TgBadgeColor.Gray),

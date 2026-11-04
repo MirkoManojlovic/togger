@@ -13,6 +13,8 @@ import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
 import com.togger.milestone.Milestone
 import com.togger.milestone.MilestoneRepoImpl
+import com.togger.milestone.MilestoneStep
+import com.togger.milestone.MilestoneStepFixtures
 import com.togger.organization.TgProject
 import com.togger.organization.TgTaskStatus
 import doobie.ConnectionIO
@@ -47,6 +49,7 @@ class TaskVersionRepoPaginationTest
     first: Account,
     second: Account,
     milestone: Milestone,
+    step: MilestoneStep,
     feature: TaskLabel,
     bug: TaskLabel
   ) {
@@ -63,6 +66,7 @@ class TaskVersionRepoPaginationTest
       inProgress <- createTaskStatus(projectId)
       done <- taskStatusRepo.insert(taskStatus.copy(id = UUID.randomUUID(), projectId = projectId, name = "Done"))
       milestone <- milestoneRepo.insert(Milestone(UUID.randomUUID(), projectId, nowAsInstant))
+      step <- MilestoneStepFixtures.insertStep(milestone.id, nowAsInstant)
       feature <- taskLabelRepo.insert(label("feature", projectId))
       bug <- taskLabelRepo.insert(label("bug", projectId))
       base = nowAsInstant
@@ -81,7 +85,7 @@ class TaskVersionRepoPaginationTest
               assignedTo = if (index <= 3) Some(first.id) else if (index <= 6) Some(second.id) else None,
               taskStatusId = if (index % 2 == 0) inProgress.id else done.id,
               priority = if (index % 3 == 0) TaskPriority.Critical else TaskPriority.Medium,
-              milestone = Option.when(index <= 2)(milestone.id),
+              milestoneStepId = Option.when(index <= 2)(step.id),
               startDate = LocalDate.of(2026, 10, 12),
               dueDate = LocalDate.of(2026, 10, 19),
               createdAt = base.plusSeconds(index.toLong),
@@ -92,7 +96,7 @@ class TaskVersionRepoPaginationTest
           _ <- labels.traverse(l => taskLabelAssignmentRepo.insert(TaskLabelAssignment(saved.id, l.id, base)))
         } yield saved
       }
-    } yield Seeded(projectId, tasks.toVector, inProgress, done, first, second, milestone, feature, bug)
+    } yield Seeded(projectId, tasks.toVector, inProgress, done, first, second, milestone, step, feature, bug)
 
   private def oldVersion(taskId: UUID, statusId: UUID, accountId: UUID, base: java.time.Instant) =
     taskVersionRepo.insert(
@@ -185,7 +189,7 @@ class TaskVersionRepoPaginationTest
         cp(oldest.name shouldBe "Task 0")
         cp(oldest.priority shouldBe TaskPriority.Critical)
         cp(oldest.assignedTo shouldBe Some(seeded.first))
-        cp(oldest.milestone shouldBe Some(seeded.milestone.id))
+        cp(oldest.milestoneStepId shouldBe Some(seeded.step.id))
         cp.reportAll()
         succeed
       }).transact(transactor)
@@ -218,6 +222,12 @@ class TaskVersionRepoPaginationTest
     filterTest("filter by unassigned only")(_ => TaskFilter(assigneeIds = List(TgIds.UNASSIGNED_UUID)), 7 to 10)
     filterTest("filter by milestone")(s => TaskFilter(milestoneIds = List(s.milestone.id)), 0 to 2)
     filterTest("filter by no milestone")(_ => TaskFilter(milestoneIds = List(TgIds.NO_MILESTONE_UUID)), 3 to 10)
+    filterTest("filter by step")(s => TaskFilter(milestoneStepIds = List(s.step.id)), 0 to 2)
+    filterTest("filter by no step")(_ => TaskFilter(milestoneStepIds = List(TgIds.NO_MILESTONE_UUID)), 3 to 10)
+    filterTest("filter by a milestone or no milestone")(
+      s => TaskFilter(milestoneIds = List(s.milestone.id, TgIds.NO_MILESTONE_UUID)),
+      0 to 10
+    )
     filterTest("filter by search, ignoring case, in name")(_ => TaskFilter(search = Some("  TASK 10 ")), 10 to 10)
     filterTest("filter by search in description")(_ => TaskFilter(search = Some("description 1")), Seq(1, 10))
     filterTest("filter by search that matches the older version only finds nothing")(

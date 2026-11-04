@@ -9,6 +9,7 @@ import com.togger.milestone.MilestoneStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.StepTestData
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -52,8 +53,17 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
     Instant.EPOCH
   )
 
+  private val step = StepTestData.step(milestone.id, "Build")
+
   private val lookups =
-    BulkLookups(Seq(backlog), Seq(bug, feature), Seq(member), Seq(milestone), WorkDayCalendar.DefaultWorkDays)
+    BulkLookups(
+      Seq(backlog),
+      Seq(bug, feature),
+      Seq(member),
+      Seq(milestone),
+      WorkDayCalendar.DefaultWorkDays,
+      Seq(step)
+    )
 
   private val defaults = BulkTaskDefaults.of(monday.minusDays(3), lookups.workDays, lookups.statuses)
   private val task = BulkTask.withDefaults(UUID.randomUUID(), "A", defaults)
@@ -61,7 +71,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
   "BulkTaskBadges.of" should {
     "show the empty-state emoji for a milestone, labels and assignee that have no default" in {
       val rows = BulkTaskBadges.of(task, lookups, monday)
-      (rows.primaryRow.head, rows.labelRow, rows.primaryRow(3)) shouldBe
+      (rows.primaryRow.head, rows.labelRow, rows.primaryRow(4)) shouldBe
         (
           BadgeSpec("🏁", TgBadgeColor.Gray, Some(BulkEditKind.Milestone)),
           Seq(BadgeSpec("🏷️", TgBadgeColor.Gray, Some(BulkEditKind.Labels))),
@@ -71,7 +81,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
 
     "show priority as its short code and status as its emoji" in {
       val rows = BulkTaskBadges.of(task, lookups, monday)
-      (rows.primaryRow(1).text, rows.primaryRow(2)) shouldBe ("p3", BadgeSpec(
+      (rows.primaryRow(2).text, rows.primaryRow(3)) shouldBe ("p3", BadgeSpec(
         "📚",
         TgBadgeColor.Gray,
         Some(BulkEditKind.Status)
@@ -84,20 +94,21 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
         .map(_.text) shouldBe Seq("🗓️ Oct 12, 2026 | Mon", "🎯 Oct 16, 2026 | Fri", "⏱️ 5 days", "⏳ 5 days left")
     }
 
-    "show the milestone name, label emoji and assignee name when set" in {
+    "show the milestone name, step name, label emoji and assignee name when set" in {
       val full = task.copy(
-        milestoneId = Some(milestone.id),
+        milestoneStepId = Some(step.id),
         labelIds = Set(bug.id, feature.id),
         assigneeId = Some(member.id)
       )
       val rows = BulkTaskBadges.of(full, lookups, monday)
-      (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(3).text) shouldBe
+      (rows.primaryRow.head.text, rows.labelRow.map(_.text), rows.primaryRow(4).text) shouldBe
         ("Release 1", Seq("🐞", "🆕"), "Ada Lovelace")
+      rows.primaryRow(1).text shouldBe "Build"
     }
 
     "put the assignee after the status in the first of two rows, and the labels apart from them" in {
       val rows = BulkTaskBadges.of(task, lookups, monday)
-      (rows.rows.map(_.size), rows.primaryRow.map(_.text)) shouldBe (Seq(4, 4), Seq("🏁", "p3", "📚", "👤"))
+      (rows.rows.map(_.size), rows.primaryRow.map(_.text)) shouldBe (Seq(5, 4), Seq("🏁", "🪜", "p3", "📚", "👤"))
     }
   }
 
@@ -108,6 +119,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
         (
           Seq(
             Some(BulkEditKind.Milestone),
+            Some(BulkEditKind.MilestoneStep),
             Some(BulkEditKind.Priority),
             Some(BulkEditKind.Status),
             Some(BulkEditKind.Assignee)
@@ -121,7 +133,7 @@ class BulkTaskBadgesTest extends AnyWordSpec with Matchers {
       val labelled = task.copy(labelIds = Set(bug.id, feature.id))
       val rows = BulkTaskBadges.of(labelled, lookups, monday)
       (BulkTaskBadges.grouped(rows.labelRow).map(_.size), BulkTaskBadges.grouped(rows.primaryRow).map(_.size)) shouldBe
-        (Seq(2), Seq(1, 1, 1, 1))
+        (Seq(2), Seq(1, 1, 1, 1, 1))
     }
 
     "not group badges that have no attribute to edit" in {

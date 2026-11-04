@@ -9,7 +9,13 @@ import java.util.UUID
 
 object TaskDtoMapper {
 
-  def toDto(task: Task, version: TaskVersion, taskLabelIds: Seq[UUID] = Seq.empty): FindTaskResp1 =
+  /** `milestoneOf` gives the milestone of a step: the milestone of a task is the one of its step. */
+  def toDto(
+    task: Task,
+    version: TaskVersion,
+    taskLabelIds: Seq[UUID] = Seq.empty,
+    milestoneOf: UUID => Option[UUID] = _ => None
+  ): FindTaskResp1 =
     FindTaskResp1(
       id = task.id,
       projectId = task.projectId,
@@ -22,7 +28,8 @@ object TaskDtoMapper {
       updatedAt = version.updatedAt,
       latestVersion = version.version,
       priority = version.priority,
-      milestone = version.milestone,
+      milestone = version.milestoneStepId.flatMap(milestoneOf),
+      milestoneStepId = version.milestoneStepId,
       startDate = version.startDate,
       dueDate = version.dueDate,
       endDate = version.endDate,
@@ -30,7 +37,7 @@ object TaskDtoMapper {
       archived = task.archived
     )
 
-  def toVersionDto(version: TaskVersion): TaskVersionDto =
+  def toVersionDto(version: TaskVersion, milestoneOf: UUID => Option[UUID] = _ => None): TaskVersionDto =
     TaskVersionDto(
       version = version.version,
       taskId = version.taskId,
@@ -42,7 +49,8 @@ object TaskDtoMapper {
       createdAt = version.createdAt,
       updatedAt = version.updatedAt,
       priority = version.priority,
-      milestone = version.milestone,
+      milestone = version.milestoneStepId.flatMap(milestoneOf),
+      milestoneStepId = version.milestoneStepId,
       startDate = version.startDate,
       dueDate = version.dueDate,
       endDate = version.endDate

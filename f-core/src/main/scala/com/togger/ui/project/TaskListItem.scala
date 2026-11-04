@@ -3,6 +3,7 @@ package com.togger.ui.project
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.FrontendPage
 import com.togger.routes.Pages.EditTaskPage
@@ -18,6 +19,8 @@ import java.time.DayOfWeek
   *
   * @param milestones
   *   to name the milestone of the task in its badges; empty where the milestone is already known
+  * @param steps
+  *   to name the step of the task in its badges
   * @param showAssignee
   *   the assignee of the task in its badges, left out where the tasks are of one member
   */
@@ -26,6 +29,7 @@ class TaskListItem(
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
   milestones: Seq[FindMilestoneResp],
+  steps: Seq[FindMilestoneStepResp],
   workDays: Set[DayOfWeek],
   showAssignee: Boolean,
   onPreview: FindTaskRespFull => Unit
@@ -58,6 +62,7 @@ class TaskListItem(
         ProjectHomeStats.taskBadges(
           task,
           milestones,
+          steps,
           showAssignee,
           tgClock.currentDate(),
           workDays,

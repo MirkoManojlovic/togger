@@ -61,6 +61,9 @@ class EditMilestoneComponent(
   val milestoneDatesVar = Var(Seq.empty[EditMilestoneDateComponent])
   val newMilestoneDatesVar = Var(Seq.empty[CreateMilestoneDateComponent])
   val workDaysVar = Var(Set.empty[DayOfWeek])
+
+  /** How many steps the milestone has and how many of them are closed. */
+  private val stepCountsVar = Var(0 -> 0)
   private val dateBadges = new MilestoneDateBadges(
     dates = formState.signal.map(form => form.startDate -> form.dueDate),
     currentDates = () => formState.now().startDate -> formState.now().dueDate,
@@ -97,6 +100,7 @@ class EditMilestoneComponent(
         error => IO(println(error)),
         success => {
           val dto = success.body.get
+          stepCountsVar.set(dto.stepsTotal -> dto.stepsClosed)
           formState.set(
             EditMilestoneForm(
               id = dto.id,
@@ -246,6 +250,16 @@ class EditMilestoneComponent(
         h3(cls(ModalStyles.titleCls), cls("mb-4"), "Close milestone"),
         label(cls("block mb-2.5 text-sm font-medium text-heading"), "End date"),
         closeEndDateField,
+        child.maybe <-- stepCountsVar.signal.map { case (total, closed) =>
+          MilestoneStepProgress
+            .closeWarning(total, closed)
+            .map(warning =>
+              div(
+                cls("mt-4 p-3 text-sm rounded-base bg-warning-soft text-fg-warning border border-warning-subtle"),
+                warning
+              )
+            )
+        },
         div(
           cls(ModalStyles.footerCls),
           cls("justify-end mt-72"),

@@ -45,6 +45,32 @@ class DateRangeValidation {
   def validateEndDateWhenDone(isDone: Boolean, endDate: Option[LocalDate]): EitherNec[TgError, Unit] =
     Either.cond(!isDone || endDate.isDefined, (), NonEmptyChain.one(DateRangeValidation.EndDateRequiredWhenDone))
 
+  /** The start and due date of a child (e.g. a milestone step) must lie inside the range of its parent. */
+  def validateWithinRange(
+    startDate: LocalDate,
+    dueDate: LocalDate,
+    rangeStart: LocalDate,
+    rangeEnd: LocalDate
+  ): EitherNec[TgError, Unit] =
+    (
+      Either
+        .cond(
+          !startDate.isBefore(rangeStart) && !startDate.isAfter(rangeEnd),
+          (),
+          NonEmptyChain.one[TgError](
+            DateRangeValidation.DateOutsideRange("Start date", startDate, rangeStart, rangeEnd)
+          )
+        )
+        .toValidated,
+      Either
+        .cond(
+          !dueDate.isBefore(rangeStart) && !dueDate.isAfter(rangeEnd),
+          (),
+          NonEmptyChain.one[TgError](DateRangeValidation.DateOutsideRange("Due date", dueDate, rangeStart, rangeEnd))
+        )
+        .toValidated
+    ).mapN((_, _) => ()).toEither
+
   def validate(
     startDate: Option[LocalDate],
     dueDate: Option[LocalDate],
@@ -72,6 +98,12 @@ object DateRangeValidation {
 
   case object EndDateRequiredWhenDone extends DateRangeError {
     override def message: String = "End date is required when the status is Done"
+  }
+
+  case class DateOutsideRange(fieldName: String, date: LocalDate, rangeStart: LocalDate, rangeEnd: LocalDate)
+      extends DateRangeError {
+    override def message: String =
+      s"$fieldName must be inside the range $rangeStart - $rangeEnd, but was $date"
   }
 
   case class DateBeforeStartDate(fieldName: String, date: LocalDate, startDate: LocalDate) extends DateRangeError {

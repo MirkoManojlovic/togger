@@ -3,11 +3,16 @@ package com.togger.controllers.milestone
 import com.togger.dto.FindMilestoneResp
 import com.togger.dto.MilestoneVersionDto
 import com.togger.milestone.Milestone
+import com.togger.milestone.MilestoneStepCounts
 import com.togger.milestone.MilestoneVersion
 
 object MilestoneDtoMapper {
 
-  def toDto(milestone: Milestone, version: MilestoneVersion): FindMilestoneResp =
+  def toDto(
+    milestone: Milestone,
+    version: MilestoneVersion,
+    stepCounts: MilestoneStepCounts = MilestoneStepCounts.empty
+  ): FindMilestoneResp =
     FindMilestoneResp(
       id = milestone.id,
       projectId = milestone.projectId,
@@ -19,7 +24,9 @@ object MilestoneDtoMapper {
       startDate = version.startDate,
       dueDate = version.dueDate,
       endDate = version.endDate,
-      updatedAt = version.updatedAt
+      updatedAt = version.updatedAt,
+      stepsTotal = stepCounts.total,
+      stepsClosed = stepCounts.closed
     )
 
   def toVersionDto(version: MilestoneVersion): MilestoneVersionDto =

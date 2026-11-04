@@ -25,6 +25,12 @@ object DemoSeedIds {
   val ProjectMapping = 21
   val DataSyncConfig = 22
   val AiActionDefault = 23
+  val MilestoneStepTemplate = 24
+  val MilestoneStepTemplateVersion = 25
+  val MilestoneTemplate = 26
+  val MilestoneTemplateVersion = 27
+  val MilestoneStep = 28
+  val MilestoneStepVersion = 29
 
   def id(group: Int, number: Int): UUID =
     new UUID(0x0000000000007000L, 0x8000000000000000L | (group.toLong << 16) | number.toLong)

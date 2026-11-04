@@ -7,6 +7,7 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.components.TgStatColumn
+import com.togger.ui.milestone.MilestoneStepLabels
 
 /** The numbers under both panels. Rendering only: what is counted lives in [[BulkSummary]]. */
 object BulkSummaryBar {
@@ -62,6 +63,14 @@ object BulkSummaryBar {
               badges(milestoneBadges(current, currentLookups))
             }
           )
+        ),
+        TgStatColumn(
+          statElement(
+            "By steps",
+            child <-- summary.combineWith(lookups).map { case (current, currentLookups) =>
+              badges(stepBadges(current, currentLookups))
+            }
+          )
         )
       )
     )
@@ -88,10 +97,22 @@ object BulkSummaryBar {
       .map { case (label, count) => BadgeSpec(s"${label.badgeText} × $count", label.badgeColor) }
 
   private def milestoneBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
-    summary.byMilestone
-      .flatMap { case (milestoneId, count) => lookups.milestones.find(_.id == milestoneId).map(_ -> count) }
-      .sortBy { case (milestone, count) => (-count, milestone.name) }
-      .map { case (milestone, count) => BadgeSpec(s"${milestone.name} × $count", TgBadgeColor.Alternative) }
+    summary.byMilestoneStep
+      .flatMap { case (stepId, count) =>
+        MilestoneStepLabels.milestoneOf(stepId, lookups.steps, lookups.milestones).map(_.name -> count)
+      }
+      .groupMapReduce(_._1)(_._2)(_ + _)
+      .toSeq
+      .sortBy { case (name, count) => (-count, name) }
+      .map { case (name, count) => BadgeSpec(s"$name × $count", TgBadgeColor.Alternative) }
+
+  private def stepBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
+    summary.byMilestoneStep
+      .flatMap { case (stepId, count) => lookups.steps.find(_.id == stepId).map(_.name -> count) }
+      .groupMapReduce(_._1)(_._2)(_ + _)
+      .toSeq
+      .sortBy { case (name, count) => (-count, name) }
+      .map { case (name, count) => BadgeSpec(s"$name × $count", TgBadgeColor.Alternative) }
 
   private def statusBadges(summary: BulkSummary, lookups: BulkLookups): Seq[BadgeSpec] =
     summary.byStatus.map { case (statusId, count) =>

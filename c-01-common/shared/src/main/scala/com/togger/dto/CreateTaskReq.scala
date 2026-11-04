@@ -7,6 +7,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
+/** A task is written with the step it is in; the milestone of the task is the milestone of that step. */
 case class CreateTaskReq(
   projectId: UUID,
   name: String,
@@ -17,7 +18,7 @@ case class CreateTaskReq(
   createdAt: Instant,
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
-  milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   taskLabelIds: Seq[UUID] = Seq.empty
@@ -34,7 +35,7 @@ case class UpdateTaskReq1(
   createdAt: Instant,
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
-  milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: Option[LocalDate] = None,
   dueDate: Option[LocalDate] = None,
   endDate: Option[LocalDate] = None,
@@ -42,6 +43,7 @@ case class UpdateTaskReq1(
   archived: Boolean = false
 )
 
+/** `milestone` is derived from the step of the task and is empty when the task has no step. */
 case class FindTaskResp1(
   id: UUID,
   projectId: UUID,
@@ -55,6 +57,7 @@ case class FindTaskResp1(
   latestVersion: UUID,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
@@ -78,6 +81,7 @@ case class FindTaskRespFull(
   logEntries: Seq[LogEntryDto],
   links: Seq[FindLinkResp],
   milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None,
@@ -97,6 +101,7 @@ case class TaskVersionDto(
   updatedAt: Instant,
   priority: TaskPriority = TaskPriority.Medium,
   milestone: Option[UUID] = None,
+  milestoneStepId: Option[UUID] = None,
   startDate: LocalDate,
   dueDate: LocalDate,
   endDate: Option[LocalDate] = None

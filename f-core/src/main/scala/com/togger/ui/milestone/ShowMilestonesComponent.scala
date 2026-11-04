@@ -197,7 +197,28 @@ class ShowMilestonesComponent(
             )
           ),
           BulkTaskCard.readOnlyRow(Seq(BadgeSpec(dto.status.toStringWithEmoji, statusColor(dto.status)))),
-          BulkTaskCard.readOnlyRow(dateRow(dto))
+          BulkTaskCard.readOnlyRow(dateRow(dto)),
+          div(
+            cls("flex flex-wrap items-center gap-1.5"),
+            a(
+              cls("text-sm text-body hover:text-fg-brand hover:underline"),
+              MilestoneStepProgress.label(dto.stepsTotal, dto.stepsClosed),
+              router.navigateTo(ShowMilestoneStepsPage(projectId, dto.id))
+            ),
+            Option
+              .when(MilestoneStepProgress.unfinishedWhenDone(dto.status, dto.stepsTotal, dto.stepsClosed) > 0)(
+                BulkTaskCard.readOnlyRow(
+                  Seq(
+                    BadgeSpec(
+                      MilestoneStepProgress.closedEarlyLabel(
+                        MilestoneStepProgress.unfinishedWhenDone(dto.status, dto.stepsTotal, dto.stepsClosed)
+                      ),
+                      TgBadgeColor.Yellow
+                    )
+                  )
+                )
+              )
+          )
         )
       )
     )

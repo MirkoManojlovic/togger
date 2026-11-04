@@ -3,6 +3,7 @@ package com.togger.ui.task
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
@@ -10,6 +11,7 @@ import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.task.bulk._
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
@@ -36,6 +38,7 @@ class TaskFormBadges(
   def setLabels(labels: Seq[FindTaskLabelResp]): Unit = lookupsVar.update(_.copy(labels = labels))
   def setMembers(members: Seq[SearchAccountDto]): Unit = lookupsVar.update(_.copy(members = members))
   def setMilestones(milestones: Seq[FindMilestoneResp]): Unit = lookupsVar.update(_.copy(milestones = milestones))
+  def setSteps(steps: Seq[FindMilestoneStepResp]): Unit = lookupsVar.update(_.copy(steps = steps))
   def setWorkDays(workDays: Set[DayOfWeek]): Unit = lookupsVar.update(_.copy(workDays = workDays))
 
   def lookupsNow(): BulkLookups = lookupsVar.now()
@@ -58,10 +61,14 @@ class TaskFormBadges(
     }
 
   private def primaryRow(task: BulkTask, lookups: BulkLookups): Seq[BadgeSpec] = {
-    val milestone = task.milestoneId
-      .flatMap(id => lookups.milestones.find(_.id == id))
+    val milestone = task.milestoneStepId
+      .flatMap(id => MilestoneStepLabels.milestoneOf(id, lookups.steps, lookups.milestones))
       .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
       .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
+    val milestoneStep = task.milestoneStepId
+      .flatMap(id => lookups.steps.find(_.id == id))
+      .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.MilestoneStep)))
+      .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep)))
     val status = task.statusId
       .flatMap(id => lookups.statuses.find(_.id == id))
       .map(found => BadgeSpec(found.badgeText, found.badgeColor, Some(BulkEditKind.Status)))
@@ -76,6 +83,7 @@ class TaskFormBadges(
     }
     Seq(
       milestone,
+      milestoneStep,
       BadgeSpec(task.priority.shortCode, task.priority.badgeColor, Some(BulkEditKind.Priority)),
       status,
       assignee

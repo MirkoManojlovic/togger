@@ -44,6 +44,7 @@ class TgRoutes {
       List[String],
       List[String],
       List[String],
+      List[String],
       Option[String]
     )
 
@@ -120,14 +121,15 @@ class TgRoutes {
               TaskListParams.selectionToQuery(page.list.labels),
               TaskListParams.selectionToQuery(page.list.assignees),
               TaskListParams.selectionToQuery(page.list.milestones),
+              TaskListParams.selectionToQuery(page.list.steps),
               TaskListParams.searchToQuery(page.list)
             )
           ),
         decode = { (args: PatternArgs[String, TaskListQuery]) =>
-          val (page, size, statuses, priorities, labels, assignees, milestones, search) = args.params
+          val (page, size, statuses, priorities, labels, assignees, milestones, steps, search) = args.params
           ShowAllTasksPage(
             UUID.fromString(args.path),
-            TaskListParams.fromQuery(page, size, statuses, priorities, labels, assignees, milestones, search)
+            TaskListParams.fromQuery(page, size, statuses, priorities, labels, assignees, milestones, steps, search)
           )
         },
         pattern = (root / "show-tasks" / segment[String] / endOfSegments) ? (
@@ -138,6 +140,7 @@ class TgRoutes {
             listParam[String]("label") &
             listParam[String]("assignee") &
             listParam[String]("milestone") &
+            listParam[String]("step") &
             param[String]("search").?
         )
       ),
@@ -195,6 +198,53 @@ class TgRoutes {
         decode = (args: PatternArgs[String, ListQuery]) =>
           ShowAllTaskTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
         pattern = (root / "task-template" / segment[String] / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: CreateMilestoneStepTemplatePage) => page.projectId.toString,
+        decode = (projectId: String) => CreateMilestoneStepTemplatePage(UUID.fromString(projectId)),
+        pattern = root / "create-milestone-step-template" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode =
+          (page: EditMilestoneStepTemplatePage) => page.projectId.toString -> page.milestoneStepTemplateId.toString,
+        decode = { (projectIdAndTemplateId: (String, String)) =>
+          EditMilestoneStepTemplatePage(
+            UUID.fromString(projectIdAndTemplateId._1),
+            UUID.fromString(projectIdAndTemplateId._2)
+          )
+        },
+        pattern = root / "edit-milestone-step-template" / "project-id" / segment[String] /
+          "milestone-step-template-id" / segment[String] / endOfSegments
+      ),
+      Route.withQuery[ShowAllMilestoneStepTemplatesPage, String, ListQuery](
+        encode = (page: ShowAllMilestoneStepTemplatesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllMilestoneStepTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "milestone-step-template" / segment[String] / endOfSegments) ? listQueryParams
+      ),
+      Route(
+        encode = (page: CreateMilestoneTemplatePage) => page.projectId.toString,
+        decode = (projectId: String) => CreateMilestoneTemplatePage(UUID.fromString(projectId)),
+        pattern = root / "create-milestone-template" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: EditMilestoneTemplatePage) => page.projectId.toString -> page.milestoneTemplateId.toString,
+        decode = { (projectIdAndTemplateId: (String, String)) =>
+          EditMilestoneTemplatePage(
+            UUID.fromString(projectIdAndTemplateId._1),
+            UUID.fromString(projectIdAndTemplateId._2)
+          )
+        },
+        pattern = root / "edit-milestone-template" / "project-id" / segment[String] /
+          "milestone-template-id" / segment[String] / endOfSegments
+      ),
+      Route.withQuery[ShowAllMilestoneTemplatesPage, String, ListQuery](
+        encode = (page: ShowAllMilestoneTemplatesPage) =>
+          PatternArgs(path = page.projectId.toString, params = listToQuery(page.list)),
+        decode = (args: PatternArgs[String, ListQuery]) =>
+          ShowAllMilestoneTemplatesPage(UUID.fromString(args.path), listFromQuery(args.params)),
+        pattern = (root / "milestone-template" / segment[String] / endOfSegments) ? listQueryParams
       ),
       Route(
         encode = (page: CreateProjectPage) => page.organizationId.toString,
@@ -392,6 +442,29 @@ class TgRoutes {
         },
         pattern =
           root / "edit-milestone" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: ShowMilestoneStepsPage) => page.projectId.toString -> page.milestoneId.toString,
+        decode = { (ids: (String, String)) =>
+          ShowMilestoneStepsPage(UUID.fromString(ids._1), UUID.fromString(ids._2))
+        },
+        pattern =
+          root / "milestone-steps" / "project-id" / segment[String] / "milestone-id" / segment[String] / endOfSegments
+      ),
+      Route(
+        encode = (page: CreateMilestoneStepPage) => page.projectId.toString -> page.milestoneId.toString,
+        decode = { (ids: (String, String)) =>
+          CreateMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2))
+        },
+        pattern = root / "create-milestone-step" / "project-id" / segment[String] / "milestone-id" / segment[String] /
+          endOfSegments
+      ),
+      Route(
+        encode = (page: EditMilestoneStepPage) => page.projectId.toString -> page.milestoneStepId.toString,
+        decode = { (ids: (String, String)) => EditMilestoneStepPage(UUID.fromString(ids._1), UUID.fromString(ids._2)) },
+        pattern =
+          root / "edit-milestone-step" / "project-id" / segment[String] / "milestone-step-id" / segment[String] /
+            endOfSegments
       ),
       Route(
         encode = (page: MilestoneSummaryPage) => page.projectId.toString -> page.milestoneId.toString,

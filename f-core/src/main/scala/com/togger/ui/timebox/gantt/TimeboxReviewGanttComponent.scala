@@ -3,6 +3,7 @@ package com.togger.ui.timebox.gantt
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
@@ -31,6 +32,7 @@ class TimeboxReviewGanttComponent(
   timebox: Signal[Option[(LocalDate, LocalDate)]],
   memberIds: Signal[Seq[UUID]],
   milestones: Signal[Seq[FindMilestoneResp]],
+  steps: Signal[Seq[FindMilestoneStepResp]],
   tgDateFormater: TgDateFormater,
   tgMarkdown: TgMarkdown,
   router: TgRouter[FrontendPage],
@@ -59,9 +61,13 @@ class TimeboxReviewGanttComponent(
     selectedVar.update(current => if (current.contains(key)) None else Some(key))
   tabVar.set("single-day")
 
-  private def taskDetails(task: FindTaskRespFull, milestones: Seq[FindMilestoneResp]): HtmlElement =
+  private def taskDetails(
+    task: FindTaskRespFull,
+    milestones: Seq[FindMilestoneResp],
+    stepList: Seq[FindMilestoneStepResp]
+  ): HtmlElement =
     div(
-      cls("flex min-w-0 flex-col gap-1 py-1"),
+      cls("flex min-w-0 flex-col gap-0.5 py-0.5"),
       div(
         cls("flex items-center gap-1.5"),
         a(
@@ -76,7 +82,7 @@ class TimeboxReviewGanttComponent(
           .element
           .amend(cls("shrink-0"))
       ),
-      ReviewTaskBadges.primary(task, milestones)
+      ReviewTaskBadges.primary(task, milestones, stepList)
     )
 
   private def statusCells(
@@ -115,15 +121,16 @@ class TimeboxReviewGanttComponent(
     axis: GanttAxis,
     members: Seq[UUID],
     milestoneList: Seq[FindMilestoneResp],
+    stepList: Seq[FindMilestoneStepResp],
     entries: Map[(UUID, LocalDate), LogEntryDto]
   ): HtmlElement =
     div(
       cls("relative grid items-center border-b border-default-medium"),
       styleAttr := layout.gridTemplate(axis),
       div(
-        cls("flex items-center self-stretch overflow-hidden px-2 py-1"),
-        styleAttr := "grid-column: 1; grid-row: 1 / span 2",
-        taskDetails(task, milestoneList)
+        cls(s"flex items-center self-stretch overflow-hidden px-2 py-0.5 ${layout.nameCellClasses}"),
+        styleAttr := layout.nameCellStyle("1 / span 2"),
+        taskDetails(task, milestoneList, stepList)
       ),
       layout.dayCells(axis, "1"),
       layout.barOrOutside(task, axis, (t, placed) => layout.barElement(t, placed, members)),
@@ -145,6 +152,7 @@ class TimeboxReviewGanttComponent(
     all: Seq[FindTaskRespFull],
     members: Seq[UUID],
     milestoneList: Seq[FindMilestoneResp],
+    stepList: Seq[FindMilestoneStepResp],
     entries: Map[(UUID, LocalDate), LogEntryDto]
   ): HtmlElement =
     if (axis.isEmpty) layout.emptyMessage("The timebox has no work days to show on the Gantt chart.")
@@ -155,7 +163,9 @@ class TimeboxReviewGanttComponent(
         legend(shown),
         layout.frame(
           axis,
-          GanttRowOrder.ordered(all, Seq.empty, members).map(taskRow(_, axis, members, milestoneList, entries))
+          GanttRowOrder
+            .ordered(all, Seq.empty, members)
+            .map(taskRow(_, axis, members, milestoneList, stepList, entries))
         )
       )
     }
@@ -167,9 +177,9 @@ class TimeboxReviewGanttComponent(
         body = TgCard.HtmlCardContent(
           div(
             child <-- axisSignal
-              .combineWith(tasks, memberIds, milestones, entryByTaskAndDay)
-              .map { case (axis, all, members, milestoneList, entries) =>
-                chart(axis, all, members, milestoneList, entries)
+              .combineWith(tasks, memberIds, milestones, steps, entryByTaskAndDay)
+              .map { case (axis, all, members, milestoneList, stepList, entries) =>
+                chart(axis, all, members, milestoneList, stepList, entries)
               }
           )
         )

@@ -14,6 +14,12 @@ import com.togger.db.TgPages
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersionRepo
 import com.togger.milestone._
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateFull
+import com.togger.milestonetemplate.MilestoneTemplateRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
 import com.togger.project.Project
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectAccountRepo
@@ -65,6 +71,12 @@ class DataImportRepo(
   milestoneDateVersionRepo: MilestoneDateVersionRepo,
   milestoneSummaryRepo: MilestoneSummaryRepo,
   milestoneSummaryVersionRepo: MilestoneSummaryVersionRepo,
+  milestoneStepRepo: MilestoneStepRepo,
+  milestoneStepVersionRepo: MilestoneStepVersionRepo,
+  milestoneStepTemplateRepo: MilestoneStepTemplateRepo,
+  milestoneStepTemplateVersionRepo: MilestoneStepTemplateVersionRepo,
+  milestoneTemplateRepo: MilestoneTemplateRepo,
+  milestoneTemplateVersionRepo: MilestoneTemplateVersionRepo,
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
@@ -433,7 +445,8 @@ class DataImportRepo(
         )
         dateOutcomes <- milestoneDump.dates.traverse(mergeMilestoneDate)
         summaryOutcomes <- milestoneDump.summaries.traverse(mergeMilestoneSummary)
-        childOutcomes = dateOutcomes ++ summaryOutcomes
+        stepOutcomes <- milestoneDump.steps.traverse(mergeMilestoneStep)
+        childOutcomes = dateOutcomes ++ summaryOutcomes ++ stepOutcomes
       } yield DataImportEntityResult.merged(
         DataExportEntityType.Milestone,
         milestoneDump.milestone.id,
@@ -467,6 +480,109 @@ class DataImportRepo(
         )
       } yield ChildMergeOutcome(rootInserted = !summaryExists, versionsAdded = added)
     }
+
+  private def mergeMilestoneStep(stepDump: MilestoneStepDumpData): ConnectionIO[ChildMergeOutcome] =
+    exists(milestoneStepRepo.findById(stepDump.milestoneStep.id)).flatMap { stepExists =>
+      for {
+        _ <- if (stepExists) ().pure[ConnectionIO] else milestoneStepRepo.insertWithId(stepDump.milestoneStep).void
+        added <- insertMissing(stepDump.versions)(
+          v => exists(milestoneStepVersionRepo.findByVersion(v.version)),
+          milestoneStepVersionRepo.insertWithId
+        )
+      } yield ChildMergeOutcome(rootInserted = !stepExists, versionsAdded = added)
+    }
+
+  /** The step templates of the dump that the project has under another id, by the name of their latest version, as
+    * every project starts with the default ones: they map to the step template of the project. A step template the
+    * project already has under the same id is not in the result.
+    */
+  def stepTemplateTargets(
+    projectId: UUID,
+    dumps: List[MilestoneStepTemplateDumpData]
+  ): ConnectionIO[Map[UUID, UUID]] =
+    TgPages.readAll(milestoneStepTemplateRepo.findPaginatedFullByProjectId(projectId, _)).map { existing =>
+      val existingIds = existing.map(_.template.id).toSet
+      val idByName = existing.map(full => full.latestVersion.name -> full.template.id).toMap
+      dumps
+        .filterNot(dump => existingIds.contains(dump.template.id))
+        .flatMap(dump => dump.versions.lastOption.flatMap(v => idByName.get(v.name)).map(dump.template.id -> _))
+        .toMap
+    }
+
+  /** A step template that the project has under another id is merged into that one: its versions are added to it
+    * instead of inserting a second one.
+    */
+  def mergeMilestoneStepTemplate(
+    templateDump: MilestoneStepTemplateDumpData,
+    targetId: Option[UUID]
+  ): ConnectionIO[DataImportEntityResult] =
+    for {
+      templateExists <- exists(milestoneStepTemplateRepo.findById(templateDump.template.id))
+      target <-
+        if (templateExists) Option.empty[MilestoneStepTemplate].pure[ConnectionIO]
+        else targetId.traverse(milestoneStepTemplateRepo.findById)
+      _ <-
+        if (templateExists || target.isDefined) ().pure[ConnectionIO]
+        else milestoneStepTemplateRepo.insertWithId(templateDump.template).void
+      versions <- target.fold(templateDump.versions.pure[ConnectionIO])(existing =>
+        milestoneStepTemplateVersionRepo
+          .findLatestByTemplateId(existing.id)
+          .map(latest =>
+            templateDump.versions
+              .map(_.copy(milestoneStepTemplateId = existing.id))
+              .filterNot(_.hasSameContentAs(latest))
+          )
+      )
+      added <- insertMissing(versions)(
+        v => exists(milestoneStepTemplateVersionRepo.findByVersion(v.version)),
+        milestoneStepTemplateVersionRepo.insertWithId
+      )
+    } yield DataImportEntityResult.merged(
+      DataExportEntityType.MilestoneStepTemplate,
+      templateDump.template.id,
+      templateDump.versions.lastOption.map(_.name),
+      rootInserted = !templateExists && target.isEmpty,
+      versionsAdded = added,
+      childrenAdded = 0
+    )
+
+  /** A template whose name the project already has under another id (e.g. a default one) is merged into that one: the
+    * versions that differ from its latest are added to it instead of inserting a second template. The step templates of
+    * the dump have to be mapped to those of the project already.
+    */
+  def mergeMilestoneTemplate(templateDump: MilestoneTemplateDumpData): ConnectionIO[DataImportEntityResult] =
+    for {
+      templateExists <- exists(milestoneTemplateRepo.findById(templateDump.template.id))
+      sameName <-
+        if (templateExists) Option.empty[MilestoneTemplateFull].pure[ConnectionIO]
+        else
+          TgPages
+            .readAll(milestoneTemplateRepo.findPaginatedFullByProjectId(templateDump.template.projectId, _))
+            .map(existing =>
+              templateDump.versions.lastOption.flatMap(v => existing.find(_.latest.version.name == v.version.name))
+            )
+      _ <-
+        if (templateExists || sameName.isDefined) ().pure[ConnectionIO]
+        else milestoneTemplateRepo.insertWithId(templateDump.template).void
+      versions = sameName.fold(templateDump.versions)(existing =>
+        templateDump.versions
+          .map(v => v.copy(version = v.version.copy(milestoneTemplateId = existing.template.id)))
+          .filterNot(v => existing.latest.hasSameContentAs(v.version.name, v.version.description, v.stages))
+      )
+      added <- insertMissing(versions)(
+        v => exists(milestoneTemplateVersionRepo.findByVersion(v.version.version)),
+        v =>
+          milestoneTemplateVersionRepo
+            .insertWithId(v.version) *> milestoneTemplateVersionRepo.insertSteps(v.version.version, v.stages)
+      )
+    } yield DataImportEntityResult.merged(
+      DataExportEntityType.MilestoneTemplate,
+      templateDump.template.id,
+      templateDump.versions.lastOption.map(_.version.name),
+      rootInserted = !templateExists && sameName.isEmpty,
+      versionsAdded = added,
+      childrenAdded = 0
+    )
 
   /** A label has at most one template, so a template whose label already has another one (e.g. a project's default
     * template) is merged into that one: its versions are added to it instead of inserting a second template.

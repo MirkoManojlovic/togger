@@ -12,6 +12,7 @@ import com.togger.ui.components.QuickOptionsPopup
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.task.TgDateFormater
 import org.scalajs.dom
 
@@ -27,6 +28,7 @@ object BulkEditKind {
   case object Priority extends BulkEditKind
   case object Status extends BulkEditKind
   case object Milestone extends BulkEditKind
+  case object MilestoneStep extends BulkEditKind
   case object Assignee extends BulkEditKind
   case object Labels extends BulkEditKind
   case object StartDate extends BulkEditKind
@@ -110,14 +112,15 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
       close()
     }
     target.kind match {
-      case BulkEditKind.Priority  => priorityPopup(current, choose)
-      case BulkEditKind.Status    => statusPopup(current, choose)
-      case BulkEditKind.Milestone => milestonePopup(current, choose)
-      case BulkEditKind.Assignee  => assigneePopup(current, choose)
-      case BulkEditKind.Labels    => labelsPopup(current, target.scope.isDefined, choose)
-      case BulkEditKind.StartDate => datePopup(current, isStart = true, choose)
-      case BulkEditKind.DueDate   => datePopup(current, isStart = false, choose)
-      case BulkEditKind.WorkDays  => workDaysPopup(current, choose)
+      case BulkEditKind.Priority      => priorityPopup(current, choose)
+      case BulkEditKind.Status        => statusPopup(current, choose)
+      case BulkEditKind.Milestone     => milestonePopup(current, choose)
+      case BulkEditKind.MilestoneStep => milestoneStepPopup(current, choose)
+      case BulkEditKind.Assignee      => assigneePopup(current, choose)
+      case BulkEditKind.Labels        => labelsPopup(current, target.scope.isDefined, choose)
+      case BulkEditKind.StartDate     => datePopup(current, isStart = true, choose)
+      case BulkEditKind.DueDate       => datePopup(current, isStart = false, choose)
+      case BulkEditKind.WorkDays      => workDaysPopup(current, choose)
     }
   }
 
@@ -167,21 +170,67 @@ class BulkEditPopups(context: Option[UUID] => BulkEditContext, onEdit: (Option[U
       option => choose(BulkEdit.SetStatus(UUID.fromString(option.id)))
     )
 
+  /** The milestone the task is in, by its step. */
+  private def milestoneIdOf(task: BulkTask, lookups: BulkLookups): Option[UUID] =
+    task.milestoneStepId.flatMap(id => lookups.steps.find(_.id == id)).map(_.milestoneId)
+
+  /** The milestone all the edited tasks are in, if they are all in the same one. */
+  private def sharedMilestoneId(current: BulkEditContext): Option[UUID] =
+    shared(current)(milestoneIdOf(_, current.lookups)).flatten
+
+  /** Choosing a milestone puts the tasks in its Shelf step; the step is picked after it. Tasks already in the chosen
+    * milestone stay in their step.
+    */
   private def milestonePopup(current: BulkEditContext, choose: BulkEdit => Unit): HtmlElement =
     optionsPopup(
-      QuickOption("", "No milestone", "", shared(current)(_.milestoneId).contains(None)) +:
+      QuickOption("", "No milestone", "", shared(current)(_.milestoneStepId).contains(None)) +:
         current.lookups.milestones
-          .sortBy(_.name)
+          .sortBy(milestone => (milestone.dueDate.toEpochDay, milestone.name))
           .map(milestone =>
             QuickOption(
               milestone.id.toString,
               milestone.name,
               milestone.status.statusName,
-              shared(current)(_.milestoneId).contains(Some(milestone.id))
+              sharedMilestoneId(current).contains(milestone.id)
             )
           ),
-      option => choose(BulkEdit.SetMilestone(optionalId(option)))
+      option => {
+        val chosen = optionalId(option)
+        val kept = current.selectedTasks.flatMap(_.milestoneStepId).distinct
+        val keptInChosen = chosen.isDefined && sharedMilestoneId(current) == chosen && kept.size == 1
+        if (keptInChosen) choose(BulkEdit.SetMilestoneStep(kept.headOption))
+        else
+          choose(
+            BulkEdit.SetMilestoneStep(
+              chosen.flatMap(id => MilestoneStepLabels.defaultStepOf(id, current.lookups.steps)).map(_.id)
+            )
+          )
+      }
     )
+
+  /** The steps of the milestone the tasks are in; without a shared milestone there is nothing to pick yet. */
+  private def milestoneStepPopup(current: BulkEditContext, choose: BulkEdit => Unit): HtmlElement =
+    sharedMilestoneId(current) match {
+      case None =>
+        optionsPopup(
+          Seq(QuickOption("", "Select a milestone first", "", false)),
+          _ => close()
+        )
+      case Some(milestoneId) =>
+        optionsPopup(
+          MilestoneStepLabels
+            .stepsOf(milestoneId, current.lookups.steps)
+            .map(step =>
+              QuickOption(
+                step.id.toString,
+                step.name,
+                step.status.statusName,
+                shared(current)(_.milestoneStepId).contains(Some(step.id))
+              )
+            ),
+          option => choose(BulkEdit.SetMilestoneStep(optionalId(option)))
+        )
+    }
 
   private def assigneePopup(current: BulkEditContext, choose: BulkEdit => Unit): HtmlElement =
     optionsPopup(

@@ -28,10 +28,18 @@ object TgPaginationComponent {
   private val inactivePageCls = "bg-neutral-secondary-medium text-body hover:bg-neutral-tertiary hover:text-heading"
   private val activePageCls = "text-fg-brand bg-neutral-tertiary-medium hover:text-fg-brand"
 
-  def apply(state: Signal[Option[PaginationState]], onChange: (Int, Int) => Unit): HtmlElement =
+  /** @param alwaysShowSize
+    *   offer the page size also when everything fits on the smallest page, so a list can be given more room before it
+    *   grows
+    */
+  def apply(
+    state: Signal[Option[PaginationState]],
+    onChange: (Int, Int) => Unit,
+    alwaysShowSize: Boolean = false
+  ): HtmlElement =
     div(
       child <-- state.map {
-        case Some(current) if current.totalItems > 0 => render(current, onChange)
+        case Some(current) if current.totalItems > 0 => render(current, onChange, alwaysShowSize)
         case _                                       => emptyNode
       }
     )
@@ -39,13 +47,15 @@ object TgPaginationComponent {
   def fromResponse(response: Signal[PaginatedResponse[_]], onChange: (Int, Int) => Unit): HtmlElement =
     apply(response.map(r => Some(PaginationState.fromResponse(r))), onChange)
 
-  private def render(state: PaginationState, onChange: (Int, Int) => Unit): HtmlElement =
+  private def render(state: PaginationState, onChange: (Int, Int) => Unit, alwaysShowSize: Boolean): HtmlElement =
     div(
       cls("flex flex-col items-center justify-between gap-3 py-3 md:flex-row"),
       rangeText(state),
       Option.when(state.totalPages > 1)(pageNav(state, onChange)).getOrElse(emptyNode),
       Option
-        .when(state.totalItems > PageRequest.SizeOptions.min)(sizeDropdown(state.size, newSize => onChange(1, newSize)))
+        .when(alwaysShowSize || state.totalItems > PageRequest.SizeOptions.min)(
+          sizeDropdown(state.size, newSize => onChange(1, newSize))
+        )
         .getOrElse(emptyNode)
     )
 

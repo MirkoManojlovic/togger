@@ -8,6 +8,11 @@ import com.togger.dto.MilestoneFilter
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersionRepo
 import com.togger.milestone._
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepo
+import com.togger.milestonetemplate.MilestoneTemplateVersionWithSteps
 import com.togger.project.Project
 import com.togger.project.ProjectAccountRepo
 import com.togger.project.ProjectLabelAssignmentRepo
@@ -34,6 +39,8 @@ case class ProjectExportSnapshot(
   tasks: List[TaskDumpData],
   logEntries: List[LogEntryDumpData],
   taskTemplates: List[TaskTemplateDumpData],
+  milestoneStepTemplates: List[MilestoneStepTemplateDumpData],
+  milestoneTemplates: List[MilestoneTemplateDumpData],
   timeboxes: List[TimeboxDumpData],
   tgPromptTemplates: List[TgPromptTemplateDumpData],
   memberIds: List[UUID]
@@ -60,6 +67,12 @@ class DataExportRepo(
   milestoneDateVersionRepo: MilestoneDateVersionRepo,
   milestoneSummaryRepo: MilestoneSummaryRepo,
   milestoneSummaryVersionRepo: MilestoneSummaryVersionRepo,
+  milestoneStepRepo: MilestoneStepRepo,
+  milestoneStepVersionRepo: MilestoneStepVersionRepo,
+  milestoneStepTemplateRepo: MilestoneStepTemplateRepo,
+  milestoneStepTemplateVersionRepo: MilestoneStepTemplateVersionRepo,
+  milestoneTemplateRepo: MilestoneTemplateRepo,
+  milestoneTemplateVersionRepo: MilestoneTemplateVersionRepo,
   taskTemplateRepo: TaskTemplateRepo,
   taskTemplateVersionRepo: TaskTemplateVersionRepo,
   timeboxRepo: TimeboxRepo,
@@ -86,6 +99,8 @@ class DataExportRepo(
       tasks <- readTasks(projectId)
       logEntries <- readLogEntries(projectId)
       taskTemplates <- readTaskTemplates(projectId)
+      milestoneStepTemplates <- readMilestoneStepTemplates(projectId)
+      milestoneTemplates <- readMilestoneTemplates(projectId)
       timeboxes <- readTimeboxes(projectId)
       tgPromptTemplates <- readTgPromptTemplates(accountId)
       members <- TgPages.readAll(projectAccountRepo.findPaginatedMembers(projectId, _))
@@ -98,6 +113,8 @@ class DataExportRepo(
       tasks = tasks.sortBy(_.task.id),
       logEntries = logEntries.sortBy(_.logEntry.id),
       taskTemplates = taskTemplates.sortBy(_.template.id),
+      milestoneStepTemplates = milestoneStepTemplates.sortBy(_.template.id),
+      milestoneTemplates = milestoneTemplates.sortBy(_.template.id),
       timeboxes = timeboxes.sortBy(_.timebox.id),
       tgPromptTemplates = tgPromptTemplates.sortBy(_.tgPromptTemplate.id),
       memberIds = members.map(_.id).sorted
@@ -133,11 +150,18 @@ class DataExportRepo(
               .readAll(milestoneSummaryVersionRepo.findPaginatedByMilestoneSummaryId(summary.id, _))
               .map(summaryVersions => MilestoneSummaryDumpData(summary, summaryVersions.sortBy(_.version)))
           }
+          steps <- milestoneStepRepo.findAllByMilestoneId(milestone.id)
+          stepsDump <- steps.traverse { step =>
+            TgPages
+              .readAll(milestoneStepVersionRepo.findPaginatedByMilestoneStepId(step.id, _))
+              .map(stepVersions => MilestoneStepDumpData(step, stepVersions.sortBy(_.version)))
+          }
         } yield MilestoneDumpData(
           milestone,
           versions.sortBy(_.version),
           datesDump.sortBy(_.milestoneDate.id),
-          summariesDump.sortBy(_.milestoneSummary.id)
+          summariesDump.sortBy(_.milestoneSummary.id),
+          stepsDump.sortBy(_.milestoneStep.id)
         )
       }
     } yield dumped
@@ -188,6 +212,36 @@ class DataExportRepo(
       }
     } yield dumped
 
+  private def readMilestoneStepTemplates(projectId: UUID): ConnectionIO[List[MilestoneStepTemplateDumpData]] =
+    for {
+      templates <- TgPages.readAll(milestoneStepTemplateRepo.findPaginatedFullByProjectId(projectId, _))
+      dumped <- templates.traverse { full =>
+        TgPages
+          .readAll(milestoneStepTemplateVersionRepo.findPaginatedByTemplateId(full.template.id, _))
+          .map(versions => MilestoneStepTemplateDumpData(full.template, versions.sortBy(_.version)))
+      }
+    } yield dumped
+
+  private def readMilestoneTemplates(projectId: UUID): ConnectionIO[List[MilestoneTemplateDumpData]] =
+    for {
+      templates <- TgPages.readAll(milestoneTemplateRepo.findPaginatedFullByProjectId(projectId, _))
+      dumped <- templates.traverse { full =>
+        for {
+          versions <- TgPages.readAll(milestoneTemplateVersionRepo.findPaginatedByTemplateId(full.template.id, _))
+          sortedVersions = versions.sortBy(_.version)
+          steps <- milestoneTemplateVersionRepo.findStepsByVersions(sortedVersions.map(_.version))
+        } yield MilestoneTemplateDumpData(
+          full.template,
+          sortedVersions.map(version =>
+            MilestoneTemplateVersionDumpData(
+              version,
+              MilestoneTemplateVersionWithSteps(version, steps.getOrElse(version.version, Nil)).stages
+            )
+          )
+        )
+      }
+    } yield dumped
+
   private def readTgPromptTemplates(accountId: UUID): ConnectionIO[List[TgPromptTemplateDumpData]] =
     for {
       prompts <- TgPages.readAll(tgPromptTemplateRepo.findPaginatedFullByCreatedBy(accountId, _))
@@ -224,6 +278,8 @@ object DataExportRepo {
     } ++
       snapshot.logEntries.flatMap(le => le.logEntry.createdBy :: le.versions.map(_.createdBy)) ++
       snapshot.taskTemplates.map(_.template.createdBy) ++
+      snapshot.milestoneStepTemplates.map(_.template.createdBy) ++
+      snapshot.milestoneTemplates.map(_.template.createdBy) ++
       snapshot.memberIds).toSet
 
 }

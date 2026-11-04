@@ -12,6 +12,7 @@ import com.togger.logentry.LogEntryVersionRepoImpl.logEntryStatusCodec
 import com.togger.task.Task
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.latestVersionLateral
+import com.togger.task.TaskVersionRepoImpl.milestoneStepJoin
 import com.togger.util.SplunkMacro.sp
 import doobie.ConnectionIO
 import doobie.Fragment
@@ -91,10 +92,10 @@ class LogEntryRepoImpl extends LogEntryRepo {
               latest_entry.version, latest_entry.log_entry_id, latest_entry.text_internal, latest_entry.text_external,
               latest_entry.status, latest_entry.created_by, latest_entry.created_at, latest_entry.updated_at
             from""" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
-        latestVersionLateral ++
+        latestVersionLateral ++ milestoneStepJoin ++
         fr"join lateral (select * from" ++ LOG_ENTRY_VERSION_TABLE_FRAG ++
         fr"""where log_entry_id = log_entry.id order by version desc limit 1) latest_entry on true
-            where tv.milestone_id = $milestoneId
+            where milestone_step.milestone_id = $milestoneId
               and (log_entry.created_at at time zone 'UTC')::date >= $from
               and (log_entry.created_at at time zone 'UTC')::date <= $to
             order by log_entry.created_at, log_entry.id

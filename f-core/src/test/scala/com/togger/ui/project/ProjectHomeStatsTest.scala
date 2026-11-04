@@ -128,6 +128,7 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
         .taskBadges(
           task("t", status("Testing")),
           Seq.empty,
+          Seq.empty,
           showAssignee = true,
           today,
           WorkDayCalendar.DefaultWorkDays,
@@ -146,10 +147,26 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
     "add the assignee only when asked to" in {
       val assigned = task("t", status("Testing")).copy(assignedTo = Some(ada))
       ProjectHomeStats
-        .taskBadges(assigned, Seq.empty, showAssignee = true, today, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .taskBadges(
+          assigned,
+          Seq.empty,
+          Seq.empty,
+          showAssignee = true,
+          today,
+          WorkDayCalendar.DefaultWorkDays,
+          _.toString
+        )
         .map(_.text) should contain(ada.fullName)
       ProjectHomeStats
-        .taskBadges(assigned, Seq.empty, showAssignee = false, today, WorkDayCalendar.DefaultWorkDays, _.toString)
+        .taskBadges(
+          assigned,
+          Seq.empty,
+          Seq.empty,
+          showAssignee = false,
+          today,
+          WorkDayCalendar.DefaultWorkDays,
+          _.toString
+        )
         .map(_.text) should not contain ada.fullName
     }
   }

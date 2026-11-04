@@ -6,9 +6,15 @@ import com.togger.logentry.LogEntryVersion
 import com.togger.milestone.Milestone
 import com.togger.milestone.MilestoneDate
 import com.togger.milestone.MilestoneDateVersion
+import com.togger.milestone.MilestoneStep
+import com.togger.milestone.MilestoneStepVersion
 import com.togger.milestone.MilestoneSummary
 import com.togger.milestone.MilestoneSummaryVersion
 import com.togger.milestone.MilestoneVersion
+import com.togger.milestonesteptemplate.MilestoneStepTemplate
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
+import com.togger.milestonetemplate.MilestoneTemplate
+import com.togger.milestonetemplate.MilestoneTemplateVersion
 import com.togger.project.Project
 import com.togger.projectlabel.ProjectLabel
 import com.togger.projectlabel.ProjectLabelCategory
@@ -71,30 +77,61 @@ case class MilestoneDateDumpData(milestoneDate: MilestoneDate, versions: List[Mi
 
 case class MilestoneSummaryDumpData(milestoneSummary: MilestoneSummary, versions: List[MilestoneSummaryVersion])
 
+case class MilestoneStepDumpData(milestoneStep: MilestoneStep, versions: List[MilestoneStepVersion])
+
 /** `milestones/<id>.json` */
 case class MilestoneDumpData(
   milestone: Milestone,
   versions: List[MilestoneVersion],
   dates: List[MilestoneDateDumpData],
-  summaries: List[MilestoneSummaryDumpData]
+  summaries: List[MilestoneSummaryDumpData],
+  steps: List[MilestoneStepDumpData] = Nil
 )
 
 object MilestoneDumpData {
   import io.circe.generic.auto._
 
-  // Dumps written before milestone summaries existed have no `summaries` field.
+  // Dumps written before milestone summaries or steps existed have no `summaries` or `steps` field.
   implicit val milestoneDumpDataDecoder: Decoder[MilestoneDumpData] = Decoder.instance { cursor =>
     for {
       milestone <- cursor.get[Milestone]("milestone")
       versions <- cursor.get[List[MilestoneVersion]]("versions")
       dates <- cursor.get[List[MilestoneDateDumpData]]("dates")
       summaries <- cursor.getOrElse[List[MilestoneSummaryDumpData]]("summaries")(Nil)
-    } yield MilestoneDumpData(milestone, versions, dates, summaries)
+      steps <- cursor.getOrElse[List[MilestoneStepDumpData]]("steps")(Nil)
+    } yield MilestoneDumpData(milestone, versions, dates, summaries, steps)
   }
 }
 
 /** `tasktemplates/<id>.json` */
 case class TaskTemplateDumpData(template: TaskTemplate, versions: List[TaskTemplateVersion])
+
+/** `milestonesteptemplates/<id>.json` */
+case class MilestoneStepTemplateDumpData(template: MilestoneStepTemplate, versions: List[MilestoneStepTemplateVersion])
+
+/** A version of a milestone template with the ids of its step templates by stage; the ones of a stage run in parallel.
+  */
+case class MilestoneTemplateVersionDumpData(version: MilestoneTemplateVersion, stages: List[List[UUID]])
+
+object MilestoneTemplateVersionDumpData {
+  import io.circe.generic.auto._
+
+  // Dumps written before the steps could run in parallel list the step templates in `stepTemplateIds`, one per stage.
+  implicit val milestoneTemplateVersionDumpDataDecoder: Decoder[MilestoneTemplateVersionDumpData] =
+    Decoder.instance { cursor =>
+      for {
+        version <- cursor.get[MilestoneTemplateVersion]("version")
+        stages <- cursor
+          .get[List[List[UUID]]]("stages")
+          .orElse(
+            cursor.get[List[UUID]]("stepTemplateIds").map(_.map(List(_)))
+          )
+      } yield MilestoneTemplateVersionDumpData(version, stages)
+    }
+}
+
+/** `milestonetemplates/<id>.json` */
+case class MilestoneTemplateDumpData(template: MilestoneTemplate, versions: List[MilestoneTemplateVersionDumpData])
 
 case class TimeboxVersionDumpData(version: TimeboxVersion, plannedTaskVersions: List[UUID])
 
@@ -116,6 +153,8 @@ object DataExportEntityType {
   case object Task extends DataExportEntityType("tasks")
   case object LogEntry extends DataExportEntityType("logentries")
   case object TaskTemplate extends DataExportEntityType("tasktemplates")
+  case object MilestoneStepTemplate extends DataExportEntityType("milestonesteptemplates")
+  case object MilestoneTemplate extends DataExportEntityType("milestonetemplates")
   case object Timebox extends DataExportEntityType("timeboxes")
   case object TgPromptTemplate extends DataExportEntityType("prompts")
 
@@ -131,6 +170,8 @@ object DataExportEntityType {
       Task,
       LogEntry,
       TaskTemplate,
+      MilestoneStepTemplate,
+      MilestoneTemplate,
       Timebox,
       TgPromptTemplate
     )

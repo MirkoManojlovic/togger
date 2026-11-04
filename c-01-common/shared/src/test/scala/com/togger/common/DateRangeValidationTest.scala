@@ -1,6 +1,7 @@
 package com.togger.common
 
 import com.togger.common.DateRangeValidation.DateBeforeStartDate
+import com.togger.common.DateRangeValidation.DateOutsideRange
 import com.togger.common.DateRangeValidation.EndDateRequiredWhenDone
 import com.togger.common.DateRangeValidation.WeekendDateNotAllowed
 import org.scalatest.EitherValues
@@ -33,6 +34,30 @@ class DateRangeValidationTest
   private val nextMonday = LocalDate.of(2024, 1, 8)
   private val nextWednesday = LocalDate.of(2024, 1, 10)
   private val nextSaturday = LocalDate.of(2024, 1, 13)
+
+  "DateRangeValidation.validateWithinRange" should {
+    "accept dates on and inside the range borders" in {
+      dateRangeValidation.validateWithinRange(monday, nextMonday, monday, nextMonday).isRight shouldBe true
+      dateRangeValidation
+        .validateWithinRange(nextWednesday, nextWednesday, monday, nextSaturday)
+        .isRight shouldBe true
+    }
+
+    "reject a start date before the range" in {
+      val errors = dateRangeValidation.validateWithinRange(monday, nextWednesday, nextMonday, nextSaturday).left.value
+      errors.toChain.toList shouldBe List(DateOutsideRange("Start date", monday, nextMonday, nextSaturday))
+    }
+
+    "reject a due date after the range" in {
+      val errors = dateRangeValidation.validateWithinRange(monday, nextSaturday, monday, nextMonday).left.value
+      errors.toChain.toList shouldBe List(DateOutsideRange("Due date", nextSaturday, monday, nextMonday))
+    }
+
+    "report both dates when both are outside" in {
+      val errors = dateRangeValidation.validateWithinRange(monday, nextSaturday, nextMonday, nextWednesday).left.value
+      errors.toChain.toList should have size 2
+    }
+  }
 
   "DateRangeValidation.isWeekend" should {
     "identify Saturdays and Sundays as weekends for a Mon-Fri project" in {

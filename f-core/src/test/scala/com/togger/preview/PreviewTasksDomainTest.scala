@@ -397,7 +397,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         task.createdAt,
         task.updatedAt,
         task.priority,
-        task.milestone,
+        task.milestoneStepId,
         Some(task.startDate),
         Some(task.dueDate),
         task.endDate,

@@ -8,6 +8,7 @@ import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgResp
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.LogEntryDto
 import com.togger.dto.SearchAccountDto
 import com.togger.dto.organization.OrganizationProjectResp
@@ -27,6 +28,7 @@ import com.togger.ui.components.TgStepperBreadcrumb
 import com.togger.ui.localstorage.LocalStorage
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
@@ -51,6 +53,7 @@ case class TeamDailyState(
   projects: Seq[OrganizationProjectResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
   selected: Set[UUID] = Set.empty,
   candidates: Seq[TeamDailyMemberPlan] = Seq.empty,
   selectedTasks: Option[Set[UUID]] = None,
@@ -93,6 +96,7 @@ class TeamDailyComponent(
   taskService: TaskFeService,
   projectDataLoader: TaskProjectDataLoader,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   spinnerService: SpinnerService,
   accountService: AccountService,
   tgClock: TgClock,
@@ -159,16 +163,22 @@ class TeamDailyComponent(
   private def loadProject(projectId: UUID): Unit =
     projectDataLoader
       .loadProjectData(projectId)
-      .flatMap(data => milestoneService.findAllByProjectId(projectId).map(milestones => (data, milestones)))
-      .map { case (data, milestones) =>
-        if (state.now().projectId.contains(projectId)) applyProject(projectId, data, milestones)
+      .flatMap(data =>
+        for {
+          milestones <- milestoneService.findAllByProjectId(projectId)
+          steps <- milestoneStepService.findByProjectId(projectId)
+        } yield (data, milestones, steps.toOption.flatMap(_.body).getOrElse(Seq.empty))
+      )
+      .map { case (data, milestones, steps) =>
+        if (state.now().projectId.contains(projectId)) applyProject(projectId, data, milestones, steps)
       }
       .unsafeRunAndForget()
 
   private def applyProject(
     projectId: UUID,
     data: TaskProjectData,
-    milestones: TgResp[Seq[FindMilestoneResp]]
+    milestones: TgResp[Seq[FindMilestoneResp]],
+    steps: Seq[FindMilestoneStepResp]
   ): Unit = {
     val restored = draftStore(projectId).flatMap(_.load())
     val memberIds = data.members.map(_.id).toSet
@@ -176,6 +186,7 @@ class TeamDailyComponent(
       current.copy(
         members = data.members,
         milestones = milestones.toOption.flatMap(_.body).getOrElse(Seq.empty),
+        steps = steps,
         selected = restored.fold(memberIds)(_.memberIds.toSet.intersect(memberIds)),
         entries =
           restored.fold(Map.empty[TeamDailyEntryKey, TeamDailyEntryDraft])(_.entries.map(r => r.key -> r.draft).toMap),
@@ -507,7 +518,7 @@ class TeamDailyComponent(
             .element,
           span(cls("text-body-subtle"), if (task.todayEntry.isEmpty) "Not logged today" else "Logged today")
         ),
-        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones))
+        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps))
       )
     )
 
@@ -618,7 +629,7 @@ class TeamDailyComponent(
           .element
       ),
       badgeRow(
-        TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones) :+
+        TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps) :+
           BadgeSpec(task.statusLabel, TaskStatusBadgeColor.of(task.statusName))
       ),
       badgeRow(

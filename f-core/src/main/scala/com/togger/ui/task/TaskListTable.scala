@@ -76,7 +76,7 @@ class TaskListTable(
   ioRuntime: IORuntime
 ) extends ToastMessages {
 
-  import lookups.{milestonesVar, projectVar, statusesVar, taskLabelsVar}
+  import lookups.{milestonesVar, projectVar, statusesVar, stepsVar, taskLabelsVar}
 
   private val browser = new TaskListBrowser(
     taskService,
@@ -112,6 +112,10 @@ class TaskListTable(
           .flatMap(id => milestonesVar.now().find(_.id == id))
           .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
           .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone))),
+        dto.milestoneStepId
+          .flatMap(id => stepsVar.now().find(_.id == id))
+          .map(step => BadgeSpec(step.name, TgBadgeColor.Alternative, Some(BulkEditKind.MilestoneStep)))
+          .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep))),
         BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor, Some(BulkEditKind.Priority)),
         BadgeSpec(dto.taskStatus.badgeText, dto.taskStatus.badgeColor, Some(BulkEditKind.Status)),
         dto.assignedTo
@@ -151,6 +155,7 @@ class TaskListTable(
       labels = taskLabelsVar.now().taskLabels,
       members = projectVar.now().members,
       milestones = milestonesVar.now(),
+      steps = stepsVar.now(),
       workDays = projectVar.now().workDays.map(DayOfWeek.of)
     )
 

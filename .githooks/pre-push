@@ -21,15 +21,8 @@ fi
 
 command -v sbt >/dev/null 2>&1 || { echo "pre-push: sbt is not on the PATH (enter the devenv shell)." >&2; exit 1; }
 
-# sbt 2 links the semanticdb files into its read-only cache; a recompile after an options change cannot overwrite them
-# ("AccessDeniedException"), so they are deleted whenever the options change
-drop_semanticdb() {
-  find target/out -type d \( -name meta -o -name test-meta \) -prune -exec rm -rf {} + 2>/dev/null
-}
-
 restore_dev_mode() {
   sbt --client reload >/dev/null 2>&1
-  drop_semanticdb
 }
 trap restore_dev_mode EXIT INT TERM
 
@@ -44,16 +37,15 @@ if ! sbt --client "show backendCore/scalacOptions" 2>&1 | grep -q -E -e '-Werror
   exit 1
 fi
 
-drop_semanticdb
-
 echo "pre-push: compiling main and test code"
 sbt --client Test/compile || exit 1
 
 echo "pre-push: formatting and scalafix"
 sbt --client "scalafmtCheckAll; scalafix --check; Test/scalafix --check" || status=$?
 
+# testFull: `test` of sbt 2 skips the suites that passed before, so it can run nothing at all
 echo "pre-push: tests"
-sbt --client test || status=$?
+sbt --client testFull || status=$?
 
 if [ "$status" -ne 0 ]; then
   echo "pre-push: checks failed, nothing was pushed. Fix them, or skip with SKIP_PRE_PUSH=1 git push." >&2

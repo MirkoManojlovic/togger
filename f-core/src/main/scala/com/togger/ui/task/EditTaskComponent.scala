@@ -24,6 +24,8 @@ import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditor
 import com.togger.ui.logentry.LogEntryComponent
 import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.ModalStyles
@@ -66,6 +68,7 @@ class EditTaskComponent(
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
   accountService: AccountService,
@@ -105,7 +108,7 @@ class EditTaskComponent(
       endDate = None,
       assigneeId = None,
       labelIds = Set.empty,
-      milestoneId = None,
+      milestoneStepId = None,
       dueDateManual = true
     ),
     tgClock,
@@ -170,7 +173,7 @@ class EditTaskComponent(
                             endDate = dto.task.endDate,
                             assigneeId = dto.task.assignedTo,
                             labelIds = dto.task.taskLabelIds.toSet,
-                            milestoneId = dto.task.milestone,
+                            milestoneStepId = dto.task.milestoneStepId,
                             dueDateManual = true
                           )
                         )
@@ -254,11 +257,18 @@ class EditTaskComponent(
           val milestonesCall: IO[Either[TgJsonFailure, TgJsonSuccess[Seq[FindMilestoneResp]]]] =
             milestoneService.findAllByProjectId(projectId)
 
-          (statusesAndTaskCall, membersCall, labelsCall, milestonesCall).parMapN {
-            (_, membersEither, labelsEither, milestonesEither) =>
+          // The step picker offers the steps of every milestone of the project.
+          val stepsCall: IO[Either[TgJsonFailure, TgJsonSuccess[List[FindMilestoneStepResp]]]] =
+            milestoneStepService.findByProjectId(projectId)
+
+          (statusesAndTaskCall, membersCall, labelsCall, milestonesCall, stepsCall).parMapN {
+            (_, membersEither, labelsEither, milestonesEither, stepsEither) =>
               val _ = membersEither.map(success => badges.setMembers(success.body.get))
               val _ = labelsEither.map(success => badges.setLabels(success.body.get))
-              milestonesEither.map(success => badges.setMilestones(success.body.get))
+              milestonesEither.map { success =>
+                badges.setMilestones(success.body.get)
+                stepsEither.map(steps => badges.setSteps(MilestoneStepLabels.ordered(steps.body.get, success.body.get)))
+              }
           }
         }
     }
@@ -287,7 +297,7 @@ class EditTaskComponent(
         createdAt = now,
         updatedAt = now,
         priority = edited.priority,
-        milestone = edited.milestoneId,
+        milestoneStepId = edited.milestoneStepId,
         startDate = Some(edited.startDate),
         dueDate = Some(edited.dueDate),
         endDate = endDate,

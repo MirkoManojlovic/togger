@@ -165,7 +165,7 @@ bound to that endpoint). Not yet consumed by `MilestoneAiSummaryService`.
 **MCP server (`backendMcp`, `b-08-mcp`):** a read-only MCP server built with Chimp, in its own **Scala 3.9** module that
 depends on no other Togger project (Chimp's tapir/sttp are compiled with Scala 3.9, and the module overrides the
 build-wide `dependencyOverrides` for that reason). It is a thin HTTP client of the backend: `McpApp` logs in as the `mcp`
-account (retrying while the backend starts), then serves 16 tools (`tools/*Tools.scala`, one class per domain) on
+account (retrying while the backend starts), then serves 19 tools (`tools/*Tools.scala`, one class per domain) on
 `http://127.0.0.1:8090/mcp` by calling the existing endpoints with the session as bearer token. Tools return the
 backend's `body` JSON as text. Config is env only: `TOGGER_BACKEND_URL` (default `http://localhost:8081`),
 `TOGGER_MCP_HOST`, `TOGGER_MCP_PORT`, and `TOGGER_MCP_API_KEY` (if set, every MCP call needs it as bearer token).
@@ -175,6 +175,45 @@ backend's `AppEnv`) also runs `CheckDesktopAppRunning` and exits when the Togger
 the arg it runs until stopped. Register
 with `claude mcp add --transport http togger http://localhost:8090/mcp`. Run with `sbt --client "backendMcp/run"` (this
 blocks the shared sbt server; alternatively run `com.togger.mcp.McpApp` from the exported classpath).
+
+**Milestone steps and templates:** a milestone has a sequence of stages of `MilestoneStep`s (`milestone_step` +
+append-only `milestone_step_version`, package `com.togger.milestone`). The `position` of a step is its **stage**: steps
+with the same position run in parallel, stages run in sequence, gaps are allowed, and Shelf is alone in the first one.
+The placement rules live in `MilestoneStepStages` (`c-01-common`, shared by the backend services and the frontend
+preview): `CreateMilestoneStepReq` inserts a new stage at `position` (later stages move down) or, with `parallel`, joins
+the last stage / the stage at `position`; `ReorderMilestoneStepsReq.stages` is `List[List[UUID]]` (outer = sequence, inner
+= parallel); `NewMilestoneStepReq.stage` (default: its index) groups the steps of a new milestone. The position is part of
+the version, so a reorder writes a new version only for the steps whose stage changes, all with the one change comment it
+requires; every update needs a change comment (like Timebox). `MilestoneStepStatus` is Planned, InProgress, Done, Paused, Abandoned; Done and Abandoned
+are the closing ones and need an end date. A step must lie inside the milestone range (`DateRangeValidation.validateWithinRange`),
+and moving the milestone dates so that a step falls outside is rejected. A milestone can be Done with open steps (the UI
+shows that as closed with unfinished steps); `FindMilestoneResp` carries `stepsTotal`/`stepsClosed`. `CreateMilestoneReq.steps`
+creates the milestone with its steps in one transaction (`MilestoneWithStepsService`); `WorkDayCalendar.splitStages`
+(on `splitEvenly`) spreads the milestone dates over the stages, the steps of a stage sharing the dates. Project-scoped templates work like task templates (versioned, `*Full` read models):
+`MilestoneStepTemplate` (name + description) and `MilestoneTemplate` (name + description + the step templates of
+each version by stage in `milestone_template_version_step`, whose `position` is the stage; the API takes `stages: List[List[UUID]]`
+and answers a `stage` per step). Every new project gets the defaults, created in
+`ProjectService.saveProject`; their text lives in `c-01-common` (`DefaultMilestoneStepTemplates`,
+`DefaultMilestoneTemplates`) because the preview uses it too. A step template used by the latest version of a milestone
+template cannot be deleted; deleting one drops it from older versions. Export/import: steps are part of
+`MilestoneDumpData` (`steps` defaults to `Nil` for old dumps), the templates are the entity types
+`milestonesteptemplates` and `milestonetemplates`; an import merges a template into the one of the project with the same
+name (the defaults), and `ExportContentKey` matches them by content for the import check. The frontend has the
+`MilestoneStep*`, `MilestoneStepTemplate*` and `MilestoneTemplate*` services with preview twins.
+
+**Tasks belong to a milestone step:** `task_version.milestone_step_id` (nullable) is the only link; the milestone of a task
+is the milestone of its step. Task DTOs are written with `milestoneStepId` and read with both `milestoneStepId` and a
+derived `milestone` (filled from a batch step→milestone lookup in `TaskController`/`TimeboxController`), so frontend code
+that only reads `task.milestone` is unchanged. SQL that grouped by the task's milestone joins `milestone_step`
+(`TaskVersionRepoImpl.milestoneStepJoin`). Every milestone has a `Shelf` step (the `DefaultMilestoneStep` enum, matched by name), created with the milestone
+as its first step (position 0, never reordered; a new or moved step goes below it) and added on startup to older milestones by
+`ShelfStepSeedService`, which moves their steps down by one. A default step is read-only: it
+cannot be edited or deleted (`DefaultStepCannotBeEdited`, `DefaultStepCannotBeDeleted`), no other step can take its name
+(`DefaultStepNameReserved`), and it is not held to the milestone date range. Task badges show the milestone and the step
+separately; choosing only a milestone puts the task in its Shelf step. The last step and a step with tasks cannot be deleted (`LastStepOfMilestone`, `StepHasTasks`), nor a
+milestone with tasks (`MilestoneHasTasks`); deleting a step clears the link of older task versions (`ON DELETE SET NULL`).
+`FindMilestoneStepResp` carries `tasksTotal`/`tasksDone` (done = the latest task version has an end date), which the home
+page turns into one progress bar per step (`StepBar`: blue, green when the step is Done and all its tasks are done).
 
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate

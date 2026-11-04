@@ -20,7 +20,8 @@ ThisBuild / semanticdbEnabled := !sys.props.contains("idea.managed")
 // Local builds (and the IntelliJ import) only warn; the PR checks set SBT_TPOLECAT_CI=true, which adds fatal warnings.
 ThisBuild / tpolecatDefaultOptionsMode := DevMode
 Global / tpolecatExcludeOptions += ScalacOptions.warnNumericWiden
-// Test sources skip the checks for discarded values (ScalaTest assertions), see project/TestWarnings.scala
+// Test sources skip the checks for discarded values (ScalaTest assertions)
+Test / tpolecatExcludeOptions ++= Set(ScalacOptions.warnNonUnitStatement, ScalacOptions.warnValueDiscard)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 // parallel DB specs each clone a database and open a pool; keep it well below the postgres connection limit
@@ -318,7 +319,8 @@ lazy val backendDeliveryHttp4s = (project in file("b-06-delivery-http4s"))
 
 //  .dependsOn(backendCommon % Cctt)
 
-lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform).in(file("c-03-http-endpoints")))
+lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-03-http-endpoints")))
   .settings(
     name := "http-endpoints",
     libraryDependencies ++= Seq(
@@ -352,7 +354,8 @@ lazy val httpEndpoints = (crossProject(JSPlatform, JVMPlatform).in(file("c-03-ht
   )
   .dependsOn(tgCommon % Cctt)
 
-lazy val tgCommon = (crossProject(JSPlatform, JVMPlatform).in(file("c-01-common")))
+lazy val tgCommon = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-01-common")))
   .settings(
     name := "tg-common",
     libraryDependencies ++= Seq(
@@ -469,7 +472,8 @@ lazy val backendCommon = (project in file("b-05-common"))
   .dependsOn(tgCommon.jvm % Cctt)
   .dependsOn(httpEndpoints.jvm % Cctt)
 
-lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform).in(file("c-00-tg-macros")))
+lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform)
+  .in(file("c-00-tg-macros")))
   .settings(
     name := "tg-macros",
     libraryDependencies ++= Seq(
@@ -506,10 +510,14 @@ lazy val backendMcp = (project in file("b-08-mcp"))
       // Backend calls
       `com.softwaremill.sttp.client4` %% `sttp-client4-core` % `client4-version`,
       `io.circe` %% `circe-parser` % "0.14.14",
+      // Desktop app watcher
+      `org.typelevel` %% `cats-effect` % `cats-effect-version`,
+      "com.lihaoyi" %% "os-lib" % "0.11.8",
       // Logging
       `com.outr` %% scribe % `scribe-version`,
       `com.outr` %% `scribe-slf4j` % `scribe-version`,
       // Tests
-      `org.scalatest` %% scalatest % `scalatest-version` % Test
+      `org.scalatest` %% scalatest % `scalatest-version` % Test,
+      `org.typelevel` %% `cats-effect-testing-scalatest` % `cats-effect-testing-scalatest-version` % Test
     )
   )

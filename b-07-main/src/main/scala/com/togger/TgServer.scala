@@ -34,10 +34,15 @@ import com.togger.controllers.milestone.MilestoneAiSummaryController
 import com.togger.controllers.milestone.MilestoneAiSummaryStreamEndpoints
 import com.togger.controllers.milestone.MilestoneController
 import com.togger.controllers.milestone.MilestoneDateController
+import com.togger.controllers.milestone.MilestoneStepController
+import com.togger.controllers.milestone.MilestoneStepTemplateController
 import com.togger.controllers.milestone.MilestoneSummaryController
+import com.togger.controllers.milestone.MilestoneTemplateController
 import com.togger.controllers.organization.OrganizationController
 import com.togger.controllers.organization.OrganizationService
 import com.togger.controllers.project.DataExportController
+import com.togger.controllers.project.DefaultMilestoneStepTemplateService
+import com.togger.controllers.project.DefaultMilestoneTemplateService
 import com.togger.controllers.project.DefaultTaskLabelService
 import com.togger.controllers.project.DefaultTaskStatusService
 import com.togger.controllers.project.DefaultTaskTemplateService
@@ -68,6 +73,12 @@ import com.togger.logentry.LogEntryRepoImpl
 import com.togger.logentry.LogEntryService
 import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.milestone._
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateService
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateService
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
 import com.togger.organization.OrganizationAccountRepoImpl
 import com.togger.organization.OrganizationEndpoints
 import com.togger.organization.OrganizationRepoImpl
@@ -137,6 +148,7 @@ object TgServer {
     Resource
       .eval(new ProjectLabelSeedService(transactorModule.transactor).run)
       .evalMap(_ => new AiEndpointSeedService(transactorModule.transactor).run)
+      .evalMap(_ => new ShelfStepSeedService(transactorModule.transactor).run)
       .evalMap(_ => new McpAccountSeedService(transactorModule.transactor).run)
       .flatMap(_ =>
         httpModule.createServer(
@@ -194,6 +206,26 @@ object TgServer {
             milestoneController.listVersions,
             milestoneController.updateVersion,
             milestoneController.deleteVersion,
+            milestoneStepController.findById,
+            milestoneStepController.findByMilestoneId,
+            milestoneStepController.findByProjectId,
+            milestoneStepController.save,
+            milestoneStepController.update,
+            milestoneStepController.reorder,
+            milestoneStepController.delete,
+            milestoneStepController.listVersions,
+            milestoneStepTemplateController.save,
+            milestoneStepTemplateController.findById,
+            milestoneStepTemplateController.update,
+            milestoneStepTemplateController.findByProjectId,
+            milestoneStepTemplateController.listVersions,
+            milestoneStepTemplateController.delete,
+            milestoneTemplateController.save,
+            milestoneTemplateController.findById,
+            milestoneTemplateController.update,
+            milestoneTemplateController.findByProjectId,
+            milestoneTemplateController.listVersions,
+            milestoneTemplateController.delete,
             milestoneDateController.findById,
             milestoneDateController.findByMilestoneId,
             milestoneDateController.findByProjectId,
@@ -323,7 +355,59 @@ class DependenciesModule(
   lazy val milestoneEndpoints = new MilestoneEndpoints(securedEndpoint)
   lazy val dateRangeValidation = new DateRangeValidation
   lazy val milestoneController =
-    new MilestoneController(milestoneEndpoints, milestoneService, dateRangeValidation, projectService)
+    new MilestoneController(
+      milestoneEndpoints,
+      milestoneService,
+      dateRangeValidation,
+      projectService,
+      milestoneStepService,
+      milestoneWithStepsService
+    )
+
+  lazy val milestoneStepRepo = new MilestoneStepRepoImpl
+  lazy val milestoneStepVersionRepo = new MilestoneStepVersionRepoImpl
+  lazy val milestoneStepService = new MilestoneStepService(milestoneStepRepo, milestoneStepVersionRepo, transactor)
+  lazy val milestoneStepEndpoints = new MilestoneStepEndpoints(securedEndpoint)
+  lazy val milestoneStepController = new MilestoneStepController(
+    milestoneStepEndpoints,
+    milestoneStepService,
+    milestoneService,
+    dateRangeValidation,
+    projectService,
+    tgClock
+  )
+
+  lazy val milestoneStepTemplateRepo = new MilestoneStepTemplateRepoImpl
+  lazy val milestoneStepTemplateVersionRepo = new MilestoneStepTemplateVersionRepoImpl
+  lazy val milestoneStepTemplateService = new MilestoneStepTemplateService(
+    milestoneStepTemplateRepo,
+    milestoneStepTemplateVersionRepo,
+    milestoneTemplateRepo,
+    transactor
+  )
+  lazy val milestoneStepTemplateEndpoints = new MilestoneStepTemplateEndpoints(securedEndpoint)
+  lazy val milestoneStepTemplateController =
+    new MilestoneStepTemplateController(milestoneStepTemplateService, milestoneStepTemplateEndpoints, tgClock)
+
+  lazy val milestoneTemplateVersionRepo = new MilestoneTemplateVersionRepoImpl
+  lazy val milestoneTemplateRepo = new MilestoneTemplateRepoImpl(milestoneTemplateVersionRepo)
+  lazy val milestoneTemplateService = new MilestoneTemplateService(
+    milestoneTemplateRepo,
+    milestoneTemplateVersionRepo,
+    milestoneStepTemplateRepo,
+    transactor
+  )
+  lazy val milestoneTemplateEndpoints = new MilestoneTemplateEndpoints(securedEndpoint)
+  lazy val milestoneTemplateController =
+    new MilestoneTemplateController(milestoneTemplateService, milestoneTemplateEndpoints, tgClock)
+
+  lazy val milestoneWithStepsService = new MilestoneWithStepsService(
+    milestoneRepo,
+    milestoneVersionRepo,
+    milestoneStepRepo,
+    milestoneStepVersionRepo,
+    transactor
+  )
 
   lazy val milestoneDateRepo = new MilestoneDateRepoImpl
   lazy val milestoneDateVersionRepo = new MilestoneDateVersionRepoImpl
@@ -373,14 +457,16 @@ class DependenciesModule(
       dateRangeValidation,
       projectService,
       taskStatusService,
-      accountNameLookup
+      accountNameLookup,
+      milestoneStepService
     )
 
   lazy val timeboxRepo = new TimeboxRepoImpl
   lazy val timeboxVersionRepo = new TimeboxVersionRepoImpl
   lazy val timeboxService = new TimeboxService(timeboxRepo, timeboxVersionRepo, taskRepo, taskVersionRepo, transactor)
   lazy val timeboxEndpoints = new TimeboxEndpoints(securedEndpoint)
-  lazy val timeboxController = new TimeboxController(timeboxEndpoints, timeboxService, dateRangeValidation, tgClock)
+  lazy val timeboxController =
+    new TimeboxController(timeboxEndpoints, timeboxService, dateRangeValidation, tgClock, milestoneStepService)
 
   lazy val projectEndpoints = new ProjectEndpoints(securedEndpoint)
   lazy val projectRepo = new ProjectRepoImpl
@@ -389,6 +475,8 @@ class DependenciesModule(
   lazy val defaultTaskStatusService = new DefaultTaskStatusService(tgClock)
   lazy val defaultTaskLabelService = new DefaultTaskLabelService(tgClock)
   lazy val defaultTaskTemplateService = new DefaultTaskTemplateService(tgClock)
+  lazy val defaultMilestoneStepTemplateService = new DefaultMilestoneStepTemplateService(tgClock)
+  lazy val defaultMilestoneTemplateService = new DefaultMilestoneTemplateService(tgClock)
   lazy val projectService =
     new ProjectService(
       projectRepo,
@@ -402,6 +490,12 @@ class DependenciesModule(
       taskTemplateRepo,
       taskTemplateVersionRepo,
       defaultTaskTemplateService,
+      milestoneStepTemplateRepo,
+      milestoneStepTemplateVersionRepo,
+      defaultMilestoneStepTemplateService,
+      milestoneTemplateRepo,
+      milestoneTemplateVersionRepo,
+      defaultMilestoneTemplateService,
       transactor
     )
   lazy val projectController = new ProjectController(projectEndpoints, projectService, tgClock)
@@ -514,6 +608,12 @@ class DependenciesModule(
       milestoneDateVersionRepo,
       milestoneSummaryRepo,
       milestoneSummaryVersionRepo,
+      milestoneStepRepo,
+      milestoneStepVersionRepo,
+      milestoneStepTemplateRepo,
+      milestoneStepTemplateVersionRepo,
+      milestoneTemplateRepo,
+      milestoneTemplateVersionRepo,
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,
@@ -587,6 +687,12 @@ class DependenciesModule(
       milestoneDateVersionRepo,
       milestoneSummaryRepo,
       milestoneSummaryVersionRepo,
+      milestoneStepRepo,
+      milestoneStepVersionRepo,
+      milestoneStepTemplateRepo,
+      milestoneStepTemplateVersionRepo,
+      milestoneTemplateRepo,
+      milestoneTemplateVersionRepo,
       taskTemplateRepo,
       taskTemplateVersionRepo,
       timeboxRepo,

@@ -275,7 +275,9 @@ class DataExportService(
     }
   }
 
-  /** The content keys of the task labels of the database and of the disk, as a template names its label by id. */
+  /** The content keys of the task labels and milestone step templates of the database and of the disk, as a template
+    * names its label or steps by id.
+    */
   private def taskLabelKeys(
     data: ExportData,
     folderPath: String,
@@ -287,7 +289,21 @@ class DataExportService(
         dataExportTreeStore.readEntityJson(folderPath, index, DataExportEntityType.TaskLabel, id).toOption.map(id -> _)
       }
     }
-    (ExportContentKey.labelKeys(dbLabels.toMap), ExportContentKey.labelKeys(diskLabels.toMap))
+    val dbStepTemplates = data.entities.collect {
+      case e if e.entityType == DataExportEntityType.MilestoneStepTemplate => e.id -> e.json
+    }
+    val diskStepTemplates = indexResult.toOption.flatten.toList.flatMap { index =>
+      index.entriesOf(DataExportEntityType.MilestoneStepTemplate).keys.toList.flatMap { id =>
+        dataExportTreeStore
+          .readEntityJson(folderPath, index, DataExportEntityType.MilestoneStepTemplate, id)
+          .toOption
+          .map(id -> _)
+      }
+    }
+    (
+      ExportContentKey.labelKeys(dbLabels.toMap) ++ ExportContentKey.stepTemplateKeys(dbStepTemplates.toMap),
+      ExportContentKey.labelKeys(diskLabels.toMap) ++ ExportContentKey.stepTemplateKeys(diskStepTemplates.toMap)
+    )
   }
 
   /** Each disk entity is paired with one database entity of the same content key, whatever their ids. */

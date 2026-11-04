@@ -3,6 +3,7 @@ package com.togger.ui.project
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskRespFull
 import com.togger.routes.FrontendPage
 import com.togger.routes.TgRouter
@@ -33,6 +34,7 @@ class ActiveTasksComponent(
   tgDateFormater: TgDateFormater,
   tgClock: TgClock,
   milestones: Seq[FindMilestoneResp],
+  steps: Seq[FindMilestoneStepResp],
   workDays: Set[DayOfWeek],
   tasks: Seq[FindTaskRespFull],
   config: ActiveTasksConfig,
@@ -48,6 +50,7 @@ class ActiveTasksComponent(
     tgDateFormater,
     tgClock,
     if (config.showMilestone) milestones else Seq.empty,
+    steps,
     workDays,
     showAssignee = false,
     onPreview

@@ -47,7 +47,7 @@ object BulkSubmit {
                   createdAt = now,
                   updatedAt = now,
                   priority = task.priority,
-                  milestone = task.milestoneId,
+                  milestoneStepId = task.milestoneStepId,
                   startDate = task.startDate,
                   dueDate = task.dueDate,
                   taskLabelIds = task.labelIds.toSeq.sortBy(_.toString)

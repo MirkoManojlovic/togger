@@ -11,6 +11,7 @@ import com.togger.db.TgFindPaginatedQuery
 import com.togger.db.Util._
 import com.togger.dto.TaskFilter
 import com.togger.logging.TgLogging
+import com.togger.milestone.MilestoneStepRepoImpl.MILESTONE_STEP_TABLE_FRAG
 import com.togger.task.TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE_FRAG
 import com.togger.task.TaskRepoImpl.TASK_TABLE_FRAG
 import com.togger.task.TaskVersionRepoImpl.TASK_VERSION_TABLE_FRAG
@@ -40,7 +41,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     "closed_by",
     "task_status_id",
     "priority",
-    "milestone_id",
+    "milestone_step_id",
     "start_date",
     "due_date",
     "end_date",
@@ -62,7 +63,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
       closedBy = closedByOpt,
       taskStatus = status,
       priority = version.priority,
-      milestone = version.milestone,
+      milestoneStepId = version.milestoneStepId,
       startDate = version.startDate,
       dueDate = version.dueDate,
       endDate = version.endDate,
@@ -77,8 +78,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, due_date, end_date, created_at, updated_at)
-        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
+        (task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_step_id, start_date, due_date, end_date, created_at, updated_at)
+        values ($taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestoneStepId, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(s"Inserting ${sp(taskVersion)}", taskVersion => s"Task version inserted ${sp(taskVersion)}")
@@ -88,8 +89,8 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
     import taskVersion._
     logAroundInfoQuery(
       insertStatement(TASK_VERSION_TABLE_FRAG)(fr"""
-        (version, task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_id, start_date, due_date, end_date, created_at, updated_at)
-        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestone, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
+        (version, task_id, name, description, assigned_to, closed_by, task_status_id, priority, milestone_step_id, start_date, due_date, end_date, created_at, updated_at)
+        values ($version, $taskId, $name, $description, $assignedTo, $closedBy, $taskStatusId, $priority, $milestoneStepId, $startDate, $dueDate, $endDate, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[TaskVersion](returnFields: _*)
     )(
@@ -164,7 +165,7 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
             closed_by = ${taskVersion.closedBy},
             task_status_id = ${taskVersion.taskStatusId},
             priority = ${taskVersion.priority},
-            milestone_id = ${taskVersion.milestone},
+            milestone_step_id = ${taskVersion.milestoneStepId},
             start_date = ${taskVersion.startDate},
             due_date = ${taskVersion.dueDate},
             end_date = ${taskVersion.endDate},
@@ -268,11 +269,24 @@ class TaskVersionRepoImpl extends TaskVersionRepo with TgLogging {
         NonEmptyList.fromList(filter.priorities).map(Fragments.in(fr"tv.priority", _)),
         NonEmptyList.fromList(filter.labelIds).map(hasAnyLabel),
         NonEmptyList.fromList(filter.assigneeIds).map(inOrNull(fr"tv.assigned_to", _, TgIds.UNASSIGNED_UUID)),
-        NonEmptyList.fromList(filter.milestoneIds).map(inOrNull(fr"tv.milestone_id", _, TgIds.NO_MILESTONE_UUID)),
+        NonEmptyList.fromList(filter.milestoneIds).map(inMilestones),
+        NonEmptyList
+          .fromList(filter.milestoneStepIds)
+          .map(inOrNull(fr"tv.milestone_step_id", _, TgIds.NO_MILESTONE_UUID)),
         filter.search.map(_.trim).filter(_.nonEmpty).map(matchesText),
         filter.timeboxId.map(inLatestTimeboxVersion),
         Option.unless(filter.includeArchived)(fr"not task.archived")
       )
+
+  // A task is in the milestone of its step; the marker id stands for the tasks without a step.
+  private def inMilestones(ids: NonEmptyList[UUID]): Fragment = {
+    val inMilestone = NonEmptyList.fromList(ids.filterNot(_ == TgIds.NO_MILESTONE_UUID)).map { milestoneIds =>
+      fr"tv.milestone_step_id in (select id from" ++ MILESTONE_STEP_TABLE_FRAG ++ fr"where" ++
+        Fragments.in(fr"milestone_id", milestoneIds) ++ fr")"
+    }
+    val withoutStep = Option.when(ids.exists(_ == TgIds.NO_MILESTONE_UUID))(fr"tv.milestone_step_id is null")
+    Fragments.or(NonEmptyList.fromListUnsafe(inMilestone.toList ++ withoutStep.toList))
+  }
 
   private def inLatestTimeboxVersion(timeboxId: UUID): Fragment =
     fr"task.id in (select ptv.task_id from" ++ TIMEBOX_VERSION_TASK_TABLE_FRAG ++ fr"tvt join" ++
@@ -306,6 +320,10 @@ object TaskVersionRepoImpl {
   val TASK_VERSION_TABLE_FRAG: Fragment = Fragment.const(TASK_VERSION_TABLE)
 
   implicit val taskPriorityCodec: Meta[TaskPriority] = Meta[Int].imap(TaskPriority.withValue)(_.value)
+
+  // The step of the latest version, which gives the milestone of the task; tasks without a step stay (left join).
+  def milestoneStepJoin: Fragment =
+    fr"left join" ++ MILESTONE_STEP_TABLE_FRAG ++ fr"on milestone_step.id = tv.milestone_step_id"
 
   // Latest task_version row per task, correlated on the outer `task` row via LATERAL.
   def latestVersionLateral: Fragment =

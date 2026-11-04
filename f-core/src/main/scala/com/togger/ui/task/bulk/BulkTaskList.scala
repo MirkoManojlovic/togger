@@ -44,14 +44,14 @@ object BulkTaskList {
     tasks.map(task => BulkTask.withDefaults(task.key, task.name, defaults))
 
   /** Drops what a task refers to that the project no longer has, so a restored draft can't send ids the backend would
-    * refuse: a missing status becomes the default one, a missing label, milestone or assignee is simply removed.
+    * refuse: a missing status becomes the default one, a missing label, step or assignee is simply removed.
     */
   def sanitize(tasks: Seq[BulkTask], lookups: BulkLookups, defaults: BulkTaskDefaults): Seq[BulkTask] =
     tasks.map { task =>
       task.copy(
         statusId = task.statusId.filter(id => lookups.statuses.exists(_.id == id)).orElse(defaults.statusId),
         labelIds = task.labelIds.filter(id => lookups.labels.exists(_.id == id)),
-        milestoneId = task.milestoneId.filter(id => lookups.milestones.exists(_.id == id)),
+        milestoneStepId = task.milestoneStepId.filter(id => lookups.steps.exists(_.id == id)),
         assigneeId = task.assigneeId.filter(id => lookups.members.exists(_.id == id))
       )
     }

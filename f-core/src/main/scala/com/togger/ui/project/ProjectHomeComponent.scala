@@ -8,6 +8,7 @@ import com.togger.common.TgClock
 import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindMilestoneSummaryResp
 import com.togger.dto.FindProjectResp
 import com.togger.dto.FindTaskRespFull
@@ -28,6 +29,8 @@ import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepsGraphComponent
 import com.togger.ui.milestone.MilestoneSummaryFeService
 import com.togger.ui.milestone.MilestoneTabs
 import com.togger.ui.milestone.MilestoneTaskRows
@@ -52,6 +55,7 @@ class ProjectHomeComponent(
   projectService: ProjectService,
   milestoneService: MilestoneFeService,
   milestoneSummaryService: MilestoneSummaryFeService,
+  milestoneStepService: MilestoneStepFeService,
   timeboxService: TimeboxFeService,
   taskService: TaskFeService,
   taskStatusService: TaskStatusFeService,
@@ -69,7 +73,10 @@ class ProjectHomeComponent(
   private val projectVar = Var(Option.empty[FindProjectResp])
   private val milestonesVar = Var(Seq.empty[(FindMilestoneResp, Seq[FindTaskRespFull])])
   private val summariesVar = Var(Map.empty[UUID, Seq[FindMilestoneSummaryResp]])
+  private val stepsVar = Var(Map.empty[UUID, Seq[FindMilestoneStepResp]])
   private val allMilestonesVar = Var(Seq.empty[FindMilestoneResp])
+
+  private def allStepsNow(): Seq[FindMilestoneStepResp] = stepsVar.now().values.flatten.toSeq
   private val timeboxesVar = Var(Seq.empty[(FindTimeboxResp, Seq[FindTaskRespFull])])
   private val allStatusesVar = Var(Seq.empty[FindTaskStatusResp])
   private val inFlightVar = Var(Seq.empty[(FindTaskStatusResp, Seq[FindTaskRespFull])])
@@ -115,6 +122,17 @@ class ProjectHomeComponent(
       }
       .map(loaded => summariesVar.set(loaded.toMap))
 
+  /** The steps of the milestones of the project by milestone, by stage and then by start date; a failure leaves the
+    * milestones without bars.
+    */
+  private def loadSteps(): IO[Unit] =
+    milestoneStepService.findByProjectId(projectId).map { response =>
+      val steps = response.fold(_ => Seq.empty, _.body.getOrElse(Seq.empty))
+      stepsVar.set(
+        steps.groupBy(_.milestoneId).view.mapValues(_.sortBy(step => (step.position, step.startDate.toEpochDay))).toMap
+      )
+    }
+
   /** Every milestone of the project, to name the milestone of a task that is not in an active one. */
   private def loadAllMilestones(): IO[Unit] =
     PaginatedLoader.loadAll(milestoneService.findByProjectId(projectId, MilestoneFilter.empty, _)).flatMap {
@@ -157,6 +175,7 @@ class ProjectHomeComponent(
         _ <- loadMilestones()
         _ <- loadSummaries()
         _ <- if (TimeboxUi.visible) loadTimeboxes() else IO.unit
+        _ <- loadSteps()
         _ <- loadInFlightTasks()
       } yield ()
     )
@@ -194,6 +213,7 @@ class ProjectHomeComponent(
           bordered = true
         ).element
       ),
+      new MilestoneStepsGraphComponent(stepsVar.signal.map(_.getOrElse(milestone.id, Seq.empty))).element,
       milestoneTabs(
         MilestoneTaskRows(tasks, statuses, days, milestone.dueDate, tgClock.currentDate(), workDays),
         summariesVar.signal.map(_.getOrElse(milestone.id, Seq.empty)),
@@ -210,6 +230,7 @@ class ProjectHomeComponent(
       Val(Some((version.startDate, version.endDate))),
       Val(projectVar.now().map(_.members.map(_.id)).getOrElse(Seq.empty)),
       Val(allMilestonesVar.now()),
+      Val(allStepsNow()),
       tgDateFormater,
       tgMarkdown,
       router,
@@ -252,7 +273,8 @@ class ProjectHomeComponent(
         tgMarkdown,
         tgClock,
         showName = true,
-        allMilestonesVar.now()
+        allMilestonesVar.now(),
+        allStepsNow()
       ).element,
       title = "Task preview",
       maxWidthCls = "max-w-[112rem]"
@@ -264,6 +286,7 @@ class ProjectHomeComponent(
       tgDateFormater,
       tgClock,
       allMilestonesVar.now(),
+      allStepsNow(),
       workDays,
       tasks,
       config,

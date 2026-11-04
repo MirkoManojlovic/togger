@@ -166,7 +166,9 @@ object ProjectNavMenu {
       Seq(
         "Milestones" -> ShowMilestonesPage(projectId),
         "Create milestone" -> CreateMilestonePage(projectId),
-        "Milestone history" -> ShowMilestoneHistoryPage(projectId)
+        "Milestone history" -> ShowMilestoneHistoryPage(projectId),
+        "Milestone templates" -> ShowAllMilestoneTemplatesPage(projectId),
+        "Step templates" -> ShowAllMilestoneStepTemplatesPage(projectId)
       )
     )
   ) ++ Option.when(TimeboxUi.visible)(

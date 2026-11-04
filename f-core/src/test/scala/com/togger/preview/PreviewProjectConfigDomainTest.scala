@@ -192,6 +192,7 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
             CreateTaskTemplateReq(DemoIdentity.ProjectId, "Foreign", "x", Some(DemoTaskConfigData.labelId(1, 5)))
           )
         )
+        _ <- s.env.runEmpty(s.templates.deleteTaskTemplateById(seeded.toOption.get.find(_.name == "Chore").get.id))
         created <- s.env.run(
           s.templates.createTaskTemplate(CreateTaskTemplateReq(DemoIdentity.ProjectId, "Chore", "v1", Some(choreLabel)))
         )
@@ -202,8 +203,8 @@ class PreviewProjectConfigDomainTest extends AsyncJsWordSpec {
         deleted <- s.env.runEmpty(s.templates.deleteTaskTemplateById(id))
         again <- s.env.runEmpty(s.templates.deleteTaskTemplateById(id))
       } yield {
-        seeded.map(_.map(_.name)) shouldBe Right(List("Bug report", "Definition of done", "Feature request"))
-        seeded.map(_.find(_.name == "Bug report").flatMap(_.taskLabelName)) shouldBe Right(Some("bug"))
+        seeded.map(_.map(_.name).sorted) shouldBe Right(List("Bug", "Chore", "Docs", "Feature", "Refactor", "Test"))
+        seeded.map(_.find(_.name == "Bug").flatMap(_.taskLabelName)) shouldBe Right(Some("bug"))
         isBadRequest(clash) shouldBe true
         isBadRequest(foreign) shouldBe true
         created.map(_.taskLabelName) shouldBe Right(Some("chore"))

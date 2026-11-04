@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
 import com.togger.task.Link
@@ -26,7 +27,9 @@ class DataImportServiceTest extends ExportImportTestSupport {
     milestoneId: UUID,
     templateId: UUID,
     timeboxId: UUID,
-    promptId: UUID
+    promptId: UUID,
+    stepTemplateId: UUID,
+    milestoneTemplateId: UUID
   )
 
   private def createFullProject(exportPath: os.Path) =
@@ -48,6 +51,14 @@ class DataImportServiceTest extends ExportImportTestSupport {
       _ <- tgPromptTemplateVersionRepo.insert(
         TgPromptTemplateVersion(UUID.randomUUID(), prompt.id, "Prompt", "Prompt text", nowAsInstant)
       )
+      stepTemplateId <- createMilestoneStepTemplate(savedProject.id, account.id, "Design", "Design description")
+      milestoneTemplateId <- createMilestoneTemplate(
+        savedProject.id,
+        account.id,
+        "New feature",
+        "Feature description",
+        List(List(stepTemplateId), List(stepTemplateId))
+      )
       timebox <- timeboxRepo.insert(Timebox(UUID.randomUUID(), savedProject.id, nowAsInstant))
       timeboxVersion <- timeboxVersionRepo.insert(
         TimeboxVersion(
@@ -62,7 +73,17 @@ class DataImportServiceTest extends ExportImportTestSupport {
       )
       taskVersion <- taskVersionRepo.findLatestByTaskId(taskId)
       _ <- timeboxVersionRepo.insertPlannedTasks(timeboxVersion.version, List(taskVersion.version))
-    } yield Fixture(account.id, savedProject.id, taskId, milestoneId, template.id, timebox.id, prompt.id)
+    } yield Fixture(
+      account.id,
+      savedProject.id,
+      taskId,
+      milestoneId,
+      template.id,
+      timebox.id,
+      prompt.id,
+      stepTemplateId,
+      milestoneTemplateId
+    )
 
   private def resultOf(result: DataImportResult, entityType: DataExportEntityType): List[DataImportEntityResult] =
     result.results.filter(_.entityType == entityType)
@@ -108,6 +129,12 @@ class DataImportServiceTest extends ExportImportTestSupport {
         restoredLabels <- taskLabelAssignmentRepo.findLabelsByTaskId(fixture.taskId).transact(transactor)
         restoredMilestone <- milestoneRepo.findById(fixture.milestoneId).transact(transactor)
         restoredTemplate <- taskTemplateRepo.findFullById(fixture.templateId).transact(transactor)
+        restoredSteps <- milestoneStepVersionRepo.findLatestByMilestoneId(fixture.milestoneId).transact(transactor)
+        restoredTaskVersion <- taskVersionRepo.findLatestByTaskId(fixture.taskId).transact(transactor)
+        restoredStepTemplate <- milestoneStepTemplateRepo.findFullById(fixture.stepTemplateId).transact(transactor)
+        restoredMilestoneTemplate <- milestoneTemplateRepo
+          .findFullById(fixture.milestoneTemplateId)
+          .transact(transactor)
         restoredTimebox <- timeboxRepo.findById(fixture.timeboxId).transact(transactor)
         restoredPrompt <- tgPromptTemplateRepo.findFullById(fixture.promptId).transact(transactor)
         restoredPlanned <- taskVersionRepo
@@ -126,6 +153,8 @@ class DataImportServiceTest extends ExportImportTestSupport {
           DataExportEntityType.LogEntry,
           DataExportEntityType.Milestone,
           DataExportEntityType.TaskTemplate,
+          DataExportEntityType.MilestoneStepTemplate,
+          DataExportEntityType.MilestoneTemplate,
           DataExportEntityType.Timebox,
           DataExportEntityType.TgPromptTemplate,
           DataExportEntityType.TaskStatus,
@@ -138,6 +167,17 @@ class DataImportServiceTest extends ExportImportTestSupport {
         cp(restoredLabels.map(_.name) shouldBe List("Label"))
         cp(restoredMilestone.id shouldBe fixture.milestoneId)
         cp(restoredTemplate.taskLabelName shouldBe Some("Label"))
+        cp(restoredSteps.map(s => (s.name, s.status)) shouldBe List(("Milestone step", MilestoneStepStatus.InProgress)))
+        cp(restoredStepTemplate.latestVersion.name shouldBe "Design")
+        cp(restoredTaskVersion.milestoneStepId shouldBe restoredSteps.headOption.map(_.milestoneStepId))
+        cp(restoredTaskVersion.milestoneStepId.isDefined shouldBe true)
+        cp(restoredMilestoneTemplate.latest.version.name shouldBe "New feature")
+        cp(
+          restoredMilestoneTemplate.latest.steps.map(_.stepTemplateId) shouldBe List(
+            fixture.stepTemplateId,
+            fixture.stepTemplateId
+          )
+        )
         cp(restoredTimebox.id shouldBe fixture.timeboxId)
         cp(restoredPrompt.tgPromptTemplate.createdBy shouldBe fixture.accountId)
         cp(restoredPrompt.latestVersion.prompt shouldBe "Prompt text")
@@ -345,6 +385,96 @@ class DataImportServiceTest extends ExportImportTestSupport {
         )
         cp.reportAll()
       }
+    }
+
+    "restore the steps that run in parallel with the same position" in { transactor =>
+      val exportPath = newExportPath()
+      for {
+        fixture <- createFullProject(exportPath).transact(transactor)
+        _ <- (for {
+          _ <- createMilestoneStepAt(fixture.milestoneId, "Backend", 1)
+          _ <- createMilestoneStepAt(fixture.milestoneId, "Frontend", 1)
+        } yield ()).transact(transactor)
+        exported <- newExportService(transactor).exportProject(fixture.projectId, fixture.accountId)
+        root = exported.toOption.get.pathResults.head.exportPath
+        _ <- deleteProjectContent.transact(transactor)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root)
+        restoredSteps <- milestoneStepVersionRepo.findLatestByMilestoneId(fixture.milestoneId).transact(transactor)
+      } yield {
+        imported.toOption.get.results.filter(_.error.isDefined) shouldBe empty
+        restoredSteps.map(s => s.name -> s.position).toSet shouldBe
+          Set("Milestone step" -> 0, "Backend" -> 1, "Frontend" -> 1)
+      }
+    }
+
+    "merge step templates and milestone templates into the ones of the same name the target project has" in {
+      transactor =>
+        val setupTarget = (sourceProjectId: UUID, accountId: UUID) =>
+          for {
+            sourceProject <- projectRepo.findById(sourceProjectId)
+            targetProject <- createSecondProject(sourceProject.organizationId)
+            _ <- projectAccountRepo.insert(ProjectAccount(targetProject.id, accountId, nowAsInstant))
+            design <- createMilestoneStepTemplate(targetProject.id, accountId, "Design", "The default design step")
+            featureId <- createMilestoneTemplate(
+              targetProject.id,
+              accountId,
+              "New feature",
+              "The default",
+              List(List(design))
+            )
+          } yield (targetProject, design, featureId)
+
+        for {
+          fixture <- createFullProject(newExportPath()).transact(transactor)
+          root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+          _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
+          target <- setupTarget(fixture.projectId, fixture.accountId).transact(transactor)
+          (targetProject, targetDesign, targetFeature) = target
+          first <- newImportService(transactor).importProject(targetProject.id, fixture.accountId, root.toString)
+          second <- newImportService(transactor).importProject(targetProject.id, fixture.accountId, root.toString)
+          stepTemplates <- milestoneStepTemplateRepo
+            .findPaginatedFullByProjectId(targetProject.id, com.togger.common.DbPageRequest.default)
+            .transact(transactor)
+          milestoneTemplates <- milestoneTemplateRepo
+            .findPaginatedFullByProjectId(targetProject.id, com.togger.common.DbPageRequest.default)
+            .transact(transactor)
+          featureVersions <- milestoneTemplateVersionRepo
+            .findPaginatedByTemplateId(targetFeature, com.togger.common.DbPageRequest.default)
+            .transact(transactor)
+          featureSteps <- milestoneTemplateVersionRepo
+            .findStepsByVersions(featureVersions.items.map(_.version))
+            .transact(transactor)
+        } yield {
+          val cp = new Checkpoint
+          val firstResults = first.toOption.get
+          cp(firstResults.results.filter(_.error.isDefined) shouldBe empty)
+          cp(
+            resultOf(firstResults, DataExportEntityType.MilestoneStepTemplate).map(_.status) shouldBe List(
+              DataImportStatus.Merged
+            )
+          )
+          cp(
+            resultOf(firstResults, DataExportEntityType.MilestoneTemplate).map(_.status) shouldBe List(
+              DataImportStatus.Merged
+            )
+          )
+          cp(stepTemplates.items.map(_.template.id) shouldBe List(targetDesign))
+          cp(milestoneTemplates.items.map(_.template.id) shouldBe List(targetFeature))
+          cp(featureVersions.items.map(_.description).toSet shouldBe Set("The default", "Feature description"))
+          // The steps of the imported version point at the step template of the target, not at the one of the tree.
+          cp(featureSteps.values.flatten.map(_.stepTemplateId).toSet shouldBe Set(targetDesign))
+          cp(
+            resultOf(second.toOption.get, DataExportEntityType.MilestoneStepTemplate).map(_.status) shouldBe List(
+              DataImportStatus.Unchanged
+            )
+          )
+          cp(
+            resultOf(second.toOption.get, DataExportEntityType.MilestoneTemplate).map(_.status) shouldBe List(
+              DataImportStatus.Unchanged
+            )
+          )
+          cp.reportAll()
+        }
     }
 
     "report a task with nothing new in the tree as unchanged" in { transactor =>

@@ -1,6 +1,7 @@
 package com.togger.ui.task.bulk
 
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.dto.FindTaskLabelResp
 import com.togger.dto.FindTaskStatusResp
 import com.togger.dto.SearchAccountDto
@@ -8,6 +9,7 @@ import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 
@@ -34,7 +36,8 @@ case class BulkLookups(
   labels: Seq[FindTaskLabelResp],
   members: Seq[SearchAccountDto],
   milestones: Seq[FindMilestoneResp],
-  workDays: Set[DayOfWeek]
+  workDays: Set[DayOfWeek],
+  steps: Seq[FindMilestoneStepResp] = Seq.empty
 )
 
 object EmojiPrefix {
@@ -53,6 +56,7 @@ object EmojiPrefix {
 object BulkTaskBadges {
 
   val EmptyMilestone = "🏁"
+  val EmptyMilestoneStep = "🪜"
   val EmptyLabels = "🏷️"
   val EmptyAssignee = "👤"
 
@@ -61,7 +65,13 @@ object BulkTaskBadges {
   def of(task: BulkTask, lookups: BulkLookups, today: LocalDate): BulkTaskBadgeRows =
     BulkTaskBadgeRows(
       labelRow = labels(task, lookups),
-      primaryRow = Seq(milestone(task, lookups), priority(task), status(task, lookups), assignee(task, lookups)),
+      primaryRow = Seq(
+        milestone(task, lookups),
+        milestoneStep(task, lookups),
+        priority(task),
+        status(task, lookups),
+        assignee(task, lookups)
+      ),
       dateRow = Seq(
         BadgeSpec(
           dateFormater.asStartDate(task.startDate),
@@ -79,10 +89,16 @@ object BulkTaskBadges {
     )
 
   private def milestone(task: BulkTask, lookups: BulkLookups): BadgeSpec =
-    task.milestoneId
-      .flatMap(id => lookups.milestones.find(_.id == id))
-      .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
+    task.milestoneStepId
+      .flatMap(id => MilestoneStepLabels.milestoneOf(id, lookups.steps, lookups.milestones))
+      .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
       .getOrElse(BadgeSpec(EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone)))
+
+  private def milestoneStep(task: BulkTask, lookups: BulkLookups): BadgeSpec =
+    task.milestoneStepId
+      .flatMap(id => lookups.steps.find(_.id == id))
+      .map(found => BadgeSpec(found.name, TgBadgeColor.Alternative, Some(BulkEditKind.MilestoneStep)))
+      .getOrElse(BadgeSpec(EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep)))
 
   private def priority(task: BulkTask): BadgeSpec =
     BadgeSpec(task.priority.shortCode, task.priority.badgeColor, Some(BulkEditKind.Priority))

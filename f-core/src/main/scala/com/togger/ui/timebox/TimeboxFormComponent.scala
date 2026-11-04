@@ -31,6 +31,8 @@ import com.togger.ui.components.TgHtmlTable
 import com.togger.ui.components.TgHtmlTable.createTd
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepBadges
+import com.togger.ui.milestone.MilestoneStepFeService
 import com.togger.ui.milestone.MilestoneSummaryRangeCalendar
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
@@ -74,6 +76,7 @@ class TimeboxFormComponent(
   taskStatusFeService: TaskStatusFeService,
   taskLabelFeService: TaskLabelFeService,
   milestoneService: MilestoneFeService,
+  milestoneStepService: MilestoneStepFeService,
   projectService: ProjectService,
   tgDateFormater: TgDateFormater,
   stagingStore: TimeboxStagingStore,
@@ -104,7 +107,8 @@ class TimeboxFormComponent(
     projectService,
     taskStatusFeService,
     taskLabelFeService,
-    milestoneService
+    milestoneService,
+    Some(milestoneStepService)
   )
 
   // The list is paged, searched and filtered here, in the form, so its params are kept in a Var rather than in the URL.
@@ -338,6 +342,9 @@ class TimeboxFormComponent(
         .flatMap(id => lookups.milestonesVar.now().find(_.id == id))
         .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative, Some(BulkEditKind.Milestone)))
         .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestone, TgBadgeColor.Gray, Some(BulkEditKind.Milestone))),
+      MilestoneStepBadges
+        .of(dto.milestoneStepId, lookups.stepsVar.now(), editable = true)
+        .getOrElse(BadgeSpec(BulkTaskBadges.EmptyMilestoneStep, TgBadgeColor.Gray, Some(BulkEditKind.MilestoneStep))),
       BadgeSpec(dto.priority.shortCode, dto.priority.badgeColor, Some(BulkEditKind.Priority)),
       BadgeSpec(dto.taskStatus.badgeText, dto.taskStatus.badgeColor, Some(BulkEditKind.Status)),
       dto.assignedTo
@@ -380,18 +387,25 @@ class TimeboxFormComponent(
       labels = lookups.taskLabelsVar.now().taskLabels,
       members = lookups.projectVar.now().members,
       milestones = lookups.milestonesVar.now(),
+      steps = lookups.stepsVar.now(),
       workDays = lookups.projectVar.now().workDays.map(DayOfWeek.of)
     )
 
   private val lookupsSignal: Signal[BulkLookups] =
     lookups.statusesVar.signal
-      .combineWith(lookups.taskLabelsVar.signal, lookups.projectVar.signal, lookups.milestonesVar.signal)
-      .map { case (statuses, labels, project, milestones) =>
+      .combineWith(
+        lookups.taskLabelsVar.signal,
+        lookups.projectVar.signal,
+        lookups.milestonesVar.signal,
+        lookups.stepsVar.signal
+      )
+      .map { case (statuses, labels, project, milestones, steps) =>
         BulkLookups(
           statuses = statuses.taskStatuses,
           labels = labels.taskLabels,
           members = project.members,
           milestones = milestones,
+          steps = steps,
           workDays = project.workDays.map(DayOfWeek.of)
         )
       }

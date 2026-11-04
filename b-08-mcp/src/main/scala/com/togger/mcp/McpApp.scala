@@ -1,5 +1,7 @@
 package com.togger.mcp
 
+import cats.effect.{Deferred, IO}
+import cats.effect.unsafe.implicits.global
 import chimp.server.McpServer
 import com.togger.mcp.tools.*
 import sttp.client4.DefaultSyncBackend
@@ -9,7 +11,7 @@ import sttp.shared.Identity
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.netty.sync.NettySyncServer
 
-object McpApp:
+object McpApp extends TgLogging:
   private val DesktopMode = "desktop"
   private val LoginAttempts = 30
   private val LoginRetryDelayMillis = 2000L
@@ -21,27 +23,35 @@ object McpApp:
 
     loginWithRetry(client, config) match
       case Left(error) =>
-        scribe.error(s"Cannot log in to the Togger backend: $error")
+        logger.error(s"Cannot log in to the Togger backend: $error")
         sys.exit(1)
-      case Right(_) => scribe.info(s"Logged in to ${config.backendUrl} as ${config.email}")
+      case Right(_) => logger.info(s"Logged in to ${config.backendUrl} as ${config.email}")
 
     val tools =
       OrganizationTools(client).all ++ ProjectTools(client).all ++ TaskTools(client).all ++
-        MilestoneTools(client).all ++ AccountTools(client).all
+        MilestoneTools(client).all ++ MilestoneStepTools(client).all ++ MilestoneTemplateTools(client).all ++
+        AccountTools(client).all
 
     val mcpServer = McpServer(tools = tools)
       .name("togger-mcp")
       .version(Option(getClass.getPackage.getImplementationVersion).getOrElse("dev"))
       .instructions(
-        "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks and milestones. " +
+        "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks, milestones with their steps, and milestone templates. " +
           "Start with list_organizations, then list_projects, then get_project_overview. All ids are UUIDs."
       )
 
     if args.headOption.contains(DesktopMode) then
-      scribe.info("Desktop mode: stopping when the Togger desktop app is no longer running")
-      val _ = CheckDesktopAppRunning(onStopped = () => sys.exit(0)).start()
+      logger.info("Desktop mode: stopping when the Togger desktop app is no longer running")
+      val condition = CheckDesktopAppRunningCondition()
+      val watch =
+        for
+          stopSignal <- Deferred[IO, Unit]
+          _ <- CheckDesktopAppRunning().run(() => condition.isRunning, stopSignal)
+          _ <- IO(sys.exit(0))
+        yield ()
+      watch.unsafeRunAndForget()
 
-    scribe.info(s"Togger MCP listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools")
+    logger.info(s"Togger MCP listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools")
     NettySyncServer()
       .host(config.host)
       .port(config.port)
@@ -64,7 +74,7 @@ object McpApp:
       .map { attempt =>
         val result = client.login()
         result.left.foreach { error =>
-          scribe.warn(s"Login attempt $attempt/$LoginAttempts to ${config.backendUrl} failed: $error")
+          logger.warn(s"Login attempt $attempt/$LoginAttempts to ${config.backendUrl} failed: $error")
           if attempt < LoginAttempts then Thread.sleep(LoginRetryDelayMillis)
         }
         result

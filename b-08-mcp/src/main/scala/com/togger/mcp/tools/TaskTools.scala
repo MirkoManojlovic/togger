@@ -13,6 +13,7 @@ case class ListTasksInput(
   labelIds: Option[List[String]],
   assigneeIds: Option[List[String]],
   milestoneIds: Option[List[String]],
+  milestoneStepIds: Option[List[String]],
   search: Option[String],
   timeboxId: Option[String],
   includeArchived: Option[Boolean],
@@ -51,7 +52,9 @@ class TaskTools(client: TgBackendClient):
       |Filters are optional and combined with AND; several values inside one filter are combined with OR.
       |statusIds: UUIDs from list_task_statuses. priorities: 1 Critical, 2 High, 3 Medium, 4 Low, 5 Planned.
       |labelIds: UUIDs from list_task_labels (task has at least one). assigneeIds: UUIDs from search_accounts,
-      |or 00000000-0000-0000-0000-000000000000 for unassigned tasks. milestoneIds: UUIDs from list_milestones.
+      |or 00000000-0000-0000-0000-000000000000 for unassigned tasks. milestoneIds: UUIDs from list_milestones (a task
+      |is in the milestone of its step; 00000000-0000-0000-0000-000000000000 matches tasks without a step).
+      |milestoneStepIds: UUIDs from list_milestone_steps (the same all-zero id matches tasks without a step).
       |search: case-insensitive text in task name or description. timeboxId: only tasks planned in that timebox.
       |includeArchived defaults to false. Paged: page starts at 1, size is 1..100, default 20.""".stripMargin
   ).input[ListTasksInput]
@@ -63,6 +66,7 @@ class TaskTools(client: TgBackendClient):
           labelIds <- uuids("labelIds", input.labelIds)
           assigneeIds <- uuids("assigneeIds", input.assigneeIds)
           milestoneIds <- uuids("milestoneIds", input.milestoneIds)
+          milestoneStepIds <- uuids("milestoneStepIds", input.milestoneStepIds)
           timeboxId <- input.timeboxId.filter(_.nonEmpty).fold(Right(None))(uuid("timeboxId", _).map(Some(_)))
           tasks <- client.get(
             List("task", "project-id", projectId),
@@ -71,6 +75,7 @@ class TaskTools(client: TgBackendClient):
               repeated("labelId", labelIds) ++
               repeated("assigneeId", assigneeIds) ++
               repeated("milestoneId", milestoneIds) ++
+              repeated("milestoneStepId", milestoneStepIds) ++
               input.search.map(_.trim).filter(_.nonEmpty).map("search" -> _).toList ++
               timeboxId.map("timeboxId" -> _).toList ++
               input.includeArchived.map("includeArchived" -> _.toString).toList ++

@@ -17,8 +17,13 @@ import scala.collection.mutable
 /** Tasks with several versions, links, log entries over the last two months, and a few timeboxes. */
 object DemoTasksData {
 
-  def tasks(today: LocalDate, now: Instant, projects: List[DemoProject]): List[DemoTask] =
-    new TaskBuilder(today, now, projects).build()
+  def tasks(
+    today: LocalDate,
+    now: Instant,
+    projects: List[DemoProject],
+    milestones: List[DemoMilestone]
+  ): List[DemoTask] =
+    new TaskBuilder(today, now, projects, milestones).build()
 
   /** The timeboxes plan the current version of some tasks, identified by the spec numbers of [[taskSpecs]]. */
   def timeboxes(today: LocalDate, tasks: List[DemoTask]): List[DemoTimebox] = {
@@ -81,7 +86,12 @@ object DemoTasksData {
     )
   }
 
-  private class TaskBuilder(today: LocalDate, now: Instant, projects: List[DemoProject]) {
+  private class TaskBuilder(
+    today: LocalDate,
+    now: Instant,
+    projects: List[DemoProject],
+    milestones: List[DemoMilestone]
+  ) {
     private val counters = mutable.Map.empty[Int, Int]
 
     private def nextId(group: Int): UUID = {
@@ -94,6 +104,16 @@ object DemoTasksData {
       day.atTime(hour, minute).toInstant(ZoneOffset.UTC)
 
     def build(): List[DemoTask] = taskSpecs.zipWithIndex.map { case (spec, index) => buildTask(spec, index + 1) }
+
+    /** The step of the milestone that holds the due date of the task, else the last step that starts before it. */
+    private def stepOf(milestoneId: Option[UUID], due: LocalDate): Option[UUID] =
+      milestoneId.flatMap(id => milestones.find(_.id == id)).flatMap { milestone =>
+        milestone.steps
+          .find(step => !due.isBefore(step.startDate) && !due.isAfter(step.dueDate))
+          .orElse(milestone.steps.filterNot(_.startDate.isAfter(due)).lastOption)
+          .orElse(milestone.steps.headOption)
+          .map(_.id)
+      }
 
     private def projectOf(projectIndex: Int): Option[DemoProject] =
       projects.find(_.id == DemoOrganizationsData.projectIds(projectIndex))
@@ -138,6 +158,7 @@ object DemoTasksData {
           versionAt,
           if (isLast || steps < 3) spec.priority else lowered(spec.priority),
           spec.milestone,
+          stepOf(spec.milestone, due),
           start,
           if (isLast || steps < 3 || !due.minusDays(5).isAfter(start)) due else workDayFrom(due.minusDays(5), workDays),
           if (finished) end else None

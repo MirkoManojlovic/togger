@@ -27,33 +27,33 @@ class BulkEditTest extends AnyWordSpec with Matchers {
       result.map(_.priority) shouldBe Seq(TaskPriority.High, TaskPriority.Medium, TaskPriority.High)
     }
 
-    "set the status, milestone and assignee" in {
+    "set the status, step and assignee" in {
       val (status, milestone, assignee) = (UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val result = BulkTaskEditor(
         BulkTaskEditor(
           BulkTaskEditor(Seq(t1), Set(t1.key), BulkEdit.SetStatus(status), workDays),
           Set(t1.key),
-          BulkEdit.SetMilestone(Some(milestone)),
+          BulkEdit.SetMilestoneStep(Some(milestone)),
           workDays
         ),
         Set(t1.key),
         BulkEdit.SetAssignee(Some(assignee)),
         workDays
       )
-      (result.head.statusId, result.head.milestoneId, result.head.assigneeId) shouldBe
+      (result.head.statusId, result.head.milestoneStepId, result.head.assigneeId) shouldBe
         (Some(status), Some(milestone), Some(assignee))
     }
 
-    "clear a milestone and an assignee" in {
-      val set = t1.copy(milestoneId = Some(UUID.randomUUID()), assigneeId = Some(UUID.randomUUID()))
+    "clear a step and an assignee" in {
+      val set = t1.copy(milestoneStepId = Some(UUID.randomUUID()), assigneeId = Some(UUID.randomUUID()))
       val key = Set(set.key)
       val cleared = BulkTaskEditor(
-        BulkTaskEditor(Seq(set), key, BulkEdit.SetMilestone(None), workDays),
+        BulkTaskEditor(Seq(set), key, BulkEdit.SetMilestoneStep(None), workDays),
         key,
         BulkEdit.SetAssignee(None),
         workDays
       )
-      (cleared.head.milestoneId, cleared.head.assigneeId) shouldBe (None, None)
+      (cleared.head.milestoneStepId, cleared.head.assigneeId) shouldBe (None, None)
     }
 
     "add, remove and replace labels" in {

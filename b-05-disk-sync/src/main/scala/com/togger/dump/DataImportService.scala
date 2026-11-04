@@ -148,6 +148,13 @@ class DataImportService(
             templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(t =>
               dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
             )
+            stepTemplates <- mergeStepTemplates(projectId, read, remap)
+            stepTemplateTargets <- IO.pure(stepTemplates._1)
+            milestoneTemplates <- mergeAll[MilestoneTemplateDumpData](
+              projectId,
+              read,
+              DataExportEntityType.MilestoneTemplate
+            )(t => dataImportRepo.mergeMilestoneTemplate(remap.milestoneTemplate(t, stepTemplateTargets)))
             timeboxes <- mergeAll[TimeboxDumpData](projectId, read, DataExportEntityType.Timebox)(t =>
               dataImportRepo.mergeTimebox(remap.timebox(t))
             )
@@ -168,10 +175,34 @@ class DataImportService(
             DataImportResult(
               importPath,
               statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                milestones ++ tasks ++ logEntries ++ templates ++ timeboxes ++ prompts ++ members
+                milestones ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
             )
           )
         }
+    }
+  }
+
+  /** Merges the milestone step templates. The milestone templates refer to them, so the ids they were merged into are
+    * returned together with the results.
+    */
+  private def mergeStepTemplates(
+    projectId: UUID,
+    read: TreeReader,
+    remap: Remapper
+  ): IO[(Map[UUID, UUID], List[DataImportEntityResult])] = {
+    val (malformed, dumps) = read.all[MilestoneStepTemplateDumpData](DataExportEntityType.MilestoneStepTemplate)
+    val remapped = dumps.map(remap.milestoneStepTemplate)
+    dataImportRepo.stepTemplateTargets(projectId, remapped).transact(transactor).flatMap { targets =>
+      remapped
+        .sortBy(_.template.id)
+        .traverse { dump =>
+          dataImportRepo
+            .mergeMilestoneStepTemplate(dump, targets.get(dump.template.id))
+            .transact(transactor)
+            .attempt
+            .map(_.fold(e => failed(DataExportEntityType.MilestoneStepTemplate, dump.template.id, e), identity))
+        }
+        .map(results => targets -> (malformed ++ results))
     }
   }
 
@@ -261,6 +292,20 @@ class DataImportService(
       data.copy(
         logEntry = data.logEntry.copy(createdBy = account(data.logEntry.createdBy)),
         versions = data.versions.map(v => v.copy(createdBy = account(v.createdBy)))
+      )
+
+    def milestoneStepTemplate(data: MilestoneStepTemplateDumpData): MilestoneStepTemplateDumpData =
+      data.copy(template = data.template.copy(projectId = projectIdDb, createdBy = account(data.template.createdBy)))
+
+    /** The steps point at the step templates that the project has, whichever id the dump knows them by. */
+    def milestoneTemplate(
+      data: MilestoneTemplateDumpData,
+      stepTemplateTargets: Map[UUID, UUID]
+    ): MilestoneTemplateDumpData =
+      data.copy(
+        template = data.template.copy(projectId = projectIdDb, createdBy = account(data.template.createdBy)),
+        versions =
+          data.versions.map(v => v.copy(stages = v.stages.map(_.map(id => stepTemplateTargets.getOrElse(id, id)))))
       )
 
     def milestone(data: MilestoneDumpData): MilestoneDumpData =

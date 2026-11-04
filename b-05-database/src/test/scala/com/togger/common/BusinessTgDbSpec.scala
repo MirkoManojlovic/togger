@@ -14,9 +14,15 @@ import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.milestone.MilestoneDateRepoImpl
 import com.togger.milestone.MilestoneDateVersionRepoImpl
 import com.togger.milestone.MilestoneRepoImpl
+import com.togger.milestone.MilestoneStepRepoImpl
+import com.togger.milestone.MilestoneStepVersionRepoImpl
 import com.togger.milestone.MilestoneSummaryRepoImpl
 import com.togger.milestone.MilestoneSummaryVersionRepoImpl
 import com.togger.milestone.MilestoneVersionRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
 import com.togger.organization.OrganizationAccountRepoImpl
 import com.togger.organization.OrganizationRepoImpl
 import com.togger.project.ProjectAccountRepoImpl
@@ -61,6 +67,13 @@ trait BusinessTgDbSpec extends TgDbSpec {
         TaskLabelAssignmentRepoImpl.TASK_LABEL_ASSIGNMENT_TABLE,
         TaskVersionRepoImpl.TASK_VERSION_TABLE,
         TaskRepoImpl.TASK_TABLE,
+        MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_STEP_TABLE,
+        MilestoneTemplateVersionRepoImpl.MILESTONE_TEMPLATE_VERSION_TABLE,
+        MilestoneTemplateRepoImpl.MILESTONE_TEMPLATE_TABLE,
+        MilestoneStepTemplateVersionRepoImpl.MILESTONE_STEP_TEMPLATE_VERSION_TABLE,
+        MilestoneStepTemplateRepoImpl.MILESTONE_STEP_TEMPLATE_TABLE,
+        MilestoneStepVersionRepoImpl.MILESTONE_STEP_VERSION_TABLE,
+        MilestoneStepRepoImpl.MILESTONE_STEP_TABLE,
         MilestoneSummaryVersionRepoImpl.MILESTONE_SUMMARY_VERSION_TABLE,
         MilestoneSummaryRepoImpl.MILESTONE_SUMMARY_TABLE,
         MilestoneDateVersionRepoImpl.MILESTONE_DATE_VERSION_TABLE,

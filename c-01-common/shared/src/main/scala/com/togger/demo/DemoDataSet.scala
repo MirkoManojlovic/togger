@@ -9,6 +9,7 @@ import com.togger.dto.dataexportconfig.DataExportConfigResp
 import com.togger.dto.dataimportconfig.DataImportConfigResp
 import com.togger.dto.projectmapping.ProjectMappingResp
 import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 import com.togger.task.DefaultTaskLabel
 import com.togger.task.DefaultTaskStatus
 
@@ -70,6 +71,20 @@ case class DemoMilestoneSummary(
   updatedAt: Instant
 )
 
+case class DemoMilestoneStep(
+  id: UUID,
+  createdAt: Instant,
+  version: UUID,
+  name: String,
+  description: String,
+  status: MilestoneStepStatus,
+  position: Int,
+  startDate: LocalDate,
+  dueDate: LocalDate,
+  endDate: Option[LocalDate],
+  updatedAt: Instant
+)
+
 case class DemoMilestone(
   id: UUID,
   projectId: UUID,
@@ -83,7 +98,8 @@ case class DemoMilestone(
   endDate: Option[LocalDate],
   updatedAt: Instant,
   dates: List[DemoMilestoneDate],
-  summaries: List[DemoMilestoneSummary]
+  summaries: List[DemoMilestoneSummary],
+  steps: List[DemoMilestoneStep] = Nil
 )
 
 case class DemoLink(id: UUID, createdAt: Instant, versions: List[LinkVersionDto])
@@ -160,7 +176,8 @@ object DemoDataSet {
 
   def build(today: LocalDate, now: Instant): DemoDataSet = {
     val projects = DemoOrganizationsData.projects
-    val tasks = DemoTasksData.tasks(today, now, projects)
+    val milestones = DemoMilestonesData.milestones(today, now, projects)
+    val tasks = DemoTasksData.tasks(today, now, projects, milestones)
     DemoDataSet(
       accounts = DemoAccountsData.accounts,
       organizations = DemoOrganizationsData.organizations,
@@ -170,7 +187,7 @@ object DemoDataSet {
       taskStatuses = DemoTaskConfigData.statuses,
       taskLabels = DemoTaskConfigData.labels,
       taskTemplates = DemoTaskConfigData.templates(now),
-      milestones = DemoMilestonesData.milestones(today, now, projects),
+      milestones = milestones,
       promptTemplates = DemoAiData.promptTemplates(now),
       aiActions = DemoAiData.actions(now),
       aiActionDefaults = DemoAiData.defaults,

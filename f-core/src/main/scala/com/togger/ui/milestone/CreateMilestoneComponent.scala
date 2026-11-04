@@ -9,17 +9,33 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto.CreateMilestoneDateReq
 import com.togger.dto.CreateMilestoneReq
 import com.togger.dto.FindMilestoneResp
-import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
-import com.togger.style.TgCommonStyleJs.justifyCenterFlex
+import com.togger.dto.FindMilestoneTemplateResp
+import com.togger.milestone.DefaultMilestoneStep
+import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.ShowMilestoneStepsPage
+import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.components.TgTab
+import com.togger.ui.components.TgTabs
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
+import com.togger.ui.milestonetemplate.MilestoneStageEditing
+import com.togger.ui.milestonetemplate.MilestoneTemplateFeService
+import com.togger.ui.milestonetemplate.MilestoneTemplatePicker
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainTextModalMessage
+import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskConfigTableSupport.iconButton
+import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
+import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonDangerCls
+import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BulkTaskDefaults
 import com.togger.ui.toast.Toast
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -39,9 +55,13 @@ case class CreateMilestoneForm(
 class CreateMilestoneComponent(
   milestoneService: MilestoneFeService,
   milestoneDateService: MilestoneDateFeService,
+  milestoneTemplateService: MilestoneTemplateFeService,
   spinnerService: SpinnerService,
   tgClock: TgClock,
+  tgDateFormater: TgDateFormater,
   projectService: ProjectService,
+  router: TgRouter[FrontendPage],
+  modalFactory: ModalFactory,
   projectId: UUID,
   val toast: Toast
 )(implicit ioRuntime: IORuntime)
@@ -59,6 +79,68 @@ class CreateMilestoneComponent(
         )
     )
     .unsafeRunAndForget()
+
+  private val templatesVar = Var(Seq.empty[FindMilestoneTemplateResp])
+  private val selectedTemplateVar = Var(Option.empty[UUID])
+
+  spinnerService
+    .runWithSpinner(milestoneTemplateService.findAllByProjectId(projectId))
+    .map(_.foreach(success => templatesVar.set(success.body.getOrElse(Seq.empty))))
+    .unsafeRunAndForget()
+
+  private val milestoneRange: Signal[(String, String)] =
+    formState.signal.map(form => form.startDate -> form.dueDate).distinct
+
+  /** The steps being created by stage: the steps of a stage run in parallel. */
+  val milestoneStepsVar = Var(List.empty[List[CreateMilestoneStepComponent]])
+
+  private def newStepComponent(draft: MilestoneStepDraft) =
+    new CreateMilestoneStepComponent(draft, milestoneRange, workDaysVar.signal, tgClock)
+
+  /** The template's steps replace the current ones, with the milestone range spread evenly over them. */
+  private def applyTemplate(template: Option[FindMilestoneTemplateResp]): Unit = {
+    selectedTemplateVar.set(template.map(_.id))
+    val form = formState.now()
+    val drafts = template.fold(List.empty[MilestoneStepDraft])(chosen =>
+      MilestoneStepsDraft.fromTemplate(chosen.steps, form.startDate, form.dueDate, workDaysVar.now())
+    )
+    val stages = template.fold(List.empty[Int])(_.steps.map(_.stage).toList)
+    milestoneStepsVar.set(MilestoneStageEditing.groupByStage(stages.zip(drafts.map(newStepComponent))))
+  }
+
+  private def addStep(): Unit = {
+    val form = formState.now()
+    milestoneStepsVar.update(
+      MilestoneStageEditing.add(
+        _,
+        newStepComponent(MilestoneStepDraft(startDate = form.startDate, dueDate = form.dueDate))
+      )
+    )
+  }
+
+  /** Spreads the milestone range over the stages again, whatever was typed; parallel steps get the same dates. */
+  private def spreadStepDates(): Unit = {
+    val stages = milestoneStepsVar.now()
+    val form = formState.now()
+    val ranges = MilestoneStepsDraft.spreadStages(
+      MilestoneStageEditing.stageIndexes(stages),
+      form.startDate,
+      form.dueDate,
+      workDaysVar.now()
+    )
+    stages.flatten.zip(ranges).foreach { case (step, (start, due)) => step.setAutomaticDates(start, due) }
+  }
+
+  /** While no step has its own dates, the steps follow the milestone range when that changes. */
+  private val followMilestoneRange: Observer[Unit] = Observer[Unit] { _ =>
+    val steps = milestoneStepsVar.now().flatten
+    if (steps.nonEmpty && !steps.exists(_.datesEdited)) spreadStepDates()
+  }
+
+  private val stepsHaveErrors: Signal[Boolean] =
+    milestoneStepsVar.signal
+      .flatMapSwitch(stages => Signal.combineSeq(stages.flatten.map(_.errors)))
+      .map(_.exists(_.nonEmpty))
 
   /** A new milestone starts on the next work day after next Monday and lasts the default number of work days. */
   private def applyProjectWorkDays(workDays: Set[DayOfWeek]): Unit = {
@@ -116,20 +198,37 @@ class CreateMilestoneComponent(
       .sequence
       .void
 
-  lazy val submitter = Observer[(CreateMilestoneForm, Seq[CreateMilestoneDateComponent])] {
-    case (form, dateComponents) =>
-      val dto = CreateMilestoneReq(
-        projectId = form.projectId,
-        name = form.name,
-        description = form.description,
-        startDate = LocalDate.parse(form.startDate),
-        dueDate = LocalDate.parse(form.dueDate)
-      )
-      spinnerService
-        .runWithSpinner(milestoneService.createMilestone(dto))
-        .toastMessageDto(_ => "Milestone created successfully")(createMilestoneDates(_, dateComponents))
-        .unsafeRunAndForget()
-  }
+  private def offerToPlanTasks(milestone: FindMilestoneResp): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(
+        s"Milestone '${milestone.name}' was created. Open its steps now to add the tasks for it?"
+      ),
+      title = "Add tasks to the milestone",
+      confirmButtonMsg = "Open the steps",
+      cancelButtonMsg = "Not now"
+    ) { close =>
+      close()
+      router.route(ShowMilestoneStepsPage(projectId, milestone.id))
+    }
+
+  lazy val submitter =
+    Observer[(CreateMilestoneForm, Seq[CreateMilestoneDateComponent], List[List[MilestoneStepDraft]])] {
+      case (form, dateComponents, stepDrafts) =>
+        val dto = CreateMilestoneReq(
+          projectId = form.projectId,
+          name = form.name,
+          description = form.description,
+          startDate = LocalDate.parse(form.startDate),
+          dueDate = LocalDate.parse(form.dueDate),
+          steps = MilestoneStepsDraft.toStagedRequests(stepDrafts)
+        )
+        spinnerService
+          .runWithSpinner(milestoneService.createMilestone(dto))
+          .toastMessageDto(_ => "Milestone created successfully")(milestone =>
+            createMilestoneDates(milestone, dateComponents) >> IO(offerToPlanTasks(milestone))
+          )
+          .unsafeRunAndForget()
+    }
 
   private val nameInput = formState.tgInputManualErrorLPSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.name),
@@ -138,49 +237,215 @@ class CreateMilestoneComponent(
     tgInputType = TgInputType.Text
   )
 
+  /** The steps as the chart draws them: the steps being created whose dates can be read, never the Shelf step. */
+  private val ganttSteps: Signal[Seq[MilestoneGanttStep]] =
+    milestoneStepsVar.signal
+      .flatMapSwitch { stages =>
+        val rows = MilestoneStageEditing.rows(stages)
+        Signal.combineSeq(rows.map(_.step.formState.signal)).map(rows.zip(_))
+      }
+      .map(_.zipWithIndex.flatMap { case ((at, draft), index) =>
+        for {
+          start <- MilestoneStepsDraft.parseDate(draft.startDate)
+          due <- MilestoneStepsDraft.parseDate(draft.dueDate)
+        } yield MilestoneGanttStep(
+          index.toString,
+          Some(draft.name.trim).filter(_.nonEmpty).getOrElse(s"Step ${at.label}"),
+          start,
+          due,
+          stage = Some(at.stage)
+        )
+      })
+
+  private val stepsGantt = new MilestoneStepsGanttComponent(
+    ganttSteps,
+    milestoneRange.map { case (start, due) =>
+      MilestoneStepsDraft.parseDate(start).zip(MilestoneStepsDraft.parseDate(due)).headOption
+    },
+    workDaysVar.signal,
+    tgDateFormater,
+    tgClock,
+    onDatesChange = Some((step, start, due) =>
+      milestoneStepsVar
+        .now()
+        .flatten
+        .lift(step.key.toInt)
+        .foreach(_.formState.update(_.copy(startDate = start.toString, dueDate = due.toString)))
+    )
+  )
+
   private val descriptionEditor = formState.wysiwygSplitEditorSig(
     inputAndUpdater = selectorAndUpdaterMacro(_.description),
     labelValue = "Milestone description",
     placeholderValue = "Describe the milestone"
   )
 
+  /** `at` is the stage of the step and its place in it; steps of a parallel stage are labelled 2a, 2b, ... */
+  private def stepCard(at: MilestoneStageEditing.Row[CreateMilestoneStepComponent], stageSize: Int): HtmlElement = {
+    def edit(
+      change: MilestoneStageEditing.Stages[CreateMilestoneStepComponent] => MilestoneStageEditing.Stages[
+        CreateMilestoneStepComponent
+      ]
+    ) = milestoneStepsVar.update(change)
+    div(
+      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
+      div(
+        cls("mb-3 flex items-center justify-between"),
+        span(cls("text-sm font-medium text-heading"), s"Step ${at.label}"),
+        div(
+          iconButton(
+            "Move up",
+            span("↑"),
+            rowIconButtonCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.move(_, at.stage, at.indexInStage, -1)))
+          ),
+          iconButton(
+            "Move down",
+            span("↓"),
+            rowIconButtonCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.move(_, at.stage, at.indexInStage, 1)))
+          ),
+          if (at.stage > 0)
+            iconButton(
+              "Run in parallel with the previous stage",
+              span("∥"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.joinPreviousStage(_, at.stage, at.indexInStage)))
+            )
+          else emptyNode,
+          if (stageSize > 1)
+            iconButton(
+              "Run after the others of its stage",
+              span("→"),
+              rowIconButtonCls,
+              rowButtonMarginCls,
+              onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.splitFromStage(_, at.stage, at.indexInStage)))
+            )
+          else emptyNode,
+          iconButton(
+            "Remove step",
+            TgIcons.trashIcon(className = "w-4 h-4"),
+            rowIconButtonDangerCls,
+            rowButtonMarginCls,
+            onClick.mapToUnit --> (_ => edit(MilestoneStageEditing.remove(_, at.stage, at.indexInStage)))
+          )
+        )
+      ),
+      at.step.htmlElement
+    )
+  }
+
+  private val addStepBadge: HtmlElement =
+    TgBadge(text = "+ Add step", color = TgBadgeColor.Alternative, bordered = true, extraCls = "cursor-pointer").element
+      .amend(
+        role("button"),
+        tabIndex(0),
+        onClick --> (_ => addStep()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => addStep())
+      )
+
+  private val spreadDatesBadge: HtmlElement =
+    TgBadge(
+      text = "Spread dates evenly",
+      color = TgBadgeColor.Alternative,
+      bordered = true,
+      extraCls = "cursor-pointer ml-2"
+    ).element
+      .amend(
+        role("button"),
+        tabIndex(0),
+        onClick --> (_ => spreadStepDates()),
+        onKeyDown.filter(event => event.key == "Enter" || event.key == " ").preventDefault --> (_ => spreadStepDates())
+      )
+
+  private val stepsSection: HtmlElement =
+    div(
+      cls("mb-4"),
+      h4(cls("text-sm font-medium text-heading mb-2"), "Steps"),
+      stepsGantt.element,
+      div(
+        cls("mb-4"),
+        child <-- MilestoneTemplatePicker(
+          templatesVar.signal,
+          selectedTemplateVar.signal,
+          Observer[Option[FindMilestoneTemplateResp]](applyTemplate)
+        )
+      ),
+      child.maybe <-- milestoneStepsVar.signal.map(steps =>
+        Option.when(steps.isEmpty)(
+          p(
+            cls("mb-4 text-sm text-body"),
+            s"Without steps, the milestone gets one step, ${DefaultMilestoneStep.Shelf.stepName}, with the dates of the milestone."
+          )
+        )
+      ),
+      children <-- milestoneStepsVar.signal.map(stages =>
+        MilestoneStageEditing.rows(stages).map(at => stepCard(at, stages(at.stage).size))
+      ),
+      addStepBadge,
+      child <-- milestoneStepsVar.signal.map(stages => if (stages.flatten.size > 1) spreadDatesBadge else emptyNode)
+    )
+
+  private val selectedTabVar = Var(EditMilestoneTabsComponent.BasicInformationTabId)
+
+  private val basicInformation: HtmlElement =
+    div(
+      nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
+      div(
+        cls("mb-4 flex flex-col gap-4"),
+        dateBadges.element,
+        MilestoneSummaryRangeCalendar.element(
+          formState.signal.map(form => form.startDate -> form.dueDate).distinct,
+          workDaysVar.signal,
+          (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
+        )
+      ),
+      descriptionEditor.htmlElement.amend(cls("mb-4")),
+      div(
+        cls("mb-4"),
+        h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
+        children <-- milestoneDatesVar.signal.map(dateComponents =>
+          dateComponents.map(
+            _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+          )
+        ),
+        addNewMilestoneDate
+      )
+    )
+
+  private val tabs = new TgTabs(
+    Seq(
+      TgTab(EditMilestoneTabsComponent.BasicInformationTabId, "Basic Information", basicInformation),
+      TgTab(EditMilestoneTabsComponent.StepsTabId, "Steps", stepsSection)
+    ),
+    selectedTabVar
+  )
+
   val element = div(
-    justifyCenterFlex,
+    display.flex,
+    flexDirection.column,
+    alignItems.center,
+    EventStream.merge(milestoneRange.changes.mapToUnit, workDaysVar.signal.changes.mapToUnit) --> followMilestoneRange,
     TgCard
       .headerNoFooter(
         header = TgCard.CardHeader.plainText("Create a milestone", TgCard.CardHeaderSize.H3),
         body = TgCard.HtmlCardContent(
           div(
             form(
-              onSubmit.preventDefault.mapTo(formState.now() -> milestoneDatesVar.now()) --> submitter,
-              nameInput.htmlElement.amend(cls("mb-4 max-w-[60ch]")),
-              div(
-                cls("mb-4 flex flex-col gap-4"),
-                dateBadges.element,
-                MilestoneSummaryRangeCalendar.element(
-                  formState.signal.map(form => form.startDate -> form.dueDate).distinct,
-                  workDaysVar.signal,
-                  (start, due) => formState.update(_.copy(startDate = start.toString, dueDate = due.toString))
-                )
-              ),
-              descriptionEditor.htmlElement.amend(cls("mb-4")),
-              div(
-                cls("mb-4"),
-                h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
-                children <-- milestoneDatesVar.signal.map(dateComponents =>
-                  dateComponents.map(
-                    _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
-                  )
-                ),
-                addNewMilestoneDate
-              ),
-              div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
+              onSubmit.preventDefault.mapTo(
+                (formState.now(), milestoneDatesVar.now(), milestoneStepsVar.now().map(_.map(_.formState.now())))
+              ) --> submitter,
+              tabs.element,
+              div(cls("flex justify-end gap-2"), TgHtmlButton.createSmall(stepsHaveErrors.changes))
             )
           )
         )
       )
       .element
-      .amend(heightAndWidthFitContent)
+      .amend(cls("w-full mb-4"))
   )
 
 }

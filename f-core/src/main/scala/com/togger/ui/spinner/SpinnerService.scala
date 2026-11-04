@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.api.L.span
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.ui.components.TableFilterComponent
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 
@@ -33,8 +34,10 @@ class SpinnerService private (
   def show(): Unit =
     spinnerState.set(true)
 
-  def hide(): Unit =
+  def hide(): Unit = {
     spinnerState.set(false)
+    TableFilterComponent.forgetReopen()
+  }
 
   parentElementForSpinner.amend(
     child.maybe <-- spinnerState.signal.map(shouldShow => Option.when(shouldShow)(spinnerElement))

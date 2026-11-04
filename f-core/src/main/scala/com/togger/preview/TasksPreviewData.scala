@@ -44,6 +44,7 @@ class TasksPreviewData(
   projects: ProjectsPreviewData,
   taskConfig: TaskConfigPreviewData,
   milestones: MilestonesPreviewData,
+  val milestoneSteps: MilestoneStepsPreviewData,
   accounts: AccountsPreviewData,
   taskStats: TaskStatsPreviewData
 ) {
@@ -70,6 +71,9 @@ class TasksPreviewData(
   val timeboxVersions: PreviewCollection[PreviewTimeboxVersion] =
     db.collection[PreviewTimeboxVersion](TasksPreviewData.TimeboxVersionsName, _.version)
 
+  /** The project a milestone is in. */
+  def milestoneProject(milestoneId: UUID): Option[UUID] = milestones.projectIdOf(milestoneId)
+
   taskStats.source = new TaskStatsSource {
     override def statusInUse(statusId: UUID): Boolean = taskVersions.all.exists(_.taskStatusId == statusId)
 
@@ -87,10 +91,18 @@ class TasksPreviewData(
       }
   }
 
+  milestoneSteps.taskSource = (stepIds: Set[UUID]) =>
+    tasks.all
+      .flatMap(task => latestTaskVersion(task.id))
+      .filter(_.milestoneStepId.exists(stepIds.contains))
+      .groupBy(_.milestoneStepId.get)
+      .map { case (stepId, versions) => stepId -> (versions.size -> versions.count(_.endDate.isDefined)) }
+
+  // The steps go with their milestone, and the tasks in them lose their step (and so their milestone).
   milestones.onMilestoneDeleted(milestoneId =>
     taskVersions.all
       .filter(_.milestone.contains(milestoneId))
-      .foreach(version => taskVersions.upsert(version.copy(milestone = None)))
+      .foreach(version => taskVersions.upsert(version.copy(milestone = None, milestoneStepId = None)))
   )
 
   taskConfig.onTaskLabelDeleted(labelId =>

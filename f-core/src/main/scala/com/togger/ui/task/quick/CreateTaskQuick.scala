@@ -23,6 +23,8 @@ import com.togger.ui.components.TaskStatusBadgeColor.TaskStatusBadgeColorOps
 import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.milestone.MilestoneFeService
+import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepLabels
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.modal.ModalStyles
 import com.togger.ui.modal.PlainTextModalMessage
@@ -70,7 +72,8 @@ case class QuickState(
   labels: Seq[FindTaskLabelResp] = Seq.empty,
   members: Seq[SearchAccountDto] = Seq.empty,
   milestones: Seq[FindMilestoneResp] = Seq.empty,
-  milestoneId: Option[UUID] = None,
+  steps: Seq[FindMilestoneStepResp] = Seq.empty,
+  milestoneStepId: Option[UUID] = None,
   assigneeId: Option[UUID] = None,
   projectId: Option[UUID] = None,
   statusId: Option[UUID] = None,
@@ -79,6 +82,10 @@ case class QuickState(
   startDate: Option[LocalDate] = None,
   dueDate: Option[LocalDate] = None
 ) {
+
+  /** The milestone of the chosen step. */
+  lazy val milestoneId: Option[UUID] =
+    milestoneStepId.flatMap(id => steps.find(_.id == id)).map(_.milestoneId)
 
   lazy val parsed: ParsedQuickInput = TaskQuickInputParser.parse(rawInput)
 
@@ -161,6 +168,7 @@ class CreateTaskQuick(
   taskTemplateFeService: TaskTemplateFeService,
   projectService: ProjectService,
   milestoneFeService: MilestoneFeService,
+  milestoneStepFeService: MilestoneStepFeService,
   organizationServiceFe: OrganizationServiceFe,
   spinnerService: SpinnerService,
   tgClock: TgClock,
@@ -186,6 +194,7 @@ class CreateTaskQuick(
     taskLabelFeService,
     projectService,
     milestoneFeService,
+    milestoneStepFeService,
     organizationServiceFe,
     accountService
   )
@@ -203,8 +212,8 @@ class CreateTaskQuick(
       case StartDateDropdown | DueDateDropdown => Seq.empty
       case MilestoneDropdown =>
         current.milestones
+          .sortBy(milestone => (milestone.dueDate.toEpochDay, milestone.name))
           .filter(milestone => matches(token.query, milestone.name))
-          .sortBy(_.name)
           .map(milestone =>
             QuickOption(
               milestone.id.toString,
@@ -212,6 +221,13 @@ class CreateTaskQuick(
               milestone.status.statusName,
               current.milestoneId.contains(milestone.id)
             )
+          )
+      case MilestoneStepDropdown =>
+        current.milestoneId.toSeq
+          .flatMap(MilestoneStepLabels.stepsOf(_, current.steps))
+          .filter(step => matches(token.query, step.name))
+          .map(step =>
+            QuickOption(step.id.toString, step.name, step.status.statusName, current.milestoneStepId.contains(step.id))
           )
       case ProjectDropdown =>
         current.projects
@@ -335,7 +351,11 @@ class CreateTaskQuick(
         case TaskStatusDropdown => cleared.copy(statusId = Some(UUID.fromString(option.id)))
         case AssignedToDropdown => cleared.copy(assigneeId = Some(UUID.fromString(option.id)))
         case StartDateDropdown | DueDateDropdown => cleared
-        case MilestoneDropdown                   => cleared.copy(milestoneId = Some(UUID.fromString(option.id)))
+        case MilestoneDropdown =>
+          val chosen = UUID.fromString(option.id)
+          if (cleared.milestoneId.contains(chosen)) cleared
+          else cleared.copy(milestoneStepId = MilestoneStepLabels.defaultStepOf(chosen, cleared.steps).map(_.id))
+        case MilestoneStepDropdown => cleared.copy(milestoneStepId = Some(UUID.fromString(option.id)))
         case LabelsDropdown =>
           val id = UUID.fromString(option.id)
           cleared
@@ -354,9 +374,10 @@ class CreateTaskQuick(
         labels = Seq.empty,
         members = Seq.empty,
         milestones = Seq.empty,
+        steps = Seq.empty,
         statusId = None,
         labelIds = Set.empty,
-        milestoneId = None,
+        milestoneStepId = None,
         templates = Seq.empty,
         templateId = None,
         appliedTemplateBody = None
@@ -379,7 +400,8 @@ class CreateTaskQuick(
                 statuses = data.statuses,
                 labels = data.labels,
                 members = data.members,
-                milestones = data.milestones
+                milestones = data.milestones,
+                steps = data.steps
               )
             )
           }
@@ -419,7 +441,7 @@ class CreateTaskQuick(
             createdAt = now,
             updatedAt = now,
             priority = current.effectivePriority,
-            milestone = current.milestoneId,
+            milestoneStepId = current.milestoneStepId,
             startDate = current.effectiveStartDate,
             dueDate = current.effectiveDueDate,
             taskLabelIds = current.labelIds.toSeq
@@ -539,8 +561,17 @@ class CreateTaskQuick(
         Some(
           badge(
             MilestoneDropdown,
-            current.milestones.find(m => current.milestoneId.contains(m.id)).fold("No milestone")(_.name),
-            current.milestoneId.map(_ => () => state.update(_.copy(milestoneId = None)))
+            current.milestones
+              .find(milestone => current.milestoneId.contains(milestone.id))
+              .fold("No milestone")(_.name),
+            current.milestoneStepId.map(_ => () => state.update(_.copy(milestoneStepId = None)))
+          )
+        ),
+        Some(
+          badge(
+            MilestoneStepDropdown,
+            current.steps.find(step => current.milestoneStepId.contains(step.id)).fold("No step")(_.name),
+            None
           )
         ),
         Some(
@@ -759,7 +790,7 @@ class CreateTaskQuick(
           child.maybe <-- datePickerSlot(viaToken = true),
           p(
             cls("mt-1.5 text-xs text-body-subtle"),
-            "~project  #label  !priority  $status  %assignee  -milestone  @s start  @d due"
+            "~project  #label  !priority  $status  %assignee  -milestone  +step  @s start  @d due"
           )
         ),
         div(
@@ -767,7 +798,14 @@ class CreateTaskQuick(
           badgeRow(labelRowBadges, Set(LabelsDropdown)),
           badgeRow(
             primaryBadges,
-            Set(ProjectDropdown, MilestoneDropdown, PriorityDropdown, TaskStatusDropdown, AssignedToDropdown)
+            Set(
+              ProjectDropdown,
+              MilestoneDropdown,
+              MilestoneStepDropdown,
+              PriorityDropdown,
+              TaskStatusDropdown,
+              AssignedToDropdown
+            )
           ),
           badgeRow(dateBadges, Set.empty, child.maybe <-- datePickerSlot(viaToken = false))
         ),

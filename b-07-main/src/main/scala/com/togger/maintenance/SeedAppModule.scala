@@ -9,6 +9,8 @@ import com.togger.common.Password
 import com.togger.common.TgClockImpl
 import com.togger.common.TgIds
 import com.togger.controllers.organization.OrganizationService
+import com.togger.controllers.project.DefaultMilestoneStepTemplateService
+import com.togger.controllers.project.DefaultMilestoneTemplateService
 import com.togger.controllers.project.DefaultTaskLabelService
 import com.togger.controllers.project.DefaultTaskStatusService
 import com.togger.controllers.project.DefaultTaskTemplateService
@@ -19,7 +21,14 @@ import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.login.SessionTokenFactoryImpl
 import com.togger.milestone.MilestoneRepoImpl
 import com.togger.milestone.MilestoneService
+import com.togger.milestone.MilestoneStepRepoImpl
+import com.togger.milestone.MilestoneStepVersionRepoImpl
 import com.togger.milestone.MilestoneVersionRepoImpl
+import com.togger.milestone.MilestoneWithStepsService
+import com.togger.milestonesteptemplate.MilestoneStepTemplateRepoImpl
+import com.togger.milestonesteptemplate.MilestoneStepTemplateVersionRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateRepoImpl
+import com.togger.milestonetemplate.MilestoneTemplateVersionRepoImpl
 import com.togger.organization.OrganizationAccountRepoImpl
 import com.togger.organization.OrganizationRepoImpl
 import com.togger.project.ProjectAccountRepoImpl
@@ -84,6 +93,12 @@ trait SeedAppModule {
   protected val taskTemplateRepo = new TaskTemplateRepoImpl
   protected val taskTemplateVersionRepo = new TaskTemplateVersionRepoImpl
   protected val defaultTaskTemplateService = new DefaultTaskTemplateService(tgClock)
+  protected val milestoneStepTemplateRepo = new MilestoneStepTemplateRepoImpl
+  protected val milestoneStepTemplateVersionRepo = new MilestoneStepTemplateVersionRepoImpl
+  protected val defaultMilestoneStepTemplateService = new DefaultMilestoneStepTemplateService(tgClock)
+  protected val milestoneTemplateVersionRepo = new MilestoneTemplateVersionRepoImpl
+  protected val milestoneTemplateRepo = new MilestoneTemplateRepoImpl(milestoneTemplateVersionRepo)
+  protected val defaultMilestoneTemplateService = new DefaultMilestoneTemplateService(tgClock)
 
   protected val organizationService =
     new OrganizationService(
@@ -107,6 +122,12 @@ trait SeedAppModule {
       taskTemplateRepo = taskTemplateRepo,
       taskTemplateVersionRepo = taskTemplateVersionRepo,
       defaultTaskTemplateService = defaultTaskTemplateService,
+      milestoneStepTemplateRepo = milestoneStepTemplateRepo,
+      milestoneStepTemplateVersionRepo = milestoneStepTemplateVersionRepo,
+      defaultMilestoneStepTemplateService = defaultMilestoneStepTemplateService,
+      milestoneTemplateRepo = milestoneTemplateRepo,
+      milestoneTemplateVersionRepo = milestoneTemplateVersionRepo,
+      defaultMilestoneTemplateService = defaultMilestoneTemplateService,
       transactor = xa
     )
 
@@ -129,6 +150,16 @@ trait SeedAppModule {
     new MilestoneService(
       milestoneRepo = milestoneRepo,
       milestoneVersionRepo = milestoneVersionRepo,
+      transactor = xa
+    )
+
+  /** Creates a milestone with its first steps; without steps it gets the default one. */
+  protected val milestoneWithStepsService =
+    new MilestoneWithStepsService(
+      milestoneRepo = milestoneRepo,
+      milestoneVersionRepo = milestoneVersionRepo,
+      milestoneStepRepo = new MilestoneStepRepoImpl,
+      milestoneStepVersionRepo = new MilestoneStepVersionRepoImpl,
       transactor = xa
     )
 

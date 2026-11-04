@@ -1,6 +1,9 @@
 package com.togger.demo
 
+import com.togger.common.WorkDayCalendar
+import com.togger.milestone.DefaultMilestoneStepTemplates
 import com.togger.milestone.MilestoneStatus
+import com.togger.milestone.MilestoneStepStatus
 
 import java.time.DayOfWeek
 import java.time.Instant
@@ -17,6 +20,7 @@ object DemoMilestonesData {
       val workDays = projects.find(_.id == spec.projectId).fold(Set(1, 2, 3, 4, 5))(_.workDays).map(DayOfWeek.of)
       def day(offset: Int): LocalDate = workDay(today.plusDays(offset.toLong), workDays)
       val start = day(spec.start)
+      val dueDate = day(spec.due)
       DemoMilestone(
         id = spec.id,
         projectId = spec.projectId,
@@ -26,7 +30,7 @@ object DemoMilestonesData {
         description = spec.description,
         status = spec.status,
         startDate = start,
-        dueDate = day(spec.due),
+        dueDate = dueDate,
         endDate = spec.end.map(day),
         updatedAt = now.minus(1, ChronoUnit.DAYS),
         dates = spec.dates.zipWithIndex.map { case ((offset, name, description), i) =>
@@ -52,9 +56,67 @@ object DemoMilestonesData {
             day(to),
             written
           )
-        }
+        },
+        steps = steps(spec, start, dueDate, workDays, today)
       )
     }
+
+  private val stepNames =
+    List(
+      DefaultMilestoneStepTemplates.Design,
+      DefaultMilestoneStepTemplates.Development,
+      DefaultMilestoneStepTemplates.Production
+    )
+
+  /** Three steps spread over the dates of the milestone.
+    *
+    * The state of a step follows today: a step that ended is Done, the current one is In Progress (Paused when the
+    * milestone is) and the later ones are Planned. A milestone that is Abandoned abandons the steps that did not end.
+    * The foundations milestone is Done although its last step never ended, as an example of a milestone closed early.
+    */
+  private def steps(
+    spec: MilestoneSpec,
+    start: LocalDate,
+    due: LocalDate,
+    workDays: Set[DayOfWeek],
+    today: LocalDate
+  ): List[DemoMilestoneStep] =
+    stepNames.zip(WorkDayCalendar.splitEvenly(start, due, stepNames.size, workDays)).zipWithIndex.map {
+      case ((name, (stepStart, stepDue)), position) =>
+        val closedEarly = spec.id == FoundationsId && position == stepNames.size - 1
+        val (status, endDate) = stepState(spec.status, stepStart, stepDue, closedEarly, today)
+        val at = stepStart.atStartOfDay().toInstant(ZoneOffset.UTC)
+        val number = spec.number * 10 + position
+        DemoMilestoneStep(
+          id = DemoSeedIds.id(DemoSeedIds.MilestoneStep, number),
+          createdAt = at.minus(3, ChronoUnit.DAYS),
+          version = DemoSeedIds.id(DemoSeedIds.MilestoneStepVersion, number),
+          name = name,
+          description =
+            DefaultMilestoneStepTemplates.defaults.collectFirst { case (`name`, text) => text }.getOrElse(""),
+          status = status,
+          position = position,
+          startDate = stepStart,
+          dueDate = stepDue,
+          endDate = endDate,
+          updatedAt = endDate.fold(at)(_.atStartOfDay().toInstant(ZoneOffset.UTC))
+        )
+    }
+
+  private def stepState(
+    milestoneStatus: MilestoneStatus,
+    start: LocalDate,
+    due: LocalDate,
+    closedEarly: Boolean,
+    today: LocalDate
+  ): (MilestoneStepStatus, Option[LocalDate]) =
+    if (closedEarly) MilestoneStepStatus.InProgress -> None
+    else if (milestoneStatus == MilestoneStatus.Done || due.isBefore(today)) MilestoneStepStatus.Done -> Some(due)
+    else if (milestoneStatus == MilestoneStatus.Abandoned) MilestoneStepStatus.Abandoned -> Some(start)
+    else if (!start.isAfter(today))
+      (if (milestoneStatus == MilestoneStatus.Paused) MilestoneStepStatus.Paused
+       else MilestoneStepStatus.InProgress) -> None
+    else MilestoneStepStatus.Planned -> None
 
   /** Offsets are in days from today; the dates are moved back to the previous work day of the project. */
   private case class MilestoneSpec(

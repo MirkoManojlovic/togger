@@ -2,9 +2,11 @@ package com.togger.ui.teamdaily
 
 import com.togger.common.WorkDayCalendar
 import com.togger.dto.FindMilestoneResp
+import com.togger.dto.FindMilestoneStepResp
 import com.togger.ui.components.TaskLabelBadgeColor.TaskLabelBadgeColorOps
 import com.togger.ui.components.TaskPriorityBadgeColor.TaskPriorityBadgeColorOps
 import com.togger.ui.components.TgBadgeColor
+import com.togger.ui.milestone.MilestoneStepBadges
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.bulk.BadgeSpec
 import com.togger.ui.task.bulk.BulkEditKind
@@ -20,11 +22,18 @@ object TeamDailyTaskBadges {
   def labels(task: TeamDailyTaskPlan): Seq[BadgeSpec] =
     task.labels.sortBy(_.name).map(label => BadgeSpec(label.badgeText, label.badgeColor))
 
-  def milestoneAndPriority(task: TeamDailyTaskPlan, milestones: Seq[FindMilestoneResp]): Seq[BadgeSpec] =
+  def milestoneAndPriority(
+    task: TeamDailyTaskPlan,
+    milestones: Seq[FindMilestoneResp],
+    steps: Seq[FindMilestoneStepResp]
+  ): Seq[BadgeSpec] =
     task.milestoneId
       .flatMap(id => milestones.find(_.id == id))
       .map(milestone => BadgeSpec(milestone.name, TgBadgeColor.Alternative))
-      .toSeq :+ BadgeSpec(task.priority.shortCode, task.priority.badgeColor)
+      .toSeq ++ MilestoneStepBadges.of(task.milestoneStepId, steps) :+ BadgeSpec(
+      task.priority.shortCode,
+      task.priority.badgeColor
+    )
 
   /** The start and due date, the length in work days, and the work days left until the due date (or overdue). */
   def dates(
