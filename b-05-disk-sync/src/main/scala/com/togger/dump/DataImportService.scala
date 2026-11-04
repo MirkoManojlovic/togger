@@ -180,7 +180,7 @@ class DataImportService(
             DataImportResult(
               importPath,
               statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                List(project) ++ milestones ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
+                (project :: milestones) ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
             )
           )
         }

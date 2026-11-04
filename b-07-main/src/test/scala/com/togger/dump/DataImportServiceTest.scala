@@ -361,35 +361,34 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
-    "report a member the database lacks as importable, and a member only the database has as in sync" in {
-      transactor =>
-        for {
-          fixture <- createFullProject(newExportPath()).transact(transactor)
-          owner <- accountRepo.findById(fixture.accountId).transact(transactor)
-          other <- accountRepo
-            .insert(createAccount(owner.accountTypeId).copy(email = "member@email.com"))
-            .transact(transactor)
-          service = newExportService(transactor)
-          check = (root: os.Path) =>
-            service
-              .checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
-              .map(_.toOption.get.entityStatuses.filter(_.entityType == DataExportEntityType.Members).map(_.status))
-          _ <- projectAccountRepo
-            .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
-            .transact(transactor)
-          withMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
-          _ <- projectAccountRepo.deleteById(fixture.projectId, other.id).transact(transactor)
-          lacking <- check(withMember)
-          _ <- projectAccountRepo
-            .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
-            .transact(transactor)
-          withoutMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
-          _ <- IO(editMembers(withoutMember, _ => List(fixture.accountId)))
-          databaseOnly <- check(withoutMember)
-        } yield {
-          lacking shouldBe List(DataExportSyncStatus.OutOfSync)
-          databaseOnly shouldBe List(DataExportSyncStatus.InSync)
-        }
+    "report a member the database lacks as importable, and a member only the database has as in sync" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        owner <- accountRepo.findById(fixture.accountId).transact(transactor)
+        other <- accountRepo
+          .insert(createAccount(owner.accountTypeId).copy(email = "member@email.com"))
+          .transact(transactor)
+        service = newExportService(transactor)
+        check = (root: os.Path) =>
+          service
+            .checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
+            .map(_.toOption.get.entityStatuses.filter(_.entityType == DataExportEntityType.Members).map(_.status))
+        _ <- projectAccountRepo
+          .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
+          .transact(transactor)
+        withMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- projectAccountRepo.deleteById(fixture.projectId, other.id).transact(transactor)
+        lacking <- check(withMember)
+        _ <- projectAccountRepo
+          .insert(ProjectAccount(fixture.projectId, other.id, nowAsInstant))
+          .transact(transactor)
+        withoutMember <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- IO(editMembers(withoutMember, _ => List(fixture.accountId)))
+        databaseOnly <- check(withoutMember)
+      } yield {
+        lacking shouldBe List(DataExportSyncStatus.OutOfSync)
+        databaseOnly shouldBe List(DataExportSyncStatus.InSync)
+      }
     }
 
     "compare the members of a tree with the ones of the project it was imported into" in { transactor =>

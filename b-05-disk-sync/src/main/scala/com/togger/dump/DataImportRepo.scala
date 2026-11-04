@@ -100,7 +100,8 @@ class DataImportRepo(
   }
 
   /** Applies the exported description, icon and work days to the project when the disk copy is newer. The name is left
-    * alone, as the import check ignores it too, and the disk's `updatedAt` is kept so that the check finds both in sync.
+    * alone, as the import check ignores it too, and the disk's `updatedAt` is kept so that the check finds both in
+    * sync.
     */
   def mergeProject(projectIdDb: UUID, exported: Project): ConnectionIO[DataImportEntityResult] =
     projectRepo.findById(projectIdDb).flatMap { current =>

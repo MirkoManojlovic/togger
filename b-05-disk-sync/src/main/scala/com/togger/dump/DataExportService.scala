@@ -380,8 +380,8 @@ class DataExportService(
 
   /** The members file of an import folder is the one of the database project whatever its id, as an import into another
     * project gives it a new one. An import only adds members, so members that the database has and the disk lacks are
-    * not reported: the entity is out of sync only when the disk lists an account that is not a member yet. Accounts
-    * are compared by their content, as the import maps them by email.
+    * not reported: the entity is out of sync only when the disk lists an account that is not a member yet. Accounts are
+    * compared by their content, as the import maps them by email.
     */
   private def importedMembersStatus(
     folderPath: String,
