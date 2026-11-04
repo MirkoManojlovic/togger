@@ -8,6 +8,8 @@ import com.togger.ui.auth.TgCard
 
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
+import scala.util.Failure
+import scala.util.Success
 
 class UpdaterComponent {
 
@@ -29,13 +31,14 @@ class UpdaterComponent {
 
   private def checkForUpdate(updater: js.Dynamic): Unit = {
     stateVar.set(Checking)
-    updater.check().asInstanceOf[js.Promise[js.Dynamic]].toFuture.foreach { result =>
-      stateVar.set(
-        if (js.isUndefined(result) || result == null) UpToDate
-        else Available(result.version.asInstanceOf[String], result.notes.asInstanceOf[String])
-      )
+    updater.check().asInstanceOf[js.Promise[js.Dynamic]].toFuture.onComplete {
+      case Success(result) =>
+        stateVar.set(
+          if (js.isUndefined(result) || result == null) UpToDate
+          else Available(result.version.asInstanceOf[String], result.notes.asInstanceOf[String])
+        )
+      case Failure(error) => failed(error)
     }
-    ()
   }
 
   private def install(updater: js.Dynamic): Unit = {
