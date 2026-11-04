@@ -6,42 +6,8 @@ import com.togger.style.TgCommonStyleJs.heightAndWidthFitContent
 import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
-import scala.scalajs.js
-
-class UpdaterComponent {
-
-  private sealed trait UpdateState
-  private case object Idle extends UpdateState
-  private case object Checking extends UpdateState
-  private case object UpToDate extends UpdateState
-  private case class Available(version: String, notes: String) extends UpdateState
-  private case object Installing extends UpdateState
-  private case class Failed(message: String) extends UpdateState
-
-  private val stateVar = Var[UpdateState](Idle)
-
-  // provided by main.js in the desktop app only
-  private val updater: Option[js.Dynamic] =
-    Option(js.Dynamic.global.window.tgUpdater).filterNot(js.isUndefined).map(_.asInstanceOf[js.Dynamic])
-
-  private def failed(error: Throwable): Unit = stateVar.set(Failed(error.getMessage))
-
-  private def checkForUpdate(updater: js.Dynamic): Unit = {
-    stateVar.set(Checking)
-    updater.check().asInstanceOf[js.Promise[js.Dynamic]].toFuture.foreach { result =>
-      stateVar.set(
-        if (js.isUndefined(result) || result == null) UpToDate
-        else Available(result.version.asInstanceOf[String], result.notes.asInstanceOf[String])
-      )
-    }
-    ()
-  }
-
-  private def install(updater: js.Dynamic): Unit = {
-    stateVar.set(Installing)
-    updater.install().asInstanceOf[js.Promise[Unit]].toFuture.failed.foreach(failed)
-  }
+class UpdaterComponent(store: UpdaterStore) {
+  import UpdateState._
 
   private def actionButton(text: String, disabledSignal: Signal[Boolean])(onPress: => Unit) =
     button(
@@ -65,21 +31,21 @@ class UpdaterComponent {
       case Failed(message)       => s"The update failed: $message"
     }
 
-  private def desktopBody(updater: js.Dynamic) =
+  private def desktopBody =
     div(
       div(
         cls("flex items-center gap-3"),
-        actionButton("Check for updates", stateVar.signal.map(s => s == Checking || s == Installing))(
-          checkForUpdate(updater)
+        actionButton("Check for updates", store.state.map(s => s == Checking || s == Installing))(
+          store.check()
         ),
-        child.maybe <-- stateVar.signal.map {
+        child.maybe <-- store.state.map {
           case Available(_, _) =>
-            Some(actionButton("Install and restart", Val(false))(install(updater)))
+            Some(actionButton("Install and restart", Val(false))(store.install()))
           case _ => None
         }
       ),
-      p(cls("mt-3 text-sm text-body"), role("status"), child.text <-- stateVar.signal.map(statusText)),
-      child.maybe <-- stateVar.signal.map {
+      p(cls("mt-3 text-sm text-body"), role("status"), child.text <-- store.state.map(statusText)),
+      child.maybe <-- store.state.map {
         case Available(_, notes) if notes.nonEmpty =>
           Some(
             pre(
@@ -99,7 +65,7 @@ class UpdaterComponent {
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.plainText("Updates", TgCard.CardHeaderSize.H3),
-          body = TgCard.HtmlCardContent(updater.map(desktopBody).getOrElse(webBody))
+          body = TgCard.HtmlCardContent(if (store.isAvailableInApp) desktopBody else webBody)
         )
         .element
         .amend(heightAndWidthFitContent)
