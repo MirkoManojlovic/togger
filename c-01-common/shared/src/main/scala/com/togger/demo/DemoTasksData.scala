@@ -238,8 +238,7 @@ object DemoTasksData {
               LogEntryVersionDto(
                 nextId(DemoSeedIds.LogEntryVersion),
                 entryId,
-                texts._1.dropRight(1),
-                "",
+                texts.dropRight(1),
                 LogEntryStatus.InProgress,
                 creator,
                 createdAt,
@@ -254,8 +253,7 @@ object DemoTasksData {
           older :+ LogEntryVersionDto(
             nextId(DemoSeedIds.LogEntryVersion),
             entryId,
-            texts._1,
-            texts._2,
+            texts,
             status,
             creator,
             createdAt,
@@ -308,15 +306,15 @@ object DemoTasksData {
   private lazy val docsRevamp = Some(DemoMilestonesData.DocsRevampId)
   private lazy val docsTutorials = Some(DemoMilestonesData.DocsTutorialsId)
 
-  private val pool: Vector[(String, String)] = Vector(
-    "Investigated the root cause and wrote a failing test." -> "Root cause found, fix in progress.",
-    "Implemented the first version, it still needs a review." -> "First version ready for review.",
-    "Pairing session to unblock the approach." -> "Agreed on the approach after a pairing session.",
-    "Addressed the review comments and pushed a fix." -> "Review comments addressed.",
-    "Waiting for the staging deploy to verify the change." -> "Change is on staging for verification.",
-    "Cleaned up the edge cases and updated the docs." -> "Edge cases handled, docs updated.",
-    "Reproduced it locally and narrowed it down to one module." -> "Reproduced, narrowing down.",
-    "Merged after a green build, monitoring the rollout." -> "Merged and rolled out, monitoring."
+  private val pool: Vector[String] = Vector(
+    "Root cause found, fix in progress.",
+    "First version ready for review.",
+    "Agreed on the approach after a pairing session.",
+    "Review comments addressed.",
+    "Change is on staging for verification.",
+    "Edge cases handled, docs updated.",
+    "Reproduced, narrowing down.",
+    "Merged and rolled out, monitoring."
   )
 
   /** Day values are offsets from today, moved to the next work day of the project. */

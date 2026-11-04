@@ -83,7 +83,7 @@ class TasksPreviewData(
           val texts = logEntriesOf(task.id)
             .filter(entry => !dayOf(entry.createdAt).isBefore(from) && !dayOf(entry.createdAt).isAfter(to))
             .flatMap(entry => latestLogEntryVersion(entry.id))
-            .map(entry => if (entry.textExternal.trim.nonEmpty) entry.textExternal else entry.textInternal)
+            .map(entry => entry.text)
           Option.when(texts.nonEmpty)(
             MilestoneActivity(version.name, taskConfig.statuses.find(version.taskStatusId).fold("")(_.name), texts)
           )

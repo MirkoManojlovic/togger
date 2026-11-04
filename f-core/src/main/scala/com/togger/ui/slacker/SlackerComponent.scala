@@ -279,8 +279,7 @@ class SlackerComponent(
       createdBy = currentAccountId.get,
       createdAt = createdAt,
       latestVersion = UUID.randomUUID(),
-      textInternal = "",
-      textExternal = draft.textExternal,
+      text = draft.text,
       status = draft.status,
       updatedAt = createdAt
     )
@@ -567,7 +566,7 @@ class SlackerComponent(
   private val formRefresh = Var(0)
 
   private def repeat(key: SlackerEntryKey, entry: LogEntryDto): Unit = {
-    edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.textExternal))
+    edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.text))
     formRefresh.update(_ + 1)
   }
 
@@ -597,7 +596,7 @@ class SlackerComponent(
         TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
         LogEntryMemberBadge(entry.createdByName)
       ),
-      div(tgMarkdown.toLaminarDiv(entry.textExternal))
+      div(tgMarkdown.toLaminarDiv(entry.text))
     )
 
   private def dayView(day: LocalDate, entries: Seq[LogEntryDto]): HtmlElement =
@@ -733,7 +732,7 @@ class SlackerComponent(
                 toSave
                   .get(key)
                   .fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(entry =>
-                    tgMarkdown.toLaminarDiv(entry.textExternal)
+                    tgMarkdown.toLaminarDiv(entry.text)
                   ),
                 onClick.mapToUnit --> (_ => jumpTo(_ == SlackerPosition.Fill(task.taskId, date)))
               )

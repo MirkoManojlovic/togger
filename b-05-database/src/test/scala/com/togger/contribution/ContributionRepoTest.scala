@@ -188,8 +188,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
           LogEntryVersion(
             version = versionId(index + 1L),
             logEntryId = entry.id,
-            textInternal = "Internal",
-            textExternal = "External",
+            text = "External",
             status = status,
             createdBy = author.id,
             createdAt = nowAsInstant,

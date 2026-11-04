@@ -208,7 +208,6 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         DemoIdentity.AccountId,
         at,
         UUID.randomUUID(),
-        "internal",
         "external",
         LogEntryStatus.InProgress,
         at
@@ -217,12 +216,12 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         saved <- s.env.run(s.tasks.saveLogEntry(entry))
         again <- s.env.run(s.tasks.saveLogEntry(entry))
         updated <- s.env.run(
-          s.tasks.updateLogEntry(saved.toOption.get.copy(textInternal = "changed", status = LogEntryStatus.Blocked))
+          s.tasks.updateLogEntry(saved.toOption.get.copy(text = "changed", status = LogEntryStatus.Blocked))
         )
         versions <- s.env.run(s.tasks.listLogEntryVersions(saved.toOption.get.id, firstPage))
         editLatest <- s.env.run(s.tasks.updateLogEntryVersion(versions.toOption.get.items.head))
         editOld <- s.env.run(
-          s.tasks.updateLogEntryVersion(versions.toOption.get.items.last.copy(textInternal = "fixed"))
+          s.tasks.updateLogEntryVersion(versions.toOption.get.items.last.copy(text = "fixed"))
         )
         deleteLatest <- s.env.runEmpty(s.tasks.deleteLogEntryVersion(versions.toOption.get.items.head.version))
         byTask <- s.env.run(s.tasks.findLogEntriesByTaskId(taskId, firstPage))
@@ -232,7 +231,7 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         updated.map(_.status) shouldBe Right(LogEntryStatus.Blocked)
         versions.map(_.totalNumberOfItems) shouldBe Right(2L)
         isBadRequest(editLatest) shouldBe true
-        editOld.map(_.textInternal) shouldBe Right("fixed")
+        editOld.map(_.text) shouldBe Right("fixed")
         deleteLatest.isRight shouldBe true
         byTask.map(_.items.headOption.map(_.latestVersion)) shouldBe Right(
           Some(versions.toOption.get.items.last.version)

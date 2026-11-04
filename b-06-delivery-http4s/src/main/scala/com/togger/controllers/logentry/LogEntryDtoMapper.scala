@@ -16,8 +16,7 @@ object LogEntryDtoMapper {
       createdBy = logEntry.createdBy,
       createdAt = version.createdAt,
       latestVersion = version.version,
-      textInternal = version.textInternal,
-      textExternal = version.textExternal,
+      text = version.text,
       status = version.status,
       updatedAt = version.updatedAt,
       createdByName = names.getOrElse(logEntry.createdBy, "")
@@ -27,8 +26,7 @@ object LogEntryDtoMapper {
     LogEntryVersionDto(
       version = version.version,
       logEntryId = version.logEntryId,
-      textInternal = version.textInternal,
-      textExternal = version.textExternal,
+      text = version.text,
       status = version.status,
       createdBy = version.createdBy,
       createdAt = version.createdAt,

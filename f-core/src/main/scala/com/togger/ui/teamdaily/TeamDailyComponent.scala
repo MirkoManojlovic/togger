@@ -251,7 +251,7 @@ class TeamDailyComponent(
   private def defaultEntry(key: TeamDailyEntryKey): TeamDailyEntryDraft = {
     val task = state.now().plan.flatMap(_.tasks).find(_.taskId == key.taskId)
     task.flatMap(_.todayEntry) match {
-      case Some(existing) => TeamDailyEntryDraft(existing.status, existing.textExternal)
+      case Some(existing) => TeamDailyEntryDraft(existing.status, existing.text)
       case None => TeamDailyEntryDraft(task.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.previousStatus), "")
     }
   }
@@ -271,7 +271,7 @@ class TeamDailyComponent(
     existing.fold(newLogEntryOf(key, draft))(entry =>
       entry.copy(
         latestVersion = UUID.randomUUID(),
-        textExternal = draft.textExternal,
+        text = draft.text,
         status = draft.status,
         updatedAt = tgClock.currentInstant
       )
@@ -288,8 +288,7 @@ class TeamDailyComponent(
       createdBy = currentAccountId.get,
       createdAt = createdAt,
       latestVersion = UUID.randomUUID(),
-      textInternal = "",
-      textExternal = draft.textExternal,
+      text = draft.text,
       status = draft.status,
       updatedAt = createdAt
     )
@@ -660,7 +659,7 @@ class TeamDailyComponent(
 
   /** Fills today with the same status and text, and shows the form again so the editor takes them over. */
   private def repeat(key: TeamDailyEntryKey, entry: LogEntryDto): Unit = {
-    edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.textExternal))
+    edit(key)(_ => TeamDailyEntryDraft(entry.status, entry.text))
     formRefresh.update(_ + 1)
   }
 
@@ -748,7 +747,7 @@ class TeamDailyComponent(
         TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
         LogEntryMemberBadge(entry.createdByName)
       ),
-      div(tgMarkdown.toLaminarDiv(entry.textExternal))
+      div(tgMarkdown.toLaminarDiv(entry.text))
     )
 
   private def dayView(day: LocalDate, entries: Seq[LogEntryDto]): HtmlElement =
@@ -808,7 +807,7 @@ class TeamDailyComponent(
                     toSave
                       .get(key)
                       .fold[HtmlElement](p(cls("text-sm text-body-subtle"), "Not filled in, will not be saved"))(
-                        entry => tgMarkdown.toLaminarDiv(entry.textExternal)
+                        entry => tgMarkdown.toLaminarDiv(entry.text)
                       ),
                     onClick.mapToUnit --> (_ =>
                       jumpTo(_ == TeamDailyPosition.Fill(member.member.id, task.taskId, date))

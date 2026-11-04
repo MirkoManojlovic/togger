@@ -47,8 +47,7 @@ class LogEntryRepoPaginationTest
     LogEntryVersion(
       version = UUID.randomUUID(),
       logEntryId = logEntryId,
-      textInternal = s"Internal $index",
-      textExternal = s"External $index",
+      text = s"External $index",
       status = LogEntryStatus.InProgress,
       createdBy = accountId,
       createdAt = nowAsInstant,

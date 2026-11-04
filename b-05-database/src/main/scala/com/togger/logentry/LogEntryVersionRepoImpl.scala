@@ -24,8 +24,7 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
   private lazy val returnFields = List(
     "version",
     "log_entry_id",
-    "text_internal",
-    "text_external",
+    "text",
     "status",
     "created_by",
     "created_at",
@@ -36,8 +35,8 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
     import logEntryVersion._
     logAroundInfoQuery(
       insertStatement(LOG_ENTRY_VERSION_TABLE_FRAG)(fr"""
-        (log_entry_id, text_internal, text_external, status, created_by, created_at, updated_at)
-        values ($logEntryId, $textInternal, $textExternal, $status, $createdBy, $createdAt, $updatedAt)
+        (log_entry_id, text, status, created_by, created_at, updated_at)
+        values ($logEntryId, $text, $status, $createdBy, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[LogEntryVersion](returnFields: _*)
     )(s"Inserting ${sp(logEntryVersion)}", logEntryVersion => s"Log entry version inserted ${sp(logEntryVersion)}")
@@ -47,8 +46,8 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
     import logEntryVersion._
     logAroundInfoQuery(
       insertStatement(LOG_ENTRY_VERSION_TABLE_FRAG)(fr"""
-        (version, log_entry_id, text_internal, text_external, status, created_by, created_at, updated_at)
-        values ($version, $logEntryId, $textInternal, $textExternal, $status, $createdBy, $createdAt, $updatedAt)
+        (version, log_entry_id, text, status, created_by, created_at, updated_at)
+        values ($version, $logEntryId, $text, $status, $createdBy, $createdAt, $updatedAt)
       """).update
         .withUniqueGeneratedKeys[LogEntryVersion](returnFields: _*)
     )(
@@ -118,8 +117,7 @@ class LogEntryVersionRepoImpl extends LogEntryVersionRepo {
   override def updateContent(logEntryVersion: LogEntryVersion): ConnectionIO[LogEntryVersion] =
     logAroundInfoQuery(
       (fr"update" ++ LOG_ENTRY_VERSION_TABLE_FRAG ++ fr"""set
-            text_internal = ${logEntryVersion.textInternal},
-            text_external = ${logEntryVersion.textExternal},
+            text = ${logEntryVersion.text},
             status = ${logEntryVersion.status},
             updated_at = ${logEntryVersion.updatedAt}
           where version = ${logEntryVersion.version}""").update

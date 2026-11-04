@@ -107,8 +107,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
             LogEntryVersion(
               version = TgIds.UNASSIGNED_UUID,
               logEntryId = TgIds.UNASSIGNED_UUID,
-              textInternal = s"Log entry ${i + 1} for $taskName",
-              textExternal = s"Log entry ${i + 1} for $taskName",
+              text = s"Log entry ${i + 1} for $taskName",
               status = status,
               createdBy = ownerId,
               createdAt = entryDate,
@@ -263,8 +262,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Log entry Alpha 01",
-          textExternal = "Log entry Alpha 01",
+          text = "Log entry Alpha 01",
           status = LogEntryStatus.InProgress,
           createdBy = owner.id,
           createdAt = now,
@@ -295,8 +293,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Log entry Alpha 02",
-          textExternal = "Log entry Alpha 02",
+          text = "Log entry Alpha 02",
           status = LogEntryStatus.Completed,
           createdBy = owner.id,
           createdAt = now,
@@ -383,8 +380,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Log entry Beta 01",
-          textExternal = "Log entry Beta 01",
+          text = "Log entry Beta 01",
           status = LogEntryStatus.InProgress,
           createdBy = owner.id,
           createdAt = now,
@@ -415,8 +411,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Log entry Beta 02",
-          textExternal = "Log entry Beta 02",
+          text = "Log entry Beta 02",
           status = LogEntryStatus.Completed,
           createdBy = owner.id,
           createdAt = now,
@@ -447,8 +442,7 @@ object CreateAccountApp extends IOApp with SeedAppModule {
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
-          textInternal = "Log entry Beta 03",
-          textExternal = "Log entry Beta 03",
+          text = "Log entry Beta 03",
           status = LogEntryStatus.Paused,
           createdBy = owner.id,
           createdAt = now,

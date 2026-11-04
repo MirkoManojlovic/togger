@@ -70,7 +70,6 @@ class LogEntryRepoMilestoneTest
             UUID.randomUUID(),
             entry.id,
             text,
-            s"$text external",
             LogEntryStatus.InProgress,
             author,
             nowAsInstant,
@@ -101,7 +100,7 @@ class LogEntryRepoMilestoneTest
         _ <- newEntry(withoutMilestone, account.id, "2026-10-11T10:00:00Z", "no milestone")
         found <- logEntryRepo.findLatestByMilestoneIdBetween(milestone.id, day(10), day(12), 10)
       } yield {
-        (found.map(_.logEntry.id), found.map(_.version.textInternal)) shouldBe (
+        (found.map(_.logEntry.id), found.map(_.version.text)) shouldBe (
           List(first.id, second.id),
           List("first latest", "second latest")
         )
@@ -119,7 +118,7 @@ class LogEntryRepoMilestoneTest
         _ <- newEntry(task, account.id, "2026-10-10T10:00:00Z", "one")
         _ <- newEntry(task, account.id, "2026-10-11T10:00:00Z", "two")
         found <- logEntryRepo.findLatestByMilestoneIdBetween(milestone.id, day(10), day(12), 1)
-      } yield found.map(_.version.textInternal) shouldBe List("one")).transact(transactor)
+      } yield found.map(_.version.text) shouldBe List("one")).transact(transactor)
     }
   }
 }

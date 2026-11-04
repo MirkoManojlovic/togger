@@ -35,7 +35,7 @@ class TeamDailyEntryForm(
     LogEntryForm(
       taskId = taskId,
       status = initial.status.value.toString,
-      textExternal = initial.textExternal,
+      text = initial.text,
       date = date.toString
     )
   )
@@ -54,8 +54,8 @@ class TeamDailyEntryForm(
     case None    => activePopupVar.update(current => if (current.exists(_.viaTrigger)) None else current)
   }
 
-  private lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
-    inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
+  private lazy val textEditor = formState.wysiwygSplitEditorSig(
+    inputAndUpdater = selectorAndUpdaterMacro(_.text),
     labelValue = "",
     minWidthRem = 40,
     minHeightRem = 20,
@@ -68,7 +68,7 @@ class TeamDailyEntryForm(
     formState.update(_.copy(status = status.value.toString))
     consume.foreach(_())
     activePopupVar.set(None)
-    textExternalEditor.focus()
+    textEditor.focus()
   }
 
   private def handleEditorKeyDown(event: dom.KeyboardEvent): Unit =
@@ -115,7 +115,7 @@ class TeamDailyEntryForm(
                 case _                                     => Some(ActivePopup.StatusOpen("", None))
               }
               highlightedVar.set(0)
-              textExternalEditor.focus()
+              textEditor.focus()
             }
           )
       },
@@ -144,18 +144,18 @@ class TeamDailyEntryForm(
   val element: HtmlElement =
     div(
       // each day opens with the cursor in the editor, so Next keeps the user typing; after the editor has mounted
-      onMountCallback(_ => if (focusEditor) dom.window.setTimeout(() => textExternalEditor.focus(), 0): Unit),
+      onMountCallback(_ => if (focusEditor) dom.window.setTimeout(() => textEditor.focus(), 0): Unit),
       // only what the user changed is reported, not the editor settling on what it was given
       formState.signal.changes
-        .map(form => TeamDailyEntryDraft(LogEntryStatus.withValue(form.status.toInt), form.textExternal))
-        .filter(draft => draft.status != initial.status || draft.textExternal != initial.textExternal) --> onChange,
+        .map(form => TeamDailyEntryDraft(LogEntryStatus.withValue(form.status.toInt), form.text))
+        .filter(draft => draft.status != initial.status || draft.text != initial.text) --> onChange,
       TgCard
         .headerNoFooter(
           header = TgCard.CardHeader.html(div(title), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
               div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(authorName)),
-              textExternalEditor.htmlElement.amend(cls("mb-1")),
+              textEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 text-xs text-body-subtle"), "$ status")
             )
           )
