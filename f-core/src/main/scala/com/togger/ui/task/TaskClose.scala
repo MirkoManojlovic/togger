@@ -2,6 +2,7 @@ package com.togger.ui.task
 
 import com.togger.dto.FindTaskStatusResp
 import com.togger.task.DefaultTaskStatus
+import com.togger.ui.task.bulk.BulkEdit
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
 
 import java.time.DayOfWeek
@@ -19,6 +20,15 @@ object TaskClose {
         TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(terminal.statusName)
       )
     )
+
+  /** The closing status a bulk edit sets, if it sets one: closing needs an end date and the log entries, so it does not
+    * go through the plain save.
+    */
+  def closingStatusOf(edit: BulkEdit, statuses: Seq[FindTaskStatusResp]): Option[FindTaskStatusResp] =
+    edit match {
+      case BulkEdit.SetStatus(statusId) => closingStatuses(statuses).find(_.id == statusId)
+      case _                            => None
+    }
 
   def endDateErrors(endDate: Option[LocalDate], startDate: LocalDate, workDays: Set[DayOfWeek]): Seq[String] =
     endDate.fold(Seq("Pick an end date")) { date =>

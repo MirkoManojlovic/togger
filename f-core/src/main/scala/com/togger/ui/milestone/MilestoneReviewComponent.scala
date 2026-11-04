@@ -23,6 +23,7 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DateEmoji
+import com.togger.ui.task.TaskCloseFlow
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
@@ -58,7 +59,8 @@ class MilestoneReviewComponent(
   projectId: UUID,
   milestoneId: UUID,
   toast: Toast,
-  modalFactory: ModalFactory
+  modalFactory: ModalFactory,
+  closeFlow: TaskCloseFlow
 )(implicit ioRuntime: IORuntime) {
 
   private val milestoneVar = Var(Option.empty[FindMilestoneResp])
@@ -119,6 +121,7 @@ class MilestoneReviewComponent(
     showList,
     toast,
     modalFactory,
+    closeFlow,
     defaultDeselectedStatuses = Set.empty,
     lockedMilestoneId = Some(milestoneId),
     loadOnCreate = false

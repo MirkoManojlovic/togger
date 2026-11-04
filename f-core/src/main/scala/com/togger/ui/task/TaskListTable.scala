@@ -69,6 +69,7 @@ class TaskListTable(
   navigate: TaskListParams => Unit,
   val toast: Toast,
   modalFactory: ModalFactory,
+  closeFlow: TaskCloseFlow,
   defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Todo, Backlog, Done, WontDo),
   lockedMilestoneId: Option[UUID] = None,
   loadOnCreate: Boolean = true
@@ -188,6 +189,11 @@ class TaskListTable(
   private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
     val lookups = lookupsNow()
     val edited = scope.fold(selectedVar.now())(Set(_)) -- savingVar.now()
+    TaskClose.closingStatusOf(edit, lookups.statuses).foreach { status =>
+      val toClose = stateFormVar.now().filter(dto => edited.contains(dto.id) && dto.taskStatus.id != status.id)
+      closeFlow.start(toClose.toList, status, lookups.workDays, () => reloadPage())
+      return
+    }
     val changed = stateFormVar.now().filter(dto => edited.contains(dto.id)).flatMap { dto =>
       val before = ShowAllTasksBulkMapping.toBulkTask(dto)
       val after = BulkTaskEditor(Seq(before), Set(dto.id), edit, lookups.workDays).head

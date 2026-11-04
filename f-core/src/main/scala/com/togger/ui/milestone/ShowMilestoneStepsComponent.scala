@@ -29,6 +29,7 @@ import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
+import com.togger.ui.task.TaskCloseFlow
 import com.togger.ui.task.TaskConfigTableSupport.headerIconButtonCls
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
@@ -65,7 +66,8 @@ class ShowMilestoneStepsComponent(
   isDark: Signal[Boolean],
   projectId: UUID,
   milestoneId: UUID,
-  val toast: Toast
+  val toast: Toast,
+  closeFlow: TaskCloseFlow
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -495,7 +497,8 @@ class ShowMilestoneStepsComponent(
     milestoneId,
     stepsVar.signal,
     load(),
-    toast
+    toast,
+    closeFlow
   )
 
   val element: HtmlElement =
