@@ -22,8 +22,9 @@ class TaskListFilterMappingTest extends AsyncJsWordSpec {
     labels: FilterSelection = nothing,
     assignees: FilterSelection = nothing,
     milestones: FilterSelection = nothing,
+    steps: FilterSelection = nothing,
     search: String = ""
-  ) = TaskListFilterMapping.toTaskFilter(statuses, priorities, labels, assignees, milestones, search)
+  ) = TaskListFilterMapping.toTaskFilter(statuses, priorities, labels, assignees, milestones, steps, search)
 
   testNameFromClassName should {
 
@@ -56,6 +57,11 @@ class TaskListFilterMappingTest extends AsyncJsWordSpec {
       )
       filter.assigneeIds shouldBe List(TgIds.UNASSIGNED_UUID)
       filter.milestoneIds shouldBe List(TgIds.NO_MILESTONE_UUID)
+    }
+
+    "filter by the ticked steps when some are unticked" in { _ =>
+      filterOf(steps = selection(Set(idA.toString, idB.toString), Set(idB.toString))) shouldBe
+        TaskFilter(milestoneStepIds = List(idB))
     }
 
     "trim the search and drop a blank one" in { _ =>
