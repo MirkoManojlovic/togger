@@ -194,7 +194,7 @@ class TaskPreviewComponent(
                     ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
-                  tgMarkdown.toLaminarDiv(entry.textExternal)
+                  tgMarkdown.toLaminarDiv(entry.text)
                 )
               )
           )
@@ -244,7 +244,7 @@ class TaskPreviewComponent(
                     ).element,
                     LogEntryMemberBadge(entry.createdByName)
                   ),
-                  tgMarkdown.toLaminarDiv(entry.textExternal)
+                  tgMarkdown.toLaminarDiv(entry.text)
                 )
               )
           )

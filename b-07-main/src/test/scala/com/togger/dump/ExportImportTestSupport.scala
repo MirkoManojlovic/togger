@@ -257,15 +257,14 @@ trait ExportImportTestSupport
         LogEntryVersion(
           version = UUID.randomUUID(),
           logEntryId = savedLogEntry.id,
-          textInternal = "internal",
-          textExternal = "external",
+          text = "external",
           status = LogEntryStatus.InProgress,
           createdBy = createdBy,
           createdAt = nowAsInstant,
           updatedAt = nowAsInstant
         )
       )
-      _ <- logEntryVersionRepo.insert(firstLogEntryVersion.copy(textInternal = "internal v2"))
+      _ <- logEntryVersionRepo.insert(firstLogEntryVersion.copy(text = "external v2"))
     } yield savedTask.id
 
   def createTaskLabel(projectId: UUID, name: String = "Label"): ConnectionIO[TaskLabel] =
@@ -498,8 +497,7 @@ trait ExportImportTestSupport
         LogEntryVersion(
           version = UUID.randomUUID(),
           logEntryId = logEntryId,
-          textInternal = "internal",
-          textExternal = "external",
+          text = "external",
           status = LogEntryStatus.InProgress,
           createdBy = createdBy,
           createdAt = nowAsInstant,

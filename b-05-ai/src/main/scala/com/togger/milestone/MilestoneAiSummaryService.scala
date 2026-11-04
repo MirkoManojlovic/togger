@@ -86,8 +86,7 @@ object MilestoneAiSummaryService {
     logEntryId: UUID,
     taskId: UUID,
     status: String,
-    textInternal: String,
-    textExternal: String,
+    text: String,
     createdAt: Instant,
     updatedAt: Instant
   )
@@ -97,8 +96,7 @@ object MilestoneAiSummaryService {
       logEntryId = entry.logEntry.id,
       taskId = entry.logEntry.taskId,
       status = entry.version.status.statusName,
-      textInternal = entry.version.textInternal,
-      textExternal = entry.version.textExternal,
+      text = entry.version.text,
       createdAt = entry.logEntry.createdAt,
       updatedAt = entry.version.updatedAt
     )

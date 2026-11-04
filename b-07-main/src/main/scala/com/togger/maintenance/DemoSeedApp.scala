@@ -373,8 +373,7 @@ object DemoSeedApp extends IOApp with SeedAppModule {
               LogEntryVersion(
                 v.version,
                 v.logEntryId,
-                v.textInternal,
-                v.textExternal,
+                v.text,
                 v.status,
                 ids.account(v.createdBy),
                 v.createdAt,

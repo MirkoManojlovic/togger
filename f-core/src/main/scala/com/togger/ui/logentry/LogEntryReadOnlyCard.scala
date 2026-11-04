@@ -37,7 +37,7 @@ object LogEntryReadOnlyCard {
           ),
           TgCard.CardHeaderSize.H3
         ),
-        body = TgCard.HtmlCardContent(div(tgMarkdown.toLaminarDiv(entry.textExternal)))
+        body = TgCard.HtmlCardContent(div(tgMarkdown.toLaminarDiv(entry.text)))
       )
       .element
 }

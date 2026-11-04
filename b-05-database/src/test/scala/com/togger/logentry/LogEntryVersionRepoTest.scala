@@ -43,8 +43,7 @@ class LogEntryVersionRepoTest
   def logEntryVersion(logEntryId: UUID, accountId: UUID, suffix: String) = LogEntryVersion(
     version = UUID.randomUUID(),
     logEntryId = logEntryId,
-    textInternal = s"Text internal $suffix",
-    textExternal = s"Text external $suffix",
+    text = s"Text external $suffix",
     status = LogEntryStatus.InProgress,
     createdBy = accountId,
     createdAt = nowAsInstant,
@@ -68,7 +67,7 @@ class LogEntryVersionRepoTest
         (savedAccount, savedLogEntry) = accountAndEntry
         savedVersion <- logEntryVersionRepo.insert(logEntryVersion(savedLogEntry.id, savedAccount.id, v1))
         foundVersion1 <- logEntryVersionRepo.findByVersion(savedVersion.version)
-        updatedVersion <- logEntryVersionRepo.updateContent(savedVersion.copy(textExternal = "new text external"))
+        updatedVersion <- logEntryVersionRepo.updateContent(savedVersion.copy(text = "new text external"))
         foundVersion2 <- logEntryVersionRepo.findByVersion(savedVersion.version)
         _ <- logEntryVersionRepo.deleteByVersion(foundVersion2.version)
         foundVersion3 <- logEntryVersionRepo.findByVersion(savedVersion.version).attempt
@@ -76,7 +75,7 @@ class LogEntryVersionRepoTest
         val cp = new Checkpoint
         cp(savedVersion shouldBe foundVersion1)
         cp(updatedVersion shouldBe foundVersion2)
-        cp(updatedVersion.textExternal shouldBe "new text external")
+        cp(updatedVersion.text shouldBe "new text external")
         cp.reportAll()
         foundVersion3.isLeft shouldBe true
       }

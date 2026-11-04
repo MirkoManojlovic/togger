@@ -260,7 +260,7 @@ class TaskFeServicePreview(
           PreviewResponses.ok(
             data.logEntryVersions
               .upsert(
-                existing.copy(textInternal = dto.textInternal, textExternal = dto.textExternal, status = dto.status)
+                existing.copy(text = dto.text, status = dto.status)
               )
           )
       }
@@ -485,8 +485,7 @@ class TaskFeServicePreview(
     LogEntryVersionDto(
       UUID.randomUUID(),
       entryId,
-      dto.textInternal,
-      dto.textExternal,
+      dto.text,
       dto.status,
       dto.createdBy,
       dto.createdAt,
@@ -500,8 +499,7 @@ class TaskFeServicePreview(
       entry.createdBy,
       version.createdAt,
       version.version,
-      version.textInternal,
-      version.textExternal,
+      version.text,
       version.status,
       version.updatedAt,
       data.accountName(entry.createdBy)

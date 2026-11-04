@@ -16,7 +16,7 @@ class GanttLogStatusTest extends AnyWordSpec with Matchers {
 
   private def entry(task: UUID, at: String, status: LogEntryStatus) = {
     val createdAt = Instant.parse(at)
-    LogEntryDto(UUID.randomUUID(), task, UUID.randomUUID(), createdAt, UUID.randomUUID(), "", "", status, createdAt)
+    LogEntryDto(UUID.randomUUID(), task, UUID.randomUUID(), createdAt, UUID.randomUUID(), "", status, createdAt)
   }
 
   "GanttLogStatus.byTaskAndDay" should {

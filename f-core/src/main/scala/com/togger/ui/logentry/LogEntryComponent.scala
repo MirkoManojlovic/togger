@@ -36,8 +36,7 @@ case class LogEntryForm(
   logEntryId: Option[UUID] = None,
   taskId: UUID,
   status: String = "",
-  textExternal: String = "",
-  textInternal: String = "",
+  text: String = "",
   date: String = "",
   createdByName: String = ""
 ) {
@@ -61,8 +60,7 @@ object LogEntryForm {
       logEntryId = Some(dto.id),
       taskId = dto.taskId,
       status = dto.status.value.toString,
-      textExternal = dto.textExternal,
-      textInternal = dto.textInternal,
+      text = dto.text,
       date = dto.updatedAt.toLocalDate().toString,
       createdByName = dto.createdByName
     )
@@ -125,8 +123,7 @@ class LogEntryComponent(
       createdBy = accountService.get.get.id,
       createdAt = form.dateAsInstant,
       latestVersion = UUID.randomUUID(),
-      textInternal = form.textInternal,
-      textExternal = form.textExternal,
+      text = form.text,
       status = LogEntryStatus.withValue(form.status.toInt),
       updatedAt = form.dateAsInstant
     )
@@ -144,8 +141,7 @@ class LogEntryComponent(
       createdBy = accountService.get.get.id,
       createdAt = form.dateAsInstant,
       latestVersion = UUID.randomUUID(),
-      textInternal = form.textInternal,
-      textExternal = form.textExternal,
+      text = form.text,
       status = LogEntryStatus.withValue(form.status.toInt),
       updatedAt = tgClock.currentInstant
     )
@@ -195,7 +191,7 @@ class LogEntryComponent(
                   ),
                   body = TgCard.HtmlCardContent(
                     div(
-                      tgMarkdown.toLaminarDiv(state.textExternal),
+                      tgMarkdown.toLaminarDiv(state.text),
                       div(cls("flex justify-end mt-2"), toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3")))
                     )
                   )
@@ -253,8 +249,8 @@ class LogEntryComponent(
       case None    => activePopupVar.update(current => if (current.exists(_.viaTrigger)) None else current)
     }
 
-    lazy val textExternalEditor = formState.wysiwygSplitEditorSig(
-      inputAndUpdater = selectorAndUpdaterMacro(_.textExternal),
+    lazy val textEditor = formState.wysiwygSplitEditorSig(
+      inputAndUpdater = selectorAndUpdaterMacro(_.text),
       labelValue = "",
       minWidthRem = 30,
       minHeightRem = 20,
@@ -284,7 +280,7 @@ class LogEntryComponent(
               formState.update(_.copy(status = chosen.value.toString))
               consumeOpt.foreach(consume => consume())
               activePopupVar.set(None)
-              textExternalEditor.focus()
+              textEditor.focus()
             case "Escape" if consumeOpt.isEmpty =>
               // a click-opened popup has no token for the editor's own Escape handling to dismiss
               event.preventDefault()
@@ -314,7 +310,7 @@ class LogEntryComponent(
                 val closing = activePopupVar.now().contains(ActivePopup.DateOpen(None))
                 activePopupVar.set(if (closing) None else Some(ActivePopup.DateOpen(None)))
                 // opening hands focus to the popup's own input instead (see CalendarPickerPopup's onMountCallback)
-                if (closing) textExternalEditor.focus()
+                if (closing) textEditor.focus()
               }
             )
         },
@@ -337,7 +333,7 @@ class LogEntryComponent(
                 },
                 onClose = () => {
                   activePopupVar.set(None)
-                  textExternalEditor.focus()
+                  textEditor.focus()
                 }
               ).element
             )
@@ -361,7 +357,7 @@ class LogEntryComponent(
                   case _                                     => Some(ActivePopup.StatusOpen("", None))
                 }
                 highlightedVar.set(0)
-                textExternalEditor.focus()
+                textEditor.focus()
               }
             )
         },
@@ -384,7 +380,7 @@ class LogEntryComponent(
                   formState.update(_.copy(status = option.id))
                   consumeOpt.foreach(consume => consume())
                   activePopupVar.set(None)
-                  textExternalEditor.focus()
+                  textEditor.focus()
                 },
                 widthCls = "w-96"
               ).element
@@ -411,7 +407,7 @@ class LogEntryComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(memberName)),
-              textExternalEditor.htmlElement.amend(cls("mb-1")),
+              textEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 mb-4 text-xs text-body-subtle"), "@ date  $ status"),
               div(
                 cls("flex justify-end"),

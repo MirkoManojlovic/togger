@@ -98,8 +98,7 @@ class LogEntryService(
 
   def updateVersionContent(
     version: UUID,
-    textInternal: String,
-    textExternal: String,
+    text: String,
     status: LogEntryStatus
   ): IO[Either[LogEntryError, LogEntryVersion]] =
     (for {
@@ -110,7 +109,7 @@ class LogEntryService(
           (CannotEditLatestVersion: LogEntryError).asLeft[LogEntryVersion].pure[doobie.ConnectionIO]
         else
           logEntryVersionRepo
-            .updateContent(existingVersion.withNewContent(textInternal, textExternal, status))
+            .updateContent(existingVersion.withNewContent(text, status))
             .map(_.asRight[LogEntryError])
     } yield result)
       .transact(transactor)

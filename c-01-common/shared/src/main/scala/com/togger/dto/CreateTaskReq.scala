@@ -147,8 +147,7 @@ case class LogEntryDto(
   createdBy: UUID,
   createdAt: Instant,
   latestVersion: UUID,
-  textInternal: String,
-  textExternal: String,
+  text: String,
   status: LogEntryStatus,
   updatedAt: Instant,
   createdByName: String = ""
@@ -157,8 +156,7 @@ case class LogEntryDto(
 case class LogEntryVersionDto(
   version: UUID,
   logEntryId: UUID,
-  textInternal: String,
-  textExternal: String,
+  text: String,
   status: LogEntryStatus,
   createdBy: UUID,
   createdAt: Instant,

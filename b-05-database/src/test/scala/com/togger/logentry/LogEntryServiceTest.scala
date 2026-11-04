@@ -50,8 +50,7 @@ class LogEntryServiceTest
   def newVersion(suffix: String) = LogEntryVersion(
     version = UUID.randomUUID(),
     logEntryId = UUID.randomUUID(),
-    textInternal = s"internal $suffix",
-    textExternal = s"external $suffix",
+    text = s"external $suffix",
     status = LogEntryStatus.InProgress,
     createdBy = accountId,
     createdAt = nowAsInstant,
@@ -153,7 +152,7 @@ class LogEntryServiceTest
       val firstVersion = newVersion("v1").copy(logEntryId = logEntry.id)
       val secondVersion = newVersion("v2").copy(logEntryId = logEntry.id)
       val editedFirstVersion =
-        firstVersion.withNewContent("old internal edit", "old external edit", LogEntryStatus.Completed)
+        firstVersion.withNewContent("old external edit", LogEntryStatus.Completed)
 
       (logEntryRepo.insert _).expects(logEntry).returns(logEntry.pure[ConnectionIO])
       (logEntryVersionRepo.insert _).expects(firstVersion).returns(firstVersion.pure[ConnectionIO])
@@ -172,13 +171,11 @@ class LogEntryServiceTest
         savedSecondVersion = secondResult.toOption.get.version
         editLatestResult <- service.updateVersionContent(
           savedSecondVersion.version,
-          "edited internal",
           "edited external",
           LogEntryStatus.Completed
         )
         editOldResult <- service.updateVersionContent(
           firstVersion.version,
-          "old internal edit",
           "old external edit",
           LogEntryStatus.Completed
         )
@@ -186,7 +183,7 @@ class LogEntryServiceTest
         val cp = new Checkpoint
         cp(editLatestResult shouldBe Left(CannotEditLatestVersion))
         cp.reportAll()
-        editOldResult.map(_.textExternal) shouldBe Right("old external edit")
+        editOldResult.map(_.text) shouldBe Right("old external edit")
       }).unsafeToFuture()
     }
 

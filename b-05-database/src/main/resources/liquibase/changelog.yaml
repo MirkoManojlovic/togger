@@ -2293,3 +2293,18 @@ databaseChangeLog:
             tableName: milestone_template_version_step
             columnNames: milestone_template_version, position, milestone_step_template_id
             constraintName: pk_milestone_template_version_step
+  - changeSet:
+      id: 22
+      author: mirko
+      labels: log-entry-single-text
+      comment: >
+        A log entry version has a single text: the internal text is dropped and the external text is renamed to text.
+      changes:
+        - dropColumn:
+            tableName: log_entry_version
+            columnName: text_internal
+        - renameColumn:
+            tableName: log_entry_version
+            oldColumnName: text_external
+            newColumnName: text
+            columnDataType: text

@@ -89,7 +89,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
   ): ConnectionIO[List[LogEntryWithOneVersion]] =
     logAroundInfoQuery(
       (fr"""select log_entry.id, log_entry.task_id, log_entry.created_by, log_entry.created_at,
-              latest_entry.version, latest_entry.log_entry_id, latest_entry.text_internal, latest_entry.text_external,
+              latest_entry.version, latest_entry.log_entry_id, latest_entry.text,
               latest_entry.status, latest_entry.created_by, latest_entry.created_at, latest_entry.updated_at
             from""" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
         latestVersionLateral ++ milestoneStepJoin ++

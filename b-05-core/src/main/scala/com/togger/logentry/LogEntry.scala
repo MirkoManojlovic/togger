@@ -13,16 +13,15 @@ case class LogEntry(
 case class LogEntryVersion(
   version: UUID,
   logEntryId: UUID,
-  textInternal: String,
-  textExternal: String,
+  text: String,
   status: LogEntryStatus,
   createdBy: UUID,
   createdAt: Instant,
   updatedAt: Instant
 ) {
 
-  def withNewContent(textInternal: String, textExternal: String, status: LogEntryStatus): LogEntryVersion =
-    this.copy(textInternal = textInternal, textExternal = textExternal, status = status)
+  def withNewContent(text: String, status: LogEntryStatus): LogEntryVersion =
+    this.copy(text = text, status = status)
 
 }
 

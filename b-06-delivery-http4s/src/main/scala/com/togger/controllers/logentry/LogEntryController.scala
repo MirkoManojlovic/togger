@@ -32,8 +32,7 @@ class LogEntryController(
     val firstVersion = LogEntryVersion(
       version = UUID.randomUUID(),
       logEntryId = logEntry.id,
-      textInternal = dto.textInternal,
-      textExternal = dto.textExternal,
+      text = dto.text,
       status = dto.status,
       createdBy = dto.createdBy,
       createdAt = dto.createdAt,
@@ -87,8 +86,7 @@ class LogEntryController(
     val newVersion = LogEntryVersion(
       version = UUID.randomUUID(),
       logEntryId = dto.id,
-      textInternal = dto.textInternal,
-      textExternal = dto.textExternal,
+      text = dto.text,
       status = dto.status,
       createdBy = dto.createdBy,
       createdAt = dto.createdAt,
@@ -117,7 +115,7 @@ class LogEntryController(
 
   val updateVersion = logEntryEndpoints.updateVersionEndpoint.serverLogic { _ => dto =>
     logEntryService
-      .updateVersionContent(dto.version, dto.textInternal, dto.textExternal, dto.status)
+      .updateVersionContent(dto.version, dto.text, dto.status)
       .map {
         case Right(version) => TgJsonSuccess.justBodyRight(toVersionDto(version))
         case Left(error)    => error.toBadRequestLeft[LogEntryVersionDto]
