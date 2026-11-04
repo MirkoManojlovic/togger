@@ -79,6 +79,21 @@ backend-desktop db_mode="development":
 backend-demo-seed:
     sbt --client "backendMain/runMain com.togger.maintenance.DemoSeedApp"
 
+# Seeds the demo data (skipped with a message when it fails, e.g. because it is already there), then starts the backend
+backend-web-demo:
+    -just backend-demo-seed
+    just backend-web
+
+# Frontend (npm run dev) in the background, stopped with the backend; the demo seed runs before the backend starts
+web-demo: npm-install
+    #!/usr/bin/env bash
+    set -uo pipefail
+    just backend-demo-seed || echo "Demo seed did not run (already seeded?), starting the backend anyway"
+    npm run dev &
+    frontend_pid=$!
+    trap 'kill "$frontend_pid" 2>/dev/null || true' EXIT
+    just backend-web
+
 # Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock, commits and tags v<version>.
 # The sbt version follows the tag (sbt-dynver). Push with `git push origin develop v<version>` to start the release.
 release version:
