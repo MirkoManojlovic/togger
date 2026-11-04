@@ -46,6 +46,39 @@ desktop-prod: (build-tauri-backend "prod") build-tauri-mcp build-tauri-app
 desktop-dev-clean: (build-tauri-backend-clean "development") build-tauri-mcp build-tauri-app
 desktop-prod-clean: (build-tauri-backend-clean "prod") build-tauri-mcp build-tauri-app
 
+# Local development. The frontend needs `sbt ~frontendMain/fastLinkJS` running next to it.
+changelog_path := "b-05-database/src/main/resources/"
+
+# runs `npm i` only when node_modules is missing or older than package-lock.json
+npm-install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -d node_modules ] || [ package-lock.json -nt node_modules ]; then
+        npm i
+        touch node_modules
+    fi
+
+frontend-web: npm-install
+    npm run dev
+
+frontend-tauri-dev: npm-install
+    npm run tauri dev
+
+# debug build of the Tauri app (not the optimized release bundle)
+frontend-tauri-debug: npm-install
+    npm run tauri build -- --debug
+
+backend-web:
+    sbt --client "backendMain/runMain com.togger.BackendApp web {{changelog_path}}"
+
+# db_mode: development -> togger-local-development, prod -> togger-local
+backend-desktop db_mode="development":
+    sbt --client "backendMain/runMain com.togger.BackendApp desktop {{changelog_path}} {{db_mode}}"
+
+# Fills a migrated development database with the demo data; refuses to run twice (stops when the demo admin exists)
+backend-demo-seed:
+    sbt --client "backendMain/runMain com.togger.maintenance.DemoSeedApp"
+
 # Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock, commits and tags v<version>.
 # The sbt version follows the tag (sbt-dynver). Push with `git push origin develop v<version>` to start the release.
 release version:
