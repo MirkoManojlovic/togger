@@ -1,8 +1,8 @@
 package com.togger.ui.milestone
 
 import com.raquo.laminar.api.L._
-import com.togger.common.TgClock
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import com.togger.common.TgClock
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax

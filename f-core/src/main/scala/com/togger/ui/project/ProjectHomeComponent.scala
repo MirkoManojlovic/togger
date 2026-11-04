@@ -30,10 +30,10 @@ import com.togger.ui.components.TgTabs
 import com.togger.ui.components.pagination.PaginatedLoader
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneStepFeService
+import com.togger.ui.milestone.MilestoneStepsGraphComponent
 import com.togger.ui.milestone.MilestoneSummaryFeService
 import com.togger.ui.milestone.MilestoneTabs
 import com.togger.ui.milestone.MilestoneTaskRows
-import com.togger.ui.milestone.MilestoneStepsGraphComponent
 import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
