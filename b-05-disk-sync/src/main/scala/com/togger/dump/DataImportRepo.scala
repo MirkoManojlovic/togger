@@ -99,6 +99,26 @@ class DataImportRepo(
     } yield project
   }
 
+  /** Applies the exported description, icon and work days to the project when the disk copy is newer. The name is left
+    * alone, as the import check ignores it too, and the disk's `updatedAt` is kept so that the check finds both in sync.
+    */
+  def mergeProject(projectIdDb: UUID, exported: Project): ConnectionIO[DataImportEntityResult] =
+    projectRepo.findById(projectIdDb).flatMap { current =>
+      val changed = current.description != exported.description || current.icon != exported.icon ||
+        current.workDays != exported.workDays
+      if (changed && exported.updatedAt.isAfter(current.updatedAt))
+        projectRepo
+          .update(
+            current.copy(description = exported.description, icon = exported.icon, workDays = exported.workDays),
+            exported.updatedAt
+          )
+          .as(DataImportEntityResult.updated(DataExportEntityType.Project, projectIdDb, Some(current.name)))
+      else
+        DataImportEntityResult
+          .merged(DataExportEntityType.Project, projectIdDb, Some(current.name), false, 0, 0)
+          .pure[ConnectionIO]
+    }
+
   def resolveAccountMapping(accountDumpData: AccountDumpData): ConnectionIO[Either[ProjectError, UUID]] =
     findMappingOfDumpAccount(accountDumpData.id).flatMap {
       case Some(mapping) =>

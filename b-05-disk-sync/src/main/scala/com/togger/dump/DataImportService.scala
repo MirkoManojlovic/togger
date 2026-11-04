@@ -136,6 +136,11 @@ class DataImportService(
             state <- timed("load existing project state", projectId)(
               dataImportRepo.loadImportState(projectId).transact(transactor)
             )
+            project <- dataImportRepo
+              .mergeProject(projectId, projectDump.project)
+              .transact(transactor)
+              .attempt
+              .map(_.fold(e => failed(DataExportEntityType.Project, projectId, e), identity))
             milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(m =>
               dataImportRepo.mergeMilestone(remap.milestone(m))
             )
@@ -175,7 +180,7 @@ class DataImportService(
             DataImportResult(
               importPath,
               statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                milestones ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
+                List(project) ++ milestones ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
             )
           )
         }

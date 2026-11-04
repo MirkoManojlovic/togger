@@ -333,6 +333,33 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "apply the project fields of a newer tree to the project, and leave a newer project alone" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        exported <- projectRepo.findById(fixture.projectId).transact(transactor)
+        older = exported.copy(icon = "old-icon", description = "old description")
+        _ <- projectRepo.update(older, exported.updatedAt.minusSeconds(60)).transact(transactor)
+        first <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        restored <- projectRepo.findById(fixture.projectId).transact(transactor)
+        newer = restored.copy(icon = "newer-icon")
+        _ <- projectRepo.update(newer, exported.updatedAt.plusSeconds(60)).transact(transactor)
+        second <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        kept <- projectRepo.findById(fixture.projectId).transact(transactor)
+      } yield {
+        restored.icon shouldBe exported.icon
+        restored.description shouldBe exported.description
+        restored.updatedAt shouldBe exported.updatedAt
+        first.toOption.get.results.filter(_.entityType == DataExportEntityType.Project).map(_.status) shouldBe List(
+          DataImportStatus.Merged
+        )
+        kept.icon shouldBe "newer-icon"
+        second.toOption.get.results.filter(_.entityType == DataExportEntityType.Project).map(_.status) shouldBe List(
+          DataImportStatus.Unchanged
+        )
+      }
+    }
+
     "reject a new project import from a folder without an index" in { transactor =>
       val emptyFolder = newExportPath()
       os.makeDir.all(emptyFolder)
