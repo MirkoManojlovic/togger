@@ -72,8 +72,10 @@ import com.togger.ui.tgprompttemplate._
 import com.togger.ui.theme.ThemeStore
 import com.togger.ui.timebox._
 import com.togger.ui.toast.Toast
+import com.togger.ui.toast.ToastMessage
 import com.togger.ui.toast.ToastMessagesService
 import com.togger.ui.updater.UpdaterComponent
+import com.togger.ui.updater.UpdaterStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLDivElement
 import sttp.client3.UriContext
@@ -398,6 +400,13 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val toastMessagesService = new ToastMessagesService(toastMessageDisplayTimeInMillis, new OneTimeOwner(() => ()))
   lazy val toast = new Toast(toastMessagesService, toastHolder)
 
+  lazy val updaterStore = new UpdaterStore
+  updaterStore.checkOnStartup(version =>
+    toastMessagesService.createAToastMessage(
+      ToastMessage.success(s"Togger $version is available. Install it in Settings > Updates.")
+    )
+  )
+
   lazy val findAccountServiceImpl: FindAccountService =
     if (previewConfig.enabled) new FindAccountServicePreview(previewModule.context, previewModule.accounts)
     else new FindAccountServiceImpl(securedEndpoint, protectedBackendClient)
@@ -480,7 +489,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                 ).element
               case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
               case McpSettingsPage       => new McpSettingsComponent().element
-              case UpdaterSettingsPage   => new UpdaterComponent().element
+              case UpdaterSettingsPage   => new UpdaterComponent(updaterStore).element
               case ShowAllAccountsPage(listParams) =>
                 new ShowAllAccountsComponent(
                   accountManagementService,
