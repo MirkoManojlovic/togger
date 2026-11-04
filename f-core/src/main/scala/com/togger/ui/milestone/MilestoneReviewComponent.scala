@@ -23,10 +23,10 @@ import com.togger.ui.organization.TgIcons
 import com.togger.ui.project.ProjectService
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DateEmoji
+import com.togger.ui.task.TaskCloseFlow
 import com.togger.ui.task.TaskConfigTableSupport.iconButton
 import com.togger.ui.task.TaskConfigTableSupport.rowButtonMarginCls
 import com.togger.ui.task.TaskConfigTableSupport.rowIconButtonCls
-import com.togger.ui.task.TaskCloseFlow
 import com.togger.ui.task.TaskFeService
 import com.togger.ui.task.TaskLabelFeService
 import com.togger.ui.task.TaskListLookups
