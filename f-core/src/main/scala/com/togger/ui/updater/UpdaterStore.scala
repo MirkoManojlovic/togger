@@ -32,28 +32,23 @@ class UpdaterStore {
   val isAvailableInApp: Boolean = updater.isDefined
 
   /** Checks for an update; a failure is reported through the state only when the user asked for the check. */
-  def check(reportFailure: Boolean = true): Unit =
+  def check(reportFailure: Boolean = true, onAvailable: String => Unit = _ => ()): Unit =
     updater.filterNot(_ => stateVar.now() == Checking || stateVar.now() == Installing).foreach { updater =>
       stateVar.set(Checking)
       updater.check().asInstanceOf[js.Promise[js.Dynamic]].toFuture.onComplete {
+        case Success(result) if js.isUndefined(result) || result == null => stateVar.set(UpToDate)
         case Success(result) =>
-          stateVar.set(
-            if (js.isUndefined(result) || result == null) UpToDate
-            else Available(result.version.asInstanceOf[String], result.notes.asInstanceOf[String])
-          )
+          val version = result.version.asInstanceOf[String]
+          stateVar.set(Available(version, result.notes.asInstanceOf[String]))
+          onAvailable(version)
         case Failure(error) =>
           stateVar.set(if (reportFailure) Failed(error.getMessage) else Idle)
       }
     }
 
   /** Checks once when the app starts and calls onAvailable when there is a newer version. */
-  def checkOnStartup(onAvailable: String => Unit): Unit = {
-    check(reportFailure = false)
-    state
-      .collect { case Available(version, _) => version }
-      .take(1)
-      .foreach(onAvailable)(unsafeWindowOwner)
-  }
+  def checkOnStartup(onAvailable: String => Unit): Unit =
+    check(reportFailure = false, onAvailable)
 
   def install(): Unit =
     updater.foreach { updater =>
