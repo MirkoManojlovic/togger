@@ -115,11 +115,12 @@ stop-backend:
 mcp-start:
     sbt --client "backendMcp/runMain com.togger.mcp.McpApp"
 
-# Stops the MCP server (the forked JVM listening on port 8090), not the sbt server that started it.
+# Stops the MCP server (the forked JVM, found by its main class as it listens on port 8090 only after its login to the
+# backend succeeded), not the sbt server that started it.
 mcp-stop:
     #!/usr/bin/env bash
     set -uo pipefail
-    pids=$(lsof -nP -tiTCP:8090 -sTCP:LISTEN || true)
+    pids=$( (lsof -nP -tiTCP:8090 -sTCP:LISTEN; pgrep -f "bin/java .*com.togger.mcp.McpApp") 2>/dev/null | sort -u || true)
     [ -z "$pids" ] || kill $pids
     echo "mcp stopped"
 
