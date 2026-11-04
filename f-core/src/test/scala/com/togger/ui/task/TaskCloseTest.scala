@@ -3,6 +3,7 @@ package com.togger.ui.task
 import com.togger.common.WorkDayCalendar
 import com.togger.common.suites.AsyncJsWordSpec
 import com.togger.dto.FindTaskStatusResp
+import com.togger.ui.task.bulk.BulkEdit
 
 import java.time.LocalDate
 import java.util.UUID
@@ -24,6 +25,15 @@ class TaskCloseTest extends AsyncJsWordSpec {
 
     "find no closing status when the project has none" in { _ =>
       TaskClose.closingStatuses(Seq(status("Todo"))) shouldBe Seq.empty
+    }
+
+    "treat a bulk status edit to Done or Won't do as closing, and any other edit as not" in { _ =>
+      val done = status("✅ Done")
+      val todo = status("Todo")
+      val statuses = Seq(todo, done)
+      TaskClose.closingStatusOf(BulkEdit.SetStatus(done.id), statuses) shouldBe Some(done)
+      TaskClose.closingStatusOf(BulkEdit.SetStatus(todo.id), statuses) shouldBe None
+      TaskClose.closingStatusOf(BulkEdit.SetWorkDays(2), statuses) shouldBe None
     }
 
     "accept a work day on or after the start date" in { _ =>

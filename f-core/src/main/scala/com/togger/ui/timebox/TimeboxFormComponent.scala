@@ -85,7 +85,8 @@ class TimeboxFormComponent(
   spinnerService: SpinnerService,
   tgClock: TgClock,
   isDark: Signal[Boolean],
-  val toast: Toast
+  val toast: Toast,
+  closeFlow: TaskCloseFlow
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -435,6 +436,12 @@ class TimeboxFormComponent(
     */
   private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
     val current = lookupsNow()
+    TaskClose.closingStatusOf(edit, current.statuses).foreach { status =>
+      val toClose =
+        editableTasks(scope).filter(dto => dto.taskStatus.id != status.id && !savingVar.now().contains(dto.id))
+      closeFlow.start(toClose.toList, status, current.workDays, () => reloadAfterClose())
+      return
+    }
     val changed = editableTasks(scope)
       .filter(dto => !savingVar.now().contains(dto.id))
       .flatMap { dto =>
@@ -455,6 +462,9 @@ class TimeboxFormComponent(
         .unsafeRunAndForget()
     }
   }
+
+  private def reloadAfterClose(): Unit =
+    spinnerService.runWithSpinner(browser.loadPage() >> refreshStaged()).unsafeRunAndForget()
 
   private def refreshStaged(): IO[Unit] =
     taskService

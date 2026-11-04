@@ -2,6 +2,7 @@ package com.togger.ui.milestone
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import cats.syntax.all._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.raquo.laminar.nodes.ReactiveHtmlElement
@@ -60,7 +61,8 @@ class MilestoneStepTasksComponent(
   milestoneId: UUID,
   milestoneSteps: Signal[Seq[FindMilestoneStepResp]],
   onSaved: IO[Unit],
-  val toast: Toast
+  val toast: Toast,
+  closeFlow: TaskCloseFlow
 )(implicit ioRuntime: IORuntime)
     extends ToastMessages {
 
@@ -266,6 +268,12 @@ class MilestoneStepTasksComponent(
   /** Saves the edit for the task at once, as the timebox form does, and reads the page and the staged copies again. */
   private def saveEdit(scope: Option[UUID], edit: BulkEdit): Unit = {
     val current = lookupsNow()
+    TaskClose.closingStatusOf(edit, current.statuses).foreach { status =>
+      val toClose =
+        editableTasks(scope).filter(dto => dto.taskStatus.id != status.id && !savingVar.now().contains(dto.id))
+      closeFlow.start(toClose.toList, status, current.workDays, () => reloadAfterClose(toClose.map(_.id)))
+      return
+    }
     val changed = editableTasks(scope)
       .filter(dto => !savingVar.now().contains(dto.id))
       .flatMap { dto =>
@@ -286,6 +294,11 @@ class MilestoneStepTasksComponent(
         .unsafeRunAndForget()
     }
   }
+
+  private def reloadAfterClose(taskIds: Seq[UUID]): Unit =
+    spinnerService
+      .runWithSpinner(browser.loadPage() >> taskIds.toList.traverse_(refreshStaged))
+      .unsafeRunAndForget()
 
   /** Swaps the staged tasks for their saved state, and, when the edit moved the edited task to another step, puts it in
     * the step it is now saved in: in none when it left the milestone. The saved state the changes are counted from

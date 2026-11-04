@@ -185,6 +185,32 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   )
   lazy val modalFactory = new ModalFactory(elementForModal)
 
+  lazy val closeFlow = new TaskCloseFlow(
+    taskService,
+    spinnerService,
+    tgClock,
+    tgDateFormater,
+    toast,
+    (scope, onClose, onSubmitted) =>
+      new SlackerComponent(
+        taskService,
+        taskProjectDataLoader,
+        milestoneService,
+        milestoneStepService,
+        spinnerService,
+        accountService,
+        tgClock,
+        tgDateFormater,
+        tgMarkdown,
+        Some(scope.projectId),
+        localStorage,
+        toast,
+        onClose,
+        scope = Some(scope),
+        onSubmitted = onSubmitted
+      ).element
+  )
+
   private def confirmPreviewReset(): Unit =
     modalFactory.plainModal(
       message = PlainTextModalMessage(
@@ -465,6 +491,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
         elementForBulkCreate,
         elementForTeamDaily,
         elementForSlacker,
+        closeFlow.element,
         div(
           cls <-- loginRepo.authenticatedSignal.combineWith(sidebarCollapseStore.current).map {
             case (accountOpt, collapsed) =>
@@ -726,7 +753,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectId,
                   listParams,
                   toast,
-                  modalFactory
+                  modalFactory,
+                  closeFlow
                 ).element
               case EditTaskPage(projectId, taskId) =>
                 new EditTaskComponent(
@@ -990,7 +1018,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                     themeStore.isDark,
                     projectId,
                     id,
-                    toast
+                    toast,
+                    closeFlow
                   ).element
                 ).element
               case ShowMilestoneStepsPage(projectId: UUID, milestoneId: UUID) =>
@@ -1010,7 +1039,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   themeStore.isDark,
                   projectId,
                   milestoneId,
-                  toast
+                  toast,
+                  closeFlow
                 ).element
               case CreateMilestoneStepPage(projectId: UUID, milestoneId: UUID) =>
                 new CreateMilestoneStepPageComponent(
@@ -1073,7 +1103,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   projectId,
                   milestoneId,
                   toast,
-                  modalFactory
+                  modalFactory,
+                  closeFlow
                 ).element
               case ProjectHomePage(projectId) =>
                 new ProjectHomeComponent(
@@ -1147,7 +1178,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   tgClock,
                   themeStore.isDark,
-                  toast
+                  toast,
+                  closeFlow
                 ).element
               case EditTimeboxPage(projectId: UUID, timeboxId: UUID) =>
                 new TimeboxFormComponent(
@@ -1166,7 +1198,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   tgClock,
                   themeStore.isDark,
-                  toast
+                  toast,
+                  closeFlow
                 ).element
               case TimeboxHistoryPage(projectId: UUID, timeboxId: UUID) =>
                 new TimeboxHistoryComponent(

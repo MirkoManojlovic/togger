@@ -41,7 +41,8 @@ class ShowAllTasksComponent(
   projectId: UUID,
   params: TaskListParams,
   val toast: Toast,
-  modalFactory: ModalFactory
+  modalFactory: ModalFactory,
+  closeFlow: TaskCloseFlow
 )(implicit
   ioRuntime: IORuntime
 ) extends ToastMessages {
@@ -73,6 +74,7 @@ class ShowAllTasksComponent(
     showList,
     toast,
     modalFactory,
+    closeFlow,
     defaultDeselectedStatuses = Set(Todo, Backlog, Done, WontDo)
   )
 
