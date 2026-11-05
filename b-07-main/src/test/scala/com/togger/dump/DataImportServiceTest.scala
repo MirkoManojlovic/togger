@@ -409,6 +409,24 @@ class DataImportServiceTest extends ExportImportTestSupport {
         .map(_.status) shouldBe List(DataExportSyncStatus.InSync)
     }
 
+    "compare the project of a tree with the new project it was imported into" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
+        source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        imported <- newImportService(transactor).importNewProject(
+          source.organizationId,
+          fixture.accountId,
+          root.toString
+        )
+        (newProjectId, _) = imported.toOption.get
+        status <- newExportService(transactor).checkImportStatus(newProjectId, fixture.accountId, root.toString)
+      } yield status.toOption.get.entityStatuses
+        .filter(_.entityType == DataExportEntityType.Project)
+        .map(s => (s.status, s.fieldDiffs.map(_.field))) shouldBe List((DataExportSyncStatus.InSync, Nil))
+    }
+
     "reject a new project import from a folder without an index" in { transactor =>
       val emptyFolder = newExportPath()
       os.makeDir.all(emptyFolder)
