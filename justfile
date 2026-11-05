@@ -126,8 +126,8 @@ mcp-stop:
 
 stop-all: stop-frontend stop-backend mcp-stop
 
-# Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock, commits and tags v<version>.
-# The sbt version follows the tag (sbt-dynver). Push with `git push origin develop v<version>` to start the release.
+# Bumps the desktop app version in tauri.conf.json, Cargo.toml and Cargo.lock and commits it (no tag).
+# Part of the release-togger skill: run it on a release/<version> branch, merge the PR, then run `just release-tag`.
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -140,5 +140,18 @@ release version:
     (cd src-tauri && cargo update --workspace --offline)
     git add src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
     git commit -m "chore(project): release {{version}}"
+    echo "Committed the release {{version}}. Push the branch, open the PR and merge it, then run: just release-tag {{version}}"
+
+# Tags v<version> on develop once the release PR is merged, and prints the push command that starts the release.
+release-tag version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [[ "$(git branch --show-current)" == "develop" ]] || { echo "not on develop"; exit 1; }
+    [[ -z "$(git status --porcelain)" ]] || { echo "working tree is not clean"; exit 1; }
+    git fetch origin
+    [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/develop)" ]] || { echo "develop differs from origin/develop"; exit 1; }
+    app_version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+    [[ "$app_version" == "{{version}}" ]] || { echo "tauri.conf.json is at $app_version, not {{version}}"; exit 1; }
+    ! git rev-parse "v{{version}}" >/dev/null 2>&1 || { echo "tag v{{version}} already exists"; exit 1; }
     git tag "v{{version}}"
-    echo "Tagged v{{version}}. Push with: git push origin develop v{{version}}"
+    echo "Tagged v{{version}}. Push with: git push origin v{{version}}"
