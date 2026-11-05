@@ -5,17 +5,17 @@ description: Sync a branch with develop. Fetches and prunes all remotes, fast-fo
 
 # Sync Branch Skill
 
-Runs the `sync-branch` recipe of the `justfile`: `just sync-branch <branch>`.
+Runs the `sync-branch` recipe of the `justfile`: `just sync-branch [branch]`.
 
 What the recipe does, in order:
 1. `git fetch --all --prune`.
 2. Fast-forwards `develop` from `origin` (in place with `merge --ff-only` when `develop` is checked out in a worktree).
 3. For every local branch whose upstream is `[gone]` (never `develop`): removes its worktree if it has one, then `git branch -D`.
-4. Rebases `<branch>` on `develop`, in the worktree where it is checked out, or after checking it out in the current directory.
+4. Rebases `<branch>` (default: the current branch) on `develop`, in the worktree where it is checked out, or after checking it out in the current directory.
 
 ## Step 1 — Branch name
 
-Use the branch the user named. If none was given, ask which branch to rebase; do not guess from the current branch.
+Use the branch the user named. If none was given, the recipe rebases the current branch (it fails on `develop` or a detached HEAD, then ask which branch to rebase).
 
 ## Step 2 — Check what will be deleted
 
@@ -32,7 +32,7 @@ Warn when the requested branch itself is `[gone]` (the recipe would delete it an
 ## Step 3 — Run
 
 ```bash
-just sync-branch <branch>
+just sync-branch [branch]
 ```
 
 ## Step 4 — Rebase conflicts

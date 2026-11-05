@@ -206,12 +206,19 @@ release-tag version:
     git tag "v{{version}}"
     echo "Tagged v{{version}}. Push with: git push origin v{{version}}"
 
-# fetch, fast-forward develop, delete local branches/worktrees whose remote branch is gone, rebase <branch> on develop
-sync-branch branch:
+# fetch, fast-forward develop, delete local branches/worktrees whose remote branch is gone, rebase <branch> (default: current branch) on develop
+sync-branch branch='':
     #!/usr/bin/env bash
     set -euo pipefail
-    branch="{{branch}}"
     base="develop"
+    branch="{{branch}}"
+    if [[ -z "$branch" ]]; then
+        branch=$(git branch --show-current)
+    fi
+    if [[ -z "$branch" || "$branch" == "$base" ]]; then
+        echo "Pass the branch to rebase: the current checkout is '${branch:-detached HEAD}'." >&2
+        exit 1
+    fi
 
     git fetch --all --prune
 
