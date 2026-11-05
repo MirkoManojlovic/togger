@@ -66,7 +66,7 @@ Verify `git show --stat HEAD` touches only those three files. If `cargo update -
 SKIP_PRE_PUSH=1 git push -u origin release/X.Y.Z
 ```
 
-The release push **always** skips the pre-push hook (`SKIP_PRE_PUSH=1`): the same checks run on the PR in Step 7, and the release must not wait for the local test run.
+The release pushes (the branch here and the tag in Step 9) **always** skip the pre-push hook (`SKIP_PRE_PUSH=1`; the hook also runs on tag pushes and would hang on the full test run): the same checks run on the PR in Step 7, and the release must not wait for the local test run.
 
 ## Step 6 — Open the PR
 
@@ -104,7 +104,7 @@ Make sure `HEAD` is the merge commit and `src-tauri/tauri.conf.json` has the rel
 
 ```bash
 just release-tag <version>
-git push origin v<version>
+SKIP_PRE_PUSH=1 git push origin v<version>
 ```
 
 This publishes a release, so only do it once the user has said to go ahead with the release (the confirmation in Step 8 may cover it if it said so explicitly).

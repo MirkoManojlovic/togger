@@ -364,8 +364,11 @@ class DataExportService(
     results.reverse ++ unmatchedDisk ++ missingFromExport
   }
 
-  /** The import check does not report a project that was renamed, nor the id it had when exported. */
-  private val importIgnoredFields = Set("project.name", "project.id")
+  /** The import check does not report a project that was renamed, nor the id, organization and timestamps it had when
+    * exported: an import into a new project gives it a new id and timestamps, and the organization may be another one.
+    */
+  private val importIgnoredFields =
+    Set("project.name", "project.id", "project.organizationId", "project.createdAt", "project.updatedAt")
 
   /** The project of an import folder is the database project whatever its id, as an import into a new project gives it
     * a new one.
