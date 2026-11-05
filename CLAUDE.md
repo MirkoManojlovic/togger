@@ -133,6 +133,10 @@ all tests) against the running sbt server; it needs Postgres and a `togger-test`
 
 ## Git worktrees
 
+Every Claude session starts its work from `develop` by creating a new branch in a new git worktree (e.g.
+`git worktree add -b <new-branch> ../togger.worktrees/<name> develop`, after fetching so `develop` is current). Do not
+work in the main checkout or commit to `develop` directly.
+
 Always create new git worktrees in `togger.worktrees`, the sibling directory of the main checkout (`../togger.worktrees`
 from the repo root; one subdirectory per worktree), not in `.claude/worktrees/` inside the repo.
 
