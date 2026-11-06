@@ -42,7 +42,7 @@ class CreateAdminAccount(transactor: Transactor[IO]) {
       exists <- accountExists(AdminEmail).transact(transactor)
       _ <-
         if (exists) IO.unit
-        else accountService.createAccount(createAccount("John", "Doe", AdminEmail, adminAccountType.id)).void
+        else accountService.createAccount(createAccount("Admin", "Account", AdminEmail, adminAccountType.id)).void
     } yield ()
   }
 
