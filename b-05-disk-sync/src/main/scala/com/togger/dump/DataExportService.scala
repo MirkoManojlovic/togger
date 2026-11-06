@@ -7,6 +7,7 @@ import com.togger.dataexportconfig.DataExportConfig
 import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.db.TgPages
 import com.togger.logging.TgLogging
+import com.togger.deletedentity.DeletedEntity
 import com.togger.project.Project
 import com.togger.project.ProjectError.DumpManifestMissing
 import com.togger.project.ProjectError.ImportFolderReadTimeout
@@ -53,7 +54,8 @@ class DataExportService(
   private case class ExportData(
     project: Project,
     exportedBy: AccountDumpData,
-    entities: List[ExportEntity]
+    entities: List[ExportEntity],
+    deletedEntities: List[DeletedEntity]
   )
 
   /** An export or status check visits every export config of the project, so all pages are read. */
@@ -94,7 +96,14 @@ class DataExportService(
               val exportedAt = tgClock.currentInstant
               val pathResults = configs.map { config =>
                 Try(
-                  dataExportTreeStore.write(config.exportPath, data.project, exportedAt, data.exportedBy, data.entities)
+                  dataExportTreeStore.write(
+                    config.exportPath,
+                    data.project,
+                    exportedAt,
+                    data.exportedBy,
+                    data.entities,
+                    data.deletedEntities
+                  )
                 ) match {
                   case Success(written) => DataExportPathResult.success(written.path)
                   case Failure(e)       => DataExportPathResult.error(config.exportPath, e.getMessage)
@@ -542,7 +551,8 @@ class DataExportService(
         } yield ExportData(
           snapshot.project,
           AccountDumpData.from(account),
-          DataExportEntities.build(snapshot, referencedAccounts)
+          DataExportEntities.build(snapshot, referencedAccounts),
+          snapshot.deletedEntities
         ).asRight[ProjectError]
     }
 

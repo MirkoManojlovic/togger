@@ -11,6 +11,7 @@ import com.togger.common.TimeHelpers
 import com.togger.dataexportconfig.DataExportConfig
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.dataexportconfig.DataExportConfigService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dump.DayOfWeekCodec._
 import com.togger.logentry._
 import com.togger.milestone._
@@ -89,6 +90,7 @@ trait ExportImportTestSupport
   val projectLabelCategoryRepo = new ProjectLabelCategoryRepoImpl
   val projectLabelAssignmentRepo = new ProjectLabelAssignmentRepoImpl
   val projectMappingRepo = new ProjectMappingRepoImpl
+  val deletedEntityRepo = new DeletedEntityRepoImpl
   val accountMappingRepo = new AccountMappingRepoImpl
   val dataExportConfigRepo = new DataExportConfigRepoImpl
 
@@ -127,7 +129,8 @@ trait ExportImportTestSupport
     timeboxRepo,
     timeboxVersionRepo,
     tgPromptTemplateRepo,
-    tgPromptTemplateVersionRepo
+    tgPromptTemplateVersionRepo,
+    deletedEntityRepo
   )
 
   val dataImportRepo = new DataImportRepo(
@@ -390,6 +393,7 @@ trait ExportImportTestSupport
   /** Removes everything an import restores, keeping accounts, the project and its memberships. */
   def deleteProjectContent: ConnectionIO[Unit] =
     List(
+      DeletedEntityRepoImpl.DELETED_ENTITY_TABLE,
       TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE,
       TimeboxVersionRepoImpl.TIMEBOX_VERSION_TABLE,
       TimeboxRepoImpl.TIMEBOX_TABLE,
@@ -434,7 +438,7 @@ trait ExportImportTestSupport
   /** Rewrites `index.json`, keeping its root hash consistent with the entries. */
   def editIndex(root: os.Path)(change: ExportIndex => ExportIndex): Unit = {
     val updated = change(readIndex(root))
-    val withRootHash = updated.copy(rootHash = ExportHasher.rootHash(updated.entities))
+    val withRootHash = updated.copy(rootHash = ExportHasher.rootHash(updated.entities, updated.deleted))
     os.write.over(root / "index.json", withRootHash.asJson.spaces2)
   }
 

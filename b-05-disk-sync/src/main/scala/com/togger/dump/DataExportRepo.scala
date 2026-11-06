@@ -4,6 +4,8 @@ import cats.implicits._
 import com.togger.account.Account
 import com.togger.account.AccountRepo
 import com.togger.db.TgPages
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
 import com.togger.dto.MilestoneFilter
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersionRepo
@@ -43,7 +45,8 @@ case class ProjectExportSnapshot(
   milestoneTemplates: List[MilestoneTemplateDumpData],
   timeboxes: List[TimeboxDumpData],
   tgPromptTemplates: List[TgPromptTemplateDumpData],
-  memberIds: List[UUID]
+  memberIds: List[UUID],
+  deletedEntities: List[DeletedEntity]
 )
 
 class DataExportRepo(
@@ -78,7 +81,8 @@ class DataExportRepo(
   timeboxRepo: TimeboxRepo,
   timeboxVersionRepo: TimeboxVersionRepo,
   tgPromptTemplateRepo: TgPromptTemplateRepo,
-  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo
+  tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo,
+  deletedEntityRepo: DeletedEntityRepo
 ) {
 
   def isAssigned(projectId: UUID, accountId: UUID): ConnectionIO[Boolean] =
@@ -104,6 +108,7 @@ class DataExportRepo(
       timeboxes <- readTimeboxes(projectId)
       tgPromptTemplates <- readTgPromptTemplates(accountId)
       members <- TgPages.readAll(projectAccountRepo.findPaginatedMembers(projectId, _))
+      deletedEntities <- deletedEntityRepo.findAllByProjectId(projectId)
     } yield ProjectExportSnapshot(
       project = project,
       taskStatuses = taskStatuses.sortBy(_.id),
@@ -117,7 +122,8 @@ class DataExportRepo(
       milestoneTemplates = milestoneTemplates.sortBy(_.template.id),
       timeboxes = timeboxes.sortBy(_.timebox.id),
       tgPromptTemplates = tgPromptTemplates.sortBy(_.tgPromptTemplate.id),
-      memberIds = members.map(_.id).sorted
+      memberIds = members.map(_.id).sorted,
+      deletedEntities = deletedEntities.sortBy(e => (e.entityType, e.entityId))
     )
 
   def findAccounts(accountIds: Set[UUID]): ConnectionIO[List[AccountDumpData]] =

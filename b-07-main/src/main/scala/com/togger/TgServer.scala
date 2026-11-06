@@ -624,7 +624,8 @@ class DependenciesModule(
       timeboxRepo,
       timeboxVersionRepo,
       tgPromptTemplateRepo,
-      tgPromptTemplateVersionRepo
+      tgPromptTemplateVersionRepo,
+      deletedEntityRepo
     )
   lazy val dataExportTreeStore = new DataExportTreeStore(dataExportDiskOps)
 
