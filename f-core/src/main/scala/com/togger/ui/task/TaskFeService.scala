@@ -74,6 +74,8 @@ trait TaskFeService {
 
   def updateLogEntryVersion(dto: LogEntryVersionDto): TgRespIO[LogEntryVersionDto]
 
+  def deleteLogEntry(id: UUID): TgRespIO[TgEmptyBody]
+
   def deleteLogEntryVersion(version: UUID): TgRespIO[TgEmptyBody]
 
   def listLinkVersions(linkId: UUID): TgRespIO[List[LinkVersionDto]]
@@ -141,6 +143,9 @@ class TaskFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient
 
   override def updateLogEntryVersion(dto: LogEntryVersionDto): TgRespIO[LogEntryVersionDto] =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.updateVersionEndpoint)(dto)
+
+  override def deleteLogEntry(id: UUID): TgRespIO[TgEmptyBody] =
+    protectedBackendClient.protectedHttpCall(logEntryEndpoints.deleteEndpoint)(id)
 
   override def deleteLogEntryVersion(version: UUID): TgRespIO[TgEmptyBody] =
     protectedBackendClient.protectedHttpCall(logEntryEndpoints.deleteVersionEndpoint)(version)

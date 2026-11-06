@@ -17,6 +17,9 @@ import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColo
 import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
+import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
+import com.togger.ui.modal.PlainTextModalMessage
 import com.togger.ui.organization.TgIcons
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.TaskFeService
@@ -104,6 +107,7 @@ class LogEntryComponent(
   tgClock: TgClock,
   router: TgRouter[FrontendPage],
   val toast: Toast,
+  modalFactory: ModalFactory,
   tgMarkdown: TgMarkdown,
   taskStartDate: LocalDate,
   taskEndDate: Option[LocalDate],
@@ -152,6 +156,35 @@ class LogEntryComponent(
       .unsafeRunAndForget()
   }
 
+  private def deleteLogEntry(logEntryId: UUID): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage("Delete this log entry and all its versions? This cannot be undone."),
+      title = "Delete log entry",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(taskService.deleteLogEntry(logEntryId))
+        .toastMessageCodeBlock("Log entry deleted!")(router.route(router.currentPageSignal.now()))
+        .unsafeRunAndForget()
+      close()
+    }
+
+  /** The small danger icon button that deletes the saved entry, after a confirmation. */
+  private def deleteButton: HtmlElement =
+    button(
+      typ("button"),
+      cls(
+        "text-fg-danger-strong bg-danger-soft border border-danger-subtle hover:bg-danger-medium " +
+          "focus:ring-4 focus:ring-danger-subtle rounded-full w-6 h-6 inline-flex items-center justify-center focus:outline-none"
+      ),
+      aria.label("Delete"),
+      title("Delete"),
+      TgIcons.trashIcon("w-3 h-3"),
+      onClick.mapToUnit --> (_ => formState.now().logEntryId.foreach(deleteLogEntry))
+    )
+
   lazy val asEditElement = div(
     asDisplayEl(saveSubmitter, "Create", addShowToggle = false)
   )
@@ -192,7 +225,11 @@ class LogEntryComponent(
                   body = TgCard.HtmlCardContent(
                     div(
                       tgMarkdown.toLaminarDiv(state.text),
-                      div(cls("flex justify-end mt-2"), toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3")))
+                      div(
+                        cls("flex justify-end gap-2 mt-2"),
+                        deleteButton,
+                        toggleEditButton("Edit", TgIcons.editIcon("w-3 h-3"))
+                      )
                     )
                   )
                 )
@@ -397,7 +434,7 @@ class LogEntryComponent(
             justifyContent.spaceBetween, // TODO: fix this
             div("Status for the day"),
             if (addShowToggle) {
-              toggleEditButton("Show", TgIcons.eyeIcon("w-3 h-3"))
+              div(cls("flex gap-2"), deleteButton, toggleEditButton("Show", TgIcons.eyeIcon("w-3 h-3")))
             } else div()
           ),
           TgCard.CardHeaderSize.H3

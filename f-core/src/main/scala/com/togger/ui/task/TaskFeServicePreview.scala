@@ -266,6 +266,15 @@ class TaskFeServicePreview(
       }
     }
 
+  override def deleteLogEntry(id: UUID): TgRespIO[TgEmptyBody] =
+    secured { _ =>
+      if (data.logEntries.find(id).isEmpty) PreviewResponses.badRequest[TgEmptyBody]("Log entry not found")
+      else {
+        val _ = data.deleteLogEntry(id)
+        PreviewResponses.okEmpty("Log entry deleted successfully")
+      }
+    }
+
   override def deleteLogEntryVersion(version: UUID): TgRespIO[TgEmptyBody] =
     secured { _ =>
       data.logEntryVersions.find(version) match {

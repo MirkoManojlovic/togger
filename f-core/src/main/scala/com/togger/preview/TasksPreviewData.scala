@@ -149,10 +149,14 @@ class TasksPreviewData(
     removeFromTimeboxes(versionIds)
     linksOf(taskId).foreach(link => linkVersions.deleteWhere(_.linkId == link.id))
     links.deleteWhere(_.taskId == taskId)
-    logEntriesOf(taskId).foreach(entry => logEntryVersions.deleteWhere(_.logEntryId == entry.id))
-    logEntries.deleteWhere(_.taskId == taskId)
+    logEntriesOf(taskId).foreach(entry => deleteLogEntry(entry.id))
     taskVersions.deleteWhere(_.taskId == taskId)
     tasks.delete(taskId)
+  }
+
+  def deleteLogEntry(id: UUID): Boolean = {
+    logEntryVersions.deleteWhere(_.logEntryId == id)
+    logEntries.delete(id)
   }
 
   def deleteTaskVersion(version: UUID): Unit = {
