@@ -125,6 +125,15 @@ backend-web-demo:
     -just backend-demo-seed
     just backend-web
 
+# Links the frontend, keeps compiling it (frontend-watch), runs vite in the background and the backend, without seeding
+web: npm-install frontend-link frontend-watch-start
+    #!/usr/bin/env bash
+    set -uo pipefail
+    npm run dev &
+    frontend_pid=$!
+    trap 'kill "$frontend_pid" 2>/dev/null || true; just stop-frontend-watch' EXIT
+    just backend-web
+
 # Links the frontend, keeps compiling it (frontend-watch), seeds the demo data, runs vite in the background and the backend
 web-demo: npm-install frontend-link frontend-watch-start
     #!/usr/bin/env bash
