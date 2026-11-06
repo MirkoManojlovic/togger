@@ -34,14 +34,14 @@ object DemoDataSyncData {
     }
 
   private val exportSpecs = List(
-    (1, DemoIdentity.ProjectId, "Team repository", "~/togger-export/website-relaunch", 30L),
-    (2, DemoIdentity.ProjectId, "Backup drive", "/Volumes/Backup/togger/website-relaunch", 12L),
-    (3, DemoIdentity.SecondProjectId, "Team repository", "~/togger-export/mobile-app", 21L)
+    (1, DemoIdentity.ProjectId, "Team repository", "~/togger-sync/export", 30L),
+    (2, DemoIdentity.ProjectId, "Backup drive", "~/togger-sync/export", 12L),
+    (3, DemoIdentity.SecondProjectId, "Team repository", "~/togger-sync/export", 21L)
   )
 
   private val importSpecs = List(
-    (11, DemoIdentity.ProjectId, "Teammate export", "~/shared/togger/website-relaunch", 20L),
-    (12, DemoIdentity.SecondProjectId, "Teammate export", "~/shared/togger/mobile-app", 9L)
+    (11, DemoIdentity.ProjectId, "Teammate export", "~/togger-sync/import", 20L),
+    (12, DemoIdentity.SecondProjectId, "Teammate export", "~/togger-sync/import", 9L)
   )
 
   private val mappingSpecs = List(
