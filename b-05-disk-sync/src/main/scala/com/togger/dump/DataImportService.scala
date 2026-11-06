@@ -141,14 +141,28 @@ class DataImportService(
               .transact(transactor)
               .attempt
               .map(_.fold(e => failed(DataExportEntityType.Project, projectId, e), identity))
+            deletions <- dataImportRepo
+              .applyTombstones(projectId, index.deleted, state)
+              .transact(transactor)
+              .attempt
+              .map(_.fold(e => List(failed(DataExportEntityType.Project, projectId, e)), identity))
             milestones <- mergeAll[MilestoneDumpData](projectId, read, DataExportEntityType.Milestone)(m =>
               dataImportRepo.mergeMilestone(remap.milestone(m))
             )
-            tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task)(t =>
-              dataImportRepo.mergeTask(remap.task(t), state)
+            tasks <- mergeAll[TaskDumpData](projectId, read, DataExportEntityType.Task, tombstoned(read, state))(t =>
+              clearingTombstone(projectId, state, DataExportEntityType.Task, t.task.id)(
+                dataImportRepo.mergeTask(remap.task(t), state)
+              )
             )
-            logEntries <- mergeAll[LogEntryDumpData](projectId, read, DataExportEntityType.LogEntry)(le =>
-              dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
+            logEntries <- mergeAll[LogEntryDumpData](
+              projectId,
+              read,
+              DataExportEntityType.LogEntry,
+              tombstoned(read, state)
+            )(le =>
+              clearingTombstone(projectId, state, DataExportEntityType.LogEntry, le.logEntry.id)(
+                dataImportRepo.mergeLogEntry(remap.logEntry(le), state)
+              )
             )
             templates <- mergeAll[TaskTemplateDumpData](projectId, read, DataExportEntityType.TaskTemplate)(t =>
               dataImportRepo.mergeTaskTemplate(remap.taskTemplate(t))
@@ -180,7 +194,7 @@ class DataImportService(
             DataImportResult(
               importPath,
               statusesMalformed ++ labelsMalformed ++ projectLabelsMalformed ++ prepared.results ++
-                (project :: milestones) ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
+                (project :: milestones) ++ deletions ++ tasks ++ logEntries ++ templates ++ stepTemplates._2 ++ milestoneTemplates ++ timeboxes ++ prompts ++ members
             )
           )
         }
@@ -215,7 +229,12 @@ class DataImportService(
     read.one[MembersDumpData](DataExportEntityType.Members, firstId(read.index, DataExportEntityType.Members))
 
   /** Merges the entities of one type one by one, and logs how long reading their files took against merging them. */
-  private def mergeAll[A: Decoder](projectId: UUID, read: TreeReader, entityType: DataExportEntityType)(
+  private def mergeAll[A: Decoder](
+    projectId: UUID,
+    read: TreeReader,
+    entityType: DataExportEntityType,
+    skip: (DataExportEntityType, UUID) => Option[DataImportEntityResult] = (_, _) => None
+  )(
     merge: A => doobie.ConnectionIO[DataImportEntityResult]
   ): IO[List[DataImportEntityResult]] =
     read.index
@@ -226,10 +245,10 @@ class DataImportService(
       .traverse { id =>
         for {
           readStart <- IO(System.nanoTime())
-          readResult = read.one[A](entityType, id)
+          readResult = skip(entityType, id).fold(read.one[A](entityType, id))(Left(_))
           mergeStart <- IO(System.nanoTime())
           result <- readResult match {
-            case Left(malformed) => IO.pure(malformed)
+            case Left(malformedOrSkipped) => IO.pure(malformedOrSkipped)
             case Right(data) =>
               merge(data).transact(transactor).attempt.map(_.fold(e => failed(entityType, id, e), identity))
           }
@@ -246,6 +265,27 @@ class DataImportService(
           )
         ).as(timedResults.map(_._1))
       }
+
+  /** An entity the project deleted stays deleted unless the tree changed it after the deletion. */
+  private def tombstoned(read: TreeReader, state: DataImportRepo#ProjectImportState)(
+    entityType: DataExportEntityType,
+    id: UUID
+  ): Option[DataImportEntityResult] =
+    for {
+      deletedAt <- state.tombstones.get((entityType.folder, id))
+      if !read.index.entriesOf(entityType).get(id).flatMap(_.changedAt).exists(_.isAfter(deletedAt))
+    } yield DataImportEntityResult.skipped(entityType, id, "deleted in the project and not changed since")
+
+  /** An entity that comes back after it was deleted in the project is no longer deleted. */
+  private def clearingTombstone(
+    projectId: UUID,
+    state: DataImportRepo#ProjectImportState,
+    entityType: DataExportEntityType,
+    id: UUID
+  )(merged: doobie.ConnectionIO[DataImportEntityResult]): doobie.ConnectionIO[DataImportEntityResult] =
+    if (state.tombstones.contains((entityType.folder, id)))
+      merged.flatTap(_ => dataImportRepo.clearTombstone(projectId, entityType.folder, id))
+    else merged
 
   private def failed(entityType: DataExportEntityType, id: UUID, e: Throwable) =
     DataImportEntityResult.failed(entityType, id, DataImportStatus.Failed, String.valueOf(e.getMessage))

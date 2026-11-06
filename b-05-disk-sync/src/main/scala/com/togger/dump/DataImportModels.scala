@@ -8,6 +8,8 @@ object DataImportStatus {
   case object Inserted extends DataImportStatus
   case object Merged extends DataImportStatus
   case object Unchanged extends DataImportStatus
+  case object Deleted extends DataImportStatus
+  case object Skipped extends DataImportStatus
   case object Malformed extends DataImportStatus
   case object Failed extends DataImportStatus
 }
@@ -42,6 +44,14 @@ object DataImportEntityResult {
   /** An existing entity whose own fields were updated in place, without a new version. */
   def updated(entityType: DataExportEntityType, entityId: UUID, entityName: Option[String]): DataImportEntityResult =
     DataImportEntityResult(entityType, entityId, entityName, DataImportStatus.Merged, 0, 0, None)
+
+  /** An existing entity that the tree deleted. */
+  def deleted(entityType: DataExportEntityType, entityId: UUID): DataImportEntityResult =
+    DataImportEntityResult(entityType, entityId, None, DataImportStatus.Deleted, 0, 0, None)
+
+  /** An entity the import left alone because of a tombstone; `reason` tells which one. */
+  def skipped(entityType: DataExportEntityType, entityId: UUID, reason: String): DataImportEntityResult =
+    DataImportEntityResult(entityType, entityId, None, DataImportStatus.Skipped, 0, 0, Some(reason))
 
   def failed(
     entityType: DataExportEntityType,

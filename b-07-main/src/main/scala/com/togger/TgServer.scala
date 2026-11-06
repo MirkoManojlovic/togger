@@ -706,7 +706,8 @@ class DependenciesModule(
       timeboxVersionRepo,
       tgPromptTemplateRepo,
       tgPromptTemplateVersionRepo,
-      projectRepo
+      projectRepo,
+      deletedEntityRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)

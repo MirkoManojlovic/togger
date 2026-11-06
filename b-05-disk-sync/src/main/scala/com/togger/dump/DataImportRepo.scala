@@ -11,8 +11,13 @@ import com.togger.common.Password
 import com.togger.common.TgClock
 import com.togger.common.TgIds
 import com.togger.db.TgPages
+import com.togger.logentry.LogEntry
 import com.togger.logentry.LogEntryRepo
+import com.togger.logentry.LogEntryVersion
 import com.togger.logentry.LogEntryVersionRepo
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.milestone._
 import com.togger.milestonesteptemplate.MilestoneStepTemplate
 import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
@@ -44,6 +49,7 @@ import com.togger.timebox.TimeboxVersionRepo
 import doobie.ConnectionIO
 
 import java.security.SecureRandom
+import java.time.Instant
 import java.util.UUID
 
 class DataImportRepo(
@@ -83,7 +89,8 @@ class DataImportRepo(
   timeboxVersionRepo: TimeboxVersionRepo,
   tgPromptTemplateRepo: TgPromptTemplateRepo,
   tgPromptTemplateVersionRepo: TgPromptTemplateVersionRepo,
-  projectRepo: ProjectRepo
+  projectRepo: ProjectRepo,
+  deletedEntityRepo: DeletedEntityRepo
 ) {
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
@@ -346,7 +353,10 @@ class DataImportRepo(
     linkVersions: Set[UUID],
     logEntryIds: Set[UUID],
     logEntryVersions: Set[UUID],
-    labelIdsByTask: Map[UUID, Set[UUID]]
+    labelIdsByTask: Map[UUID, Set[UUID]],
+    taskChangedAt: Map[UUID, Instant],
+    logEntryChangedAt: Map[UUID, Instant],
+    tombstones: Map[(String, UUID), Instant]
   )
 
   def loadImportState(projectId: UUID): ConnectionIO[ProjectImportState] =
@@ -358,6 +368,7 @@ class DataImportRepo(
       logEntries <- logEntryRepo.findAllByProjectId(projectId)
       logEntryVersions <- logEntryVersionRepo.findAllByProjectId(projectId)
       labels <- taskLabelAssignmentRepo.findLabelsByProjectId(projectId)
+      tombstones <- deletedEntityRepo.findAllByProjectId(projectId)
     } yield ProjectImportState(
       tasks.map(_.id).toSet,
       taskVersions.map(_.version).toSet,
@@ -365,8 +376,82 @@ class DataImportRepo(
       linkVersions.map(_.version).toSet,
       logEntries.map(_.id).toSet,
       logEntryVersions.map(_.version).toSet,
-      labels.view.mapValues(_.map(_.id).toSet).toMap
+      labels.view.mapValues(_.map(_.id).toSet).toMap,
+      taskChangedAt(tasks, taskVersions, links, linkVersions),
+      logEntryChangedAt(logEntries, logEntryVersions),
+      tombstones.map(t => (t.entityType, t.entityId) -> t.deletedAt).toMap
     )
+
+  /** The newest creation or update inside a task as the export dumps it: the task, its versions, its links and their
+    * versions.
+    */
+  private def taskChangedAt(
+    tasks: List[Task],
+    taskVersions: List[TaskVersion],
+    links: List[Link],
+    linkVersions: List[LinkVersion]
+  ): Map[UUID, Instant] = {
+    val linkTask = links.map(l => l.id -> l.taskId).toMap
+    val stamps = tasks.map(t => t.id -> t.createdAt) ++
+      taskVersions.flatMap(v => List(v.taskId -> v.createdAt, v.taskId -> v.updatedAt)) ++
+      links.map(l => l.taskId -> l.createdAt) ++
+      linkVersions.flatMap(v =>
+        linkTask.get(v.linkId).toList.flatMap(taskId => List(taskId -> v.createdAt, taskId -> v.updatedAt))
+      )
+    stamps.groupMapReduce(_._1)(_._2)((a, b) => if (a.isAfter(b)) a else b)
+  }
+
+  private def logEntryChangedAt(logEntries: List[LogEntry], versions: List[LogEntryVersion]): Map[UUID, Instant] = {
+    val stamps = logEntries.map(e => e.id -> e.createdAt) ++
+      versions.flatMap(v => List(v.logEntryId -> v.createdAt, v.logEntryId -> v.updatedAt))
+    stamps.groupMapReduce(_._1)(_._2)((a, b) => if (a.isAfter(b)) a else b)
+  }
+
+  /** Applies the deletions of the tree. A task or log entry that the project has is deleted unless it changed after the
+    * deletion, in which case it is kept. Every deletion is recorded in the project, whether the entity is there or not,
+    * so that the next export carries it on and an older tree cannot bring the entity back.
+    */
+  def applyTombstones(
+    projectId: UUID,
+    tombstones: Map[String, Map[String, Instant]],
+    state: ProjectImportState
+  ): ConnectionIO[List[DataImportEntityResult]] = {
+    def deletions(folder: String): List[(UUID, Instant)] =
+      tombstones.getOrElse(folder, Map.empty).toList.map { case (id, at) => UUID.fromString(id) -> at }.sortBy(_._1)
+
+    def keep(entityType: DataExportEntityType, id: UUID): DataImportEntityResult =
+      DataImportEntityResult.skipped(entityType, id, "changed after it was deleted in the tree, so it is kept")
+
+    val tasks = deletions(DeletedEntityType.Task).traverse { case (id, deletedAt) =>
+      val changedAt = state.taskChangedAt.get(id)
+      if (changedAt.exists(_.isAfter(deletedAt))) List(keep(DataExportEntityType.Task, id)).pure[ConnectionIO]
+      else
+        for {
+          logEntries <- logEntryRepo.findByTaskId(id)
+          deleted <- taskRepo.deleteById(id)
+          _ <- deletedEntityRepo.insertAll(
+            DeletedEntity(projectId, DeletedEntityType.Task, id, deletedAt) ::
+              logEntries.map(e => DeletedEntity(projectId, DeletedEntityType.LogEntry, e.id, deletedAt))
+          )
+        } yield if (deleted > 0) List(DataImportEntityResult.deleted(DataExportEntityType.Task, id)) else Nil
+    }
+    val logEntries = deletions(DeletedEntityType.LogEntry).traverse { case (id, deletedAt) =>
+      val changedAt = state.logEntryChangedAt.get(id)
+      if (changedAt.exists(_.isAfter(deletedAt))) List(keep(DataExportEntityType.LogEntry, id)).pure[ConnectionIO]
+      else
+        for {
+          deleted <- logEntryRepo.deleteById(id)
+          _ <- deletedEntityRepo.insertAll(List(DeletedEntity(projectId, DeletedEntityType.LogEntry, id, deletedAt)))
+        } yield if (deleted > 0) List(DataImportEntityResult.deleted(DataExportEntityType.LogEntry, id)) else Nil
+    }
+    for {
+      taskResults <- tasks
+      logEntryResults <- logEntries
+    } yield (taskResults ++ logEntryResults).flatten
+  }
+
+  def clearTombstone(projectId: UUID, folder: String, id: UUID): ConnectionIO[Int] =
+    deletedEntityRepo.deleteByEntity(projectId, folder, id)
 
   private def exists[A](io: ConnectionIO[A]): ConnectionIO[Boolean] = io.attempt.map(_.isRight)
 

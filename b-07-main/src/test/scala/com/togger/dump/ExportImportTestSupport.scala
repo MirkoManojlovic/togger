@@ -170,7 +170,8 @@ trait ExportImportTestSupport
     timeboxVersionRepo,
     tgPromptTemplateRepo,
     tgPromptTemplateVersionRepo,
-    projectRepo
+    projectRepo,
+    deletedEntityRepo
   )
 
   def newExportService(transactor: Transactor[IO]) =

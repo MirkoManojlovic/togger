@@ -1,7 +1,11 @@
 package com.togger.dump
 
 import cats.effect.IO
+import cats.implicits._
 import com.togger.milestone.MilestoneStepStatus
+import com.togger.common.TgClockImpl
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
 import com.togger.project.ProjectLabelAssignment
@@ -10,16 +14,19 @@ import com.togger.projectlabel.ProjectLabelCategory
 import com.togger.task.Link
 import com.togger.task.LinkVersion
 import com.togger.task.TaskLabelAssignment
+import com.togger.task.TaskService
 import com.togger.tasktemplate.TaskTemplate
 import com.togger.tasktemplate.TaskTemplateVersion
 import com.togger.tgprompttemplate.TgPromptTemplate
 import com.togger.tgprompttemplate.TgPromptTemplateVersion
 import com.togger.timebox.Timebox
 import com.togger.timebox.TimeboxVersion
+import doobie.Transactor
 import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.generic.auto._
 
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -36,6 +43,29 @@ class DataImportServiceTest extends ExportImportTestSupport {
     stepTemplateId: UUID,
     milestoneTemplateId: UUID
   )
+
+  private def newTaskService(transactor: Transactor[IO]) =
+    new TaskService(
+      taskRepo,
+      taskVersionRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo,
+      taskLabelAssignmentRepo,
+      deletedEntityRepo,
+      new TgClockImpl,
+      transactor
+    )
+
+  private def clearTombstones(transactor: Transactor[IO], projectId: UUID): IO[Unit] =
+    deletedEntityRepo
+      .findAllByProjectId(projectId)
+      .flatMap(_.traverse_(t => deletedEntityRepo.deleteByEntity(t.projectId, t.entityType, t.entityId)))
+      .transact(transactor)
+
+  private def taskResults(result: Either[_, DataImportResult]): List[DataImportStatus] =
+    result.toOption.get.results.filter(_.entityType == DataExportEntityType.Task).map(_.status)
 
   private def createFullProject(exportPath: os.Path) =
     for {
@@ -480,6 +510,88 @@ class DataImportServiceTest extends ExportImportTestSupport {
           (DataExportEntityType.Project, DataExportSyncStatus.InSync, Nil)
         )
       }
+    }
+
+    "delete a task the tree deleted, and record the deletion so it is carried on" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        older = newExportPath()
+        _ = os.copy(root, older)
+        _ <- newTaskService(transactor).deleteTask(fixture.taskId)
+        _ <- exportToFolder(transactor, fixture.projectId, fixture.accountId) // the tree now holds the tombstone
+        _ <- clearTombstones(transactor, fixture.projectId) // another database that still has the task
+        restored <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, older.toString)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+        tombstones <- deletedEntityRepo.findAllByProjectId(fixture.projectId).transact(transactor)
+      } yield {
+        taskResults(restored) shouldBe List(DataImportStatus.Inserted)
+        taskResults(imported) shouldBe List(DataImportStatus.Deleted)
+        task shouldBe None
+        tombstones.map(t => (t.entityType, t.entityId)).toSet should contain((DeletedEntityType.Task, fixture.taskId))
+      }
+    }
+
+    "keep a task that changed after the tree deleted it" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        older = newExportPath()
+        _ = os.copy(root, older)
+        _ <- newTaskService(transactor).deleteTask(fixture.taskId)
+        _ <- exportToFolder(transactor, fixture.projectId, fixture.accountId) // the tree now holds the tombstone
+        _ = editIndex(root)(index =>
+          index.copy(deleted = index.deleted.view.mapValues(_.view.mapValues(_ => Instant.EPOCH).toMap).toMap)
+        ) // deleted long before the task was last changed
+        _ <- clearTombstones(transactor, fixture.projectId) // another database that still has the task
+        _ <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, older.toString)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+      } yield {
+        taskResults(imported) shouldBe List(DataImportStatus.Skipped)
+        task should not be None
+      }
+    }
+
+    "not bring back a task that the project deleted, from an older tree" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- newTaskService(transactor).deleteTask(fixture.taskId)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+        logEntries <- logEntryRepo.findAllByProjectId(fixture.projectId).transact(transactor)
+      } yield {
+        taskResults(imported) shouldBe List(DataImportStatus.Skipped)
+        imported.toOption.get.results
+          .filter(_.entityType == DataExportEntityType.LogEntry)
+          .map(_.status)
+          .distinct shouldBe List(DataImportStatus.Skipped)
+        task shouldBe None
+        logEntries shouldBe empty
+      }
+    }
+
+    "bring a task back that changed in the tree after the project deleted it, and clear the tombstone" in {
+      transactor =>
+        for {
+          fixture <- createFullProject(newExportPath()).transact(transactor)
+          root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+          _ <- taskRepo.deleteById(fixture.taskId).transact(transactor)
+          _ <- deletedEntityRepo
+            .insertAll(
+              List(DeletedEntity(fixture.projectId, DeletedEntityType.Task, fixture.taskId, Instant.EPOCH))
+            )
+            .transact(transactor)
+          imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+          task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+          tombstones <- deletedEntityRepo.findAllByProjectId(fixture.projectId).transact(transactor)
+        } yield {
+          taskResults(imported) shouldBe List(DataImportStatus.Inserted)
+          task should not be None
+          tombstones.map(_.entityId) should not contain fixture.taskId
+        }
     }
 
     "reject a new project import from a folder without an index" in { transactor =>

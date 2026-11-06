@@ -14,6 +14,8 @@ object DataImportStatusResp extends Enum[DataImportStatusResp] {
   case object Inserted extends DataImportStatusResp
   case object Merged extends DataImportStatusResp
   case object Unchanged extends DataImportStatusResp
+  case object Deleted extends DataImportStatusResp
+  case object Skipped extends DataImportStatusResp
   case object Malformed extends DataImportStatusResp
   case object Failed extends DataImportStatusResp
 }
