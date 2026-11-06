@@ -122,6 +122,15 @@ class LogEntryController(
       }
   }
 
+  val delete = logEntryEndpoints.deleteEndpoint.serverLogic { _ => id =>
+    logEntryService
+      .deleteLogEntry(id)
+      .map {
+        case Right(_)    => TgJsonSuccess.justMessageRight("Log entry deleted successfully")
+        case Left(error) => error.toBadRequestLeft[TgJsonSuccess.TgEmptyBody]
+      }
+  }
+
   val deleteVersion = logEntryEndpoints.deleteVersionEndpoint.serverLogic { _ => version =>
     logEntryService
       .deleteVersion(version)

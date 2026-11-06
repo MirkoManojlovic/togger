@@ -126,9 +126,14 @@ class LogEntryVersionRepoTest
         (savedAccount, savedLogEntry) = accountAndEntry
         _ <- logEntryVersionRepo.insert(logEntryVersion(savedLogEntry.id, savedAccount.id, v1))
         _ <- logEntryVersionRepo.insert(logEntryVersion(savedLogEntry.id, savedAccount.id, v2))
-        _ <- logEntryRepo.deleteById(savedLogEntry.id)
+        deleted <- logEntryRepo.deleteById(savedLogEntry.id)
         remainingVersions <- logEntryVersionRepo.findByLogEntryId(savedLogEntry.id)
-      } yield remainingVersions shouldBe empty
+        remainingCount <- logEntryVersionRepo.countByLogEntryId(savedLogEntry.id)
+      } yield {
+        deleted shouldBe 1
+        remainingVersions shouldBe empty
+        remainingCount shouldBe 0
+      }
 
       res.transact(transactor)
     }

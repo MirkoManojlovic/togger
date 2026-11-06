@@ -239,6 +239,37 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       }
     }
 
+    "delete a log entry together with all its versions" in { _ =>
+      val s = new Services
+      val taskId = DemoSeedIds.id(DemoSeedIds.Task, 13)
+      val at = Instant.parse("2026-06-15T11:00:00Z")
+      val entry = LogEntryDto(
+        UUID.randomUUID(),
+        taskId,
+        DemoIdentity.AccountId,
+        at,
+        UUID.randomUUID(),
+        "external",
+        LogEntryStatus.InProgress,
+        at
+      )
+      for {
+        saved <- s.env.run(s.tasks.saveLogEntry(entry))
+        entryId = saved.toOption.get.id
+        _ <- s.env.run(s.tasks.updateLogEntry(saved.toOption.get.copy(text = "changed")))
+        versionsBefore <- s.env.run(s.tasks.listLogEntryVersions(entryId, firstPage))
+        deleted <- s.env.runEmpty(s.tasks.deleteLogEntry(entryId))
+        deletedAgain <- s.env.runEmpty(s.tasks.deleteLogEntry(entryId))
+        byTask <- s.env.run(s.tasks.findLogEntriesByTaskId(taskId, firstPage))
+      } yield {
+        versionsBefore.map(_.totalNumberOfItems) shouldBe Right(2L)
+        deleted.isRight shouldBe true
+        isBadRequest(deletedAgain) shouldBe true
+        byTask.map(_.items.exists(_.id == entryId)) shouldBe Right(false)
+        s.env.module.tasks.versionsOfLogEntry(entryId) shouldBe empty
+      }
+    }
+
     "filter project log entries by the creation time range" in { _ =>
       val s = new Services
       val from = Instant.parse("2026-06-08T00:00:00Z")

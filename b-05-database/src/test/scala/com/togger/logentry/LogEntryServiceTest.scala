@@ -11,6 +11,7 @@ import com.togger.db.MockedTransactor
 import com.togger.logentry.LogEntryError.CannotDeleteLastVersion
 import com.togger.logentry.LogEntryError.CannotEditLatestVersion
 import com.togger.logentry.LogEntryError.LogEntryAlreadyExistsForDay
+import com.togger.logentry.LogEntryError.LogEntryNotFound
 import com.togger.suites.TestNameHelper
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -222,6 +223,24 @@ class LogEntryServiceTest
         cp(latestAfterDelete shouldBe firstVersion)
         cp.reportAll()
         deleteLastResult shouldBe Left(CannotDeleteLastVersion)
+      }).unsafeToFuture()
+    }
+
+    "delete a log entry and report an unknown one as not found" in {
+      val logEntry = newLogEntry()
+      val unknownId = UUID.randomUUID()
+
+      (logEntryRepo.deleteById _).expects(logEntry.id).returns(1.pure[ConnectionIO])
+      (logEntryRepo.deleteById _).expects(unknownId).returns(0.pure[ConnectionIO])
+
+      (for {
+        deleted <- service.deleteLogEntry(logEntry.id)
+        missing <- service.deleteLogEntry(unknownId)
+      } yield {
+        val cp = new Checkpoint
+        cp(deleted shouldBe Right(1))
+        cp.reportAll()
+        missing shouldBe Left(LogEntryNotFound)
       }).unsafeToFuture()
     }
 

@@ -192,6 +192,7 @@ object TgServer {
             logEntryController.listVersions,
             logEntryController.updateVersion,
             logEntryController.deleteVersion,
+            logEntryController.delete,
             timeboxController.findById,
             timeboxController.findByProjectId,
             timeboxController.save,
