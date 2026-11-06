@@ -205,3 +205,57 @@ release-tag version:
     ! git rev-parse "v{{version}}" >/dev/null 2>&1 || { echo "tag v{{version}} already exists"; exit 1; }
     git tag "v{{version}}"
     echo "Tagged v{{version}}. Push with: git push origin v{{version}}"
+
+# fetch, fast-forward develop, delete local branches/worktrees whose remote branch is gone, rebase <branch> (default: current branch) on develop
+sync-branch branch='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    base="develop"
+    branch="{{branch}}"
+    if [[ -z "$branch" ]]; then
+        branch=$(git branch --show-current)
+    fi
+    if [[ -z "$branch" || "$branch" == "$base" ]]; then
+        echo "Pass the branch to rebase: the current checkout is '${branch:-detached HEAD}'." >&2
+        exit 1
+    fi
+
+    git fetch --all --prune
+
+    # 'git fetch origin develop:develop' is refused while develop is checked out, so fast-forward it in place then.
+    base_worktree=$(git worktree list --porcelain | awk -v ref="refs/heads/$base" '/^worktree /{wt=substr($0,10)} $0=="branch "ref{print wt}')
+    if [[ -n "$base_worktree" ]]; then
+        git -C "$base_worktree" merge --ff-only "origin/$base"
+    else
+        git fetch origin "$base:$base"
+    fi
+
+    # Local branches whose upstream no longer exists on the remote.
+    gone_branches=$(git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads | awk '$2=="[gone]"{print $1}')
+    for gone in $gone_branches; do
+        if [[ "$gone" == "$base" ]]; then
+            continue
+        fi
+        worktree=$(git worktree list --porcelain | awk -v ref="refs/heads/$gone" '/^worktree /{wt=substr($0,10)} $0=="branch "ref{print wt}')
+        if [[ -n "$worktree" ]]; then
+            echo "Removing worktree $worktree ($gone)"
+            git worktree remove "$worktree"
+        fi
+        echo "Deleting branch $gone"
+        git branch -D "$gone"
+    done
+    git worktree prune
+
+    if ! git show-ref --verify --quiet "refs/heads/$branch"; then
+        echo "Branch '$branch' does not exist locally (or was deleted because its remote branch is gone)." >&2
+        exit 1
+    fi
+
+    # Rebase in the worktree where the branch is checked out, or check it out here otherwise.
+    branch_worktree=$(git worktree list --porcelain | awk -v ref="refs/heads/$branch" '/^worktree /{wt=substr($0,10)} $0=="branch "ref{print wt}')
+    if [[ -n "$branch_worktree" ]]; then
+        git -C "$branch_worktree" rebase "$base"
+    else
+        git checkout "$branch"
+        git rebase "$base"
+    fi
