@@ -230,6 +230,18 @@ milestone with tasks (`MilestoneHasTasks`); deleting a step clears the link of o
 `FindMilestoneStepResp` carries `tasksTotal`/`tasksDone` (done = the latest task version has an end date), which the home
 page turns into one progress bar per step (`StepBar`: blue, green when the step is Done and all its tasks are done).
 
+**Export/import tombstones:** tasks are hard-deleted, so `TaskService.deleteTask` writes a `deleted_entity` row (project,
+entity type = the export folder, id, `deleted_at`) for the task and its log entries in the same transaction
+(`DeletedEntityRepo`). The export writes them into `index.json` as `deleted` (folder -> id -> time, part of the root
+hash; a tombstone of an entity that exists again is left out; an index without the section still reads). The import
+(`DataImportRepo.applyTombstones`) deletes a task or log entry that the tree deleted unless it changed after the
+deletion (`Skipped`), and records the tombstone either way; an entity that the project deleted is not brought back by a
+tree that has not changed it since, a newer copy comes back and clears the tombstone. "Changed" is the newest
+`createdAt`/`updatedAt` in the entity, as in the index. The checks report `PendingDelete` (disk deleted, database still
+has it: pending import) and `Deleted` (database deleted, disk still has it: pending export). The import asks for
+confirmation in the UI (`ImportDeletions`) before it deletes. Only tasks (with their log entries) have tombstones so
+far; other entity types are deleted from the tree without one.
+
 **Auth:** bearer-token sessions (`AccountSessionRepo`), Tapir endpoints authenticated via `SecuredEndpoint`
 (wraps the shared `baseEndpoint` with `securityIn(auth.bearer[String]())` + `SecurityLogic`, which has separate
 JVM (`SecurityLogicJvm`) and JS (`SecurityLogicJs`) implementations). Passwords hashed with `scalapass`.
