@@ -4,6 +4,8 @@ import com.togger.milestonesteptemplate.MilestoneStepTemplate
 import com.togger.milestonesteptemplate.MilestoneStepTemplateVersion
 import com.togger.milestonetemplate.MilestoneTemplate
 import com.togger.milestonetemplate.MilestoneTemplateVersion
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -36,7 +38,30 @@ class ExportContentKeyTest extends AnyWordSpec with Matchers {
       }
     ).asJson
 
+  private def projectLabelJson(id: UUID, name: String, categoryName: String = "Area"): Json =
+    ProjectLabelDumpData(
+      ProjectLabel(id, name, "description", UUID.randomUUID(), earlier, earlier),
+      ProjectLabelCategory(UUID.randomUUID(), categoryName, earlier, earlier)
+    ).asJson
+
   "ExportContentKey" should {
+
+    "identify a project label by its name, whatever its id" in {
+      val here =
+        ExportContentKey.of(DataExportEntityType.ProjectLabel, projectLabelJson(UUID.randomUUID(), "Scala"), Map.empty)
+      here.isRight shouldBe true
+      here shouldBe ExportContentKey.of(
+        DataExportEntityType.ProjectLabel,
+        projectLabelJson(UUID.randomUUID(), "Scala", "Other area"),
+        Map.empty
+      )
+      here should not be ExportContentKey.of(
+        DataExportEntityType.ProjectLabel,
+        projectLabelJson(UUID.randomUUID(), "Web"),
+        Map.empty
+      )
+      ExportContentKey.applies(DataExportEntityType.ProjectLabel) shouldBe true
+    }
 
     "apply to the milestone step templates and the milestone templates" in {
       ExportContentKey.applies(DataExportEntityType.MilestoneStepTemplate) shouldBe true

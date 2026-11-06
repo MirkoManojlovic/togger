@@ -6,9 +6,9 @@ import io.circe.Json
 import java.time.Instant
 import java.util.UUID
 
-/** What identifies a task status, label or template across projects: the import matches them by content and gives
-  * imported rows new ids and timestamps, so the import check cannot match them by id or hash. A template is identified
-  * by the content of its label and of its latest version.
+/** What identifies a task status, label, project label or template across projects: the import matches them by content
+  * and gives imported rows new ids and timestamps, so the import check cannot match them by id or hash. A template is
+  * identified by the content of its label and of its latest version, a project label by its name (as the import does).
   */
 object ExportContentKey {
 
@@ -17,7 +17,7 @@ object ExportContentKey {
   def applies(entityType: DataExportEntityType): Boolean =
     entityType == DataExportEntityType.TaskStatus || entityType == DataExportEntityType.TaskLabel ||
       entityType == DataExportEntityType.TaskTemplate || entityType == DataExportEntityType.MilestoneStepTemplate ||
-      entityType == DataExportEntityType.MilestoneTemplate
+      entityType == DataExportEntityType.MilestoneTemplate || entityType == DataExportEntityType.ProjectLabel
 
   /** The keys of the milestone step templates by id (their latest name and description), for the milestone templates to
     * resolve their steps through.
@@ -34,6 +34,7 @@ object ExportContentKey {
       case DataExportEntityType.TaskTemplate          => template(json, labelKeys)
       case DataExportEntityType.MilestoneStepTemplate => stepTemplate(json)
       case DataExportEntityType.MilestoneTemplate     => milestoneTemplate(json, labelKeys)
+      case DataExportEntityType.ProjectLabel          => projectLabel(json)
       case _                                          => nameDescriptionEmoji(json)
     }
 
@@ -47,6 +48,15 @@ object ExportContentKey {
       s"cannot read name, description and emoji: ${error.message}"
     )
   }
+
+  /** The import matches a project label to the one of the database with the same name, whatever its id. */
+  private def projectLabel(json: Json): Either[String, Key] =
+    json.hcursor
+      .downField("label")
+      .get[String]("name")
+      .map(List(_))
+      .left
+      .map(error => s"cannot read the name of the project label: ${error.message}")
 
   private def template(json: Json, labelKeys: Map[UUID, Key]): Either[String, Key] = {
     val cursor = json.hcursor
