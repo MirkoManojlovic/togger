@@ -295,6 +295,7 @@ object TgServer {
             dataExportController.checkImportStatus,
             dataExportController.exportPending,
             dataExportController.importPending,
+            dataExportController.sync,
             dataExportConfigController.findById,
             dataExportConfigController.save,
             dataExportConfigController.update,
@@ -703,12 +704,15 @@ class DependenciesModule(
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)
+  lazy val dataSyncService =
+    new DataSyncService(projectRepo, dataImportConfigService, dataImportService, dataExportService, transactor)
   lazy val dataExportEndpoints = new DataExportEndpoints(securedEndpoint)
   lazy val dataExportController = new DataExportController(
     dataExportEndpoints,
     dataExportService,
     dataImportService,
-    dataSyncPendingService
+    dataSyncPendingService,
+    dataSyncService
   )
 
 }
