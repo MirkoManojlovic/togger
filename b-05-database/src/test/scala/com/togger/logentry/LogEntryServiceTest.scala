@@ -5,13 +5,13 @@ import cats.implicits._
 import com.togger.TestLoggingJvm
 import com.togger.common.DbPageRequest
 import com.togger.common.PaginatedResponse
-import com.togger.common.TgIds
 import com.togger.common.TgClockImpl
+import com.togger.common.TgIds
 import com.togger.common.TimeHelpers
+import com.togger.db.MockedTransactor
 import com.togger.deletedentity.DeletedEntity
 import com.togger.deletedentity.DeletedEntityRepo
 import com.togger.deletedentity.DeletedEntityType
-import com.togger.db.MockedTransactor
 import com.togger.logentry.LogEntryError.CannotDeleteLastVersion
 import com.togger.logentry.LogEntryError.CannotEditLatestVersion
 import com.togger.logentry.LogEntryError.LogEntryAlreadyExistsForDay
