@@ -10,6 +10,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
 import com.togger.markdown.TgMarkdown
 import com.togger.routes.FrontendPage
+import com.togger.routes.Pages
 import com.togger.routes.TgRouter
 import com.togger.task.TaskPriority
 import com.togger.toast.ToastMessages
@@ -93,6 +94,9 @@ class EditTaskComponent(
   private val ArchiveButtonCls =
     "text-fg-warning bg-warning-soft border border-warning-subtle hover:bg-warning-medium focus:ring-4 " +
       "focus:ring-warning-subtle font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
+  private val DeleteButtonCls =
+    "text-fg-danger-strong bg-danger-soft border border-danger-subtle hover:bg-danger-medium focus:ring-4 " +
+      "focus:ring-danger-subtle font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
   private val UnarchiveButtonCls =
     "text-white bg-brand border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium " +
       "font-medium leading-5 rounded-base text-xs px-3 py-1.5 focus:outline-none"
@@ -623,6 +627,29 @@ class EditTaskComponent(
       onClick.mapToUnit --> (_ => setArchived(!formState.now().archived))
     )
 
+  private def deleteTask(): Unit =
+    modalFactory.plainModal(
+      message = PlainTextModalMessage(s"Delete task '${formState.now().name}' and all its log entries and links?"),
+      title = "Delete task",
+      variant = PlainModalVariant.Danger,
+      confirmButtonMsg = "Yes, delete it",
+      cancelButtonMsg = "Cancel"
+    ) { close =>
+      spinnerService
+        .runWithSpinner(taskService.deleteTask(taskId))
+        .toastBackendMessageCodeBlock(router.forcePage(Pages.ShowAllTasksPage(projectId)))
+        .unsafeRunAndForget()
+      close()
+    }
+
+  private val deleteButton =
+    button(
+      typ("button"),
+      cls(DeleteButtonCls),
+      "Delete",
+      onClick.mapToUnit --> (_ => deleteTask())
+    )
+
   private val closeButton =
     button(
       typ("button"),
@@ -682,6 +709,7 @@ class EditTaskComponent(
               descriptionEditor.htmlElement.amend(cls("mb-4")),
               div(
                 cls("flex justify-end gap-2"),
+                deleteButton,
                 archiveButton,
                 closeButton,
                 TgHtmlButton.updateSmall(EventStream.fromValue(false))
