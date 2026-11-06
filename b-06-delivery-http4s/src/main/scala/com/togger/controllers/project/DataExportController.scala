@@ -12,9 +12,9 @@ import com.togger.dto.DataExportResp
 import com.togger.dto.DataExportStatusResp
 import com.togger.dto.DataExportSyncStatusResp
 import com.togger.dto.DataImportEntityResultResp
+import com.togger.dto.DataImportPathResp
 import com.togger.dto.DataImportResp
 import com.togger.dto.DataImportStatusResp
-import com.togger.dto.DataImportPathResp
 import com.togger.dto.DataSyncPendingResp
 import com.togger.dto.DataSyncProjectResp
 import com.togger.dto.DataSyncResp
