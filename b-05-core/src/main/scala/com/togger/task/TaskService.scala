@@ -4,6 +4,10 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.DbPageRequest
 import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.dto.TaskFilter
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersionRepo
@@ -34,6 +38,8 @@ class TaskService(
   logEntryRepo: LogEntryRepo,
   logEntryVersionRepo: LogEntryVersionRepo,
   taskLabelAssignmentRepo: TaskLabelAssignmentRepo,
+  deletedEntityRepo: DeletedEntityRepo,
+  tgClock: TgClock,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
@@ -146,11 +152,23 @@ class TaskService(
       logEntries <- findLogEntriesWithLatestVersion(taskFull.id)
     } yield (taskFull.copy(taskLabels = labels), links, logEntries)).transact(transactor)
 
+  /** The tombstones of the task and of its log entries are written in the same transaction, for the export. */
   def deleteTask(taskId: UUID): IO[Either[TaskError, Int]] = {
     logger.info(s"Deleting task ${sp(taskId)} with all its versions, links, log entries and label assignments")
     taskRepo
-      .deleteById(taskId)
-      .map(deleted => Either.cond(deleted > 0, deleted, TaskNotFound: TaskError))
+      .findOptionById(taskId)
+      .flatMap {
+        case None => (TaskNotFound: TaskError).asLeft[Int].pure[ConnectionIO]
+        case Some(task) =>
+          for {
+            logEntries <- logEntryRepo.findByTaskId(taskId)
+            deleted <- taskRepo.deleteById(taskId)
+            deletedAt = tgClock.currentInstant
+            tombstones = DeletedEntity(task.projectId, DeletedEntityType.Task, taskId, deletedAt) ::
+              logEntries.map(e => DeletedEntity(task.projectId, DeletedEntityType.LogEntry, e.id, deletedAt))
+            _ <- if (deleted > 0) deletedEntityRepo.insertAll(tombstones) else 0.pure[ConnectionIO]
+          } yield Either.cond(deleted > 0, deleted, TaskNotFound: TaskError)
+      }
       .transact(transactor)
   }
 

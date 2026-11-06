@@ -78,6 +78,8 @@ class ImportResultsComponent(results: Seq[DataImportEntityResultResp]) {
     case DataImportStatusResp.Inserted  => TgBadgeColor.Green
     case DataImportStatusResp.Merged    => TgBadgeColor.Blue
     case DataImportStatusResp.Unchanged => TgBadgeColor.Dark
+    case DataImportStatusResp.Deleted   => TgBadgeColor.Purple
+    case DataImportStatusResp.Skipped   => TgBadgeColor.Yellow
     case DataImportStatusResp.Malformed => TgBadgeColor.Red
     case DataImportStatusResp.Failed    => TgBadgeColor.Red
   }

@@ -2308,3 +2308,42 @@ databaseChangeLog:
             oldColumnName: text_external
             newColumnName: text
             columnDataType: text
+  - changeSet:
+      id: 23
+      author: mirko
+      labels: export-tombstones
+      comment: >
+        A tombstone records that an entity of a project was deleted, so that the export can tell the import about the
+        deletion and the import does not bring a deleted entity back from an older tree. The entity type is the
+        export folder of the entity (tasks, logentries).
+      changes:
+        - createTable:
+            tableName: deleted_entity
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_deleted_entity_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: entity_type
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: deleted_entity
+            columnNames: project_id, entity_type, entity_id
+            constraintName: pk_deleted_entity

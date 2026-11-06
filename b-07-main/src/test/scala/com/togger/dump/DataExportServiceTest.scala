@@ -1,8 +1,12 @@
 package com.togger.dump
 
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
 import doobie.implicits._
+
+import java.util.UUID
 
 class DataExportServiceTest extends ExportImportTestSupport {
 
@@ -98,6 +102,61 @@ class DataExportServiceTest extends ExportImportTestSupport {
         cp(os.read(root / "index.json") should not include removedLabel.id.toString)
         cp.reportAll()
       }
+    }
+
+    "write the tombstones of deleted entities into the index, and change the root hash with them" in { transactor =>
+      val exportPath = newExportPath()
+      val deletedTaskId = UUID.randomUUID()
+      val setup = for {
+        projectData <- createExportableProject(exportPath)
+        (savedAccount, savedProject) = projectData
+        status <- createTaskStatus(savedProject.id)
+        keptTask <- createTaskWithFullHistory(savedProject.id, savedAccount.id, status.id)
+      } yield (savedAccount, savedProject, keptTask)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, keptTask) = setupResult
+        service = newExportService(transactor)
+        first <- service.exportProject(savedProject.id, savedAccount.id)
+        root = os.Path(first.toOption.get.pathResults.head.exportPath)
+        before = readIndex(root)
+        deletedAt = nowAsInstant
+        _ <- deletedEntityRepo
+          .insertAll(
+            List(
+              DeletedEntity(savedProject.id, DeletedEntityType.Task, deletedTaskId, deletedAt),
+              DeletedEntity(
+                savedProject.id,
+                DeletedEntityType.Task,
+                keptTask,
+                deletedAt
+              ) // exists again: not a tombstone
+            )
+          )
+          .transact(transactor)
+        _ <- service.exportProject(savedProject.id, savedAccount.id)
+        after = readIndex(root)
+      } yield {
+        before.deleted shouldBe empty
+        after.deleted.keySet shouldBe Set(DataExportEntityType.Task.folder)
+        after.deleted(DataExportEntityType.Task.folder).keySet shouldBe Set(deletedTaskId.toString)
+        after.rootHash should not be before.rootHash
+        after.entities shouldBe before.entities
+      }
+    }
+
+    "read an index written before tombstones existed as one without tombstones" in { transactor =>
+      val exportPath = newExportPath()
+      for {
+        projectData <- createExportableProject(exportPath).transact(transactor)
+        (savedAccount, savedProject) = projectData
+        root <- exportToFolder(transactor, savedProject.id, savedAccount.id)
+        _ = os.write.over(
+          root / "index.json",
+          io.circe.parser.parse(os.read(root / "index.json")).toOption.get.mapObject(_.remove("deleted")).spaces2
+        )
+      } yield readIndex(root).deleted shouldBe empty
     }
 
   }

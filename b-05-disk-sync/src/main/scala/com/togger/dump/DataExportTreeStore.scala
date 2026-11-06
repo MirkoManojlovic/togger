@@ -1,5 +1,6 @@
 package com.togger.dump
 
+import com.togger.deletedentity.DeletedEntity
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.util.SplunkMacro.sp
@@ -41,7 +42,8 @@ class DataExportTreeStore(diskOps: DiskOps) extends TgLogging {
     project: Project,
     exportedAt: Instant,
     exportedBy: AccountDumpData,
-    entities: List[ExportEntity]
+    entities: List[ExportEntity],
+    deletedEntities: List[DeletedEntity] = Nil
   ): ExportTreeWriteResult = {
     val folder = projectFolder(basePath, project)
     logger.info(s"Writing export tree to ${sp(folder)}")
@@ -57,19 +59,32 @@ class DataExportTreeStore(diskOps: DiskOps) extends TgLogging {
       diskOps.overwriteFileToDisk(entityPath(folder, entity.entityType, entity.id), entity.json.spaces2)
     }
 
-    val deleted = deleteStaleFiles(folder, entities)
+    val deletedFiles = deleteStaleFiles(folder, entities)
 
     val entries = entities.groupBy(_.entityType.folder).map { case (typeFolder, typeEntities) =>
       typeFolder -> typeEntities.map(e => e.id.toString -> e.indexEntry).toMap
     }
-    val index = ExportIndex(ExportHasher.rootHash(entries), exportedAt, exportedBy, entries)
+    val deleted = tombstones(entities, deletedEntities)
+    val index = ExportIndex(ExportHasher.rootHash(entries, deleted), exportedAt, exportedBy, entries, deleted)
     if (!previous.exists(_.rootHash == index.rootHash) || !diskOps.exists(folder / indexFileName))
       diskOps.overwriteFileToDisk(folder / indexFileName, index.asJson.spaces2)
 
     logger.info(
-      s"Export tree written to ${sp(folder)}: ${sp(changed.size)} written, ${sp(unchanged.size)} unchanged, ${sp(deleted)} deleted"
+      s"Export tree written to ${sp(folder)}: ${sp(changed.size)} written, ${sp(unchanged.size)} unchanged, ${sp(deletedFiles)} deleted"
     )
-    ExportTreeWriteResult(folder.toString, changed.size, unchanged.size, deleted)
+    ExportTreeWriteResult(folder.toString, changed.size, unchanged.size, deletedFiles)
+  }
+
+  /** The tombstones of the entities that are gone: one of an entity that exists again is dropped. */
+  private def tombstones(
+    entities: List[ExportEntity],
+    deletedEntities: List[DeletedEntity]
+  ): Map[String, Map[String, Instant]] = {
+    val existing = entities.map(e => (e.entityType.folder, e.id)).toSet
+    deletedEntities
+      .filterNot(d => existing.contains((d.entityType, d.entityId)))
+      .groupBy(_.entityType)
+      .map { case (folder, group) => folder -> group.map(d => d.entityId.toString -> d.deletedAt).toMap }
   }
 
   /** The index of the project's tree below the export path; `None` when the project was never exported there. */

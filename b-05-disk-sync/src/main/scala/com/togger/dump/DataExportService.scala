@@ -6,6 +6,7 @@ import com.togger.common.TgClock
 import com.togger.dataexportconfig.DataExportConfig
 import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.db.TgPages
+import com.togger.deletedentity.DeletedEntity
 import com.togger.logging.TgLogging
 import com.togger.project.Project
 import com.togger.project.ProjectError.DumpManifestMissing
@@ -19,6 +20,7 @@ import doobie.Transactor
 import doobie.implicits._
 import io.circe.Json
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -53,7 +55,8 @@ class DataExportService(
   private case class ExportData(
     project: Project,
     exportedBy: AccountDumpData,
-    entities: List[ExportEntity]
+    entities: List[ExportEntity],
+    deletedEntities: List[DeletedEntity]
   )
 
   /** An export or status check visits every export config of the project, so all pages are read. */
@@ -94,7 +97,14 @@ class DataExportService(
               val exportedAt = tgClock.currentInstant
               val pathResults = configs.map { config =>
                 Try(
-                  dataExportTreeStore.write(config.exportPath, data.project, exportedAt, data.exportedBy, data.entities)
+                  dataExportTreeStore.write(
+                    config.exportPath,
+                    data.project,
+                    exportedAt,
+                    data.exportedBy,
+                    data.entities,
+                    data.deletedEntities
+                  )
                 ) match {
                   case Success(written) => DataExportPathResult.success(written.path)
                   case Failure(e)       => DataExportPathResult.error(config.exportPath, e.getMessage)
@@ -274,17 +284,36 @@ class DataExportService(
                 status(entityType, id, entity.name, DataExportSyncStatus.Malformed, List("file is missing"))
               else status(entityType, id, entity.name, DataExportSyncStatus.InSync)
             }
+            val diskTombstones = index.deleted.getOrElse(entityType.folder, Map.empty)
+            val dbTombstones =
+              data.deletedEntities.filter(_.entityType == entityType.folder).map(t => t.entityId -> t.deletedAt).toMap
             val missingFromExport = db.keySet.diff(indexed.keySet).toList.map { id =>
-              status(entityType, id, db(id).name, DataExportSyncStatus.MissingFromExport)
+              val deletedOnDisk = diskTombstones.get(id.toString).exists(unchangedSince(db(id).changedAt, _))
+              status(
+                entityType,
+                id,
+                db(id).name,
+                if (deletedOnDisk) DataExportSyncStatus.PendingDelete else DataExportSyncStatus.MissingFromExport
+              )
             }
             val missingFromDb = indexed.keySet.diff(db.keySet).toList.map { id =>
-              status(entityType, id, indexed(id).name, DataExportSyncStatus.MissingFromDb)
+              val deletedInDb = dbTombstones.get(id).exists(unchangedSince(indexed(id).changedAt, _))
+              status(
+                entityType,
+                id,
+                indexed(id).name,
+                if (deletedInDb) DataExportSyncStatus.Deleted else DataExportSyncStatus.MissingFromDb
+              )
             }
             common ++ missingFromExport ++ missingFromDb
           }
         }
     }
   }
+
+  /** A deletion holds for an entity that did not change after it; without a timestamp it does, as in the import. */
+  private def unchangedSince(changedAt: Option[Instant], deletedAt: Instant): Boolean =
+    !changedAt.exists(_.isAfter(deletedAt))
 
   /** The content keys of the task labels and milestone step templates of the database and of the disk, as a template
     * names its label or steps by id.
@@ -542,7 +571,8 @@ class DataExportService(
         } yield ExportData(
           snapshot.project,
           AccountDumpData.from(account),
-          DataExportEntities.build(snapshot, referencedAccounts)
+          DataExportEntities.build(snapshot, referencedAccounts),
+          snapshot.deletedEntities
         ).asRight[ProjectError]
     }
 

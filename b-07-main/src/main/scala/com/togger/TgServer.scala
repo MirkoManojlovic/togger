@@ -65,6 +65,7 @@ import com.togger.dataexportconfig.DataExportConfigService
 import com.togger.dataimportconfig.DataImportConfigEndpoints
 import com.togger.dataimportconfig.DataImportConfigRepoImpl
 import com.togger.dataimportconfig.DataImportConfigService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule
@@ -340,7 +341,8 @@ class DependenciesModule(
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
   lazy val logEntryVersionRepo = new LogEntryVersionRepoImpl
-  lazy val logEntryService = new LogEntryService(logEntryRepo, logEntryVersionRepo, transactor)
+  lazy val logEntryService =
+    new LogEntryService(logEntryRepo, logEntryVersionRepo, taskRepo, deletedEntityRepo, tgClock, transactor)
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
   lazy val accountNameLookup = new AccountNameLookup(accountRepo, transactor)
   lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService, accountNameLookup)
@@ -447,6 +449,8 @@ class DependenciesModule(
       logEntryRepo,
       logEntryVersionRepo,
       taskLabelAssignmentRepo,
+      deletedEntityRepo,
+      tgClock,
       transactor
     )
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
@@ -621,7 +625,8 @@ class DependenciesModule(
       timeboxRepo,
       timeboxVersionRepo,
       tgPromptTemplateRepo,
-      tgPromptTemplateVersionRepo
+      tgPromptTemplateVersionRepo,
+      deletedEntityRepo
     )
   lazy val dataExportTreeStore = new DataExportTreeStore(dataExportDiskOps)
 
@@ -650,6 +655,7 @@ class DependenciesModule(
     )
 
   lazy val projectMappingRepo = new ProjectMappingRepoImpl
+  lazy val deletedEntityRepo = new DeletedEntityRepoImpl
   lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, transactor)
   lazy val projectMappingEndpoints = new ProjectMappingEndpoints(securedEndpoint)
   lazy val projectMappingController =
@@ -701,7 +707,8 @@ class DependenciesModule(
       timeboxVersionRepo,
       tgPromptTemplateRepo,
       tgPromptTemplateVersionRepo,
-      projectRepo
+      projectRepo,
+      deletedEntityRepo
     )
   lazy val dataImportService = new DataImportService(dataExportRepo, dataImportRepo, dataExportTreeStore, transactor)
   lazy val dataSyncPendingService = new DataSyncPendingService(dataExportService, dataImportConfigService)

@@ -15,6 +15,7 @@ import com.togger.controllers.project.DefaultTaskLabelService
 import com.togger.controllers.project.DefaultTaskStatusService
 import com.togger.controllers.project.DefaultTaskTemplateService
 import com.togger.controllers.project.ProjectService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.logentry.LogEntryRepoImpl
 import com.togger.logentry.LogEntryService
 import com.togger.logentry.LogEntryVersionRepoImpl
@@ -80,6 +81,7 @@ trait SeedAppModule {
   protected val taskStatusRepo = new TaskStatusRepoImpl
   protected val taskLabelRepo = new TaskLabelRepoImpl
   protected val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
+  protected val deletedEntityRepo = new DeletedEntityRepoImpl
   protected val taskRepo = new TaskRepoImpl
   protected val taskVersionRepo = new TaskVersionRepoImpl
   protected val linkRepo = new LinkRepoImpl
@@ -140,11 +142,20 @@ trait SeedAppModule {
       logEntryRepo = logEntryRepo,
       logEntryVersionRepo = logEntryVersionRepo,
       taskLabelAssignmentRepo = taskLabelAssignmentRepo,
+      deletedEntityRepo = deletedEntityRepo,
+      tgClock = tgClock,
       transactor = xa
     )
 
   protected val logEntryService =
-    new LogEntryService(logEntryRepo = logEntryRepo, logEntryVersionRepo = logEntryVersionRepo, transactor = xa)
+    new LogEntryService(
+      logEntryRepo = logEntryRepo,
+      logEntryVersionRepo = logEntryVersionRepo,
+      taskRepo = taskRepo,
+      deletedEntityRepo = deletedEntityRepo,
+      tgClock = tgClock,
+      transactor = xa
+    )
 
   protected val milestoneService =
     new MilestoneService(

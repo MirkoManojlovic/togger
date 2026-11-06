@@ -11,7 +11,9 @@ import com.togger.dto.DataImportResp
 import com.togger.ui.components.TgTab
 import com.togger.ui.components.TgTabs
 import com.togger.ui.dataexportconfig.ExportCheckComponent
+import com.togger.ui.modal.HtmlModalMessage
 import com.togger.ui.modal.ModalFactory
+import com.togger.ui.modal.PlainModalVariant
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.task.DataExportFeService
 import com.togger.ui.toast.Toast
@@ -71,7 +73,8 @@ class ImportFlow(
   }
 
   private def needsImport(status: DataExportSyncStatusResp): Boolean =
-    status == DataExportSyncStatusResp.MissingFromDb || status == DataExportSyncStatusResp.OutOfSync
+    status == DataExportSyncStatusResp.MissingFromDb || status == DataExportSyncStatusResp.OutOfSync ||
+      status == DataExportSyncStatusResp.PendingDelete
 
   private def checkContent(projectId: UUID, pathCount: Int, statuses: List[DataExportPathStatusResp]): HtmlElement =
     if (pathCount == 0) div(cls("p-4 text-body"), "No import paths configured for this project")
@@ -79,13 +82,39 @@ class ImportFlow(
     else {
       new ExportCheckComponent(
         statuses,
-        onAll = pathsToImport => run(projectId, pathsToImport.map(_.exportPath)),
-        onPath = path => run(projectId, List(path.exportPath)),
+        onAll = pathsToImport => confirmThenRun(projectId, pathsToImport),
+        onPath = path => confirmThenRun(projectId, List(path)),
         actionLabel = "Import",
         statusTitle = "Import status",
         needsAction = needsImport(_)
       ).element
     }
+
+  /** An import that deletes what the import paths deleted asks first, as every deletion does. */
+  private def confirmThenRun(projectId: UUID, paths: List[DataExportPathStatusResp]): Unit = {
+    val deletions = ImportDeletions.of(paths)
+    val importPaths = paths.map(_.exportPath)
+    if (deletions.isEmpty) run(projectId, importPaths)
+    else
+      modalFactory.plainModal(
+        message = HtmlModalMessage(
+          div(
+            p(
+              cls("mb-2"),
+              s"The import will delete ${deletions.size} entity(ies) that were deleted in the import path:"
+            ),
+            ul(cls("list-disc text-start ps-6"), ImportDeletions.lines(deletions).map(line => li(line)))
+          )
+        ),
+        title = "Delete while importing",
+        variant = PlainModalVariant.Danger,
+        confirmButtonMsg = "Yes, delete and import",
+        cancelButtonMsg = "Cancel"
+      ) { close =>
+        close()
+        run(projectId, importPaths)
+      }
+  }
 
   private def run(projectId: UUID, importPaths: List[String]): Unit = {
     val program: IO[(List[String], List[(String, Either[TgJsonFailure, DataImportResp])])] =

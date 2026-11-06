@@ -13,17 +13,36 @@ import scala.util.Try
   */
 case class ExportIndexEntry(hash: String, name: Option[String], changedAt: Option[Instant])
 
-/** `index.json`: the hash of every entity file by entity folder and id, plus a root hash over all of them. */
+/** `index.json`: the hash of every entity file by entity folder and id, the tombstones of the entities deleted from the
+  * project (when, by entity folder and id), plus a root hash over all of them. An index written before tombstones
+  * existed has none.
+  */
 case class ExportIndex(
   rootHash: String,
   exportedAt: Instant,
   exportedBy: AccountDumpData,
-  entities: Map[String, Map[String, ExportIndexEntry]]
+  entities: Map[String, Map[String, ExportIndexEntry]],
+  deleted: Map[String, Map[String, Instant]] = Map.empty
 ) {
 
   def entriesOf(entityType: DataExportEntityType): Map[UUID, ExportIndexEntry] =
     entities.getOrElse(entityType.folder, Map.empty).map { case (id, entry) => UUID.fromString(id) -> entry }
 
+}
+
+object ExportIndex {
+  import io.circe.Decoder
+  import io.circe.generic.auto._
+
+  implicit val exportIndexDecoder: Decoder[ExportIndex] = Decoder.instance { cursor =>
+    for {
+      rootHash <- cursor.get[String]("rootHash")
+      exportedAt <- cursor.get[Instant]("exportedAt")
+      exportedBy <- cursor.get[AccountDumpData]("exportedBy")
+      entities <- cursor.get[Map[String, Map[String, ExportIndexEntry]]]("entities")
+      deleted <- cursor.getOrElse[Map[String, Map[String, Instant]]]("deleted")(Map.empty)
+    } yield ExportIndex(rootHash, exportedAt, exportedBy, entities, deleted)
+  }
 }
 
 /** Hashes an entity by the canonical form of its json, so key order, whitespace and the order of array elements never
@@ -59,14 +78,21 @@ object ExportHasher {
 
   private def parseInstant(value: String): Option[Instant] = Try(Instant.parse(value)).toOption
 
-  def rootHash(entities: Map[String, Map[String, ExportIndexEntry]]): String =
+  /** Covers the entities and the tombstones, so that a deletion alone changes the root hash. */
+  def rootHash(
+    entities: Map[String, Map[String, ExportIndexEntry]],
+    deleted: Map[String, Map[String, Instant]] = Map.empty
+  ): String =
     sha256(
-      entities.toList
+      (entities.toList
         .sortBy(_._1)
         .flatMap { case (folder, entries) =>
           entries.toList.sortBy(_._1).map { case (id, entry) => s"$folder/$id:${entry.hash}" }
-        }
-        .mkString("\n")
+        } ++ deleted.toList
+        .sortBy(_._1)
+        .flatMap { case (folder, entries) =>
+          entries.toList.sortBy(_._1).map { case (id, deletedAt) => s"deleted/$folder/$id:$deletedAt" }
+        }).mkString("\n")
     )
 
   private def sha256(value: String): String =

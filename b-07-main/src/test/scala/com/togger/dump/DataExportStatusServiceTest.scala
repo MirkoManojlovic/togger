@@ -1,7 +1,10 @@
 package com.togger.dump
 
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.project.ProjectError
 import doobie.implicits._
+
+import java.time.Instant
 
 class DataExportStatusServiceTest extends ExportImportTestSupport {
 
@@ -124,6 +127,71 @@ class DataExportStatusServiceTest extends ExportImportTestSupport {
         _ = os.remove(root / "tasklabels" / s"${label.id}.json")
         result <- service.checkStatus(savedProject.id, savedAccount.id)
       } yield statusOf(result, DataExportEntityType.TaskLabel, label.id).status shouldBe DataExportSyncStatus.Malformed
+    }
+
+    "report a task the disk deleted as pending delete, unless it changed after the deletion" in { transactor =>
+      val setup = for {
+        projectData <- createExportableProject(newExportPath())
+        (savedAccount, savedProject) = projectData
+        status <- createTaskStatus(savedProject.id)
+        taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, status.id)
+        task <- taskRepo.findById(taskId)
+      } yield (savedAccount, savedProject, task)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, task) = setupResult
+        _ <- newTaskService(transactor).deleteTask(task.id)
+        root <- exportToFolder(transactor, savedProject.id, savedAccount.id) // the tree holds the tombstone
+        _ <- taskRepo.insertWithId(task).transact(transactor) // another database that still has the task
+        service = newExportService(transactor)
+        unchanged <- service.checkImportStatus(savedProject.id, savedAccount.id, root.toString)
+        _ = editIndex(root)(index =>
+          index.copy(deleted = index.deleted.view.mapValues(_.view.mapValues(_ => Instant.EPOCH).toMap).toMap)
+        )
+        changed <- service.checkImportStatus(savedProject.id, savedAccount.id, root.toString)
+        statusOfTask = (result: Either[ProjectError.ProjectError, DataExportPathStatus]) =>
+          result.toOption.get.entityStatuses
+            .find(s => s.entityType == DataExportEntityType.Task && s.entityId == task.id)
+            .map(_.status)
+      } yield {
+        statusOfTask(unchanged) shouldBe Some(DataExportSyncStatus.PendingDelete)
+        statusOfTask(changed) shouldBe Some(DataExportSyncStatus.MissingFromExport)
+      }
+    }
+
+    "report a task the database deleted as deleted, unless the disk changed it after the deletion" in { transactor =>
+      val setup = for {
+        projectData <- createExportableProject(newExportPath())
+        (savedAccount, savedProject) = projectData
+        status <- createTaskStatus(savedProject.id)
+        taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, status.id)
+      } yield (savedAccount, savedProject, taskId)
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (savedAccount, savedProject, taskId) = setupResult
+        root <- exportToFolder(transactor, savedProject.id, savedAccount.id) // the tree still has the task
+        _ <- newTaskService(transactor).deleteTask(taskId)
+        service = newExportService(transactor)
+        unchanged <- service.checkStatus(savedProject.id, savedAccount.id)
+        imported <- service.checkImportStatus(savedProject.id, savedAccount.id, root.toString)
+        _ <- deletedEntityRepo.deleteByEntity(savedProject.id, DeletedEntityType.Task, taskId).transact(transactor)
+        _ <- deletedEntityRepo
+          .insertAll(
+            List(com.togger.deletedentity.DeletedEntity(savedProject.id, DeletedEntityType.Task, taskId, Instant.EPOCH))
+          )
+          .transact(transactor)
+        changed <- service.checkImportStatus(savedProject.id, savedAccount.id, root.toString)
+        statusOfTask = (entityStatuses: List[DataExportEntityStatus]) =>
+          entityStatuses.find(s => s.entityType == DataExportEntityType.Task && s.entityId == taskId).map(_.status)
+      } yield {
+        statusOfTask(unchanged.toOption.get.pathStatuses.head.entityStatuses) shouldBe Some(
+          DataExportSyncStatus.Deleted
+        )
+        statusOfTask(imported.toOption.get.entityStatuses) shouldBe Some(DataExportSyncStatus.Deleted)
+        statusOfTask(changed.toOption.get.entityStatuses) shouldBe Some(DataExportSyncStatus.MissingFromDb)
+      }
     }
 
   }

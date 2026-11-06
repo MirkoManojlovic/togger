@@ -213,6 +213,8 @@ class DataExportController(
     case DataImportStatus.Inserted  => DataImportStatusResp.Inserted
     case DataImportStatus.Merged    => DataImportStatusResp.Merged
     case DataImportStatus.Unchanged => DataImportStatusResp.Unchanged
+    case DataImportStatus.Deleted   => DataImportStatusResp.Deleted
+    case DataImportStatus.Skipped   => DataImportStatusResp.Skipped
     case DataImportStatus.Malformed => DataImportStatusResp.Malformed
     case DataImportStatus.Failed    => DataImportStatusResp.Failed
   }
@@ -232,6 +234,8 @@ class DataExportController(
     case DataExportSyncStatus.OutOfSync         => DataExportSyncStatusResp.OutOfSync
     case DataExportSyncStatus.MissingFromExport => DataExportSyncStatusResp.MissingFromExport
     case DataExportSyncStatus.MissingFromDb     => DataExportSyncStatusResp.MissingFromDb
+    case DataExportSyncStatus.PendingDelete     => DataExportSyncStatusResp.PendingDelete
+    case DataExportSyncStatus.Deleted           => DataExportSyncStatusResp.Deleted
     case DataExportSyncStatus.Malformed         => DataExportSyncStatusResp.Malformed
   }
 

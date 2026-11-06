@@ -13,6 +13,8 @@ object DataExportSyncStatusResp extends Enum[DataExportSyncStatusResp] {
   case object OutOfSync extends DataExportSyncStatusResp
   case object MissingFromExport extends DataExportSyncStatusResp
   case object MissingFromDb extends DataExportSyncStatusResp
+  case object PendingDelete extends DataExportSyncStatusResp
+  case object Deleted extends DataExportSyncStatusResp
   case object Malformed extends DataExportSyncStatusResp
 }
 

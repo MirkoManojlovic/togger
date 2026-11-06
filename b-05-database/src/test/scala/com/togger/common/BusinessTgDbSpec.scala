@@ -9,6 +9,7 @@ import com.togger.accountmapping.AccountMappingRepoImpl
 import com.togger.ai.AiEndpointRepoImpl
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.dataimportconfig.DataImportConfigRepoImpl
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.logentry.LogEntryRepoImpl
 import com.togger.logentry.LogEntryVersionRepoImpl
 import com.togger.milestone.MilestoneDateRepoImpl
@@ -55,6 +56,7 @@ trait BusinessTgDbSpec extends TgDbSpec {
       Seq(
         AccountMappingRepoImpl.ACCOUNT_MAPPING_TABLE,
         ProjectMappingRepoImpl.PROJECT_MAPPING_TABLE,
+        DeletedEntityRepoImpl.DELETED_ENTITY_TABLE,
         DataExportConfigRepoImpl.DATA_EXPORT_CONFIG_TABLE,
         DataImportConfigRepoImpl.DATA_IMPORT_CONFIG_TABLE,
         TimeboxVersionRepoImpl.TIMEBOX_VERSION_TASK_TABLE,
