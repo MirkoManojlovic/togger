@@ -188,6 +188,9 @@ trait ExportImportTestSupport
       transactor
     )
 
+  def newLogEntryService(transactor: Transactor[IO]) =
+    new LogEntryService(logEntryRepo, logEntryVersionRepo, taskRepo, deletedEntityRepo, new TgClockImpl, transactor)
+
   def newExportService(transactor: Transactor[IO]) =
     new DataExportService(
       dataExportRepo,

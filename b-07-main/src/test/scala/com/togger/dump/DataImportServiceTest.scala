@@ -517,6 +517,33 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "delete a log entry the tree deleted, and keep its task" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        older = newExportPath()
+        _ = os.copy(root, older)
+        logEntries <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+        logEntryId = logEntries.head.id
+        _ <- newLogEntryService(transactor).deleteLogEntry(logEntryId)
+        _ <- exportToFolder(transactor, fixture.projectId, fixture.accountId) // the tree now holds the tombstone
+        _ <- clearTombstones(transactor, fixture.projectId) // another database that still has the log entry
+        restored <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, older.toString)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        remaining <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+        task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+      } yield {
+        restored.toOption.get.results
+          .filter(_.entityType == DataExportEntityType.LogEntry)
+          .map(_.status) shouldBe List(DataImportStatus.Inserted)
+        imported.toOption.get.results
+          .filter(_.entityType == DataExportEntityType.LogEntry)
+          .map(_.status) shouldBe List(DataImportStatus.Deleted)
+        remaining shouldBe empty
+        task should not be None
+      }
+    }
+
     "keep a task that changed after the tree deleted it" in { transactor =>
       for {
         fixture <- createFullProject(newExportPath()).transact(transactor)

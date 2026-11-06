@@ -17,6 +17,8 @@ trait LogEntryRepo {
 
   def findById(id: UUID): ConnectionIO[LogEntry]
 
+  def findOptionById(id: UUID): ConnectionIO[Option[LogEntry]]
+
   /** Whether the task has a log entry created in `[from, to)`. */
   def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean]
 

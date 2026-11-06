@@ -148,7 +148,14 @@ trait SeedAppModule {
     )
 
   protected val logEntryService =
-    new LogEntryService(logEntryRepo = logEntryRepo, logEntryVersionRepo = logEntryVersionRepo, transactor = xa)
+    new LogEntryService(
+      logEntryRepo = logEntryRepo,
+      logEntryVersionRepo = logEntryVersionRepo,
+      taskRepo = taskRepo,
+      deletedEntityRepo = deletedEntityRepo,
+      tgClock = tgClock,
+      transactor = xa
+    )
 
   protected val milestoneService =
     new MilestoneService(

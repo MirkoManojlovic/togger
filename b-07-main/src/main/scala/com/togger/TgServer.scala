@@ -341,7 +341,7 @@ class DependenciesModule(
   import authDependenciesModule._
   lazy val logEntryRepo = new LogEntryRepoImpl
   lazy val logEntryVersionRepo = new LogEntryVersionRepoImpl
-  lazy val logEntryService = new LogEntryService(logEntryRepo, logEntryVersionRepo, transactor)
+  lazy val logEntryService = new LogEntryService(logEntryRepo, logEntryVersionRepo, taskRepo, deletedEntityRepo, tgClock, transactor)
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
   lazy val accountNameLookup = new AccountNameLookup(accountRepo, transactor)
   lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService, accountNameLookup)

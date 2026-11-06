@@ -57,6 +57,9 @@ class LogEntryRepoImpl extends LogEntryRepo {
       logEntry => s"log entry found ${sp(logEntry)}"
     )
 
+  override def findOptionById(id: UUID): ConnectionIO[Option[LogEntry]] =
+    findByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].option
+
   override def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean] =
     logAroundInfoQuery(
       (fr"select exists (select 1 from" ++ LOG_ENTRY_TABLE_FRAG ++

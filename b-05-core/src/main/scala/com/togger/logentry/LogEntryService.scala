@@ -4,6 +4,10 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.common.DbPageRequest
 import com.togger.common.PaginatedResponse
+import com.togger.common.TgClock
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.dto.LogEntryFilter
 import com.togger.logentry.LogEntryError.CannotDeleteLastVersion
 import com.togger.logentry.LogEntryError.CannotEditLatestVersion
@@ -12,7 +16,9 @@ import com.togger.logentry.LogEntryError.LogEntryError
 import com.togger.logentry.LogEntryError.LogEntryNotFound
 import com.togger.logentry.LogEntryError.VersionNotFound
 import com.togger.logging.TgLogging
+import com.togger.task.TaskRepo
 import com.togger.util.SplunkMacro.sp
+import doobie.ConnectionIO
 import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
@@ -23,6 +29,9 @@ import java.util.UUID
 class LogEntryService(
   logEntryRepo: LogEntryRepo,
   logEntryVersionRepo: LogEntryVersionRepo,
+  taskRepo: TaskRepo,
+  deletedEntityRepo: DeletedEntityRepo,
+  tgClock: TgClock,
   transactor: Transactor[IO]
 ) extends TgLogging {
 
@@ -139,10 +148,20 @@ class LogEntryService(
         IO.pure(Left(VersionNotFound))
       }
 
+  /** The tombstone is written in the same transaction, for the export. */
   def deleteLogEntry(id: UUID): IO[Either[LogEntryError, Int]] =
     logEntryRepo
-      .deleteById(id)
-      .map(deleted => Either.cond(deleted > 0, deleted, LogEntryNotFound: LogEntryError))
+      .findOptionById(id)
+      .flatMap {
+        case None => (LogEntryNotFound: LogEntryError).asLeft[Int].pure[ConnectionIO]
+        case Some(logEntry) =>
+          for {
+            task <- taskRepo.findById(logEntry.taskId)
+            deleted <- logEntryRepo.deleteById(id)
+            tombstone = DeletedEntity(task.projectId, DeletedEntityType.LogEntry, id, tgClock.currentInstant)
+            _ <- if (deleted > 0) deletedEntityRepo.insertAll(List(tombstone)) else 0.pure[ConnectionIO]
+          } yield Either.cond(deleted > 0, deleted, LogEntryNotFound: LogEntryError)
+      }
       .transact(transactor)
 
 }

@@ -6,13 +6,19 @@ import com.togger.TestLoggingJvm
 import com.togger.common.DbPageRequest
 import com.togger.common.PaginatedResponse
 import com.togger.common.TgIds
+import com.togger.common.TgClockImpl
 import com.togger.common.TimeHelpers
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.db.MockedTransactor
 import com.togger.logentry.LogEntryError.CannotDeleteLastVersion
 import com.togger.logentry.LogEntryError.CannotEditLatestVersion
 import com.togger.logentry.LogEntryError.LogEntryAlreadyExistsForDay
 import com.togger.logentry.LogEntryError.LogEntryNotFound
 import com.togger.suites.TestNameHelper
+import com.togger.task.Task
+import com.togger.task.TaskRepo
 import doobie.ConnectionIO
 import doobie.implicits._
 import org.scalamock.scalatest.AsyncMockFactory
@@ -36,7 +42,17 @@ class LogEntryServiceTest
   val logEntryRepo: LogEntryRepo = mock[LogEntryRepo]
   val logEntryVersionRepo: LogEntryVersionRepo = mock[LogEntryVersionRepo]
 
-  val service = new LogEntryService(logEntryRepo, logEntryVersionRepo, transactorMock)
+  val taskRepo: TaskRepo = mock[TaskRepo]
+  val deletedEntityRepo: DeletedEntityRepo = mock[DeletedEntityRepo]
+
+  val service = new LogEntryService(
+    logEntryRepo,
+    logEntryVersionRepo,
+    taskRepo,
+    deletedEntityRepo,
+    new TgClockImpl,
+    transactorMock
+  )
 
   val taskId: UUID = UUID.randomUUID()
   val accountId: UUID = TgIds.UNASSIGNED_UUID
@@ -226,12 +242,21 @@ class LogEntryServiceTest
       }).unsafeToFuture()
     }
 
-    "delete a log entry and report an unknown one as not found" in {
+    "delete a log entry with a tombstone in the project, and report an unknown one as not found" in {
       val logEntry = newLogEntry()
       val unknownId = UUID.randomUUID()
+      val task = Task(taskId, UUID.randomUUID(), accountId, nowAsInstant)
 
+      (logEntryRepo.findOptionById _).expects(logEntry.id).returns(Option(logEntry).pure[ConnectionIO])
+      (taskRepo.findById _).expects(taskId).returns(task.pure[ConnectionIO])
       (logEntryRepo.deleteById _).expects(logEntry.id).returns(1.pure[ConnectionIO])
-      (logEntryRepo.deleteById _).expects(unknownId).returns(0.pure[ConnectionIO])
+      (deletedEntityRepo.insertAll _)
+        .expects(where { (tombstones: List[DeletedEntity]) =>
+          tombstones.map(t => (t.projectId, t.entityType, t.entityId)) ==
+            List((task.projectId, DeletedEntityType.LogEntry, logEntry.id))
+        })
+        .returns(1.pure[ConnectionIO])
+      (logEntryRepo.findOptionById _).expects(unknownId).returns(Option.empty[LogEntry].pure[ConnectionIO])
 
       (for {
         deleted <- service.deleteLogEntry(logEntry.id)
