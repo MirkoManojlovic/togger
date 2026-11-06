@@ -107,6 +107,10 @@ npm run build-preview   # static preview build
 - `PreviewModule` (`f-core/.../preview`) owns `PreviewDb` (typed JSON collections, one localStorage key each), the
   per-domain `*PreviewData` holders and `*PreviewSeed` seeders (demo data computed from `TgClock`). A new domain adds a
   data holder, a seeder (registered in `PreviewModule.seeders`, ids from `PreviewSeedIds`) and its twin service.
+- The navbar has one sync button (`SyncButton`/`SyncService`) that calls `POST /project/export/sync/all` (`DataSyncService`): for every
+  project of the account it imports all import paths, then exports; it spins while running, is grayed out in preview mode
+  and shows a dot while `SyncPendingStore.anyPending`. Results open in a tabbed modal (`SyncResultsComponent`). The
+  interval of `SyncCheckSettingsStore` only drives the pending check.
 - Export/import actions answer "Export/import is not available in frontend preview mode"; their pending checks report
   nothing pending. Settings menu > "Reset preview data" re-seeds everything.
 
