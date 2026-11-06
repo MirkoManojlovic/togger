@@ -59,7 +59,7 @@ object ExportHasher {
       obj => Json.fromFields(obj.toList.sortBy(_._1).map { case (key, value) => key -> canonical(value) })
     )
 
-  private val timestampKeys = Set("createdAt", "updatedAt")
+  private val timestampKeys = Set("createdAt", "updatedAt", "labelsAssignedAt")
 
   /** The newest value of any `createdAt`/`updatedAt` field anywhere in the entity's json. */
   def latestTimestamp(json: Json): Option[Instant] =

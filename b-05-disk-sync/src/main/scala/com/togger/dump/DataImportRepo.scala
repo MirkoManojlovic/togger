@@ -356,7 +356,8 @@ class DataImportRepo(
     labelIdsByTask: Map[UUID, Set[UUID]],
     taskChangedAt: Map[UUID, Instant],
     logEntryChangedAt: Map[UUID, Instant],
-    tombstones: Map[(String, UUID), Instant]
+    tombstones: Map[(String, UUID), Instant],
+    labelsAssignedAt: Map[UUID, Instant]
   )
 
   def loadImportState(projectId: UUID): ConnectionIO[ProjectImportState] =
@@ -369,6 +370,8 @@ class DataImportRepo(
       logEntryVersions <- logEntryVersionRepo.findAllByProjectId(projectId)
       labels <- taskLabelAssignmentRepo.findLabelsByProjectId(projectId)
       tombstones <- deletedEntityRepo.findAllByProjectId(projectId)
+      assignments <- taskLabelAssignmentRepo.findByProjectId(projectId)
+      labelsAssignedAt = assignments.groupMapReduce(_.taskId)(_.createdAt)((a, b) => if (a.isAfter(b)) a else b)
     } yield ProjectImportState(
       tasks.map(_.id).toSet,
       taskVersions.map(_.version).toSet,
@@ -377,9 +380,10 @@ class DataImportRepo(
       logEntries.map(_.id).toSet,
       logEntryVersions.map(_.version).toSet,
       labels.view.mapValues(_.map(_.id).toSet).toMap,
-      taskChangedAt(tasks, taskVersions, links, linkVersions),
+      taskChangedAt(tasks, taskVersions, links, linkVersions, labelsAssignedAt),
       logEntryChangedAt(logEntries, logEntryVersions),
-      tombstones.map(t => (t.entityType, t.entityId) -> t.deletedAt).toMap
+      tombstones.map(t => (t.entityType, t.entityId) -> t.deletedAt).toMap,
+      labelsAssignedAt
     )
 
   /** The newest creation or update inside a task as the export dumps it: the task, its versions, its links and their
@@ -389,12 +393,14 @@ class DataImportRepo(
     tasks: List[Task],
     taskVersions: List[TaskVersion],
     links: List[Link],
-    linkVersions: List[LinkVersion]
+    linkVersions: List[LinkVersion],
+    labelsAssignedAt: Map[UUID, Instant]
   ): Map[UUID, Instant] = {
     val linkTask = links.map(l => l.id -> l.taskId).toMap
     val stamps = tasks.map(t => t.id -> t.createdAt) ++
       taskVersions.flatMap(v => List(v.taskId -> v.createdAt, v.taskId -> v.updatedAt)) ++
       links.map(l => l.taskId -> l.createdAt) ++
+      labelsAssignedAt.toList ++
       linkVersions.flatMap(v =>
         linkTask.get(v.linkId).toList.flatMap(taskId => List(taskId -> v.createdAt, taskId -> v.updatedAt))
       )
@@ -498,11 +504,7 @@ class DataImportRepo(
         taskVersionRepo.insertWithId
       )
       linkOutcomes <- diskData.links.traverse(mergeLink(_, state))
-      assignedLabels = state.labelIdsByTask.getOrElse(diskData.task.id, Set.empty[UUID])
-      now = tgClock.currentInstant
-      labelsAdded <- diskData.labelIds.distinct.filterNot(assignedLabels.contains).traverse { labelId =>
-        taskLabelAssignmentRepo.insert(TaskLabelAssignment(diskData.task.id, labelId, now))
-      }
+      labelsAdded <- mergeLabels(diskData, state)
     } yield DataImportEntityResult.merged(
       DataExportEntityType.Task,
       diskData.task.id,
@@ -511,6 +513,26 @@ class DataImportRepo(
       versionsAdded = taskVersionsAdded + linkOutcomes.map(_.versionsAdded).sum,
       childrenAdded = linkOutcomes.count(_.rootInserted) + labelsAdded.size
     )
+
+  /** The labels of a task are the set of its last update, so the newer set replaces the older one: a label that the
+    * newer side removed goes too. A tree without the time (an old one) only adds the labels the task does not have. The
+    * labels that are set keep the time of the tree, so that the next export carries it on.
+    */
+  private def mergeLabels(
+    diskData: TaskDumpData,
+    state: ProjectImportState
+  ): ConnectionIO[List[TaskLabelAssignment]] = {
+    val taskId = diskData.task.id
+    val assigned = state.labelIdsByTask.getOrElse(taskId, Set.empty[UUID])
+    val diskLabels = diskData.labelIds.distinct
+    def insertAll(labelIds: List[UUID], at: Instant) =
+      labelIds.traverse(labelId => taskLabelAssignmentRepo.insert(TaskLabelAssignment(taskId, labelId, at)))
+    (diskData.labelsAssignedAt, state.labelsAssignedAt.get(taskId)) match {
+      case (None, _) => insertAll(diskLabels.filterNot(assigned.contains), tgClock.currentInstant)
+      case (Some(diskAt), Some(dbAt)) if !diskAt.isAfter(dbAt) => List.empty[TaskLabelAssignment].pure[ConnectionIO]
+      case (Some(diskAt), _) => taskLabelAssignmentRepo.deleteAllByTaskId(taskId) *> insertAll(diskLabels, diskAt)
+    }
+  }
 
   private def mergeLink(linkDump: LinkDumpData, state: ProjectImportState): ConnectionIO[ChildMergeOutcome] = {
     val linkExists = state.linkIds.contains(linkDump.link.id)

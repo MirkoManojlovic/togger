@@ -605,6 +605,32 @@ class DataImportServiceTest extends ExportImportTestSupport {
         }
     }
 
+    "replace the labels of a task by the newer set of the tree, and keep a newer set of the project" in { transactor =>
+      def setLabels(taskId: UUID, labelId: UUID, at: Instant) =
+        (taskLabelAssignmentRepo.deleteAllByTaskId(taskId) *>
+          taskLabelAssignmentRepo.insert(TaskLabelAssignment(taskId, labelId, at))).transact(transactor)
+      def labelIds(taskId: UUID) =
+        taskLabelAssignmentRepo.findLabelsByTaskId(taskId).map(_.map(_.id)).transact(transactor)
+
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        feature <- taskLabelAssignmentRepo.findLabelsByTaskId(fixture.taskId).map(_.head.id).transact(transactor)
+        bug <- createTaskLabel(fixture.projectId, "Bug").map(_.id).transact(transactor)
+        _ <- setLabels(fixture.taskId, feature, Instant.parse("2026-01-01T10:00:00Z"))
+        older <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- setLabels(fixture.taskId, bug, Instant.parse("2026-01-02T10:00:00Z"))
+        newer <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, older.toString)
+        keptNewer <- labelIds(fixture.taskId) // the project changed its labels after the older tree
+        _ <- setLabels(fixture.taskId, feature, Instant.parse("2026-01-01T10:00:00Z")) // the other computer
+        _ <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, newer.toString)
+        replaced <- labelIds(fixture.taskId)
+      } yield {
+        keptNewer shouldBe List(bug)
+        replaced shouldBe List(bug)
+      }
+    }
+
     "reject a new project import from a folder without an index" in { transactor =>
       val emptyFolder = newExportPath()
       os.makeDir.all(emptyFolder)

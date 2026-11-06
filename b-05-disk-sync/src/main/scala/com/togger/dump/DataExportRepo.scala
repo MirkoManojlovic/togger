@@ -180,7 +180,9 @@ class DataExportRepo(
       links <- linkRepo.findAllByProjectId(projectId)
       linkVersions <- linkVersionRepo.findAllByProjectId(projectId)
       labels <- taskLabelAssignmentRepo.findLabelsByProjectId(projectId)
+      assignments <- taskLabelAssignmentRepo.findByProjectId(projectId)
     } yield {
+      val assignedAt = assignments.groupMapReduce(_.taskId)(_.createdAt)((a, b) => if (a.isAfter(b)) a else b)
       val versionsByTask = taskVersions.groupBy(_.taskId)
       val linkVersionsByLink = linkVersions.groupBy(_.linkId)
       val linksByTask = links.groupBy(_.taskId)
@@ -192,7 +194,8 @@ class DataExportRepo(
             .getOrElse(task.id, Nil)
             .map(link => LinkDumpData(link, linkVersionsByLink.getOrElse(link.id, Nil).sortBy(_.version)))
             .sortBy(_.link.id),
-          labels.getOrElse(task.id, Nil).map(_.id).sorted
+          labels.getOrElse(task.id, Nil).map(_.id).sorted,
+          assignedAt.get(task.id)
         )
       }
     }
