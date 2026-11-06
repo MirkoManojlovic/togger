@@ -8,6 +8,7 @@ import com.togger.account._
 import com.togger.common.Password
 import com.togger.common.TgClockImpl
 import com.togger.common.TgIds
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.controllers.organization.OrganizationService
 import com.togger.controllers.project.DefaultMilestoneStepTemplateService
 import com.togger.controllers.project.DefaultMilestoneTemplateService
@@ -80,6 +81,7 @@ trait SeedAppModule {
   protected val taskStatusRepo = new TaskStatusRepoImpl
   protected val taskLabelRepo = new TaskLabelRepoImpl
   protected val taskLabelAssignmentRepo = new TaskLabelAssignmentRepoImpl
+  protected val deletedEntityRepo = new DeletedEntityRepoImpl
   protected val taskRepo = new TaskRepoImpl
   protected val taskVersionRepo = new TaskVersionRepoImpl
   protected val linkRepo = new LinkRepoImpl
@@ -140,6 +142,8 @@ trait SeedAppModule {
       logEntryRepo = logEntryRepo,
       logEntryVersionRepo = logEntryVersionRepo,
       taskLabelAssignmentRepo = taskLabelAssignmentRepo,
+      deletedEntityRepo = deletedEntityRepo,
+      tgClock = tgClock,
       transactor = xa
     )
 

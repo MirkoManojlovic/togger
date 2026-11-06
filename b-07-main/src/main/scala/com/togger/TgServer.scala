@@ -62,6 +62,7 @@ import com.togger.controllers.timebox.TimeboxController
 import com.togger.dataexportconfig.DataExportConfigEndpoints
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.dataexportconfig.DataExportConfigService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dataimportconfig.DataImportConfigEndpoints
 import com.togger.dataimportconfig.DataImportConfigRepoImpl
 import com.togger.dataimportconfig.DataImportConfigService
@@ -447,6 +448,8 @@ class DependenciesModule(
       logEntryRepo,
       logEntryVersionRepo,
       taskLabelAssignmentRepo,
+      deletedEntityRepo,
+      tgClock,
       transactor
     )
   lazy val taskEndpoints = new TaskEndpoints(securedEndpoint)
@@ -650,6 +653,7 @@ class DependenciesModule(
     )
 
   lazy val projectMappingRepo = new ProjectMappingRepoImpl
+  lazy val deletedEntityRepo = new DeletedEntityRepoImpl
   lazy val projectMappingService = new ProjectMappingService(projectMappingRepo, transactor)
   lazy val projectMappingEndpoints = new ProjectMappingEndpoints(securedEndpoint)
   lazy val projectMappingController =

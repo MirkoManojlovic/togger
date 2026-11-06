@@ -12,6 +12,8 @@ trait TaskRepo {
 
   def findById(id: UUID): ConnectionIO[Task]
 
+  def findOptionById(id: UUID): ConnectionIO[Option[Task]]
+
   /** Every task of the project, unbounded: only for whole-project jobs such as the disk dump, never for an endpoint. */
   def findAllByProjectId(projectId: UUID): ConnectionIO[List[Task]]
 

@@ -47,6 +47,12 @@ class TaskRepoImpl extends TaskRepo with TgLogging {
       task => s"Task found ${sp(task)}"
     )
 
+  override def findOptionById(id: UUID): ConnectionIO[Option[Task]] =
+    logAroundInfoQuery(findByIdStatementUUID(TASK_TABLE_FRAG)(id).query[Task].option)(
+      s"Finding task with ${sp(id)} if it exists",
+      task => s"Task found ${sp(task)}"
+    )
+
   override def updateArchived(id: UUID, archived: Boolean): ConnectionIO[Int] =
     logAroundInfoQuery(
       (fr"update" ++ TASK_TABLE_FRAG ++ fr"set archived = $archived where id = $id").update.run

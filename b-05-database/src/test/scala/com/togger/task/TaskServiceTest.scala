@@ -4,6 +4,11 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.togger.TestLoggingJvm
+import com.togger.common.TgClockImpl
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
+import com.togger.logentry.LogEntry
 import com.togger.common.TgIds
 import com.togger.common.TimeHelpers
 import com.togger.db.MockedTransactor
@@ -37,6 +42,7 @@ class TaskServiceTest
   val logEntryRepo: LogEntryRepo = mock[LogEntryRepo]
   val logEntryVersionRepo: LogEntryVersionRepo = mock[LogEntryVersionRepo]
   val taskLabelAssignmentRepo: TaskLabelAssignmentRepo = mock[TaskLabelAssignmentRepo]
+  val deletedEntityRepo: DeletedEntityRepo = mock[DeletedEntityRepo]
 
   val taskService =
     new TaskService(
@@ -47,6 +53,8 @@ class TaskServiceTest
       logEntryRepo,
       logEntryVersionRepo,
       taskLabelAssignmentRepo,
+      deletedEntityRepo,
+      new TgClockImpl,
       transactorMock
     )
 
@@ -233,14 +241,25 @@ class TaskServiceTest
         .unsafeToFuture()
     }
 
-    "delete the task" in {
+    "delete the task and record a tombstone for it and for its log entries" in {
+      val logEntry = LogEntry(UUID.randomUUID(), task.id, task.createdBy, nowAsInstant)
+      (taskRepo.findOptionById _).expects(task.id).returns(Option(task).pure[ConnectionIO])
+      (logEntryRepo.findByTaskId _).expects(task.id).returns(List(logEntry).pure[ConnectionIO])
       (taskRepo.deleteById _).expects(task.id).returns(1.pure[ConnectionIO])
+      (deletedEntityRepo.insertAll _)
+        .expects(where { (tombstones: List[DeletedEntity]) =>
+          tombstones.map(t => (t.projectId, t.entityType, t.entityId)).toSet == Set(
+            (task.projectId, DeletedEntityType.Task, task.id),
+            (task.projectId, DeletedEntityType.LogEntry, logEntry.id)
+          )
+        })
+        .returns(2.pure[ConnectionIO])
 
       taskService.deleteTask(task.id).map(_ shouldBe Right(1)).unsafeToFuture()
     }
 
-    "return TaskNotFound when deleting a task that does not exist" in {
-      (taskRepo.deleteById _).expects(task.id).returns(0.pure[ConnectionIO])
+    "return TaskNotFound and record no tombstone when deleting a task that does not exist" in {
+      (taskRepo.findOptionById _).expects(task.id).returns(Option.empty[Task].pure[ConnectionIO])
 
       taskService.deleteTask(task.id).map(_ shouldBe Left(TaskError.TaskNotFound)).unsafeToFuture()
     }

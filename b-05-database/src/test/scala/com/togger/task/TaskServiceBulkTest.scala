@@ -4,6 +4,8 @@ import cats.effect.IO
 import com.togger.account.TgAccount
 import com.togger.common.BusinessTgDbSpec
 import com.togger.common.DbPageRequest
+import com.togger.common.TgClockImpl
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.common.TimeHelpers
 import com.togger.dto.TaskFilter
 import com.togger.logentry.LogEntryRepoImpl
@@ -30,6 +32,8 @@ class TaskServiceBulkTest extends BusinessTgDbSpec with TgAccount with TgProject
       new LogEntryRepoImpl,
       new LogEntryVersionRepoImpl,
       new TaskLabelAssignmentRepoImpl,
+      new DeletedEntityRepoImpl,
+      new TgClockImpl,
       transactor
     )
 
