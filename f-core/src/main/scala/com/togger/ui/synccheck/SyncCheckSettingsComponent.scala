@@ -8,17 +8,19 @@ import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.tgInputStyle
 
-class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
+class SyncCheckSettingsComponent(settings: SyncIntervalSettingsStore) {
 
   private val inputError: Var[Option[String]] = Var(None)
 
   private val setInterval = Observer[String] { text =>
-    text.toIntOption.filter(_ >= SyncCheckSettingsStore.MinIntervalSeconds) match {
+    text.toIntOption.filter(_ >= SyncIntervalSettingsStore.MinIntervalSeconds) match {
       case Some(seconds) =>
         inputError.set(None)
         settings.set(seconds)
       case None =>
-        inputError.set(Some(s"Enter a whole number of seconds, at least ${SyncCheckSettingsStore.MinIntervalSeconds}"))
+        inputError.set(
+          Some(s"Enter a whole number of seconds, at least ${SyncIntervalSettingsStore.MinIntervalSeconds}")
+        )
     }
   }
 
@@ -27,12 +29,12 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       label(
         cls("block mb-2 text-sm font-medium text-heading"),
         forId("sync-check-interval"),
-        "Check interval (seconds)"
+        "Sync interval (seconds)"
       ),
       input(
         idAttr("sync-check-interval"),
         `type`("number"),
-        minAttr(SyncCheckSettingsStore.MinIntervalSeconds.toString),
+        minAttr(SyncIntervalSettingsStore.MinIntervalSeconds.toString),
         cls(tgInputStyle),
         controlled(
           value <-- settings.intervalSeconds.map(_.toString),
@@ -42,8 +44,8 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       child.maybe <-- inputError.signal.map(_.map(message => p(cls("mt-2 text-sm text-red-600"), message))),
       p(
         cls("mt-2 text-sm text-body"),
-        "How often the app checks whether there is something to import or export. A circle on the Import and " +
-          "Export buttons shows that there is. This is kept in this browser only."
+        "How often the app runs a sync by itself: it imports and then exports all your projects, like the sync " +
+          "button. The button shows when it is running."
       )
     )
 
@@ -52,7 +54,7 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       justifyCenterFlex,
       TgCard
         .headerNoFooter(
-          header = TgCard.CardHeader.plainText("Import / export check", TgCard.CardHeaderSize.H3),
+          header = TgCard.CardHeader.plainText("Sync", TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
               intervalInput.amend(cls("mb-4")),

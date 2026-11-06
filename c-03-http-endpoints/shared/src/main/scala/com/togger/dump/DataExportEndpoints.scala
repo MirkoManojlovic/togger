@@ -8,6 +8,7 @@ import com.togger.dto.DataExportStatusResp
 import com.togger.dto.DataImportReq
 import com.togger.dto.DataImportResp
 import com.togger.dto.DataSyncPendingResp
+import com.togger.dto.DataSyncResp
 import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -68,5 +69,11 @@ class DataExportEndpoints(securedEndpoint: SecuredEndpoint) {
     securedEndpoint.endpoint.get
       .in(basePath / "import" / "pending" / path[UUID]("project-id"))
       .out(jsonBody[TgJsonSuccess[DataSyncPendingResp]])
+
+  /** Imports every import path and then exports every export path of all the projects of the account. */
+  val syncEndpoint: TgSecuredEndpoint[Unit, DataSyncResp] =
+    securedEndpoint.endpoint.post
+      .in(basePath / "sync" / "all")
+      .out(jsonBody[TgJsonSuccess[DataSyncResp]])
 
 }

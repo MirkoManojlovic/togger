@@ -12,9 +12,12 @@ import com.togger.dto.DataExportResp
 import com.togger.dto.DataExportStatusResp
 import com.togger.dto.DataExportSyncStatusResp
 import com.togger.dto.DataImportEntityResultResp
+import com.togger.dto.DataImportPathResp
 import com.togger.dto.DataImportResp
 import com.togger.dto.DataImportStatusResp
 import com.togger.dto.DataSyncPendingResp
+import com.togger.dto.DataSyncProjectResp
+import com.togger.dto.DataSyncResp
 import com.togger.dump.DataExportEndpoints
 import com.togger.dump.DataExportEntityStatus
 import com.togger.dump.DataExportEntityType
@@ -26,6 +29,8 @@ import com.togger.dump.DataImportResult
 import com.togger.dump.DataImportService
 import com.togger.dump.DataImportStatus
 import com.togger.dump.DataSyncPendingService
+import com.togger.dump.DataSyncProjectResult
+import com.togger.dump.DataSyncService
 
 import java.util.UUID
 
@@ -33,7 +38,8 @@ class DataExportController(
   dataExportEndpoints: DataExportEndpoints,
   dataExportService: DataExportService,
   dataImportService: DataImportService,
-  dataSyncPendingService: DataSyncPendingService
+  dataSyncPendingService: DataSyncPendingService,
+  dataSyncService: DataSyncService
 ) {
 
   val exportTasks = dataExportEndpoints.exportEndpoint.serverLogic { auth => projectId =>
@@ -135,6 +141,29 @@ class DataExportController(
         case Right(pending) => TgJsonSuccess.justBodyRight(DataSyncPendingResp(projectId, pending))
         case Left(error)    => error.toBadRequestLeft[DataSyncPendingResp]
       }
+  }
+
+  val sync = dataExportEndpoints.syncEndpoint.serverLogic { auth => _ =>
+    dataSyncService
+      .sync(auth.body.get.id)
+      .map(results => TgJsonSuccess.justBodyRight(DataSyncResp(results.map(toResp))))
+  }
+
+  private def toResp(result: DataSyncProjectResult): DataSyncProjectResp = {
+    val projectId = result.project.id
+    DataSyncProjectResp(
+      projectId,
+      result.project.name,
+      result.imports.map(i =>
+        DataImportPathResp(
+          i.importPath,
+          i.result.toOption.map(toImportResp(projectId, _)),
+          i.result.left.toOption.map(_.message)
+        )
+      ),
+      result.exportResult.toOption.flatten.map(toResp(projectId, _)),
+      result.exportResult.left.toOption.map(_.message)
+    )
   }
 
   private def toImportResp(projectId: UUID, result: DataImportResult): DataImportResp = {

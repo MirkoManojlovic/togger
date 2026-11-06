@@ -3,28 +3,27 @@ package com.togger.ui.synccheck
 import com.raquo.laminar.api.L._
 import com.togger.ui.localstorage.LocalStorage
 
-/** How often the frontend asks the backend whether there is something to import or export; kept in this browser only.
-  */
-class SyncCheckSettingsStore(localStorage: LocalStorage) {
+/** How often the frontend runs a sync by itself (the sync-execute interval); kept in this browser only. */
+class SyncIntervalSettingsStore(localStorage: LocalStorage) {
 
   private val intervalVar: Var[Int] = Var(readIntervalSeconds)
 
   val intervalSeconds: Signal[Int] = intervalVar.signal
 
   def set(seconds: Int): Unit = {
-    val valid = math.max(seconds, SyncCheckSettingsStore.MinIntervalSeconds)
+    val valid = math.max(seconds, SyncIntervalSettingsStore.MinIntervalSeconds)
     intervalVar.set(valid)
-    localStorage.setItem(SyncCheckSettingsStore.StorageKey, valid.toString)
+    localStorage.setItem(SyncIntervalSettingsStore.StorageKey, valid.toString)
   }
 
-  def reset(): Unit = set(SyncCheckSettingsStore.DefaultIntervalSeconds)
+  def reset(): Unit = set(SyncIntervalSettingsStore.DefaultIntervalSeconds)
 
   private def readIntervalSeconds: Int =
-    SyncCheckSettingsStore.parse(localStorage.getItem(SyncCheckSettingsStore.StorageKey))
+    SyncIntervalSettingsStore.parse(localStorage.getItem(SyncIntervalSettingsStore.StorageKey))
 
 }
 
-object SyncCheckSettingsStore {
+object SyncIntervalSettingsStore {
   val StorageKey = "tg-sync-check-interval-seconds"
   val DefaultIntervalSeconds = 60
   val MinIntervalSeconds = 10

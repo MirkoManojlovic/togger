@@ -53,6 +53,8 @@ class DataExportFeServicePreview(ctx: PreviewContext, projects: ProjectsPreviewD
       PreviewResponses.ok(DataExportStatusResp(projectId, List(DataExportPathStatusResp(importPath, Nil))))
     )
 
+  override def sync(): TgRespIO[DataSyncResp] = unavailable
+
   override def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp] = nothingPending(projectId)
 
   override def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp] = nothingPending(projectId)

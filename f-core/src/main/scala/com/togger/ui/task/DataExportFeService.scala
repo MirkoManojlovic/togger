@@ -8,6 +8,7 @@ import com.togger.dto.DataExportStatusResp
 import com.togger.dto.DataImportReq
 import com.togger.dto.DataImportResp
 import com.togger.dto.DataSyncPendingResp
+import com.togger.dto.DataSyncResp
 import com.togger.dump.DataExportEndpoints
 
 import java.util.UUID
@@ -30,6 +31,9 @@ trait DataExportFeService {
   def exportPending(projectId: UUID): TgRespIO[DataSyncPendingResp]
 
   def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp]
+
+  /** Imports all import paths, then exports all export paths, of every project of the account. */
+  def sync(): TgRespIO[DataSyncResp]
 }
 
 class DataExportFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackendClient: ProtectedBackendClient)
@@ -66,4 +70,7 @@ class DataExportFeServiceImpl(securedEndpoint: SecuredEndpoint, protectedBackend
 
   override def importPending(projectId: UUID): TgRespIO[DataSyncPendingResp] =
     protectedBackendClient.protectedHttpCall(dataExportEndpoints.importPendingEndpoint)(projectId)
+
+  override def sync(): TgRespIO[DataSyncResp] =
+    protectedBackendClient.protectedHttpCall(dataExportEndpoints.syncEndpoint)(())
 }

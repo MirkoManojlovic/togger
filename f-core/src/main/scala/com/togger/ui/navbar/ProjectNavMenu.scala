@@ -6,9 +6,6 @@ import com.togger.routes.FrontendPage
 import com.togger.routes.Pages._
 import com.togger.routes.TgRouter
 import com.togger.ui.organization.OrganizationWithProjects
-import com.togger.ui.organization.TgIcons
-import com.togger.ui.synccheck.SyncPendingDot
-import com.togger.ui.synccheck.SyncPendingStore
 import com.togger.ui.timebox.TimeboxUi
 import org.scalajs.dom
 
@@ -21,10 +18,7 @@ case class ProjectNavGroup(title: String, links: Seq[(String, FrontendPage)])
   */
 class ProjectNavMenu(
   router: TgRouter[FrontendPage],
-  organizations: Signal[Seq[OrganizationWithProjects]],
-  onExport: UUID => Unit,
-  onImport: UUID => Unit,
-  syncPendingStore: SyncPendingStore
+  organizations: Signal[Seq[OrganizationWithProjects]]
 ) {
 
   private val openGroup: Var[Option[String]] = Var(None)
@@ -82,22 +76,6 @@ class ProjectNavMenu(
       router.navigateTo(page)
     )
 
-  private def actionButton(
-    label: String,
-    icon: Modifier[HtmlElement],
-    action: () => Unit,
-    pending: Signal[Boolean]
-  ): HtmlElement =
-    button(
-      `type`("button"),
-      cls(NavbarComponent.navLinkClass, "relative cursor-pointer"),
-      SyncPendingDot(pending, s"There is something to ${label.toLowerCase}"),
-      title(label),
-      aria.label(label),
-      icon,
-      onClick.mapToUnit --> (_ => action())
-    )
-
   private def directLinks(projectId: UUID, current: FrontendPage): Seq[HtmlElement] = {
     val contributionsSelected = current match {
       case ShowContributionsPage(id, _) => id == projectId
@@ -109,19 +87,7 @@ class ProjectNavMenu(
     }
     Seq(
       directLink("Contributions", ShowContributionsPage(projectId), contributionsSelected),
-      directLink("Sync", SyncConfigPage(projectId), syncSelected),
-      actionButton(
-        "Import",
-        TgIcons.uploadIcon("w-4 h-4"),
-        () => onImport(projectId),
-        syncPendingStore.importPending(projectId)
-      ),
-      actionButton(
-        "Export",
-        TgIcons.downloadIcon("w-4 h-4"),
-        () => onExport(projectId),
-        syncPendingStore.exportPending(projectId)
-      )
+      directLink("Sync", SyncConfigPage(projectId), syncSelected)
     )
   }
 

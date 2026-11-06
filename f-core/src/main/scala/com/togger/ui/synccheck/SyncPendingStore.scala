@@ -10,10 +10,10 @@ import java.util.UUID
 
 case class ProjectSyncPending(exportPending: Boolean, importPending: Boolean)
 
-/** Asks the backend, every interval of the settings, which projects have something to export or import. */
-class SyncPendingStore(dataExportService: DataExportFeService, settings: SyncCheckSettingsStore)(implicit
-  ioRuntime: IORuntime
-) {
+/** The sync check: asks the backend every [[SyncPendingStore.CheckIntervalSeconds]] seconds, not configurable, which
+  * projects have something to export or import.
+  */
+class SyncPendingStore(dataExportService: DataExportFeService)(implicit ioRuntime: IORuntime) {
 
   private val pendingVar: Var[Map[UUID, ProjectSyncPending]] = Var(Map.empty)
 
@@ -27,12 +27,16 @@ class SyncPendingStore(dataExportService: DataExportFeService, settings: SyncChe
   def importPending(projectId: UUID): Signal[Boolean] =
     pendingVar.signal.map(_.get(projectId).exists(_.importPending)).distinct
 
+  /** Whether any checked project has something to import or export, i.e. whether a sync would change anything. */
+  val anyPending: Signal[Boolean] =
+    pendingVar.signal.map(_.values.exists(p => p.exportPending || p.importPending)).distinct
+
   /** Checks again right away, e.g. after an export or import. */
   def refresh(): Unit = refreshRequests.emit(())
 
   /** Keeps checking the given projects for as long as the element it is bound to is mounted. */
   def binder(projectIds: Signal[Seq[UUID]]): Binder[HtmlElement] = {
-    val ticks = settings.intervalSeconds.distinct.flatMapSwitch(seconds => EventStream.periodic(seconds * 1000))
+    val ticks = EventStream.periodic(SyncPendingStore.CheckIntervalSeconds * 1000)
     EventStream
       .merge(ticks.mapToUnit, refreshRequests.events, projectIds.distinct.changes.mapToUnit)
       .withCurrentValueOf(projectIds) --> Observer[Seq[UUID]](check)
@@ -58,4 +62,8 @@ class SyncPendingStore(dataExportService: DataExportFeService, settings: SyncChe
       imported <- importResult.toOption
     } yield ProjectSyncPending(exported.body.get.pending, imported.body.get.pending)
 
+}
+
+object SyncPendingStore {
+  val CheckIntervalSeconds = 30
 }

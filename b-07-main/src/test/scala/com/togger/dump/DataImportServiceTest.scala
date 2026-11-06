@@ -4,6 +4,9 @@ import cats.effect.IO
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
+import com.togger.project.ProjectLabelAssignment
+import com.togger.projectlabel.ProjectLabel
+import com.togger.projectlabel.ProjectLabelCategory
 import com.togger.task.Link
 import com.togger.task.LinkVersion
 import com.togger.task.TaskLabelAssignment
@@ -14,6 +17,7 @@ import com.togger.tgprompttemplate.TgPromptTemplateVersion
 import com.togger.timebox.Timebox
 import com.togger.timebox.TimeboxVersion
 import doobie.implicits._
+import doobie.postgres.implicits._
 import io.circe.generic.auto._
 
 import java.time.LocalDate
@@ -425,6 +429,57 @@ class DataImportServiceTest extends ExportImportTestSupport {
       } yield status.toOption.get.entityStatuses
         .filter(_.entityType == DataExportEntityType.Project)
         .map(s => (s.status, s.fieldDiffs.map(_.field))) shouldBe List((DataExportSyncStatus.InSync, Nil))
+    }
+
+    "compare the members of a tree by email, whatever the names of the accounts" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        // the same email belongs to an account with another name in the database the tree is checked against
+        _ <-
+          sql"update account set first_name = 'Renamed', last_name = 'Person' where id = ${fixture.accountId}".update.run
+            .transact(transactor)
+        status <- newExportService(transactor).checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
+      } yield status.toOption.get.entityStatuses
+        .filter(_.entityType == DataExportEntityType.Members)
+        .map(s => (s.status, s.fieldDiffs.map(_.field))) shouldBe List((DataExportSyncStatus.InSync, Nil))
+    }
+
+    "compare the project labels of a tree with the ones of the project by name, whatever their ids" in { transactor =>
+      def assignLabel(projectId: UUID, name: String) =
+        for {
+          category <- projectLabelCategoryRepo.insert(
+            ProjectLabelCategory(UUID.randomUUID(), s"Area $name", nowAsInstant, nowAsInstant)
+          )
+          label <- projectLabelRepo.insert(
+            ProjectLabel(UUID.randomUUID(), name, "description", category.id, nowAsInstant, nowAsInstant)
+          )
+          _ <- projectLabelAssignmentRepo.insert(ProjectLabelAssignment(projectId, label.id, nowAsInstant))
+        } yield label
+
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        original <- assignLabel(fixture.projectId, "Scala").transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        // the tree comes from another database, where the label of the same name has another id
+        _ <- (for {
+          _ <- projectLabelAssignmentRepo.deleteAllByProjectId(fixture.projectId)
+          _ <- projectLabelRepo.deleteById(original.id)
+          _ <- projectLabelCategoryRepo.deleteById(original.categoryId)
+          _ <- assignLabel(fixture.projectId, "Scala")
+        } yield ()).transact(transactor)
+        status <- newExportService(transactor).checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
+      } yield {
+        val statuses = status.toOption.get.entityStatuses
+        statuses
+          .filter(s =>
+            s.entityType == DataExportEntityType.ProjectLabel || s.entityType == DataExportEntityType.Project
+          )
+          .map(s => (s.entityType, s.status, s.fieldDiffs.map(_.field))) should contain theSameElementsAs List(
+          (DataExportEntityType.ProjectLabel, DataExportSyncStatus.InSync, Nil),
+          (DataExportEntityType.Project, DataExportSyncStatus.InSync, Nil)
+        )
+      }
     }
 
     "reject a new project import from a folder without an index" in { transactor =>

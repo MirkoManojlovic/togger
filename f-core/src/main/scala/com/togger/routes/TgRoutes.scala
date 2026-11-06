@@ -287,7 +287,7 @@ class TgRoutes {
       ),
       Route.static(
         SyncCheckSettingsPage,
-        root / "settings" / "sync-check"
+        root / "settings" / "sync-interval"
       ),
       Route.static(
         McpSettingsPage,

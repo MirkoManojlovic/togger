@@ -46,7 +46,7 @@ desktop-prod: (build-tauri-backend "prod") build-tauri-mcp build-tauri-app
 desktop-dev-clean: (build-tauri-backend-clean "development") build-tauri-mcp build-tauri-app
 desktop-prod-clean: (build-tauri-backend-clean "prod") build-tauri-mcp build-tauri-app
 
-# Local development. The frontend needs `sbt ~frontendMain/fastLinkJS` running next to it.
+# Local development. The frontend needs `sbt ~frontendMain/fastLinkJS` running next to it (`frontend-watch`).
 changelog_path := "b-05-database/src/main/resources/"
 
 # runs `npm i` only when node_modules is missing or older than package-lock.json
@@ -58,7 +58,48 @@ npm-install:
         touch node_modules
     fi
 
-frontend-web: npm-install
+# Links the ScalaJS frontend once (against the running sbt server), so vite serves the current code
+frontend-link:
+    sbt --client "frontendMain/fastLinkJS"
+
+# Continuous frontend compilation (`~frontendMain/fastLinkJS`) in an sbt JVM of its own (no sbt server), so the
+# backend `runMain` on the shared sbt server cannot block it. Runs in the foreground.
+frontend-watch:
+    sbt -Dsbt.client=false -Dsbt.server.autostart=false "~frontendMain/fastLinkJS"
+
+# Starts `frontend-watch` in the background (log: target/frontend-watch.log, pid: target/frontend-watch.pid)
+[private]
+frontend-watch-start:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    mkdir -p target
+    if [ -f target/frontend-watch.pid ] && kill -0 "$(cat target/frontend-watch.pid)" 2>/dev/null; then
+        echo "frontend watch already running"
+        exit 0
+    fi
+    nohup just frontend-watch > target/frontend-watch.log 2>&1 &
+    echo $! > target/frontend-watch.pid
+    echo "frontend watch started (log: target/frontend-watch.log)"
+
+# Stops the `frontend-watch` started by this checkout (found by its pid file, so a watcher of another checkout survives).
+stop-frontend-watch:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    kill_tree() {
+        for child in $(pgrep -P "$1" || true); do kill_tree "$child"; done
+        kill "$1" 2>/dev/null || true
+    }
+    if [ -f target/frontend-watch.pid ]; then
+        kill_tree "$(cat target/frontend-watch.pid)"
+        rm -f target/frontend-watch.pid
+    fi
+    echo "frontend watch stopped"
+
+# Links the frontend, keeps compiling it in the background and runs vite; the watch stops with vite
+frontend-web: npm-install frontend-link frontend-watch-start
+    #!/usr/bin/env bash
+    set -uo pipefail
+    trap 'just stop-frontend-watch' EXIT
     npm run dev
 
 frontend-tauri-dev: npm-install
@@ -84,18 +125,27 @@ backend-web-demo:
     -just backend-demo-seed
     just backend-web
 
-# Frontend (npm run dev) in the background, stopped with the backend; the demo seed runs before the backend starts
-web-demo: npm-install
+# Links the frontend, keeps compiling it (frontend-watch), runs vite in the background and the backend, without seeding
+web: npm-install frontend-link frontend-watch-start
+    #!/usr/bin/env bash
+    set -uo pipefail
+    npm run dev &
+    frontend_pid=$!
+    trap 'kill "$frontend_pid" 2>/dev/null || true; just stop-frontend-watch' EXIT
+    just backend-web
+
+# Links the frontend, keeps compiling it (frontend-watch), seeds the demo data, runs vite in the background and the backend
+web-demo: npm-install frontend-link frontend-watch-start
     #!/usr/bin/env bash
     set -uo pipefail
     just backend-demo-seed || echo "Demo seed did not run (already seeded?), starting the backend anyway"
     npm run dev &
     frontend_pid=$!
-    trap 'kill "$frontend_pid" 2>/dev/null || true' EXIT
+    trap 'kill "$frontend_pid" 2>/dev/null || true; just stop-frontend-watch' EXIT
     just backend-web
 
-# Stops the vite dev server (port 5173) and `tauri dev`. Never touches sbt.
-stop-frontend:
+# Stops the vite dev server (port 5173), `tauri dev` and the frontend watch of this checkout. Never touches the sbt server.
+stop-frontend: stop-frontend-watch
     #!/usr/bin/env bash
     set -uo pipefail
     pids=$(lsof -nP -tiTCP:5173 -sTCP:LISTEN || true)

@@ -228,6 +228,7 @@ class DataExportService(
     val dbEntities = data.entities.map(e => (e.entityType, e.id) -> e).toMap
     lazy val accountKeys = if (matchByContent) importAccountKeys(data, folderPath, indexResult) else None
     lazy val labelKeys = taskLabelKeys(data, folderPath, indexResult)
+    lazy val projectLabelNames = if (matchByContent) importProjectLabelNames(data, indexResult) else None
 
     indexResult match {
       case Left(error) =>
@@ -247,7 +248,14 @@ class DataExportService(
           if (matchByContent && ExportContentKey.applies(entityType))
             contentStatuses(entityType, folderPath, index, db.values.toList.sortBy(_.id), indexed, labelKeys)
           else if (matchByContent && entityType == DataExportEntityType.Project && db.size == 1 && indexed.size == 1)
-            importedProjectStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
+            importedProjectStatus(
+              folderPath,
+              index,
+              db.values.head,
+              indexed.keys.head,
+              accountKeys,
+              projectLabelNames
+            ) :: Nil
           else if (matchByContent && entityType == DataExportEntityType.Members && db.size == 1 && indexed.size == 1)
             importedMembersStatus(folderPath, index, db.values.head, indexed.keys.head, accountKeys) :: Nil
           else {
@@ -378,8 +386,39 @@ class DataExportService(
     index: ExportIndex,
     entity: ExportEntity,
     diskId: UUID,
-    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)]
-  ) = outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId, accountKeys)
+    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)],
+    projectLabelNames: Option[(Map[UUID, String], Map[UUID, String])]
+  ) = outOfSyncStatus(folderPath, index, entity, importIgnoredFields, diskId, accountKeys, projectLabelNames)
+
+  /** The names of the project labels of the disk and of the database by id: the import matches project labels by name,
+    * so the project lists the same labels when their names are the same, whatever their ids.
+    */
+  private def importProjectLabelNames(
+    data: ExportData,
+    indexResult: Either[String, Option[ExportIndex]]
+  ): Option[(Map[UUID, String], Map[UUID, String])] =
+    indexResult.toOption.flatten.map { index =>
+      val disk = index.entriesOf(DataExportEntityType.ProjectLabel).map { case (id, entry) =>
+        id -> entry.name.getOrElse(id.toString)
+      }
+      val database = data.entities.collect {
+        case e if e.entityType == DataExportEntityType.ProjectLabel => e.id -> e.name.getOrElse(e.id.toString)
+      }.toMap
+      (disk, database)
+    }
+
+  /** The `projectLabelIds` of a project file as the sorted names of its labels, so that equal labels compare equal. */
+  private def withProjectLabelNames(json: Json, names: Map[UUID, String]): Json =
+    json.hcursor.get[List[UUID]]("projectLabelIds") match {
+      case Right(ids) =>
+        json.mapObject(
+          _.add(
+            "projectLabelIds",
+            Json.fromValues(ids.map(id => names.getOrElse(id, id.toString)).sorted.map(Json.fromString))
+          )
+        )
+      case Left(_) => json
+    }
 
   /** The members file of an import folder is the one of the database project whatever its id, as an import into another
     * project gives it a new one. An import only adds members, so members that the database has and the disk lacks are
@@ -444,12 +483,20 @@ class DataExportService(
     entity: ExportEntity,
     ignoredFields: Set[String] = Set.empty,
     diskId: UUID,
-    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)] = None
+    accountKeys: Option[(ExportAccountKeys, ExportAccountKeys)] = None,
+    projectLabelNames: Option[(Map[UUID, String], Map[UUID, String])] = None
   ): DataExportEntityStatus =
     dataExportTreeStore.readEntityJson(folderPath, index, entity.entityType, diskId) match {
       case Right(diskJson) =>
-        val (diskCompared, databaseCompared) = accountKeys.fold((diskJson, entity.json)) { case (disk, database) =>
-          (disk.replaceIds(diskJson), database.replaceIds(entity.json))
+        val (diskIdsReplaced, databaseIdsReplaced) = accountKeys.fold((diskJson, entity.json)) {
+          case (disk, database) => (disk.replaceIds(diskJson), database.replaceIds(entity.json))
+        }
+        val (diskCompared, databaseCompared) = projectLabelNames.fold((diskIdsReplaced, databaseIdsReplaced)) {
+          case (diskNames, databaseNames) =>
+            (
+              withProjectLabelNames(diskIdsReplaced, diskNames),
+              withProjectLabelNames(databaseIdsReplaced, databaseNames)
+            )
         }
         val fieldDiffs =
           ExportJsonDiff.diff(diskCompared, databaseCompared).filterNot(d => ignoredFields.contains(d.field))

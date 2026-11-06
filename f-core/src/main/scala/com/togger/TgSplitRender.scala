@@ -58,8 +58,9 @@ import com.togger.ui.projectmapping._
 import com.togger.ui.slacker.SlackerComponent
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.synccheck.SyncCheckSettingsComponent
-import com.togger.ui.synccheck.SyncCheckSettingsStore
+import com.togger.ui.synccheck.SyncIntervalSettingsStore
 import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.synccheck.SyncService
 import com.togger.ui.syncconfig._
 import com.togger.ui.task._
 import com.togger.ui.task.bulk.BulkAddTasks
@@ -236,8 +237,16 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val sidebarRefresh = new SidebarRefresh
   lazy val themeStore = new ThemeStore(localStorage)
-  lazy val syncCheckSettingsStore = new SyncCheckSettingsStore(localStorage)
-  lazy val syncPendingStore = new SyncPendingStore(dataExportService, syncCheckSettingsStore)
+  lazy val syncIntervalSettingsStore = new SyncIntervalSettingsStore(localStorage)
+  lazy val syncPendingStore = new SyncPendingStore(dataExportService)
+  lazy val syncService = new SyncService(
+    dataExportService,
+    syncPendingStore,
+    syncIntervalSettingsStore,
+    modalFactory,
+    toast,
+    previewConfig
+  )
   lazy val timeboxStagingStore = new TimeboxStagingStore(localStorage)
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
@@ -261,13 +270,10 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
       organizationProjectsLoader,
       accountService,
       router,
-      dataExportService,
-      dataImportConfigService,
-      spinnerService,
-      modalFactory,
       sidebarCollapseStore,
       sidebarRefresh,
       themeStore,
+      syncService,
       syncPendingStore,
       () => quickCreateHost.open(),
       () => bulkCreateHost.open(),
@@ -514,7 +520,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   modalFactory
                 ).element
-              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
+              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncIntervalSettingsStore).element
               case McpSettingsPage       => new McpSettingsComponent().element
               case UpdaterSettingsPage   => new UpdaterComponent(updaterStore).element
               case ShowAllAccountsPage(listParams) =>
@@ -1256,13 +1262,10 @@ case class NavigationSelection(
   organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
   router: TgRouter[FrontendPage],
-  dataExportService: DataExportFeService,
-  dataImportConfigService: DataImportConfigFeService,
-  spinnerService: SpinnerService,
-  modalFactory: ModalFactory,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
   themeStore: ThemeStore,
+  syncService: SyncService,
   syncPendingStore: SyncPendingStore,
   onQuickCreate: () => Unit,
   onBulkCreate: () => Unit,
@@ -1281,10 +1284,6 @@ case class NavigationSelection(
             router,
             organizationProjectsLoader,
             accountService,
-            dataExportService,
-            dataImportConfigService,
-            spinnerService,
-            modalFactory,
             sidebarCollapseStore,
             sidebarRefresh,
             syncPendingStore,
@@ -1302,9 +1301,7 @@ case class NavigationSelection(
               themeStore,
               sidebar.organizations,
               sidebarCollapseStore.current,
-              sidebar.exportProject,
-              sidebar.importProject,
-              syncPendingStore,
+              syncService,
               previewConfig,
               onResetPreview
             ).element,
