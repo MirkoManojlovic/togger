@@ -186,6 +186,12 @@ object DataExportSyncStatus {
   case object OutOfSync extends DataExportSyncStatus
   case object MissingFromExport extends DataExportSyncStatus
   case object MissingFromDb extends DataExportSyncStatus
+
+  /** The disk deleted the entity, which the database still has unchanged: an import deletes it. */
+  case object PendingDelete extends DataExportSyncStatus
+
+  /** The database deleted the entity, which the disk still has unchanged: an export removes it from the tree. */
+  case object Deleted extends DataExportSyncStatus
   case object Malformed extends DataExportSyncStatus
 }
 

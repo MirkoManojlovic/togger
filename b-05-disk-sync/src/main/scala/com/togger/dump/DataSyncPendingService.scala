@@ -18,10 +18,15 @@ class DataSyncPendingService(
 ) {
 
   private val exportNeeded: Set[DataExportSyncStatus] =
-    Set(DataExportSyncStatus.OutOfSync, DataExportSyncStatus.MissingFromExport, DataExportSyncStatus.Malformed)
+    Set(
+      DataExportSyncStatus.OutOfSync,
+      DataExportSyncStatus.MissingFromExport,
+      DataExportSyncStatus.Malformed,
+      DataExportSyncStatus.Deleted
+    )
 
   private val importNeeded: Set[DataExportSyncStatus] =
-    Set(DataExportSyncStatus.OutOfSync, DataExportSyncStatus.MissingFromDb)
+    Set(DataExportSyncStatus.OutOfSync, DataExportSyncStatus.MissingFromDb, DataExportSyncStatus.PendingDelete)
 
   private def anyNeeded(pathStatus: DataExportPathStatus, needed: Set[DataExportSyncStatus]): Boolean =
     pathStatus.entityStatuses.exists(s => needed.contains(s.status))

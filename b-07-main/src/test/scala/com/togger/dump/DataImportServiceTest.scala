@@ -3,7 +3,6 @@ package com.togger.dump
 import cats.effect.IO
 import cats.implicits._
 import com.togger.milestone.MilestoneStepStatus
-import com.togger.common.TgClockImpl
 import com.togger.deletedentity.DeletedEntity
 import com.togger.deletedentity.DeletedEntityType
 import com.togger.project.ProjectAccount
@@ -14,7 +13,6 @@ import com.togger.projectlabel.ProjectLabelCategory
 import com.togger.task.Link
 import com.togger.task.LinkVersion
 import com.togger.task.TaskLabelAssignment
-import com.togger.task.TaskService
 import com.togger.tasktemplate.TaskTemplate
 import com.togger.tasktemplate.TaskTemplateVersion
 import com.togger.tgprompttemplate.TgPromptTemplate
@@ -43,20 +41,6 @@ class DataImportServiceTest extends ExportImportTestSupport {
     stepTemplateId: UUID,
     milestoneTemplateId: UUID
   )
-
-  private def newTaskService(transactor: Transactor[IO]) =
-    new TaskService(
-      taskRepo,
-      taskVersionRepo,
-      linkRepo,
-      linkVersionRepo,
-      logEntryRepo,
-      logEntryVersionRepo,
-      taskLabelAssignmentRepo,
-      deletedEntityRepo,
-      new TgClockImpl,
-      transactor
-    )
 
   private def clearTombstones(transactor: Transactor[IO], projectId: UUID): IO[Unit] =
     deletedEntityRepo

@@ -174,6 +174,20 @@ trait ExportImportTestSupport
     deletedEntityRepo
   )
 
+  def newTaskService(transactor: Transactor[IO]) =
+    new TaskService(
+      taskRepo,
+      taskVersionRepo,
+      linkRepo,
+      linkVersionRepo,
+      logEntryRepo,
+      logEntryVersionRepo,
+      taskLabelAssignmentRepo,
+      deletedEntityRepo,
+      new TgClockImpl,
+      transactor
+    )
+
   def newExportService(transactor: Transactor[IO]) =
     new DataExportService(
       dataExportRepo,

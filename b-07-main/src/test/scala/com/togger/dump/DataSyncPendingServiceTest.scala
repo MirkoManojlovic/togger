@@ -110,6 +110,29 @@ class DataSyncPendingServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "have a deletion to export, but nothing to import, while the import path still holds the deleted task" in {
+      transactor =>
+        val importPath = newExportPath()
+        for {
+          setupResult <- createExportableProject(importPath).transact(transactor)
+          (savedAccount, savedProject) = setupResult
+          status <- createTaskStatus(savedProject.id).transact(transactor)
+          taskId <- createTaskWithFullHistory(savedProject.id, savedAccount.id, status.id).transact(transactor)
+          root <- exportToFolder(transactor, savedProject.id, savedAccount.id)
+          _ <- insertImportConfig(savedProject.id, savedAccount.id, root).transact(transactor)
+          service = pendingService(transactor)
+          _ <- newTaskService(transactor).deleteTask(taskId)
+          exportPending <- service.exportPending(savedProject.id, savedAccount.id)
+          importPending <- service.importPending(savedProject.id, savedAccount.id)
+          _ <- newExportService(transactor).exportProject(savedProject.id, savedAccount.id)
+          exportedPending <- service.exportPending(savedProject.id, savedAccount.id)
+        } yield {
+          exportPending shouldBe Right(true)
+          importPending shouldBe Right(false)
+          exportedPending shouldBe Right(false)
+        }
+    }
+
     "refuse an account that is not assigned to the project" in { transactor =>
       for {
         setupResult <- createExportableProject(newExportPath()).transact(transactor)

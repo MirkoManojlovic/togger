@@ -234,6 +234,8 @@ class DataExportController(
     case DataExportSyncStatus.OutOfSync         => DataExportSyncStatusResp.OutOfSync
     case DataExportSyncStatus.MissingFromExport => DataExportSyncStatusResp.MissingFromExport
     case DataExportSyncStatus.MissingFromDb     => DataExportSyncStatusResp.MissingFromDb
+    case DataExportSyncStatus.PendingDelete     => DataExportSyncStatusResp.PendingDelete
+    case DataExportSyncStatus.Deleted           => DataExportSyncStatusResp.Deleted
     case DataExportSyncStatus.Malformed         => DataExportSyncStatusResp.Malformed
   }
 
