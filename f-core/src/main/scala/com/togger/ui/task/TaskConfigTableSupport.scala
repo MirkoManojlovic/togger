@@ -63,6 +63,8 @@ object TaskConfigTableSupport {
     case DataExportSyncStatusResp.OutOfSync         => TgBadgeColor.Yellow
     case DataExportSyncStatusResp.MissingFromExport => TgBadgeColor.Red
     case DataExportSyncStatusResp.MissingFromDb     => TgBadgeColor.Red
+    case DataExportSyncStatusResp.PendingDelete     => TgBadgeColor.Purple
+    case DataExportSyncStatusResp.Deleted           => TgBadgeColor.Purple
     case DataExportSyncStatusResp.Malformed         => TgBadgeColor.Red
   }
 

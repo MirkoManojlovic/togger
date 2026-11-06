@@ -71,7 +71,8 @@ class ImportFlow(
   }
 
   private def needsImport(status: DataExportSyncStatusResp): Boolean =
-    status == DataExportSyncStatusResp.MissingFromDb || status == DataExportSyncStatusResp.OutOfSync
+    status == DataExportSyncStatusResp.MissingFromDb || status == DataExportSyncStatusResp.OutOfSync ||
+      status == DataExportSyncStatusResp.PendingDelete
 
   private def checkContent(projectId: UUID, pathCount: Int, statuses: List[DataExportPathStatusResp]): HtmlElement =
     if (pathCount == 0) div(cls("p-4 text-body"), "No import paths configured for this project")
