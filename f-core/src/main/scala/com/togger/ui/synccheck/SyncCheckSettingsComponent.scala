@@ -27,7 +27,7 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       label(
         cls("block mb-2 text-sm font-medium text-heading"),
         forId("sync-check-interval"),
-        "Check interval (seconds)"
+        "Sync interval (seconds)"
       ),
       input(
         idAttr("sync-check-interval"),
@@ -42,8 +42,8 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       child.maybe <-- inputError.signal.map(_.map(message => p(cls("mt-2 text-sm text-red-600"), message))),
       p(
         cls("mt-2 text-sm text-body"),
-        "How often the app checks whether there is something to import or export. A circle on the Import and " +
-          "Export buttons shows that there is. This is kept in this browser only."
+        "How often the app checks whether a sync has something to import or export. A circle on the sync button " +
+          "in the top bar shows that it has."
       )
     )
 
