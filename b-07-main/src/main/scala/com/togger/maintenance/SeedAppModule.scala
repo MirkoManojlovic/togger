@@ -8,7 +8,6 @@ import com.togger.account._
 import com.togger.common.Password
 import com.togger.common.TgClockImpl
 import com.togger.common.TgIds
-import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.controllers.organization.OrganizationService
 import com.togger.controllers.project.DefaultMilestoneStepTemplateService
 import com.togger.controllers.project.DefaultMilestoneTemplateService
@@ -16,6 +15,7 @@ import com.togger.controllers.project.DefaultTaskLabelService
 import com.togger.controllers.project.DefaultTaskStatusService
 import com.togger.controllers.project.DefaultTaskTemplateService
 import com.togger.controllers.project.ProjectService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.logentry.LogEntryRepoImpl
 import com.togger.logentry.LogEntryService
 import com.togger.logentry.LogEntryVersionRepoImpl

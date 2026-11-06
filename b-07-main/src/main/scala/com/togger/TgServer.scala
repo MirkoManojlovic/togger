@@ -62,10 +62,10 @@ import com.togger.controllers.timebox.TimeboxController
 import com.togger.dataexportconfig.DataExportConfigEndpoints
 import com.togger.dataexportconfig.DataExportConfigRepoImpl
 import com.togger.dataexportconfig.DataExportConfigService
-import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dataimportconfig.DataImportConfigEndpoints
 import com.togger.dataimportconfig.DataImportConfigRepoImpl
 import com.togger.dataimportconfig.DataImportConfigService
+import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
 import com.togger.http.HttpModule

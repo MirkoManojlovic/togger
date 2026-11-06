@@ -11,13 +11,13 @@ import com.togger.common.Password
 import com.togger.common.TgClock
 import com.togger.common.TgIds
 import com.togger.db.TgPages
+import com.togger.deletedentity.DeletedEntity
+import com.togger.deletedentity.DeletedEntityRepo
+import com.togger.deletedentity.DeletedEntityType
 import com.togger.logentry.LogEntry
 import com.togger.logentry.LogEntryRepo
 import com.togger.logentry.LogEntryVersion
 import com.togger.logentry.LogEntryVersionRepo
-import com.togger.deletedentity.DeletedEntity
-import com.togger.deletedentity.DeletedEntityRepo
-import com.togger.deletedentity.DeletedEntityType
 import com.togger.milestone._
 import com.togger.milestonesteptemplate.MilestoneStepTemplate
 import com.togger.milestonesteptemplate.MilestoneStepTemplateRepo
