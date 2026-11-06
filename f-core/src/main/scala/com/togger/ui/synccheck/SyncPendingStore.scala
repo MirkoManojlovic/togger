@@ -27,6 +27,10 @@ class SyncPendingStore(dataExportService: DataExportFeService, settings: SyncChe
   def importPending(projectId: UUID): Signal[Boolean] =
     pendingVar.signal.map(_.get(projectId).exists(_.importPending)).distinct
 
+  /** Whether any checked project has something to import or export, i.e. whether a sync would change anything. */
+  val anyPending: Signal[Boolean] =
+    pendingVar.signal.map(_.values.exists(p => p.exportPending || p.importPending)).distinct
+
   /** Checks again right away, e.g. after an export or import. */
   def refresh(): Unit = refreshRequests.emit(())
 

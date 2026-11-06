@@ -52,7 +52,7 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       justifyCenterFlex,
       TgCard
         .headerNoFooter(
-          header = TgCard.CardHeader.plainText("Import / export check", TgCard.CardHeaderSize.H3),
+          header = TgCard.CardHeader.plainText("Sync", TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
               intervalInput.amend(cls("mb-4")),

@@ -97,7 +97,7 @@ object TgBreadcrumbTrail {
     case ShowAllAccountsPage(_)    => underOrganizations(current("Accounts"))
     case EditAccountPage(_) =>
       underOrganizations(link("Accounts", ShowAllAccountsPage()), current("Edit account"))
-    case SyncCheckSettingsPage => underOrganizations(current("Import / export check"))
+    case SyncCheckSettingsPage => underOrganizations(current("Sync"))
 
     case ShowAllTgPromptTemplatesPage(_) => underOrganizations(current("Prompt templates"))
     case CreateTgPromptTemplatePage      => underPromptTemplates("Create prompt template")

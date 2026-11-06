@@ -10,17 +10,10 @@ import com.togger.routes.Pages._
 import com.togger.routes.TgRouter
 import com.togger.toast.ToastMessages
 import com.togger.ui.auth.AccountService
-import com.togger.ui.dataexportconfig.ExportCheckFlow
-import com.togger.ui.dataimportconfig.DataImportConfigFeService
-import com.togger.ui.dataimportconfig.ImportFlow
-import com.togger.ui.modal.ModalFactory
 import com.togger.ui.organization.OrganizationProjectsLoader
 import com.togger.ui.organization.OrganizationWithProjects
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.spinner.SpinnerService
-import com.togger.ui.synccheck.SyncPendingDot
 import com.togger.ui.synccheck.SyncPendingStore
-import com.togger.ui.task.DataExportFeService
 import com.togger.ui.timebox.TimeboxUi
 import com.togger.ui.toast.Toast
 import org.scalajs.dom
@@ -33,13 +26,9 @@ case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
   collapsed: Signal[Boolean],
-  onExportClick: Option[() => Unit] = None,
-  onImportClick: Option[() => Unit] = None,
   onTasksClick: Option[() => Unit] = None,
   onMilestonesClick: Option[() => Unit] = None,
   onTimeboxesClick: Option[() => Unit] = None,
-  exportPending: Signal[Boolean] = Val(false),
-  importPending: Signal[Boolean] = Val(false),
   icon: String = ""
 ) {
 
@@ -49,15 +38,13 @@ case class SidebarLink(
   private def navButton(
     label: String,
     glyph: ReactiveSvgElement[SVGSVGElement],
-    action: () => Unit,
-    pending: Signal[Boolean] = Val(false)
+    action: () => Unit
   ) =
     button(
       `type`("button"),
       title(label),
       glyph,
-      cls(navButtonStyle, "relative"),
-      SyncPendingDot(pending, s"$label: there is something to do"),
+      cls(navButtonStyle),
       onClick.mapToUnit --> (_ => action())
     )
 
@@ -103,8 +90,6 @@ case class SidebarLink(
       onTasksClick.map(navButton("All tasks", TgIcons.taskListIcon("w-3.5 h-3.5"), _)),
       onMilestonesClick.map(navButton("All milestones", TgIcons.milestoneIcon("w-3.5 h-3.5"), _)),
       onTimeboxesClick.map(navButton("All timeboxes", TgIcons.timeboxIcon("w-3.5 h-3.5"), _)),
-      onExportClick.map(navButton("Export all", TgIcons.downloadIcon("w-3.5 h-3.5"), _, exportPending)),
-      onImportClick.map(navButton("Import all", TgIcons.uploadIcon("w-3.5 h-3.5"), _, importPending)),
       onClick.mapToUnit --> closeMenu
     )
 
@@ -192,10 +177,6 @@ class Sidebar(
   router: TgRouter[FrontendPage],
   organizationProjectsLoader: OrganizationProjectsLoader,
   accountService: AccountService,
-  dataExportService: DataExportFeService,
-  dataImportConfigService: DataImportConfigFeService,
-  spinnerService: SpinnerService,
-  modalFactory: ModalFactory,
   sidebarCollapseStore: SidebarCollapseStore,
   sidebarRefresh: SidebarRefresh,
   syncPendingStore: SyncPendingStore,
@@ -208,25 +189,6 @@ class Sidebar(
     extends ToastMessages {
 
   private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
-
-  /** The results modal; an error building it would be lost in the IO that runs it, so it is shown as a toast. */
-
-  private val exportCheckFlow =
-    new ExportCheckFlow(dataExportService, spinnerService, modalFactory, toast, () => syncPendingStore.refresh())
-
-  def exportProject(projectId: UUID): Unit =
-    exportCheckFlow.start(dataExportService.checkStatus(projectId), dataExportService.exportData(projectId))
-
-  private val importFlow = new ImportFlow(
-    dataExportService,
-    dataImportConfigService,
-    spinnerService,
-    modalFactory,
-    toast,
-    () => syncPendingStore.refresh()
-  )
-
-  def importProject(projectId: UUID): Unit = importFlow.importAll(projectId)
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)
@@ -342,10 +304,6 @@ class Sidebar(
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick =
                                 Option.when(TimeboxUi.visible)(() => router.route(ShowTimeboxesPage(project.id))),
-                              exportPending = syncPendingStore.exportPending(project.id),
-                              importPending = syncPendingStore.importPending(project.id),
-                              onExportClick = Some(() => exportProject(project.id)),
-                              onImportClick = Some(() => importProject(project.id)),
                               icon = project.icon
                             )
                             if (isProjectSelected(project, page)) projectLink.selectedProject

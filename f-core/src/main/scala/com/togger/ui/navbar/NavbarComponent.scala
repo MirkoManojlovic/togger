@@ -10,12 +10,10 @@ import com.togger.ui.auth.LoginRepo
 import com.togger.ui.icons.TgSvgIcons
 import com.togger.ui.organization.OrganizationWithProjects
 import com.togger.ui.organization.TgIcons
-import com.togger.ui.synccheck.SyncPendingStore
+import com.togger.ui.synccheck.SyncService
 import com.togger.ui.theme.ThemeStore
 import org.scalajs.dom
 import org.scalajs.dom.HTMLLIElement
-
-import java.util.UUID
 
 case class MenuLink(
   linkName: String,
@@ -47,16 +45,16 @@ class NavbarComponent(
   themeStore: ThemeStore,
   organizations: Signal[Seq[OrganizationWithProjects]],
   collapsed: Signal[Boolean],
-  onExport: UUID => Unit,
-  onImport: UUID => Unit,
-  syncPendingStore: SyncPendingStore,
+  syncService: SyncService,
   previewConfig: PreviewConfig = PreviewConfig.disabled,
   onResetPreview: () => Unit = () => ()
 ) {
 
+  private lazy val syncButton = new SyncButton(syncService)
+
   private lazy val themeToggleButton = new ThemeToggleButton(themeStore)
 
-  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations, onExport, onImport, syncPendingStore)
+  private lazy val projectNavMenu = new ProjectNavMenu(router, organizations)
 
   private val userMenuOpen: Var[Boolean] = Var(false)
 
@@ -104,7 +102,7 @@ class NavbarComponent(
       ul(
         cls("p-2 text-sm text-body font-medium"),
         Seq(
-          "Import / export check" -> SyncCheckSettingsPage,
+          "Sync" -> SyncCheckSettingsPage,
           "Prompt templates" -> ShowAllTgPromptTemplatesPage(),
           "AI actions" -> ShowAllTgAiActionsPage(),
           "MCP" -> McpSettingsPage,
@@ -256,7 +254,7 @@ class NavbarComponent(
                   )
                 )
               ),
-              div(cls("flex items-center ms-3 gap-2"), themeToggleButton.element, userMenu)
+              div(cls("flex items-center ms-3 gap-2"), syncButton.element, themeToggleButton.element, userMenu)
             )
           )
         )
