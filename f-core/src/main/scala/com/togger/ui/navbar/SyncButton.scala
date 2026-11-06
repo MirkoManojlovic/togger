@@ -18,6 +18,7 @@ class SyncButton(syncService: SyncService) {
       disabled <-- syncService.canSync.map(!_),
       title <-- syncService.tooltip,
       aria.busy <-- syncService.running,
+      syncService.autoSyncBinder,
       SyncPendingDot(syncService.pending, "There is something to sync"),
       span(cls("sr-only"), "Sync"),
       span(cls("inline-flex"), cls("animate-spin") <-- syncService.running, TgIcons.syncIcon("w-5 h-5")),

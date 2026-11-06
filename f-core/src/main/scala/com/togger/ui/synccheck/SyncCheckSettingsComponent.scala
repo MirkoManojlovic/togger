@@ -8,17 +8,19 @@ import com.togger.style.TgCommonStyleJs.justifyCenterFlex
 import com.togger.ui.auth.TgCard
 import com.togger.ui.auth.TgInput.tgInputStyle
 
-class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
+class SyncCheckSettingsComponent(settings: SyncIntervalSettingsStore) {
 
   private val inputError: Var[Option[String]] = Var(None)
 
   private val setInterval = Observer[String] { text =>
-    text.toIntOption.filter(_ >= SyncCheckSettingsStore.MinIntervalSeconds) match {
+    text.toIntOption.filter(_ >= SyncIntervalSettingsStore.MinIntervalSeconds) match {
       case Some(seconds) =>
         inputError.set(None)
         settings.set(seconds)
       case None =>
-        inputError.set(Some(s"Enter a whole number of seconds, at least ${SyncCheckSettingsStore.MinIntervalSeconds}"))
+        inputError.set(
+          Some(s"Enter a whole number of seconds, at least ${SyncIntervalSettingsStore.MinIntervalSeconds}")
+        )
     }
   }
 
@@ -32,7 +34,7 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       input(
         idAttr("sync-check-interval"),
         `type`("number"),
-        minAttr(SyncCheckSettingsStore.MinIntervalSeconds.toString),
+        minAttr(SyncIntervalSettingsStore.MinIntervalSeconds.toString),
         cls(tgInputStyle),
         controlled(
           value <-- settings.intervalSeconds.map(_.toString),
@@ -42,8 +44,8 @@ class SyncCheckSettingsComponent(settings: SyncCheckSettingsStore) {
       child.maybe <-- inputError.signal.map(_.map(message => p(cls("mt-2 text-sm text-red-600"), message))),
       p(
         cls("mt-2 text-sm text-body"),
-        "How often the app checks whether a sync has something to import or export. A circle on the sync button " +
-          "in the top bar shows that it has."
+        "How often the app runs a sync by itself: it imports and then exports all your projects, like the sync " +
+          "button. The button shows when it is running."
       )
     )
 

@@ -9,10 +9,13 @@ import com.togger.ui.modal.ModalFactory
 import com.togger.ui.task.DataExportFeService
 import com.togger.ui.toast.Toast
 
-/** The one sync of the navbar: imports then exports everything, then shows the results in a modal. */
+/** The one sync of the navbar: imports then exports everything. A click shows the results in a modal; the automatic
+  * sync (the sync-execute interval of the settings) runs the same sync without the modal and only reports a failure.
+  */
 class SyncService(
   dataExportService: DataExportFeService,
   syncPendingStore: SyncPendingStore,
+  settings: SyncIntervalSettingsStore,
   modalFactory: ModalFactory,
   toast: Toast,
   previewConfig: PreviewConfig
@@ -34,7 +37,22 @@ class SyncService(
     case (false, false)             => "Sync: import, then export"
   }
 
-  def sync(): Unit =
+  /** Runs the automatic sync every interval of the settings for as long as the element it is bound to is mounted. */
+  val autoSyncBinder: Binder[HtmlElement] =
+    settings.intervalSeconds.distinct
+      .flatMapSwitch(seconds => EventStream.periodic(seconds * 1000))
+      .mapToUnit --> Observer[Unit](_ => autoSync())
+
+  /** The click of the button: the results are shown in a modal. */
+  def sync(): Unit = run { response =>
+    toast.success(summary(response))
+    modalFactory.previewModal(new SyncResultsComponent(response).element, "Sync results")
+  }
+
+  /** Skipped while another sync is running; success is silent, the button just goes back to normal. */
+  private def autoSync(): Unit = run(_ => ())
+
+  private def run(onSuccess: DataSyncResp => Unit): Unit =
     if (!runningVar.now() && !previewConfig.enabled) {
       runningVar.set(true)
       dataExportService
@@ -44,9 +62,7 @@ class SyncService(
           case Left(failure) => toast.error(failure)
           case Right(success) =>
             syncPendingStore.refresh()
-            val response = success.body.get
-            toast.success(summary(response))
-            modalFactory.previewModal(new SyncResultsComponent(response).element, "Sync results")
+            onSuccess(success.body.get)
         }
         .unsafeRunAndForget()
     }

@@ -58,7 +58,7 @@ import com.togger.ui.projectmapping._
 import com.togger.ui.slacker.SlackerComponent
 import com.togger.ui.spinner.SpinnerService
 import com.togger.ui.synccheck.SyncCheckSettingsComponent
-import com.togger.ui.synccheck.SyncCheckSettingsStore
+import com.togger.ui.synccheck.SyncIntervalSettingsStore
 import com.togger.ui.synccheck.SyncPendingStore
 import com.togger.ui.synccheck.SyncService
 import com.togger.ui.syncconfig._
@@ -237,9 +237,16 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val sidebarCollapseStore = new SidebarCollapseStore(localStorage)
   lazy val sidebarRefresh = new SidebarRefresh
   lazy val themeStore = new ThemeStore(localStorage)
-  lazy val syncCheckSettingsStore = new SyncCheckSettingsStore(localStorage)
-  lazy val syncPendingStore = new SyncPendingStore(dataExportService, syncCheckSettingsStore)
-  lazy val syncService = new SyncService(dataExportService, syncPendingStore, modalFactory, toast, previewConfig)
+  lazy val syncIntervalSettingsStore = new SyncIntervalSettingsStore(localStorage)
+  lazy val syncPendingStore = new SyncPendingStore(dataExportService)
+  lazy val syncService = new SyncService(
+    dataExportService,
+    syncPendingStore,
+    syncIntervalSettingsStore,
+    modalFactory,
+    toast,
+    previewConfig
+  )
   lazy val timeboxStagingStore = new TimeboxStagingStore(localStorage)
   lazy val timeboxFormDraftStore = new TimeboxFormDraftStore(localStorage)
   lazy val tokenStorageKeys = TokenStorageKeys("accessTokenKey", "refreshTokenKey")
@@ -513,7 +520,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   modalFactory
                 ).element
-              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncCheckSettingsStore).element
+              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncIntervalSettingsStore).element
               case McpSettingsPage       => new McpSettingsComponent().element
               case UpdaterSettingsPage   => new UpdaterComponent(updaterStore).element
               case ShowAllAccountsPage(listParams) =>
