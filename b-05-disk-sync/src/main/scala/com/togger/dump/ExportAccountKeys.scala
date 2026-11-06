@@ -3,8 +3,8 @@ package com.togger.dump
 import io.circe.Json
 
 /** An import maps the accounts of an export to the ones of the database by email, so their ids differ between the disk
-  * and the database. The import check compares accounts by first name, last name and email instead: every account id in
-  * an entity's json is replaced by that content before the two sides are compared.
+  * and the database, and so can their names. The import check compares accounts by email instead: every account id in
+  * an entity's json is replaced by that email before the two sides are compared.
   */
 case class ExportAccountKeys(accountKeys: Map[String, String]) {
 
@@ -32,10 +32,8 @@ object ExportAccountKeys {
           val cursor = account.hcursor
           for {
             id <- cursor.get[String]("id").toOption
-            firstName <- cursor.get[String]("firstName").toOption
-            lastName <- cursor.get[String]("lastName").toOption
             email <- cursor.get[String]("email").toOption
-          } yield id -> s"account:$firstName|$lastName|$email"
+          } yield id -> s"account:$email"
         }
         .toMap
     )

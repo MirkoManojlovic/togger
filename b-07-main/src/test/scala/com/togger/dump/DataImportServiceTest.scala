@@ -17,6 +17,7 @@ import com.togger.tgprompttemplate.TgPromptTemplateVersion
 import com.togger.timebox.Timebox
 import com.togger.timebox.TimeboxVersion
 import doobie.implicits._
+import doobie.postgres.implicits._
 import io.circe.generic.auto._
 
 import java.time.LocalDate
@@ -427,6 +428,20 @@ class DataImportServiceTest extends ExportImportTestSupport {
         status <- newExportService(transactor).checkImportStatus(newProjectId, fixture.accountId, root.toString)
       } yield status.toOption.get.entityStatuses
         .filter(_.entityType == DataExportEntityType.Project)
+        .map(s => (s.status, s.fieldDiffs.map(_.field))) shouldBe List((DataExportSyncStatus.InSync, Nil))
+    }
+
+    "compare the members of a tree by email, whatever the names of the accounts" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        // the same email belongs to an account with another name in the database the tree is checked against
+        _ <-
+          sql"update account set first_name = 'Renamed', last_name = 'Person' where id = ${fixture.accountId}".update.run
+            .transact(transactor)
+        status <- newExportService(transactor).checkImportStatus(fixture.projectId, fixture.accountId, root.toString)
+      } yield status.toOption.get.entityStatuses
+        .filter(_.entityType == DataExportEntityType.Members)
         .map(s => (s.status, s.fieldDiffs.map(_.field))) shouldBe List((DataExportSyncStatus.InSync, Nil))
     }
 
