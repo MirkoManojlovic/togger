@@ -139,4 +139,10 @@ class LogEntryService(
         IO.pure(Left(VersionNotFound))
       }
 
+  def deleteLogEntry(id: UUID): IO[Either[LogEntryError, Int]] =
+    logEntryRepo
+      .deleteById(id)
+      .map(deleted => Either.cond(deleted > 0, deleted, LogEntryNotFound: LogEntryError))
+      .transact(transactor)
+
 }

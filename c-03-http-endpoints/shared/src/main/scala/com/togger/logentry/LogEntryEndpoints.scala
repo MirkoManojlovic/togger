@@ -72,6 +72,11 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
       .in(jsonBody[LogEntryVersionDto])
       .out(jsonBody[TgJsonSuccess[LogEntryVersionDto]])
 
+  val deleteEndpoint: TgSecuredEndpointEmptyBody[UUID] =
+    securedEndpoint.endpoint.delete
+      .in(basePath / path[UUID]("id"))
+      .out(jsonBody[TgJsonSuccess[TgEmptyBody]])
+
   val deleteVersionEndpoint: TgSecuredEndpointEmptyBody[UUID] =
     securedEndpoint.endpoint.delete
       .in(basePath / "version" / path[UUID]("version"))
