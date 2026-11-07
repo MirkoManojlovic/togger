@@ -136,9 +136,11 @@ class TaskListTable(
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
         ),
-        TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, projectVar.now().workDays.map(DayOfWeek.of)),
-        daysLeft(dto)
-      ) ++ dto.endDate.map(date => BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
+        TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, projectVar.now().workDays.map(DayOfWeek.of))
+      ) ++ (dto.endDate match {
+        case Some(date) => Seq(BadgeSpec(tgDateFormater.asEndDate(date), TgBadgeColor.Gray))
+        case None       => Seq(daysLeft(dto))
+      })
   }
 
   private def daysLeft(dto: FindTaskRespFull): BadgeSpec =

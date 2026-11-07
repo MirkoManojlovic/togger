@@ -45,9 +45,8 @@ object TeamDailyTaskBadges {
     Seq(
       BadgeSpec(s"${DateEmoji.Start} ${format(task.startDate)}", TgBadgeColor.Gray),
       BadgeSpec(s"${DateEmoji.Due} ${format(task.dueDate)}", TgBadgeColor.Gray),
-      duration(task.startDate, task.dueDate, workDays),
-      daysLeft(task.dueDate, today, workDays)
-    )
+      duration(task.startDate, task.dueDate, workDays)
+    ) ++ Option.when(task.endDate.isEmpty)(daysLeft(task.dueDate, today, workDays))
 
   /** The length of a task in work days, from its start to its due date. */
   def duration(

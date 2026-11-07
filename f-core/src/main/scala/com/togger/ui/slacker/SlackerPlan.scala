@@ -68,6 +68,7 @@ object SlackerPlan {
       labels = task.taskLabels,
       startDate = task.startDate,
       dueDate = task.dueDate,
+      endDate = task.endDate,
       logEntries = task.logEntries,
       description = task.description
     )

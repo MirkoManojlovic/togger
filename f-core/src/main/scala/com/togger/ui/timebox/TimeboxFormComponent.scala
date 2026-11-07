@@ -361,7 +361,8 @@ class TimeboxFormComponent(
         Some(BulkEditKind.StartDate)
       ),
       BadgeSpec(tgDateFormater.asDueDate(dto.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate)),
-      TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, lookups.projectVar.now().workDays.map(DayOfWeek.of)),
+      TeamDailyTaskBadges.duration(dto.startDate, dto.dueDate, lookups.projectVar.now().workDays.map(DayOfWeek.of))
+    ) ++ Option.when(dto.endDate.isEmpty)(
       TeamDailyTaskBadges.daysLeft(
         dto.dueDate,
         tgClock.currentDate(),

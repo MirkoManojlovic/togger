@@ -88,7 +88,8 @@ class TaskPreviewComponent(
         Seq(
           BadgeSpec(s"${DateEmoji.Start} ${tgDateFormater.asAmericanDate(task.startDate)}", TgBadgeColor.Gray),
           BadgeSpec(s"${DateEmoji.Due} ${tgDateFormater.asAmericanDate(task.dueDate)}", TgBadgeColor.Gray),
-          TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays),
+          TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays)
+        ) ++ Option.when(task.endDate.isEmpty)(
           TeamDailyTaskBadges.daysLeft(task.dueDate, tgClock.currentDate(), workDays)
         )
       )

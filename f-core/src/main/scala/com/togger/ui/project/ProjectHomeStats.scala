@@ -93,9 +93,8 @@ object ProjectHomeStats {
       Seq(
         BadgeSpec(s"${DateEmoji.Start} ${formatDate(task.startDate)}", TgBadgeColor.Gray),
         BadgeSpec(s"${DateEmoji.Due} ${formatDate(task.dueDate)}", TgBadgeColor.Gray),
-        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays),
-        TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays)
-      )
+        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays)
+      ) ++ Option.when(task.endDate.isEmpty)(TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays))
 
   /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left out.
     */
