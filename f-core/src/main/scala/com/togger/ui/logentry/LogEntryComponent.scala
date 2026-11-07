@@ -208,9 +208,7 @@ class LogEntryComponent(
                 .headerNoFooter(
                   header = TgCard.CardHeader.html(
                     div(
-                      div(
-                        // a badge never breaks its text; those that do not fit the row go on the lines below
-                        cls("flex flex-wrap items-center gap-2 [&>*]:whitespace-nowrap"),
+                      LogEntryBadgeRow(
                         TgBadge(
                           text = tgDateFormater.asAmericanDateWithDayAbrv(date),
                           bordered = true,
@@ -330,7 +328,7 @@ class LogEntryComponent(
 
     def dateBadge: HtmlElement =
       div(
-        cls("relative"),
+        cls("relative flex"),
         child <-- formState.signal.map(_.date).distinct.map { dateStr =>
           val date = Try(LocalDate.parse(dateStr)).getOrElse(tgClock.currentDate())
           TgBadge(
@@ -380,7 +378,7 @@ class LogEntryComponent(
 
     def statusBadge: HtmlElement =
       div(
-        cls("relative"),
+        cls("relative flex"),
         child <-- formState.signal.map(_.status).distinct.map { statusStr =>
           val status = LogEntryStatus.withValue(statusStr.toInt)
           TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
@@ -443,7 +441,7 @@ class LogEntryComponent(
           div(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
-              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(memberName)),
+              LogEntryBadgeRow(dateBadge, statusBadge, LogEntryMemberBadge(memberName)).amend(cls("mb-2")),
               textEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 mb-4 text-xs text-body-subtle"), "@ date  $ status"),
               div(

@@ -8,6 +8,7 @@ import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
 import com.togger.ui.logentry.ActivePopup
+import com.togger.ui.logentry.LogEntryBadgeRow
 import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.task.TgDateFormater
@@ -102,7 +103,7 @@ class TeamDailyEntryForm(
 
   private val statusBadge: HtmlElement =
     div(
-      cls("relative"),
+      cls("relative flex"),
       child <-- formState.signal.map(_.status).distinct.map { statusStr =>
         val status = LogEntryStatus.withValue(statusStr.toInt)
         TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
@@ -154,7 +155,7 @@ class TeamDailyEntryForm(
           header = TgCard.CardHeader.html(div(title), TgCard.CardHeaderSize.H3),
           body = TgCard.HtmlCardContent(
             div(
-              div(cls("flex items-center gap-2 mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(authorName)),
+              div(cls(LogEntryBadgeRow.rowClasses + " mb-2"), dateBadge, statusBadge, LogEntryMemberBadge(authorName)),
               textEditor.htmlElement.amend(cls("mb-1")),
               p(cls("mt-1 text-xs text-body-subtle"), "$ status")
             )
