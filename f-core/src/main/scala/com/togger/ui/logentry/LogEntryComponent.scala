@@ -328,7 +328,7 @@ class LogEntryComponent(
 
     def dateBadge: HtmlElement =
       div(
-        cls("relative"),
+        cls("relative flex"),
         child <-- formState.signal.map(_.date).distinct.map { dateStr =>
           val date = Try(LocalDate.parse(dateStr)).getOrElse(tgClock.currentDate())
           TgBadge(
@@ -378,7 +378,7 @@ class LogEntryComponent(
 
     def statusBadge: HtmlElement =
       div(
-        cls("relative"),
+        cls("relative flex"),
         child <-- formState.signal.map(_.status).distinct.map { statusStr =>
           val status = LogEntryStatus.withValue(statusStr.toInt)
           TgBadge(text = status.toStringWithEmoji, color = status.badgeColor, bordered = true).element
