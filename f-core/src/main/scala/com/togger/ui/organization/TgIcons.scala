@@ -573,6 +573,12 @@ object TgIcons {
   def taskListIcon(className: String) =
     strokeIcon(className, "M11 7h9m-9 10h9M3 7.5 4.5 9 7.5 6M3 16.5 4.5 18l3-3")
 
+  def undoIcon(className: String) =
+    strokeIcon(className, "M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11")
+
+  def redoIcon(className: String) =
+    strokeIcon(className, "m15 14 5-5-5-5m5 5H9.5a5.5 5.5 0 0 0 0 11H13")
+
   def milestoneIcon(className: String) =
     strokeIcon(className, "M5 21V4m0 0h12l-2.5 4L17 12H5")
 
