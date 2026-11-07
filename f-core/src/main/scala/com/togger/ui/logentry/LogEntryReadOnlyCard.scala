@@ -25,15 +25,17 @@ object LogEntryReadOnlyCard {
       .headerNoFooter(
         header = TgCard.CardHeader.html(
           div(
-            cls("flex items-center gap-2"),
+            cls("flex flex-col gap-1"),
             span(cls("min-w-0 truncate"), title := taskName, taskName),
-            TgBadge(
-              text = tgDateFormater.asAmericanDateWithDayAbrv(day),
-              bordered = true,
-              color = TgBadgeColor.Gray
-            ).element,
-            TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
-            LogEntryMemberBadge(entry.createdByName)
+            LogEntryBadgeRow(
+              TgBadge(
+                text = tgDateFormater.asAmericanDateWithDayAbrv(day),
+                bordered = true,
+                color = TgBadgeColor.Gray
+              ).element,
+              TgBadge(text = entry.status.toStringWithEmoji, color = entry.status.badgeColor, bordered = true).element,
+              LogEntryMemberBadge(entry.createdByName)
+            )
           ),
           TgCard.CardHeaderSize.H3
         ),
