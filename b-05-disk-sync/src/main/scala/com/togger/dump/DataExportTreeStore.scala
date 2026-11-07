@@ -18,7 +18,10 @@ import scala.util.Try
   */
 case class ExportEntity(entityType: DataExportEntityType, id: UUID, name: Option[String], json: Json) {
   lazy val hash: String = ExportHasher.hashJson(json)
-  lazy val changedAt: Option[Instant] = ExportHasher.latestTimestamp(json)
+  lazy val changedAt: Option[Instant] = entityType match {
+    case DataExportEntityType.LogEntry => LogEntryChangedAt.ofJson(json)
+    case _                             => ExportHasher.latestTimestamp(json)
+  }
   def indexEntry: ExportIndexEntry = ExportIndexEntry(hash, name, changedAt)
 }
 

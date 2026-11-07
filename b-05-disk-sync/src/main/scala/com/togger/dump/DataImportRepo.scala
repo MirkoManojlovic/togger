@@ -408,9 +408,12 @@ class DataImportRepo(
   }
 
   private def logEntryChangedAt(logEntries: List[LogEntry], versions: List[LogEntryVersion]): Map[UUID, Instant] = {
-    val stamps = logEntries.map(e => e.id -> e.createdAt) ++
-      versions.flatMap(v => List(v.logEntryId -> v.createdAt, v.logEntryId -> v.updatedAt))
-    stamps.groupMapReduce(_._1)(_._2)((a, b) => if (a.isAfter(b)) a else b)
+    val versionsByEntry = versions.groupBy(_.logEntryId)
+    logEntries.flatMap { entry =>
+      val entryVersions = versionsByEntry.getOrElse(entry.id, Nil)
+      val timestamps = entry.createdAt :: entryVersions.flatMap(v => List(v.createdAt, v.updatedAt))
+      LogEntryChangedAt.of(entry.id, entryVersions.map(_.version), timestamps).map(entry.id -> _)
+    }.toMap
   }
 
   /** Applies the deletions of the tree. A task or log entry that the project has is deleted unless it changed after the
