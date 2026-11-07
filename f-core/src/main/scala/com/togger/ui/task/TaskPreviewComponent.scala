@@ -12,6 +12,7 @@ import com.togger.routes.Pages.EditTaskPage
 import com.togger.routes.TgRouter
 import com.togger.ui.components.LogEntryStatusBadgeColor.LogEntryStatusBadgeColorOps
 import com.togger.ui.components._
+import com.togger.ui.logentry.LogEntryBadgeRow
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.project.ProjectHomeStats
 import com.togger.ui.task.bulk.BadgeSpec
@@ -181,7 +182,7 @@ class TaskPreviewComponent(
             cls("mb-4"),
             if (dayEntries.isEmpty)
               div(
-                div(cls("flex items-center gap-2 mb-2"), dateBadge()),
+                div(cls(LogEntryBadgeRow.rowClasses + " mb-2"), dateBadge()),
                 p(cls("text-body"), "No status update")
               )
             else
@@ -189,7 +190,7 @@ class TaskPreviewComponent(
                 div(
                   cls("mb-2"),
                   div(
-                    cls("flex items-center gap-2 mb-2"),
+                    cls(LogEntryBadgeRow.rowClasses + " mb-2"),
                     dateBadge(),
                     TgBadge(
                       text = entry.status.toStringWithEmoji,
@@ -235,7 +236,7 @@ class TaskPreviewComponent(
                 div(
                   cls("mb-2"),
                   div(
-                    cls("flex items-center gap-2 mb-2"),
+                    cls(LogEntryBadgeRow.rowClasses + " mb-2"),
                     TgBadge(
                       text = tgDateFormater.asAmericanDateWithDayAbrv(day),
                       bordered = true,

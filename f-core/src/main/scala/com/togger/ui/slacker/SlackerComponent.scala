@@ -25,6 +25,7 @@ import com.togger.ui.components.TgSelectDropdownOption
 import com.togger.ui.components.TgStep
 import com.togger.ui.components.TgStepperBreadcrumb
 import com.togger.ui.localstorage.LocalStorage
+import com.togger.ui.logentry.LogEntryBadgeRow
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.milestone.MilestoneFeService
 import com.togger.ui.milestone.MilestoneStepFeService
@@ -587,7 +588,7 @@ class SlackerComponent(
     div(
       cls("mb-2 rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10"),
       div(
-        cls("flex items-center gap-2 mb-2"),
+        cls(LogEntryBadgeRow.rowClasses + " mb-2"),
         TgBadge(
           text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
           bordered = true,
@@ -603,7 +604,7 @@ class SlackerComponent(
     if (entries.isEmpty)
       div(
         div(
-          cls("flex items-center gap-2 mb-2"),
+          cls(LogEntryBadgeRow.rowClasses + " mb-2"),
           TgBadge(
             text = tgDateFormater.asAmericanDateWithDayAbrv(day),
             bordered = true,
@@ -712,7 +713,7 @@ class SlackerComponent(
                   "mb-2 cursor-pointer rounded-base border-s-4 border-brand p-2 ps-3 shadow-sm dark:shadow-white/10 hover:bg-neutral-secondary-medium"
                 ),
                 div(
-                  cls("flex items-center gap-2 mb-2"),
+                  cls(LogEntryBadgeRow.rowClasses + " mb-2"),
                   TgBadge(
                     text = tgDateFormater.asAmericanDateWithDayAbrv(date),
                     bordered = true,
