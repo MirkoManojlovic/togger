@@ -10,6 +10,8 @@ class SyncIntervalSettingsStore(localStorage: LocalStorage) {
 
   val intervalSeconds: Signal[Int] = intervalVar.signal
 
+  def currentSeconds: Int = intervalVar.now()
+
   def set(seconds: Int): Unit = {
     val valid = math.max(seconds, SyncIntervalSettingsStore.MinIntervalSeconds)
     intervalVar.set(valid)

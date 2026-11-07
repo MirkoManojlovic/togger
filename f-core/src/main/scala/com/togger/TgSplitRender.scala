@@ -520,7 +520,7 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
                   spinnerService,
                   modalFactory
                 ).element
-              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncIntervalSettingsStore).element
+              case SyncCheckSettingsPage => new SyncCheckSettingsComponent(syncIntervalSettingsStore, toast).element
               case McpSettingsPage       => new McpSettingsComponent().element
               case UpdaterSettingsPage   => new UpdaterComponent(updaterStore).element
               case ShowAllAccountsPage(listParams) =>
