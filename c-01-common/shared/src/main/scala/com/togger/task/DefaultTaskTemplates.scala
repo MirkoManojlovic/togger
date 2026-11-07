@@ -14,13 +14,13 @@ object DefaultTaskTemplates {
       |Staging environment runs Node 22 with no test regressions.
       |
       |**In scope**  
-      |-  Update the Dockerfile
-      |-  Refresh the lockfile
+      |- Update the Dockerfile
+      |- Refresh the lockfile
       |- Run the full test suite
       |- Update the CI base image
       |
       |**Out of scope**  
-      |- Production rollout (tracked separately) 
+      |- Production rollout (tracked separately)
       |
       |**Dependencies**  
       |- SRE approval for the staging window
@@ -49,7 +49,7 @@ object DefaultTaskTemplates {
       |
       |**Steps to reproduce**  
       |- Open the login page in Safari 17.
-      |-  Enter valid credentials.
+      |- Enter valid credentials.
       |- Click Sign in.
       |
       |**Actual behavior**  
