@@ -121,7 +121,8 @@ npm run build-preview   # static preview build
 `.githooks/` holds the git hooks (enable once with `git config core.hooksPath .githooks`). `pre-commit` rejects staged
 personal paths. `pre-push` runs what the PR checks run (tpolecat CI mode compile, `scalafmtCheckAll`, `scalafix --check`,
 all tests) against the running sbt server; it needs Postgres and a `togger-test` schema that is up to date. Skip it with
-`SKIP_PRE_PUSH=1 git push`.
+`SKIP_PRE_PUSH=1 git push`. Before every push, always ask the user whether the pre-push check should run; do not decide
+that yourself.
 
 ## Rules for using sbt
 
