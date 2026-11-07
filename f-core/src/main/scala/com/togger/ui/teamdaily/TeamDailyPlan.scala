@@ -26,7 +26,8 @@ case class TeamDailyTaskPlan(
   description: String = "",
   statusEmoji: String = "",
   todayEntry: Option[LogEntryDto] = None,
-  milestoneStepId: Option[UUID] = None
+  milestoneStepId: Option[UUID] = None,
+  endDate: Option[LocalDate] = None
 ) {
 
   def statusLabel: String = s"$statusEmoji $statusName".trim
@@ -88,6 +89,7 @@ object TeamDailyPlan {
       labels = task.taskLabels,
       startDate = task.startDate,
       dueDate = task.dueDate,
+      endDate = task.endDate,
       logEntries = task.logEntries,
       description = task.description
     )

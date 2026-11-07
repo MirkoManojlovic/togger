@@ -82,10 +82,10 @@ object BulkTaskBadges {
           dateFormater.asDueDate(task.dueDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
-        ),
-        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays, Some(BulkEditKind.WorkDays)),
-        TeamDailyTaskBadges.daysLeft(task.dueDate, today, lookups.workDays)
-      )
+        )
+      ) ++ task.endDate.map(date => BadgeSpec(dateFormater.asEndDate(date), TgBadgeColor.Gray)) ++ Seq(
+        TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays, Some(BulkEditKind.WorkDays))
+      ) ++ Option.when(task.endDate.isEmpty)(TeamDailyTaskBadges.daysLeft(task.dueDate, today, lookups.workDays))
     )
 
   private def milestone(task: BulkTask, lookups: BulkLookups): BadgeSpec =
