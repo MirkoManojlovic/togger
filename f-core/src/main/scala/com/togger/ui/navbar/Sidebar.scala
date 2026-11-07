@@ -188,7 +188,14 @@ class Sidebar(
 )(implicit IORuntime: IORuntime)
     extends ToastMessages {
 
-  private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
+  private val widthCollapsed: Signal[Boolean] = sidebarCollapseStore.current
+
+  /** The labels follow the collapsing at once but wait for the width animation when expanding, so the text is not laid
+    * out in the still narrow sidebar (one letter per line).
+    */
+  private val labelsCollapsedVar: Var[Boolean] = Var(sidebarCollapseStore.now())
+
+  private val collapsed: Signal[Boolean] = labelsCollapsedVar.signal
 
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)
@@ -245,6 +252,10 @@ class Sidebar(
 
   val element = {
     div(
+      widthCollapsed.changes.flatMapSwitch { isCollapsed =>
+        if (isCollapsed) EventStream.fromValue(true)
+        else EventStream.fromValue(false).delay(Sidebar.WidthAnimationMs)
+      } --> labelsCollapsedVar,
       sidebarRefresh.requests --> (_ => reloadOrganizations()),
       syncPendingStore.binder(organizationState.signal.map(_.flatMap(_.projects.map(_.id)))),
       asideTag(
@@ -252,7 +263,7 @@ class Sidebar(
         cls(
           "fixed top-14 left-0 z-40 h-[calc(100%-3.5rem)] transition-[width] duration-200 -translate-x-full sm:translate-x-0"
         ),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) "w-16" else "w-64"),
+        cls <-- widthCollapsed.map(isCollapsed => if (isCollapsed) "w-16" else "w-64"),
 //        aria-label="Sidebar"
 
         div(
@@ -360,6 +371,8 @@ class Sidebar(
 }
 
 object Sidebar {
+  val WidthAnimationMs = 200
+
   def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
     case ProjectHomePage(projectId)                      => Some(projectId)
     case CreateTaskPage(projectId)                       => Some(projectId)
