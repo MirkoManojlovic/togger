@@ -297,7 +297,9 @@ class DataExportService(
               )
             }
             val missingFromDb = indexed.keySet.diff(db.keySet).toList.map { id =>
-              val deletedInDb = dbTombstones.get(id).exists(unchangedSince(indexed(id).changedAt, _))
+              val deletedInDb = dbTombstones
+                .get(id)
+                .exists(unchangedSince(dataExportTreeStore.changedAt(folderPath, index, entityType, id), _))
               status(
                 entityType,
                 id,

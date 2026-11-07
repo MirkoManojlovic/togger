@@ -273,7 +273,7 @@ class DataImportService(
   ): Option[DataImportEntityResult] =
     for {
       deletedAt <- state.tombstones.get((entityType.folder, id))
-      if !read.index.entriesOf(entityType).get(id).flatMap(_.changedAt).exists(_.isAfter(deletedAt))
+      if !dataExportTreeStore.changedAt(read.path, read.index, entityType, id).exists(_.isAfter(deletedAt))
     } yield DataImportEntityResult.skipped(entityType, id, "deleted in the project and not changed since")
 
   /** An entity that comes back after it was deleted in the project is no longer deleted. */
@@ -291,7 +291,7 @@ class DataImportService(
     DataImportEntityResult.failed(entityType, id, DataImportStatus.Failed, String.valueOf(e.getMessage))
 
   /** Reads the files of the tree, verified against the hashes in the index. */
-  private class TreeReader(path: String, val index: ExportIndex) {
+  private class TreeReader(val path: String, val index: ExportIndex) {
 
     def one[A: Decoder](entityType: DataExportEntityType, id: UUID): Maybe[A] =
       dataExportTreeStore
