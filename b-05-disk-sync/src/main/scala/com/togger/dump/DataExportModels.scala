@@ -29,6 +29,7 @@ import io.circe.Decoder
 import io.circe.Encoder
 
 import java.time.DayOfWeek
+import java.time.Instant
 import java.util.UUID
 
 // `Project.workDays: Set[DayOfWeek]` has no circe instance by default (unlike LocalDate/Instant, circe has no
@@ -59,12 +60,16 @@ case class MembersDumpData(accountIds: List[UUID])
 
 case class LinkDumpData(link: Link, versions: List[LinkVersion])
 
-/** `tasks/<id>.json`: the task, its versions, links and the task labels assigned to it. */
+/** `tasks/<id>.json`: the task, its versions, links and the task labels assigned to it. `labelsAssignedAt` is when the
+  * labels were last set (a task update rewrites them all at once), so that the newer set wins in an import. Dumps
+  * written before it existed have none.
+  */
 case class TaskDumpData(
   task: Task,
   taskVersions: List[TaskVersion],
   links: List[LinkDumpData],
-  labelIds: List[UUID]
+  labelIds: List[UUID],
+  labelsAssignedAt: Option[Instant] = None
 )
 
 /** `logentries/<id>.json` */

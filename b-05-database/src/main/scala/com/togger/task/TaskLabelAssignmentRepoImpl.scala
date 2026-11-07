@@ -69,6 +69,19 @@ class TaskLabelAssignmentRepoImpl extends TaskLabelAssignmentRepo with TgLogging
           labelsByTaskId => s"Task labels found ${sp(labelsByTaskId)}"
         )
     }
+  override def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLabelAssignment]] =
+    logAroundInfoQuery(
+      (selectAllStatement(TASK_LABEL_ASSIGNMENT_TABLE_FRAG) ++
+        innerJoin(TASK_TABLE_FRAG)(fr"task_label_assignment.task_id = task.id") ++
+        fr"where task.project_id = $projectId")
+        .query[(TaskLabelAssignment, Task)]
+        .to[List]
+        .map(_.map(_._1))
+    )(
+      s"Finding all task label assignments of ${sp(projectId)}",
+      assignments => s"Found ${sp(assignments.size)} task label assignments of ${sp(projectId)}"
+    )
+
   override def findLabelsByProjectId(projectId: UUID): ConnectionIO[Map[UUID, List[TaskLabel]]] =
     logAroundInfoQuery(
       (selectAllStatement(TASK_LABEL_ASSIGNMENT_TABLE_FRAG) ++

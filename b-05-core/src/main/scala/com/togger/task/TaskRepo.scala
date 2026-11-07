@@ -109,6 +109,9 @@ trait TaskLabelAssignmentRepo {
   /** Bounded by caller (the ids come from a page of tasks): the labels assigned to each of them. */
   def findLabelsByTaskIds(taskIds: Seq[UUID]): ConnectionIO[Map[UUID, List[TaskLabel]]]
 
+  /** The assignments of the tasks of the project, unbounded: only for whole-project jobs such as the disk dump. */
+  def findByProjectId(projectId: UUID): ConnectionIO[List[TaskLabelAssignment]]
+
   /** The labels assigned to each task of the project, unbounded: only for whole-project jobs such as the disk dump. */
   def findLabelsByProjectId(projectId: UUID): ConnectionIO[Map[UUID, List[TaskLabel]]]
 
