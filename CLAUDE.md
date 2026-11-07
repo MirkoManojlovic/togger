@@ -121,7 +121,8 @@ npm run build-preview   # static preview build
 `.githooks/` holds the git hooks (enable once with `git config core.hooksPath .githooks`). `pre-commit` rejects staged
 personal paths. `pre-push` runs what the PR checks run (tpolecat CI mode compile, `scalafmtCheckAll`, `scalafix --check`,
 all tests) against the running sbt server; it needs Postgres and a `togger-test` schema that is up to date. Skip it with
-`SKIP_PRE_PUSH=1 git push`.
+`SKIP_PRE_PUSH=1 git push`. Before every push, always ask the user whether the pre-push check should run; do not decide
+that yourself.
 
 ## Rules for using sbt
 
@@ -133,9 +134,10 @@ all tests) against the running sbt server; it needs Postgres and a `togger-test`
 
 ## Git worktrees
 
-Every Claude session starts its work from `develop` by creating a new branch in a new git worktree (e.g.
-`git worktree add -b <new-branch> ../togger.worktrees/<name> develop`, after fetching so `develop` is current). Do not
-work in the main checkout or commit to `develop` directly.
+Never commit to `develop` directly. When the user asks to work on a new branch, always ask whether the branch should
+be a git worktree or not; do not decide that yourself. Either way, start the branch from an up-to-date `develop`
+(fetch first). A worktree is created with e.g. `git worktree add -b <new-branch> ../togger.worktrees/<name> develop`;
+otherwise create the branch in the main checkout.
 
 Always create new git worktrees in `togger.worktrees`, the sibling directory of the main checkout (`../togger.worktrees`
 from the repo root; one subdirectory per worktree), not in `.claude/worktrees/` inside the repo.
