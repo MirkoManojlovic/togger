@@ -26,6 +26,7 @@ case class SidebarLink(
   linkName: String,
   link: Binder[HtmlElement],
   collapsed: Signal[Boolean],
+  labelsCollapsed: Signal[Boolean],
   onTasksClick: Option[() => Unit] = None,
   onMilestonesClick: Option[() => Unit] = None,
   onTimeboxesClick: Option[() => Unit] = None,
@@ -97,6 +98,15 @@ case class SidebarLink(
 
   private def glyph: String = if (icon.nonEmpty) icon else initials
 
+  /** The label stays in place and fades with the sidebar width; it only wraps once the sidebar is fully expanded. */
+  private def linkLabel =
+    span(
+      cls("min-w-0 transition-opacity duration-200"),
+      cls <-- collapsed.map(isCollapsed => if (isCollapsed) "opacity-0" else "opacity-100"),
+      cls <-- labelsCollapsed.map(isCollapsed => if (isCollapsed) "whitespace-nowrap" else "break-words"),
+      linkName
+    )
+
   private def linkElementProject =
     div(
       cls("flex items-center justify-between"),
@@ -104,19 +114,16 @@ case class SidebarLink(
       child.maybe <-- menuPosition.signal.map(_.map { case (x, y) => contextMenu(x, y) }),
       a(
         cls("inline-flex items-center min-w-0"),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
         span(
           cls <-- collapsed.map(isCollapsed =>
-            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5", "shrink-0")
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle
+            else if (icon.nonEmpty) "me-1.5" +: Sidebar.collapsedGlyphBoxStyle
+            else Seq("shrink-0")
           ),
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
-        span(
-          cls("min-w-0 break-words"),
-          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-          linkName
-        ),
+        linkLabel,
         link
       )
     )
@@ -126,19 +133,16 @@ case class SidebarLink(
       cls("flex items-center"),
       a(
         cls("inline-flex items-center min-w-0"),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center", "w-full") else Seq.empty),
         title(linkName),
         span(
           cls <-- collapsed.map(isCollapsed =>
-            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle else Seq("me-1.5", "-ms-0.5", "shrink-0")
+            if (isCollapsed) Sidebar.collapsedGlyphBoxStyle
+            else if (icon.nonEmpty) "me-1.5" +: Sidebar.collapsedGlyphBoxStyle
+            else Seq("shrink-0")
           ),
           child.text <-- collapsed.map(isCollapsed => if (isCollapsed) glyph else icon)
         ),
-        span(
-          cls("min-w-0 break-words"),
-          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
-          linkName
-        ),
+        linkLabel,
         link
       )
     )
@@ -190,6 +194,13 @@ class Sidebar(
 
   private val collapsed: Signal[Boolean] = sidebarCollapseStore.current
 
+  /** Follows the collapsing at once but waits for the width animation when expanding, so the labels only wrap once the
+    * sidebar is wide enough (not one letter per line).
+    */
+  private val labelsCollapsedVar: Var[Boolean] = Var(sidebarCollapseStore.now())
+
+  private val labelsCollapsed: Signal[Boolean] = labelsCollapsedVar.signal
+
   private def organizationIdForPage(page: FrontendPage): Option[UUID] = page match {
     case CreateProjectPage(organizationId)         => Some(organizationId)
     case ShowProjectsForOrganizationIdTable(id, _) => Some(id)
@@ -229,12 +240,11 @@ class Sidebar(
     li(
       a(
         cls(Sidebar.sideBarLinkStyle),
-        cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("justify-center") else Seq.empty),
         title("Create new organization"),
-        TgIcons.plusIcon("w-5 h-5 shrink-0"),
+        span(cls(Sidebar.collapsedGlyphBoxStyle), TgIcons.plusIcon("w-5 h-5")),
         span(
-          cls("ms-2 whitespace-nowrap"),
-          cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("hidden") else Seq.empty),
+          cls("ms-1.5 whitespace-nowrap transition-opacity duration-200"),
+          cls <-- collapsed.map(isCollapsed => if (isCollapsed) "opacity-0" else "opacity-100"),
           "Create new organization"
         ),
         router.navigateTo(CreateOrganizationPage)
@@ -245,6 +255,10 @@ class Sidebar(
 
   val element = {
     div(
+      collapsed.changes.flatMapSwitch { isCollapsed =>
+        if (isCollapsed) EventStream.fromValue(true)
+        else EventStream.fromValue(false).delay(Sidebar.WidthAnimationMs)
+      } --> labelsCollapsedVar,
       sidebarRefresh.requests --> (_ => reloadOrganizations()),
       syncPendingStore.binder(organizationState.signal.map(_.flatMap(_.projects.map(_.id)))),
       asideTag(
@@ -288,6 +302,7 @@ class Sidebar(
                         linkName = organization.name,
                         link = router.navigateTo(ShowProjectsForOrganizationIdTable(organization.id)),
                         collapsed = collapsed,
+                        labelsCollapsed = labelsCollapsed,
                         icon = organization.icon
                       )
                       val orgRow =
@@ -300,6 +315,7 @@ class Sidebar(
                               linkName = project.name,
                               link = router.navigateTo(ProjectHomePage(project.id)),
                               collapsed = collapsed,
+                              labelsCollapsed = labelsCollapsed,
                               onTasksClick = Some(() => router.route(ShowAllTasksPage(project.id))),
                               onMilestonesClick = Some(() => router.route(ShowMilestonesPage(project.id))),
                               onTimeboxesClick =
@@ -360,6 +376,8 @@ class Sidebar(
 }
 
 object Sidebar {
+  val WidthAnimationMs = 200
+
   def projectIdForPage(page: FrontendPage): Option[UUID] = page match {
     case ProjectHomePage(projectId)                      => Some(projectId)
     case CreateTaskPage(projectId)                       => Some(projectId)
