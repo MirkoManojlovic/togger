@@ -82,7 +82,8 @@ object BulkTaskBadges {
           dateFormater.asDueDate(task.dueDate),
           TgBadgeColor.Gray,
           Some(BulkEditKind.DueDate)
-        ),
+        )
+      ) ++ task.endDate.map(date => BadgeSpec(dateFormater.asEndDate(date), TgBadgeColor.Gray)) ++ Seq(
         TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays, Some(BulkEditKind.WorkDays))
       ) ++ Option.when(task.endDate.isEmpty)(TeamDailyTaskBadges.daysLeft(task.dueDate, today, lookups.workDays))
     )
