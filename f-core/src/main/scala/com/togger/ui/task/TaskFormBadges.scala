@@ -98,8 +98,9 @@ class TaskFormBadges(
         Some(BulkEditKind.StartDate)
       ),
       BadgeSpec(tgDateFormater.asDueDate(task.dueDate), TgBadgeColor.Gray, Some(BulkEditKind.DueDate))
-    ) ++ Seq(TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays)) ++
-      task.endDate.fold(Seq(daysLeft(task, lookups)))(date => Seq(endBadge(date)))
+    ) ++ task.endDate.map(endBadge) ++
+      Seq(TeamDailyTaskBadges.duration(task.startDate, task.dueDate, lookups.workDays)) ++
+      Option.when(task.endDate.isEmpty)(daysLeft(task, lookups))
 
   /** The end date is set by closing the task, so its badge has no popup of its own. */
   private def endBadge(date: LocalDate): BadgeSpec =
