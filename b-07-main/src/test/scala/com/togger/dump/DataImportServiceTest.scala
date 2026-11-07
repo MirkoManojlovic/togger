@@ -517,6 +517,89 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "not bring back a deleted task or its log entry that is logged for a day after the deletion" in { transactor =>
+      val futureDay = Instant.now().plusSeconds(3 * 24 * 3600)
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        logEntries <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+        logEntryId = logEntries.head.id
+        _ <- (sql"update log_entry set created_at = $futureDay where id = $logEntryId".update.run *>
+          sql"update log_entry_version set created_at = $futureDay, updated_at = $futureDay where log_entry_id = $logEntryId".update.run)
+          .transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        _ = editIndex(root) { index => // as an older version wrote it
+          val folder = DataExportEntityType.LogEntry.folder
+          val entries = index.entities(folder).map { case (id, entry) => id -> entry.copy(changedAt = Some(futureDay)) }
+          index.copy(entities = index.entities.updated(folder, entries))
+        }
+        _ <- newTaskService(transactor).deleteTask(fixture.taskId)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        task <- taskRepo.findOptionById(fixture.taskId).transact(transactor)
+        remaining <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+      } yield {
+        taskResults(imported) shouldBe List(DataImportStatus.Skipped)
+        imported.toOption.get.results
+          .filter(_.entityType == DataExportEntityType.LogEntry)
+          .map(_.status) shouldBe List(DataImportStatus.Skipped)
+        task shouldBe None
+        remaining shouldBe empty
+      }
+    }
+
+    "delete a log entry that is logged for a day after the deletion" in { transactor =>
+      val futureDay = Instant.now().plusSeconds(3 * 24 * 3600)
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        logEntries <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+        logEntryId = logEntries.head.id
+        _ <- (sql"update log_entry set created_at = $futureDay where id = $logEntryId".update.run *>
+          sql"update log_entry_version set created_at = $futureDay, updated_at = $futureDay where log_entry_id = $logEntryId".update.run)
+          .transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        older = newExportPath()
+        _ = os.copy(root, older)
+        _ <- newLogEntryService(transactor).deleteLogEntry(logEntryId)
+        _ <- exportToFolder(transactor, fixture.projectId, fixture.accountId) // the tree now holds the tombstone
+        _ <- clearTombstones(transactor, fixture.projectId) // another database that still has the log entry
+        _ <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, older.toString)
+        imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+        remaining <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+      } yield {
+        imported.toOption.get.results
+          .filter(_.entityType == DataExportEntityType.LogEntry)
+          .map(_.status) shouldBe List(DataImportStatus.Deleted)
+        remaining shouldBe empty
+      }
+    }
+
+    "not bring back a log entry the project deleted from a tree whose index holds the day it is logged for" in {
+      transactor =>
+        val futureDay = Instant.now().plusSeconds(3 * 24 * 3600)
+        for {
+          fixture <- createFullProject(newExportPath()).transact(transactor)
+          logEntries <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+          logEntryId = logEntries.head.id
+          _ <- (sql"update log_entry set created_at = $futureDay where id = $logEntryId".update.run *>
+            sql"update log_entry_version set created_at = $futureDay, updated_at = $futureDay where log_entry_id = $logEntryId".update.run)
+            .transact(transactor)
+          root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+          _ = editIndex(root) { index => // as an older version wrote it
+            val folder = DataExportEntityType.LogEntry.folder
+            val entries =
+              index.entities(folder).map { case (id, entry) => id -> entry.copy(changedAt = Some(futureDay)) }
+            index.copy(entities = index.entities.updated(folder, entries))
+          }
+          _ <- newLogEntryService(transactor).deleteLogEntry(logEntryId)
+          imported <- newImportService(transactor).importProject(fixture.projectId, fixture.accountId, root.toString)
+          remaining <- logEntryRepo.findByTaskId(fixture.taskId).transact(transactor)
+        } yield {
+          imported.toOption.get.results
+            .filter(_.entityType == DataExportEntityType.LogEntry)
+            .map(_.status) shouldBe List(DataImportStatus.Skipped)
+          remaining shouldBe empty
+        }
+    }
+
     "delete a log entry the tree deleted, and keep its task" in { transactor =>
       for {
         fixture <- createFullProject(newExportPath()).transact(transactor)

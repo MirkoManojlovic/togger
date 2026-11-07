@@ -18,7 +18,10 @@ import scala.util.Try
   */
 case class ExportEntity(entityType: DataExportEntityType, id: UUID, name: Option[String], json: Json) {
   lazy val hash: String = ExportHasher.hashJson(json)
-  lazy val changedAt: Option[Instant] = ExportHasher.latestTimestamp(json)
+  lazy val changedAt: Option[Instant] = entityType match {
+    case DataExportEntityType.LogEntry => LogEntryChangedAt.ofJson(json)
+    case _                             => ExportHasher.latestTimestamp(json)
+  }
   def indexEntry: ExportIndexEntry = ExportIndexEntry(hash, name, changedAt)
 }
 
@@ -104,6 +107,18 @@ class DataExportTreeStore(diskOps: DiskOps) extends TgLogging {
 
   def entityExists(folderPath: String, entityType: DataExportEntityType, id: UUID): Boolean =
     diskOps.exists(entityPath(diskOps.resolvePath(folderPath), entityType, id))
+
+  /** When the entity of the tree changed. The index of a tree written by an older version holds wrong times for log
+    * entries (see [[LogEntryChangedAt]]), so for them the file is read again.
+    */
+  def changedAt(folderPath: String, index: ExportIndex, entityType: DataExportEntityType, id: UUID): Option[Instant] =
+    entityType match {
+      case DataExportEntityType.LogEntry =>
+        readEntityJson(folderPath, index, entityType, id).toOption
+          .flatMap(LogEntryChangedAt.ofJson)
+          .orElse(index.entriesOf(entityType).get(id).flatMap(_.changedAt))
+      case _ => index.entriesOf(entityType).get(id).flatMap(_.changedAt)
+    }
 
   /** The json of an entity file, only if it still matches the hash the index recorded for it. */
   def readEntityJson(
