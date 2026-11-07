@@ -8,8 +8,8 @@ import com.togger.ui.components._
 import com.togger.ui.components.wysiwyg.WYSIWYGTextEditorSplit.WYSIWYGTextEditorSplitSyntax
 import com.togger.ui.components.wysiwyg.WYSIWYGTriggerEvent
 import com.togger.ui.logentry.ActivePopup
-import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.logentry.LogEntryBadgeRow
+import com.togger.ui.logentry.LogEntryForm
 import com.togger.ui.logentry.LogEntryMemberBadge
 import com.togger.ui.task.TgDateFormater
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
