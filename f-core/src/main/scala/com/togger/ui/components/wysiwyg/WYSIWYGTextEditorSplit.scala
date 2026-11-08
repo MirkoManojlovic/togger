@@ -316,8 +316,10 @@ case class WYSIWYGTextEditorSplit(
       onClick.preventDefault.mapToUnit --> Observer[Unit](_ => runCommand(command))
     )
 
-  /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the browser's —
-    * the whole reason this editor is a textarea.
+  /** The three formatting shortcuts, redo, plus Enter's effect inside a list. Tab, Backspace and undo stay the
+    * browser's — the whole reason this editor is a textarea. Redo is bound here (Cmd/Ctrl+Shift+Z and Ctrl+Y) through
+    * the same `execCommand` as the toolbar button, because on a Mac Chrome takes Cmd+Shift+Z before the page sees it
+    * and does not redo on Ctrl+Y.
     *
     * `onEditorKeyDown` runs first and gets to claim the key (via `preventDefault`) before any of this editor's own
     * handling — the caller's popup (e.g. a status dropdown open above this field) needs ArrowUp/ArrowDown/Enter before
@@ -342,6 +344,12 @@ case class WYSIWYGTextEditorSplit(
           case "k" =>
             event.preventDefault()
             runCommand(linkCommand)
+          case "z" if event.shiftKey =>
+            event.preventDefault()
+            runHistory("redo")
+          case "y" if event.ctrlKey && !event.metaKey =>
+            event.preventDefault()
+            runHistory("redo")
           case _ => ()
         }
       else if (event.key == "Enter" && !event.shiftKey) handleEnter(event)
