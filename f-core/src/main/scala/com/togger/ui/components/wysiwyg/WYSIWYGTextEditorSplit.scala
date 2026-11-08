@@ -434,10 +434,10 @@ case class WYSIWYGTextEditorSplit(
       if (element.value != text) element.value = text
     }
 
-  private def execEdit(command: (String, String)): Boolean = {
+  private def execEdit(command: (String, String)): Unit = {
     val (name, value) = command
 
-    Try(dom.document.execCommand(name, false, value)).getOrElse(false)
+    Try(dom.document.execCommand(name, false, value)).foreach(_ => ())
   }
 
   /** Undo and redo are the browser's own, the ones Cmd+Z reaches, so they cover typing and toolbar commands alike. The
