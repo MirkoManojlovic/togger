@@ -263,6 +263,8 @@ class WYSIWYGTextEditorSplitTest extends AsyncJsWordSpec {
 
         Future.successful(
           labels shouldBe Seq(
+            "Undo",
+            "Redo",
             "Heading",
             "Bold",
             "Italic",

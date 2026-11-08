@@ -16,6 +16,7 @@ import org.scalajs.dom
 import org.scalajs.dom.SVGSVGElement
 
 import scala.scalajs.js
+import scala.util.Try
 
 /** Which pane is on screen while the editor is too narrow to show both. */
 sealed trait SplitPane
@@ -190,12 +191,12 @@ case class WYSIWYGTextEditorSplit(
     */
   private def consumeTriggerToken(token: WYSIWYGTriggerToken): Unit = {
     val updated = sourceVar.now().patch(token.start, "", token.end - token.start)
-    sourceVar.set(updated)
     sourceRef.foreach { element =>
-      if (element.value != updated) element.value = updated
+      writeSource(element, updated)
       element.setSelectionRange(token.start, token.start)
       element.focus()
     }
+    sourceVar.set(updated)
     caretVar.set(token.start)
     dismissedTriggerStartVar.set(None)
   }
@@ -274,6 +275,9 @@ case class WYSIWYGTextEditorSplit(
   private def toolbarElement: HtmlDiv =
     div(
       cls(WYSIWYGTextEditorStyles.toolbar),
+      historyButton("Undo", TgIcons.undoIcon, "undo"),
+      historyButton("Redo", TgIcons.redoIcon, "redo"),
+      div(cls(WYSIWYGTextEditorStyles.toolbarSeparator)),
       toolbarButton("Heading", "h2", TgIcons.headingIcon, WYSIWYGMarkdownCommands.togglePrefix(_, "## ")),
       toolbarButton("Bold", "strong", TgIcons.boldIcon, WYSIWYGMarkdownCommands.toggleInline(_, "**")),
       toolbarButton("Italic", "em", TgIcons.italicIcon, WYSIWYGMarkdownCommands.toggleInline(_, "*")),
@@ -312,8 +316,10 @@ case class WYSIWYGTextEditorSplit(
       onClick.preventDefault.mapToUnit --> Observer[Unit](_ => runCommand(command))
     )
 
-  /** The three formatting shortcuts, plus Enter's effect inside a list. Tab, Backspace and undo stay the browser's —
-    * the whole reason this editor is a textarea.
+  /** The three formatting shortcuts, redo, plus Enter's effect inside a list. Tab, Backspace and undo stay the
+    * browser's — the whole reason this editor is a textarea. Redo is bound here (Cmd/Ctrl+Shift+Z and Ctrl+Y) through
+    * the same `execCommand` as the toolbar button, because on a Mac Chrome takes Cmd+Shift+Z before the page sees it
+    * and does not redo on Ctrl+Y.
     *
     * `onEditorKeyDown` runs first and gets to claim the key (via `preventDefault`) before any of this editor's own
     * handling — the caller's popup (e.g. a status dropdown open above this field) needs ArrowUp/ArrowDown/Enter before
@@ -338,6 +344,12 @@ case class WYSIWYGTextEditorSplit(
           case "k" =>
             event.preventDefault()
             runCommand(linkCommand)
+          case "z" if event.shiftKey =>
+            event.preventDefault()
+            runHistory("redo")
+          case "y" if event.ctrlKey && !event.metaKey =>
+            event.preventDefault()
+            runHistory("redo")
           case _ => ()
         }
       else if (event.key == "Enter" && !event.shiftKey) handleEnter(event)
@@ -368,13 +380,14 @@ case class WYSIWYGTextEditorSplit(
       applyResult(command(TextSelection(element.value, element.selectionStart, element.selectionEnd)), element)
     )
 
-  /** The `Var` is written before the DOM on purpose: the controlled binding assigns `value` synchronously while `set`
-    * runs, and assigning a textarea's value is what clears its selection. Restoring the selection afterwards is
-    * therefore the last step, not the first.
+  /** The DOM is written before the `Var` on purpose: the controlled binding assigns `value` synchronously while `set`
+    * runs, and a textarea whose value was assigned has lost its undo history. [[writeSource]] goes first, as an edit
+    * the browser records, and the `Var` then only echoes what the textarea already holds. Restoring the selection
+    * afterwards is the last step, because both ways of writing move it.
     */
   private def applyResult(result: TextSelection, element: dom.html.TextArea): Unit = {
+    writeSource(element, result.text)
     sourceVar.set(result.text)
-    if (element.value != result.text) element.value = result.text
     element.setSelectionRange(result.start, result.end)
     element.focus()
     refreshActiveMarks()
@@ -397,12 +410,61 @@ case class WYSIWYGTextEditorSplit(
     TgMarkdownTasks.setChecked(sourceVar.now(), toggle.index, toggle.checked).foreach { updated =>
       val selection = sourceRef.map(element => (element.selectionStart, element.selectionEnd))
 
-      sourceVar.set(updated)
       sourceRef.foreach { element =>
-        if (element.value != updated) element.value = updated
+        writeSource(element, updated)
         selection.foreach { case (start, end) => element.setSelectionRange(start, end) }
       }
+      sourceVar.set(updated)
     }
+
+  /** Makes the textarea hold `text` as an edit the browser records, so Cmd+Z undoes a toolbar command like typing.
+    *
+    * Only the changed range is replaced: assigning `value` would empty the undo history, and the same edit is what
+    * keeps the caret and the scroll where they were. `execCommand` needs the textarea focused, and it can decline (the
+    * pane is hidden while the editor is stacked, an engine without the command), so the value is checked and assigned
+    * as the last resort. Undo is lost then, the text is not.
+    */
+  private def writeSource(element: dom.html.TextArea, text: String): Unit =
+    if (element.value != text) {
+      val edit = WYSIWYGTextReplacement.between(element.value, text)
+
+      element.focus()
+      element.setSelectionRange(edit.start, edit.end)
+      execEdit(if (edit.replacement.isEmpty) ("delete", "") else ("insertText", edit.replacement))
+      if (element.value != text) element.value = text
+    }
+
+  private def execEdit(command: (String, String)): Unit = {
+    val (name, value) = command
+
+    Try(dom.document.execCommand(name, false, value)).foreach(_ => ())
+  }
+
+  /** Undo and redo are the browser's own, the ones Cmd+Z reaches, so they cover typing and toolbar commands alike. The
+    * `Var` is synced afterwards because not every engine fires `input` for a history step.
+    */
+  private def runHistory(name: String): Unit =
+    sourceRef.foreach { element =>
+      element.focus()
+      execEdit((name, ""))
+      sourceVar.set(element.value)
+      refreshActiveMarks()
+    }
+
+  private def historyButton(
+    title: String,
+    icon: String => ReactiveSvgElement[SVGSVGElement],
+    name: String
+  ): HtmlButton =
+    button(
+      `type`("button"),
+      L.title(title),
+      aria.label(title),
+      cls(WYSIWYGTextEditorStyles.toolbarButton),
+      icon(WYSIWYGTextEditorStyles.toolbarIcon),
+      onMouseDown.preventDefault --> Observer[dom.MouseEvent](_ => ()),
+      onClick.preventDefault.mapToUnit --> Observer[Unit](_ => runHistory(name))
+    )
 
   private def emit(value: String): Unit =
     if (!lastKnown.contains(value)) {
