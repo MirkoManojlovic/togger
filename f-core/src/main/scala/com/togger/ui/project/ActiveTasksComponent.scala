@@ -111,21 +111,8 @@ class ActiveTasksComponent(
 
 object ActiveTasksComponent {
 
-  val ColumnStatuses: Seq[DefaultTaskStatus] =
-    Seq(
-      DefaultTaskStatus.InProgress,
-      DefaultTaskStatus.Testing,
-      DefaultTaskStatus.Waiting,
-      DefaultTaskStatus.Blocked,
-      DefaultTaskStatus.Done,
-      DefaultTaskStatus.WontDo
-    )
-
-  private val RankByName: Map[String, Int] =
-    ColumnStatuses.zipWithIndex.map { case (status, rank) =>
-      TeamDailyStatusOrder.normalise(status.statusName) -> rank
-    }.toMap
+  val ColumnStatuses: Seq[DefaultTaskStatus] = TeamDailyStatusOrder.Ordered
 
   /** The column of a status, by its default name; none for a status without a column. */
-  def rank(statusName: String): Option[Int] = RankByName.get(TeamDailyStatusOrder.normalise(statusName))
+  def rank(statusName: String): Option[Int] = TeamDailyStatusOrder.rank(statusName)
 }

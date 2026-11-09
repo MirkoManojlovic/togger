@@ -7,13 +7,16 @@ class TeamDailyStatusOrderTest extends AsyncJsWordSpec {
 
   testNameFromClassName should {
 
-    "rank the four daily statuses in order" in { _ =>
+    "rank the daily statuses in order, the done and won't do ones last" in { _ =>
       Seq(
         DefaultTaskStatus.InProgress,
         DefaultTaskStatus.Testing,
         DefaultTaskStatus.Waiting,
-        DefaultTaskStatus.Blocked
-      ).map(status => TeamDailyStatusOrder.rank(status.statusName)) shouldBe Seq(Some(0), Some(1), Some(2), Some(3))
+        DefaultTaskStatus.Blocked,
+        DefaultTaskStatus.Done,
+        DefaultTaskStatus.WontDo
+      ).map(status => TeamDailyStatusOrder.rank(status.statusName)) shouldBe
+        Seq(Some(0), Some(1), Some(2), Some(3), Some(4), Some(5))
     }
 
     "ignore other statuses" in { _ =>

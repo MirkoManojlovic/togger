@@ -7,10 +7,15 @@ import com.togger.task.DefaultTaskStatus
   */
 object TeamDailyStatusOrder {
 
-  private val Ordered: Seq[DefaultTaskStatus] =
-    Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
-
-  val StatusCount: Int = Ordered.size
+  val Ordered: Seq[DefaultTaskStatus] =
+    Seq(
+      DefaultTaskStatus.InProgress,
+      DefaultTaskStatus.Testing,
+      DefaultTaskStatus.Waiting,
+      DefaultTaskStatus.Blocked,
+      DefaultTaskStatus.Done,
+      DefaultTaskStatus.WontDo
+    )
 
   def normalise(name: String): String =
     name.dropWhile(!_.isLetter).trim.toLowerCase
@@ -18,7 +23,7 @@ object TeamDailyStatusOrder {
   private val RankByName: Map[String, Int] =
     Ordered.zipWithIndex.map { case (status, rank) => normalise(status.statusName) -> rank }.toMap
 
-  /** 0 for In progress up to 3 for Blocked; none for any other status. */
+  /** 0 for In progress up to 5 for Won't do; none for any other status. */
   def rank(statusName: String): Option[Int] = RankByName.get(normalise(statusName))
 
   private val OnHold =
