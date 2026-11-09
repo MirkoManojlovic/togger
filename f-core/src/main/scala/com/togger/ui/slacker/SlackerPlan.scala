@@ -3,7 +3,6 @@ package com.togger.ui.slacker
 import com.togger.dto.FindTaskRespFull
 import com.togger.logentry.LogEntryStatus
 import com.togger.ui.teamdaily.TeamDailyEntryDraft
-import com.togger.ui.teamdaily.TeamDailyStatusGroup
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskPlan
 import com.togger.ui.timebox.gantt.GanttLogStatus
@@ -78,17 +77,6 @@ object SlackerPlan {
   /** The tasks that were chosen; `None` means all of them. */
   def chosen(candidates: Seq[TeamDailyTaskPlan], selected: Option[Set[UUID]]): Seq[TeamDailyTaskPlan] =
     candidates.filter(task => selected.forall(_.contains(task.taskId)))
-
-  /** The tasks under the status they have, in the order of the daily statuses and then by name. */
-  def byStatus(tasks: Seq[TeamDailyTaskPlan]): Seq[TeamDailyStatusGroup] =
-    tasks
-      .groupBy(task => TeamDailyStatusOrder.rank(task.statusName))
-      .toSeq
-      .sortBy { case (rank, _) => rank.getOrElse(Int.MaxValue) }
-      .map { case (_, sameStatus) =>
-        val sorted = sameStatus.sortBy(_.name)
-        TeamDailyStatusGroup(sorted.head.statusName, sorted, sorted.head.statusEmoji)
-      }
 
   def daysOf(task: TeamDailyTaskPlan, pastFirst: Set[UUID]): Seq[LocalDate] =
     SlackerDirection.of(pastFirst.contains(task.taskId)).order(task.missingDays)

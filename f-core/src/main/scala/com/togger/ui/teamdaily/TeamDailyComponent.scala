@@ -497,55 +497,51 @@ class TeamDailyComponent(
       }
     )
 
-  private def taskRow(task: TeamDailyTaskPlan): HtmlElement =
-    label(
-      cls("flex items-start gap-2 py-1 text-sm text-body cursor-pointer"),
+  private def taskRow(task: TeamDailyTaskPlan): HtmlElement = {
+    val selected = state.signal.map(_.isTaskSelected(task.taskId)).distinct
+    TeamDailyTaskBoard.card(
+      task,
       input(
         `type`("checkbox"),
         cls(checkboxCls),
-        cls("mt-0.5 shrink-0"),
-        checked <-- state.signal.map(_.isTaskSelected(task.taskId)).distinct,
+        checked <-- selected,
         onChange.mapToChecked --> (on => setTaskSelected(task.taskId, on))
       ),
-      div(
-        cls("flex flex-col gap-1"),
-        div(
-          cls("flex flex-wrap items-center gap-2"),
-          span(cls("font-medium text-black dark:text-white"), task.name),
-          badgeRow(TeamDailyTaskBadges.labels(task)),
-          TaskProgressComponent
-            .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
-            .element,
-          span(cls("text-body-subtle"), if (task.todayEntry.isEmpty) "Not logged today" else "Logged today")
-        ),
-        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps))
-      )
+      selected,
+      if (task.todayEntry.isEmpty) "Not logged today" else "Logged today",
+      state.now().milestones,
+      state.now().steps
     )
+  }
 
-  private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
-    TeamDailyStatusGroupCard(group, taskRow)
-
-  private def memberGroup(member: TeamDailyMemberPlan): HtmlElement =
+  /** The first cell of the member's row: the name, and buttons to choose or drop all of their tasks. */
+  private def memberCell(member: TeamDailyMemberPlan): HtmlElement = {
+    val taskIds = member.tasks.map(_.taskId).toSet
     div(
-      cls("mb-4"),
+      cls("w-full my-2 flex flex-col justify-center items-center gap-2 px-2 py-2"),
+      cls("border border-default-medium rounded-base text-center"),
+      h4(cls("text-sm font-medium text-heading"), member.member.fullName),
       div(
-        cls("mb-1 flex flex-wrap items-center gap-2"),
-        h4(cls("text-base font-medium text-heading"), member.member.fullName),
+        cls("flex flex-wrap justify-center gap-1"),
         button(
           `type`("button"),
           cls(smallButtonCls),
           "Select all",
-          onClick.mapToUnit --> (_ => setTasksSelected(member.tasks.map(_.taskId).toSet, on = true))
+          onClick.mapToUnit --> (_ => setTasksSelected(taskIds, on = true))
         ),
         button(
           `type`("button"),
           cls(smallButtonCls),
           "Unselect all",
-          onClick.mapToUnit --> (_ => setTasksSelected(member.tasks.map(_.taskId).toSet, on = false))
+          onClick.mapToUnit --> (_ => setTasksSelected(taskIds, on = false))
         )
-      ),
-      TeamDailyPlan.byStatus(member.tasks).map(statusGroup)
+      )
     )
+  }
+
+  private def memberBoard(candidates: Seq[TeamDailyMemberPlan]): Node =
+    if (candidates.isEmpty) emptyNode
+    else TeamDailyTaskBoard.withMembers(candidates.map(member => memberCell(member) -> member.tasks), taskRow)
 
   private val chooseTasks: HtmlElement =
     div(
@@ -566,7 +562,6 @@ class TeamDailyComponent(
         )
       ),
       div(
-        cls("rounded-base border border-default-medium p-3"),
         child.maybe <-- state.signal
           .map(_.candidates)
           .distinct
@@ -575,7 +570,7 @@ class TeamDailyComponent(
               p(cls("text-sm text-body"), "The chosen members have no open tasks.")
             )
           ),
-        children <-- state.signal.map(_.candidates).distinct.map(_.map(memberGroup))
+        child <-- state.signal.map(_.candidates).distinct.map(memberBoard)
       )
     )
 

@@ -39,12 +39,6 @@ case class TeamDailyTaskPlan(
 
 case class TeamDailyMemberPlan(member: SearchAccountDto, tasks: Seq[TeamDailyTaskPlan])
 
-/** The tasks of one member that have one status. */
-case class TeamDailyStatusGroup(statusName: String, tasks: Seq[TeamDailyTaskPlan], statusEmoji: String = "") {
-
-  def statusLabel: String = s"$statusEmoji $statusName".trim
-}
-
 sealed trait TeamDailyPosition
 object TeamDailyPosition {
   case object ChooseMembers extends TeamDailyPosition
@@ -104,17 +98,6 @@ object TeamDailyPlan {
       val tasks = member.tasks.filter(task => selected.forall(_.contains(task.taskId)))
       Option.when(tasks.nonEmpty)(member.copy(tasks = tasks))
     }
-
-  /** The tasks of a member, under the status they have, in the order of the daily statuses and then by name. */
-  def byStatus(tasks: Seq[TeamDailyTaskPlan]): Seq[TeamDailyStatusGroup] =
-    tasks
-      .groupBy(task => TeamDailyStatusOrder.rank(task.statusName))
-      .toSeq
-      .sortBy { case (rank, _) => rank.getOrElse(Int.MaxValue) }
-      .map { case (_, sameStatus) =>
-        val sorted = sameStatus.sortBy(_.name)
-        TeamDailyStatusGroup(sorted.head.statusName, sorted, sorted.head.statusEmoji)
-      }
 
   /** Every place Next walks through: choosing members, choosing tasks, each task of each member, then the review. */
   def positions(plan: Seq[TeamDailyMemberPlan]): Seq[TeamDailyPosition] =
