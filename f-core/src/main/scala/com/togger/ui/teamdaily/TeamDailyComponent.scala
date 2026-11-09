@@ -508,7 +508,8 @@ class TeamDailyComponent(
         onChange.mapToChecked --> (on => setTaskSelected(task.taskId, on))
       ),
       selected,
-      if (task.todayEntry.isEmpty) "Not logged today" else "Logged today",
+      task.todayEntry.nonEmpty,
+      None,
       state.now().milestones,
       state.now().steps
     )

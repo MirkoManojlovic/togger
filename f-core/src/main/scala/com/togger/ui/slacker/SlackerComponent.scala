@@ -458,7 +458,8 @@ class SlackerComponent(
         onChange.mapToChecked --> (on => setTasksSelected(Set(task.taskId), on))
       ),
       selected,
-      missingText(task),
+      logged = false,
+      Some(missingText(task)),
       state.now().milestones,
       state.now().steps
     )

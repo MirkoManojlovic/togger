@@ -64,21 +64,23 @@ object TeamDailyTaskBoard {
     )
   }
 
-  /** A task to check: name, labels and progress, then milestone, step and priority, then a note; dimmed when it is not
-    * chosen.
+  /** A task to check: name, labels and progress, then milestone, step and priority, then an optional note; dimmed when
+    * it is not chosen. A task logged today has a thick blue border on the left.
     */
   def card(
     task: TeamDailyTaskPlan,
     checkbox: HtmlElement,
     selected: Signal[Boolean],
-    note: String,
+    logged: Boolean,
+    note: Option[String],
     milestones: Seq[FindMilestoneResp],
     steps: Seq[FindMilestoneStepResp]
   ): HtmlElement =
     label(
-      cls("flex items-start gap-2 mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+      cls("flex items-start gap-2 mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft shadow-md"),
       cls("text-sm text-body cursor-pointer hover:bg-neutral-tertiary"),
       cls("opacity-50") <-- selected.map(!_),
+      Option.when(logged)(cls("border-l-4 border-l-brand")),
       checkbox.amend(cls("mt-0.5 shrink-0")),
       div(
         cls("flex min-w-0 flex-1 flex-col gap-1"),
@@ -92,7 +94,7 @@ object TeamDailyTaskBoard {
             .amend(cls("self-center leading-none"))
         ),
         BulkTaskCard.readOnlyRow(TeamDailyTaskBadges.milestoneAndPriority(task, milestones, steps)),
-        span(cls("text-xs text-body-subtle"), note)
+        note.map(text => span(cls("text-xs text-body-subtle"), text))
       )
     )
 }
