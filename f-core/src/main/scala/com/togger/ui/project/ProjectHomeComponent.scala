@@ -320,7 +320,7 @@ class ProjectHomeComponent(
         sectionTitle("Active tasks", marginCls = "mb-4"),
         activeTasks(
           inFlight.flatMap(_._2),
-          ActiveTasksConfig("No tasks in progress, testing, waiting, blocked or done.")
+          ActiveTasksConfig("No tasks in progress, testing, waiting, blocked, done or won't do.")
         )
       ),
       if (TimeboxUi.visible)
