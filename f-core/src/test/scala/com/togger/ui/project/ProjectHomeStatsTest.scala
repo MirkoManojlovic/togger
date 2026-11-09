@@ -71,11 +71,12 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
   }
 
   "ProjectHomeStats.inFlightStatuses" should {
-    "keep In progress, Testing, Waiting and Blocked in that order, whatever emoji precedes them" in {
+    "keep In progress, Testing, Waiting, Blocked and Done in that order, whatever emoji precedes them" in {
       val blocked = status("🚫 Blocked")
       val inProgress = status("🚧 In progress")
-      val statuses = Seq(status("Done"), blocked, status("Todo"), inProgress, status("Backlog"))
-      ProjectHomeStats.inFlightStatuses(statuses) shouldBe Seq(inProgress, blocked)
+      val done = status("✅ Done")
+      val statuses = Seq(done, blocked, status("Todo"), inProgress, status("Backlog"))
+      ProjectHomeStats.inFlightStatuses(statuses) shouldBe Seq(inProgress, blocked, done)
     }
   }
 
@@ -93,14 +94,15 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
   }
 
   "ProjectHomeStats.byColumn" should {
-    "put the tasks being worked on in the column of their status by name and leave out the others" in {
+    "put the tasks in the column of their status by name, the done ones last, and leave out the others" in {
       val blocked = status("Blocked")
       val inProgress = status("In progress")
       val done = status("Done")
+      val todo = status("Todo")
       val columns = ProjectHomeStats.byColumn(
-        Seq(task("b", blocked), task("z", inProgress), task("a", inProgress), task("c", done))
+        Seq(task("b", blocked), task("z", inProgress), task("a", inProgress), task("c", done), task("t", todo))
       )
-      columns.map(_.map(_.name)) shouldBe Seq(Seq("a", "z"), Seq.empty, Seq.empty, Seq("b"))
+      columns.map(_.map(_.name)) shouldBe Seq(Seq("a", "z"), Seq.empty, Seq.empty, Seq("b"), Seq("c"))
     }
   }
 
@@ -182,9 +184,9 @@ class ProjectHomeStatsTest extends AnyWordSpec with Matchers {
       val rows = ProjectHomeStats.memberRows(Seq(nobodys, adas, bobs))
       rows.map(_._1) shouldBe Seq(Some(ada), Some(bob), None)
       rows.map(_._2) shouldBe Seq(
-        Seq(Seq(adas), Seq.empty, Seq.empty, Seq.empty),
-        Seq(Seq.empty, Seq.empty, Seq.empty, Seq(bobs)),
-        Seq(Seq(nobodys), Seq.empty, Seq.empty, Seq.empty)
+        Seq(Seq(adas), Seq.empty, Seq.empty, Seq.empty, Seq.empty),
+        Seq(Seq.empty, Seq.empty, Seq.empty, Seq(bobs), Seq.empty),
+        Seq(Seq(nobodys), Seq.empty, Seq.empty, Seq.empty, Seq.empty)
       )
     }
   }

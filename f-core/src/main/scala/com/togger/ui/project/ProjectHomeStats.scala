@@ -12,7 +12,6 @@ import com.togger.ui.components.TgBadgeColor
 import com.togger.ui.milestone.MilestoneStepBadges
 import com.togger.ui.task.DateEmoji
 import com.togger.ui.task.bulk.BadgeSpec
-import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.timebox.TimeboxReviewStats
 
@@ -31,10 +30,10 @@ object ProjectHomeStats {
       )
       .sortBy(_.latestVersion.endDate.toEpochDay)
 
-  /** The statuses of tasks that are being worked on, in the order of the daily. */
+  /** The statuses of the columns (being worked on, then done), in the order of the columns. */
   def inFlightStatuses(statuses: Seq[FindTaskStatusResp]): Seq[FindTaskStatusResp] =
     statuses
-      .flatMap(status => TeamDailyStatusOrder.rank(status.name).map(_ -> status))
+      .flatMap(status => ActiveTasksComponent.rank(status.name).map(_ -> status))
       .sortBy(_._1)
       .map(_._2)
 
@@ -97,11 +96,11 @@ object ProjectHomeStats {
         TeamDailyTaskBadges.duration(task.startDate, task.dueDate, workDays)
       ) ++ Option.when(task.endDate.isEmpty)(TeamDailyTaskBadges.daysLeft(task.dueDate, today, workDays))
 
-  /** The tasks being worked on for each of the statuses of the daily, in its order, by name; the others are left out.
+  /** The tasks for each of the column statuses, in their order, by name; the others are left out.
     */
   def byColumn(tasks: Seq[FindTaskRespFull]): Seq[Seq[FindTaskRespFull]] = {
-    val ranked = tasks.flatMap(task => TeamDailyStatusOrder.rank(task.taskStatus.name).map(_ -> task))
-    (0 until TeamDailyStatusOrder.StatusCount).map(column =>
+    val ranked = tasks.flatMap(task => ActiveTasksComponent.rank(task.taskStatus.name).map(_ -> task))
+    (0 until ActiveTasksComponent.ColumnStatuses.size).map(column =>
       ranked.collect { case (rank, task) if rank == column => task }.sortBy(_.name)
     )
   }
