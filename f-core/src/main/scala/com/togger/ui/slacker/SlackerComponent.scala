@@ -41,9 +41,9 @@ import com.togger.ui.teamdaily.ScrollableStepper
 import com.togger.ui.teamdaily.TeamDailyComponent
 import com.togger.ui.teamdaily.TeamDailyEntryDraft
 import com.togger.ui.teamdaily.TeamDailyEntryForm
-import com.togger.ui.teamdaily.TeamDailyTaskBoard
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
+import com.togger.ui.teamdaily.TeamDailyTaskBoard
 import com.togger.ui.teamdaily.TeamDailyTaskPlan
 import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
