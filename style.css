@@ -10,6 +10,15 @@
    UI switches together. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Tailwind's shadows are 10% black, which is invisible on the near-black dark backgrounds. Utilities read
+   `--tw-shadow-color` before their built-in color, so every shadow gets a stronger black in dark mode. This sits in the
+   base layer, so an explicit `shadow-<color>` utility still wins. */
+@layer base {
+  .dark :is(.shadow-2xs, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+    --tw-shadow-color: rgb(0 0 0 / 0.6);
+  }
+}
+
 
 @keyframes myAnimation {
   0%   {background-color: red;}
