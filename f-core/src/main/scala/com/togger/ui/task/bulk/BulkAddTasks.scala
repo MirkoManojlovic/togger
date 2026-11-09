@@ -392,7 +392,7 @@ class BulkAddTasks(
   private val preview =
     div(
       cls("md:col-start-2 md:row-start-3"),
-      cls("min-h-[24rem] max-h-[32rem] overflow-y-auto rounded-base border border-default-medium p-3"),
+      cls("min-h-[24rem] max-h-[32rem] overflow-y-auto rounded-base border border-default-medium p-3 shadow-md"),
       child.maybe <-- state.signal
         .map(_.tasks.isEmpty)
         .distinct

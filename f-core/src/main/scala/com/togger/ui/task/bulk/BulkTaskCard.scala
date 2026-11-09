@@ -30,7 +30,7 @@ object BulkTaskCard {
       BulkTaskBadges.of(current, currentLookups, today())
     }
     div(
-      cls("rounded-base border border-default-medium bg-neutral-primary p-2.5"),
+      cls("rounded-base border border-default-medium bg-neutral-primary p-2.5 shadow-md"),
       rootModifiers,
       div(
         cls("mb-1.5 flex items-start gap-2"),

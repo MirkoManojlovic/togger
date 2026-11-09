@@ -11,6 +11,7 @@ import com.togger.task.DefaultTaskStatus
 import com.togger.ui.components.TaskStatusBadgeColor
 import com.togger.ui.components.TgBadge
 import com.togger.ui.task.TgDateFormater
+import com.togger.ui.teamdaily.TeamDailyStatusOrder
 
 import java.time.DayOfWeek
 
@@ -25,9 +26,9 @@ import java.time.DayOfWeek
   */
 case class ActiveTasksConfig(emptyNote: String, showMilestone: Boolean = true, showMember: Boolean = true)
 
-/** The tasks being worked on in a column for each of the statuses of the daily, in its order, also when no task is in
-  * one. With the member column, a row for each member with the tasks of the member in the column of their status, the
-  * tasks without an assignee in the last row.
+/** The tasks being worked on, the done ones and the ones that will not be done, in a column for each of the statuses of
+  * the daily, in its order, also when no task is in one. With the member column, a row for each member with the tasks
+  * of the member in the column of their status, the tasks without an assignee in the last row.
   */
 class ActiveTasksComponent(
   router: TgRouter[FrontendPage],
@@ -74,7 +75,7 @@ class ActiveTasksComponent(
   private def withMembers: HtmlElement = {
     val rows = ProjectHomeStats.memberRows(tasks)
     grid(
-      "grid-cols-[auto_repeat(4,minmax(0,1fr))]",
+      "grid-cols-[auto_repeat(6,minmax(0,1fr))]",
       div(cls("flex items-center justify-center text-sm font-medium text-heading"), "Member") +:
         (header(columnStatuses.indices.map(column => rows.map(_._2(column).size).sum)) ++
           rows.flatMap { case (member, cells) =>
@@ -84,7 +85,7 @@ class ActiveTasksComponent(
               styleAttr := "max-width: 9rem;",
               div(
                 cls(
-                  "w-full my-2 flex items-center px-2 py-1 border border-default-medium rounded-base text-sm font-medium text-heading"
+                  "w-full my-2 flex items-center justify-center text-center px-2 py-1 border border-default-medium rounded-base text-sm font-medium text-heading shadow-md"
                 ),
                 member.fold("Unassigned")(_.fullName)
               )
@@ -96,11 +97,11 @@ class ActiveTasksComponent(
 
   private def withoutMembers: HtmlElement = {
     val cells = ProjectHomeStats.byColumn(tasks)
-    grid("grid-cols-[repeat(4,minmax(0,1fr))]", header(cells.map(_.size)) ++ cells.map(cell))
+    grid("grid-cols-[repeat(6,minmax(0,1fr))]", header(cells.map(_.size)) ++ cells.map(cell))
   }
 
   private def grid(columnsCls: String, content: Seq[HtmlElement]): HtmlElement =
-    div(cls("overflow-x-auto"), div(cls("grid gap-4 min-w-[48rem]"), cls(columnsCls), content))
+    div(cls("overflow-x-auto"), div(cls("grid gap-4 min-w-[72rem]"), cls(columnsCls), content))
 
   val element: HtmlElement =
     if (ProjectHomeStats.byColumn(tasks).forall(_.isEmpty)) div(cls("text-body"), config.emptyNote)
@@ -110,6 +111,8 @@ class ActiveTasksComponent(
 
 object ActiveTasksComponent {
 
-  val ColumnStatuses: Seq[DefaultTaskStatus] =
-    Seq(DefaultTaskStatus.InProgress, DefaultTaskStatus.Testing, DefaultTaskStatus.Waiting, DefaultTaskStatus.Blocked)
+  val ColumnStatuses: Seq[DefaultTaskStatus] = TeamDailyStatusOrder.Ordered
+
+  /** The column of a status, by its default name; none for a status without a column. */
+  def rank(statusName: String): Option[Int] = TeamDailyStatusOrder.rank(statusName)
 }

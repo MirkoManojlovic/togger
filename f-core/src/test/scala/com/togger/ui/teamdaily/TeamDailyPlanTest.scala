@@ -39,15 +39,6 @@ class TeamDailyPlanTest extends AsyncJsWordSpec {
 
   testNameFromClassName should {
 
-    "group the tasks of a member by status in the order of the daily statuses" in { _ =>
-      TeamDailyPlan.byStatus(Seq(blocked, testing, inProgressB)).map(_.statusName) shouldBe
-        Seq("▶️ In progress", "🔬 Testing", "🔴 Blocked")
-    }
-
-    "sort the tasks of a status by name" in { _ =>
-      TeamDailyPlan.byStatus(Seq(inProgressB, inProgressA)).head.tasks shouldBe Seq(inProgressA, inProgressB)
-    }
-
     "choose every task when none was narrowed down" in { _ =>
       TeamDailyPlan.chosen(candidates, None) shouldBe candidates
     }

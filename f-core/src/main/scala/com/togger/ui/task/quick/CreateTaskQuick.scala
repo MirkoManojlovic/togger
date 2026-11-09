@@ -577,7 +577,7 @@ class CreateTaskQuick(
         Some(
           badge(
             PriorityDropdown,
-            current.effectivePriority.priorityName,
+            current.effectivePriority.shortCode,
             priorityClear,
             Some(current.effectivePriority.badgeColor)
           )

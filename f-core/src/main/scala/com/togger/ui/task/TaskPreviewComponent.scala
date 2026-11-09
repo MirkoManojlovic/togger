@@ -99,12 +99,12 @@ class TaskPreviewComponent(
       )
     )
 
-  private val sectionCls = "border border-default rounded-base p-4"
+  private val sectionCls = "border border-default rounded-base p-4 shadow-md"
 
   private val nameBlock: Option[HtmlElement] =
     Option.when(showName)(
       div(
-        cls("mb-3 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+        cls("mb-3 p-2 border border-default rounded-base bg-neutral-primary-soft shadow-md"),
         nameWithLabels,
         badges
       )

@@ -41,10 +41,9 @@ import com.togger.ui.teamdaily.ScrollableStepper
 import com.togger.ui.teamdaily.TeamDailyComponent
 import com.togger.ui.teamdaily.TeamDailyEntryDraft
 import com.togger.ui.teamdaily.TeamDailyEntryForm
-import com.togger.ui.teamdaily.TeamDailyStatusGroup
-import com.togger.ui.teamdaily.TeamDailyStatusGroupCard
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
+import com.togger.ui.teamdaily.TeamDailyTaskBoard
 import com.togger.ui.teamdaily.TeamDailyTaskPlan
 import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
@@ -448,33 +447,23 @@ class SlackerComponent(
   private def missingText(task: TeamDailyTaskPlan): String =
     if (task.missingDays.size == 1) "1 day missing" else s"${task.missingDays.size} days missing"
 
-  private def taskRow(task: TeamDailyTaskPlan): HtmlElement =
-    label(
-      cls("flex items-start gap-2 py-1 text-sm text-body cursor-pointer"),
+  private def taskRow(task: TeamDailyTaskPlan): HtmlElement = {
+    val selected = state.signal.map(_.isTaskSelected(task.taskId)).distinct
+    TeamDailyTaskBoard.card(
+      task,
       input(
         `type`("checkbox"),
         cls(checkboxCls),
-        cls("mt-0.5 shrink-0"),
-        checked <-- state.signal.map(_.isTaskSelected(task.taskId)).distinct,
+        checked <-- selected,
         onChange.mapToChecked --> (on => setTasksSelected(Set(task.taskId), on))
       ),
-      div(
-        cls("flex flex-col gap-1"),
-        div(
-          cls("flex flex-wrap items-center gap-2"),
-          span(cls("font-medium text-black dark:text-white"), task.name),
-          badgeRow(TeamDailyTaskBadges.labels(task)),
-          TaskProgressComponent
-            .fromDescription(Val(task.description), ringSizeCls = "w-3 h-3", textSizeCls = "text-xs")
-            .element,
-          span(cls("text-body-subtle"), missingText(task))
-        ),
-        badgeRow(TeamDailyTaskBadges.milestoneAndPriority(task, state.now().milestones, state.now().steps))
-      )
+      selected,
+      logged = false,
+      Some(missingText(task)),
+      state.now().milestones,
+      state.now().steps
     )
-
-  private def statusGroup(group: TeamDailyStatusGroup): HtmlElement =
-    TeamDailyStatusGroupCard(group, taskRow)
+  }
 
   private val chooseTasks: HtmlElement =
     div(
@@ -496,16 +485,15 @@ class SlackerComponent(
         )
       ),
       div(
-        cls("rounded-base border border-default-medium p-3"),
         child.maybe <-- state.signal.map(s => (s.loaded, s.candidates.isEmpty)).distinct.map {
           case (true, true) =>
             Some(p(cls("text-sm text-body"), "You are all caught up: none of your open tasks misses a log entry."))
           case _ => None
         },
-        children <-- state.signal
+        child <-- state.signal
           .map(_.candidates)
           .distinct
-          .map(candidates => SlackerPlan.byStatus(candidates).map(statusGroup))
+          .map(candidates => if (candidates.isEmpty) emptyNode else TeamDailyTaskBoard(candidates, taskRow))
       )
     )
 
@@ -628,7 +616,7 @@ class SlackerComponent(
     val dayEntries = (day: LocalDate) =>
       task.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
     div(
-      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3"),
+      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3 shadow-md"),
       div(
         cls("w-full min-w-0 flex-1"),
         div(
@@ -670,7 +658,7 @@ class SlackerComponent(
       val canRepeat = latest.exists(isRepeatable(task, _))
       val focusRepeat = canRepeat && !state.now().entries.contains(key)
       div(
-        cls("rounded-base border border-default-medium p-4"),
+        cls("rounded-base border border-default-medium p-4 shadow-md"),
         taskHeader(task, headingCls = "text-base font-medium text-heading", trailing = Some(directionTabs(taskId))),
         div(
           cls("flex flex-col gap-4 lg:flex-row"),
@@ -704,7 +692,7 @@ class SlackerComponent(
       div(
         s.plan.map { task =>
           div(
-            cls("mt-2 rounded-base border border-default-medium p-3"),
+            cls("mt-2 rounded-base border border-default-medium p-3 shadow-md"),
             taskHeader(task, headingCls = "text-sm font-medium text-heading"),
             task.missingDays.sortBy(_.toEpochDay).map { date =>
               val key = SlackerEntryKey(task.taskId, date)

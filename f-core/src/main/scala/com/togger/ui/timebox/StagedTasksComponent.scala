@@ -83,7 +83,7 @@ class StagedTasksComponent(
   /** The column a grouping is by is left out: every row in it would say the same. */
   private def groupBlock(grouping: StagedGrouping, summary: GroupSummary): HtmlElement =
     div(
-      cls("flex flex-col gap-2 rounded-base border border-default px-3 py-2"),
+      cls("flex flex-col gap-2 rounded-base border border-default px-3 py-2 shadow-md"),
       span(cls("text-sm font-semibold text-heading"), summary.title),
       div(
         cls("flex flex-wrap gap-x-4 gap-y-3"),

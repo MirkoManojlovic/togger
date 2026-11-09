@@ -37,7 +37,7 @@ case class TgCard(header: Option[CardHeader], body: TgCardContent, footer: Optio
 //    </div>
 //
 
-  val cardClass = "w-full bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"
+  val cardClass = "w-full bg-neutral-primary-soft p-6 border border-default rounded-base shadow-md"
   val cardHeadClass = "text-xl font-semibold text-heading mb-6"
 
   def element: HtmlDiv =

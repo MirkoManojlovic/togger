@@ -227,7 +227,7 @@ class GanttChartLayout(tgDateFormater: TgDateFormater, tgClock: TgClock) {
   /** The scrolling frame with the header and then the rows. */
   def frame(axis: GanttAxis, rows: Seq[HtmlElement], nameColumnTitle: String = DefaultNameColumnTitle): HtmlElement =
     div(
-      cls("overflow-x-auto rounded-base border border-default-medium"),
+      cls("overflow-x-auto rounded-base border border-default-medium shadow-md"),
       styleProp[String](NameColumnVar) <-- nameColumnWidthPxVar.signal.map(
         _.fold("max-content")(width => s"${width}px")
       ),

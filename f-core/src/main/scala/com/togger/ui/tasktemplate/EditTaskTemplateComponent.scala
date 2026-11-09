@@ -105,7 +105,7 @@ class EditTaskTemplateComponent(
       h4(cls("mb-2 text-sm font-medium text-heading"), "Version history"),
       children <-- versionsVar.signal.map(_.map { version =>
         div(
-          cls("mb-3 p-3 border border-default rounded-base bg-neutral-primary-soft"),
+          cls("mb-3 p-3 border border-default rounded-base bg-neutral-primary-soft shadow-md"),
           div(
             cls("mb-2 text-xs text-body-subtle"),
             s"${version.name} - ${tgDateFormater.yearMonthDayTimeFormat(version.createdAt)}"
