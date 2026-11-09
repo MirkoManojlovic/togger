@@ -616,7 +616,7 @@ class SlackerComponent(
     val dayEntries = (day: LocalDate) =>
       task.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
     div(
-      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3"),
+      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3 shadow-md"),
       div(
         cls("w-full min-w-0 flex-1"),
         div(
@@ -658,7 +658,7 @@ class SlackerComponent(
       val canRepeat = latest.exists(isRepeatable(task, _))
       val focusRepeat = canRepeat && !state.now().entries.contains(key)
       div(
-        cls("rounded-base border border-default-medium p-4"),
+        cls("rounded-base border border-default-medium p-4 shadow-md"),
         taskHeader(task, headingCls = "text-base font-medium text-heading", trailing = Some(directionTabs(taskId))),
         div(
           cls("flex flex-col gap-4 lg:flex-row"),
@@ -692,7 +692,7 @@ class SlackerComponent(
       div(
         s.plan.map { task =>
           div(
-            cls("mt-2 rounded-base border border-default-medium p-3"),
+            cls("mt-2 rounded-base border border-default-medium p-3 shadow-md"),
             taskHeader(task, headingCls = "text-sm font-medium text-heading"),
             task.missingDays.sortBy(_.toEpochDay).map { date =>
               val key = SlackerEntryKey(task.taskId, date)

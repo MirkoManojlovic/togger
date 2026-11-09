@@ -288,7 +288,7 @@ class CreateMilestoneComponent(
       ]
     ) = milestoneStepsVar.update(change)
     div(
-      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
+      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4 shadow-md"),
       div(
         cls("mb-3 flex items-center justify-between"),
         span(cls("text-sm font-medium text-heading"), s"Step ${at.label}"),
@@ -409,7 +409,7 @@ class CreateMilestoneComponent(
         h4(cls("text-sm font-medium text-heading mb-2"), "Additional milestone dates"),
         children <-- milestoneDatesVar.signal.map(dateComponents =>
           dateComponents.map(
-            _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"))
+            _.htmlElement.amend(cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4 shadow-md"))
           )
         ),
         addNewMilestoneDate

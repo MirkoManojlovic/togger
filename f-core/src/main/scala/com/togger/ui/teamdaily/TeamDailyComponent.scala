@@ -465,7 +465,7 @@ class TeamDailyComponent(
         )
       ),
       div(
-        cls("rounded-base border border-default-medium p-3"),
+        cls("rounded-base border border-default-medium p-3 shadow-md"),
         children <-- state.signal.map(_.members).distinct.map(_.map(memberRow))
       )
     )
@@ -520,7 +520,7 @@ class TeamDailyComponent(
     val taskIds = member.tasks.map(_.taskId).toSet
     div(
       cls("w-full my-2 flex flex-col justify-center items-center gap-2 px-2 py-2"),
-      cls("border border-default-medium rounded-base text-center"),
+      cls("border border-default-medium rounded-base text-center shadow-md"),
       h4(cls("text-sm font-medium text-heading"), member.member.fullName),
       div(
         cls("flex flex-wrap justify-center gap-1"),
@@ -587,7 +587,7 @@ class TeamDailyComponent(
     val focusRepeat = canRepeat && !state.now().entries.contains(key) && task.forall(_.todayEntry.isEmpty)
     // one box per task, so the entry to fill in is clearly the one of the task above it
     div(
-      cls("rounded-base border border-default-medium p-4"),
+      cls("rounded-base border border-default-medium p-4 shadow-md"),
       task.map(taskHeader(_, headingCls = "text-base font-medium text-heading")),
       div(
         cls("flex flex-col gap-4 lg:flex-row"),
@@ -676,7 +676,7 @@ class TeamDailyComponent(
         _.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
       )
     div(
-      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3"),
+      cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3 shadow-md"),
       div(
         cls("w-full min-w-0 flex-1"),
         div(
@@ -775,7 +775,7 @@ class TeamDailyComponent(
             h4(cls("text-base font-medium text-heading"), member.member.fullName),
             member.tasks.map { task =>
               div(
-                cls("mt-2 rounded-base border border-default-medium p-3"),
+                cls("mt-2 rounded-base border border-default-medium p-3 shadow-md"),
                 taskHeader(task, headingCls = "text-sm font-medium text-heading"),
                 task.missingDays.map { date =>
                   val key = TeamDailyEntryKey(member.member.id, task.taskId, date)

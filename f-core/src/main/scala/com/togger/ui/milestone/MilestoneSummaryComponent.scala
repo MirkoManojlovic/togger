@@ -486,7 +486,7 @@ class MilestoneSummaryComponent(
   private def buildPreviousSummaryRow(component: MilestoneSummaryFormComponent): HtmlElement = {
     val selectedTab = Var("summary")
     div(
-      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4"),
+      cls("border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4 shadow-md"),
       child <-- component.editingVar.signal.map { editing =>
         if (editing)
           div(

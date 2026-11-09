@@ -99,7 +99,7 @@ class TaskPreviewComponent(
       )
     )
 
-  private val sectionCls = "border border-default rounded-base p-4"
+  private val sectionCls = "border border-default rounded-base p-4 shadow-md"
 
   private val nameBlock: Option[HtmlElement] =
     Option.when(showName)(

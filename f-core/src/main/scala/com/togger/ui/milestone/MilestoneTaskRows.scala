@@ -96,7 +96,7 @@ object MilestoneTaskRows {
   ): HtmlElement = {
     val progress = TimeboxReviewStats.tasksProgress(tasks)
     div(
-      cls("p-3 border border-default rounded-base"),
+      cls("p-3 border border-default rounded-base shadow-md"),
       div(cls("font-semibold text-heading mb-3"), title),
       div(
         cls("flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-0"),

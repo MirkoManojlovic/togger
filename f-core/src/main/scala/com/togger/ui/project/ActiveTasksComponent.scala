@@ -85,7 +85,7 @@ class ActiveTasksComponent(
               styleAttr := "max-width: 9rem;",
               div(
                 cls(
-                  "w-full my-2 flex items-center justify-center text-center px-2 py-1 border border-default-medium rounded-base text-sm font-medium text-heading"
+                  "w-full my-2 flex items-center justify-center text-center px-2 py-1 border border-default-medium rounded-base text-sm font-medium text-heading shadow-md"
                 ),
                 member.fold("Unassigned")(_.fullName)
               )

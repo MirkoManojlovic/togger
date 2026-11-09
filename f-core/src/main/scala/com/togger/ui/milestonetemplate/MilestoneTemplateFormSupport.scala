@@ -56,7 +56,7 @@ object MilestoneTemplateFormSupport {
               cls("mb-3"),
               MilestoneStageEditing.rows(stepNames(stages, templates)).map { at =>
                 div(
-                  cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base"),
+                  cls("flex items-center justify-between mb-1 p-2 border border-default rounded-base shadow-md"),
                   span(cls("text-sm text-heading"), s"${at.label}. ${at.step}"),
                   div(
                     iconButton(

@@ -116,7 +116,7 @@ class MilestoneStepsGraphComponent(
   ): HtmlElement =
     div(
       cls("flex min-w-0 flex-1 flex-col gap-3 p-2"),
-      if (inStage.size > 1) cls("rounded-base border border-default-medium bg-neutral-secondary-soft")
+      if (inStage.size > 1) cls("rounded-base border border-default-medium bg-neutral-secondary-soft shadow-md")
       else cls("border border-transparent"),
       editing.fold[Modifier[HtmlElement]](emptyMod) { _ =>
         Seq[Modifier[HtmlElement]](

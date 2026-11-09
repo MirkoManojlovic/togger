@@ -158,7 +158,7 @@ class FindAccountsComponent(
         TgHtmlButton.primary("Search").amend(cls("mb-4"))
       ),
       div(
-        cls("border rounded-md border-default-medium mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4 shadow-md"),
         h3(
           cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
           div(TgIcons.userIcon("w-5 h-5 text-body mr-1")),
@@ -172,7 +172,7 @@ class FindAccountsComponent(
       ),
       localRootSpinnerDiv.amend(foundMembersElement).amend(cls("mt-4 mb-4")),
       div(
-        cls("border rounded-md border-default-medium mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4 shadow-md"),
         h3(
           cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
           div(TgIcons.checkIcon("w-5 h-5 text-green-600 mr-1")),
@@ -185,7 +185,7 @@ class FindAccountsComponent(
         )
       ),
       div(
-        cls("border rounded-md border-default-medium mt-4 mb-4"),
+        cls("border rounded-md border-default-medium mt-4 mb-4 shadow-md"),
         h3(
           cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
           div(TgIcons.minusCircleIcon("w-5 h-5 text-red-600 mr-1")),
@@ -206,7 +206,7 @@ class FindAccountsComponent(
         dtos =>
           div(
             div(
-              cls("border rounded-md border-default-medium"),
+              cls("border rounded-md border-default-medium shadow-md"),
               h3(
                 cls("flex items-center bg-neutral-secondary-medium border-b border-default-medium"),
                 div(TgIcons.searchIcon("w-5 h-5 text-body mr-1")),
