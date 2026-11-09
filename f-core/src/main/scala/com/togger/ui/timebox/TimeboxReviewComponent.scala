@@ -206,7 +206,7 @@ class TimeboxReviewComponent(
 
   private def pieCard(pie: ReviewPie) =
     div(
-      cls("bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4 md:p-6"),
+      cls("bg-neutral-primary-soft border border-default rounded-base shadow-md p-4 md:p-6"),
       h5(cls("text-heading text-lg font-semibold mb-4"), pie.title),
       new ApexChartComponent(Val(pie.options), isDark).element
     )

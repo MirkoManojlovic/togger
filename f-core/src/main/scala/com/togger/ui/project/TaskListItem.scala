@@ -37,7 +37,7 @@ class TaskListItem(
 
   def apply(task: FindTaskRespFull): HtmlElement =
     li(
-      cls("mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft"),
+      cls("mb-2 p-2 border border-default rounded-base bg-neutral-primary-soft shadow-md"),
       cls("cursor-pointer hover:bg-neutral-tertiary"),
       onClick.mapToUnit --> (_ => onPreview(task)),
       div(

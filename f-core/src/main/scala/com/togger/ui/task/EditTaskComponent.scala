@@ -793,7 +793,7 @@ class EditTaskComponent(
         .changes
         .collect { case (Some(day), _) => day }
     div(
-      cls("min-w-0 flex-1 bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs"),
+      cls("min-w-0 flex-1 bg-neutral-primary-soft p-6 border border-default rounded-base shadow-md"),
       clickedDays --> Observer[LocalDate] { day =>
         if (scrollOnSelect) scrollToDay(pane.ref, day)
         scrollOnSelect = true

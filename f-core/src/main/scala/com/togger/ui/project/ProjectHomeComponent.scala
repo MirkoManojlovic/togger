@@ -203,7 +203,7 @@ class ProjectHomeComponent(
     val days = TimeboxReviewStats.daysProgress(milestone.startDate, milestone.dueDate, tgClock.currentDate())
     val statuses = TaskStatusesState(allStatusesVar.now()).taskStatusesSorted
     div(
-      cls("mb-4 p-4 border border-default-medium rounded-base"),
+      cls("mb-4 p-4 border border-default-medium rounded-base shadow-md"),
       div(
         cls("flex flex-wrap items-center gap-2 mb-3"),
         pageLink(milestone.name, MilestoneReviewPage(projectId, milestone.id)),
@@ -237,7 +237,7 @@ class ProjectHomeComponent(
       tgClock
     )
     div(
-      cls("mb-4 p-4 border border-default-medium rounded-base"),
+      cls("mb-4 p-4 border border-default-medium rounded-base shadow-md"),
       div(
         cls("mb-3"),
         pageLink(
@@ -296,7 +296,7 @@ class ProjectHomeComponent(
   private def sectionTitle(text: String, marginCls: String = "mb-2"): HtmlElement =
     div(cls("font-semibold text-heading"), cls(marginCls), text)
 
-  private val sectionBorderCls = "p-4 border border-default-medium rounded-base"
+  private val sectionBorderCls = "p-4 border border-default-medium rounded-base shadow-md"
 
   private def generalSection[A](title: String, items: Seq[A], empty: String, bordered: Boolean = false)(
     render: A => HtmlElement

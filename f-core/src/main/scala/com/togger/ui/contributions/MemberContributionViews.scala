@@ -66,7 +66,7 @@ object MemberContributionViews {
       members.filter(_.tasks.byStatus.nonEmpty).map(memberTaskCharts(_, isDark))
     )
 
-  private val tileCls = "bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4"
+  private val tileCls = "bg-neutral-primary-soft border border-default rounded-base shadow-md p-4"
 
   private def stat(label: String, value: String): HtmlElement =
     div(

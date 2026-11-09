@@ -107,7 +107,7 @@ class EditTgPromptTemplateComponent(
 
   private def versionRow(version: TgPromptTemplateVersionDto, deletable: Boolean): HtmlElement =
     div(
-      cls("mb-3 p-3 border border-default rounded-base bg-neutral-primary-soft"),
+      cls("mb-3 p-3 border border-default rounded-base bg-neutral-primary-soft shadow-md"),
       div(
         cls("mb-2 flex justify-between items-center text-xs text-body-subtle"),
         span(s"${version.title} - ${tgDateFormater.yearMonthDayTimeFormat(version.createdAt)}"),

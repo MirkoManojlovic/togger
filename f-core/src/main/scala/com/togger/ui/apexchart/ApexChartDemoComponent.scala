@@ -28,7 +28,7 @@ class ApexChartDemoComponent(isDark: Signal[Boolean]) {
 
   private def card(title: String, chart: ApexChartComponent): HtmlElement =
     div(
-      cls("bg-neutral-primary-soft border border-default rounded-base shadow-xs p-4 md:p-6"),
+      cls("bg-neutral-primary-soft border border-default rounded-base shadow-md p-4 md:p-6"),
       h5(cls("text-heading text-lg font-semibold mb-4"), title),
       chart.element
     )
