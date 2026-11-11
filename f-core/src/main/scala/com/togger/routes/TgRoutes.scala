@@ -45,6 +45,7 @@ class TgRoutes {
       List[String],
       List[String],
       List[String],
+      Option[String],
       Option[String]
     )
 
@@ -122,14 +123,26 @@ class TgRoutes {
               TaskListParams.selectionToQuery(page.list.assignees),
               TaskListParams.selectionToQuery(page.list.milestones),
               TaskListParams.selectionToQuery(page.list.steps),
-              TaskListParams.searchToQuery(page.list)
+              TaskListParams.searchToQuery(page.list),
+              TaskListParams.archivedToQuery(page.list)
             )
           ),
         decode = { (args: PatternArgs[String, TaskListQuery]) =>
-          val (page, size, statuses, priorities, labels, assignees, milestones, steps, search) = args.params
+          val (page, size, statuses, priorities, labels, assignees, milestones, steps, search, archived) = args.params
           ShowAllTasksPage(
             UUID.fromString(args.path),
-            TaskListParams.fromQuery(page, size, statuses, priorities, labels, assignees, milestones, steps, search)
+            TaskListParams.fromQuery(
+              page,
+              size,
+              statuses,
+              priorities,
+              labels,
+              assignees,
+              milestones,
+              steps,
+              search,
+              archived
+            )
           )
         },
         pattern = (root / "show-tasks" / segment[String] / endOfSegments) ? (
@@ -141,7 +154,8 @@ class TgRoutes {
             listParam[String]("assignee") &
             listParam[String]("milestone") &
             listParam[String]("step") &
-            param[String]("search").?
+            param[String]("search").? &
+            param[String]("archived").?
         )
       ),
       Route.withQuery[ShowAllTaskStatusesPage, String, ListQuery](
