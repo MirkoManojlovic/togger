@@ -149,7 +149,7 @@ case class SidebarLink(
 
   def deselectedProject: ReactiveHtmlElement[HTMLLIElement] =
     li(
-      cls("pl-2"),
+      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq.empty[String] else Seq("pl-2")),
       linkElementProject.amend(cls(Sidebar.sideBarLinkStyle))
     )
 
@@ -160,7 +160,7 @@ case class SidebarLink(
 
   def selectedProject: ReactiveHtmlElement[HTMLLIElement] =
     li(
-      cls("pl-2"),
+      cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq.empty[String] else Seq("pl-2")),
       linkElementProject.amend(
         cls(Sidebar.sidebarSelectedLink),
         cls <-- collapsed.map(isCollapsed => if (isCollapsed) Seq("border", "border-fg-brand") else Seq.empty)
