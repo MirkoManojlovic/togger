@@ -2,6 +2,7 @@ package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
 import com.togger.components.button.TgHtmlButton
+import com.togger.task.LinkValidation
 import com.togger.ui.auth.TgInput.TgInputSyntax
 import com.togger.ui.auth.TgInputType
 import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
@@ -40,7 +41,8 @@ class TaskLinkEditor(
     inputAndUpdater = selectorAndUpdaterMacro(_.url),
     errors = formState.signal.changes.map { form =>
       if (form.url.trim.isEmpty && form.name.trim.nonEmpty) Seq("Link value can't be empty")
-      else if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty) Seq("This kind of address is not allowed")
+      else if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty)
+        Seq(LinkValidation.LinkUrlNotAllowed.message)
       else Seq.empty
     },
     labelValue = "Url",
