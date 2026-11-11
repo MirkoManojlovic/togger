@@ -277,6 +277,38 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+    "not import a task with a link whose address is not allowed" in { transactor =>
+      val setup = for {
+        projectData <- createExportableProject(newExportPath())
+        (account, project) = projectData
+        status <- createTaskStatus(project.id)
+      } yield (account, project, status)
+
+      val taskId = UUID.randomUUID()
+      val linkId = UUID.randomUUID()
+      val linkData = LinkDumpData(
+        Link(linkId, taskId, nowAsInstant),
+        List(LinkVersion(UUID.randomUUID(), linkId, "Bad link", "javascript:alert(1)", nowAsInstant, nowAsInstant))
+      )
+
+      for {
+        setupResult <- setup.transact(transactor)
+        (account, project, status) = setupResult
+        root <- exportToFolder(transactor, project.id, account.id)
+        task = handWrittenTask(taskId, project.id, account.id, status.id).copy(links = List(linkData))
+        _ = putEntity(root, DataExportEntityType.Task, taskId, None, task)
+        importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+        persistedTask <- taskRepo.findById(taskId).transact(transactor).attempt
+        links <- linkRepo.findByTaskId(taskId).transact(transactor)
+      } yield {
+        val taskResult = resultOf(importResult.toOption.get, DataExportEntityType.Task).find(_.entityId == taskId).get
+        taskResult.status shouldBe DataImportStatus.Malformed
+        taskResult.error.get should include("javascript:alert(1)")
+        persistedTask.isLeft shouldBe true
+        links shouldBe empty
+      }
+    }
+
     "merge missing versions and links into a task that already exists in the db, and be idempotent on reimport" in {
       transactor =>
         val setup = for {

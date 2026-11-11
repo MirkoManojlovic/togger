@@ -498,7 +498,26 @@ class DataImportRepo(
       childrenAdded = added.count(identity)
     )
 
+  /** A task whose links carry an address that the link validation does not allow is not imported at all. */
   def mergeTask(diskData: TaskDumpData, state: ProjectImportState): ConnectionIO[DataImportEntityResult] =
+    unallowedLinkUrl(diskData).fold(mergeAllowedTask(diskData, state))(url =>
+      DataImportEntityResult
+        .failed(
+          DataExportEntityType.Task,
+          diskData.task.id,
+          DataImportStatus.Malformed,
+          s"${LinkValidation.LinkUrlNotAllowed.message}: $url"
+        )
+        .pure[ConnectionIO]
+    )
+
+  private def unallowedLinkUrl(diskData: TaskDumpData): Option[String] =
+    diskData.links.flatMap(_.versions).map(_.url).find(url => url.trim.nonEmpty && LinkValidation.safeHref(url).isEmpty)
+
+  private def mergeAllowedTask(
+    diskData: TaskDumpData,
+    state: ProjectImportState
+  ): ConnectionIO[DataImportEntityResult] =
     for {
       taskExists <- state.taskIds.contains(diskData.task.id).pure[ConnectionIO]
       _ <- if (taskExists) ().pure[ConnectionIO] else taskRepo.insertWithId(diskData.task).void
