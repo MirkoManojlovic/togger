@@ -1,10 +1,10 @@
 package com.togger.ui.task
 
 import com.raquo.laminar.api.L._
+import com.togger.task.LinkValidation
 import com.togger.ui.auth.TgHtmlTypes.TgHtmlElement
 import com.togger.ui.components.TgBadge
 import com.togger.ui.components.TgBadgeColor
-import com.togger.task.LinkValidation
 import com.togger.ui.organization.TgIcons
 
 /** The links of a task as badges that show the link name and open the link in the browser of the system. */
