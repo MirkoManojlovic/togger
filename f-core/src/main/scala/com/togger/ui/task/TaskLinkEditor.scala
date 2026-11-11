@@ -40,7 +40,7 @@ class TaskLinkEditor(
     inputAndUpdater = selectorAndUpdaterMacro(_.url),
     errors = formState.signal.changes.map { form =>
       if (form.url.trim.isEmpty && form.name.trim.nonEmpty) Seq("Link value can't be empty")
-      else if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty) Seq("Use a web address")
+      else if (form.url.trim.nonEmpty && TaskLinkBadges.safeHref(form.url).isEmpty) Seq("This kind of address is not allowed")
       else Seq.empty
     },
     labelValue = "Url",

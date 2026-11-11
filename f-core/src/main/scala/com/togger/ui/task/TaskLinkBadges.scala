@@ -9,16 +9,19 @@ import com.togger.ui.organization.TgIcons
 /** The links of a task as badges that show the link name and open the link in the browser of the system. */
 object TaskLinkBadges {
 
-  private val UnsafeScheme = "(?i)^\\s*(javascript|data|vbscript|file|blob):".r
-  private val AnyScheme = "(?i)^[a-z][a-z0-9+.-]*://".r
+  private val UnsafeScheme =
+    "(?i)^\\s*(javascript|data|vbscript|file|blob|view-source|ms-msdt|search-ms|ms-officecmd):".r
+  private val AnyScheme = "(?i)^[a-z][a-z0-9+.-]*:".r
+  private val HostWithPort = "(?i)^[a-z0-9.-]+:\\d+(/.*)?$".r
 
-  /** The address to open: web addresses as they are, a bare one like `example.com/x` as https, nothing for the rest. */
+  /** The address to open: any scheme (`https://`, `togger://`, `mailto:`) as it is except the unsafe ones, a bare one
+    * like `example.com/x` or `localhost:3000` as https, nothing for the unsafe schemes.
+    */
   def safeHref(url: String): Option[String] = {
     val trimmed = url.trim
-    val lower = trimmed.toLowerCase
     if (trimmed.isEmpty || UnsafeScheme.findPrefixOf(trimmed).isDefined) None
-    else if (lower.startsWith("http://") || lower.startsWith("https://")) Some(trimmed)
-    else if (AnyScheme.findPrefixOf(trimmed).isDefined) None
+    else if (HostWithPort.matches(trimmed)) Some(s"https://$trimmed")
+    else if (AnyScheme.findPrefixOf(trimmed).isDefined) Some(trimmed)
     else Some(s"https://$trimmed")
   }
 

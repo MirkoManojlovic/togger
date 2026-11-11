@@ -22,8 +22,26 @@ class TaskLinkBadgesTest extends AsyncJsWordSpec {
       TaskLinkBadges.safeHref("file:///etc/passwd") shouldBe None
     }
 
-    "not open other schemes or an empty address" in { _ =>
-      TaskLinkBadges.safeHref("ftp://example.com") shouldBe None
+    "not open the other unsafe schemes" in { _ =>
+      TaskLinkBadges.safeHref("vbscript:x") shouldBe None
+      TaskLinkBadges.safeHref("blob:https://example.com/x") shouldBe None
+      TaskLinkBadges.safeHref("view-source:https://example.com") shouldBe None
+      TaskLinkBadges.safeHref("ms-msdt://x") shouldBe None
+      TaskLinkBadges.safeHref("search-ms:query=x") shouldBe None
+    }
+
+    "keep any other scheme as it is" in { _ =>
+      TaskLinkBadges.safeHref("togger://task/1") shouldBe Some("togger://task/1")
+      TaskLinkBadges.safeHref("TOGGER://task/1") shouldBe Some("TOGGER://task/1")
+      TaskLinkBadges.safeHref("ftp://example.com") shouldBe Some("ftp://example.com")
+      TaskLinkBadges.safeHref("mailto:a@b.com") shouldBe Some("mailto:a@b.com")
+    }
+
+    "open a host with a port as https" in { _ =>
+      TaskLinkBadges.safeHref("localhost:3000/x") shouldBe Some("https://localhost:3000/x")
+    }
+
+    "not open an empty address" in { _ =>
       TaskLinkBadges.safeHref("  ") shouldBe None
     }
   }
