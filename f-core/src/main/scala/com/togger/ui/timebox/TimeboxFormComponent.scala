@@ -351,7 +351,7 @@ class TimeboxFormComponent(
       dto.assignedTo
         .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
         .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
-    )
+    ) ++ Option.when(dto.archived)(BadgeSpec("📦 Archived", TgBadgeColor.Gray))
 
   private def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
     Seq(

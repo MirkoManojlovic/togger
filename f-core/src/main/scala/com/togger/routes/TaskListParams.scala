@@ -14,7 +14,8 @@ case class TaskListParams(
   assignees: Option[Set[String]] = None,
   milestones: Option[Set[String]] = None,
   steps: Option[Set[String]] = None,
-  search: String = ""
+  search: String = "",
+  archived: Boolean = false
 ) {
   def pageRequest: PageRequest = PageRequest(page, size)
 
@@ -40,7 +41,8 @@ object TaskListParams {
     assignees: List[String],
     milestones: List[String],
     steps: List[String],
-    search: Option[String]
+    search: Option[String],
+    archived: Option[String]
   ): TaskListParams =
     TaskListParams(
       page = page.flatMap(_.trim.toIntOption).filter(_ >= 1).getOrElse(PageRequest.DefaultPage),
@@ -52,7 +54,8 @@ object TaskListParams {
       assignees = selectionFromQuery(assignees),
       milestones = selectionFromQuery(milestones),
       steps = selectionFromQuery(steps),
-      search = search.map(_.trim).getOrElse("")
+      search = search.map(_.trim).getOrElse(""),
+      archived = archived.exists(_.trim.equalsIgnoreCase("true"))
     )
 
   def pageToQuery(params: TaskListParams): Option[String] =
@@ -63,6 +66,9 @@ object TaskListParams {
 
   def searchToQuery(params: TaskListParams): Option[String] =
     Option.when(params.search.nonEmpty)(params.search)
+
+  def archivedToQuery(params: TaskListParams): Option[String] =
+    Option.when(params.archived)("true")
 
   def selectionFromQuery(values: List[String]): Option[Set[String]] =
     if (values.isEmpty) None

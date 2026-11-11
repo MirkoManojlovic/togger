@@ -36,7 +36,8 @@ class TaskListRouteTest extends AsyncJsWordSpec {
         labels = Some(Set(statusId)),
         assignees = Some(Set(otherId)),
         milestones = Some(Set("none")),
-        search = "fix login"
+        search = "fix login",
+        archived = true
       )
       val page = ShowAllTasksPage(projectId, params)
       pageOf(urlOf(page)) shouldBe Some(page)

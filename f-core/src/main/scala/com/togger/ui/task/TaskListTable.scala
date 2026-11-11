@@ -122,7 +122,7 @@ class TaskListTable(
         dto.assignedTo
           .map(member => BadgeSpec(member.fullName, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
           .getOrElse(BadgeSpec(BulkTaskBadges.EmptyAssignee, TgBadgeColor.Gray, Some(BulkEditKind.Assignee)))
-      )
+      ) ++ Option.when(dto.archived)(BadgeSpec("📦 Archived", TgBadgeColor.Gray))
 
     def dateRow(dto: FindTaskRespFull): Seq[BadgeSpec] =
       Seq(
@@ -207,6 +207,23 @@ class TaskListTable(
       .unsafeRunAndForget()
   }
 
+  /** Archives the selected tasks that are not archived yet, or unarchives them when all of them are archived; one
+    * request each, through the same save as the bulk edits.
+    */
+  private def archiveSelected(): Unit = {
+    val selected = stateFormVar.now().filter(dto => selectedVar.now().contains(dto.id))
+    val archive = !selected.forall(_.archived)
+    val toArchive = selected
+      .filter(dto => dto.archived != archive && !savingVar.now().contains(dto.id))
+      .map(_.copy(archived = archive))
+    if (toArchive.isEmpty) return
+    savingVar.update(_ ++ toArchive.map(_.id))
+    spinnerService
+      .runWithSpinner(saveAll(toArchive.toList, toArchive.size, 0))
+      .guarantee(IO(savingVar.update(_ -- toArchive.map(_.id))))
+      .unsafeRunAndForget()
+  }
+
   /** Stops at the first failure; either way the current page is read again, so the table shows what the backend has. */
   private def saveAll(pending: List[FindTaskRespFull], total: Int, saved: Int): IO[Unit] =
     pending match {
@@ -270,6 +287,13 @@ class TaskListTable(
       onClick.mapToUnit --> (_ => selectedVar.update(BulkSelection.toggleAll(_, visibleIdsVar.now())))
     )
 
+  /** The selection is only archived tasks: the button then brings them back instead of archiving. */
+  private val allSelectedArchivedSignal: Signal[Boolean] =
+    selectedVar.signal.combineWith(stateFormVar.signal).map { case (chosen, rows) =>
+      val picked = rows.filter(dto => chosen.contains(dto.id))
+      picked.nonEmpty && picked.forall(_.archived)
+    }
+
   private val selectionBar: HtmlElement =
     div(
       cls("flex flex-wrap items-center gap-3"),
@@ -278,6 +302,13 @@ class TaskListTable(
         span(child.text <-- selectedVar.signal.map(chosen => s"${chosen.size} selected on this page"))
       ),
       editToolbar.element,
+      button(
+        `type`("button"),
+        cls("px-2.5 py-1 text-xs font-medium rounded-base border border-default-strong text-body"),
+        cls("hover:bg-neutral-secondary-strong cursor-pointer"),
+        child.text <-- allSelectedArchivedSignal.map(if (_) "Unarchive" else "Archive"),
+        onClick.mapToUnit --> (_ => archiveSelected())
+      ),
       button(
         `type`("button"),
         cls("px-2.5 py-1 text-xs font-medium rounded-base border border-red-600 text-red-600"),

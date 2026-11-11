@@ -1,7 +1,6 @@
 package com.togger.ui.task
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.modifiers.Modifier
 import com.togger.common.TgIds
@@ -47,14 +46,13 @@ class TaskListBrowser(
   searchPlaceholder: String = "Search all tasks by name, description",
   defaultDeselectedStatuses: Set[DefaultTaskStatus] = Set(Done, WontDo, Backlog),
   lockedMilestoneId: Option[UUID] = None
-)(implicit ioRuntime: IORuntime) {
+) {
 
   import lookups.{milestonesVar, projectVar, statusesVar, stepsVar, taskLabelsVar}
 
   val rowsVar = Var(Seq.empty[FindTaskRespFull])
 
   private val paginationVar = Var(Option.empty[PaginationState])
-  private val showArchivedVar = Var(false)
   private val defaultDeselectedStatusNames = defaultDeselectedStatuses.map(_.toStringWithEmoji)
 
   private val unassignedDto = SearchAccountDto(
@@ -210,7 +208,7 @@ class TaskListBrowser(
       milestones = milestoneFilter.selection,
       steps = stepFilter.selection,
       search = params.search,
-      includeArchived = showArchivedVar.now()
+      includeArchived = params.archived
     )
     lockedMilestoneId.fold(filter)(locked => filter.copy(milestoneIds = List(locked)))
   }
@@ -261,7 +259,11 @@ class TaskListBrowser(
         )
         .toSeq,
       TgCheckbox
-        .checkBox(showArchivedVar.signal, showArchivedVar.writer, "Show archived")
+        .checkBox(
+          paramsVar.signal.map(_.archived),
+          Observer[Boolean](archived => navigate(params.copy(archived = archived).firstPage)),
+          "Show archived"
+        )
         .htmlElement
         .amend(cls("!w-auto whitespace-nowrap"))
     )
@@ -273,8 +275,7 @@ class TaskListBrowser(
     labelFilter.navigateOnChange,
     assigneeFilter.navigateOnChange,
     milestoneFilter.navigateOnChange,
-    stepFilter.navigateOnChange,
-    showArchivedVar.signal.changes --> Observer[Boolean](_ => loadPage().unsafeRunAndForget())
+    stepFilter.navigateOnChange
   )
 
   def pagination: HtmlElement = pagination(alwaysShowSize = false)
