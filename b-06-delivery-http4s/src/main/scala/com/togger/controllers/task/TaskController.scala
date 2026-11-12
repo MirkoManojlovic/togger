@@ -275,7 +275,7 @@ class TaskController(
         taskVersionService.findLatest(taskDto.id).flatMap { currentVersion =>
           val effectiveStartDate = taskDto.startDate.getOrElse(currentVersion.startDate)
           val effectiveDueDate = taskDto.dueDate.getOrElse(currentVersion.dueDate)
-          val effectiveEndDate = taskDto.endDate.orElse(currentVersion.endDate)
+          val effectiveEndDate = taskDto.endDate
 
           dateRangeValidation
             .validate(Some(effectiveStartDate), Some(effectiveDueDate), effectiveEndDate, project.workDays)

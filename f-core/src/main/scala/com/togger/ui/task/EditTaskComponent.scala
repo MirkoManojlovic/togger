@@ -87,6 +87,8 @@ class EditTaskComponent(
   val linksVar: Var[Seq[TaskLinkComponent]] = linksSection.linksVar
   val logEntryPanelVar: Var[LogEntryPanelState] = Var(LogEntryPanelState())
   val workDaysVar = Var(Set.empty[DayOfWeek])
+  // whether the saved task is closed (a closing status and an end date); unsaved edits do not change it
+  private val closedVar = Var(false)
   private val calendarSelectedDay = Var(Option.empty[LocalDate])
 
   private val tgDateFormater = new TgDateFormater
@@ -185,6 +187,12 @@ class EditTaskComponent(
                           dto.links.map(linkDto => new TaskLinkComponent(Some(TaskLinkFormData.fromResp(linkDto))))
                         )
                         rememberSaved()
+                        closedVar.set(
+                          dto.task.endDate.isDefined &&
+                            TaskClose
+                              .closingStatuses(badges.lookupsNow().statuses)
+                              .exists(_.id == dto.task.taskStatusId)
+                        )
 
                         val taskStartDate = dto.task.startDate
                         val taskEndDate = dto.task.endDate
@@ -660,6 +668,25 @@ class EditTaskComponent(
       onClick.mapToUnit --> (_ => openCloseDialog(None))
     )
 
+  private def reopenTask(): Unit =
+    TaskClose
+      .inProgressStatus(badges.lookupsNow().statuses)
+      .fold(toast.error("This project has no In progress status")) { status =>
+        val dto = updateRequest(formState.now(), linksVar.now(), badges.taskVar.now(), status.id, None)
+        spinnerService
+          .runWithSpinner(sendUpdate(dto))
+          .toastMessageCodeBlock("Task reopened")(router.refresh())
+          .unsafeRunAndForget()
+      }
+
+  private val reopenButton =
+    button(
+      typ("button"),
+      cls(TgHtmlButton.tailwindExtraSmallButton),
+      "Reopen",
+      onClick.mapToUnit --> (_ => reopenTask())
+    )
+
   /** The update call; what it was told to delete is gone once it went through. */
   private def sendUpdate(dto: UpdateTaskReq): IO[TgResponseTypes.TgResp[FindTaskResp]] =
     taskService
@@ -713,7 +740,7 @@ class EditTaskComponent(
                 cls("flex justify-end gap-2"),
                 deleteButton,
                 archiveButton,
-                closeButton,
+                child.maybe <-- closedVar.signal.map(closed => Some(if (closed) reopenButton else closeButton)),
                 TgHtmlButton.updateSmall(EventStream.fromValue(false))
               )
             )

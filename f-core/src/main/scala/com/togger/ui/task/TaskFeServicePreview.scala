@@ -115,7 +115,7 @@ class TaskFeServicePreview(
         case Some((task, current)) =>
           val startDate = update.startDate.getOrElse(current.startDate)
           val dueDate = update.dueDate.getOrElse(current.dueDate)
-          val endDate = update.endDate.orElse(current.endDate)
+          val endDate = update.endDate
           val linksToCreate = LinkValidation.withoutBlankLinks(dto.linksToCreate)
           val workDaysOfProject = projects.projects.find(task.projectId).fold(allDays)(workDays)
           dateRangeValidation

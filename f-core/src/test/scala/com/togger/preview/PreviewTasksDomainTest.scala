@@ -160,6 +160,26 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       }
     }
 
+    "clear the end date and reopen a closed task with an update without an end date" in { _ =>
+      val s = new Services
+      def update(task: FindTaskResp1) =
+        s.env.run(s.tasks.updateTask(UpdateTaskReq(task.into, Seq.empty, Seq.empty, Seq.empty)))
+      for {
+        created <- s.env.run(s.tasks.createTask(s.newTask("To reopen")))
+        id = created.toOption.get.task.id
+        closed <- update(
+          created.toOption.get.task.copy(taskStatusId = s.doneStatus, endDate = Some(monday.plusDays(2)))
+        )
+        reopened <- update(closed.toOption.get.task.copy(taskStatusId = s.todoStatus, endDate = None))
+        found <- s.env.run(s.tasks.findTaskById(id))
+      } yield {
+        closed.map(_.task.endDate) shouldBe Right(Some(monday.plusDays(2)))
+        reopened.map(_.task.endDate) shouldBe Right(None)
+        found.map(_.task.endDate) shouldBe Right(None)
+        found.map(_.task.taskStatusId) shouldBe Right(s.todoStatus)
+      }
+    }
+
     "reject a task on a day that is not a work day" in { _ =>
       val s = new Services
       s.env.run(s.tasks.createTask(s.newTask("Weekend", start = monday.plusDays(5), due = monday.plusDays(6)))).map {
