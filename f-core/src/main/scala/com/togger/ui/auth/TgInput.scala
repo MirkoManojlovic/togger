@@ -11,6 +11,7 @@ import com.togger.ui.auth.TgInput.successLabelClass
 import com.togger.ui.auth.TgInput.tgInputStyle
 import com.togger.ui.auth.TgInputType.Text
 import com.togger.ui.auth.TgTextArea.tailwindClasses
+import com.togger.ui.directorypicker.DirectoryPicker
 import com.togger.util.FrontendMacros.SelectAndUpdate
 import com.togger.util.FrontendMacros.SelectAndUpdateAndError
 import enumeratum._
@@ -232,6 +233,24 @@ object TgInput {
         isRequired = isRequired,
         debounceTimeMillis = debounceTimeMillis
       )
+
+    /** A path input: the directory chooser of the desktop app, the plain text input everywhere else. */
+    def tgPathInput(
+      inputAndUpdater: SelectAndUpdate[A, String],
+      labelValue: String
+    ): ReactiveHtmlElement[html.Div] =
+      if (DirectoryPicker.isAvailable)
+        TgDirInput(
+          inputSignal = formState.signal.map(inputAndUpdater.selector),
+          inputStateUpdater = formState.updater(inputAndUpdater.updater),
+          labelValue = labelValue
+        ).htmlElement
+      else
+        tgInputManualErrorLPSig(
+          inputAndUpdater = inputAndUpdater,
+          errors = EventStream.empty,
+          labelValue = labelValue
+        ).htmlElement
 
     def tgInputAutoError(
       inputAndUpdaterAndError: SelectAndUpdateAndError[A, String],

@@ -88,11 +88,9 @@ class EditDataExportConfigComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val exportPathInput = formState.tgInputManualErrorLPSig(
+  private val exportPathInput = formState.tgPathInput(
     inputAndUpdater = selectorAndUpdaterMacro(_.exportPath),
-    errors = EventStream.empty,
-    labelValue = "Export path (must be an abs path)",
-    tgInputType = TgInputType.Text
+    labelValue = "Export path (must be an abs path)"
   )
 
   val element = div(
@@ -105,7 +103,7 @@ class EditDataExportConfigComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> submitter,
               nameInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
-              exportPathInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
+              exportPathInput.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.updateSmall(EventStream.fromValue(false)))
             )
           )
