@@ -8,6 +8,18 @@ import {resolveResource} from '@tauri-apps/api/path';
 import {getCurrentWindow} from '@tauri-apps/api/window';
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
+import {open as openDialog} from '@tauri-apps/plugin-dialog';
+
+// the Scala.js UI picks the import/export directories through this; resolves to null when the dialog is cancelled.
+// Registered in every Tauri window (also `tauri dev`, which runs the web frontend), never in a plain browser
+if (window.__TAURI_INTERNALS__) {
+  window.tgDirectoryPicker = {
+    pick: async (current) => {
+      const picked = await openDialog({directory: true, multiple: false, defaultPath: current || undefined})
+      return typeof picked === "string" ? picked : null
+    }
+  }
+}
 
 if (appConfig.isDesktopMode === "true") {
   async function load() {

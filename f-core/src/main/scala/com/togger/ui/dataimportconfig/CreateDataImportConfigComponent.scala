@@ -50,11 +50,9 @@ class CreateDataImportConfigComponent(
     tgInputType = TgInputType.Text
   )
 
-  private val importPathInput = formState.tgInputManualErrorLPSig(
+  private val importPathInput = formState.tgPathInput(
     inputAndUpdater = selectorAndUpdaterMacro(_.importPath),
-    errors = EventStream.empty,
-    labelValue = "Import path (must be an abs path; the latest dump inside it is imported)",
-    tgInputType = TgInputType.Text
+    labelValue = "Import path (must be an abs path; the latest dump inside it is imported)"
   )
 
   val element = div(
@@ -67,7 +65,7 @@ class CreateDataImportConfigComponent(
             form(
               onSubmit.preventDefault.mapTo(formState.now()) --> createSubmitter,
               nameInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
-              importPathInput.htmlElement.amend(cls("mb-4 w-[60ch] max-w-full")),
+              importPathInput.amend(cls("mb-4 w-[60ch] max-w-full")),
               div(cls("flex justify-end"), TgHtmlButton.createSmall(EventStream.fromValue(false)))
             )
           )
