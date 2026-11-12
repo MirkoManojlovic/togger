@@ -21,6 +21,14 @@ object TaskClose {
       )
     )
 
+  /** The status a reopened task gets, recognised by its default name. */
+  def inProgressStatus(statuses: Seq[FindTaskStatusResp]): Option[FindTaskStatusResp] =
+    statuses.find(status =>
+      TeamDailyStatusOrder.normalise(status.name) == TeamDailyStatusOrder.normalise(
+        DefaultTaskStatus.InProgress.statusName
+      )
+    )
+
   /** The closing status a bulk edit sets, if it sets one: closing needs an end date and the log entries, so it does not
     * go through the plain save.
     */
