@@ -2,8 +2,8 @@ package com.togger.ui.backendstatus
 
 import cats.effect.IO
 import com.togger.backendcalls.UnprotectedBackendClient
-import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.common.TgJsonSuccess
+import com.togger.common.TgResponseTypes.TgRespIO
 import com.togger.dto.HealthResp
 import com.togger.health.HealthEndpoints
 

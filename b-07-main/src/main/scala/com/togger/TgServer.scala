@@ -2,7 +2,6 @@ package com.togger
 import cats.effect.IO
 import cats.effect.Resource
 import com.togger.account.AccountEndpoints
-import com.togger.health.HealthController
 import com.togger.account.AccountManagementRepoImpl
 import com.togger.account.AccountManagementService
 import com.togger.account.AccountNameLookup
@@ -69,6 +68,7 @@ import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
+import com.togger.health.HealthController
 import com.togger.http.HttpModule
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.logentry.LogEntryRepoImpl

@@ -28,6 +28,12 @@ import com.togger.ui.accountmanagement.EditAccountComponent
 import com.togger.ui.accountmanagement.ShowAllAccountsComponent
 import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.auth._
+import com.togger.ui.backendstatus.BackendControl
+import com.togger.ui.backendstatus.BackendHealthFeService
+import com.togger.ui.backendstatus.BackendHealthFeServiceImpl
+import com.togger.ui.backendstatus.BackendHealthFeServicePreview
+import com.togger.ui.backendstatus.BackendStatusComponent
+import com.togger.ui.backendstatus.BackendStatusStore
 import com.togger.ui.components.TgBreadcrumbTrail
 import com.togger.ui.components.TgBreadcrumbs
 import com.togger.ui.contributions.ContributionsComponent
@@ -75,12 +81,6 @@ import com.togger.ui.timebox._
 import com.togger.ui.toast.Toast
 import com.togger.ui.toast.ToastMessage
 import com.togger.ui.toast.ToastMessagesService
-import com.togger.ui.backendstatus.BackendControl
-import com.togger.ui.backendstatus.BackendHealthFeService
-import com.togger.ui.backendstatus.BackendHealthFeServiceImpl
-import com.togger.ui.backendstatus.BackendHealthFeServicePreview
-import com.togger.ui.backendstatus.BackendStatusComponent
-import com.togger.ui.backendstatus.BackendStatusStore
 import com.togger.ui.updater.UpdaterComponent
 import com.togger.ui.updater.UpdaterStore
 import org.scalajs.dom
