@@ -38,6 +38,9 @@ sealed trait PrivatePage extends FrontendPage {
 object Pages {
   case object LoginPage extends PublicPage
 
+  /** Public on purpose: it must work without a session and while the backend is down. */
+  case object BackendStatusPage extends PublicPage
+
   case object ChangePasswordPage extends PrivatePage
 
   case object ChangeAccountInfoPage extends PrivatePage

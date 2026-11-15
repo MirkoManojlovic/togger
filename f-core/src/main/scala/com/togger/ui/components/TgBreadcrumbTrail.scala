@@ -77,7 +77,7 @@ object TgBreadcrumbTrail {
     underProject(projectId, link("Timeboxes", ShowTimeboxesPage(projectId)), current(label))
 
   def forPage(page: FrontendPage): Seq[TgBreadcrumb] = page match {
-    case HomePage | LoginPage | NotFoundPage(_) => Seq.empty
+    case HomePage | LoginPage | BackendStatusPage | NotFoundPage(_) => Seq.empty
 
     case ShowAllOrganizationsPage(_) => Seq(organizations.copy(page = None))
     case CreateOrganizationPage      => underOrganizations(current("Create organization"))

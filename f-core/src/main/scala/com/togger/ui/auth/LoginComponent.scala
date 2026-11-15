@@ -8,6 +8,7 @@ import com.togger.components.button.TgHtmlButton
 import com.togger.dto.login.DeviceInfo
 import com.togger.dto.login.LoginDto
 import com.togger.routes.FrontendPage
+import com.togger.routes.Pages.BackendStatusPage
 import com.togger.routes.Pages.HomePage
 import com.togger.routes.Pages.LoginPage
 import com.togger.routes.TgRouter
@@ -103,6 +104,11 @@ class LoginComponent(
             )
             .element
             .amend(heightAndWidthFitContent)
+        ),
+        div(
+          justifyCenterFlex,
+          marginTop.rem(1),
+          a(cls("text-sm text-body underline cursor-pointer"), "Backend status", router.navigateTo(BackendStatusPage))
         )
       )
     )
