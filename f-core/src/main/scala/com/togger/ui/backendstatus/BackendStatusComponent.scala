@@ -44,14 +44,16 @@ class BackendStatusComponent(store: BackendStatusStore, modalFactory: ModalFacto
   private def restartWithConfirmation(app: Option[StatusApp]): Unit =
     confirmed("Restart", s"Restart ${target(app)}?", "Yes, restart")(store.restart(app))
 
-  private def buttons(app: Option[StatusApp], view: Option[AppStatusView]) =
+  private def buttons(app: Option[StatusApp], view: Option[AppStatusView]) = {
+    val suffix = if (app.isEmpty) " All" else ""
     div(
       cls("flex flex-wrap gap-2 mt-3"),
-      actionButton("Start")(store.start(app)),
-      actionButton("Stop")(stopWithConfirmation(app)),
-      actionButton("Restart")(restartWithConfirmation(app)),
+      actionButton(s"Start$suffix")(store.start(app)),
+      actionButton(s"Stop$suffix")(stopWithConfirmation(app)),
+      actionButton(s"Restart$suffix")(restartWithConfirmation(app)),
       view.filter(_.versionMismatch).toList.map(_ => span(cls("text-sm text-danger self-center"), "Restart to update"))
     )
+  }
 
   private def row(label: String, value: String): HtmlElement =
     div(cls("flex justify-between gap-6 text-sm"), span(cls("text-body"), label), span(cls("text-heading"), value))
