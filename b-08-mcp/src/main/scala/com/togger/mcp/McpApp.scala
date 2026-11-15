@@ -21,12 +21,6 @@ object McpApp extends TgLogging:
     val config = McpConfig.fromEnv()
     val client = TgBackendClient(config, DefaultSyncBackend())
 
-    loginWithRetry(client, config) match
-      case Left(error) =>
-        logger.error(s"Cannot log in to the Togger backend: $error")
-        sys.exit(1)
-      case Right(_) => logger.info(s"Logged in to ${config.backendUrl} as ${config.email}")
-
     val tools =
       OrganizationTools(client).all ++ ProjectTools(client).all ++ TaskTools(client).all ++
         MilestoneTools(client).all ++ MilestoneStepTools(client).all ++ MilestoneTemplateTools(client).all ++
@@ -34,11 +28,29 @@ object McpApp extends TgLogging:
 
     val mcpServer = McpServer(tools = tools)
       .name("togger-mcp")
-      .version(Option(getClass.getPackage.getImplementationVersion).getOrElse("dev"))
+      .version(BuildInfo.version)
       .instructions(
         "Read-only access to Togger: organizations, projects, members, labels, task statuses, tasks, milestones with their steps, and milestone templates. " +
           "Start with list_organizations, then list_projects, then get_project_overview. All ids are UUIDs."
       )
+
+    // /health answers while the MCP server still logs in to the backend (which can take a minute at startup)
+    logger.info(
+      s"Togger MCP ${BuildInfo.version} listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools"
+    )
+    val server = NettySyncServer()
+      .host(config.host)
+      .port(config.port)
+      .addEndpoint(HealthRoute(BuildInfo.version).endpoint)
+      .addEndpoint(protect(mcpServer.endpoint(List("mcp")), config))
+    // `startAndWait` blocks, so the server runs on its own thread while this one logs in to the backend
+    Thread(() => server.startAndWait(), "mcp-http-server").start()
+
+    loginWithRetry(client, config) match
+      case Left(error) =>
+        logger.error(s"Cannot log in to the Togger backend: $error")
+        sys.exit(1)
+      case Right(_) => logger.info(s"Logged in to ${config.backendUrl} as ${config.email}")
 
     if args.headOption.contains(DesktopMode) then
       logger.info("Desktop mode: stopping when the Togger desktop app is no longer running")
@@ -51,12 +63,7 @@ object McpApp extends TgLogging:
         yield ()
       watch.unsafeRunAndForget()
 
-    logger.info(s"Togger MCP listening on http://${config.host}:${config.port}/mcp with ${tools.size} tools")
-    NettySyncServer()
-      .host(config.host)
-      .port(config.port)
-      .addEndpoint(protect(mcpServer.endpoint(List("mcp")), config))
-      .startAndWait()
+    Thread.currentThread().join()
 
   // The mcp account is an admin, so when TOGGER_MCP_API_KEY is set every MCP call must carry it as a bearer token.
   private def protect(endpoint: ServerEndpoint[Any, Identity], config: McpConfig): ServerEndpoint[Any, Identity] =
