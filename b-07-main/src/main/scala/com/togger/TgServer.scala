@@ -2,6 +2,7 @@ package com.togger
 import cats.effect.IO
 import cats.effect.Resource
 import com.togger.account.AccountEndpoints
+import com.togger.health.HealthController
 import com.togger.account.AccountManagementRepoImpl
 import com.togger.account.AccountManagementService
 import com.togger.account.AccountNameLookup
@@ -146,6 +147,7 @@ object TgServer {
     import dependenciesModule._
 
     lazy val httpModule = new HttpModule()
+    lazy val healthController = new HealthController(BuildInfo.version)
     Resource
       .eval(new ProjectLabelSeedService(transactorModule.transactor).run)
       .evalMap(_ => new AiEndpointSeedService(transactorModule.transactor).run)
@@ -154,6 +156,7 @@ object TgServer {
       .flatMap(_ =>
         httpModule.createServer(
           List(
+            healthController.health,
             loginController.login,
             loginController.expireOldSessions,
             loginController.logoutEveryone,
