@@ -187,8 +187,11 @@ lazy val backendAi = (project in file("b-05-ai"))
 lazy val backendMain = (project in file("b-07-main"))
   .enablePlugins(JavaServerAppPackaging)
   .enablePlugins(GraalVMNativeImagePlugin)
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "backend-main",
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "com.togger",
     Test / parallelExecution := true, // every spec works on its own database cloned from togger-test (TgTestDatabase)
     dependencyOverrides += `org.slf4j` % `slf4j-api` % `slf4-api-version`,
     libraryDependencies ++= Seq(
@@ -491,8 +494,11 @@ lazy val tgMacros = (crossProject(JSPlatform, JVMPlatform)
 // backend over HTTP only.
 lazy val backendMcp = (project in file("b-08-mcp"))
   .enablePlugins(JavaAppPackaging)
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "backend-mcp",
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "com.togger.mcp",
     Compile / mainClass := Some("com.togger.mcp.McpApp"),
     // Chimp and its tapir/sttp dependencies are compiled with Scala 3.9, so this module needs a 3.9 compiler.
     scalaVersion := "3.9.0",

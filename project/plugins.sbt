@@ -7,6 +7,9 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.12.0")
 // the version comes from the latest `v*` git tag (see `just release`)
 addSbtPlugin("com.github.sbt" % "sbt-dynver" % "5.1.1")
 
+// the version of the packaged backend and MCP server (BuildInfo.version), answered by their /health
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.13.1")
+
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.9")
 
 addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.7")
