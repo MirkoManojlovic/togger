@@ -28,6 +28,12 @@ import com.togger.ui.accountmanagement.EditAccountComponent
 import com.togger.ui.accountmanagement.ShowAllAccountsComponent
 import com.togger.ui.apexchart.ApexChartDemoComponent
 import com.togger.ui.auth._
+import com.togger.ui.backendstatus.BackendControl
+import com.togger.ui.backendstatus.BackendHealthFeService
+import com.togger.ui.backendstatus.BackendHealthFeServiceImpl
+import com.togger.ui.backendstatus.BackendHealthFeServicePreview
+import com.togger.ui.backendstatus.BackendStatusComponent
+import com.togger.ui.backendstatus.BackendStatusStore
 import com.togger.ui.components.TgBreadcrumbTrail
 import com.togger.ui.components.TgBreadcrumbs
 import com.togger.ui.contributions.ContributionsComponent
@@ -432,6 +438,11 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
   lazy val toastMessagesService = new ToastMessagesService(toastMessageDisplayTimeInMillis, new OneTimeOwner(() => ()))
   lazy val toast = new Toast(toastMessagesService, toastHolder)
 
+  lazy val backendHealthService: BackendHealthFeService =
+    if (previewConfig.enabled) new BackendHealthFeServicePreview
+    else new BackendHealthFeServiceImpl(unprotectedBackendClient)
+  lazy val backendStatusStore = new BackendStatusStore(backendHealthService, new BackendControl)
+
   lazy val updaterStore = new UpdaterStore
   updaterStore.checkOnStartup(version =>
     toastMessagesService.createAToastMessage(
@@ -509,8 +520,9 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
           child <-- signal
             .map(page => authenticationRouteGuard.canVisitPage(page))
             .map {
-              case HomePage  => router.route(ShowAllOrganizationsPage()); div()
-              case LoginPage => new LoginComponent(router, loginService, spinnerService, modalFactory).element
+              case HomePage          => router.route(ShowAllOrganizationsPage()); div()
+              case BackendStatusPage => new BackendStatusComponent(backendStatusStore, modalFactory).element
+              case LoginPage         => new LoginComponent(router, loginService, spinnerService, modalFactory).element
               case ChangePasswordPage =>
                 new ChangePasswordComponent(changePasswordService, accountService, spinnerService, modalFactory).element
               case ChangeAccountInfoPage =>

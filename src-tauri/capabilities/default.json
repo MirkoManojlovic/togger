@@ -11,29 +11,6 @@
     "shell:allow-open",
     "updater:default",
     "process:allow-restart",
-    "dialog:allow-open",
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [
-        {
-          "name": "binaries/backend-app-exec",
-          "sidecar": true,
-          "args": [
-            {
-              "validator": "^[^-].*[/\\\\]java[/\\\\]?$"
-            }
-          ]
-        },
-        {
-          "name": "binaries/mcp-app-exec",
-          "sidecar": true,
-          "args": [
-            {
-              "validator": "^[^-].*[/\\\\]mcp[/\\\\]?$"
-            }
-          ]
-        }
-      ]
-    }
+    "dialog:allow-open"
   ]
 }

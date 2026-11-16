@@ -3,9 +3,8 @@ import './style.css'
 import './apexcharts-bridge.js'
 import '@linkOutputDir/main.js'
 
-import {Command, open} from '@tauri-apps/plugin-shell';
-import {resolveResource} from '@tauri-apps/api/path';
-import {getCurrentWindow} from '@tauri-apps/api/window';
+import {open} from '@tauri-apps/plugin-shell';
+import {invoke} from '@tauri-apps/api/core';
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
 import {open as openDialog} from '@tauri-apps/plugin-dialog';
@@ -21,18 +20,19 @@ if (window.__TAURI_INTERNALS__) {
   }
 }
 
+// The Scala.js status page controls the backend and the MCP server through this. The Rust side (processes.rs) owns the
+// processes, starts them at launch, checks them every minute and stops them when the app exits. `app` is "backend" or
+// "mcp"; without it the call is for both. Every call answers the status of both apps.
+if (window.__TAURI_INTERNALS__) {
+  window.tgBackend = {
+    status: () => invoke('backend_status'),
+    start: (app) => invoke('backend_start', {app: app || null}),
+    stop: (app) => invoke('backend_stop', {app: app || null}),
+    restart: (app) => invoke('backend_restart', {app: app || null})
+  }
+}
+
 if (appConfig.isDesktopMode === "true") {
-  async function load() {
-    const resourcePath = await resolveResource('java/');
-    const command = Command.sidecar('binaries/backend-app-exec', resourcePath);
-    const output = await command.spawn();
-  }
-
-  async function loadMcp() {
-    const resourcePath = await resolveResource('mcp/');
-    return await Command.sidecar('binaries/mcp-app-exec', resourcePath).spawn();
-  }
-
   // a webview does not hand links to the browser of the system, so web links that ask for a new tab are opened there
   document.addEventListener('click', event => {
     const link = event.target instanceof Element ? event.target.closest('a[target="_blank"]') : null
@@ -41,12 +41,6 @@ if (appConfig.isDesktopMode === "true") {
       open(link.href).catch(error => console.log('Error:', error))
     }
   })
-
-  async function stopSidecars() {
-    await fetch("http://localhost:8081/stop-app")
-    const mcp = await mcpChild
-    if (mcp) await mcp.kill()
-  }
 
   // the Scala.js UI drives updates through this; the sidecars are stopped first because they lock the app files
   let pendingUpdate = null
@@ -57,24 +51,9 @@ if (appConfig.isDesktopMode === "true") {
     },
     install: async () => {
       if (!pendingUpdate) throw new Error("No update has been checked")
-      await stopSidecars()
+      await invoke('backend_stop', {app: null})
       await pendingUpdate.downloadAndInstall()
       await relaunch()
     }
   }
-
-  load().then(res => console.log("Loaded"))
-  const mcpChild = loadMcp().catch(error => console.log('Error:', error))
-
-  getCurrentWindow().onCloseRequested(async (event) => {
-      try {
-        const response = await fetch("http://localhost:8081/stop-app")
-        const mcp = await mcpChild
-        if (mcp) await mcp.kill()
-        window.destroy()
-      } catch (error) {
-        console.log('Error:', error)
-      }
-    }
-  ).then(_ => console.log("Closed"))
 }

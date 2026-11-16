@@ -107,6 +107,7 @@ class NavbarComponent(
           "AI actions" -> ShowAllTgAiActionsPage(),
           "MCP" -> McpSettingsPage,
           "Updates" -> UpdaterSettingsPage,
+          "Backend status" -> BackendStatusPage,
           "Accounts" -> ShowAllAccountsPage()
         ).map { case (label, page) =>
           li(
@@ -180,7 +181,9 @@ class NavbarComponent(
               _
             ) =>
           NavbarItems.organizationSelected
-        case SyncCheckSettingsPage | McpSettingsPage | UpdaterSettingsPage | ShowAllAccountsPage(_) | EditAccountPage(
+        case SyncCheckSettingsPage | McpSettingsPage | UpdaterSettingsPage | BackendStatusPage | ShowAllAccountsPage(
+              _
+            ) | EditAccountPage(
               _
             ) | CreateTgPromptTemplatePage | ShowAllTgPromptTemplatesPage(_) | EditTgPromptTemplatePage(_) |
             CreateTgAiActionPage | ShowAllTgAiActionsPage(_) | EditTgAiActionPage(_) | TgAiActionDefaultsPage =>

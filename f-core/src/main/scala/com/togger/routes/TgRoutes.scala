@@ -304,6 +304,10 @@ class TgRoutes {
         root / "settings" / "sync-interval"
       ),
       Route.static(
+        BackendStatusPage,
+        root / "status"
+      ),
+      Route.static(
         McpSettingsPage,
         root / "settings" / "mcp"
       ),

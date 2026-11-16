@@ -68,6 +68,7 @@ import com.togger.dataimportconfig.DataImportConfigService
 import com.togger.deletedentity.DeletedEntityRepoImpl
 import com.togger.dep.AuthDependenciesModule
 import com.togger.dump._
+import com.togger.health.HealthController
 import com.togger.http.HttpModule
 import com.togger.logentry.LogEntryEndpoints
 import com.togger.logentry.LogEntryRepoImpl
@@ -146,6 +147,7 @@ object TgServer {
     import dependenciesModule._
 
     lazy val httpModule = new HttpModule()
+    lazy val healthController = new HealthController(BuildInfo.version)
     Resource
       .eval(new ProjectLabelSeedService(transactorModule.transactor).run)
       .evalMap(_ => new AiEndpointSeedService(transactorModule.transactor).run)
@@ -154,6 +156,7 @@ object TgServer {
       .flatMap(_ =>
         httpModule.createServer(
           List(
+            healthController.health,
             loginController.login,
             loginController.expireOldSessions,
             loginController.logoutEveryone,

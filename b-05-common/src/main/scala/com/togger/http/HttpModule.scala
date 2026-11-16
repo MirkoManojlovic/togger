@@ -56,6 +56,8 @@ class HttpModule extends TgLogging {
       .default[IO]
       .withHost(ipv4"0.0.0.0") // TODO: move this to config
       .withPort(port"8081")
+      // on a stop the server waits this long for open connections (30 s by default) before the process can exit
+      .withShutdownTimeout(3.seconds)
       .withIdleTimeout(5.minutes) // AI endpoints wait for a local model to answer
       .withHttpApp(createHttpApp(endpoints))
       .build

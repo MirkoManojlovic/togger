@@ -193,6 +193,20 @@ the arg it runs until stopped. Register
 with `claude mcp add --transport http togger http://localhost:8090/mcp`. Run with `sbt --client "backendMcp/run"` (this
 blocks the shared sbt server; alternatively run `com.togger.mcp.McpApp` from the exported classpath).
 
+**Backend status page and sidecar control:** the page `/status` (`BackendStatusPage`, a `PublicPage`: no login, also
+reachable from the login page) shows the version and state of the backend and the MCP server. Both answer a public
+`GET /health` with `{"body": {"app", "version"}}` (backend: `HealthController` in `b-07-main`, shared
+`HealthEndpoints`; MCP: `HealthRoute`, which is never behind the api key and answers while the MCP still logs in). The
+version is `BuildInfo.version` (sbt-buildinfo, the dynver version / `TOGGER_FIXED_VERSION`). In the Tauri app the
+processes belong to Rust (`src-tauri/src/processes.rs`, `ProcessManager`): it starts both sidecars at launch (not in
+debug builds unless `TOGGER_SIDECARS=1`), stops them on exit, and a thread checks `/health` every 60 s, starting what is
+down and restarting what runs another release than the app (`CARGO_PKG_VERSION`, compared as major.minor.patch;
+backs off after 3 failed restarts; never undoes a stop by the user). Stop kills the tracked child and whatever listens on
+port 8081/8090 if it is a Togger process (so processes left over from an older app version go too). `main.js` only
+exposes `window.tgBackend` (`status`/`start`/`stop`/`restart`, Tauri commands `backend_*`); the frontend wraps it in
+`BackendControl` (`ui/backendstatus`) and shows only the backend health when it is absent (web, preview twin
+`BackendHealthFeServicePreview`). The release build must produce the sbt version equal to the Tauri version.
+
 **Milestone steps and templates:** a milestone has a sequence of stages of `MilestoneStep`s (`milestone_step` +
 append-only `milestone_step_version`, package `com.togger.milestone`). The `position` of a step is its **stage**: steps
 with the same position run in parallel, stages run in sequence, gaps are allowed, and Shelf is alone in the first one.
