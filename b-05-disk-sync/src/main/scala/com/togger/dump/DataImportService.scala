@@ -65,14 +65,14 @@ class DataImportService(
     readTree(organizationId, projectFolderPath) match {
       case None => IO.pure(Left(DumpManifestMissing))
       case Some((importPath, index, projectDump)) =>
-        for {
-          project <- timed("create project", organizationId)(
-            dataImportRepo.createProject(organizationId, accountId, projectDump.project).transact(transactor)
-          )
-          result <- timed("import total", project.id)(
-            importFromTree(project.id, accountId, importPath, index, projectDump)
-          )
-        } yield result.map(project.id -> _)
+        timed("create project", organizationId)(
+          dataImportRepo.createProject(organizationId, accountId, projectDump.project).transact(transactor)
+        ).flatMap {
+          case Left(error) => IO.pure(Left(error))
+          case Right(project) =>
+            timed("import total", project.id)(importFromTree(project.id, accountId, importPath, index, projectDump))
+              .map(_.map(project.id -> _))
+        }
     }
   }
 

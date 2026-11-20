@@ -29,6 +29,7 @@ import com.togger.project.Project
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectAccountRepo
 import com.togger.project.ProjectError.AccountTypeMissing
+import com.togger.project.ProjectError.ProjectAlreadyExists
 import com.togger.project.ProjectError.ProjectError
 import com.togger.project.ProjectLabelAssignment
 import com.togger.project.ProjectLabelAssignmentRepo
@@ -95,15 +96,24 @@ class DataImportRepo(
 
   private case class ChildMergeOutcome(rootInserted: Boolean, versionsAdded: Int)
 
-  /** A new project in the organization with the fields of the exported one and the importing account as its member. */
-  def createProject(organizationId: UUID, accountId: UUID, exported: Project): ConnectionIO[Project] = {
+  /** A project in the organization with the id and the fields of the exported one and the importing account as its
+    * member; `ProjectAlreadyExists` when the id is taken.
+    */
+  def createProject(
+    organizationId: UUID,
+    accountId: UUID,
+    exported: Project
+  ): ConnectionIO[Either[ProjectError, Project]] = {
     val now = tgClock.currentInstant
-    for {
-      project <- projectRepo.insert(
-        exported.copy(id = UUID.randomUUID(), organizationId = organizationId, createdAt = now, updatedAt = now)
-      )
-      _ <- projectAccountRepo.insert(ProjectAccount(project.id, accountId, now))
-    } yield project
+    projectRepo.existsById(exported.id).flatMap { exists =>
+      if (exists) (Left(ProjectAlreadyExists): Either[ProjectError, Project]).pure[ConnectionIO]
+      else
+        for {
+          project <- projectRepo
+            .insertWithId(exported.copy(organizationId = organizationId, createdAt = now, updatedAt = now))
+          _ <- projectAccountRepo.insert(ProjectAccount(project.id, accountId, now))
+        } yield Right(project)
+    }
   }
 
   /** Applies the exported description, icon and work days to the project when the disk copy is newer. The name is left

@@ -68,6 +68,8 @@ class ContributionControllerTest extends AnyWordSpec with Matchers {
   private class StubProjectRepo extends ProjectRepo {
     override def findById(id: UUID): ConnectionIO[Project] = pure(project)
     override def insert(project: Project) = ???
+    override def insertWithId(project: Project) = ???
+    override def existsById(id: UUID) = ???
     override def deleteById(id: UUID) = ???
     override def deleteWithAllData(id: UUID) = ???
     override def deleteAllByOrganizationId(organizationId: UUID) = ???

@@ -9,6 +9,11 @@ object ProjectError {
     override def message: String = "Account is not assigned to this project"
   }
 
+  case object ProjectAlreadyExists extends ProjectError {
+    override def message: String =
+      "A project with the id of this export already exists. Import into that project or sync it instead of importing it as a new project"
+  }
+
   case object NoExportPathConfigured extends ProjectError {
     override def message: String =
       "No export path configured for this project. Configure at least one export data config path first."

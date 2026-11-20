@@ -56,6 +56,32 @@ class ProjectRepoImpl extends ProjectRepo {
     )
   }
 
+  override def insertWithId(project: Project): ConnectionIO[Project] = {
+    import project._
+    logAroundInfoQuery(
+      insertStatement(ProjectRepoImpl.PROJECT_TABLE_FRAG)(fr"""
+        (id, organization_id, name, description, icon, work_days, created_at, updated_at)
+        values ($id, $organizationId, $name, $description, $icon, $workDays, $createdAt, $updatedAt)
+      """).update
+        .withUniqueGeneratedKeys[Project](
+          "id",
+          "organization_id",
+          "name",
+          "description",
+          "icon",
+          "work_days",
+          "created_at",
+          "updated_at"
+        )
+    )(
+      s"Inserting ${sp(project)} with its own id",
+      project => s"Project inserted ${sp(project)}"
+    )
+  }
+
+  override def existsById(id: UUID): ConnectionIO[Boolean] =
+    (fr"select exists (select 1 from" ++ PROJECT_TABLE_FRAG ++ fr"where id = $id)").query[Boolean].unique
+
   override def deleteById(id: UUID): ConnectionIO[Int] =
     logAroundInfoQuery(
       deleteByIdStatementUUID(ProjectRepoImpl.PROJECT_TABLE_FRAG)(id).update.run
