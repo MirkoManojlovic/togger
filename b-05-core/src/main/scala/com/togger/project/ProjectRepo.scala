@@ -12,6 +12,11 @@ trait ProjectRepo {
 
   def insert(project: Project): ConnectionIO[Project]
 
+  /** Inserts the project with its own id instead of a generated one (used by the import to keep the exported id). */
+  def insertWithId(project: Project): ConnectionIO[Project]
+
+  def existsById(id: UUID): ConnectionIO[Boolean]
+
   def deleteById(id: UUID): ConnectionIO[Int]
 
   /** Deletes the project together with everything that belongs to it: tasks (and their versions, links, log entries and
