@@ -363,6 +363,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
         _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
         source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        _ <- projectRepo.deleteWithAllData(fixture.projectId).transact(transactor)
         imported <- newImportService(transactor).importNewProject(
           source.organizationId,
           fixture.accountId,
@@ -373,7 +374,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         isMember <- projectAccountRepo.isMember(newProjectId, fixture.accountId).transact(transactor)
         tasks <- taskRepo.findAllByProjectId(newProjectId).transact(transactor)
       } yield {
-        newProjectId should not be fixture.projectId
+        newProjectId shouldBe fixture.projectId
         created.organizationId shouldBe source.organizationId
         created.name shouldBe source.name
         isMember shouldBe true
@@ -381,6 +382,23 @@ class DataImportServiceTest extends ExportImportTestSupport {
         result.results.filter(_.entityType == DataExportEntityType.Task).map(_.status) shouldBe List(
           DataImportStatus.Inserted
         )
+      }
+    }
+
+    "reject a new project import when a project with the id of the tree already exists" in { transactor =>
+      for {
+        fixture <- createFullProject(newExportPath()).transact(transactor)
+        root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
+        source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        result <- newImportService(transactor).importNewProject(
+          source.organizationId,
+          fixture.accountId,
+          root.toString
+        )
+        stillThere <- projectRepo.findById(fixture.projectId).transact(transactor)
+      } yield {
+        result shouldBe Left(ProjectError.ProjectAlreadyExists)
+        stillThere shouldBe source
       }
     }
 
@@ -447,6 +465,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
         _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
         source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        _ <- projectRepo.deleteWithAllData(fixture.projectId).transact(transactor)
         imported <- newImportService(transactor).importNewProject(
           source.organizationId,
           fixture.accountId,
@@ -465,6 +484,7 @@ class DataImportServiceTest extends ExportImportTestSupport {
         root <- exportToFolder(transactor, fixture.projectId, fixture.accountId)
         _ <- deleteProjectContent.transact(transactor) // the tree comes from another database
         source <- projectRepo.findById(fixture.projectId).transact(transactor)
+        _ <- projectRepo.deleteWithAllData(fixture.projectId).transact(transactor)
         imported <- newImportService(transactor).importNewProject(
           source.organizationId,
           fixture.accountId,
