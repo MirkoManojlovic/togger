@@ -246,6 +246,10 @@ milestone with tasks (`MilestoneHasTasks`); deleting a step clears the link of o
 `FindMilestoneStepResp` carries `tasksTotal`/`tasksDone` (done = the latest task version has an end date), which the home
 page turns into one progress bar per step (`StepBar`: blue, green when the step is Done and all its tasks are done).
 
+**Import as a new project:** `importNewProject` (`DataImportRepo.createProject`) keeps the project id from `project.json`
+(`ProjectRepo.insertWithId`; the normal `insert` leaves the id to the DB) and takes the organization from the request; an
+existing id is rejected with `ProjectError.ProjectAlreadyExists`.
+
 **Export/import tombstones:** tasks and log entries are hard-deleted, so `TaskService.deleteTask` (the task and its log
 entries) and `LogEntryService.deleteLogEntry` write a `deleted_entity` row (project, entity type = the export folder, id,
 `deleted_at`) in the same transaction (`DeletedEntityRepo`). The export writes them into `index.json` as `deleted` (folder -> id -> time, part of the root
