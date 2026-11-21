@@ -45,13 +45,10 @@ import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskBadges
 import com.togger.ui.teamdaily.TeamDailyTaskBoard
 import com.togger.ui.teamdaily.TeamDailyTaskPlan
-import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneOffset
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
@@ -270,18 +267,17 @@ class SlackerComponent(
   // ---- submit
 
   private def logEntryOf(key: SlackerEntryKey, draft: TeamDailyEntryDraft): LogEntryDto = {
-    val createdAt =
-      if (key.date == tgClock.currentDate()) tgClock.currentInstant
-      else tgClock.instantFrom(key.date, LocalTime.NOON, ZoneOffset.UTC)
+    val now = tgClock.currentInstant
     LogEntryDto(
       id = UUID.randomUUID(),
       taskId = key.taskId,
       createdBy = currentAccountId.get,
-      createdAt = createdAt,
+      createdAt = now,
       latestVersion = UUID.randomUUID(),
       text = draft.text,
       status = draft.status,
-      updatedAt = createdAt
+      updatedAt = now,
+      logDate = key.date
     )
   }
 
@@ -578,7 +574,7 @@ class SlackerComponent(
       div(
         cls(LogEntryBadgeRow.rowClasses + " mb-2"),
         TgBadge(
-          text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
+          text = tgDateFormater.asAmericanDateWithDayAbrv(entry.logDate),
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,
@@ -613,8 +609,7 @@ class SlackerComponent(
     focusRepeat: Boolean
   ): HtmlElement = {
     val selectedDay = Var(Option.empty[LocalDate])
-    val dayEntries = (day: LocalDate) =>
-      task.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
+    val dayEntries = (day: LocalDate) => task.logEntries.filter(e => e.logDate == day).sortBy(_.createdAt)
     div(
       cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3 shadow-md"),
       div(

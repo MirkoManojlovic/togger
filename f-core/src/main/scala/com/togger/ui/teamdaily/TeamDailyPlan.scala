@@ -6,7 +6,6 @@ import com.togger.dto.LogEntryDto
 import com.togger.dto.SearchAccountDto
 import com.togger.logentry.LogEntryStatus
 import com.togger.task.TaskPriority
-import com.togger.ui.timebox.gantt.GanttLogStatus
 
 import java.time.LocalDate
 import java.util.UUID
@@ -74,7 +73,7 @@ object TeamDailyPlan {
       statusEmoji = task.taskStatus.emoji,
       missingDays = MissingLogDays.of(today),
       todayEntry = task.logEntries
-        .filter(e => GanttLogStatus.toLocalDate(e.createdAt) == today)
+        .filter(e => e.logDate == today)
         .maxByOption(_.createdAt),
       previousStatus = latest.fold[LogEntryStatus](LogEntryStatus.InProgress)(_.status),
       priority = task.priority,

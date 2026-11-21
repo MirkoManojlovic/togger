@@ -55,7 +55,7 @@ class ContributionsFeServicePreview(
     val activity = data.logEntries.all
       .flatMap(entry =>
         taskById.get(entry.taskId).zip(data.latestLogEntryVersion(entry.id)).map { case (row, version) =>
-          Activity(entry.createdBy, row.milestoneId, data.dayOf(entry.createdAt), version.status)
+          Activity(entry.createdBy, row.milestoneId, entry.logDate, version.status)
         }
       )
       .filter(row => memberIds.contains(row.memberId) && inRange(row.day))

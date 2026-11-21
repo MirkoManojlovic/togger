@@ -23,7 +23,6 @@ import org.scalajs.dom
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 /** A task as the status of the projects shows it: its description on the left, its log entries in the middle, by the
   * day selected in the calendar or by a range of weeks, and the calendar of the log entries on the right.
@@ -167,7 +166,7 @@ class TaskPreviewComponent(
         case None => emptyNode
         case Some(day) =>
           val dayEntries = logEntries
-            .filter(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate == day)
+            .filter(entry => entry.logDate == day)
             .sortBy(_.createdAt)
             .reverse
 
@@ -214,10 +213,10 @@ class TaskPreviewComponent(
   ) = {
     val entriesByDate = logEntries
       .filter { entry =>
-        val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
+        val day = entry.logDate
         !day.isBefore(start) && !day.isAfter(end)
       }
-      .groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+      .groupBy(entry => entry.logDate)
 
     div(
       cls("mb-4"),

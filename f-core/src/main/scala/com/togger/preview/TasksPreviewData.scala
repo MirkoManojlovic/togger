@@ -21,7 +21,7 @@ case class PreviewTask(
 
 case class PreviewLink(id: UUID, taskId: UUID, createdAt: Instant)
 
-case class PreviewLogEntry(id: UUID, taskId: UUID, createdBy: UUID, createdAt: Instant)
+case class PreviewLogEntry(id: UUID, taskId: UUID, createdBy: UUID, createdAt: Instant, logDate: LocalDate)
 
 case class PreviewTimebox(id: UUID, projectId: UUID, createdAt: Instant)
 
@@ -81,7 +81,7 @@ class TasksPreviewData(
       tasks.all.flatMap { task =>
         latestTaskVersion(task.id).filter(_.milestone.contains(milestoneId)).flatMap { version =>
           val texts = logEntriesOf(task.id)
-            .filter(entry => !dayOf(entry.createdAt).isBefore(from) && !dayOf(entry.createdAt).isAfter(to))
+            .filter(entry => !entry.logDate.isBefore(from) && !entry.logDate.isAfter(to))
             .flatMap(entry => latestLogEntryVersion(entry.id))
             .map(entry => entry.text)
           Option.when(texts.nonEmpty)(
@@ -115,8 +115,6 @@ class TasksPreviewData(
     tasks.filter(_.projectId == projectId).foreach(task => deleteTask(task.id))
     timeboxes.filter(_.projectId == projectId).foreach(timebox => deleteTimebox(timebox.id))
   }
-
-  def dayOf(instant: Instant): LocalDate = instant.atZone(java.time.ZoneOffset.UTC).toLocalDate
 
   def versionsOfTask(taskId: UUID): List[TaskVersionDto] = taskVersions.filter(_.taskId == taskId)
 

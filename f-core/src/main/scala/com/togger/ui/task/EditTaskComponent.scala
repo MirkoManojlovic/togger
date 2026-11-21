@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import com.raquo.laminar.api.L._
-import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.common._
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto._
@@ -188,7 +187,7 @@ class EditTaskComponent(
 
                         val taskStartDate = dto.task.startDate
                         val taskEndDate = dto.task.endDate
-                        def dateOf(logEntry: LogEntryDto) = logEntry.createdAt.toLocalDate()
+                        def dateOf(logEntry: LogEntryDto) = logEntry.logDate
                         val allLogEntryDates =
                           dto.logEntries.map(logEntry => dateOf(logEntry) -> logEntry.status).toMap
 
@@ -392,7 +391,7 @@ class EditTaskComponent(
             IO {
               val task = success.body.get
               val missing = SlackerMissingDays.of(
-                task.logEntries.map(_.createdAt.toLocalDate()),
+                task.logEntries.map(_.logDate),
                 task.task.startDate,
                 endDate,
                 workDaysVar.now()

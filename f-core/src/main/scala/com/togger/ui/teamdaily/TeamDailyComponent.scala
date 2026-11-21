@@ -39,13 +39,10 @@ import com.togger.ui.task.TaskProjectData
 import com.togger.ui.task.TaskProjectDataLoader
 import com.togger.ui.task.TgDateFormater
 import com.togger.ui.task.bulk.BadgeSpec
-import com.togger.ui.timebox.gantt.GanttLogStatus
 import com.togger.ui.toast.Toast
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneOffset
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
@@ -280,18 +277,17 @@ class TeamDailyComponent(
   }
 
   private def newLogEntryOf(key: TeamDailyEntryKey, draft: TeamDailyEntryDraft): LogEntryDto = {
-    val today = tgClock.currentDate()
-    val createdAt =
-      if (key.date == today) tgClock.currentInstant else tgClock.instantFrom(key.date, LocalTime.NOON, ZoneOffset.UTC)
+    val now = tgClock.currentInstant
     LogEntryDto(
       id = UUID.randomUUID(),
       taskId = key.taskId,
       createdBy = currentAccountId.get,
-      createdAt = createdAt,
+      createdAt = now,
       latestVersion = UUID.randomUUID(),
       text = draft.text,
       status = draft.status,
-      updatedAt = createdAt
+      updatedAt = now,
+      logDate = key.date
     )
   }
 
@@ -673,7 +669,7 @@ class TeamDailyComponent(
     val selectedDay = Var(Option.empty[LocalDate])
     val dayEntries = (day: LocalDate) =>
       task.fold(Seq.empty[LogEntryDto])(
-        _.logEntries.filter(e => GanttLogStatus.toLocalDate(e.createdAt) == day).sortBy(_.createdAt)
+        _.logEntries.filter(e => e.logDate == day).sortBy(_.createdAt)
       )
     div(
       cls("flex flex-col items-start gap-6 rounded-base border border-default-medium p-3 shadow-md"),
@@ -737,7 +733,7 @@ class TeamDailyComponent(
       div(
         cls(LogEntryBadgeRow.rowClasses + " mb-2"),
         TgBadge(
-          text = tgDateFormater.asAmericanDateWithDayAbrv(GanttLogStatus.toLocalDate(entry.createdAt)),
+          text = tgDateFormater.asAmericanDateWithDayAbrv(entry.logDate),
           bordered = true,
           color = TgBadgeColor.Gray
         ).element,

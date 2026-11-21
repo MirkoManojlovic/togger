@@ -17,7 +17,7 @@ class TasksPreviewSeed(data: TasksPreviewData, tasks: List[DemoTask], timeboxes:
     data.links.replaceAll(tasks.flatMap(t => t.links.map(l => PreviewLink(l.id, t.id, l.createdAt))))
     data.linkVersions.replaceAll(tasks.flatMap(_.links).flatMap(_.versions))
     data.logEntries.replaceAll(
-      tasks.flatMap(t => t.logEntries.map(e => PreviewLogEntry(e.id, t.id, e.createdBy, e.createdAt)))
+      tasks.flatMap(t => t.logEntries.map(e => PreviewLogEntry(e.id, t.id, e.createdBy, e.createdAt, e.logDate)))
     )
     data.logEntryVersions.replaceAll(tasks.flatMap(_.logEntries).flatMap(_.versions))
     timeboxes.foreach { timebox =>
