@@ -2,12 +2,14 @@ package com.togger.common
 
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
 
 trait TimeHelpers {
 
   lazy val nowAsInstant: Instant = Instant.now()
+  lazy val nowAsLocalDate: LocalDate = nowAsInstant.atOffset(ZoneOffset.UTC).toLocalDate
   lazy val now: LocalTime = nowAsInstant.atOffset(ZoneOffset.UTC).toLocalTime
 
   lazy val midnight: LocalTime = TimeHelpers.midnight
