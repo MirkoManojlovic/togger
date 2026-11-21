@@ -47,7 +47,7 @@ class TaskServiceDeleteTest extends BusinessTgDbSpec with TgAccount with TgProje
           .insert(Task(UUID.randomUUID(), projectId, account.id, nowAsInstant))
           .transact(transactor)
         logEntry <- logEntryRepo
-          .insert(LogEntry(UUID.randomUUID(), task.id, account.id, nowAsInstant))
+          .insert(LogEntry(UUID.randomUUID(), task.id, account.id, nowAsInstant, nowAsLocalDate))
           .transact(transactor)
         deleted <- taskService(transactor).deleteTask(task.id)
         tombstones <- deletedEntityRepo.findAllByProjectId(projectId).transact(transactor)

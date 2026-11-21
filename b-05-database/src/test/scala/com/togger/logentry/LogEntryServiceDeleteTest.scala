@@ -37,7 +37,7 @@ class LogEntryServiceDeleteTest extends BusinessTgDbSpec with TgAccount with TgP
         projectId = orgAndProject._2.id
         task <- taskRepo.insert(Task(UUID.randomUUID(), projectId, account.id, nowAsInstant)).transact(transactor)
         logEntry <- logEntryRepo
-          .insert(LogEntry(UUID.randomUUID(), task.id, account.id, nowAsInstant))
+          .insert(LogEntry(UUID.randomUUID(), task.id, account.id, nowAsInstant, nowAsLocalDate))
           .transact(transactor)
         deleted <- service.deleteLogEntry(logEntry.id)
         missing <- service.deleteLogEntry(logEntry.id)

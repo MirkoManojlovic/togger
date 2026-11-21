@@ -4,6 +4,8 @@ import cats.effect.IO
 import cats.implicits._
 import com.togger.deletedentity.DeletedEntity
 import com.togger.deletedentity.DeletedEntityType
+import com.togger.logentry.LogEntry
+import com.togger.logentry.LogEntryVersion
 import com.togger.milestone.MilestoneStepStatus
 import com.togger.project.ProjectAccount
 import com.togger.project.ProjectError
@@ -897,6 +899,96 @@ class DataImportServiceTest extends ExportImportTestSupport {
       }
     }
 
+  }
+
+  /** The log date of an existing log entry as the import leaves it, when the tree moved the entry to another day. */
+  private case class MovedByTree(result: DataImportEntityResult, before: LogEntry, after: LogEntry, treeDate: LocalDate)
+
+  // The change time of a log entry comes from the uuid7 ids of the entry and its versions.
+  private def uuid7At(instant: Instant): UUID = {
+    val random = new scala.util.Random()
+    val mostSignificant = (instant.toEpochMilli << 16) | 0x7000L | (random.nextLong() & 0x0fffL)
+    val leastSignificant = (random.nextLong() & 0x3fffffffffffffffL) | Long.MinValue
+    new UUID(mostSignificant, leastSignificant)
+  }
+
+  private def importLogEntryMovedByTree(
+    transactor: Transactor[IO],
+    treeChangedLater: Boolean,
+    projectHasEntryOnTreeDate: Boolean
+  ): IO[MovedByTree] = {
+    val setup = for {
+      projectData <- createExportableProject(newExportPath())
+      (account, project) = projectData
+      status <- createTaskStatus(project.id)
+      taskId <- createTaskWithFullHistory(project.id, account.id, status.id)
+    } yield (account, project, taskId)
+
+    for {
+      setupResult <- setup.transact(transactor)
+      (account, project, taskId) = setupResult
+      root <- exportToFolder(transactor, project.id, account.id)
+      before <- logEntryRepo.findByTaskId(taskId).transact(transactor).map(_.head)
+      versions <- logEntryVersionRepo.findByLogEntryId(before.id).transact(transactor)
+      treeDate = before.logDate.plusDays(5)
+      _ <-
+        if (projectHasEntryOnTreeDate)
+          logEntryRepo
+            .insert(LogEntry(UUID.randomUUID(), taskId, account.id, nowAsInstant, treeDate))
+            .transact(transactor)
+        else IO.unit
+      laterVersion = LogEntryVersion(
+        uuid7At(nowAsInstant.plusSeconds(3600)),
+        before.id,
+        "moved on disk",
+        versions.head.status,
+        account.id,
+        nowAsInstant.plusSeconds(3600),
+        nowAsInstant.plusSeconds(3600)
+      )
+      _ = putEntity(
+        root,
+        DataExportEntityType.LogEntry,
+        before.id,
+        None,
+        LogEntryDumpData(
+          before.copy(logDate = treeDate),
+          if (treeChangedLater) versions :+ laterVersion else versions
+        )
+      )
+      importResult <- newImportService(transactor).importProject(project.id, account.id, root.toString)
+      after <- logEntryRepo.findById(before.id).transact(transactor)
+    } yield MovedByTree(
+      resultOf(importResult.toOption.get, DataExportEntityType.LogEntry).find(_.entityId == before.id).get,
+      before,
+      after,
+      treeDate
+    )
+  }
+
+  "importing a log entry that the tree moved to another day" should {
+
+    "follow the tree when the tree changed the entry after the project" in { transactor =>
+      importLogEntryMovedByTree(transactor, treeChangedLater = true, projectHasEntryOnTreeDate = false).map { moved =>
+        moved.after.logDate shouldBe moved.treeDate
+        moved.result.status shouldBe DataImportStatus.Merged
+        moved.result.error shouldBe None
+      }
+    }
+
+    "keep the day of the project when the tree did not change the entry after it" in { transactor =>
+      importLogEntryMovedByTree(transactor, treeChangedLater = false, projectHasEntryOnTreeDate = false).map { moved =>
+        moved.after.logDate shouldBe moved.before.logDate
+      }
+    }
+
+    "keep the day of the project and report it when the task already has another entry for the tree's day" in {
+      transactor =>
+        importLogEntryMovedByTree(transactor, treeChangedLater = true, projectHasEntryOnTreeDate = true).map { moved =>
+          moved.after.logDate shouldBe moved.before.logDate
+          moved.result.error should not be empty
+        }
+    }
   }
 
 }

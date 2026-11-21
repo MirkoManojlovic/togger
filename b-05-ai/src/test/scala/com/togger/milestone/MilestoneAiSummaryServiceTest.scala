@@ -42,13 +42,13 @@ class MilestoneAiSummaryServiceTest extends AsyncWordSpec with AsyncMockFactory 
   private val at = Instant.parse("2026-10-11T10:00:00Z")
 
   private val entry = LogEntryWithOneVersion(
-    LogEntry(logEntryId, taskId, accountId, at),
+    LogEntry(logEntryId, taskId, accountId, at, LocalDate.of(2026, 10, 11)),
     LogEntryVersion(UUID.randomUUID(), logEntryId, "external", LogEntryStatus.Completed, accountId, at, at)
   )
 
   private val expectedEntryJson =
     s"""[{"logEntryId":"$logEntryId","taskId":"$taskId","status":"Completed",""" +
-      s""""text":"external","createdAt":"$at","updatedAt":"$at"}]"""
+      """"text":"external","logDate":"2026-10-11"}]"""
 
   private class CapturingAiService(reply: Either[TgAiError.TgAiError, List[String]]) extends TgAiService(null, null) {
     val request = new AtomicReference[TgAiChatRequest]()

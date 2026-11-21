@@ -13,7 +13,6 @@ import com.togger.task.TaskRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
 
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /** Log entries of a task are listed newest first; their versions newest version first. */
@@ -41,7 +40,13 @@ class LogEntryRepoPaginationTest
     } yield Seeded(account.id, task, otherTask)
 
   private def newEntry(taskId: UUID, accountId: UUID, minutesAgo: Long) =
-    LogEntry(UUID.randomUUID(), taskId, accountId, nowAsInstant.minus(minutesAgo, ChronoUnit.MINUTES))
+    LogEntry(
+      UUID.randomUUID(),
+      taskId,
+      accountId,
+      nowAsInstant,
+      nowAsLocalDate.minusDays(minutesAgo)
+    )
 
   private def newVersion(logEntryId: UUID, accountId: UUID, index: Int) =
     LogEntryVersion(

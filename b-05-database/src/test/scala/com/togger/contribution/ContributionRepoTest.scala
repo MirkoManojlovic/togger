@@ -62,8 +62,8 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
     * "bug" and "feature", t3 has no label.
     *
     * Log entries: e1 of t1 by `first` on the 13th, completed by its latest version (an older one was in progress); e2
-    * of t1 by `first` on the 13th, in progress; e3 of t2 by `second` on the 14th at 23:30 UTC, completed; e4 of t3 by
-    * `first` on the 20th, on vacation.
+    * of t2 by `first` on the 13th, in progress (a task has one entry per day); e3 of t2 by `second` on the 14th at
+    * 23:30 UTC, completed; e4 of t3 by `first` on the 20th, on vacation.
     */
   private case class Seeded(
     projectId: UUID,
@@ -115,7 +115,7 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
       _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(t2.id, bug.id, nowAsInstant))
       _ <- taskLabelAssignmentRepo.insert(TaskLabelAssignment(t2.id, feature.id, nowAsInstant))
       _ <- newEntry(t1, first, "2026-10-13T10:00:00Z", LogEntryStatus.InProgress, LogEntryStatus.Completed)
-      _ <- newEntry(t1, first, "2026-10-13T15:00:00Z", LogEntryStatus.InProgress)
+      _ <- newEntry(t2, first, "2026-10-13T15:00:00Z", LogEntryStatus.InProgress)
       _ <- newEntry(t2, second, "2026-10-14T23:30:00Z", LogEntryStatus.Completed)
       _ <- newEntry(t3, first, "2026-10-20T08:00:00Z", LogEntryStatus.Vacation)
     } yield Seeded(projectId, first, second, milestone, status.name)
@@ -182,7 +182,9 @@ class ContributionRepoTest extends BusinessTgDbSpec with TgAccount with TgProjec
   /** The statuses are the versions of the entry from the oldest to the latest. */
   private def newEntry(task: Task, author: Account, createdAt: String, statuses: LogEntryStatus*): ConnectionIO[Unit] =
     for {
-      entry <- logEntryRepo.insert(LogEntry(UUID.randomUUID(), task.id, author.id, Instant.parse(createdAt)))
+      entry <- logEntryRepo.insert(
+        LogEntry(UUID.randomUUID(), task.id, author.id, Instant.parse(createdAt), LocalDate.parse(createdAt.take(10)))
+      )
       _ <- statuses.toList.zipWithIndex.traverse { case (status, index) =>
         logEntryVersionRepo.insert(
           LogEntryVersion(

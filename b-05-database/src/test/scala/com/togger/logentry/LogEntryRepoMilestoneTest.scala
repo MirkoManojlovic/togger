@@ -17,7 +17,6 @@ import com.togger.task.TaskVersionRepoImpl
 import doobie.ConnectionIO
 import doobie.implicits._
 
-import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -63,7 +62,9 @@ class LogEntryRepoMilestoneTest
   /** Inserts an entry with one version per text, the last text being the latest version. */
   private def newEntry(task: Task, author: UUID, createdAt: String, texts: String*): ConnectionIO[LogEntry] =
     for {
-      entry <- logEntryRepo.insert(LogEntry(UUID.randomUUID(), task.id, author, Instant.parse(createdAt)))
+      entry <- logEntryRepo.insert(
+        LogEntry(UUID.randomUUID(), task.id, author, nowAsInstant, LocalDate.parse(createdAt.take(10)))
+      )
       _ <- texts.toList.traverse(text =>
         logEntryVersionRepo.insert(
           LogEntryVersion(

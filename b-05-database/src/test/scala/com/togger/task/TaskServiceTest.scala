@@ -242,7 +242,7 @@ class TaskServiceTest
     }
 
     "delete the task and record a tombstone for it and for its log entries" in {
-      val logEntry = LogEntry(UUID.randomUUID(), task.id, task.createdBy, nowAsInstant)
+      val logEntry = LogEntry(UUID.randomUUID(), task.id, task.createdBy, nowAsInstant, nowAsLocalDate)
       (taskRepo.findOptionById _).expects(task.id).returns(Option(task).pure[ConnectionIO])
       (logEntryRepo.findByTaskId _).expects(task.id).returns(List(logEntry).pure[ConnectionIO])
       (taskRepo.deleteById _).expects(task.id).returns(1.pure[ConnectionIO])
