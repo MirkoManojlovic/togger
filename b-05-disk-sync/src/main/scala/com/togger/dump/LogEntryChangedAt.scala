@@ -5,10 +5,11 @@ import io.circe.Json
 import java.time.Instant
 import java.util.UUID
 
-/** When a log entry really changed. Its `createdAt`/`updatedAt` hold the day the entry is logged for, which can lie in
-  * the future, so they cannot be compared with the time of a deletion. The ids of the entry and of its versions are
-  * uuid7, which carry the real creation time; a new version is a change. Ids that are not uuid7 fall back to the
-  * timestamps.
+/** When a log entry really changed. The `createdAt`/`updatedAt` of entries written before `logDate` existed hold the
+  * day the entry is logged for, which can lie in the future, so they cannot be compared with the time of a deletion.
+  * The ids of the entry and of its versions are uuid7, which carry the real creation time; a new version is a change,
+  * and so is a move of the entry to another `logDate` (it always comes with a new version). Ids that are not uuid7 fall
+  * back to the timestamps.
   */
 object LogEntryChangedAt {
 
