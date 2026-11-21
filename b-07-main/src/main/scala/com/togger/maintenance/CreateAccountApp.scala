@@ -19,7 +19,6 @@ import com.togger.task._
 import doobie.ConnectionIO
 import doobie.implicits._
 
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
@@ -45,12 +44,14 @@ object CreateAccountApp extends IOApp with SeedAppModule {
     val totalSeedTasks = 20
     val logEntriesPerTask = 15
 
-    def dateForDayOffset(dayOffset: Int): Instant =
-      logEntrySpanStart.plusDays(dayOffset.toLong).atStartOfDay(ZoneOffset.UTC).toInstant
+    val today: LocalDate = now.atZone(ZoneOffset.UTC).toLocalDate
+
+    def dateForDayOffset(dayOffset: Int): LocalDate =
+      logEntrySpanStart.plusDays(dayOffset.toLong)
 
     // Spreads each task's log entries across the June 01 - September 01 span, starting at a
     // different day per task (unique per taskIndex) and wrapping around the span if it overruns.
-    def entryDatesForTask(taskIndex: Int): List[Instant] = {
+    def entryDatesForTask(taskIndex: Int): List[LocalDate] = {
       val startDayOffset = (taskIndex * logEntrySpanDays) / totalSeedTasks
       (0 until logEntriesPerTask).toList.map(i => dateForDayOffset((startDayOffset + i) % (logEntrySpanDays + 1)))
     }
@@ -103,15 +104,21 @@ object CreateAccountApp extends IOApp with SeedAppModule {
           val entryDate = entryDates(i)
           val status = entryStatuses(i)
           logEntryService.createLogEntry(
-            LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = task.task.id, createdBy = ownerId, createdAt = entryDate),
+            LogEntry(
+              id = TgIds.UNASSIGNED_UUID,
+              taskId = task.task.id,
+              createdBy = ownerId,
+              createdAt = now,
+              logDate = entryDate
+            ),
             LogEntryVersion(
               version = TgIds.UNASSIGNED_UUID,
               logEntryId = TgIds.UNASSIGNED_UUID,
               text = s"Log entry ${i + 1} for $taskName",
               status = status,
               createdBy = ownerId,
-              createdAt = entryDate,
-              updatedAt = entryDate
+              createdAt = now,
+              updatedAt = now
             )
           )
         }
@@ -258,7 +265,13 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       alphaTask1 = alphaTask1Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = alphaTask1.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(
+          id = TgIds.UNASSIGNED_UUID,
+          taskId = alphaTask1.task.id,
+          createdBy = owner.id,
+          createdAt = now,
+          logDate = today
+        ),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
@@ -289,7 +302,13 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       alphaTask2 = alphaTask2Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = alphaTask2.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(
+          id = TgIds.UNASSIGNED_UUID,
+          taskId = alphaTask2.task.id,
+          createdBy = owner.id,
+          createdAt = now,
+          logDate = today
+        ),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
@@ -376,7 +395,13 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       betaTask1 = betaTask1Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask1.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(
+          id = TgIds.UNASSIGNED_UUID,
+          taskId = betaTask1.task.id,
+          createdBy = owner.id,
+          createdAt = now,
+          logDate = today
+        ),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
@@ -407,7 +432,13 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       betaTask2 = betaTask2Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask2.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(
+          id = TgIds.UNASSIGNED_UUID,
+          taskId = betaTask2.task.id,
+          createdBy = owner.id,
+          createdAt = now,
+          logDate = today
+        ),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,
@@ -438,7 +469,13 @@ object CreateAccountApp extends IOApp with SeedAppModule {
       )
       betaTask3 = betaTask3Result._1
       _ <- logEntryService.createLogEntry(
-        LogEntry(id = TgIds.UNASSIGNED_UUID, taskId = betaTask3.task.id, createdBy = owner.id, createdAt = now),
+        LogEntry(
+          id = TgIds.UNASSIGNED_UUID,
+          taskId = betaTask3.task.id,
+          createdBy = owner.id,
+          createdAt = now,
+          logDate = today
+        ),
         LogEntryVersion(
           version = TgIds.UNASSIGNED_UUID,
           logEntryId = TgIds.UNASSIGNED_UUID,

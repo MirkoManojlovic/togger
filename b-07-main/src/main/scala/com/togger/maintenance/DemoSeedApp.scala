@@ -369,7 +369,9 @@ object DemoSeedApp extends IOApp with SeedAppModule {
           }
       }
       _ <- task.logEntries.traverse_ { entry =>
-        logEntryRepo.insertWithId(LogEntry(entry.id, task.id, ids.account(entry.createdBy), entry.createdAt)) *>
+        logEntryRepo.insertWithId(
+          LogEntry(entry.id, task.id, ids.account(entry.createdBy), entry.createdAt, entry.logDate)
+        ) *>
           entry.versions.traverse_ { v =>
             logEntryVersionRepo.insertWithId(
               LogEntryVersion(

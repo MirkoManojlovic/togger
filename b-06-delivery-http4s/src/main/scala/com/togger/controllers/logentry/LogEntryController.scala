@@ -2,6 +2,7 @@ package com.togger.controllers.logentry
 
 import cats.effect.IO
 import com.togger.account.AccountNameLookup
+import com.togger.common.TgClock
 import com.togger.common.TgError._
 import com.togger.common.TgJsonSuccess
 import com.togger.controllers.common.PageRequestValidation
@@ -19,15 +20,19 @@ import java.util.UUID
 class LogEntryController(
   logEntryEndpoints: LogEntryEndpoints,
   logEntryService: LogEntryService,
-  accountNameLookup: AccountNameLookup
+  accountNameLookup: AccountNameLookup,
+  tgClock: TgClock
 ) {
 
+  // The client sends only the day (logDate); when the entry and its versions were written is the server's time.
   val save = logEntryEndpoints.saveEndpoint.serverLogic { _ => dto =>
+    val now = tgClock.currentInstant
     val logEntry = LogEntry(
       id = UUID.randomUUID(),
       taskId = dto.taskId,
       createdBy = dto.createdBy,
-      createdAt = dto.createdAt
+      createdAt = now,
+      logDate = dto.logDate
     )
     val firstVersion = LogEntryVersion(
       version = UUID.randomUUID(),
@@ -35,8 +40,8 @@ class LogEntryController(
       text = dto.text,
       status = dto.status,
       createdBy = dto.createdBy,
-      createdAt = dto.createdAt,
-      updatedAt = dto.updatedAt
+      createdAt = now,
+      updatedAt = now
     )
 
     logEntryService
@@ -83,18 +88,19 @@ class LogEntryController(
   }
 
   val updateLogEntry = logEntryEndpoints.updateEndpoint.serverLogic { _ => dto =>
+    val now = tgClock.currentInstant
     val newVersion = LogEntryVersion(
       version = UUID.randomUUID(),
       logEntryId = dto.id,
       text = dto.text,
       status = dto.status,
       createdBy = dto.createdBy,
-      createdAt = dto.createdAt,
-      updatedAt = dto.updatedAt
+      createdAt = now,
+      updatedAt = now
     )
 
     logEntryService
-      .saveNewVersion(dto.id, newVersion)
+      .updateLogEntry(dto.id, dto.logDate, newVersion)
       .flatMap {
         case Right(result) =>
           accountNameLookup

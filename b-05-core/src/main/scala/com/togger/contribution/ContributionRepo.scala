@@ -10,7 +10,7 @@ import java.util.UUID
   */
 trait ContributionRepo {
 
-  /** Log entries by author, milestone of the task, UTC day and current status; `created_at` is filtered by the range.
+  /** Log entries by author, milestone of the task, log date and current status; `log_date` is filtered by the range.
     */
   def entryActivity(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[EntryActivityRow]]
 
