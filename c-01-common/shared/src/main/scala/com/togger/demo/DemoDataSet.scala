@@ -104,7 +104,13 @@ case class DemoMilestone(
 
 case class DemoLink(id: UUID, createdAt: Instant, versions: List[LinkVersionDto])
 
-case class DemoLogEntry(id: UUID, createdBy: UUID, createdAt: Instant, versions: List[LogEntryVersionDto])
+case class DemoLogEntry(
+  id: UUID,
+  createdBy: UUID,
+  createdAt: Instant,
+  logDate: LocalDate,
+  versions: List[LogEntryVersionDto]
+)
 
 /** Versions are ordered oldest first, the last one is the current content. */
 case class DemoTask(

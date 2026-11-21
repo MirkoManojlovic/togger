@@ -14,11 +14,12 @@ object LogEntryDtoMapper {
       id = logEntry.id,
       taskId = logEntry.taskId,
       createdBy = logEntry.createdBy,
-      createdAt = version.createdAt,
+      createdAt = logEntry.createdAt,
       latestVersion = version.version,
       text = version.text,
       status = version.status,
       updatedAt = version.updatedAt,
+      logDate = logEntry.logDate,
       createdByName = names.getOrElse(logEntry.createdBy, "")
     )
 

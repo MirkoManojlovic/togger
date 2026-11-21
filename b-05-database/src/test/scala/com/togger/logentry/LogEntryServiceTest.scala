@@ -26,7 +26,6 @@ import org.scalatest.Checkpoints
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class LogEntryServiceTest
@@ -61,7 +60,8 @@ class LogEntryServiceTest
     id = UUID.randomUUID(),
     taskId = taskId,
     createdBy = accountId,
-    createdAt = nowAsInstant
+    createdAt = nowAsInstant,
+    logDate = nowAsLocalDate
   )
 
   def newVersion(suffix: String) = LogEntryVersion(
@@ -102,10 +102,9 @@ class LogEntryServiceTest
     "create a log entry when the task has none for that day" in {
       val logEntry = newLogEntry()
       val version = newVersion("v1").copy(logEntryId = logEntry.id)
-      val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
 
-      (logEntryRepo.existsByTaskIdCreatedBetween _)
-        .expects(taskId, dayStart, dayStart.plus(1, ChronoUnit.DAYS))
+      (logEntryRepo.existsByTaskIdAndLogDate _)
+        .expects(taskId, logEntry.logDate)
         .returns(false.pure[ConnectionIO])
       (logEntryRepo.insert _).expects(logEntry).returns(logEntry.pure[ConnectionIO])
       (logEntryVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
@@ -119,15 +118,61 @@ class LogEntryServiceTest
     "reject a second log entry for the same task on the same day" in {
       val logEntry = newLogEntry()
       val version = newVersion("v1").copy(logEntryId = logEntry.id)
-      val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
 
-      (logEntryRepo.existsByTaskIdCreatedBetween _)
-        .expects(taskId, dayStart, dayStart.plus(1, ChronoUnit.DAYS))
+      (logEntryRepo.existsByTaskIdAndLogDate _)
+        .expects(taskId, logEntry.logDate)
         .returns(true.pure[ConnectionIO])
 
       service
         .createLogEntryOncePerDay(logEntry, version)
         .map(_ shouldBe Left(LogEntryAlreadyExistsForDay))
+        .unsafeToFuture()
+    }
+
+    "move a log entry to a free day together with its new version" in {
+      val logEntry = newLogEntry()
+      val newDate = logEntry.logDate.plusDays(3)
+      val version = newVersion("v2").copy(logEntryId = logEntry.id)
+
+      (logEntryRepo.findById _).expects(logEntry.id).returns(logEntry.pure[ConnectionIO])
+      (logEntryRepo.existsByTaskIdAndLogDateExcluding _)
+        .expects(taskId, newDate, logEntry.id)
+        .returns(false.pure[ConnectionIO])
+      (logEntryRepo.updateLogDate _).expects(logEntry.id, newDate).returns(1.pure[ConnectionIO])
+      (logEntryVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
+
+      service
+        .updateLogEntry(logEntry.id, newDate, version)
+        .map(_ shouldBe Right(LogEntryWithOneVersion(logEntry.copy(logDate = newDate), version)))
+        .unsafeToFuture()
+    }
+
+    "reject moving a log entry to a day the task already has another entry for" in {
+      val logEntry = newLogEntry()
+      val newDate = logEntry.logDate.plusDays(3)
+      val version = newVersion("v2").copy(logEntryId = logEntry.id)
+
+      (logEntryRepo.findById _).expects(logEntry.id).returns(logEntry.pure[ConnectionIO])
+      (logEntryRepo.existsByTaskIdAndLogDateExcluding _)
+        .expects(taskId, newDate, logEntry.id)
+        .returns(true.pure[ConnectionIO])
+
+      service
+        .updateLogEntry(logEntry.id, newDate, version)
+        .map(_ shouldBe Left(LogEntryAlreadyExistsForDay))
+        .unsafeToFuture()
+    }
+
+    "only save the version when the log date does not change" in {
+      val logEntry = newLogEntry()
+      val version = newVersion("v2").copy(logEntryId = logEntry.id)
+
+      (logEntryRepo.findById _).expects(logEntry.id).returns(logEntry.pure[ConnectionIO])
+      (logEntryVersionRepo.insert _).expects(version).returns(version.pure[ConnectionIO])
+
+      service
+        .updateLogEntry(logEntry.id, logEntry.logDate, version)
+        .map(_ shouldBe Right(LogEntryWithOneVersion(logEntry, version)))
         .unsafeToFuture()
     }
 

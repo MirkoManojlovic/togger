@@ -16,7 +16,7 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe.jsonBody
 
-import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
@@ -40,8 +40,8 @@ class LogEntryEndpoints(securedEndpoint: SecuredEndpoint) {
   //      .description(s"Find $topic using id")
 
   private val logEntryFilterQuery: EndpointInput[LogEntryFilter] =
-    query[Option[Instant]]("from")
-      .and(query[Option[Instant]]("to"))
+    query[Option[LocalDate]]("from")
+      .and(query[Option[LocalDate]]("to"))
       .map { case (from, to) => LogEntryFilter(from, to) }(filter => (filter.from, filter.to))
 
   val findByProjectIdEndpoint: TgSecuredEndpoint[

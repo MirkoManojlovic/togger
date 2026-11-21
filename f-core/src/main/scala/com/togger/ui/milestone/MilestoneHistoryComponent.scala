@@ -130,7 +130,7 @@ class MilestoneHistoryComponent(
   private val monthOptionsSignal: Signal[Seq[MonthOption]] =
     logEntriesVar.signal.map { entries =>
       entries
-        .map(e => toLocalDate(e.createdAt))
+        .map(e => e.logDate)
         .map(d => (d.getYear, d.getMonthValue))
         .distinct
         .sortBy(identity)
@@ -365,7 +365,7 @@ class MilestoneHistoryComponent(
           val allDays: Seq[LocalDate] =
             if (allLogEntries.isEmpty) Seq.empty
             else {
-              val dates = allLogEntries.map(e => toLocalDate(e.createdAt))
+              val dates = allLogEntries.map(e => e.logDate)
               val minDate = dates.min
               val maxDate = dates.max
               Iterator
@@ -377,11 +377,11 @@ class MilestoneHistoryComponent(
           val days: Seq[LocalDate] = allDays.filter(day => dayPasses(day, activeFilter))
 
           val logEntries: Seq[LogEntryDto] =
-            allLogEntries.filter(e => dayPasses(toLocalDate(e.createdAt), activeFilter))
+            allLogEntries.filter(e => dayPasses(e.logDate, activeFilter))
           val taskIdsWithVisibleEntries: Set[UUID] = logEntries.map(_.taskId).toSet
 
           val entriesByTaskAndDay: Map[(UUID, LocalDate), Seq[LogEntryDto]] =
-            logEntries.groupBy(e => (e.taskId, toLocalDate(e.createdAt)))
+            logEntries.groupBy(e => (e.taskId, e.logDate))
 
           val weekStartIndex: Map[LocalDate, Int] = days.map(weekStart).distinct.zipWithIndex.toMap
           val weekIndexByDay: Map[LocalDate, Int] = days.map(d => d -> weekStartIndex(weekStart(d))).toMap
@@ -447,7 +447,7 @@ class MilestoneHistoryComponent(
                         val lastLogEntryDate: Option[LocalDate] =
                           allLogEntries
                             .filter(e => groupTaskIds.contains(e.taskId))
-                            .map(e => toLocalDate(e.createdAt))
+                            .map(e => e.logDate)
                             .maxOption
                         val endDate = lastLogEntryDate.getOrElse(startDate)
                         // Milestone dates are always work days, but may fall outside the currently visible

@@ -2347,3 +2347,36 @@ databaseChangeLog:
             tableName: deleted_entity
             columnNames: project_id, entity_type, entity_id
             constraintName: pk_deleted_entity
+  - changeSet:
+      id: 24
+      author: mirko
+      labels: log-entry-log-date
+      comment: >
+        A log entry gets its own log_date, the day the entry is for. Until now created_at held that day. Existing
+        entries take the UTC day of their created_at (the day the queries used so far); created_at stays as it is.
+        The column is added last so that the positional row mapping of log_entry keeps working.
+      changes:
+        - addColumn:
+            tableName: log_entry
+            columns:
+              - column:
+                  name: log_date
+                  type: date
+        - sql:
+            sql: >
+              update log_entry set log_date = (created_at at time zone 'UTC')::date
+        - addNotNullConstraint:
+            tableName: log_entry
+            columnName: log_date
+            columnDataType: date
+  - changeSet:
+      id: 25
+      author: mirko
+      labels: log-entry-log-date
+      comment: >
+        A task has at most one log entry per day. A separate change set, so that data with duplicate days fails here
+        and not in the migration of the column.
+      changes:
+        - sql:
+            sql: >
+              create unique index uq_log_entry_task_id_log_date on log_entry (task_id, log_date)

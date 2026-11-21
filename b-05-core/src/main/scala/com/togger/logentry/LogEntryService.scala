@@ -23,7 +23,7 @@ import doobie.Transactor
 import doobie.implicits._
 import doobie.util.invariant.UnexpectedEnd
 
-import java.time.temporal.ChronoUnit
+import java.time.LocalDate
 import java.util.UUID
 
 class LogEntryService(
@@ -46,15 +46,13 @@ class LogEntryService(
     }).transact(transactor)
   }
 
-  /** Like [[createLogEntry]], but rejects a second log entry for the same task on the same (UTC) day. */
+  /** Like [[createLogEntry]], but rejects a second log entry for the same task on the same log date. */
   def createLogEntryOncePerDay(
     logEntry: LogEntry,
     firstVersion: LogEntryVersion
-  ): IO[Either[LogEntryError, LogEntryWithOneVersion]] = {
-    val dayStart = logEntry.createdAt.truncatedTo(ChronoUnit.DAYS)
-    val dayEnd = dayStart.plus(1, ChronoUnit.DAYS)
+  ): IO[Either[LogEntryError, LogEntryWithOneVersion]] =
     logEntryRepo
-      .existsByTaskIdCreatedBetween(logEntry.taskId, dayStart, dayEnd)
+      .existsByTaskIdAndLogDate(logEntry.taskId, logEntry.logDate)
       .transact(transactor)
       .flatMap { exists =>
         if (exists) {
@@ -62,7 +60,32 @@ class LogEntryService(
           IO.pure(Left(LogEntryAlreadyExistsForDay))
         } else createLogEntry(logEntry, firstVersion).map(Right(_))
       }
-  }
+
+  /** Saves a new version and moves the entry to `logDate` in one transaction. A date change is rejected when the task
+    * already has another log entry for that day.
+    */
+  def updateLogEntry(
+    logEntryId: UUID,
+    logDate: LocalDate,
+    newVersion: LogEntryVersion
+  ): IO[Either[LogEntryError, LogEntryWithOneVersion]] =
+    (for {
+      entry <- logEntryRepo.findById(logEntryId)
+      taken <-
+        if (entry.logDate == logDate) false.pure[ConnectionIO]
+        else logEntryRepo.existsByTaskIdAndLogDateExcluding(entry.taskId, logDate, logEntryId)
+      result <-
+        if (taken) (LogEntryAlreadyExistsForDay: LogEntryError).asLeft[LogEntryWithOneVersion].pure[ConnectionIO]
+        else
+          for {
+            _ <- if (entry.logDate == logDate) 0.pure[ConnectionIO] else logEntryRepo.updateLogDate(logEntryId, logDate)
+            savedVersion <- logEntryVersionRepo.insert(newVersion.copy(logEntryId = logEntryId))
+          } yield LogEntryWithOneVersion(entry.copy(logDate = logDate), savedVersion).asRight[LogEntryError]
+    } yield result)
+      .transact(transactor)
+      .recoverWith { case UnexpectedEnd =>
+        IO.pure(Left(LogEntryNotFound))
+      }
 
   def saveNewVersion(
     logEntryId: UUID,

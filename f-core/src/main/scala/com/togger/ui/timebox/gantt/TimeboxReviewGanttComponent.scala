@@ -193,7 +193,7 @@ class TimeboxReviewGanttComponent(
   ): Seq[(FindTaskRespFull, LogEntryDto)] =
     all
       .flatMap(task => task.logEntries.map(task -> _))
-      .filter { case (_, entry) => inRange(GanttLogStatus.toLocalDate(entry.createdAt)) }
+      .filter { case (_, entry) => inRange(entry.logDate) }
       .sortBy { case (_, entry) => entry.createdAt }
 
   private def entryCards(found: Seq[(FindTaskRespFull, LogEntryDto)], emptyText: String): HtmlElement =
@@ -204,7 +204,7 @@ class TimeboxReviewGanttComponent(
         found.map { case (task, entry) =>
           LogEntryReadOnlyCard(
             entry,
-            GanttLogStatus.toLocalDate(entry.createdAt),
+            entry.logDate,
             task.name,
             tgDateFormater,
             tgMarkdown

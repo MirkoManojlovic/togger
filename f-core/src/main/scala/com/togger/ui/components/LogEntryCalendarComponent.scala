@@ -9,7 +9,6 @@ import com.togger.ui.task.TgDateFormater
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 /** A grid of a task's log entries, one column per the project's configured work day, each showing that day's status
   * emoji(s). Clicking a cell toggles it in `selectedDayVar`, which a caller can read to drive a "selected day" detail
@@ -45,12 +44,12 @@ class LogEntryCalendarComponent(
 
   private def render(tiny: Boolean): HtmlDiv = {
     val workDayEntries =
-      logEntries.filter(entry => isWorkDay(entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate, workDays))
+      logEntries.filter(entry => isWorkDay(entry.logDate, workDays))
 
     if (workDayEntries.isEmpty || sortedWorkDays.isEmpty) div()
     else {
       val entriesByDate: Map[LocalDate, Seq[LogEntryDto]] =
-        workDayEntries.groupBy(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+        workDayEntries.groupBy(entry => entry.logDate)
 
       // the marked and the extra days are part of the grid even when they have no entry, as the days still to log have none
       val shownDates = entriesByDate.keys ++ markedDay ++ extraDays.filter(isWorkDay(_, workDays))
@@ -216,7 +215,7 @@ object LogEntryCalendarComponent {
 
   def lastCalendarDay(logEntries: Seq[LogEntryDto], workDays: Set[DayOfWeek]): Option[LocalDate] =
     logEntries
-      .map(entry => entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate)
+      .map(entry => entry.logDate)
       .filter(isWorkDay(_, workDays))
       .maxOption
 

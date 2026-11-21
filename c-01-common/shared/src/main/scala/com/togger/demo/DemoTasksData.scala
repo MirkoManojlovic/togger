@@ -250,6 +250,7 @@ object DemoTasksData {
           entryId,
           creator,
           createdAt,
+          day,
           older :+ LogEntryVersionDto(
             nextId(DemoSeedIds.LogEntryVersion),
             entryId,

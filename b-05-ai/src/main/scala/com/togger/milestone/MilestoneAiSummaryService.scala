@@ -16,7 +16,6 @@ import io.circe.Printer
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -87,8 +86,7 @@ object MilestoneAiSummaryService {
     taskId: UUID,
     status: String,
     text: String,
-    createdAt: Instant,
-    updatedAt: Instant
+    logDate: LocalDate
   )
 
   def toAiDto(entry: LogEntryWithOneVersion): LogEntryAiDto =
@@ -97,7 +95,6 @@ object MilestoneAiSummaryService {
       taskId = entry.logEntry.taskId,
       status = entry.version.status.statusName,
       text = entry.version.text,
-      createdAt = entry.logEntry.createdAt,
-      updatedAt = entry.version.updatedAt
+      logDate = entry.logEntry.logDate
     )
 }

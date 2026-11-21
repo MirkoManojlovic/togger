@@ -578,21 +578,69 @@ class DataImportRepo(
   }
 
   def mergeLogEntry(logEntryDump: LogEntryDumpData, state: ProjectImportState): ConnectionIO[DataImportEntityResult] = {
-    val logEntryExists = state.logEntryIds.contains(logEntryDump.logEntry.id)
+    val logEntry = logEntryDump.logEntry
+    val logEntryExists = state.logEntryIds.contains(logEntry.id)
     for {
-      _ <- if (logEntryExists) ().pure[ConnectionIO] else logEntryRepo.insertWithId(logEntryDump.logEntry).void
+      move <-
+        if (logEntryExists) moveLogEntryToDumpDate(logEntryDump, state)
+        else logEntryRepo.insertWithId(logEntry).as[LogDateMove](LogDateMove.Unchanged)
       added <- insertUnknown(logEntryDump.versions)(
         v => state.logEntryVersions.contains(v.version),
         logEntryVersionRepo.insertWithId
       )
-    } yield DataImportEntityResult.merged(
-      DataExportEntityType.LogEntry,
-      logEntryDump.logEntry.id,
-      None,
-      rootInserted = !logEntryExists,
-      versionsAdded = added,
-      childrenAdded = 0
-    )
+    } yield {
+      val merged = DataImportEntityResult.merged(
+        DataExportEntityType.LogEntry,
+        logEntry.id,
+        None,
+        rootInserted = !logEntryExists,
+        versionsAdded = added,
+        childrenAdded = 0
+      )
+      move match {
+        case LogDateMove.Moved if merged.status == DataImportStatus.Unchanged =>
+          DataImportEntityResult.updated(DataExportEntityType.LogEntry, logEntry.id, None)
+        case LogDateMove.Taken =>
+          merged.copy(error =
+            Some(s"The task already has another log entry for ${logEntry.logDate}; the date was kept")
+          )
+        case _ => merged
+      }
+    }
+  }
+
+  private sealed trait LogDateMove
+  private object LogDateMove {
+    case object Unchanged extends LogDateMove
+    case object Moved extends LogDateMove
+    case object Taken extends LogDateMove
+  }
+
+  /** The date of an existing log entry follows the tree when the tree changed the entry after the project did (a move
+    * always comes with a new version, so the change time sees it). A day that the task already uses for another entry
+    * keeps the date of the project.
+    */
+  private def moveLogEntryToDumpDate(
+    logEntryDump: LogEntryDumpData,
+    state: ProjectImportState
+  ): ConnectionIO[LogDateMove] = {
+    val dumped = logEntryDump.logEntry
+    val diskChangedAt = logEntryChangedAt(List(dumped), logEntryDump.versions).get(dumped.id)
+    val treeIsNewer = (diskChangedAt, state.logEntryChangedAt.get(dumped.id)) match {
+      case (Some(disk), Some(project)) => disk.isAfter(project)
+      case (Some(_), None)             => true
+      case _                           => false
+    }
+    if (!treeIsNewer) (LogDateMove.Unchanged: LogDateMove).pure[ConnectionIO]
+    else
+      logEntryRepo.findById(dumped.id).flatMap { current =>
+        if (current.logDate == dumped.logDate) (LogDateMove.Unchanged: LogDateMove).pure[ConnectionIO]
+        else
+          logEntryRepo.existsByTaskIdAndLogDateExcluding(current.taskId, dumped.logDate, current.id).flatMap {
+            case true  => (LogDateMove.Taken: LogDateMove).pure[ConnectionIO]
+            case false => logEntryRepo.updateLogDate(current.id, dumped.logDate).as(LogDateMove.Moved: LogDateMove)
+          }
+      }
   }
 
   def mergeMilestone(milestoneDump: MilestoneDumpData): ConnectionIO[DataImportEntityResult] =

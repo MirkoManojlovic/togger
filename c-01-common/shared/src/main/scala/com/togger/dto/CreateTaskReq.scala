@@ -150,6 +150,7 @@ case class LogEntryDto(
   text: String,
   status: LogEntryStatus,
   updatedAt: Instant,
+  logDate: LocalDate,
   createdByName: String = ""
 )
 

@@ -5,7 +5,6 @@ import com.togger.common.PaginatedResponse
 import com.togger.dto.LogEntryFilter
 import doobie.ConnectionIO
 
-import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -19,8 +18,13 @@ trait LogEntryRepo {
 
   def findOptionById(id: UUID): ConnectionIO[Option[LogEntry]]
 
-  /** Whether the task has a log entry created in `[from, to)`. */
-  def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean]
+  /** Whether the task has a log entry for `logDate`. */
+  def existsByTaskIdAndLogDate(taskId: UUID, logDate: LocalDate): ConnectionIO[Boolean]
+
+  /** Whether the task has a log entry for `logDate` other than `excludedId`: the check for moving an entry. */
+  def existsByTaskIdAndLogDateExcluding(taskId: UUID, logDate: LocalDate, excludedId: UUID): ConnectionIO[Boolean]
+
+  def updateLogDate(id: UUID, logDate: LocalDate): ConnectionIO[Int]
 
   def deleteById(id: UUID): ConnectionIO[Int]
 
@@ -34,15 +38,15 @@ trait LogEntryRepo {
 
   def findPaginatedByTaskId(taskId: UUID, page: DbPageRequest): ConnectionIO[PaginatedResponse[LogEntry]]
 
-  /** One page of the project's log entries, newest first. */
+  /** One page of the project's log entries, newest log date first. */
   def findPaginatedByProjectId(
     projectId: UUID,
     filter: LogEntryFilter,
     page: DbPageRequest
   ): ConnectionIO[PaginatedResponse[LogEntry]]
 
-  /** Bounded by caller (`limit`): the latest version of every log entry of the milestone's tasks created on a UTC day
-    * in `[from, to]` (both inclusive), oldest first.
+  /** Bounded by caller (`limit`): the latest version of every log entry of the milestone's tasks whose log date is in
+    * `[from, to]` (both inclusive), oldest first.
     */
   def findLatestByMilestoneIdBetween(
     milestoneId: UUID,

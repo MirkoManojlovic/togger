@@ -230,7 +230,8 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         UUID.randomUUID(),
         "external",
         LogEntryStatus.InProgress,
-        at
+        at,
+        LocalDate.of(2026, 6, 15)
       )
       for {
         saved <- s.env.run(s.tasks.saveLogEntry(entry))
@@ -271,7 +272,8 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
         UUID.randomUUID(),
         "external",
         LogEntryStatus.InProgress,
-        at
+        at,
+        LocalDate.of(2026, 6, 15)
       )
       for {
         saved <- s.env.run(s.tasks.saveLogEntry(entry))
@@ -290,10 +292,10 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       }
     }
 
-    "filter project log entries by the creation time range" in { _ =>
+    "filter project log entries by the inclusive log date range" in { _ =>
       val s = new Services
-      val from = Instant.parse("2026-06-08T00:00:00Z")
-      val to = Instant.parse("2026-06-15T00:00:00Z")
+      val from = LocalDate.of(2026, 6, 8)
+      val to = LocalDate.of(2026, 6, 14)
       for {
         all <- s.env.run(s.tasks.findAllLogEntriesByProjectId(DemoIdentity.ProjectId))
         week <- s.env.run(
@@ -302,9 +304,45 @@ class PreviewTasksDomainTest extends AsyncJsWordSpec {
       } yield {
         week.toOption.get.nonEmpty shouldBe true
         all.toOption.get.size should be > week.toOption.get.size
-        week.toOption.get.forall(e => !e.createdAt.isBefore(from) && e.createdAt.isBefore(to)) shouldBe true
+        week.toOption.get.forall(e => !e.logDate.isBefore(from) && !e.logDate.isAfter(to)) shouldBe true
         all.toOption.get
-          .map(_.createdAt.toEpochMilli) shouldBe all.toOption.get.map(_.createdAt.toEpochMilli).sorted.reverse
+          .map(_.logDate.toEpochDay) shouldBe all.toOption.get.map(_.logDate.toEpochDay).sorted.reverse
+      }
+    }
+
+    "move a log entry to another day unless the task already has an entry there" in { _ =>
+      val s = new Services
+      val taskId = DemoSeedIds.id(DemoSeedIds.Task, 13)
+      val at = Instant.parse("2026-06-15T11:00:00Z")
+      def entryOn(day: LocalDate) =
+        LogEntryDto(
+          UUID.randomUUID(),
+          taskId,
+          DemoIdentity.AccountId,
+          at,
+          UUID.randomUUID(),
+          "external",
+          LogEntryStatus.InProgress,
+          at,
+          day
+        )
+      val first = LocalDate.of(2026, 6, 15)
+      val second = LocalDate.of(2026, 6, 16)
+      val free = LocalDate.of(2026, 6, 17)
+      for {
+        savedFirst <- s.env.run(s.tasks.saveLogEntry(entryOn(first)))
+        savedSecond <- s.env.run(s.tasks.saveLogEntry(entryOn(second)))
+        onTakenDay <- s.env.run(s.tasks.updateLogEntry(savedFirst.toOption.get.copy(logDate = second)))
+        onFreeDay <- s.env.run(s.tasks.updateLogEntry(savedFirst.toOption.get.copy(logDate = free)))
+        sameDay <- s.env.run(s.tasks.updateLogEntry(savedSecond.toOption.get.copy(text = "same day")))
+        byTask <- s.env.run(s.tasks.findLogEntriesByTaskId(taskId, firstPage))
+      } yield {
+        isBadRequest(onTakenDay) shouldBe true
+        onFreeDay.map(_.logDate) shouldBe Right(free)
+        sameDay.map(_.logDate) shouldBe Right(second)
+        byTask
+          .map(_.items.filter(e => Set(savedFirst, savedSecond).flatMap(_.toOption).exists(_.id == e.id)))
+          .map(_.map(_.logDate)) shouldBe Right(List(free, second).sortBy(_.toEpochDay).reverse)
       }
     }
 

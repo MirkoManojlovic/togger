@@ -261,6 +261,16 @@ tree that has not changed it since, a newer copy comes back and clears the tombs
 has it: pending import) and `Deleted` (database deleted, disk still has it: pending export). The import asks for
 confirmation in the UI (`ImportDeletions`) before it deletes. Only tasks and log entries have tombstones so far; other entity types are deleted from the tree without one.
 
+**Log entry date:** a `LogEntry` has a `logDate` (the day it is for, `LocalDate`) apart from `createdAt` (the real time it
+was written, set by the backend clock; the client sends only `logDate`). A task has at most one entry per `logDate`
+(unique index on `(task_id, log_date)`, plus the `LogEntryAlreadyExistsForDay` check in `LogEntryService`), and the date
+is editable: `LogEntryService.updateLogEntry` moves the entry and saves the new version in one transaction. Every
+"day of an entry" (contributions, milestone history, AI summary, calendar, Gantt) reads `logDate`, never `createdAt`.
+`LogEntryFilter` takes inclusive `LocalDate` `from`/`to`. `logDate` stays the last field of `LogEntry`/last column of
+`log_entry` (the repo maps by position). Old dumps without `logDate` decode it as the UTC day of `createdAt`
+(`LogEntryDumpData`); on import the tree's `logDate` wins for an existing entry only when the tree changed the entry
+after the project did, and not when the task already has another entry on that day (reported in the result).
+
 **Task labels in the export/import:** a task file carries `labelsAssignedAt` (newest assignment time; a task update
 rewrites all assignments at once) and the import replaces the labels of a task by the set of the newer side, so a swapped
 label is not added next to the old one. A tree without the time (old) only adds. Clearing all labels leaves no time, so

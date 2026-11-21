@@ -15,7 +15,7 @@ object GanttLogStatus {
   /** The log entry of each task on each day it has any. With several entries on a day the latest one counts. */
   def latestByTaskAndDay(entries: Seq[LogEntryDto]): Map[(UUID, LocalDate), LogEntryDto] =
     entries
-      .groupBy(entry => (entry.taskId, toLocalDate(entry.createdAt)))
+      .groupBy(entry => (entry.taskId, entry.logDate))
       .map { case (key, dayEntries) => key -> dayEntries.maxBy(_.createdAt) }
 
   def byTaskAndDay(entries: Seq[LogEntryDto]): Map[(UUID, LocalDate), LogEntryStatus] =

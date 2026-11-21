@@ -34,7 +34,8 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
     id = UUID.randomUUID(),
     taskId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant
+    createdAt = nowAsInstant,
+    logDate = nowAsLocalDate
   )
 
   testNameFromClassName should {
@@ -75,12 +76,13 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(_ =>
+    def createLogEntries(taskId: UUID, accountId: UUID) = (0 to 10).map(index =>
       LogEntry(
         id = UUID.randomUUID(),
         taskId = taskId,
         createdBy = accountId,
-        createdAt = nowAsInstant
+        createdAt = nowAsInstant,
+        logDate = nowAsLocalDate.minusDays(index.toLong)
       )
     )
 
@@ -97,7 +99,8 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
             id = UUID.randomUUID(),
             taskId = savedTask1.id,
             createdBy = savedAccount.id,
-            createdAt = base.plusSeconds(index.toLong)
+            createdAt = base.plusSeconds(index.toLong),
+            logDate = nowAsLocalDate.plusDays(index.toLong)
           )
         )
         saved <- entriesOfProject1.map(logEntryRepo.insert).toList.sequence
@@ -115,7 +118,7 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
         page3 <- logEntryRepo.findPaginatedByProjectId(savedProject1.id, LogEntryFilter.empty, pageOf(5, 3))
         page4 <- logEntryRepo.findPaginatedByProjectId(savedProject1.id, LogEntryFilter.empty, pageOf(5, 4))
       } yield {
-        val newestFirst = saved.sortBy(_.createdAt).reverse
+        val newestFirst = saved.sortBy(_.logDate).reverse
         val cp = new Checkpoint
         cp(List(page1, page2, page3).map(_.totalNumberOfItems) shouldBe List(11L, 11L, 11L))
         cp(page1.totalNumberOfPages shouldBe 3L)
@@ -130,36 +133,91 @@ class LogEntryRepoTest extends BusinessTgDbSpec with TgAccount with TgProject wi
       res.transact(transactor)
     }
 
-    "filter by project id with an inclusive from and an exclusive to" in { transactor =>
+    "filter by project id with an inclusive from and an inclusive to" in { transactor =>
       val res = for {
         savedAccount <- createAccount
         orgAndProject <- createOrgAndProject
         seeded <- seedProjectEntries(orgAndProject._2, savedAccount)
         (saved, savedProject1) = seeded
-        ordered = saved.sortBy(_.createdAt)
+        ordered = saved.sortBy(_.logDate)
         window <- logEntryRepo.findPaginatedByProjectId(
           savedProject1.id,
-          LogEntryFilter(from = Some(ordered(2).createdAt), to = Some(ordered(6).createdAt)),
+          LogEntryFilter(from = Some(ordered(2).logDate), to = Some(ordered(6).logDate)),
           pageOf(100, 1)
         )
         fromOnly <- logEntryRepo.findPaginatedByProjectId(
           savedProject1.id,
-          LogEntryFilter(from = Some(ordered(9).createdAt)),
+          LogEntryFilter(from = Some(ordered(9).logDate)),
           pageOf(100, 1)
         )
         toOnly <- logEntryRepo.findPaginatedByProjectId(
           savedProject1.id,
-          LogEntryFilter(to = Some(ordered(1).createdAt)),
+          LogEntryFilter(to = Some(ordered(1).logDate)),
           pageOf(100, 1)
         )
       } yield {
         val cp = new Checkpoint
-        cp(window.items shouldBe ordered.slice(2, 6).reverse)
-        cp(window.totalNumberOfItems shouldBe 4L)
+        cp(window.items shouldBe ordered.slice(2, 7).reverse)
+        cp(window.totalNumberOfItems shouldBe 5L)
         cp(fromOnly.items shouldBe ordered.drop(9).reverse)
         cp.reportAll()
-        toOnly.items shouldBe ordered.take(1)
+        toOnly.items shouldBe ordered.take(2).reverse
       }
+
+      res.transact(transactor)
+    }
+
+    "move a log entry to another log date" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        orgAndProject <- createOrgAndProject
+        savedTask <- taskRepo.insert(task.copy(projectId = orgAndProject._2.id, createdBy = savedAccount.id))
+        savedLogEntry <- logEntryRepo.insert(logEntry.copy(taskId = savedTask.id, createdBy = savedAccount.id))
+        newDate = savedLogEntry.logDate.plusDays(2)
+        updated <- logEntryRepo.updateLogDate(savedLogEntry.id, newDate)
+        found <- logEntryRepo.findById(savedLogEntry.id)
+      } yield {
+        updated shouldBe 1
+        found shouldBe savedLogEntry.copy(logDate = newDate)
+      }
+
+      res.transact(transactor)
+    }
+
+    "tell whether the task has an entry for a log date, also excluding one entry" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        orgAndProject <- createOrgAndProject
+        savedTask <- taskRepo.insert(task.copy(projectId = orgAndProject._2.id, createdBy = savedAccount.id))
+        savedLogEntry <- logEntryRepo.insert(logEntry.copy(taskId = savedTask.id, createdBy = savedAccount.id))
+        onItsDay <- logEntryRepo.existsByTaskIdAndLogDate(savedTask.id, savedLogEntry.logDate)
+        onOtherDay <- logEntryRepo.existsByTaskIdAndLogDate(savedTask.id, savedLogEntry.logDate.plusDays(1))
+        excludingItself <- logEntryRepo
+          .existsByTaskIdAndLogDateExcluding(savedTask.id, savedLogEntry.logDate, savedLogEntry.id)
+        excludingOther <- logEntryRepo
+          .existsByTaskIdAndLogDateExcluding(savedTask.id, savedLogEntry.logDate, UUID.randomUUID())
+      } yield {
+        val cp = new Checkpoint
+        cp(onItsDay shouldBe true)
+        cp(onOtherDay shouldBe false)
+        cp(excludingItself shouldBe false)
+        cp.reportAll()
+        excludingOther shouldBe true
+      }
+
+      res.transact(transactor)
+    }
+
+    "refuse a second entry of the task on the same log date" in { transactor =>
+      val res = for {
+        savedAccount <- createAccount
+        orgAndProject <- createOrgAndProject
+        savedTask <- taskRepo.insert(task.copy(projectId = orgAndProject._2.id, createdBy = savedAccount.id))
+        _ <- logEntryRepo.insert(logEntry.copy(taskId = savedTask.id, createdBy = savedAccount.id))
+        duplicate <- logEntryRepo
+          .insert(logEntry.copy(id = UUID.randomUUID(), taskId = savedTask.id, createdBy = savedAccount.id))
+          .attempt
+      } yield duplicate.isLeft shouldBe true
 
       res.transact(transactor)
     }

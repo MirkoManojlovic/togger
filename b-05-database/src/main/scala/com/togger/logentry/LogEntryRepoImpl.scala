@@ -20,7 +20,6 @@ import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
 
-import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -30,10 +29,10 @@ class LogEntryRepoImpl extends LogEntryRepo {
     import logEntry._
     logAroundInfoQuery(
       insertStatement(LOG_ENTRY_TABLE_FRAG)(fr"""
-        (task_id, created_by, created_at)
-        values ($taskId, $createdBy, $createdAt)
+        (task_id, created_by, created_at, log_date)
+        values ($taskId, $createdBy, $createdAt, $logDate)
       """).update
-        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at")
+        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at", "log_date")
     )(s"Inserting ${sp(logEntry)}", logEntry => s"Log entry inserted ${sp(logEntry)}")
   }
 
@@ -41,10 +40,10 @@ class LogEntryRepoImpl extends LogEntryRepo {
     import logEntry._
     logAroundInfoQuery(
       insertStatement(LOG_ENTRY_TABLE_FRAG)(fr"""
-        (id, task_id, created_by, created_at)
-        values ($id, $taskId, $createdBy, $createdAt)
+        (id, task_id, created_by, created_at, log_date)
+        values ($id, $taskId, $createdBy, $createdAt, $logDate)
       """).update
-        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at")
+        .withUniqueGeneratedKeys[LogEntry]("id", "task_id", "created_by", "created_at", "log_date")
     )(
       s"Inserting ${sp(logEntry)} with existing id",
       logEntry => s"Log entry inserted with existing id ${sp(logEntry)}"
@@ -60,13 +59,34 @@ class LogEntryRepoImpl extends LogEntryRepo {
   override def findOptionById(id: UUID): ConnectionIO[Option[LogEntry]] =
     findByIdStatementUUID(LOG_ENTRY_TABLE_FRAG)(id).query[LogEntry].option
 
-  override def existsByTaskIdCreatedBetween(taskId: UUID, from: Instant, to: Instant): ConnectionIO[Boolean] =
+  override def existsByTaskIdAndLogDate(taskId: UUID, logDate: LocalDate): ConnectionIO[Boolean] =
     logAroundInfoQuery(
       (fr"select exists (select 1 from" ++ LOG_ENTRY_TABLE_FRAG ++
-        fr"where task_id = $taskId and created_at >= $from and created_at < $to)").query[Boolean].unique
+        fr"where task_id = $taskId and log_date = $logDate)").query[Boolean].unique
     )(
-      s"Checking log entries of ${sp(taskId)} between ${sp(from)} and ${sp(to)}",
-      exists => s"Log entry exists ${sp(exists)} for ${sp(taskId)}"
+      s"Checking log entries of ${sp(taskId)} on ${sp(logDate)}",
+      exists => s"Log entry exists ${sp(exists)} for ${sp(taskId)} on ${sp(logDate)}"
+    )
+
+  override def existsByTaskIdAndLogDateExcluding(
+    taskId: UUID,
+    logDate: LocalDate,
+    excludedId: UUID
+  ): ConnectionIO[Boolean] =
+    logAroundInfoQuery(
+      (fr"select exists (select 1 from" ++ LOG_ENTRY_TABLE_FRAG ++
+        fr"where task_id = $taskId and log_date = $logDate and id <> $excludedId)").query[Boolean].unique
+    )(
+      s"Checking log entries of ${sp(taskId)} on ${sp(logDate)} other than ${sp(excludedId)}",
+      exists => s"Other log entry exists ${sp(exists)} for ${sp(taskId)} on ${sp(logDate)}"
+    )
+
+  override def updateLogDate(id: UUID, logDate: LocalDate): ConnectionIO[Int] =
+    logAroundInfoQuery(
+      (fr"update" ++ LOG_ENTRY_TABLE_FRAG ++ fr"set log_date = $logDate where id = $id").update.run
+    )(
+      s"Moving log entry ${sp(id)} to ${sp(logDate)}",
+      updated => s"Log entries moved ${sp(updated)} for ${sp(id)}"
     )
 
   override def deleteById(id: UUID): ConnectionIO[Int] =
@@ -91,7 +111,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
     limit: Int
   ): ConnectionIO[List[LogEntryWithOneVersion]] =
     logAroundInfoQuery(
-      (fr"""select log_entry.id, log_entry.task_id, log_entry.created_by, log_entry.created_at,
+      (fr"""select log_entry.id, log_entry.task_id, log_entry.created_by, log_entry.created_at, log_entry.log_date,
               latest_entry.version, latest_entry.log_entry_id, latest_entry.text,
               latest_entry.status, latest_entry.created_by, latest_entry.created_at, latest_entry.updated_at
             from""" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
@@ -99,9 +119,9 @@ class LogEntryRepoImpl extends LogEntryRepo {
         fr"join lateral (select * from" ++ LOG_ENTRY_VERSION_TABLE_FRAG ++
         fr"""where log_entry_id = log_entry.id order by version desc limit 1) latest_entry on true
             where milestone_step.milestone_id = $milestoneId
-              and (log_entry.created_at at time zone 'UTC')::date >= $from
-              and (log_entry.created_at at time zone 'UTC')::date <= $to
-            order by log_entry.created_at, log_entry.id
+              and log_entry.log_date >= $from
+              and log_entry.log_date <= $to
+            order by log_entry.log_date, log_entry.id
             limit $limit""")
         .query[(LogEntry, LogEntryVersion)]
         .to[List]
@@ -132,7 +152,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
       TgFindPaginatedQuery[LogEntry](
         pageQuery = request =>
           (selectAllStatement(LOG_ENTRY_TABLE_FRAG) ++ fr"where task_id = $taskId" ++
-            PaginationSql.orderBy(fr"created_at desc", fr"id") ++
+            PaginationSql.orderBy(fr"log_date desc", fr"created_at desc", fr"id") ++
             PaginationSql.limitOffset(request)).query[LogEntry].to[List],
         countQuery = (fr"select count(*) from" ++ LOG_ENTRY_TABLE_FRAG ++
           fr"where task_id = $taskId").query[Long].unique
@@ -151,7 +171,7 @@ class LogEntryRepoImpl extends LogEntryRepo {
       TgFindPaginatedQuery[LogEntry](
         pageQuery = request =>
           (fr"select log_entry.*" ++ filteredEntries(projectId, filter) ++
-            PaginationSql.orderBy(fr"log_entry.created_at desc", fr"log_entry.id") ++
+            PaginationSql.orderBy(fr"log_entry.log_date desc", fr"log_entry.created_at desc", fr"log_entry.id") ++
             PaginationSql.limitOffset(request)).query[LogEntry].to[List],
         countQuery = (fr"select count(*)" ++ filteredEntries(projectId, filter)).query[Long].unique
       ).run(page)
@@ -165,8 +185,8 @@ class LogEntryRepoImpl extends LogEntryRepo {
     fr"from" ++ LOG_ENTRY_TABLE_FRAG ++ innerJoin(TASK_TABLE_FRAG)(fr"log_entry.task_id = task.id") ++
       Fragments.whereAndOpt(
         Some(fr"task.project_id = $projectId"),
-        filter.from.map(from => fr"log_entry.created_at >= $from"),
-        filter.to.map(to => fr"log_entry.created_at < $to")
+        filter.from.map(from => fr"log_entry.log_date >= $from"),
+        filter.to.map(to => fr"log_entry.log_date <= $to")
       )
 
   override def deleteByTaskId(taskId: UUID): ConnectionIO[Int] = {
