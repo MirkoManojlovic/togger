@@ -30,6 +30,8 @@ import io.circe.Encoder
 
 import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 
 // `Project.workDays: Set[DayOfWeek]` has no circe instance by default (unlike LocalDate/Instant, circe has no
@@ -74,6 +76,28 @@ case class TaskDumpData(
 
 /** `logentries/<id>.json` */
 case class LogEntryDumpData(logEntry: LogEntry, versions: List[LogEntryVersion])
+
+object LogEntryDumpData {
+  import io.circe.generic.auto._
+
+  // Dumps written before log entries had a `logDate` have none: the day was held by `createdAt`, as a UTC day.
+  private val logEntryDecoder: Decoder[LogEntry] = Decoder.instance { cursor =>
+    for {
+      id <- cursor.get[UUID]("id")
+      taskId <- cursor.get[UUID]("taskId")
+      createdBy <- cursor.get[UUID]("createdBy")
+      createdAt <- cursor.get[Instant]("createdAt")
+      logDate <- cursor.get[Option[LocalDate]]("logDate").map(_.getOrElse(createdAt.atZone(ZoneOffset.UTC).toLocalDate))
+    } yield LogEntry(id, taskId, createdBy, createdAt, logDate)
+  }
+
+  implicit val logEntryDumpDataDecoder: Decoder[LogEntryDumpData] = Decoder.instance { cursor =>
+    for {
+      logEntry <- cursor.get[LogEntry]("logEntry")(logEntryDecoder)
+      versions <- cursor.get[List[LogEntryVersion]]("versions")
+    } yield LogEntryDumpData(logEntry, versions)
+  }
+}
 
 /** `projectlabels/<id>.json` */
 case class ProjectLabelDumpData(label: ProjectLabel, category: ProjectLabelCategory)

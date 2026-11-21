@@ -272,7 +272,13 @@ trait ExportImportTestSupport
       )
       _ <- linkVersionRepo.insert(firstLinkVersion.copy(name = "Link v2"))
       savedLogEntry <- logEntryRepo.insert(
-        LogEntry(id = UUID.randomUUID(), taskId = savedTask.id, createdBy = createdBy, createdAt = nowAsInstant)
+        LogEntry(
+          id = UUID.randomUUID(),
+          taskId = savedTask.id,
+          createdBy = createdBy,
+          createdAt = nowAsInstant,
+          logDate = nowAsLocalDate
+        )
       )
       firstLogEntryVersion <- logEntryVersionRepo.insert(
         LogEntryVersion(
@@ -520,7 +526,13 @@ trait ExportImportTestSupport
 
   def handWrittenLogEntry(logEntryId: UUID, taskId: UUID, createdBy: UUID): LogEntryDumpData =
     LogEntryDumpData(
-      logEntry = LogEntry(id = logEntryId, taskId = taskId, createdBy = createdBy, createdAt = nowAsInstant),
+      logEntry = LogEntry(
+        id = logEntryId,
+        taskId = taskId,
+        createdBy = createdBy,
+        createdAt = nowAsInstant,
+        logDate = nowAsLocalDate
+      ),
       versions = List(
         LogEntryVersion(
           version = UUID.randomUUID(),

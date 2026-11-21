@@ -34,7 +34,8 @@ class LogEntryVersionRepoTest
     id = UUID.randomUUID(),
     taskId = UUID.randomUUID(),
     createdBy = TgIds.UNASSIGNED_UUID,
-    createdAt = nowAsInstant
+    createdAt = nowAsInstant,
+    logDate = nowAsLocalDate
   )
 
   val v1 = "v1"

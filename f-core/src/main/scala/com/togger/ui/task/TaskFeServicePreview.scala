@@ -195,14 +195,14 @@ class TaskFeServicePreview(
       val taskIds = data.tasks.filter(_.projectId == projectId).map(_.id).toSet
       val matching = data.logEntries
         .filter(entry => taskIds.contains(entry.taskId))
-        .filter(entry => filter.from.forall(!entry.createdAt.isBefore(_)) && filter.to.forall(entry.createdAt.isBefore))
-        .sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+        .filter(entry => filter.from.forall(!entry.logDate.isBefore(_)) && filter.to.forall(!entry.logDate.isAfter(_)))
+        .sortBy(newestFirst)
       PreviewResponses.paged(matching.flatMap(toLogEntryDto), page)
     }
 
   override def findLogEntriesByTaskId(taskId: UUID, page: PageRequest): TgRespIO[PaginatedResponse[LogEntryDto]] =
     secured { _ =>
-      val entries = data.logEntriesOf(taskId).sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+      val entries = data.logEntriesOf(taskId).sortBy(newestFirst)
       PreviewResponses.paged(entries.flatMap(toLogEntryDto), page)
     }
 
@@ -217,7 +217,7 @@ class TaskFeServicePreview(
               data.linksOf(id).flatMap(link => data.latestLinkVersion(link.id).map(toLinkDto(link, _))),
               data
                 .logEntriesOf(id)
-                .sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+                .sortBy(newestFirst)
                 .flatMap(toLogEntryDto)
             )
           )
@@ -227,10 +227,12 @@ class TaskFeServicePreview(
   override def saveLogEntry(dto: LogEntryDto): TgRespIO[LogEntryDto] =
     secured { _ =>
       if (data.tasks.find(dto.taskId).isEmpty) PreviewResponses.notFound[LogEntryDto]
-      else if (data.logEntriesOf(dto.taskId).exists(entry => data.dayOf(entry.createdAt) == data.dayOf(dto.createdAt)))
+      else if (data.logEntriesOf(dto.taskId).exists(_.logDate == dto.logDate))
         PreviewResponses.badRequest[LogEntryDto]("The task already has a log entry for that day")
       else {
-        val entry = data.logEntries.upsert(PreviewLogEntry(UUID.randomUUID(), dto.taskId, dto.createdBy, dto.createdAt))
+        val entry = data.logEntries.upsert(
+          PreviewLogEntry(UUID.randomUUID(), dto.taskId, dto.createdBy, ctx.clock.currentInstant, dto.logDate)
+        )
         val version = data.logEntryVersions.upsert(newLogEntryVersion(entry.id, dto))
         PreviewResponses.ok(logEntryDto(entry, version))
       }
@@ -239,8 +241,15 @@ class TaskFeServicePreview(
   override def updateLogEntry(dto: LogEntryDto): TgRespIO[LogEntryDto] =
     secured { _ =>
       data.logEntries.find(dto.id).fold(PreviewResponses.badRequest[LogEntryDto]("Log entry not found")) { entry =>
-        val version = data.logEntryVersions.upsert(newLogEntryVersion(entry.id, dto))
-        PreviewResponses.ok(logEntryDto(entry, version))
+        val dateTaken =
+          dto.logDate != entry.logDate &&
+            data.logEntriesOf(entry.taskId).exists(other => other.id != entry.id && other.logDate == dto.logDate)
+        if (dateTaken) PreviewResponses.badRequest[LogEntryDto]("The task already has a log entry for that day")
+        else {
+          val moved = data.logEntries.upsert(entry.copy(logDate = dto.logDate))
+          val version = data.logEntryVersions.upsert(newLogEntryVersion(moved.id, dto))
+          PreviewResponses.ok(logEntryDto(moved, version))
+        }
       }
     }
 
@@ -497,20 +506,24 @@ class TaskFeServicePreview(
       dto.text,
       dto.status,
       dto.createdBy,
-      dto.createdAt,
-      dto.updatedAt
+      ctx.clock.currentInstant,
+      ctx.clock.currentInstant
     )
+
+  private def newestFirst(entry: PreviewLogEntry): (Long, Long, String) =
+    (-entry.logDate.toEpochDay, -entry.createdAt.toEpochMilli, entry.id.toString)
 
   private def logEntryDto(entry: PreviewLogEntry, version: LogEntryVersionDto): LogEntryDto =
     LogEntryDto(
       entry.id,
       entry.taskId,
       entry.createdBy,
-      version.createdAt,
+      entry.createdAt,
       version.version,
       version.text,
       version.status,
       version.updatedAt,
+      entry.logDate,
       data.accountName(entry.createdBy)
     )
 
@@ -534,7 +547,7 @@ class TaskFeServicePreview(
         latestVersion = version.version,
         logEntries = data
           .logEntriesOf(task.id)
-          .sortBy(entry => (-entry.createdAt.toEpochMilli, entry.id.toString))
+          .sortBy(newestFirst)
           .flatMap(toLogEntryDto),
         links = data.linksOf(task.id).flatMap(link => data.latestLinkVersion(link.id).map(toLinkDto(link, _))),
         milestone = version.milestone,

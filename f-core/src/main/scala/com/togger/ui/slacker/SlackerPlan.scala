@@ -5,7 +5,6 @@ import com.togger.logentry.LogEntryStatus
 import com.togger.ui.teamdaily.TeamDailyEntryDraft
 import com.togger.ui.teamdaily.TeamDailyStatusOrder
 import com.togger.ui.teamdaily.TeamDailyTaskPlan
-import com.togger.ui.timebox.gantt.GanttLogStatus
 
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -54,7 +53,7 @@ object SlackerPlan {
       statusName = task.taskStatus.name,
       statusEmoji = task.taskStatus.emoji,
       missingDays = SlackerMissingDays.of(
-        task.logEntries.map(e => GanttLogStatus.toLocalDate(e.createdAt)),
+        task.logEntries.map(e => e.logDate),
         task.startDate,
         today,
         workDays

@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
 import com.togger.common.TgClock
-import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.components.button.TgHtmlButton
 import com.togger.dto.LogEntryDto
 import com.togger.logentry.LogEntryStatus
@@ -29,9 +28,7 @@ import com.togger.util.FrontendMacros.selectorAndUpdaterMacro
 import org.scalajs.dom
 
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
 import scala.util.Try
 
@@ -43,11 +40,7 @@ case class LogEntryForm(
   date: String = "",
   createdByName: String = ""
 ) {
-  lazy val dateAsInstant: Instant = {
-    val localDate = LocalDate.parse(date)
-    val localDateTime = localDate.atTime(0, 0, 0)
-    localDateTime.toInstant(ZoneOffset.UTC)
-  }
+  lazy val logDate: LocalDate = LocalDate.parse(date)
 }
 
 object LogEntryForm {
@@ -64,7 +57,7 @@ object LogEntryForm {
       taskId = dto.taskId,
       status = dto.status.value.toString,
       text = dto.text,
-      date = dto.updatedAt.toLocalDate().toString,
+      date = dto.logDate.toString,
       createdByName = dto.createdByName
     )
 }
@@ -125,11 +118,12 @@ class LogEntryComponent(
       id = form.logEntryId.getOrElse(UUID.randomUUID()),
       taskId = form.taskId,
       createdBy = accountService.get.get.id,
-      createdAt = form.dateAsInstant,
+      createdAt = tgClock.currentInstant,
       latestVersion = UUID.randomUUID(),
       text = form.text,
       status = LogEntryStatus.withValue(form.status.toInt),
-      updatedAt = form.dateAsInstant
+      updatedAt = tgClock.currentInstant,
+      logDate = form.logDate
     )
 
     spinnerService
@@ -143,11 +137,12 @@ class LogEntryComponent(
       id = form.logEntryId.getOrElse(UUID.randomUUID()),
       taskId = form.taskId,
       createdBy = accountService.get.get.id,
-      createdAt = form.dateAsInstant,
+      createdAt = tgClock.currentInstant,
       latestVersion = UUID.randomUUID(),
       text = form.text,
       status = LogEntryStatus.withValue(form.status.toInt),
-      updatedAt = tgClock.currentInstant
+      updatedAt = tgClock.currentInstant,
+      logDate = form.logDate
     )
 
     spinnerService

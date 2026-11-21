@@ -348,7 +348,7 @@ class DependenciesModule(
     new LogEntryService(logEntryRepo, logEntryVersionRepo, taskRepo, deletedEntityRepo, tgClock, transactor)
   lazy val logEntryEndpoints = new LogEntryEndpoints(securedEndpoint)
   lazy val accountNameLookup = new AccountNameLookup(accountRepo, transactor)
-  lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService, accountNameLookup)
+  lazy val logEntryController = new LogEntryController(logEntryEndpoints, logEntryService, accountNameLookup, tgClock)
 
   lazy val contributionRepo = new ContributionRepoImpl
   lazy val contributionService =

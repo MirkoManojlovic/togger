@@ -26,7 +26,7 @@ import java.util.UUID
 
 class ContributionRepoImpl extends ContributionRepo {
 
-  private val entryDay: Fragment = fr"(log_entry.created_at at time zone 'UTC')::date"
+  private val entryDay: Fragment = fr"log_entry.log_date"
 
   override def entryActivity(projectId: UUID, filter: ContributionsFilter): ConnectionIO[List[EntryActivityRow]] =
     logAroundInfoQuery(

@@ -3,7 +3,6 @@ package com.togger.ui.task
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.raquo.laminar.api.L._
-import com.togger.common.TgJavaTimeSyntax.TgInstantOps
 import com.togger.common._
 import com.togger.dto.FindTaskRespFull
 import com.togger.dto.FindTaskStatusResp
@@ -71,7 +70,7 @@ class TaskCloseFlow(
         case Left(error) => IO { toast.error(error); abort() }
         case Right(found) =>
           val missing = SlackerMissingDays.of(
-            found.body.get.logEntries.map(_.createdAt.toLocalDate()),
+            found.body.get.logEntries.map(_.logDate),
             task.startDate,
             endDate,
             workDays

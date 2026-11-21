@@ -14,9 +14,11 @@ class GanttLogStatusTest extends AnyWordSpec with Matchers {
   private val taskA = UUID.randomUUID()
   private val taskB = UUID.randomUUID()
 
-  private def entry(task: UUID, at: String, status: LogEntryStatus) = {
+  /** `at` is when the entry was written; its log date is that day unless given. */
+  private def entry(task: UUID, at: String, status: LogEntryStatus, logDate: Option[LocalDate] = None) = {
     val createdAt = Instant.parse(at)
-    LogEntryDto(UUID.randomUUID(), task, UUID.randomUUID(), createdAt, UUID.randomUUID(), "", status, createdAt)
+    val day = logDate.getOrElse(LocalDate.parse(at.take(10)))
+    LogEntryDto(UUID.randomUUID(), task, UUID.randomUUID(), createdAt, UUID.randomUUID(), "", status, createdAt, day)
   }
 
   "GanttLogStatus.byTaskAndDay" should {
@@ -46,13 +48,19 @@ class GanttLogStatusTest extends AnyWordSpec with Matchers {
       )
     }
 
-    "use the UTC day around midnight" in {
+    "keep the entries of two log dates apart, whenever they were written" in {
       val entries = Seq(
         entry(taskA, "2026-03-02T23:59:59Z", LogEntryStatus.InProgress),
         entry(taskA, "2026-03-03T00:00:00Z", LogEntryStatus.Completed)
       )
       GanttLogStatus.byTaskAndDay(entries).keySet shouldBe
         Set((taskA, LocalDate.of(2026, 3, 2)), (taskA, LocalDate.of(2026, 3, 3)))
+    }
+
+    "group by the log date and not by the time the entry was written" in {
+      val backdated = entry(taskA, "2026-03-05T09:00:00Z", LogEntryStatus.Completed, Some(LocalDate.of(2026, 3, 2)))
+      GanttLogStatus.byTaskAndDay(Seq(backdated)) shouldBe
+        Map((taskA, LocalDate.of(2026, 3, 2)) -> LogEntryStatus.Completed)
     }
   }
 

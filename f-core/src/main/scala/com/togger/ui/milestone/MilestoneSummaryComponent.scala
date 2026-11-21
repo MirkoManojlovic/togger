@@ -45,7 +45,6 @@ import com.togger.ui.toast.Toast
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
 import scala.collection.mutable
 import scala.util.Try
@@ -581,7 +580,7 @@ object MilestoneSummaryComponent {
     endDate: LocalDate
   ): Seq[FindTaskRespFull] =
     tasks.filter(_.logEntries.exists { entry =>
-      val day = entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDate
+      val day = entry.logDate
       !day.isBefore(startDate) && !day.isAfter(endDate)
     })
 }
