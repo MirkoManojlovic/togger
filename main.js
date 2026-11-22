@@ -42,7 +42,8 @@ if (appConfig.isDesktopMode === "true") {
     }
   })
 
-  // the Scala.js UI drives updates through this; the sidecars are stopped first because they lock the app files
+  // the Scala.js UI drives updates through this. The update is downloaded and verified first, so a failing download
+  // leaves the app as it was; the sidecars are stopped only for the install because they lock the app files.
   let pendingUpdate = null
   window.tgUpdater = {
     check: async () => {
@@ -51,8 +52,14 @@ if (appConfig.isDesktopMode === "true") {
     },
     install: async () => {
       if (!pendingUpdate) throw new Error("No update has been checked")
-      await invoke('backend_stop', {app: null})
-      await pendingUpdate.downloadAndInstall()
+      await pendingUpdate.download()
+      try {
+        await invoke('backend_stop', {app: null})
+        await pendingUpdate.install()
+      } catch (error) {
+        await invoke('backend_start', {app: null}).catch(startError => console.log('Error:', startError))
+        throw error
+      }
       await relaunch()
     }
   }
