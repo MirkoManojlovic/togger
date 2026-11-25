@@ -81,6 +81,7 @@ import com.togger.ui.timebox._
 import com.togger.ui.toast.Toast
 import com.togger.ui.toast.ToastMessage
 import com.togger.ui.toast.ToastMessagesService
+import com.togger.ui.updater.UpdateBannerComponent
 import com.togger.ui.updater.UpdaterComponent
 import com.togger.ui.updater.UpdaterStore
 import org.scalajs.dom
@@ -449,6 +450,11 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
       ToastMessage.success(s"Togger $version is available. Install it in Settings > Updates.")
     )
   )
+  locally { val _ = updaterStore.busy.foreach(router.setNavigationLocked)(new OneTimeOwner(() => ())) }
+  lazy val updateBanner = new UpdateBannerComponent(
+    updaterStore,
+    router.currentPageSignal.map(_ == UpdaterSettingsPage)
+  )
 
   lazy val findAccountServiceImpl: FindAccountService =
     if (previewConfig.enabled) new FindAccountServicePreview(previewModule.context, previewModule.accounts)
@@ -502,6 +508,8 @@ class TgSplitRender(router: TgRouter[FrontendPage], previewConfig: PreviewConfig
 //        cls("pb-[2rem] pl-[2rem] pr-[2rem]"),
         child <-- navigationSelection.navigationSignal,
         elementForSpinner,
+        updateBanner.element,
+        windowEvents(_.onBeforeUnload).filterWith(updaterStore.busy) --> (_.preventDefault()),
         toastHolder,
         elementForModal,
         elementForQuickCreate,

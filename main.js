@@ -50,16 +50,29 @@ if (appConfig.isDesktopMode === "true") {
       pendingUpdate = await check()
       return pendingUpdate ? {version: pendingUpdate.version, notes: pendingUpdate.body || ""} : null
     },
-    install: async () => {
+    // onEvent gets {phase, downloaded, total}: phase is downloading, stopping, installing or restarting; downloaded and
+    // total are bytes (total is undefined when the server sends no content length)
+    install: async (onEvent) => {
       if (!pendingUpdate) throw new Error("No update has been checked")
-      await pendingUpdate.download()
+      const report = (phase, downloaded, total) => onEvent && onEvent({phase, downloaded, total})
+      let downloaded = 0
+      let total
+      report("downloading", downloaded, total)
+      await pendingUpdate.download(event => {
+        if (event.event === 'Started') total = event.data.contentLength
+        if (event.event === 'Progress') downloaded += event.data.chunkLength
+        report("downloading", downloaded, total)
+      })
       try {
+        report("stopping", downloaded, total)
         await invoke('backend_stop', {app: null})
+        report("installing", downloaded, total)
         await pendingUpdate.install()
       } catch (error) {
         await invoke('backend_start', {app: null}).catch(startError => console.log('Error:', startError))
         throw error
       }
+      report("restarting", downloaded, total)
       await relaunch()
     }
   }

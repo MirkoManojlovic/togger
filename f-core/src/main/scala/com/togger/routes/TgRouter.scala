@@ -24,6 +24,11 @@ trait TgRouter[PAGE <: FrontendPage] {
   /** Takes the guard away if it still is the one that is set, so the page that took over keeps its own. */
   def clearLeaveGuard(guard: (() => Unit) => Unit): Unit
 
+  /** While locked, every navigation (links, `route`, back/forward) is ignored and the page on screen stays. Independent
+    * of the leave guard, so a page guard cannot lift it.
+    */
+  def setNavigationLocked(locked: Boolean): Unit
+
   val currentPageSignal: StrictSignal[PAGE]
 
   def absoluteUrlForPage(page: PAGE): String
@@ -76,7 +81,19 @@ class TgRouterImpl(
   override def clearLeaveGuard(guard: (() => Unit) => Unit): Unit =
     if (leaveGuard.contains(guard)) leaveGuard = None
 
-  private def guarded(navigate: () => Unit): Unit = leaveGuard.fold(navigate())(_(navigate))
+  private var lockedPage: Option[FrontendPage] = None
+
+  override def setNavigationLocked(locked: Boolean): Unit =
+    lockedPage = Option.when(locked)(router.currentPageSignal.now())
+
+  // back/forward is handled by the waypoint router itself, so it is put back on the locked page afterwards
+  locally {
+    val _ = router.currentPageSignal
+      .foreach(page => lockedPage.filter(_ != page).foreach(router.replaceState(_)))(unsafeWindowOwner)
+  }
+
+  private def guarded(navigate: () => Unit): Unit =
+    if (lockedPage.isDefined) () else leaveGuard.fold(navigate())(_(navigate))
 
   override def route(page: FrontendPage): Unit =
     guarded(() => router.pushState(page))
