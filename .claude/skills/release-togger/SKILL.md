@@ -39,6 +39,10 @@ Show the full draft to the user and ask for approval. Apply their changes and sh
 
 ## Step 4 — Branch and the two commits
 
+Before the version bump, make sure `b-07-main/.../dbmigration/DbMigration<X_Y_Z>.scala` exists for the new version and is
+registered in `DbMigrations.all` (a no-op with `CopyRules.noChanges` when the schema did not change); `DbMigrationsTest`
+fails otherwise.
+
 The branch is named `release/X.Y.Z` after the version chosen in Step 2 (for example `release/0.2.2`, no `v`); `X.Y.Z` stands for that version below.
 
 ```bash

@@ -286,8 +286,22 @@ JVM (`SecurityLogicJvm`) and JS (`SecurityLogicJs`) implementations). Passwords 
 
 **DB schema:** managed by Liquibase, changelog at `b-05-database/src/main/resources/liquibase/changelog.yaml`
 (gitignored contents pattern relaxed — see `.gitignore` note in git log). On desktop app startup,
-`BackendApp.setupDb` checks whether the `togger_account` DB role exists; if not, it creates the DB/role, runs
-Liquibase, and seeds an admin account (`CreateAdminAccount`).
+`BackendApp.setupDb` ensures the `togger_account` role, then the database; Liquibase (`LiquibaseOps`, never `dropAll`)
+runs only on a database that was just created, and `CreateAdminAccount` seeds the admin account afterwards.
+
+**One database per app version (prod mode):** `DbMode.Prod` uses `togger-local-X.Y.Z` (`DbNames.prodName`, from
+`BuildInfo.version` cut to its release part, `0.5.0+3-abcd` -> `0.5.0`; a non-release version such as `ci` keeps the
+legacy `togger-local`). Development mode keeps `togger-local-development`. `DbMigrationRunner` (`b-07-main`,
+`com.togger.dbmigration`) creates the database if missing, applies the changelog and copies the data of the previous
+version into it: the highest older `togger-local-X.Y.Z`, else the legacy `togger-local`, else nothing (fresh install).
+The old database is only read, never changed or dropped. The copy is complete once the version is a row of
+`db_migration_log`; a database without that row is dropped and rebuilt on the next start, and a failed migration drops
+the new database and aborts startup. `DbMigration<X_Y_Z>` classes (registry `DbMigrations.all`) hold what changed between
+two versions as `CopyRules` for the generic `TableCopier` (copies the columns both schemas have, same table names, FK
+checks off, one transaction): renamed tables/columns, derived values for new NOT NULL columns, skipped tables. **Every
+release adds its `DbMigration<X_Y_Z>` class, a no-op (`CopyRules.noChanges`) when the schema did not change**;
+`DbMigrationsTest` fails when the Tauri version has none. The migration tests build the old schema from the frozen
+`b-07-main/src/test/resources/liquibase-v0.5.0/changelog.yaml`.
 
 **Web vs. desktop split**, both at build time and runtime:
 - Runtime: `AppEnv` (`web`/`desktop`, first CLI arg to `BackendApp`; third arg is the `DbMode`, `development` → db `togger-local-development` (default) or `prod` → `togger-local`) selects `application-web.conf` /
