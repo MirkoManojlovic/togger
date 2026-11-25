@@ -1,0 +1,2349 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: mirko
+      labels: table-creation
+      context:
+      comment: Creates all tables
+      changes:
+        - createTable:
+            tableName: account_type
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: account
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: last_name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: email
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: account_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_account_type_account
+                    references: account_type(id)
+              - column:
+                  name: verified
+                  type: boolean
+                  defaultValue: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValue: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: organization
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: icon
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: project
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_organization_project
+                    references: organization(id)
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: icon
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: work_days
+                  type: smallint
+                  defaultValueNumeric: 31
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_project
+                    references: project(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_version_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: status
+                  type: int
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_version_milestone_id_version
+            tableName: milestone_version
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: milestone_date
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_date_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_date_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_date_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_date_version_milestone_date
+                    references: milestone_date(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_date_version_milestone_date_id_version
+            tableName: milestone_date_version
+            columns:
+              - column:
+                  name: milestone_date_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: task_status
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_project_task_status
+                    references: project(id)
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: varchar(256)
+                  constraints:
+                    nullable: true
+                    unique: false
+              - column:
+                  name: emoji
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: task_label
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_project_task_label
+                    references: project(id)
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: varchar(256)
+                  constraints:
+                    nullable: true
+                    unique: false
+              - column:
+                  name: emoji
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: task
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_task
+                    references: project(id)
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: task_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_version_task
+                    references: task(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: assigned_to
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_task_version_assigned_to_account
+                    references: account(id)
+              - column:
+                  name: closed_by
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_task_version_closed_by_account
+                    references: account(id)
+              - column:
+                  name: task_status_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_version_task_status
+                    references: task_status(id)
+              - column:
+                  name: priority
+                  type: int
+                  defaultValueNumeric: 3
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_task_version_milestone
+                    references: milestone(id)
+              - column:
+                  name: start_date
+                  type: date
+                  defaultValueComputed: CURRENT_DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: date
+                  defaultValueComputed: CURRENT_DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_task_version_task_id_version
+            tableName: task_version
+            columns:
+              - column:
+                  name: task_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: timebox
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_timebox_project
+                    references: project(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: timebox_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: timebox_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_timebox_version_timebox
+                    references: timebox(id)
+                    deleteCascade: true
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_comment
+                  type: text
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_timebox_version_timebox_id_version
+            tableName: timebox_version
+            columns:
+              - column:
+                  name: timebox_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: timebox_version_task
+            columns:
+              - column:
+                  name: timebox_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_timebox_version_task_timebox_version
+                    references: timebox_version(version)
+                    deleteCascade: true
+              - column:
+                  name: task_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_timebox_version_task_task_version
+                    references: task_version(version)
+                    deleteCascade: true
+        - createTable:
+            tableName: task_label_assignment
+            columns:
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_task_label_assignment_task
+                    references: task(id)
+                    deleteCascade: true
+              - column:
+                  name: task_label_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_task_label_assignment_task_label
+                    references: task_label(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: link
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_link
+                    references: task(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: link_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: link_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_link_version_link
+                    references: link(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: url
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_link_version_link_id_version
+            tableName: link_version
+            columns:
+              - column:
+                  name: link_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: log_entry
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_log_entry
+                    references: task(id)
+                    deleteCascade: true
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_log_entry_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: log_entry_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: log_entry_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_log_entry_version_log_entry
+                    references: log_entry(id)
+                    deleteCascade: true
+              - column:
+                  name: text_internal
+                  type: text
+                  constraints:
+                    nullable: true
+                    unique: false
+              - column:
+                  name: text_external
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: status
+                  type: int
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_log_entry_version_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_log_entry_version_log_entry_id_version
+            tableName: log_entry_version
+            columns:
+              - column:
+                  name: log_entry_id
+              - column:
+                  name: version
+                  descending: true
+        - createTable:
+            tableName: account_session
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_user_account_account_session
+                    references: account(id)
+              - column:
+                  name: session_token
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: device_info
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+        - createTable:
+            tableName: organization_account
+            columns:
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_organization_account_organization
+                    references: organization(id)
+                    primaryKey: true
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_organization_account_account
+                    references: account(id)
+                    primaryKey: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: project_account
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_account_project
+                    references: project(id)
+                    primaryKey: true
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_account_account
+                    references: account(id)
+                    primaryKey: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: task_dump_config
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_dump_config_project
+                    references: project(id)
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_dump_config_account
+                    references: account(id)
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: dump_path
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: task_load_config
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: dump_path
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_load_config_project
+                    references: project(id)
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_load_config_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: project_mapping
+            columns:
+              - column:
+                  name: project_id_db
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_project_mapping_project_db
+                    references: project(id)
+              - column:
+                  name: project_id_dump
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: project_label_category
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: project_label
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: description
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+                    unique: false
+              - column:
+                  name: category_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_label_category
+                    references: project_label_category(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: account_mapping
+            columns:
+              - column:
+                  name: account_id_db
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_account_mapping_account_db
+                    references: account(id)
+              - column:
+                  name: account_id_dump
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: project_label_assignment
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_project_label_assignment_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: project_label_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    foreignKeyName: fk_project_label_assignment_project_label
+                    references: project_label(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 2
+      author: mirko
+      labels: pagination-indexes
+      comment: Task list queries filter by project; log entry list queries join log entries to their task
+      changes:
+        - createIndex:
+            indexName: idx_task_project_id_id
+            tableName: task
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_log_entry_task_id_id
+            tableName: log_entry
+            columns:
+              - column:
+                  name: task_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 3
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Timebox lists filter by project; project and organization lists look up the memberships of one account, which
+        the (project_id, account_id) and (organization_id, account_id) primary keys cannot serve; project lists of one
+        organization filter by organization
+      changes:
+        - createIndex:
+            indexName: idx_timebox_project_id_id
+            tableName: timebox
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_project_account_account_id_project_id
+            tableName: project_account
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_organization_account_account_id_organization_id
+            tableName: organization_account
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: organization_id
+        - createIndex:
+            indexName: idx_project_organization_id_id
+            tableName: project
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 4
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Task status and task label lists filter by project and order by name, milestone lists filter by project; none
+        of the three tables has an index on project_id
+      changes:
+        - createIndex:
+            indexName: idx_task_status_project_id_name_id
+            tableName: task_status
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: name
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_task_label_project_id_name_id
+            tableName: task_label
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: name
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_milestone_project_id_id
+            tableName: milestone
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 5
+      author: mirko
+      labels: pagination-indexes
+      comment: >
+        Task load and dump config lists and milestone date lists filter by one parent and order by id, none of the
+        three tables has an index on its parent; the mapping lookups by the dump side id (run for every account of a
+        task load) cannot use the primary keys, which lead with the database side id
+      changes:
+        - createIndex:
+            indexName: idx_task_load_config_project_id_id
+            tableName: task_load_config
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_task_dump_config_project_id_id
+            tableName: task_dump_config
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_milestone_date_milestone_id_id
+            tableName: milestone_date
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
+        - createIndex:
+            indexName: idx_account_mapping_account_id_dump_account_id_db
+            tableName: account_mapping
+            columns:
+              - column:
+                  name: account_id_dump
+              - column:
+                  name: account_id_db
+        - createIndex:
+            indexName: idx_project_mapping_project_id_dump_project_id_db
+            tableName: project_mapping
+            columns:
+              - column:
+                  name: project_id_dump
+              - column:
+                  name: project_id_db
+  - changeSet:
+      id: 6
+      author: mirko
+      labels: task-template
+      comment: >
+        Task templates: a project-scoped starting text for the description of a new task, optionally linked to one
+        task label (at most one template per label), with an append-only history of versions
+      changes:
+        - createTable:
+            tableName: task_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_task_template
+                    references: project(id)
+              - column:
+                  name: task_label_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_task_template_task_label
+            baseTableName: task_template
+            baseColumnNames: task_label_id
+            referencedTableName: task_label
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createTable:
+            tableName: task_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_template_version_task_template
+                    references: task_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              create unique index uq_task_template_task_label_id on task_template (task_label_id)
+              where task_label_id is not null
+        - createIndex:
+            indexName: idx_task_template_project_id
+            tableName: task_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_task_template_version_task_template_id_version
+            tableName: task_template_version
+            columns:
+              - column:
+                  name: task_template_id
+              - column:
+                  name: version
+                  descending: true
+  - changeSet:
+      id: 7
+      author: mirko
+      labels: data-export
+      comment: Task dump config is now the data export config
+      changes:
+        - renameTable:
+            oldTableName: task_dump_config
+            newTableName: data_export_config
+        - renameColumn:
+            tableName: data_export_config
+            oldColumnName: dump_path
+            newColumnName: export_path
+            columnDataType: text
+        - sql:
+            sql: >
+              alter index idx_task_dump_config_project_id_id rename to idx_data_export_config_project_id_id;
+              alter table data_export_config rename constraint fk_task_dump_config_project to fk_data_export_config_project;
+              alter table data_export_config rename constraint fk_task_dump_config_account to fk_data_export_config_account
+  - changeSet:
+      id: 8
+      author: mirko
+      labels: data-import
+      comment: Task load config is now the data import config
+      changes:
+        - renameTable:
+            oldTableName: task_load_config
+            newTableName: data_import_config
+        - renameColumn:
+            tableName: data_import_config
+            oldColumnName: dump_path
+            newColumnName: import_path
+            columnDataType: text
+        - sql:
+            sql: >
+              alter index idx_task_load_config_project_id_id rename to idx_data_import_config_project_id_id;
+              alter table data_import_config rename constraint fk_task_load_config_project to fk_data_import_config_project;
+              alter table data_import_config rename constraint fk_task_load_config_account to fk_data_import_config_account
+  - changeSet:
+      id: 9
+      author: mirko
+      labels: task-archive
+      comment: Archiving is a flag of the task instead of the "Archived" task status
+      changes:
+        - addColumn:
+            tableName: task
+            columns:
+              - column:
+                  name: archived
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              update task set archived = true
+              where id in (
+                select tv.task_id from task_version tv
+                join task_status ts on ts.id = tv.task_status_id
+                where ts.name = U&'\+01F4E6 Archived'
+              )
+        - sql:
+            sql: >
+              update task_version tv set task_status_id = done.id
+              from task_status archived_status, task_status done
+              where tv.task_status_id = archived_status.id
+                and archived_status.name = U&'\+01F4E6 Archived'
+                and done.project_id = archived_status.project_id
+                and done.name = U&'\+002705 Done'
+        - sql:
+            sql: >
+              delete from task_status ts
+              where ts.name = U&'\+01F4E6 Archived'
+                and not exists (select 1 from task_version tv where tv.task_status_id = ts.id)
+  - changeSet:
+      id: 10
+      author: mirko
+      labels: milestone-summary
+      comment: Versioned summaries of a period of a milestone
+      changes:
+        - createTable:
+            tableName: milestone_summary
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_summary_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_summary_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_summary_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_summary_version_milestone_summary
+                    references: milestone_summary(id)
+                    deleteCascade: true
+              - column:
+                  name: summary
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_summary_version_milestone_summary_id_version
+            tableName: milestone_summary_version
+            columns:
+              - column:
+                  name: milestone_summary_id
+              - column:
+                  name: version
+                  descending: true
+        - createIndex:
+            indexName: idx_milestone_summary_milestone_id_id
+            tableName: milestone_summary
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 11
+      author: mirko
+      labels: tg-prompt
+      comment: Account-scoped AI prompts with an append-only history of versions
+      changes:
+        - createTable:
+            tableName: tg_prompt
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_prompt_created_by_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: tg_prompt_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tg_prompt_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_prompt_version_tg_prompt
+                    references: tg_prompt(id)
+                    deleteCascade: true
+              - column:
+                  name: title
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_tg_prompt_created_by
+            tableName: tg_prompt
+            columns:
+              - column:
+                  name: created_by
+        - createIndex:
+            indexName: idx_tg_prompt_version_tg_prompt_id_version
+            tableName: tg_prompt_version
+            columns:
+              - column:
+                  name: tg_prompt_id
+              - column:
+                  name: version
+                  descending: true
+  - changeSet:
+      id: 12
+      author: mirko
+      labels: tg-prompt-template
+      comment: Rename TgPrompt to TgPromptTemplate
+      changes:
+        - renameTable:
+            oldTableName: tg_prompt
+            newTableName: tg_prompt_template
+        - renameTable:
+            oldTableName: tg_prompt_version
+            newTableName: tg_prompt_template_version
+        - renameColumn:
+            tableName: tg_prompt_template_version
+            oldColumnName: tg_prompt_id
+            newColumnName: tg_prompt_template_id
+        - sql:
+            sql: ALTER TABLE tg_prompt_template RENAME CONSTRAINT fk_tg_prompt_created_by_account TO fk_tg_prompt_template_created_by_account
+        - sql:
+            sql: ALTER TABLE tg_prompt_template_version RENAME CONSTRAINT fk_tg_prompt_version_tg_prompt TO fk_tg_prompt_template_version_tg_prompt_template
+        - sql:
+            sql: ALTER INDEX idx_tg_prompt_created_by RENAME TO idx_tg_prompt_template_created_by
+        - sql:
+            sql: ALTER INDEX idx_tg_prompt_version_tg_prompt_id_version RENAME TO idx_tg_prompt_template_version_tg_prompt_template_id_version
+  - changeSet:
+      id: 13
+      author: mirko
+      labels: ai-endpoint
+      comment: AI endpoints table mirroring the TgAiEndpoints enum
+      changes:
+        - createTable:
+            tableName: ai_endpoints
+            columns:
+              - column:
+                  name: id
+                  type: integer
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_ai_endpoints_name
+  - changeSet:
+      id: 14
+      author: mirko
+      labels: tg-ai-action
+      comment: Account-scoped, unversioned AI actions
+      changes:
+        - createTable:
+            tableName: tg_ai_action
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_created_by_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tg_prompt_template_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: model
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: tg_ai_action
+            baseColumnNames: tg_prompt_template_id
+            constraintName: fk_tg_ai_action_tg_prompt_template
+            referencedTableName: tg_prompt_template
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addUniqueConstraint:
+            tableName: tg_ai_action
+            columnNames: created_by, name
+            constraintName: uq_tg_ai_action_created_by_name
+        - createIndex:
+            indexName: idx_tg_ai_action_tg_prompt_template_id
+            tableName: tg_ai_action
+            columns:
+              - column:
+                  name: tg_prompt_template_id
+  - changeSet:
+      id: 15
+      author: mirko
+      labels: tg-ai-action
+      comment: Binding of AI actions to AI endpoints
+      changes:
+        - createTable:
+            tableName: tg_ai_action_endpoint
+            columns:
+              - column:
+                  name: tg_ai_action_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_endpoint_tg_ai_action
+                    references: tg_ai_action(id)
+                    deleteCascade: true
+              - column:
+                  name: ai_endpoint_id
+                  type: integer
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_endpoint_ai_endpoints
+                    references: ai_endpoints(id)
+        - addPrimaryKey:
+            tableName: tg_ai_action_endpoint
+            columnNames: tg_ai_action_id, ai_endpoint_id
+            constraintName: pk_tg_ai_action_endpoint
+  - changeSet:
+      id: 16
+      author: mirko
+      labels: tg-ai-action
+      comment: Default AI action of a member per project and AI endpoint
+      changes:
+        - createTable:
+            tableName: tg_ai_action_default
+            columns:
+              - column:
+                  name: account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_default_account
+                    references: account(id)
+                    deleteCascade: true
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tg_ai_action_default_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: ai_endpoint_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tg_ai_action_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: tg_ai_action_default
+            columnNames: account_id, project_id, ai_endpoint_id
+            constraintName: pk_tg_ai_action_default
+        - addForeignKeyConstraint:
+            baseTableName: tg_ai_action_default
+            baseColumnNames: tg_ai_action_id, ai_endpoint_id
+            constraintName: fk_tg_ai_action_default_binding
+            referencedTableName: tg_ai_action_endpoint
+            referencedColumnNames: tg_ai_action_id, ai_endpoint_id
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_tg_ai_action_default_project_id
+            tableName: tg_ai_action_default
+            columns:
+              - column:
+                  name: project_id
+  - changeSet:
+      id: 17
+      author: mirko
+      labels: milestone-step
+      comment: Versioned, ordered steps of a milestone
+      changes:
+        - createTable:
+            tableName: milestone_step
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_milestone
+                    references: milestone(id)
+                    deleteCascade: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_step_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_step_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_version_milestone_step
+                    references: milestone_step(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_comment
+                  type: text
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_step_version_milestone_step_id_version
+            tableName: milestone_step_version
+            columns:
+              - column:
+                  name: milestone_step_id
+              - column:
+                  name: version
+                  descending: true
+        - createIndex:
+            indexName: idx_milestone_step_milestone_id_id
+            tableName: milestone_step
+            columns:
+              - column:
+                  name: milestone_id
+              - column:
+                  name: id
+  - changeSet:
+      id: 18
+      author: mirko
+      labels: milestone-step-template
+      comment: >
+        Milestone step templates: a project-scoped name and description for a step of a milestone, with an
+        append-only history of versions
+      changes:
+        - createTable:
+            tableName: milestone_step_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_project
+                    references: project(id)
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_step_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_step_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_step_template_version_template
+                    references: milestone_step_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_milestone_step_template_project_id
+            tableName: milestone_step_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_milestone_step_template_version_template_id_version
+            tableName: milestone_step_template_version
+            columns:
+              - column:
+                  name: milestone_step_template_id
+              - column:
+                  name: version
+                  descending: true
+  - changeSet:
+      id: 19
+      author: mirko
+      labels: milestone-template
+      comment: >
+        Milestone templates: a project-scoped name and description with an ordered list of milestone step templates,
+        with an append-only history of versions. The steps belong to a version. A step template that is deleted
+        disappears from the steps of the versions that listed it.
+      changes:
+        - createTable:
+            tableName: milestone_template
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_project
+                    references: project(id)
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_created_by_account
+                    references: account(id)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_template_version
+            columns:
+              - column:
+                  name: version
+                  type: uuid
+                  defaultValueComputed: uuidv7()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: milestone_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_template
+                    references: milestone_template(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: milestone_template_version_step
+            columns:
+              - column:
+                  name: milestone_template_version
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_step_version
+                    references: milestone_template_version(version)
+                    deleteCascade: true
+              - column:
+                  name: position
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: milestone_step_template_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_milestone_template_version_step_step_template
+                    references: milestone_step_template(id)
+                    deleteCascade: true
+        - addPrimaryKey:
+            tableName: milestone_template_version_step
+            columnNames: milestone_template_version, position
+            constraintName: pk_milestone_template_version_step
+        - createIndex:
+            indexName: idx_milestone_template_version_step_step_template_id
+            tableName: milestone_template_version_step
+            columns:
+              - column:
+                  name: milestone_step_template_id
+        - createIndex:
+            indexName: idx_milestone_template_project_id
+            tableName: milestone_template
+            columns:
+              - column:
+                  name: project_id
+        - createIndex:
+            indexName: idx_milestone_template_version_template_id_version
+            tableName: milestone_template_version
+            columns:
+              - column:
+                  name: milestone_template_id
+              - column:
+                  name: version
+                  descending: true
+  - changeSet:
+      id: 20
+      author: mirko
+      labels: task-milestone-step
+      comment: >
+        A task belongs to a milestone step (its milestone is the milestone of the step) instead of to a milestone. The
+        column is renamed in place to keep the column order of the table; the old values were milestone ids, which
+        are not step ids, so they are cleared and the tasks start without a step. Deleting a step clears the link of
+        the older task versions that pointed at it (history); the service refuses to delete a step that tasks are in.
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: task_version
+            constraintName: fk_task_version_milestone
+        - sql:
+            sql: update task_version set milestone_id = null
+        - renameColumn:
+            tableName: task_version
+            oldColumnName: milestone_id
+            newColumnName: milestone_step_id
+            columnDataType: uuid
+        - addForeignKeyConstraint:
+            baseTableName: task_version
+            baseColumnNames: milestone_step_id
+            constraintName: fk_task_version_milestone_step
+            referencedTableName: milestone_step
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            indexName: idx_task_version_milestone_step_id
+            tableName: task_version
+            columns:
+              - column:
+                  name: milestone_step_id
+  - changeSet:
+      id: 21
+      author: mirko
+      labels: milestone-step-parallel
+      comment: >
+        The position of a step of a milestone template version is its stage: steps with the same position run in
+        parallel. The primary key therefore includes the step template, so a stage can hold several steps.
+      changes:
+        - dropPrimaryKey:
+            tableName: milestone_template_version_step
+            constraintName: pk_milestone_template_version_step
+        - addPrimaryKey:
+            tableName: milestone_template_version_step
+            columnNames: milestone_template_version, position, milestone_step_template_id
+            constraintName: pk_milestone_template_version_step
+  - changeSet:
+      id: 22
+      author: mirko
+      labels: log-entry-single-text
+      comment: >
+        A log entry version has a single text: the internal text is dropped and the external text is renamed to text.
+      changes:
+        - dropColumn:
+            tableName: log_entry_version
+            columnName: text_internal
+        - renameColumn:
+            tableName: log_entry_version
+            oldColumnName: text_external
+            newColumnName: text
+            columnDataType: text
+  - changeSet:
+      id: 23
+      author: mirko
+      labels: export-tombstones
+      comment: >
+        A tombstone records that an entity of a project was deleted, so that the export can tell the import about the
+        deletion and the import does not bring a deleted entity back from an older tree. The entity type is the
+        export folder of the entity (tasks, logentries).
+      changes:
+        - createTable:
+            tableName: deleted_entity
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_deleted_entity_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: entity_type
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: deleted_entity
+            columnNames: project_id, entity_type, entity_id
+            constraintName: pk_deleted_entity
