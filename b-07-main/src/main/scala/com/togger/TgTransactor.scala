@@ -13,11 +13,11 @@ object TgTransactor {
   private val PoolSize = 10
 
   /** Pooled, so a transaction reuses an open connection instead of paying for a new one each time. */
-  def desktopTransactor(dbMode: DbMode): Resource[IO, Transactor[IO]] =
-    pooledTransactor(s"jdbc:postgresql:${dbMode.dbName}")
+  def desktopTransactor(dbName: String): Resource[IO, Transactor[IO]] =
+    pooledTransactor(s"jdbc:postgresql:$dbName")
 
-  def dockerTransactor(dbMode: DbMode): Resource[IO, Transactor[IO]] =
-    pooledTransactor(s"jdbc:postgresql://postgres-docker/${dbMode.dbName}")
+  def dockerTransactor(dbName: String): Resource[IO, Transactor[IO]] =
+    pooledTransactor(s"jdbc:postgresql://postgres-docker/$dbName")
 
   private def pooledTransactor(url: String): Resource[IO, Transactor[IO]] = {
     val config = new HikariConfig()
