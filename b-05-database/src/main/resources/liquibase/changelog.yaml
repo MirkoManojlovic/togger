@@ -2380,3 +2380,25 @@ databaseChangeLog:
         - sql:
             sql: >
               create unique index uq_log_entry_task_id_log_date on log_entry (task_id, log_date)
+  - changeSet:
+      id: 26
+      author: mirko
+      labels: versioned-database
+      comment: >
+        The database of an app version records that the data of the previous version was copied into it completely. A
+        database without this row is an unfinished copy and is rebuilt on the next start.
+      changes:
+        - createTable:
+            tableName: db_migration_log
+            columns:
+              - column:
+                  name: version
+                  type: varchar(50)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: migrated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false

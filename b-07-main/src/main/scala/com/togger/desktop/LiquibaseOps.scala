@@ -1,7 +1,7 @@
 package com.togger.desktop
 
 import cats.effect.IO
-import com.togger.DbMode
+import com.togger.Constants
 import com.togger.TgLogging
 import doobie.FC
 import doobie.Transactor
@@ -18,11 +18,12 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import scala.annotation.nowarn
 
-class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
-  private val jdbcUrl = s"jdbc:postgresql:${dbMode.dbName}"
+/** Applies the changelog to the database; it never drops anything, so it is safe on a database that holds data. */
+class LiquibaseOps(changelogPath: String, dbName: String) extends TgLogging {
+  private val jdbcUrl = s"jdbc:postgresql:$dbName"
 
   def runLiquibase(): Unit = {
-    val connection = DriverManager.getConnection(jdbcUrl)
+    val connection = DriverManager.getConnection(jdbcUrl, Constants.DB_USERNAME, Constants.DB_PASSWORD)
     try {
       val database = DatabaseFactory
         .getInstance()
@@ -35,7 +36,6 @@ class LiquibaseOps(changelogPath: String, dbMode: DbMode) extends TgLogging {
       val resourceAccessor = new DirectoryResourceAccessor(changelogFile)
       val liquibase = new Liquibase("changelog.yaml", resourceAccessor, database)
 
-      liquibase.dropAll()
       liquibase.update(new Contexts()): @nowarn("cat=deprecation")
     } finally {
       if (connection != null) {
@@ -80,6 +80,15 @@ class InitialSetup(transactorWithRootAccount: Transactor[IO]) {
         Right(1)
       }
   }
+
+  def listDatabases: IO[List[String]] =
+    fr"SELECT datname FROM pg_database".query[String].to[List].transact(transactorWithRootAccount)
+
+  def dropDatabase(dbName: String): IO[Unit] =
+    (fr"DROP DATABASE IF EXISTS" ++ Fragment.const(s""""$dbName"""") ++ fr"WITH (FORCE)").update.run
+      .transact(nonTransactionalTransactor)
+      .void
+      .recover { case _: java.sql.SQLException => () }
 
   def createToggerUser: IO[Int] = {
     fr"CREATE USER togger_account WITH PASSWORD 'togger_password'".update.run

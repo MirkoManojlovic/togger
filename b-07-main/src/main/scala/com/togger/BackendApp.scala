@@ -1,6 +1,8 @@
 package com.togger
 
 import cats.effect._
+import com.togger.dbmigration.DbMigrationRunner
+import com.togger.dbmigration.SemVer
 import com.togger.desktop._
 import doobie.Transactor
 import scribe.Level
@@ -19,12 +21,13 @@ object BackendApp extends IOApp with TgLogging {
 //    val transactor = TgTransactor.dockerTransactor
 
     val (appEnv, changelogPath, dbMode) = new AppEnvParser().parse(args)
-    logger.info(s"Running App in [env=$appEnv] [dbMode=$dbMode]")
+    val dbName = dbMode.dbNameFor(BuildInfo.version)
+    logger.info(s"Running App in [env=$appEnv] [dbMode=$dbMode] [db=$dbName] [version=${BuildInfo.version}]")
     val appConfigBe = new AppEnvSelector(appEnv).appConfig
 
-    TgTransactor.desktopTransactor(dbMode).use { appTransactor =>
+    TgTransactor.desktopTransactor(dbName).use { appTransactor =>
       for {
-        _ <- setupDb(liquibaseTransactor, changelogPath, dbMode)
+        _ <- setupDb(liquibaseTransactor, changelogPath, dbMode, dbName)
         _ <- new CreateAdminAccount(appTransactor).run
         _ <- setupScribeLogging
         _ <- archiveLogs(appEnv)
@@ -83,43 +86,51 @@ object BackendApp extends IOApp with TgLogging {
   private def setupDb(
     liquibaseTransactor: Transactor[IO],
     changelogPath: String,
-    dbMode: DbMode
+    dbMode: DbMode,
+    dbName: String
   ): IO[Unit] = {
-    val DB_NAME = dbMode.dbName
     val initialSetup = new InitialSetup(liquibaseTransactor)
-    val liquibaseOps = new LiquibaseOps(changelogPath, dbMode)
+    val liquibaseOps = (name: String) => IO(new LiquibaseOps(changelogPath, name).runLiquibase())
 
     for {
-      dbExists <- initialSetup.checkIfDatabaseExists(DB_NAME)
-      userExists <- initialSetup.checkIfUserExits(Constants.DB_USERNAME)
-      _ <-
-        if (dbExists && userExists) {
-          for {
-            _ <- IO(logger.info(s"Togger db $DB_NAME and account exist skipping"))
-          } yield ()
-
-        } else {
-          for {
-            _ <- IO(logger.info("Togger db or db account doesn't exist. Creating..."))
-            _ <- IO(logger.info(s"Creating $DB_NAME database"))
-            result <- initialSetup.createDatabase(DB_NAME)
-            _ <- IO(logger.info(s"$DB_NAME database result=$result"))
-            _ <-
-              if (userExists) IO(logger.info("togger_account exists, reusing it"))
-              else
-                for {
-                  _ <- IO(logger.info("Creating togger_account"))
-                  _ <- initialSetup.createToggerUser
-                  _ <- IO(logger.info("togger_account created"))
-                  _ <- IO(logger.info("Adding privileges to togger_account"))
-                  _ <- initialSetup.makeSuperUser
-                  _ <- IO(logger.info("Privileges added to togger_account"))
-                } yield ()
-            _ <- IO(logger.info("Running Liquibase"))
-            _ <- IO(liquibaseOps.runLiquibase())
-          } yield ()
-        }
+      _ <- ensureToggerUser(initialSetup)
+      _ <- versionedDb(dbMode) match {
+        case Some(version) => new DbMigrationRunner(initialSetup, liquibaseOps).run(dbName, version)
+        case None          => setupUnversionedDb(initialSetup, liquibaseOps, dbName)
+      }
     } yield ()
   }
+
+  /** Only prod with a release version has a database per version. */
+  private def versionedDb(dbMode: DbMode): Option[SemVer] =
+    if (dbMode == DbMode.Prod) SemVer.parse(BuildInfo.version) else None
+
+  private def ensureToggerUser(initialSetup: InitialSetup): IO[Unit] =
+    initialSetup.checkIfUserExits(Constants.DB_USERNAME).flatMap {
+      case true => IO(logger.info("togger_account exists, reusing it"))
+      case false =>
+        for {
+          _ <- IO(logger.info("Creating togger_account"))
+          _ <- initialSetup.createToggerUser
+          _ <- initialSetup.makeSuperUser
+          _ <- IO(logger.info("togger_account created with privileges"))
+        } yield ()
+    }
+
+  private def setupUnversionedDb(
+    initialSetup: InitialSetup,
+    applySchema: String => IO[Unit],
+    dbName: String
+  ): IO[Unit] =
+    initialSetup.checkIfDatabaseExists(dbName).flatMap {
+      case true => IO(logger.info(s"Togger db $dbName exists, skipping"))
+      case false =>
+        for {
+          _ <- IO(logger.info(s"Creating $dbName database"))
+          result <- initialSetup.createDatabase(dbName)
+          _ <- IO(logger.info(s"$dbName database result=$result"))
+          _ <- applySchema(dbName)
+        } yield ()
+    }
 
 }
